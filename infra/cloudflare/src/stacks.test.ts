@@ -68,9 +68,15 @@ describe("alchemy stacks", () => {
     ]);
   });
 
-  it.for(stackNames)("%s exports the program the CLI runs", async (stack) => {
-    expect.hasAssertions();
-    const module: unknown = await stackModules[`./${stack}.ts`]?.();
-    expect(Effect.isEffect(defaultExport(module))).toBe(true);
-  });
+  it.for(stackNames)("%s exports the program the CLI runs", (stack) =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        expect.hasAssertions();
+        const load = stackModules[`./${stack}.ts`];
+        const module: unknown =
+          load === undefined ? undefined : yield* Effect.promise(() => load());
+        expect(Effect.isEffect(defaultExport(module))).toBe(true);
+      }),
+    ),
+  );
 });

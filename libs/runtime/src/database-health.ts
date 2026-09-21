@@ -16,7 +16,7 @@ const isolateCheck = (
       isolate.expiresAt = clockInstant + Duration.toMillis(healthCacheWindow);
     }
     const { check } = isolate;
-    yield* yield* Effect.promise(async () => check);
+    yield* yield* Effect.promise(() => check);
   });
 };
 class DatabaseHealth extends Context.Service<

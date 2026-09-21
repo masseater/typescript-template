@@ -1,7 +1,8 @@
+import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
 import { DropdownMenuContent } from "./dropdown-menu-content";
 import { DropdownMenuItem } from "./dropdown-menu-item";
@@ -29,8 +30,16 @@ const meta = preview.meta({
 export const Closed = meta.story();
 
 export const Opened = meta.story({
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "利用者の操作" }));
-    await expect(await screen.findByRole("menuitem", { name: "権限を変更" })).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* openMenu() {
+        yield* playTask(() =>
+          userEvent.click(canvas.getByRole("button", { name: "利用者の操作" })),
+        );
+        const menuItem = yield* playTask(() =>
+          screen.findByRole("menuitem", { name: "権限を変更" }),
+        );
+        yield* playTask(() => expect(menuItem).toBeInTheDocument());
+      }),
+    ),
 });

@@ -28,7 +28,7 @@ export class Auth extends Context.Service<
         });
         yield* Effect.tryPromise({
           catch: (cause) => new AuthFailure({ cause }),
-          try: async () => betterAuthInstance.$context,
+          try: () => betterAuthInstance.$context,
         });
         return Auth.of({ audience: authOptions.audience, instance: betterAuthInstance });
       }),

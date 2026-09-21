@@ -43,8 +43,9 @@ const runCli = <Failure>(
 ): void => {
   NodeRuntime.runMain(
     program.pipe(
-      Effect.catchCause((cause) =>
-        Cause.hasInterruptsOnly(cause) ? Effect.failCause(cause) : reportFailed(onFailure(cause)),
+      Effect.catchCauseIf(
+        (cause) => !Cause.hasInterruptsOnly(cause),
+        (cause) => reportFailed(onFailure(cause)),
       ),
     ),
     { disableErrorReporting: true },

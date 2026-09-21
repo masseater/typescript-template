@@ -3,7 +3,6 @@ import { httpStatus } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
 import {
-  AuthApps,
   PASSWORD,
   bootstrapVerifiedAdmin,
   clientOf,
@@ -23,7 +22,6 @@ type AuthorizationFlow = {
 const wikiOrigin = origins[APPLICATION.wiki];
 const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
-const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Registration = Schema.Struct({ client_id: Schema.String });
 
 const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
@@ -46,7 +44,7 @@ const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministr
 });
 
 const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifier: string) {
-  const digest = yield* Effect.promise(async () =>
+  const digest = yield* Effect.promise(() =>
     crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
   return Buffer.from(digest).toString("base64url");

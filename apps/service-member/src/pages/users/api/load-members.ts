@@ -7,13 +7,14 @@ import type { UsersSearch } from "#pages/users/model/users-search.ts";
 
 type Members = typeof MemberList.Type;
 
-async function loadMembers(search: UsersSearch): Promise<Members> {
-  const { api } = await userClient();
+function loadMembers(search: UsersSearch): Promise<Members> {
   const query = {
     ...(search.keyword === undefined ? {} : { keyword: search.keyword }),
     page: String(search.page ?? 1),
   };
-  return apiData(MemberList, await api.members.get({ query }));
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.members.get({ query }).then((response) => apiData(MemberList, response)),
+  );
 }
 
 export { loadMembers };

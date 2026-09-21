@@ -16,37 +16,39 @@ const validRoutes = { "/": "home" };
 const ReportedLog = Schema.Record(Schema.String, Schema.String);
 const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
 
-async function servedUnavailable(
+function servedUnavailable(
   layer: () => Layer.Layer<WikiServices, unknown>,
   reporting: Reporting,
-): Promise<{
+): Effect.Effect<{
   readonly body: unknown;
   readonly status: number;
 }> {
-  const worker = serveApp({
-    runtime: workerRuntime(layer),
-    route: () => Effect.succeed(new Response("reached the route")),
-    reporting,
+  return Effect.gen(function* fetchUnavailable() {
+    const worker = serveApp(
+      workerRuntime(layer),
+      () => Effect.succeed(new Response("reached the route")),
+      reporting,
+    );
+    const context = createExecutionContext();
+    const response = yield* Effect.promise(() =>
+      worker.fetch(new Request("http://localhost:3001/"), {}, context),
+    );
+    yield* Effect.promise(() => waitOnExecutionContext(context));
+    return {
+      body: yield* Effect.promise(() => response.json()),
+      status: response.status,
+    };
   });
-  const context = createExecutionContext();
-  const response = await worker.fetch(new Request("http://localhost:3001/"), {}, context);
-  await waitOnExecutionContext(context);
-  return {
-    body: await response.json(),
-    status: response.status,
-  };
 }
 
 describe("a wiki worker whose database has not been migrated", () => {
   it.effect("names the missing table that broke the layer", () =>
     Effect.gen(function* program() {
       const logs = recordingSink();
-      const response = yield* Effect.promise(async () =>
-        servedUnavailable(() => wikiLayer(appEnvironment(), validRoutes), {
-          log: logs.sink,
-          service: wikiService,
-        }),
-      );
+      const response = yield* servedUnavailable(() => wikiLayer(appEnvironment(), validRoutes), {
+        log: logs.sink,
+        service: wikiService,
+      });
       assert.strictEqual(response.status, httpStatus.serviceUnavailable);
       const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
       assert.notInclude(error, "oauth_resource");

@@ -25,14 +25,14 @@ import {
 describe("createAuth", () => {
   describe("a registered user whose email is not verified yet", () => {
     const it = authTest()
-      .extend("unverified", async ({ auth }) =>
+      .extend("unverified", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInUnverified() {
             return yield* signIn(yield* register("alice@example.com"), "alice@example.com");
           }),
         ),
       )
-      .extend("verified", async ({ auth }) =>
+      .extend("verified", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInVerified() {
             const client = yield* register("alice@example.com");
@@ -52,7 +52,7 @@ describe("createAuth", () => {
   });
 
   describe("the admin app", () => {
-    const it = authTest().extend("signUp", async ({ auth }) =>
+    const it = authTest().extend("signUp", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* signUpToAdmin() {
           const client = yield* clientOf(APPLICATION.admin);
@@ -72,14 +72,14 @@ describe("createAuth", () => {
 
   describe("the user app", () => {
     const it = authTest()
-      .extend("userList", async ({ auth }) =>
+      .extend("userList", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* listUsers() {
             return yield* (yield* clientOf(APPLICATION.user)).status("/admin/list-users");
           }),
         ),
       )
-      .extend("roleChange", async ({ auth }) =>
+      .extend("roleChange", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* setRole() {
             return yield* (yield* clientOf(APPLICATION.user)).status("/admin/set-role", {
@@ -101,7 +101,7 @@ describe("createAuth", () => {
 
   describe("an unverified user signing in", () => {
     const it = authTest()
-      .extend("wikiRecipients", async ({ auth }) =>
+      .extend("wikiRecipients", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInToWiki() {
             yield* register("pending@example.com");
@@ -110,7 +110,7 @@ describe("createAuth", () => {
           }),
         ),
       )
-      .extend("userRecipients", async ({ auth }) =>
+      .extend("userRecipients", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInToUser() {
             yield* register("pending@example.com");
@@ -131,10 +131,8 @@ describe("createAuth", () => {
 
   describe.for([APPLICATION.user, APPLICATION.wiki] as const)("the %s app", (audience) => {
     const it = authTest()
-      .extend("missingFields", async ({ auth }) =>
-        runWith(auth, () => missingSchemaFields(audience)),
-      )
-      .extend("inputs", async ({ auth }) => runWith(auth, () => audienceInputs(audience)));
+      .extend("missingFields", ({ auth }) => runWith(auth, () => missingSchemaFields(audience)))
+      .extend("inputs", ({ auth }) => runWith(auth, () => audienceInputs(audience)));
 
     it("finds every field its plugins need in the database", ({ missingFields }) => {
       expect(missingFields).toStrictEqual([]);
@@ -148,10 +146,10 @@ describe("createAuth", () => {
   describe("sign-in attempts from one address", () => {
     const spender = { "cf-connecting-ip": "203.0.113.10" };
     const it = authTest()
-      .extend("burst", async ({ auth }) =>
+      .extend("burst", ({ auth }) =>
         runWith(auth, () => spendSignInWindow({ email: "spender@example.com", network: spender })),
       )
-      .extend("bystander", async ({ auth }) =>
+      .extend("bystander", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInBeside() {
             yield* spendSignInWindow({ email: "spender@example.com", network: spender });
@@ -162,7 +160,7 @@ describe("createAuth", () => {
           }),
         ),
       )
-      .extend("forwarded", async ({ auth }) =>
+      .extend("forwarded", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* forward() {
             yield* spendSignInWindow({ email: "spender@example.com", network: spender });
@@ -190,7 +188,7 @@ describe("createAuth", () => {
 
   describe("a member on the wiki", () => {
     const it = authTest()
-      .extend("signInStatus", async ({ auth }) =>
+      .extend("signInStatus", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInMember() {
             yield* registerVerified("member@example.com");
@@ -198,7 +196,7 @@ describe("createAuth", () => {
           }),
         ),
       )
-      .extend("signUpStatus", async ({ auth }) =>
+      .extend("signUpStatus", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signUpMember() {
             return yield* (yield* clientOf(APPLICATION.wiki)).status("/sign-up/email", {
@@ -221,7 +219,7 @@ describe("createAuth", () => {
 
   describe("someone signing up with a registered address", () => {
     const it = authTest()
-      .extend("verifiedNotice", async ({ auth }) =>
+      .extend("verifiedNotice", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* noticeVerifiedOwner() {
             const client = yield* registerVerified("taken@example.com");
@@ -238,7 +236,7 @@ describe("createAuth", () => {
           }),
         ),
       )
-      .extend("unverifiedNotice", async ({ auth }) =>
+      .extend("unverifiedNotice", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* noticeUnverifiedOwner() {
             const client = yield* register("unverified@example.com");

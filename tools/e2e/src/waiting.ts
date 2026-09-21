@@ -1,25 +1,27 @@
-import { setTimeout as delay } from "node:timers/promises";
+import { DateTime, Effect } from "effect";
 
-const pollInterval = 250;
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 
-const until = async <Value>(polling: {
-  readonly attempt: () => Promise<Value | undefined> | (Value | undefined);
+const pollInterval = "250 millis";
+
+const until = <Value>(polling: {
+  readonly attempt: () => Effect.Effect<Value | undefined, JourneyFailure>;
   readonly deadline: number;
   readonly reason: string;
-}): Promise<Value> => {
-  const found = await polling.attempt();
-  if (found !== undefined) {
-    return found;
-  }
-  if (Date.now() >= polling.deadline) {
-    throw new Error(polling.reason);
-  }
-  await delay(pollInterval);
-  return until(polling);
-};
+}): Effect.Effect<Value, JourneyFailure> =>
+  Effect.gen(function* pollUntil() {
+    const found = yield* polling.attempt();
+    if (found !== undefined) {
+      return found;
+    }
+    if (DateTime.toEpochMillis(DateTime.nowUnsafe()) >= polling.deadline) {
+      return yield* failed(polling.reason);
+    }
+    yield* Effect.sleep(pollInterval);
+    return yield* until(polling);
+  });
 
-const deadlineIn = (milliseconds: number): number => {
-  return Date.now() + milliseconds;
-};
+const deadlineIn = (milliseconds: number): number =>
+  DateTime.toEpochMillis(DateTime.nowUnsafe()) + milliseconds;
 
 export { deadlineIn, until };

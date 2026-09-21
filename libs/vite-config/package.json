@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "1.54.10",
+    "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
     "@inlang/paraglide-js": "catalog:",
     "@repo/config": "workspace:*",

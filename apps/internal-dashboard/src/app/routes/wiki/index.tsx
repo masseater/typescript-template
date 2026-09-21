@@ -10,7 +10,7 @@ function WikiIndexPage(): ReactElement {
 
 const Route = createFileRoute("/wiki/")({
   component: WikiIndexPage,
-  loader: async () => loadWikiPage({ data: [] }),
+  loader: () => loadWikiPage({ data: [] }),
 });
 
 export { Route };

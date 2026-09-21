@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import {
   jobsQueueBinding,
@@ -15,6 +13,7 @@ import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";
+import { paths } from "@repo/vite-config";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
@@ -36,7 +35,7 @@ export default defineProject({
         [jobsWorkflowClass]: "WorkflowEntrypoint",
         [mailRecorder]: "WorkerEntrypoint",
       },
-      main: path.join(root, "vitest.workers.main.ts"),
+      main: paths.join(root, "vitest.workers.main.ts"),
       miniflare: {
         bindings: {
           ALERT_FROM: "monitor@example.test",
@@ -72,7 +71,7 @@ export default defineProject({
     include: [`libs/${workerTests}`, `infra/${workerTests}`, `apps/${workerTests}`],
     name: "workers",
     root,
-    setupFiles: [path.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
+    setupFiles: [paths.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
     testTimeout: 30_000,
   },
 });

@@ -5,7 +5,7 @@ import {
   executeD1RawBatch,
 } from "@repo/db-local";
 import { Effect } from "effect";
-import { HttpResponse, http } from "msw";
+import { HttpResponse, http, type HttpResponseResolver } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -13,6 +13,22 @@ import { runRemoteDatabaseCommand } from "../../../infra/cloudflare/src/remote-c
 import { remoteDatabase, remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure } from "./remote-input.ts";
 import { loadRemoteMigrations, migrateDatabase, readMigrationStatus } from "./remote-operations.ts";
+
+import type { D1Database } from "@cloudflare/workers-types";
+
+const respondWithBatch =
+  (
+    execute: (database: D1Database, requestJson: unknown) => Effect.Effect<unknown, unknown>,
+    database: D1Database,
+  ): HttpResponseResolver =>
+  ({ request }) =>
+    Effect.runPromise(
+      Effect.gen(function* respond() {
+        const requestJson = yield* Effect.promise(() => request.json());
+        const body = yield* execute(database, requestJson);
+        return HttpResponse.json(body as Record<string, unknown>);
+      }),
+    );
 
 const d1Target = {
   accountId: "a".repeat(32),
@@ -40,7 +56,7 @@ describe("remoteDatabase", () => {
     ],
     ["a body that is not JSON", (): Response => HttpResponse.text(d1Target.apiToken)],
   ] as const)("a D1 API answering with %s", ([, d1Answer]) => {
-    const it = test.extend("queryFailure", async ({}, { onCleanup }) => {
+    const it = test.extend("queryFailure", ({}, { onCleanup }) => {
       const d1Api = setupServer(
         http.post(
           `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/raw`,
@@ -72,16 +88,14 @@ const d1RawEndpoint = `https://api.cloudflare.com/client/v4/accounts/${d1Target.
 
 describe("the migration status of a database reached over the D1 API", () => {
   const it = test
-    .extend("declaredMigrations", async () =>
+    .extend("declaredMigrations", () =>
       Effect.runPromise(Effect.map(loadRemoteMigrations(), (migrations) => migrations.length)))
-    .extend("statusBeforeMigrating", async ({}, { onCleanup }) =>
+    .extend("statusBeforeMigrating", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* program() {
           const binding = yield* TestBinding;
           const d1Api = setupServer(
-            http.post(d1QueryEndpoint, async ({ request }) =>
-              HttpResponse.json(await executeD1HttpBatch(binding, await request.json())),
-            ),
+            http.post(d1QueryEndpoint, respondWithBatch(executeD1HttpBatch, binding)),
           );
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {
@@ -91,17 +105,13 @@ describe("the migration status of a database reached over the D1 API", () => {
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
     )
-    .extend("statusAfterMigrating", async ({}, { onCleanup }) =>
+    .extend("statusAfterMigrating", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* program() {
           const binding = yield* TestBinding;
           const d1Api = setupServer(
-            http.post(d1QueryEndpoint, async ({ request }) =>
-              HttpResponse.json(await executeD1HttpBatch(binding, await request.json())),
-            ),
-            http.post(d1RawEndpoint, async ({ request }) =>
-              HttpResponse.json(await executeD1RawBatch(binding, await request.json())),
-            ),
+            http.post(d1QueryEndpoint, respondWithBatch(executeD1HttpBatch, binding)),
+            http.post(d1RawEndpoint, respondWithBatch(executeD1RawBatch, binding)),
           );
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {
@@ -143,16 +153,14 @@ describe("the migration status of a database reached over the D1 API", () => {
 
 describe("a database whose tables were made without a recorded history", () => {
   const it = test
-    .extend("declaredMigrations", async () =>
+    .extend("declaredMigrations", () =>
       Effect.runPromise(Effect.map(loadRemoteMigrations(), (migrations) => migrations.length)))
-    .extend("unrecordedStatus", async ({}, { onCleanup }) =>
+    .extend("unrecordedStatus", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* program() {
           const binding = yield* TestBinding;
           const d1Api = setupServer(
-            http.post(d1QueryEndpoint, async ({ request }) =>
-              HttpResponse.json(await executeD1HttpBatch(binding, await request.json())),
-            ),
+            http.post(d1QueryEndpoint, respondWithBatch(executeD1HttpBatch, binding)),
           );
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {
@@ -165,17 +173,13 @@ describe("a database whose tables were made without a recorded history", () => {
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
     )
-    .extend("migrationRefusal", async ({}, { onCleanup }) =>
+    .extend("migrationRefusal", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* program() {
           const binding = yield* TestBinding;
           const d1Api = setupServer(
-            http.post(d1QueryEndpoint, async ({ request }) =>
-              HttpResponse.json(await executeD1HttpBatch(binding, await request.json())),
-            ),
-            http.post(d1RawEndpoint, async ({ request }) =>
-              HttpResponse.json(await executeD1RawBatch(binding, await request.json())),
-            ),
+            http.post(d1QueryEndpoint, respondWithBatch(executeD1HttpBatch, binding)),
+            http.post(d1RawEndpoint, respondWithBatch(executeD1RawBatch, binding)),
           );
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {

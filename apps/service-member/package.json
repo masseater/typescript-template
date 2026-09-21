@@ -22,7 +22,6 @@
     "@tanstack/ai": "0.54.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
-    "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",

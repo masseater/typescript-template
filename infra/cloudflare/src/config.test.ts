@@ -30,21 +30,21 @@ function binding<Binding>(value: object): Binding {
 const sharedBindings = {
   APP_ORIGIN: settings.origins["service-admin"],
   APP_RELEASE: release,
-  ASSETS: binding<Service>({ fetch: async (): Promise<Response> => new Response() }),
+  ASSETS: binding<Service>({ fetch: (): Promise<Response> => Promise.resolve(new Response()) }),
   AUTH_SECRET: "runtime-secret-of-at-least-32-characters",
   DB: binding<D1Database>({
-    batch: async (): Promise<never[]> => [],
+    batch: (): Promise<never[]> => Promise.resolve([]),
     prepare: (): undefined => undefined,
   }),
-  EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
+  EMAIL: binding<SendEmail>({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
   EMAIL_FROM: settings.mailFrom,
   FLAGSHIP_ACCOUNT_ID: settings.accountId,
   FLAGS: binding<Flagship.App>({
     appId: "flagship-app-id",
-    getBooleanValue: async (): Promise<boolean> => false,
-    getNumberValue: async (): Promise<number> => 0,
-    getObjectValue: async (): Promise<object> => ({}),
-    getStringValue: async (): Promise<string> => "",
+    getBooleanValue: (): Promise<boolean> => Promise.resolve(false),
+    getNumberValue: (): Promise<number> => Promise.resolve(0),
+    getObjectValue: (): Promise<object> => Promise.resolve({}),
+    getStringValue: (): Promise<string> => Promise.resolve(""),
   }),
   OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
@@ -52,24 +52,25 @@ const sharedBindings = {
 const adminBindings: AppBindings<"service-admin"> = sharedBindings;
 const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
-  AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
+  AI: binding<Ai>({ run: (): Promise<{ data: never[] }> => Promise.resolve({ data: [] }) }),
   APP_ORIGIN: settings.origins["service-member"],
   CACHE: binding<KVNamespace>({
-    delete: async (): Promise<undefined> => undefined,
-    get: async (): Promise<null> => null,
-    put: async (): Promise<undefined> => undefined,
+    delete: (): Promise<undefined> => Promise.resolve(undefined),
+    get: (): Promise<null> => Promise.resolve(null),
+    put: (): Promise<undefined> => Promise.resolve(undefined),
   }),
   FILES: binding<R2Bucket>({
-    delete: async (): Promise<undefined> => undefined,
-    get: async (): Promise<null> => null,
-    put: async (): Promise<null> => null,
+    delete: (): Promise<undefined> => Promise.resolve(undefined),
+    get: (): Promise<null> => Promise.resolve(null),
+    put: (): Promise<null> => Promise.resolve(null),
   }),
-  JOBS: binding({ send: async (): Promise<undefined> => undefined }),
+  JOBS: binding({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
   PROCESS: binding({
-    create: async (): Promise<{ id: string }> => ({ id: "job" }),
-    get: async (): Promise<{ status: () => Promise<{ status: string }> }> => ({
-      status: async () => ({ status: "complete" }),
-    }),
+    create: (): Promise<{ id: string }> => Promise.resolve({ id: "job" }),
+    get: (): Promise<{ status: () => Promise<{ status: string }> }> =>
+      Promise.resolve({
+        status: (): Promise<{ status: string }> => Promise.resolve({ status: "complete" }),
+      }),
   }),
   USER_INBOX: binding<DurableObjectNamespace>({
     get: (): undefined => undefined,

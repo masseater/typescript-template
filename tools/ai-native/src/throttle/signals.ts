@@ -1,3 +1,6 @@
+import { Effect } from "effect";
+import { attemptAsync } from "es-toolkit";
+
 /** @canonical-values ai-native.interrupt-signal */
 const INTERRUPT_SIGNALS = ["SIGINT", "SIGTERM"] as const;
 
@@ -23,24 +26,29 @@ export const makeWaitingInterruptHandler = (input: {
   };
 };
 
-const raiseAfterRelease = async (
+const raiseAfterRelease = (
   dependencies: {
     release: () => Promise<void>;
     onUnreleased: (failure: Error) => void;
   },
   arrival: Promise<NodeJS.Signals | null>,
-): Promise<void> => {
-  const signal = await arrival;
-  if (signal === null) return;
-  try {
-    await dependencies.release();
-  } catch (staleLease) {
-    dependencies.onUnreleased(
-      new Error(`releasing the slot before re-raising ${signal} failed`, { cause: staleLease }),
-    );
-  }
-  raiseSignal(signal);
-};
+): Promise<void> =>
+  Effect.runPromise(
+    Effect.gen(function* raiseHeldSignal() {
+      const signal = yield* Effect.promise(() => arrival);
+      if (signal === null) {
+        return;
+      }
+      const releaseHeldSlot = (): Promise<void> => dependencies.release();
+      const [staleLease] = yield* Effect.promise(() => attemptAsync(releaseHeldSlot));
+      if (staleLease !== null) {
+        dependencies.onUnreleased(
+          new Error(`releasing the slot before re-raising ${signal} failed`, { cause: staleLease }),
+        );
+      }
+      raiseSignal(signal);
+    }),
+  );
 
 export const makeHeldInterrupt = (dependencies: {
   release: () => Promise<void>;

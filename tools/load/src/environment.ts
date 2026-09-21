@@ -1,7 +1,6 @@
-import { readFile } from "node:fs/promises";
 import { loadavg } from "node:os";
-import path from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
 import {
   type Application,
   applicationOrigins,
@@ -10,7 +9,7 @@ import {
   waitUntilResponds,
 } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { Effect, Predicate, Schema } from "effect";
+import { Effect, FileSystem, Path, Schema } from "effect";
 
 const readinessChecks = 120;
 const readinessInterval = "500 millis" as const;
@@ -19,10 +18,6 @@ const loadAverageDigits = 2;
 const oneMinuteLoadAverage = (): number => {
   const [average = 0] = loadavg();
   return Number(average.toFixed(loadAverageDigits));
-};
-
-const isMissing = (thrown: unknown): boolean => {
-  return Predicate.isObject(thrown) && "code" in thrown && thrown.code === "ENOENT";
 };
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
@@ -35,14 +30,18 @@ class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("Env
   ]),
 }) {}
 
-const builtVariables = (app: Application): Effect.Effect<string, EnvironmentUnusable> => {
-  return Effect.tryPromise({
-    catch: (unread) =>
-      new EnvironmentUnusable({ reason: isMissing(unread) ? "build_missing" : "file_io_failed" }),
-    try: async () =>
-      readFile(path.join(repositoryRoot, "apps", app, "dist/server/.dev.vars"), "utf-8"),
-  });
-};
+const builtVariables = (app: Application): Effect.Effect<string, EnvironmentUnusable> =>
+  Effect.gen(function* readBuiltVariables() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const variablesPath = paths.join(repositoryRoot, "apps", app, "dist/server/.dev.vars");
+    if (!(yield* filesystem.exists(variablesPath).pipe(Effect.orElseSucceed(() => false)))) {
+      return yield* new EnvironmentUnusable({ reason: "build_missing" });
+    }
+    return yield* filesystem
+      .readFileString(variablesPath)
+      .pipe(Effect.mapError(() => new EnvironmentUnusable({ reason: "file_io_failed" })));
+  }).pipe(Effect.provide(NodeServices.layer));
 
 const appOrigin = /^APP_ORIGIN="(?<origin>[^"]*)"$/mu;
 

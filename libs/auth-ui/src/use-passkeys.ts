@@ -1,14 +1,18 @@
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { requestAtom, resultError } from "@repo/ui";
+import { Effect } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 
+import { authTask } from "./browser-http.ts";
 import { authClient } from "./client.ts";
 import { requireSuccess } from "./protocol.ts";
 
 import type { PasskeySummary } from "./mfa-types.ts";
 
-const passkeysAtom = requestAtom(async () =>
-  requireSuccess(await authClient.passkey.listUserPasskeys()),
+const passkeysAtom = requestAtom(() =>
+  Effect.runPromise(
+    authTask(() => authClient.passkey.listUserPasskeys()).pipe(Effect.map(requireSuccess)),
+  ),
 );
 
 const usePasskeys = (): {

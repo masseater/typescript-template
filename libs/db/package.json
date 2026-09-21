@@ -11,6 +11,7 @@
     "./local": "./src/local.ts"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
     "better-auth": "catalog:",

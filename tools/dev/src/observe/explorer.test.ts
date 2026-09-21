@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { explorerOrigin, requestTelemetry, withEvent } from "./explorer.ts";
 
@@ -22,16 +22,20 @@ it.effect("Local Explorer queries only target loopback HTTP app origins", () =>
 );
 
 it.effect("structured console lines are decoded from the Local Explorer message encoding", () =>
-  Effect.sync(() => {
-    const line = JSON.stringify({ event: "application.error", request_id: "x" });
-    assert.deepStrictEqual(withEvent({ message: JSON.stringify([line]), trace_id: "t" }), {
+  Effect.gen(function* program() {
+    const line = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+      event: "application.error",
+      request_id: "x",
+    });
+    const encodedLine = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([line]);
+    assert.deepStrictEqual(withEvent({ message: encodedLine, trace_id: "t" }), {
       event: { event: "application.error", request_id: "x" },
       trace_id: "t",
     });
-    assert.strictEqual(
-      withEvent({ message: JSON.stringify(["GET http://localhost/"]) }).event,
-      "unparsable",
-    );
+    const getLine = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+      "GET http://localhost/",
+    ]);
+    assert.strictEqual(withEvent({ message: getLine }).event, "unparsable");
     assert.isUndefined(withEvent({ message: unrelatedMessage }).event);
     assert.strictEqual(withEvent({ message: "{not-json" }).event, "unparsable");
   }),

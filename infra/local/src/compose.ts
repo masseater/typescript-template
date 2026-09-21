@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { access } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { join } from "node:path";
 
 import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
