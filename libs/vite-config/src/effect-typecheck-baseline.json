@@ -139,12 +139,6 @@
         "count": 1
       },
       {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
@@ -165,7 +159,7 @@
       {
         "file": "src/pages/flags/model/flag-list.ts",
         "code": "TS2339",
-        "message": "Property 'flags' does not exist on type 'Promise<{ api: { api: { flags: { get: ((options?: { fetch?: RequestInit<CfProperties<unknown>>; throwHttpError?: ThrowHttpError; headers?: Record<string, unknown>; query?: Record<...>; } | undefined) => Promise<...>) & { ...; }; patch: ((body?: unknown, options?: { ...; } | undefined) => Promise<...>) & { ...; }; } ...'.",
+        "message": "Property 'flags' does not exist on type 'Promise<Instance<AddRoute<\"/api\", \"local\", { decorator: {}; store: {}; derive: {}; }, { typebox: {}; error: []; }, DefaultMetadata, { api: { telemetry: { post: { body: unknown; params: {}; query: unknown; headers: unknown; response: { ...; }; error: never; }; }; } & { ...; } & { ...; }; } & { ...; }, ... 6 more ...,...'.",
         "count": 2
       },
       {
@@ -306,12 +300,6 @@
         "file": "../../libs/observability/src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       },
       {
