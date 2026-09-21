@@ -12,6 +12,7 @@ const monitorWorkerVite = (): {
       alwaysBundle: ["effect", "@repo/monitor"],
       onlyBundle: ["effect", "@repo/monitor"],
     },
+    dts: false,
     entry: { index: "src/worker.ts" },
     format: "esm",
     outExtensions: (): { readonly js: ".js" } => ({ js: ".js" }),

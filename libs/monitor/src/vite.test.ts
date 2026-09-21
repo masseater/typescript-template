@@ -15,6 +15,7 @@ describe("monitorWorkerVite", () => {
           alwaysBundle: ["effect", "@repo/monitor"],
           onlyBundle: ["effect", "@repo/monitor"],
         },
+        dts: false,
         entry: { index: "src/worker.ts" },
         format: "esm",
         outExtensions: workerVite.pack.outExtensions,
