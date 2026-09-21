@@ -41,7 +41,7 @@ describe("the pack extension", () => {
     if (outExtensions === undefined) {
       throw new Error("monitorWorkerVite pack must declare outExtensions");
     }
-    return outExtensions();
+    return outExtensions({ format: "es", options: {} } as never);
   });
 
   it("emits JavaScript", ({ packedExtension }) => {
