@@ -787,12 +787,6 @@
         "count": 2
       },
       {
-        "file": "src/app.ts",
-        "code": "TS2375",
-        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: Redacted<string>; DB: Database; EMAIL: SendEmail; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID: string; ... 7 more ...; FLAGSHIP_APP_ID: Output<...>; } | { ...; } | DeclaredEnv' is not assignable to type 'DeclaredEnv | WikiEnv' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
         "file": "src/artifacts.test.ts",
         "code": "TS2503",
         "message": "Cannot find namespace 'Scope'.",

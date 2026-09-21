@@ -19,7 +19,7 @@ import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
+import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
 function appEnv(
@@ -77,16 +77,14 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
           ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
         }),
   });
-  const baseEnv: DeclaredEnv | WikiEnv =
-    target === APPLICATION.wiki
+  const env = {
+    ...(target === APPLICATION.wiki
       ? {
           ...shared,
           FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
           FLAGSHIP_APP_ID: flags.appId,
         }
-      : shared;
-  const env = {
-    ...baseEnv,
+      : shared),
     ...(jobsQueue === undefined
       ? {}
       : {
