@@ -18,7 +18,9 @@ function Consequences(): ReactElement {
           <Heading as="h3" size="block">
             {m.feature_search_title()}
           </Heading>
-          <p className="text-base leading-normal text-muted-foreground">{m.feature_search_body()}</p>
+          <p className="text-base leading-normal text-muted-foreground">
+            {m.feature_search_body()}
+          </p>
           <MemberSearchStill />
         </section>
         <section className="flex flex-col gap-3">

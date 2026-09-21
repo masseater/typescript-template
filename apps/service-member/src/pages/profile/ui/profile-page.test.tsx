@@ -1,3 +1,4 @@
+import { formatWarekiMonth } from "@repo/ui";
 import {
   RouterContextProvider,
   createMemoryHistory,
@@ -9,7 +10,6 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
-import { formatWarekiMonth } from "@repo/ui";
 import { ProfilePage } from "./profile-page.tsx";
 
 import type { Member } from "#pages/profile/model/member.ts";

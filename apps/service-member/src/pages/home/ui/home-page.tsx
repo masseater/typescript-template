@@ -6,8 +6,8 @@ import { loadHomeFeed } from "#pages/home/api/feed.ts";
 import { getLocale } from "#shared/i18n/index.ts";
 import { HomeFeed, presentFeed } from "./home-feed.tsx";
 
-import type { HomeEntry, HomeFeedState } from "./home-feed.tsx";
 import type { ReactElement } from "react";
+import type { HomeEntry, HomeFeedState } from "./home-feed.tsx";
 
 const feedAtom = requestAtom(async (): Promise<readonly HomeEntry[]> => {
   const updatedAtLabel = new Intl.DateTimeFormat(getLocale(), {

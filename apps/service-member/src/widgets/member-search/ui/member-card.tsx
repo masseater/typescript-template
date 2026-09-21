@@ -6,7 +6,9 @@ import type { ReactElement } from "react";
 
 function MemberCard({
   member,
-}: Readonly<{ member: { readonly id: string; readonly name: string; readonly profile: string } }>): ReactElement {
+}: Readonly<{
+  member: { readonly id: string; readonly name: string; readonly profile: string };
+}>): ReactElement {
   return (
     <li>
       <CardLink to="/users/$id" params={{ id: member.id }}>
