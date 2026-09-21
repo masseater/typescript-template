@@ -1,17 +1,14 @@
 import { monitorWorker } from "@repo/monitor";
 import { Effect } from "effect";
 
-import { parseErrorMonitorConfig } from "./config.ts";
+import { errorMonitorWorker, parseErrorMonitorConfig, type ErrorMonitorEnv } from "./config.ts";
 import { decideNotifications, formatMessage } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
 
 import type { MonitorBindings } from "@repo/monitor";
 import type { SeenFingerprints } from "./decision.ts";
 
-interface Bindings extends MonitorBindings {
-  CLOUDFLARE_ACCOUNT_ID: string;
-  OBSERVABILITY_TOKEN: string;
-}
+interface Bindings extends MonitorBindings, ErrorMonitorEnv {}
 
 const LOOKBACK_MS = 900_000;
 
@@ -38,8 +35,8 @@ const errorMonitor = monitorWorker<Bindings>({
       return { dropped, groups: groups.length, notified: decision.notifications.length };
     }).pipe(Effect.withSpan("ErrorMonitor.check"));
   },
-  className: "ErrorMonitor",
-  event: "error_monitor",
+  className: errorMonitorWorker.className,
+  event: errorMonitorWorker.event,
   failure: {
     subject: "Cloudflare Workers error monitoring failed",
     text: "Cloudflare Workers のエラー監視が失敗しました。error_monitor.check_failed のログを確認してください。エラーが 0 件だとは判断しないでください。",

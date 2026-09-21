@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
+    "@effect/atom-react": "catalog:",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@smarthr/wareki": "catalog:",

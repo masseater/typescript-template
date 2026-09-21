@@ -2,19 +2,12 @@ import { monitorWorker } from "@repo/monitor";
 import { Effect } from "effect";
 
 import { fetchUsage } from "./billing.ts";
-import { parseBudgetConfig } from "./config.ts";
+import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
 
 import type { MonitorBindings } from "@repo/monitor";
 
-interface Bindings extends MonitorBindings {
-  CLOUDFLARE_ACCOUNT_ID: string;
-  BILLING_READ_TOKEN: string;
-  BUDGET_JPY: string;
-  JPY_PER_USD: string;
-  FIXED_COST_USD: string;
-  RESERVE_USD: string;
-}
+interface Bindings extends MonitorBindings, BudgetMonitorEnv {}
 
 const budget = monitorWorker<Bindings>({
   check({ ctx, env }, notify) {
@@ -45,8 +38,8 @@ const budget = monitorWorker<Bindings>({
       return decision;
     }).pipe(Effect.withSpan("BudgetMonitor.check"));
   },
-  className: "BudgetMonitor",
-  event: "budget",
+  className: budgetMonitorWorker.className,
+  event: budgetMonitorWorker.event,
   failure: {
     subject: "Cloudflare budget monitoring failed",
     text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",

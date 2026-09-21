@@ -8,9 +8,16 @@ import { createEmailVerificationToken } from "better-auth/api";
 import { Effect, Cause } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
-import { sendExistingAccountNotice, sendVerificationEmail, type MailSettings } from "./email.ts";
+import {
+  sendEmailChangeNotice,
+  sendEmailChangeVerification,
+  sendExistingAccountNotice,
+  sendVerificationEmail,
+  type MailSettings,
+} from "./email.ts";
 import { assertEligibleUser, authenticationMethodFor } from "./policy.ts";
 import { createRequestHooks } from "./request-hooks.ts";
+import { emailChangeTarget } from "./verification-token.ts";
 
 import type { GenerateId } from "./auth-identifiers.ts";
 import type { Run } from "./runner.ts";
@@ -26,7 +33,7 @@ const createDatabaseHooks = (
           candidate: Readonly<Record<string, unknown> & { userId: string }>,
           hookContext: Readonly<{ path: string }> | null,
         ) => {
-          const user = (await run(findUser(candidate.userId))) ?? undefined;
+          const user = await run(findUser(candidate.userId));
           assertEligibleUser(user, audience);
           return {
             data: {
@@ -66,6 +73,10 @@ const EXISTING_ACCOUNT_NOTICE_MILLISECONDS =
 
 const verificationLink = (origin: string, token: string): string => {
   return new URL(`/verify-email#${new URLSearchParams({ token }).toString()}`, origin).href;
+};
+
+const emailChangeLink = (origin: string, token: string): string => {
+  return new URL(`/verify-email-change#${new URLSearchParams({ token }).toString()}`, origin).href;
 };
 
 export type AuthOptions = {
@@ -119,12 +130,31 @@ const createEmailVerification = (
       token,
     }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
       await run(
-        sendVerificationEmail(authOptions.mail, {
-          email: user.email,
-          url: verificationLink(origin, token),
-        }),
+        emailChangeTarget(token) === undefined
+          ? sendVerificationEmail(authOptions.mail, {
+              email: user.email,
+              url: verificationLink(origin, token),
+            })
+          : sendEmailChangeVerification(authOptions.mail, {
+              email: user.email,
+              url: emailChangeLink(origin, token),
+            }),
       );
     },
+  };
+};
+
+const createEmailChangeNotifier = (
+  authOptions: AuthOptions,
+  { origin, run }: Readonly<{ origin: string; run: Run }>,
+): ((email: string) => Promise<void>) => {
+  return async (email) => {
+    await run(
+      sendEmailChangeNotice(authOptions.mail, {
+        email,
+        url: new URL("/settings/security", origin).href,
+      }),
+    );
   };
 };
 
@@ -239,7 +269,11 @@ export const createAuth = ({
     databaseHooks: createDatabaseHooks(run, audience),
     emailAndPassword: createEmailAndPassword(authOptions, { origin, run }),
     emailVerification: createEmailVerification(authOptions, { origin, run }),
-    hooks: createRequestHooks(run, audience),
+    hooks: createRequestHooks({
+      audience,
+      onEmailChangeRequested: createEmailChangeNotifier(authOptions, { origin, run }),
+      run,
+    }),
     logger: createLogger(run),
     plugins: authPlugins({ audience, origin, run }),
     rateLimit: {
@@ -256,6 +290,7 @@ export const createAuth = ({
         role: { defaultValue: ROLE.member, input: false, required: true, type: [...roles] },
         securityVersion: { defaultValue: 0, input: false, required: true, type: "number" },
       },
+      changeEmail: { enabled: audience === APPLICATION.user },
       deleteUser: { enabled: false },
     },
   }) as BetterAuthInstance;

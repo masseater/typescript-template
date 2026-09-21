@@ -2,9 +2,15 @@ import { readFile } from "node:fs/promises";
 import { loadavg } from "node:os";
 import path from "node:path";
 
-import { type Application, applicationOrigins, applicationReadyPaths } from "@repo/config";
+import {
+  type Application,
+  applicationOrigins,
+  applicationReadyPaths,
+  respondedSuccessfully,
+  waitUntilResponds,
+} from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { Effect, Schedule, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 
 const readinessChecks = 120;
 const readinessInterval = "500 millis";
@@ -16,9 +22,7 @@ const oneMinuteLoadAverage = (): number => {
 };
 
 const isMissing = (thrown: unknown): boolean => {
-  return (
-    typeof thrown === "object" && thrown !== null && "code" in thrown && thrown.code === "ENOENT"
-  );
+  return Predicate.isObject(thrown) && "code" in thrown && thrown.code === "ENOENT";
 };
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {
@@ -53,48 +57,25 @@ const requireLoopbackOrigin = Effect.fn("requireLoopbackOrigin")(function* requi
   return origin;
 });
 
-const answeredStatus = (
-  url: string,
-  method: "GET" | "POST",
-): Effect.Effect<number, EnvironmentUnusable> => {
-  return Effect.tryPromise({
-    catch: () => new EnvironmentUnusable({ reason: "target_unreachable" }),
-    try: async () => {
-      const answered = await fetch(url, { method, redirect: "manual" });
-      await answered.body?.cancel();
-      return answered.status;
-    },
-  });
-};
-
-const isSuccessful = (answeredCode: number): boolean => {
-  const firstSuccess = 200;
-  const firstRedirect = 300;
-  return answeredCode >= firstSuccess && answeredCode < firstRedirect;
-};
-
 const awaitReady = (app: Application): Effect.Effect<void, EnvironmentUnusable> => {
-  return answeredStatus(`${applicationOrigins[app]}${applicationReadyPaths[app]}`, "GET").pipe(
-    Effect.flatMap((answeredCode) =>
-      isSuccessful(answeredCode)
-        ? Effect.void
-        : Effect.fail(new EnvironmentUnusable({ reason: "target_unreachable" })),
-    ),
-    Effect.retry({ schedule: Schedule.spaced(readinessInterval), times: readinessChecks }),
-  );
+  return waitUntilResponds({
+    accept: respondedSuccessfully,
+    method: "GET",
+    onStatus: () => new EnvironmentUnusable({ reason: "target_unreachable" }),
+    onUnreachable: () => new EnvironmentUnusable({ reason: "target_unreachable" }),
+    retry: { interval: readinessInterval, times: readinessChecks },
+    url: `${applicationOrigins[app]}${applicationReadyPaths[app]}`,
+  }).pipe(Effect.asVoid);
 };
 
 const clearTraces = (origin: string): Effect.Effect<void, EnvironmentUnusable> => {
-  return answeredStatus(
-    `${origin}/cdn-cgi/local/explorer/api/local/observability/clear`,
-    "POST",
-  ).pipe(
-    Effect.flatMap((answeredCode) =>
-      isSuccessful(answeredCode)
-        ? Effect.void
-        : Effect.fail(new EnvironmentUnusable({ reason: "traces_not_cleared" })),
-    ),
-  );
+  return waitUntilResponds({
+    accept: respondedSuccessfully,
+    method: "POST",
+    onStatus: () => new EnvironmentUnusable({ reason: "traces_not_cleared" }),
+    onUnreachable: () => new EnvironmentUnusable({ reason: "target_unreachable" }),
+    url: `${origin}/cdn-cgi/local/explorer/api/local/observability/clear`,
+  }).pipe(Effect.asVoid);
 };
 
 export {

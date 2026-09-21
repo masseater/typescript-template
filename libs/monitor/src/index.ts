@@ -1,3 +1,5 @@
+import { Email } from "@repo/config";
+import { httpStatus } from "@repo/observability/http-status";
 import { Cause, Console, Effect, Exit, Predicate, Schema, SchemaGetter } from "effect";
 
 import { monitorBinding } from "./binding.ts";
@@ -26,10 +28,8 @@ type MonitorSchedule = Readonly<{
   MONITOR: Readonly<Pick<DurableObjectNamespace, "get" | "idFromName">>;
 }>;
 
-const MAX_ALERT_RECIPIENTS = 10;
+const maximumAlertRecipients = 10;
 const ISO_DATE_LENGTH = 10;
-const NOT_FOUND_STATUS = 404;
-const CHECK_FAILED_STATUS = 500;
 
 const UNRECOGNIZED_REASON = "unrecognized";
 const declaredFailure = Schema.Struct({
@@ -55,8 +55,7 @@ function failureReason(cause: Readonly<Cause.Cause<unknown>>): string {
   return `${base}:${error.keys.join(",")}`;
 }
 
-const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
-const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, MAX_ALERT_RECIPIENTS));
+const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
 const splitRecipients = SchemaGetter.transform((value: string) => value.split(","));
 const joinRecipients = SchemaGetter.transform((value: readonly string[]) => value.join(","));
 const AlertEnvironment = Schema.Struct({
@@ -142,7 +141,7 @@ abstract class Monitor<Bindings extends MonitorBindings> {
         yield* notify(failure);
         yield* Effect.promise(async () => ctx.storage.put("failureNotifiedDay", day));
       }
-      return Response.json({ ok: false, reason }, { status: CHECK_FAILED_STATUS });
+      return Response.json({ ok: false, reason }, { status: httpStatus.internalServerError });
     });
   }
 
@@ -176,7 +175,7 @@ function monitorWorker<Bindings extends MonitorBindings>(definition: {
 
 function monitorHandler(event: string): MonitorHandler {
   return {
-    fetch: () => new Response("Not found", { status: NOT_FOUND_STATUS }),
+    fetch: () => new Response("Not found", { status: httpStatus.notFound }),
     scheduled: async (_controller, env) => {
       const stub = env.MONITOR.get(env.MONITOR.idFromName(event));
       const result = await Effect.runPromise(
@@ -191,5 +190,5 @@ function monitorHandler(event: string): MonitorHandler {
   };
 }
 
-export { AlertEnvironment, monitorBinding, monitorWorker };
+export { AlertEnvironment, maximumAlertRecipients, monitorBinding, monitorWorker };
 export type { MonitorBindings };

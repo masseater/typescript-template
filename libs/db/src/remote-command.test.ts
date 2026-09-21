@@ -1,4 +1,4 @@
-import { EmptyTestDatabase, TestBinding, executeD1HttpBatch } from "@repo/db-local";
+import { EmptyTestDatabase, TestBinding, executeD1RawBatch } from "@repo/db-local";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -15,7 +15,7 @@ const d1Target = {
   databaseId: "11111111-1111-4111-8111-111111111111",
 };
 
-const d1Query = `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/query`;
+const d1Query = `https://api.cloudflare.com/client/v4/accounts/${d1Target.accountId}/d1/database/${d1Target.databaseId}/raw`;
 
 describe("runRemoteDatabaseCommand", () => {
   describe("a bootstrap plan", () => {
@@ -63,7 +63,7 @@ describe("runRemoteDatabaseCommand", () => {
           const d1Api = setupServer(
             http.post(d1Query, async ({ request }) =>
               request.headers.get("authorization") === `Bearer ${d1Target.apiToken}`
-                ? HttpResponse.json(await executeD1HttpBatch(binding, await request.json()))
+                ? HttpResponse.json(await executeD1RawBatch(binding, await request.json()))
                 : HttpResponse.json({ error: "unauthorized" }, { status: 401 }),
             ),
           );
@@ -95,7 +95,7 @@ describe("runRemoteDatabaseCommand", () => {
           const d1Api = setupServer(
             http.post(d1Query, async ({ request }) =>
               request.headers.get("authorization") === `Bearer ${d1Target.apiToken}`
-                ? HttpResponse.json(await executeD1HttpBatch(binding, await request.json()))
+                ? HttpResponse.json(await executeD1RawBatch(binding, await request.json()))
                 : HttpResponse.json({ error: "unauthorized" }, { status: 401 }),
             ),
           );

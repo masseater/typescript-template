@@ -1,4 +1,6 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
+import * as Headers from "effect/unstable/http/Headers";
+import * as HttpTraceContext from "effect/unstable/http/HttpTraceContext";
 
 export type Correlation = {
   readonly traceId: string;
@@ -50,13 +52,23 @@ export const randomHex = (bytes: number): string => {
   ).join("");
 };
 
+export const traceparentOf = (span: {
+  readonly spanId: string;
+  readonly traceId: string;
+}): string => `00-${span.traceId}-${span.spanId}-01`;
+
 export const parentContext = (
   traceparent: string | null,
 ): { readonly parentSpanId: string; readonly traceId: string } | undefined => {
-  const traceparentParts = traceparent?.match(/^00-([0-9a-f]{32})-([0-9a-f]{16})-0[01]$/u);
-  const traceId = traceparentParts?.[1];
-  const parentSpanId = traceparentParts?.[2];
-  return isTraceId(traceId) && isSpanId(parentSpanId) ? { parentSpanId, traceId } : undefined;
+  if (traceparent === null) {
+    return undefined;
+  }
+  const decoded = HttpTraceContext.w3c(Headers.fromRecordUnsafe({ traceparent }));
+  if (Option.isNone(decoded)) {
+    return undefined;
+  }
+  const { spanId, traceId } = decoded.value;
+  return isTraceId(traceId) && isSpanId(spanId) ? { parentSpanId: spanId, traceId } : undefined;
 };
 
 export const httpMethod = (method: string): HttpMethod => {

@@ -1,3 +1,5 @@
+import { CloudflareApiToken, CloudflareId } from "@repo/config";
+import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Effect, Schema } from "effect";
 
 class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("ErrorMonitorFailure", {
@@ -10,19 +12,28 @@ class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("Err
   keys: Schema.Array(Schema.String),
 }) {}
 
-const MIN_OBSERVABILITY_TOKEN_LENGTH = 20;
+const errorMonitorWorker = {
+  className: "ErrorMonitor",
+  cron: "*/5 * * * *",
+  event: "error_monitor",
+  name: "errors",
+} as const;
+
+const errorMonitorEnv = {
+  accountId: deploymentKey.cloudflareAccountId,
+  observabilityToken: "OBSERVABILITY_TOKEN",
+} as const;
 
 const ErrorMonitorEnvironment = Schema.Struct({
-  CLOUDFLARE_ACCOUNT_ID: Schema.String.check(Schema.isPattern(/^[a-f0-9]{32}$/u)),
-  OBSERVABILITY_TOKEN: Schema.String.check(Schema.isMinLength(MIN_OBSERVABILITY_TOKEN_LENGTH)),
+  [errorMonitorEnv.accountId]: CloudflareId,
+  [errorMonitorEnv.observabilityToken]: CloudflareApiToken,
 });
+
+type ErrorMonitorEnv = typeof ErrorMonitorEnvironment.Encoded;
 
 function parseErrorMonitorConfig(
   input: unknown,
-): Effect.Effect<
-  { readonly CLOUDFLARE_ACCOUNT_ID: string; readonly OBSERVABILITY_TOKEN: string },
-  ErrorMonitorFailure
-> {
+): Effect.Effect<typeof ErrorMonitorEnvironment.Type, ErrorMonitorFailure> {
   return Schema.decodeUnknownEffect(ErrorMonitorEnvironment)(input).pipe(
     Effect.mapError(
       () => new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
@@ -30,4 +41,5 @@ function parseErrorMonitorConfig(
   );
 }
 
-export { ErrorMonitorFailure, parseErrorMonitorConfig };
+export { ErrorMonitorFailure, errorMonitorEnv, errorMonitorWorker, parseErrorMonitorConfig };
+export type { ErrorMonitorEnv };

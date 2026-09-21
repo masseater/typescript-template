@@ -1,3 +1,4 @@
+import { Email } from "@repo/config";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
@@ -86,7 +87,7 @@ const MemberList = Schema.Struct({
 });
 
 const ContactSubmission = Schema.Struct({
-  email: Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u)),
+  email: Email,
   message: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactMessageLength)),
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactNameLength)),
 });
@@ -96,6 +97,7 @@ const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
 export {
   ContactAccepted,
   ContactSubmission,
+  Identifier,
   MemberList,
   MemberListQuery,
   MemberQuery,
@@ -112,4 +114,5 @@ export {
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
+  pageNumber,
 };

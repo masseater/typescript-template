@@ -1,3 +1,4 @@
+import { httpStatus } from "@repo/observability";
 import { Effect } from "effect";
 
 import { AuthFailure } from "./auth-failure.ts";
@@ -5,8 +6,6 @@ import { Auth } from "./auth.ts";
 import { EmailVerificationFailed } from "./email-verification-failed.ts";
 
 import type { BetterAuthInstance } from "./create-auth.ts";
-
-const tooManyRequests = 429;
 
 function authPromise<Value>(
   run: (instance: BetterAuthInstance) => Promise<Value>,
@@ -36,7 +35,9 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
   const response = yield* handleAuthRequest(new Request(verification, { headers, method: "GET" }));
   yield* Effect.promise(async () => response.body?.cancel());
   if (!response.ok) {
-    return yield* new EmailVerificationFailed({ rateLimited: response.status === tooManyRequests });
+    return yield* new EmailVerificationFailed({
+      rateLimited: response.status === httpStatus.tooManyRequests,
+    });
   }
   return { verified: true } as const;
 });
