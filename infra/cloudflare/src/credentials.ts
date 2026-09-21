@@ -6,8 +6,7 @@ import { Effect, FileSystem, Option, Path, Schema } from "effect";
 import { secretsFile } from "./deployment.ts";
 import { isNotFound, layer } from "./platform.ts";
 import { projectName } from "./project.ts";
-
-const GROUP_AND_OTHER_PERMISSIONS = 0o077;
+import { modeAllowsGroupOrOther } from "./unix-permission-bits.ts";
 
 function declaredKeys(contents: string): ReadonlySet<string> {
   return new Set(Object.keys(parseEnv(contents)));
@@ -64,8 +63,7 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
   if (
     metadata.type !== "File" ||
     Option.getOrElse(metadata.nlink, () => 0) !== 1 ||
-    // oxlint-disable-next-line no-bitwise -- Unix file modes and open flags are bit fields, so the group-and-other mask and the no-follow open flag are written with bitwise operators
-    (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0
+    modeAllowsGroupOrOther(metadata.mode)
   ) {
     return yield* new SecretsFileFailure({ code: "secrets_file_readable_by_others", keys: [] });
   }

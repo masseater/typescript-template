@@ -10,7 +10,4 @@ const isNotFound = (error: unknown): boolean =>
   error.reason instanceof PlatformError.SystemError &&
   error.reason._tag === "NotFound";
 
-const run = <Value, Failure>(work: Effect.Effect<Value, Failure>): Promise<Value> =>
-  Effect.runPromise(work);
-
-export { filesystem, isNotFound, layer, paths, run };
+export { filesystem, isNotFound, paths };
