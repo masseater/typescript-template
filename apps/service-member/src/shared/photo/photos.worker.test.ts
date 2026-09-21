@@ -6,6 +6,7 @@ import {
   ROLE,
   maximumPhotoBytes,
 } from "@repo/config";
+import { readStorage } from "@repo/config/storage";
 import { photoKeysOf, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { FileStore } from "@repo/runtime";
@@ -18,11 +19,21 @@ import { PhotoStore } from "./photo-store.ts";
 import { deleteMemberPhotos, readPhoto, removePhoto, uploadPhoto } from "./photos.ts";
 import { readPhotoUpload } from "./upload.ts";
 
+import type { R2Bucket } from "@cloudflare/workers-types";
 import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { user } = schema;
 const origin = "http://localhost:3001";
+
+const bucket: R2Bucket = await Effect.runPromise(
+  Effect.map(readStorage(env), (found) => {
+    if (found.files === undefined) {
+      throw new TypeError("the worker test pool has no FILES bucket");
+    }
+    return found.files;
+  }),
+);
 
 const services = Layer.mergeAll(
   TestDatabase,
@@ -60,7 +71,7 @@ function addUser(
 function storedKeys(): Effect.Effect<readonly string[]> {
   return Effect.promise(async () => {
     const listed = await bucket.list();
-    return listed.objects.map((object) => object.key);
+    return listed.objects.map((object: { readonly key: string }) => object.key);
   });
 }
 

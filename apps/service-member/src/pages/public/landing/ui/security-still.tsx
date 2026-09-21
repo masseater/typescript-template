@@ -9,6 +9,7 @@ const sampleSession = {
     email: "hana@example.com",
     id: "sample-member",
     name: "山田 花子",
+    permission: null,
     role: ROLE.member,
     twoFactorEnabled: true,
   },

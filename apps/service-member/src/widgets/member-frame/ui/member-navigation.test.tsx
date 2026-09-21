@@ -22,6 +22,7 @@ const member = {
   email: "member@example.com",
   id: "member-1",
   name: "会員",
+  permission: null,
   role: ROLE.member,
   twoFactorEnabled: false,
 } as const satisfies SessionView["user"];
@@ -29,10 +30,11 @@ const member = {
 const destinations = [
   { label: "ホーム", path: "/home" },
   { label: "プロフィール", path: "/users/member-1" },
+  { label: "探す", path: "/upgrade" },
   { label: "掲示板", path: "/board" },
+  { label: "メッセージ", path: "/messages" },
+  { label: "通知", path: "/notifications" },
 ] as const;
-
-const absent = ["探す", "メッセージ", "通知", "有料"] as const;
 
 function markup(locale: Locale, view: "header" | "rail" | "tabs"): string {
   overwriteGetLocale(() => locale);
@@ -41,8 +43,12 @@ function markup(locale: Locale, view: "header" | "rail" | "tabs"): string {
     createRoute({ getParentRoute: () => rootRoute, path: "/" }),
     createRoute({ getParentRoute: () => rootRoute, path: "/home" }),
     createRoute({ getParentRoute: () => rootRoute, path: "/board" }),
+    createRoute({ getParentRoute: () => rootRoute, path: "/messages" }),
+    createRoute({ getParentRoute: () => rootRoute, path: "/notifications" }),
+    createRoute({ getParentRoute: () => rootRoute, path: "/search" }),
     createRoute({ getParentRoute: () => rootRoute, path: "/settings" }),
     createRoute({ getParentRoute: () => rootRoute, path: "/support" }),
+    createRoute({ getParentRoute: () => rootRoute, path: "/upgrade" }),
     createRoute({ getParentRoute: () => rootRoute, path: "/users/$id" }),
   ]);
   const router = createRouter({
@@ -72,14 +78,11 @@ describe("member navigation", () => {
     .extend("thePhoneHeader", () => markup("ja", "header"))
     .extend("theEnglishRail", () => markup("en", "rail"));
 
-  it("lists home, profile, and the board in the rail", ({ theRail }) => {
+  it("lists the primary destinations in the rail", ({ theRail }) => {
     expect.hasAssertions();
     for (const destination of destinations) {
       expect(theRail).toContain(`>${destination.label}<`);
       expect(theRail).toContain(`href="${destination.path}"`);
-    }
-    for (const label of absent) {
-      expect(theRail).not.toContain(label);
     }
   });
 
@@ -88,9 +91,6 @@ describe("member navigation", () => {
     for (const destination of destinations) {
       expect(theTabs).toContain(`aria-label="${destination.label}"`);
       expect(theTabs).not.toContain(`>${destination.label}<`);
-    }
-    for (const label of absent) {
-      expect(theTabs).not.toContain(label);
     }
   });
 

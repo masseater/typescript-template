@@ -4,14 +4,30 @@ import { overwriteGetLocale } from "#paraglide/runtime.js";
 import { memberNavItems, titleForPath } from "./navigation.ts";
 
 describe("memberNavItems", () => {
-  it("lists home, profile, and the board when the board flag is on", () => {
+  it("sends free members from 探す to upgrade", () => {
     expect.hasAssertions();
-    expect(memberNavItems(true, "member-1").map((item) => item.id)).toStrictEqual([
+    const search = memberNavItems(false, true, "member-1").find((item) => item.id === "search");
+    expect(search?.to).toBe("/upgrade");
+    expect(search?.paid).toBe(true);
+  });
+
+  it("keeps paid members on 探す", () => {
+    expect.hasAssertions();
+    const search = memberNavItems(true, true, "member-1").find((item) => item.id === "search");
+    expect(search?.to).toBe("/search");
+  });
+
+  it("lists the primary destinations when the board flag is on", () => {
+    expect.hasAssertions();
+    expect(memberNavItems(false, true, "member-1").map((item) => item.id)).toStrictEqual([
       "home",
       "profile",
+      "search",
       "board",
+      "messages",
+      "notifications",
     ]);
-    expect(memberNavItems(true, "member-1").find((item) => item.id === "profile")).toMatchObject({
+    expect(memberNavItems(false, true, "member-1").find((item) => item.id === "profile")).toMatchObject({
       params: { id: "member-1" },
       to: "/users/$id",
     });
@@ -19,9 +35,12 @@ describe("memberNavItems", () => {
 
   it("hides the board tab when the board flag is off", () => {
     expect.hasAssertions();
-    expect(memberNavItems(false, "member-1").map((item) => item.id)).toStrictEqual([
+    expect(memberNavItems(false, false, "member-1").map((item) => item.id)).toStrictEqual([
       "home",
       "profile",
+      "search",
+      "messages",
+      "notifications",
     ]);
   });
 });

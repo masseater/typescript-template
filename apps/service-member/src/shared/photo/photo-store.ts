@@ -42,7 +42,7 @@ class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
                   );
                 }
                 return Effect.succeed({
-                  bytes: stored.bytes,
+                  bytes: new Uint8Array(stored.bytes),
                   contentType: stored.contentType,
                 } satisfies SanitizedImage);
               }),
