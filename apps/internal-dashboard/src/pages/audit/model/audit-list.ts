@@ -1,5 +1,7 @@
 import { useAtomValue } from "@effect/atom-react";
+import { auditActions } from "@repo/db/dashboard-literals";
 import { localState, requestAtom, type RequestResult } from "@repo/ui";
+import { Schema } from "effect";
 import { Atom } from "effect/unstable/reactivity";
 
 import { loadAuditPage } from "#pages/audit/api/audit.ts";
@@ -22,16 +24,17 @@ interface AuditList extends AuditFilter {
 }
 
 const auditPageSize = 50;
+const AuditAction = Schema.Literals(auditActions);
 
 const emptyFilter: AuditFilter = { action: "", actorId: "", targetId: "" };
 
 function auditPageQuery(filter: AuditFilter): typeof AuditPageQuery.Type {
   return {
-    action: filter.action.length > 0 ? filter.action : undefined,
-    actorId: filter.actorId.length > 0 ? filter.actorId : undefined,
+    ...(Schema.is(AuditAction)(filter.action) ? { action: filter.action } : {}),
+    ...(filter.actorId.length > 0 ? { actorId: filter.actorId } : {}),
     limit: auditPageSize,
     offset: 0,
-    targetId: filter.targetId.length > 0 ? filter.targetId : undefined,
+    ...(filter.targetId.length > 0 ? { targetId: filter.targetId } : {}),
   };
 }
 

@@ -25,6 +25,28 @@ import type { Database, DatabaseFailure } from "@repo/db";
 const { follow, user } = schema;
 const recordedAt = new Date("2026-01-01T00:00:00.000Z");
 
+type DeliveredMail = Readonly<{
+  readonly subject: string;
+  readonly text: string;
+  readonly to: string | readonly string[];
+}>;
+
+function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
+  if (!("EMAIL" in bindings)) {
+    throw new Error("EMAIL recorder is missing");
+  }
+  const email = bindings.EMAIL;
+  if (
+    typeof email !== "object" ||
+    email === null ||
+    !("taken" in email) ||
+    typeof email.taken !== "function"
+  ) {
+    throw new Error("EMAIL recorder is missing taken()");
+  }
+  return email.taken() as Promise<readonly DeliveredMail[]>;
+}
+
 const testLayer = Layer.merge(
   TestDatabase,
   Layer.succeed(OpsMail, {
@@ -59,7 +81,7 @@ function drainMailbox(): Effect.Effect<
     readonly to: string | readonly string[];
   }>
 > {
-  return Effect.promise(async () => env.EMAIL.taken());
+  return Effect.promise(async () => deliveredMail(env));
 }
 
 it.effect("follows a member and notifies the followee", () =>

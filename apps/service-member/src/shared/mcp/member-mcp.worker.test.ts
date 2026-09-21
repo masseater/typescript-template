@@ -4,7 +4,8 @@ import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS } from "@repo/config
 import { query, recordSubscription, schema } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { appLayer } from "@repo/runtime/bindings";
-import { apiRoutes, createApi, unavailable } from "@repo/runtime/http";
+import { unavailable } from "@repo/runtime/account";
+import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { eq } from "drizzle-orm";
@@ -28,9 +29,16 @@ const reporting = { service: APPLICATION.user } as const;
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
   const member = (yield* AuthApps)[APPLICATION.user];
-  const response = yield* Effect.promise(async () =>
-    member.instance.handler(new Request(`${memberOrigin}${path}`)),
+  const handler = member.instance.handler;
+  if (typeof handler !== "function") {
+    return yield* Effect.die("MEMBER_HANDLER_UNAVAILABLE");
+  }
+  const response: unknown = yield* Effect.promise(async () =>
+    handler(new Request(`${memberOrigin}${path}`)),
   );
+  if (!(response instanceof Response)) {
+    return yield* Effect.die("MEMBER_HANDLER_UNAVAILABLE");
+  }
   const body = yield* Effect.promise(async (): Promise<unknown> => response.json());
   return { body, status: response.status };
 });

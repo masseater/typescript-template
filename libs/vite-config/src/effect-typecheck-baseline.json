@@ -65,9 +65,203 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
+        "file": "../../libs/auth/src/request-hooks.ts",
+        "code": "TS4111",
+        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/request-hooks.ts",
+        "code": "TS4111",
+        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/request-hooks.ts",
+        "code": "TS4111",
+        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/session.ts",
+        "code": "TS18046",
+        "message": "'instance.options' is of type 'unknown'.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
+        "code": "TS6133",
+        "message": "'AuthApps' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
+        "code": "TS6133",
+        "message": "'decodeRedirect' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/db/src/index.ts",
+        "code": "TS6133",
+        "message": "'eq' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/db/src/testing.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/observability/src/request-span.ts",
+        "code": "TS2322",
+        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventStream<Encoded>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/wareki.ts",
+        "code": "TS2304",
+        "message": "Cannot find name 'Temporal'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
+        "file": "src/pages/docs/ui/docs-page.tsx",
+        "code": "TS2322",
+        "message": "Type 'unknown' is not assignable to type 'Root'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/flags/model/flag-list.ts",
+        "code": "TS2749",
+        "message": "'FlagEntry' refers to a value, but is being used as a type here. Did you mean 'typeof FlagEntry'?",
+        "count": 6
+      },
+      {
+        "file": "src/pages/flags/model/flag-list.ts",
+        "code": "TS6196",
+        "message": "'FlagEntry' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/flags/ui/flag-row.tsx",
+        "code": "TS2322",
+        "message": "Type '{ \"aria-label\": string; checked: any; disabled: boolean; label: string; name: string; onCheckedChange: (checked: boolean) => void; }' is not assignable to type 'IntrinsicAttributes & Readonly<{ checked: boolean; label: string; onCheckedChange: (checked: boolean) => void; }>'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/flags/ui/flag-row.tsx",
+        "code": "TS2339",
+        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/flags/ui/flag-row.tsx",
+        "code": "TS2749",
+        "message": "'FlagEntry' refers to a value, but is being used as a type here. Did you mean 'typeof FlagEntry'?",
+        "count": 2
+      },
+      {
+        "file": "src/pages/flags/ui/flag-row.tsx",
+        "code": "TS6196",
+        "message": "'FlagEntry' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/flags/ui/flags-page.tsx",
+        "code": "TS2339",
+        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS2345",
+        "message": "Argument of type '(request: Request<unknown, CfProperties<unknown>>) => Effect<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | ... 8 more ... | SessionRequired, AppOrigin | ... 3 more ... | FlagEditorAccess>' is not assignable to parameter of type 'Handler<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | AdminRequired | ConfigurationInvalid | ... 6 more ... | SessionRequired, Requirements | WikiServices>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS2741",
+        "message": "Property 'DatabaseFailure' is missing in type '{}' but required in type 'FailureTable<DatabaseFailure>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/wiki/authorize-mcp.ts",
+        "code": "TS18046",
+        "message": "'instance.handler' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/wiki/wiki-layer.worker.test.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
+        "code": "TS18046",
+        "message": "'wiki.instance.handler' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/wiki/wiki-oauth-fixture.ts",
+        "code": "TS18046",
+        "message": "'wiki.instance.handler' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/wiki/wiki.ts",
+        "code": "TS6192",
+        "message": "All imports in import declaration are unused.",
+        "count": 1
+      }
+    ],
+    "apps/service-admin": [
+      {
+        "file": "../../libs/auth/src/auth-request.ts",
+        "code": "TS18046",
+        "message": "'instance.handler' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/auth-request.ts",
+        "code": "TS18046",
+        "message": "'instance.options' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/auth-test-fixture.ts",
+        "code": "TS18046",
+        "message": "'member.instance.api' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/auth-test-fixture.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/auth/src/browser-client.ts",
+        "code": "TS2571",
+        "message": "Object is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/mail-fixture.ts",
+        "code": "TS2345",
+        "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
         "count": 1
       },
       {
@@ -127,7 +321,7 @@
       {
         "file": "../../libs/runtime/src/http.ts",
         "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       },
       {
@@ -140,194 +334,6 @@
         "file": "../../libs/vite-config/src/request-guard.ts",
         "code": "TS4111",
         "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
-        "file": "src/pages/docs/ui/docs-page.tsx",
-        "code": "TS2322",
-        "message": "Type 'unknown' is not assignable to type 'Root'.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/flags/model/flag-list.ts",
-        "code": "TS2339",
-        "message": "Property 'flags' does not exist on type 'Promise<{ api: { api: { flags: { get: ((options?: { fetch?: RequestInit<CfProperties<unknown>>; throwHttpError?: ThrowHttpError; headers?: Record<string, unknown>; query?: Record<...>; } | undefined) => Promise<...>) & { ...; }; patch: ((body?: unknown, options?: { ...; } | undefined) => Promise<...>) & { ...; }; } ...'.",
-        "count": 2
-      },
-      {
-        "file": "src/pages/flags/model/flag-list.ts",
-        "code": "TS2749",
-        "message": "'FlagEntry' refers to a value, but is being used as a type here. Did you mean 'typeof FlagEntry'?",
-        "count": 6
-      },
-      {
-        "file": "src/pages/flags/model/flag-list.ts",
-        "code": "TS6196",
-        "message": "'FlagEntry' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/flags/ui/flag-row.tsx",
-        "code": "TS2322",
-        "message": "Type '{ \"aria-label\": string; checked: any; disabled: boolean; label: string; name: string; onCheckedChange: (checked: boolean) => void; }' is not assignable to type 'IntrinsicAttributes & Readonly<{ checked: boolean; label: string; onCheckedChange: (checked: boolean) => void; }>'.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/flags/ui/flag-row.tsx",
-        "code": "TS2339",
-        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/flags/ui/flag-row.tsx",
-        "code": "TS2749",
-        "message": "'FlagEntry' refers to a value, but is being used as a type here. Did you mean 'typeof FlagEntry'?",
-        "count": 2
-      },
-      {
-        "file": "src/pages/flags/ui/flag-row.tsx",
-        "code": "TS6196",
-        "message": "'FlagEntry' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/flags/ui/flags-page.tsx",
-        "code": "TS2339",
-        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS2345",
-        "message": "Argument of type '(request: Request<unknown, CfProperties<unknown>>) => Effect<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | ... 8 more ... | SessionRequired, AppOrigin | ... 3 more ... | FlagEditorAccess>' is not assignable to parameter of type 'Handler<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | AdminRequired | ConfigurationInvalid | ... 6 more ... | SessionRequired, Requirements | WikiServices>'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS2741",
-        "message": "Property 'DatabaseFailure' is missing in type '{}' but required in type 'FailureTable<DatabaseFailure>'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS377004",
-        "message": "This Effect requires a service that is missing from the expected Effect context: `FlagEditorAccess`. effect(missingEffectContext)",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/authorize-mcp.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-layer.worker.test.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS18046",
-        "message": "'wiki.instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-oauth-fixture.ts",
-        "code": "TS18046",
-        "message": "'wiki.instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki.ts",
-        "code": "TS6192",
-        "message": "All imports in import declaration are unused.",
-        "count": 1
-      }
-    ],
-    "apps/service-admin": [
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/ui/src/wareki.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'Temporal'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/server-app.ts",
-        "code": "TS2554",
-        "message": "Expected 1 arguments, but got 3.",
-        "count": 1
-      },
-      {
-        "file": "src/widgets/admin-frame/ui/admin-navigation.tsx",
-        "code": "TS2375",
-        "message": "Type '{ key: AdminNavPath; badge: number | undefined; collapsed: boolean; icon: LucideIcon; label: string; to: AdminNavPath; onNavigate: () => void; }' is not assignable to type 'Readonly<{ badge?: number; collapsed: boolean; icon: LucideIcon; label: string; onNavigate: () => void; to: AdminNavPath; }>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       }
     ],
@@ -345,9 +351,27 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
+        "file": "../../libs/auth/src/auth-test-fixture.ts",
+        "code": "TS18046",
+        "message": "'member.instance.api' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/auth-test-fixture.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/auth/src/browser-client.ts",
+        "code": "TS2571",
+        "message": "Object is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/mail-fixture.ts",
+        "code": "TS2345",
+        "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
         "count": 1
       },
       {
@@ -373,6 +397,18 @@
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
         "count": 2
+      },
+      {
+        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
+        "code": "TS6133",
+        "message": "'AuthApps' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
+        "code": "TS6133",
+        "message": "'decodeRedirect' is declared but its value is never read.",
+        "count": 1
       },
       {
         "file": "../../libs/db/src/index.ts",
@@ -395,7 +431,7 @@
       {
         "file": "../../libs/runtime/src/http.ts",
         "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       },
       {
@@ -426,7 +462,7 @@
         "file": "src/app/entry-conditions.ts",
         "code": "TS7053",
         "message": "Element implicitly has an 'any' type because expression of type 'OnboardingStep' can't be used to index type '{ readonly agreement: \"/welcome/agreement\"; readonly choose: \"/welcome/choose\"; readonly interview: \"/welcome/interview\"; readonly profile: \"/welcome/profile\"; }'.",
-        "count": 1
+        "count": 2
       },
       {
         "file": "src/app/routes/_welcome.tsx",
@@ -453,6 +489,42 @@
         "count": 1
       },
       {
+        "file": "src/app/routes/_welcome/welcome.recovery.tsx",
+        "code": "TS7053",
+        "message": "Element implicitly has an 'any' type because expression of type 'OnboardingStep' can't be used to index type '{ readonly agreement: \"/welcome/agreement\"; readonly choose: \"/welcome/choose\"; readonly interview: \"/welcome/interview\"; readonly profile: \"/welcome/profile\"; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/app/server.ts",
+        "code": "TS7006",
+        "message": "Parameter '_controller' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "src/app/server.ts",
+        "code": "TS7006",
+        "message": "Parameter '_environment' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "src/app/server.ts",
+        "code": "TS7006",
+        "message": "Parameter 'context' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/account/welcome/api/onboarding.ts",
+        "code": "TS2749",
+        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
+        "count": 3
+      },
+      {
+        "file": "src/pages/account/welcome/api/onboarding.ts",
+        "code": "TS6196",
+        "message": "'OnboardingStep' is declared but never used.",
+        "count": 1
+      },
+      {
         "file": "src/pages/home/api/feed.ts",
         "code": "TS2749",
         "message": "'FeedItem' refers to a value, but is being used as a type here. Did you mean 'typeof FeedItem'?",
@@ -477,9 +549,27 @@
         "count": 1
       },
       {
-        "file": "src/pages/landing/ui/features.tsx",
-        "code": "TS2375",
-        "message": "Type '{ key: string; title: string; description: string; sketch: SketchKind; reverse: boolean | undefined; }' is not assignable to type 'Readonly<{ description: string; reverse?: boolean; sketch: SketchKind; title: string; }>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "file": "src/pages/notifications/api/notifications.ts",
+        "code": "TS2749",
+        "message": "'NotificationItem' refers to a value, but is being used as a type here. Did you mean 'typeof NotificationItem'?",
+        "count": 1
+      },
+      {
+        "file": "src/pages/notifications/api/notifications.ts",
+        "code": "TS6196",
+        "message": "'NotificationItem' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/notifications/ui/notifications-page.tsx",
+        "code": "TS2749",
+        "message": "'NotificationItem' refers to a value, but is being used as a type here. Did you mean 'typeof NotificationItem'?",
+        "count": 2
+      },
+      {
+        "file": "src/pages/notifications/ui/notifications-page.tsx",
+        "code": "TS6196",
+        "message": "'NotificationItem' is declared but never used.",
         "count": 1
       },
       {
@@ -495,15 +585,51 @@
         "count": 1
       },
       {
-        "file": "src/pages/welcome/api/onboarding.ts",
+        "file": "src/pages/public/landing/ui/features.tsx",
+        "code": "TS2375",
+        "message": "Type '{ key: string; title: string; description: string; sketch: SketchKind; reverse: boolean | undefined; }' is not assignable to type 'Readonly<{ description: string; reverse?: boolean; sketch: SketchKind; title: string; }>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/settings/api/api-keys.ts",
+        "code": "TS2322",
+        "message": "Type '{ members: readonly [\"read\"]; messages?: string[]; profile: string[]; }' is not assignable to type 'Record<string, string[]>'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/settings/api/notification-preferences.ts",
         "code": "TS2749",
-        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
+        "message": "'Preferences' refers to a value, but is being used as a type here. Did you mean 'typeof Preferences'?",
         "count": 3
       },
       {
-        "file": "src/pages/welcome/api/onboarding.ts",
+        "file": "src/pages/settings/api/notification-preferences.ts",
         "code": "TS6196",
-        "message": "'OnboardingStep' is declared but never used.",
+        "message": "'Preferences' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/settings/ui/ai-page.tsx",
+        "code": "TS6133",
+        "message": "'useAction' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/settings/ui/notifications-page.tsx",
+        "code": "TS2749",
+        "message": "'NotificationPreferences' refers to a value, but is being used as a type here. Did you mean 'typeof NotificationPreferences'?",
+        "count": 2
+      },
+      {
+        "file": "src/pages/settings/ui/notifications-page.tsx",
+        "code": "TS6196",
+        "message": "'NotificationPreferences' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/billing/stripe.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
         "count": 1
       },
       {
@@ -511,6 +637,48 @@
         "code": "TS2322",
         "message": "Type 'true' is not assignable to type 'false'.",
         "count": 1
+      },
+      {
+        "file": "src/shared/interview/session.ts",
+        "code": "TS2345",
+        "message": "Argument of type '{ readonly sheet: { readonly area?: string; readonly interests?: readonly string[]; readonly message?: string; readonly nickname?: string; readonly occupation?: string; }; readonly skipped: readonly (\"area\" | \"interests\" | \"message\" | \"nickname\" | \"occupation\")[]; readonly messages: readonly { ...; }[]; readonly cur...' is not assignable to parameter of type '{ readonly sheet: { readonly area?: string; readonly interests?: readonly string[]; readonly message?: string; readonly nickname?: string; readonly occupation?: string; }; readonly skipped: readonly (\"area\" | \"interests\" | \"message\" | \"nickname\" | \"occupation\")[]; readonly messages: readonly { ...; }[]; readonly pha...'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/mcp/mcp.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { accountState: SQLiteColumn<{ name: string; tableName: string; dataType: \"string enum\"; data: \"active\" | \"suspended\"; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; ... 6 more ...; sessionSecurityVersion: SQLiteColum...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/mcp/mcp.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { accountState: SQLiteColumn<{ name: string; tableName: string; dataType: \"string enum\"; data: \"active\" | \"suspended\"; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; ... 6 more ...; sessionSecurityVersion: SQLiteColum...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/mcp/mcp.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/mcp/member-mcp.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/mcp/member-mcp.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/mcp/member-mcp.worker.test.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 2
       },
       {
         "file": "src/shared/members/members.ts",
@@ -527,8 +695,14 @@
       {
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { createdAt: SQLiteColumn<{ name: string; tableName: string; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; id: SQLiteColumn<...>; name: SQLiteColumn<...>;...'.",
-        "count": 2
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { companyPhotoKey: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 5 more ...; socialLinks: SQLiteColumn<....'.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/members/members.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followeeId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
       },
       {
         "file": "src/shared/members/members.ts",
@@ -540,7 +714,7 @@
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
         "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQLWrapper<unknown> | undefined'.",
-        "count": 1
+        "count": 2
       },
       {
         "file": "src/shared/members/members.ts",
@@ -551,8 +725,14 @@
       {
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { email: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; id: SQLiteColumn<...>; name: SQLiteColumn<...>; profil...'.",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { companyPhotoKey: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 5 more ...; socialLinks: SQLiteColumn<....'.",
         "count": 1
+      },
+      {
+        "file": "src/shared/members/members.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQLWrapper<unknown>'.",
+        "count": 2
       },
       {
         "file": "src/shared/members/members.ts",
@@ -573,33 +753,39 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/board-api.ts",
-        "code": "TS2375",
-        "message": "Type 'Effect<{ threads: BoardThreadSummary[]; total: {}; pageSize: 20; }, AdminMfaRequired | AdminRequired | BoardMemberRequired | DatabaseFailure | InputInvalid | SessionInvalid | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly pageSize: 20; readonly threads: readonly { readonly author: { readonly id: string; readonly name: string; } | null; readonly createdAt: number; readonly id: string; readonly lastPostedAt: number; readonly postCount: number; readonly title: string; }[]; readonly total: number; }, AdminMfaRequired | ...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "file": "src/shared/members/members.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
-        "file": "src/shared/server-api/board-api.worker.test.ts",
+        "file": "src/shared/members/members.worker.test.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/members/profile.worker.test.ts",
         "code": "TS2339",
-        "message": "Property 'EMAIL' does not exist on type 'Env'.",
+        "message": "Property 'blocked' does not exist on type 'Readonly<{ id: string; joined: string; name: string; photos: Readonly<{ company: string | null; face: string | null; }>; profile: string; socialLinks: readonly string[]; }> | { ...; } | { ...; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/billing-api.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'ApiRoutes<Stripe | AppServices>' is not assignable to parameter of type 'ApiRoutes<Interviewer | OpsMail | PhotoStore | Stripe | AppServices>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/board-api.ts",
+        "code": "TS2375",
+        "message": "Type 'Effect<{ threads: BoardThreadSummary[]; total: {}; pageSize: 20; }, AdminMfaRequired | AdminRequired | BoardMemberRequired | DatabaseFailure | InputInvalid | SessionInvalid | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly pageSize: 20; readonly threads: readonly { readonly author: { readonly id: string; readonly name: string; } | { readonly name: \"退会した会員\"; readonly withdrawn: true; } | null; readonly createdAt: number; readonly id: string; readonly lastPostedAt: number; readonly postCount: number; readon...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
       {
         "file": "src/shared/server-api/board-api.worker.test.ts",
         "code": "TS2379",
         "message": "Argument of type '{ body: string | undefined; headers: { \"content-type\": string; cookie: string; origin: string; }; method: \"GET\" | \"POST\"; }' is not assignable to parameter of type 'RequestInit<CfProperties<unknown>>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/board-api.worker.test.ts",
-        "code": "TS7006",
-        "message": "Parameter 'line' implicitly has an 'any' type.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/board-api.worker.test.ts",
-        "code": "TS7006",
-        "message": "Parameter 'sent' implicitly has an 'any' type.",
         "count": 1
       },
       {
@@ -618,24 +804,30 @@
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
         "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
-        "count": 1
+        "count": 3
       },
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorId: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 5 more ...; title: SQLiteColumn<...>; }) => SQL<...'.",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorName: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 4 more ...; storedAuthorId: SQLiteColumn<...>...'.",
         "count": 2
       },
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorId: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; authorName: SQLiteColumn<...>; body: SQLiteColumn<.....'.",
-        "count": 1
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorName: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 6 more ...; title: SQLiteColumn<...>; }) => S...'.",
+        "count": 3
       },
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
         "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/board.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: SelectedFields) => SQL<unknown> | undefined) | undefined'.",
         "count": 1
       },
       {
@@ -647,14 +839,14 @@
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorId: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 5 more ...; title: SQLiteColumn<...>; }) => SQL<...'.",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorName: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 4 more ...; storedAuthorId: SQLiteColumn<...>...'.",
         "count": 1
       },
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorId: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; authorName: SQLiteColumn<...>; body: SQLiteColumn<.....'.",
-        "count": 1
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { authorName: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 6 more ...; title: SQLiteColumn<...>; }) => S...'.",
+        "count": 3
       },
       {
         "file": "src/shared/server-api/board.ts",
@@ -664,8 +856,26 @@
       },
       {
         "file": "src/shared/server-api/board.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQLWrapper<unknown>'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/board.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"board_post\"; dataType: \"string\"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: [...]; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/board.ts",
         "code": "TS2379",
         "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"board_thread\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/board.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"board_thread\"; dataType: \"string\"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: [...]; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
       {
@@ -678,7 +888,7 @@
         "file": "src/shared/server-api/board.ts",
         "code": "TS2769",
         "message": "No overload matches this call.",
-        "count": 10
+        "count": 13
       },
       {
         "file": "src/shared/server-api/board.ts",
@@ -687,9 +897,15 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/contact-api.worker.test.ts",
+        "file": "src/shared/server-api/board.worker.test.ts",
         "code": "TS2339",
-        "message": "Property 'EMAIL' does not exist on type 'Env'.",
+        "message": "Property 'id' does not exist on type 'BoardAuthor | WithdrawnAuthor'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/consent-gate.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'ApiRoutes<Interviewer | OpsMail | AppServices>' is not assignable to parameter of type 'ApiRoutes<Interviewer | OpsMail | PhotoStore | Stripe | AppServices>'.",
         "count": 1
       },
       {
@@ -705,6 +921,168 @@
         "count": 1
       },
       {
+        "file": "src/shared/server-api/groups-api.ts",
+        "code": "TS2375",
+        "message": "Type 'Effect<{ conversationId: string; id: string; inviteExpired: boolean; isMember: boolean; isOwner: boolean; joinPolicy: \"invite\" | \"open\"; memberCount: {}; members: { id: string; joinedAt: number; name: string; }[]; name: string; owner: { ...; }; }, AdminMfaRequired | ... 6 more ... | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly conversationId: string; readonly id: string; readonly inviteExpired: boolean; readonly isMember: boolean; readonly isOwner: boolean; readonly joinPolicy: \"invite\" | \"open\"; readonly memberCount: number; readonly members: readonly { ...; }[]; readonly name: string; readonly owner: { ...; }; }, Admin...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2322",
+        "message": "Type '{}' is not assignable to type 'number'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2322",
+        "message": "Type 'SQL<number>' is not assignable to type 'Aliased<unknown> | SQL<unknown> | SQLiteColumn<ColumnBaseConfig<ColumnType>, {}> | SQLiteTable<TableConfig> | SelectedFieldsFlat<...> | Subquery<...>'.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { groupId: SQLiteColumn<{ name: string; tableName: \"member_group\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; joinPolicy: SQLiteColumn<...>; }) => SQL<...>...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; }) => SQL<...> | undefined) | und...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { role: SQLiteColumn<{ name: string; tableName: \"group_membership\"; dataType: \"string enum\"; data: \"member\" | \"owner\"; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: SelectedFields) => SQL<unknown> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { conversationId: SQLiteColumn<{ name: string; tableName: \"member_group\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; ... 4 more ...; ownerName: SQLiteColumn<...>; }) => SQL<...> ...'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { expiresAt: SQLiteColumn<{ name: string; tableName: \"group_invite\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; token: SQLiteColumn<...>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { groupId: SQLiteColumn<{ name: string; tableName: \"member_group\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; joinPolicy: SQLiteColumn<...>; }) => SQL<...>...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"group_membership\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; joinedAt: SQLiteColumn<...>; name: SQLiteColu...'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"member_group\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: SelectedFields) => SQL<unknown> | undefined) | undefined'.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2365",
+        "message": "Operator '>=' cannot be applied to types '{}' and 'number'.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"group_invite\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"group_membership\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 27
+      },
+      {
+        "file": "src/shared/server-api/groups.ts",
+        "code": "TS4111",
+        "message": "Property 'count' comes from an index signature, so it must be accessed with ['count'].",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/member-api-keys.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'ApiRoutes<AppServices>' is not assignable to parameter of type 'ApiRoutes<Interviewer | OpsMail | PhotoStore | Stripe | AppServices>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-api.ts",
+        "code": "TS2375",
+        "message": "Type 'Effect<{ members: Readonly<{ id: string; joined: string; name: string; photos: Readonly<{ company: string | null; face: string | null; }>; profile: string; socialLinks: readonly string[]; }>[]; total: {}; pageSize: 24; }, AdminMfaRequired | ... 5 more ... | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly members: readonly { readonly blocked?: boolean; readonly following?: boolean; readonly id: string; readonly joined: string; readonly name: string; readonly photos: { readonly company: string | null; readonly face: string | null; }; readonly profile: string; readonly socialLinks: readonly string[]; ...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followeeId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followeeId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; }) => SQL<...> | undef...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followerId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; }) => SQL<...> | undef...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2345",
         "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; updatedAt: SQLiteColumn<...>; }) ...'.",
@@ -713,7 +1091,37 @@
       {
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQLWrapper<unknown> | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'Aliased<unknown> | SQL<unknown> | SQLiteColumn<ColumnBaseConfig<ColumnType>, {}>'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
         "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followeeId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followeeId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; }) => SQL<...> | undef...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followerId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; }) => SQL<...> | undef...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { name: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
         "count": 1
       },
       {
@@ -725,6 +1133,12 @@
       {
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/member-social.ts",
+        "code": "TS2379",
         "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: string; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
@@ -732,7 +1146,331 @@
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2769",
         "message": "No overload matches this call.",
-        "count": 6
+        "count": 19
+      },
+      {
+        "file": "src/shared/server-api/member-social.worker.test.ts",
+        "code": "TS2339",
+        "message": "Property 'EMAIL' does not exist on type 'Env'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging-api.ts",
+        "code": "TS2375",
+        "message": "Type 'Effect<{ conversation: ConversationView; messages: MessageView[]; total: {}; pageSize: 50; } | { conversation: DirectConversationView; messages: MessageView[]; total: {}; pageSize: 50; }, AdminMfaRequired | ... 6 more ... | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly conversation: { readonly id: string; readonly kind: \"direct\"; readonly peer: { readonly id: string | null; readonly name: string; readonly withdrawn: boolean; }; readonly total: number; } | { ...; }; readonly messages: readonly { ...; }[]; readonly pageSize: 50; readonly total: number; }, AdminMfaR...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2322",
+        "message": "Type '{}' is not assignable to type 'number'.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2322",
+        "message": "Type 'SQL<number>' is not assignable to type 'Aliased<unknown> | SQL<unknown> | SQLiteColumn<ColumnBaseConfig<ColumnType>, {}> | SQLiteTable<TableConfig> | SelectedFieldsFlat<...> | Subquery<...>'.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { body: SQLiteColumn<{ name: string; tableName: \"direct_message\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { body: SQLiteColumn<{ name: string; tableName: \"direct_message\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; createdAt: SQLiteColumn<...>; id: SQLiteColum...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { conversationId: SQLiteColumn<{ name: string; tableName: \"conversation_participant\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; lastMessageAt: SQLiteColumn<...>; }) => SQL<...> |...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; }) => SQL<...> | undefined) | und...'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { lastReadAt: SQLiteColumn<{ name: string; tableName: \"conversation_participant\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: false; hasDefault: false; ... 6 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { liveName: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; memberId: SQLiteColumn<...>; memberName: SQLiteColu...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: SelectedFields) => SQL<unknown> | undefined) | undefined'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'Aliased<unknown> | SQL<unknown> | SQLiteColumn<ColumnBaseConfig<ColumnType>, {}>'.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { body: SQLiteColumn<{ name: string; tableName: \"direct_message\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { body: SQLiteColumn<{ name: string; tableName: \"direct_message\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; createdAt: SQLiteColumn<...>; id: SQLiteColum...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { conversationId: SQLiteColumn<{ name: string; tableName: \"conversation_participant\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; kind: SQLiteColumn<...>; }) => SQL<...> | undefine...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; lastMessageAt: SQLiteColumn<...>; }) => SQL<...> |...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"member_group\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; }) => SQL<...> | undefine...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { kind: SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"string enum\"; data: \"direct\" | \"group\"; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { liveName: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; memberId: SQLiteColumn<...>; memberName: SQLiteColu...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: SelectedFields) => SQL<unknown> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQLWrapper<unknown>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2365",
+        "message": "Operator '+=' cannot be applied to types 'number' and '{}'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"conversation\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; hasRuntimeDefault: false; enumValues: [...]; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"direct_message\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"direct_message\"; dataType: \"string\"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: [...]; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"direct_message\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; hasRuntimeDefault: false; enumValues: [...]; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 41
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS4111",
+        "message": "Property 'count' comes from an index signature, so it must be accessed with ['count'].",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/messaging.ts",
+        "code": "TS4111",
+        "message": "Property 'unread' comes from an index signature, so it must be accessed with ['unread'].",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/messaging.worker.test.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2322",
+        "message": "Type '{}' is not assignable to type 'number'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2322",
+        "message": "Type 'SQL<number>' is not assignable to type 'Aliased<unknown> | SQL<unknown> | SQLiteColumn<ColumnBaseConfig<ColumnType>, {}> | SQLiteTable<TableConfig> | SelectedFieldsFlat<...> | Subquery<...>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: \"notification\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: SelectedFields) => SQL<unknown> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'Aliased<unknown> | SQL<unknown> | SQLiteColumn<ColumnBaseConfig<ColumnType>, {}>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { actorName: SQLiteColumn<{ name: string; tableName: \"notification\"; dataType: \"string\"; data: string; driverParam: string; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; ... 5 more ...; title: SQLiteColumn<...>;...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { boardMail: SQLiteColumn<{ name: string; tableName: \"notification_preference\"; dataType: \"boolean\"; data: boolean; driverParam: number; notNull: true; hasDefault: true; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; email: SQLiteColumn<...>; messageMail: SQLiteColumn<.....'.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { boardMail: SQLiteColumn<{ name: string; tableName: \"notification_preference\"; dataType: \"boolean\"; data: boolean; driverParam: number; notNull: true; hasDefault: true; isPrimaryKey: false; ... 5 more ...; generated: undefined; }, {}>; messageMail: SQLiteColumn<...>; }) => SQL<...> | undef...'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"notification\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: false; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'SQLiteColumn<{ name: string; tableName: \"notification\"; dataType: \"object date\"; data: Date; driverParam: number; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; hasRuntimeDefault: false; enumValues: undefined; baseColumn: never; identity: undefined; generated: undefined; }, {}>' is not assignable to parameter of type 'AnyColumn | SQLWrapper<unknown>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 10
+      },
+      {
+        "file": "src/shared/server-api/notifications.ts",
+        "code": "TS4111",
+        "message": "Property 'count' comes from an index signature, so it must be accessed with ['count'].",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.worker.test.ts",
+        "code": "TS2339",
+        "message": "Property 'EMAIL' does not exist on type 'Env'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.worker.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { followeeId: SQLiteColumn<{ name: string; tableName: \"follow\"; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: false; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; }) => SQL<...> | undefined) | undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/notifications.worker.test.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 2
       },
       {
         "file": "src/shared/server-api/ops-mail.ts",
@@ -741,9 +1479,51 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/server-app.ts",
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS2345",
+        "message": "Argument of type '{ AuthFailure: \"unexpected\"; DatabaseFailure: \"unexpected\"; AgreementRequired: (error: AgreementRequired) => Failure; FollowSelfForbidden: { message: string; status: 400; }; NotificationNotFound: { message: string; status: 404; }; UserNotFound: { message: string; status: 404; }; }' is not assignable to parameter of type 'FailureTable<Tagged>'.",
+        "count": 12
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
         "code": "TS2375",
-        "message": "Type 'Effect<{ members: Readonly<{ id: string; joined: string; name: string; profile: string; socialLinks: readonly string[]; }>[]; total: {}; pageSize: 24; }, AdminMfaRequired | AdminRequired | DatabaseFailure | InputInvalid | SessionInvalid | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly members: readonly { readonly id: string; readonly joined: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; }[]; readonly pageSize: 24; readonly total: number; }, AdminMfaRequired | ... 4 more ... | SessionRequired, FeatureFlags | ... 2 more ... | App...' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "message": "Type 'Effect<{ count: {}; }, AdminMfaRequired | AdminRequired | DatabaseFailure | SessionInvalid | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly count: number; }, Tagged, AppServices>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS2375",
+        "message": "Type 'Effect<{ notifications: {}; }, AdminMfaRequired | AdminRequired | DatabaseFailure | SessionInvalid | SessionRequired, Auth | Database>' is not assignable to type 'Effect<{ readonly notifications: number; }, Tagged, AppServices>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS2375",
+        "message": "Type 'Effect<{ ok: true; }, AdminMfaRequired | AdminRequired | DatabaseFailure | EmailDeliveryFailed | FollowSelfForbidden | ... 4 more ... | UserNotFound, AppOrigin | ... 2 more ... | OpsMail>' is not assignable to type 'Effect<{ readonly ok: true; }, Tagged, AppServices>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `OpsMail`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS6133",
+        "message": "'FollowSelfForbidden' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS6133",
+        "message": "'NotificationNotFound' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS6133",
+        "message": "'UserNotFound' is declared but its value is never read.",
         "count": 1
       },
       {
@@ -756,6 +1536,18 @@
         "file": "src/shared/social-link/registry.ts",
         "code": "TS6196",
         "message": "'SocialNetworkId' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/widgets/member-frame/api/badges.ts",
+        "code": "TS2749",
+        "message": "'NavBadgesView' refers to a value, but is being used as a type here. Did you mean 'typeof NavBadgesView'?",
+        "count": 1
+      },
+      {
+        "file": "src/widgets/member-frame/api/badges.ts",
+        "code": "TS6196",
+        "message": "'NavBadgesView' is declared but never used.",
         "count": 1
       }
     ],
@@ -987,12 +1779,6 @@
         "count": 1
       },
       {
-        "file": "src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -1125,12 +1911,6 @@
         "count": 1
       },
       {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "../auth/src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -1184,12 +1964,6 @@
         "file": "../vite-config/src/request-guard.ts",
         "code": "TS4111",
         "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
-        "file": "src/monitor-fixture.ts",
-        "code": "TS4023",
-        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
         "count": 1
       },
       {
@@ -1251,6 +2025,18 @@
         "code": "TS4094",
         "message": "Property 'run' of exported anonymous class type may not be private or protected.",
         "count": 1
+      },
+      {
+        "file": "src/vite.test.ts",
+        "code": "TS2339",
+        "message": "Property 'premerge' does not exist on type '{ \"check:effect\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; build: { ...; }; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/vite.test.ts",
+        "code": "TS2339",
+        "message": "Property 'prepr' does not exist on type '{ \"check:effect\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; build: { ...; }; }'.",
+        "count": 1
       }
     ],
     "libs/observability": [
@@ -1284,12 +2070,6 @@
         "file": "../auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -1337,13 +2117,13 @@
       {
         "file": "src/http-events.test.ts",
         "code": "TS2345",
-        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
+        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly [x: string]: unknown; readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
         "count": 1
       },
       {
         "file": "src/http.ts",
         "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, FailureBody, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       }
     ],
@@ -1382,12 +2162,6 @@
         "file": "../../libs/auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {

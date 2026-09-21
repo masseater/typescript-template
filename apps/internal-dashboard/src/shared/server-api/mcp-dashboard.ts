@@ -7,22 +7,16 @@ import type { WikiServices } from "#shared/wiki/index.ts";
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { Context } from "effect";
 
-const AuditToolInput = Schema.Struct({
-  action: AuditPageQuery.fields.action,
-  actorId: AuditPageQuery.fields.actorId,
-  limit: AuditPageQuery.fields.limit,
-  offset: AuditPageQuery.fields.offset,
-  targetId: AuditPageQuery.fields.targetId,
-});
-
-const TrendToolInput = TrendQuery;
+const EmptyInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(Schema.Struct({})));
+const AuditToolInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(AuditPageQuery));
+const TrendToolInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(TrendQuery));
 
 function registerDashboardTools(server: McpServer, context: Context.Context<WikiServices>): void {
   server.registerTool(
     "overview_metrics",
     {
       description: "Read aggregate service metrics for the internal dashboard overview.",
-      inputSchema: Schema.Struct({}),
+      inputSchema: EmptyInput,
     },
     async () => {
       const overview = await Effect.runPromiseWith(context)(dashboardStaff.overview());
@@ -38,8 +32,7 @@ function registerDashboardTools(server: McpServer, context: Context.Context<Wiki
       inputSchema: TrendToolInput,
     },
     async (input) => {
-      const query = await Effect.runPromise(Schema.decodeUnknownEffect(TrendToolInput)(input));
-      const trend = await Effect.runPromiseWith(context)(dashboardStaff.metricTrend(query));
+      const trend = await Effect.runPromiseWith(context)(dashboardStaff.metricTrend(input));
       return {
         content: [{ text: JSON.stringify(trend), type: "text" as const }],
       };
@@ -52,8 +45,7 @@ function registerDashboardTools(server: McpServer, context: Context.Context<Wiki
       inputSchema: AuditToolInput,
     },
     async (input) => {
-      const page = await Effect.runPromise(Schema.decodeUnknownEffect(AuditToolInput)(input));
-      const events = await Effect.runPromiseWith(context)(dashboardStaff.auditEvents(page));
+      const events = await Effect.runPromiseWith(context)(dashboardStaff.auditEvents(input));
       return {
         content: [{ text: JSON.stringify(events), type: "text" as const }],
       };

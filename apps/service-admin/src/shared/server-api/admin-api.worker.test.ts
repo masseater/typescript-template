@@ -30,6 +30,27 @@ const reporting = { log: recordingSink().sink, service: APPLICATION.admin } as c
 const invitee = "newcomer@example.com";
 const inviteePassword = "invited-password-safe-123";
 
+type DeliveredMail = Readonly<{
+  readonly text: string;
+  readonly to: string;
+}>;
+
+function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
+  if (!("EMAIL" in bindings)) {
+    throw new Error("EMAIL recorder is missing");
+  }
+  const email = bindings.EMAIL;
+  if (
+    typeof email !== "object" ||
+    email === null ||
+    !("taken" in email) ||
+    typeof email.taken !== "function"
+  ) {
+    throw new Error("EMAIL recorder is missing taken()");
+  }
+  return email.taken() as Promise<readonly DeliveredMail[]>;
+}
+
 type AdminActor = Exclude<Actor, "member" | "weak-owner">;
 
 const adminActors: readonly AdminActor[] = ["operator", "owner", "viewer"];
@@ -188,7 +209,7 @@ describe("admin invitation through the API", () => {
   it.effect("creates the account once from the mailed link and burns the token", () =>
     Effect.gen(function* program() {
       yield* seedAccounts;
-      yield* Effect.promise(async () => env.EMAIL.taken());
+      yield* Effect.promise(async () => deliveredMail(env));
       const app = adminApp();
       const invited = yield* app.as("owner", {
         body: { email: invitee, permission: ADMIN_PERMISSION.operator },
@@ -196,7 +217,7 @@ describe("admin invitation through the API", () => {
         path: "/admins/invites",
       });
       assert.strictEqual(invited.status, httpStatus.ok);
-      const [mail] = yield* Effect.promise(async () => env.EMAIL.taken());
+      const [mail] = yield* Effect.promise(async () => deliveredMail(env));
       assert.isDefined(mail);
       assert.strictEqual(mail.to, invitee);
       const token = inviteTokenOf(mail.text);

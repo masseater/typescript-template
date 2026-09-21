@@ -40,9 +40,19 @@ function AuditPage(): ReactElement {
       </Heading>
       <form onSubmit={handleSubmit}>
         <FormColumn>
-          <Field label="操作者 ID" name="actorId" onChange={handleActorIdChange} value={actorId} />
-          <Field label="対象 ID" name="targetId" onChange={handleTargetIdChange} value={targetId} />
-          <Field label="操作" name="action" onChange={handleActionChange} value={action} />
+          <Field
+            label="操作者 ID"
+            name="actorId"
+            onValueChange={handleActorIdChange}
+            value={actorId}
+          />
+          <Field
+            label="対象 ID"
+            name="targetId"
+            onValueChange={handleTargetIdChange}
+            value={targetId}
+          />
+          <Field label="操作" name="action" onValueChange={handleActionChange} value={action} />
           <Button type="submit">絞り込む</Button>
         </FormColumn>
       </form>
@@ -55,14 +65,11 @@ function AuditPage(): ReactElement {
       )}
       {page !== undefined && page.events.length > 0 && (
         <section aria-label="監査ログ一覧">
-          <Heading as="h2" id="audit-log-heading" size="section">
+          <Heading as="h2" size="section">
             一覧
           </Heading>
           <p className="text-sm text-muted-foreground">全 {page.total} 件</p>
-          <table
-            aria-labelledby="audit-log-heading"
-            className="w-full border-collapse text-left text-sm"
-          >
+          <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="p-2">日時</th>

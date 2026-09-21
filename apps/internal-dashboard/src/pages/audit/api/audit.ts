@@ -6,7 +6,7 @@ import { StaffAuditPage, type StaffAuditPageView } from "#shared/contracts/index
 import type { AuditPageQuery } from "#shared/contracts/index.ts";
 
 async function loadAuditPage(query: typeof AuditPageQuery.Type): Promise<StaffAuditPageView> {
-  const api = await wikiClient();
+  const { api } = await wikiClient();
   return apiData(StaffAuditPage, await api.audit.get({ query }));
 }
 

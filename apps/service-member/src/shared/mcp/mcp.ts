@@ -18,20 +18,24 @@ const { session, user } = schema;
 const mcpVersion = "1.0.0";
 const defaultPageSize = 20;
 
-const MemberSearch = Schema.toStandardSchemaV1(
-  Schema.Struct({
-    keyword: Schema.optionalKey(Schema.String),
-    limit: Schema.optionalKey(Schema.Int),
-    offset: Schema.optionalKey(Schema.Int),
-  }),
+const MemberSearch = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(
+    Schema.Struct({
+      keyword: Schema.optionalKey(Schema.String),
+      limit: Schema.optionalKey(Schema.Int),
+      offset: Schema.optionalKey(Schema.Int),
+    }),
+  ),
 );
-const ProfileInput = Schema.toStandardSchemaV1(ProfileUpdate);
-const MessageInput = Schema.toStandardSchemaV1(
-  Schema.Struct({
-    body: Schema.String.check(Schema.isLengthBetween(1, maximumMessageBodyLength)),
-    conversationId: Schema.optionalKey(Schema.String),
-    recipientId: Schema.optionalKey(Schema.String),
-  }),
+const ProfileInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(ProfileUpdate));
+const MessageInput = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(
+    Schema.Struct({
+      body: Schema.String.check(Schema.isLengthBetween(1, maximumMessageBodyLength)),
+      conversationId: Schema.optionalKey(Schema.String),
+      recipientId: Schema.optionalKey(Schema.String),
+    }),
+  ),
 );
 
 const toolText = (value: unknown): { content: [{ type: "text"; text: string }] } => ({
@@ -173,7 +177,7 @@ function createServer(
           const id = yield* signedInMember;
           yield* requirePaid(id);
           return yield* listMembers(id, {
-            keyword: filters.keyword,
+            ...(filters.keyword === undefined ? {} : { keyword: filters.keyword }),
             limit,
             offset,
           });

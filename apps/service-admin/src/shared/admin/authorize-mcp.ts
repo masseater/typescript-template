@@ -61,7 +61,14 @@ async function fetchJwks(
   instance: Readonly<Pick<BetterAuthInstance, "handler">>,
   origin: string,
 ): ReturnType<typeof decodeJwks> {
-  const response = await instance.handler(new Request(`${origin}/api/auth/jwks`));
+  const handler = instance.handler;
+  if (typeof handler !== "function") {
+    return Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));
+  }
+  const response: unknown = await handler(new Request(`${origin}/api/auth/jwks`));
+  if (!(response instanceof Response)) {
+    return Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));
+  }
   return response.ok
     ? decodeJwks(await response.json())
     : Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));

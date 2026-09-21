@@ -4,6 +4,7 @@ import { Schema } from "effect";
 
 import { ReportsPage, loadReports } from "#pages/reports/index.ts";
 
+import type { ReportStatus } from "@repo/config";
 import type { ReactElement } from "react";
 
 const searchSchema = Schema.toStandardSchemaV1(
@@ -15,13 +16,25 @@ const searchSchema = Schema.toStandardSchemaV1(
 
 type ReportsSearch = Readonly<{
   page?: number | undefined;
-  status?: (typeof reportStatuses)[number] | undefined;
+  status?: ReportStatus | undefined;
+}>;
+
+type ReportsDeps = Readonly<{
+  page: number;
+  status?: ReportStatus;
 }>;
 
 const Route = createFileRoute("/_admin/reports")({
   component: ReportsRoute,
-  loader: async ({ search }: Readonly<{ search: ReportsSearch }>) =>
-    loadReports({ page: search.page ?? 1, status: search.status }),
+  loader: async ({ deps }: Readonly<{ deps: ReportsDeps }>) =>
+    loadReports({
+      page: deps.page,
+      ...(deps.status === undefined ? {} : { status: deps.status }),
+    }),
+  loaderDeps: ({ search }: Readonly<{ search: ReportsSearch }>): ReportsDeps => ({
+    page: search.page ?? 1,
+    ...(search.status === undefined ? {} : { status: search.status }),
+  }),
   validateSearch: searchSchema,
 });
 

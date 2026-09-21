@@ -4,7 +4,7 @@ import { Identifier } from "./member.ts";
 
 const maximumGroupNameLength = 100;
 
-const GroupJoinPolicy = Schema.Literal("invite", "open");
+const GroupJoinPolicy = Schema.Literals(["invite", "open"]);
 
 const GroupOwner = Schema.Struct({ id: Schema.String, name: Schema.String });
 

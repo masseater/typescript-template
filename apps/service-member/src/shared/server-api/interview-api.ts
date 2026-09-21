@@ -30,6 +30,10 @@ const failures = {
     status: httpStatus.tooManyRequests,
   },
   TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
+  AgreementVersionUnavailable: {
+    message: "同意の対象となる規約が見つかりません。",
+    status: httpStatus.notFound,
+  },
 };
 
 const open = Effect.fn("interview.api.open")(function* open(request: Request) {

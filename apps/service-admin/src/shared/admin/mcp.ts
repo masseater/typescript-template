@@ -1,7 +1,7 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { mailInvite } from "@repo/auth";
 import { APPLICATION, ACCOUNT_STATE } from "@repo/config";
-import { ADMIN_PERMISSION, accountStates, adminPermissions } from "@repo/config/identity";
+import { accountStates, adminPermissions } from "@repo/config/identity";
 import { AUDIT_CHANNEL } from "@repo/db";
 import {
   deleteUser,
@@ -25,32 +25,42 @@ import type { AdminMcpActor } from "./authorize-mcp.ts";
 const mcpVersion = "1.0.0";
 const defaultPageSize = 50;
 
-const MemberFilters = Schema.toStandardSchemaV1(
-  Schema.Struct({
-    accountState: Schema.optionalKey(Schema.Literals(accountStates)),
-    emailVerified: Schema.optionalKey(Schema.Boolean),
-    keyword: Schema.optionalKey(Schema.String),
-    limit: Schema.optionalKey(Schema.Int),
-    offset: Schema.optionalKey(Schema.Int),
-  }),
+const MemberFilters = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(
+    Schema.Struct({
+      accountState: Schema.optionalKey(Schema.Literals(accountStates)),
+      emailVerified: Schema.optionalKey(Schema.Boolean),
+      keyword: Schema.optionalKey(Schema.String),
+      limit: Schema.optionalKey(Schema.Int),
+      offset: Schema.optionalKey(Schema.Int),
+    }),
+  ),
 );
 
-const MemberId = Schema.toStandardSchemaV1(Schema.Struct({ memberId: Schema.String }));
-
-const AdminId = Schema.toStandardSchemaV1(Schema.Struct({ adminId: Schema.String }));
-
-const AdminInvitation = Schema.toStandardSchemaV1(
-  Schema.Struct({
-    email: Schema.String,
-    permission: Schema.Literals(adminPermissions),
-  }),
+const MemberId = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(Schema.Struct({ memberId: Schema.String })),
 );
 
-const AdminPermissionChange = Schema.toStandardSchemaV1(
-  Schema.Struct({
-    adminId: Schema.String,
-    permission: Schema.Literals(adminPermissions),
-  }),
+const AdminId = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(Schema.Struct({ adminId: Schema.String })),
+);
+
+const AdminInvitation = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(
+    Schema.Struct({
+      email: Schema.String,
+      permission: Schema.Literals(adminPermissions),
+    }),
+  ),
+);
+
+const AdminPermissionChange = Schema.toStandardJSONSchemaV1(
+  Schema.toStandardSchemaV1(
+    Schema.Struct({
+      adminId: Schema.String,
+      permission: Schema.Literals(adminPermissions),
+    }),
+  ),
 );
 
 const toolText = (value: unknown): { content: [{ type: "text"; text: string }] } => ({
@@ -105,9 +115,9 @@ function createServer(
     async (filters) =>
       run(
         listUsers(sessionId, {
-          accountState: filters.accountState,
-          emailVerified: filters.emailVerified,
-          keyword: filters.keyword,
+          ...(filters.accountState === undefined ? {} : { accountState: filters.accountState }),
+          ...(filters.emailVerified === undefined ? {} : { emailVerified: filters.emailVerified }),
+          ...(filters.keyword === undefined ? {} : { keyword: filters.keyword }),
           limit: filters.limit ?? defaultPageSize,
           offset: filters.offset ?? 0,
         }),

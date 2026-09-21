@@ -36,13 +36,10 @@ function OverviewPage(): ReactElement {
       )}
       {overview !== undefined && overview.trend.length > 0 && (
         <section aria-label="推移">
-          <Heading as="h2" id="member-trend-heading" size="section">
+          <Heading as="h2" size="section">
             会員数の直近推移
           </Heading>
-          <table
-            aria-labelledby="member-trend-heading"
-            className="w-full border-collapse text-left text-sm"
-          >
+          <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="p-2">日付</th>

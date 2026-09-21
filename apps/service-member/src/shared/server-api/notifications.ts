@@ -239,7 +239,6 @@ const updateNotificationPreferences = Effect.fn("updateNotificationPreferences")
   memberId: string,
   preferences: NotificationPreferences,
 ) {
-  const now = new Date();
   yield* query((database) =>
     database
       .insert(notificationPreference)

@@ -62,7 +62,16 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
     headers: { "content-type": "application/x-www-form-urlencoded" },
     method: "POST",
   });
-  const issued = yield* Effect.promise(async () => admin.instance.handler(exchange));
+  const issued: unknown = yield* Effect.promise(async () => {
+    const handler = admin.instance.handler;
+    if (typeof handler !== "function") {
+      return Promise.reject(new Error("ADMIN_HANDLER_UNAVAILABLE"));
+    }
+    return handler(exchange);
+  });
+  if (!(issued instanceof Response)) {
+    return yield* Effect.die("ADMIN_HANDLER_UNAVAILABLE");
+  }
   const tokens = yield* Effect.promise(async (): Promise<unknown> => issued.json());
   return yield* Schema.decodeUnknownEffect(Tokens)(tokens);
 });
@@ -82,7 +91,7 @@ const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(
   body?: unknown,
 ) {
   const incoming = new Request(`${adminOrigin}/mcp`, {
-    body: body === undefined ? undefined : JSON.stringify(body),
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     headers: {
       accept: "application/json, text/event-stream",
       ...(body === undefined ? {} : { "content-type": "application/json" }),

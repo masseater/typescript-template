@@ -359,6 +359,8 @@ const locateCompiler = (env: NodeJS.ProcessEnv): string =>
     }),
   );
 
+const compilerOutputLimit = 32 * 1024 * 1024;
+
 const compileWorkspace = (
   cwd: string,
   env: NodeJS.ProcessEnv = pathWithBins(),
@@ -379,6 +381,7 @@ const compileWorkspace = (
       cwd,
       encoding: "utf8",
       env,
+      maxBuffer: compilerOutputLimit,
     }),
   );
 };

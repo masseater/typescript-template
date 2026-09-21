@@ -4,7 +4,7 @@ import { and, count, desc, eq, gt, isNull, ne, not, or, sql } from "drizzle-orm"
 import { Clock, Effect } from "effect";
 
 import { maySendGroupMessage } from "#shared/messaging/index.ts";
-import { canReadGroupConversation, groupIdForConversation } from "./groups.ts";
+import { canReadGroupConversation } from "./groups.ts";
 import { MessagingConversationNotFound } from "./messaging-conversation-not-found.ts";
 import { MessagingMemberRequired } from "./messaging-member-required.ts";
 
@@ -60,11 +60,6 @@ interface DirectConversationView {
   readonly kind: typeof directConversationKind;
   readonly peer: ConversationPeer;
   readonly total: number;
-}
-
-interface GroupConversationTarget {
-  readonly group: { readonly id: string; readonly name: string };
-  readonly kind: typeof groupConversationKind;
 }
 
 interface ConversationSummary {

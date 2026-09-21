@@ -22,13 +22,14 @@ function requireComposeSearch(raw: unknown): ComposeSearch {
 
 const Route = createFileRoute("/_member/messages/new")({
   component: ComposeRoute,
-  loader: async ({ search }: Readonly<{ search: ComposeSearch }>) => {
-    const existing = await lookupConversation(search.peer);
+  loader: async ({ deps }: Readonly<{ deps: ComposeSearch }>) => {
+    const existing = await lookupConversation(deps.peer);
     if (existing !== null) {
       throw redirect({ params: { id: existing }, replace: true, search: {}, to: "/messages/$id" });
     }
-    return loadMember(search.peer);
+    return loadMember(deps.peer);
   },
+  loaderDeps: ({ search }: Readonly<{ search: ComposeSearch }>) => search,
   validateSearch: requireComposeSearch,
 });
 

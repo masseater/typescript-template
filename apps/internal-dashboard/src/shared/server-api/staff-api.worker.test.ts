@@ -30,6 +30,27 @@ const reporting = { log: recordingSink().sink, service: wikiService } as const;
 const invitee = "colleague@example.com";
 const inviteePassword = "invited-password-safe-123";
 
+type DeliveredMail = Readonly<{
+  readonly text: string;
+  readonly to: string;
+}>;
+
+function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
+  if (!("EMAIL" in bindings)) {
+    throw new Error("EMAIL recorder is missing");
+  }
+  const email = bindings.EMAIL;
+  if (
+    typeof email !== "object" ||
+    email === null ||
+    !("taken" in email) ||
+    typeof email.taken !== "function"
+  ) {
+    throw new Error("EMAIL recorder is missing taken()");
+  }
+  return email.taken() as Promise<readonly DeliveredMail[]>;
+}
+
 const tokenOf = (actor: Actor): string => `${actor}-session-token`;
 
 const seedAccounts = Effect.gen(function* seedAccounts() {
@@ -171,7 +192,7 @@ describe("staff invitation through the API", () => {
   it.effect("creates the account once from the mailed link and burns the token", () =>
     Effect.gen(function* program() {
       yield* seedAccounts;
-      yield* Effect.promise(async () => env.EMAIL.taken());
+      yield* Effect.promise(async () => deliveredMail(env));
       const app = wikiApp();
       const invited = yield* app.as("editor", {
         body: { email: invitee, permission: STAFF_PERMISSION.editor },
@@ -179,7 +200,7 @@ describe("staff invitation through the API", () => {
         path: "/staff/invites",
       });
       assert.strictEqual(invited.status, httpStatus.ok);
-      const [mail] = yield* Effect.promise(async () => env.EMAIL.taken());
+      const [mail] = yield* Effect.promise(async () => deliveredMail(env));
       assert.isDefined(mail);
       assert.strictEqual(mail.to, invitee);
       const token = inviteTokenOf(mail.text);

@@ -11,7 +11,8 @@ import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { addUser, auditActionsOf } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { appLayer } from "@repo/runtime/bindings";
-import { apiRoutes, createApi, unavailable } from "@repo/runtime/http";
+import { unavailable } from "@repo/runtime/account";
+import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Context, Effect, Layer } from "effect";
@@ -36,9 +37,16 @@ const reporting = { service: APPLICATION.admin } as const;
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
   const admin = (yield* AuthApps)[APPLICATION.admin];
-  const response = yield* Effect.promise(async () =>
-    admin.instance.handler(new Request(`${adminOrigin}${path}`)),
+  const handler = admin.instance.handler;
+  if (typeof handler !== "function") {
+    return yield* Effect.die("ADMIN_HANDLER_UNAVAILABLE");
+  }
+  const response: unknown = yield* Effect.promise(async () =>
+    handler(new Request(`${adminOrigin}${path}`)),
   );
+  if (!(response instanceof Response)) {
+    return yield* Effect.die("ADMIN_HANDLER_UNAVAILABLE");
+  }
   const body = yield* Effect.promise(async (): Promise<unknown> => response.json());
   return { body, status: response.status };
 });
