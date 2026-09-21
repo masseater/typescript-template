@@ -43,3 +43,5 @@
 - elysiajs https://github.com/elysiajs/skills
 - shadcn https://ui.shadcn.com/docs/skills
 - mergify https://github.com/mergifyio/mergify-cli/blob/main/skills/mergify-stack/SKILL.md
+- modern react guidance `.claude/skills/modern-react-guidance/SKILL.md`（出典 https://github.com/adhhamdev/modern-react-guidance ）
+- react best practices `.claude/skills/react-best-practices/SKILL.md`（出典 https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices ）。async の瀑布はここを先に読む

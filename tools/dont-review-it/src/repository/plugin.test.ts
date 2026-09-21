@@ -35,6 +35,95 @@ const forbiddenCode = [
     'import { useMemo as cache } from "react"; export const fn = () => cache(() => 0, []);',
     "no-manual-memoization",
   ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { forwardRef } from "react"; export const Input = forwardRef((props: object) => props);',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import React from "react"; export const Input = React.forwardRef((props: object) => props);',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { forwardRef as wrap } from "react"; export const Input = wrap;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { createFactory } from "react"; export const div = createFactory("div");',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { createContext } from "react"; const Theme = createContext("light"); export const Panel = () => <Theme.Provider value="dark" />;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { createContext } from "react"; const Theme = createContext("light"); const Alias = Theme; export const Panel = () => <Alias.Provider value="dark" />;',
+    "react-legacy",
+  ],
+  ["libs/ui/src/probe.tsx", 'export const Panel = () => <input ref="name" />;', "react-legacy"],
+  ["libs/ui/src/probe.tsx", 'export const Panel = () => <input ref={"name"} />;', "react-legacy"],
+  [
+    "libs/ui/src/probe.ts",
+    'const Button = (label = "ok") => label; Button.defaultProps = { label: "ok" }; export { Button };',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    "const Button = () => null; Button.propTypes = {}; export { Button };",
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { findDOMNode } from "react-dom"; export const nodeOf = findDOMNode;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { render } from "react-dom"; export const mount = render;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { hydrate } from "react-dom"; export const mount = hydrate;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { unmountComponentAtNode } from "react-dom"; export const unmount = unmountComponentAtNode;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { renderToNodeStream } from "react-dom/server"; export const stream = renderToNodeStream;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { renderToStaticNodeStream } from "react-dom/server"; export const stream = renderToStaticNodeStream;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { create } from "react-test-renderer"; export const tree = create;',
+    "react-legacy",
+  ],
+  ["libs/ui/src/probe.ts", 'export { forwardRef } from "react";', "react-legacy"],
+  ["libs/ui/src/probe.ts", 'export * from "react-test-renderer";', "react-legacy"],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { useEffect, useEffectEvent } from "react"; export const Chat = (roomId: string) => { const onConnected = useEffectEvent(() => roomId); useEffect(() => { onConnected(); }, [roomId, onConnected]); };',
+    "effect-event-deps",
+  ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { useEffectEvent as event, useLayoutEffect } from "react"; export const Chat = (roomId: string) => { const onConnected = event(() => roomId); useLayoutEffect(() => { onConnected(); }, [onConnected]); };',
+    "effect-event-deps",
+  ],
   ["libs/ui/src/probe.ts", 'export * from "styled-components";', "retired-imports"],
   [
     "apps/service-member/src/probe.ts",
@@ -243,6 +332,26 @@ const validBoundaries = [
     'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',
   ],
   ["libs/ui/src/probe.ts", 'export * from "@repo/ui/button";'],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { createContext, use } from "react"; const Theme = createContext("light"); export const Panel = ({ inputRef }: { readonly inputRef?: never }) => <Theme value="dark"><input ref={inputRef} /></Theme>; export const useTheme = () => use(Theme);',
+  ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { Menu } from "base-ui"; export const Panel = () => <Menu.Provider />;',
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { createRoot, hydrateRoot } from "react-dom/client"; export const mount = { createRoot, hydrateRoot };',
+  ],
+  [
+    "libs/ui/src/probe.ts",
+    'import { renderToString } from "react-dom/server"; export const html = renderToString;',
+  ],
+  [
+    "libs/ui/src/probe.tsx",
+    'import { useEffect, useEffectEvent } from "react"; export const Chat = (roomId: string) => { const onConnected = useEffectEvent(() => roomId); useEffect(() => { onConnected(); }, [roomId]); };',
+  ],
   ["libs/ui/src/probe.ts", 'export * from "styled-components-extra";'],
   ["libs/ui/src/probe.ts", 'export * from "pulumi-helpers";'],
   [
