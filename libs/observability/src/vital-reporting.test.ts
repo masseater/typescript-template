@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { recordedDeliveries } from "./testing.ts";
+import { recordedDeliveries } from "./browser-testing.ts";
 import { stoppableVitals } from "./vital-reporting.ts";
 
 const vitalEvent = {
