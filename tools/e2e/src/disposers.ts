@@ -1,28 +1,33 @@
 import { Effect, Ref } from "effect";
 
-type Disposer = () => Promise<void>;
+import type { JourneyFailure } from "./journey-failure.ts";
 
-const disposeEach = async (disposers: readonly Disposer[]): Promise<void> => {
-  const [first, ...rest] = disposers;
-  if (first === undefined) {
-    return;
-  }
-  await Promise.allSettled([first()]);
-  await disposeEach(rest);
-};
+type Disposer = Effect.Effect<void, JourneyFailure>;
+
+const disposeEach = (
+  pending: readonly Effect.Effect<void, JourneyFailure>[],
+): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* disposeRemaining() {
+    const [first, ...rest] = pending;
+    if (first === undefined) {
+      return;
+    }
+    yield* first.pipe(Effect.ignore);
+    yield* disposeEach(rest);
+  });
 
 const newDisposerStack = (): {
-  readonly collect: (disposer: Disposer) => void;
-  readonly disposeAll: () => Promise<void>;
+  readonly collect: (disposer: Effect.Effect<void, JourneyFailure>) => void;
+  readonly disposeAll: Effect.Effect<void, JourneyFailure>;
 } => {
   const disposers = Ref.makeUnsafe<readonly Disposer[]>([]);
   return {
-    collect: (disposer) => {
-      Effect.runSync(Ref.set(disposers, [...Ref.getUnsafe(disposers), disposer]));
+    collect: (dispose: Effect.Effect<void, JourneyFailure>) => {
+      Effect.runSync(Ref.set(disposers, [...Ref.getUnsafe(disposers), dispose]));
     },
-    disposeAll: async () => disposeEach(Ref.getUnsafe(disposers)),
+    disposeAll: Effect.suspend(() => disposeEach(Ref.getUnsafe(disposers))),
   };
 };
 
 export { newDisposerStack };
-export type { Disposer };
+export type { Disposer, JourneyFailure };

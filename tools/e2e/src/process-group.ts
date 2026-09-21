@@ -1,27 +1,30 @@
-import { once } from "node:events";
-import { setTimeout as delay } from "node:timers/promises";
+import { Effect } from "effect";
 
-import type { ChildProcess } from "node:child_process";
+import { failed } from "./journey-failure.ts";
 
-const stopTimeout = 30_000;
+import type { ChildProcessSpawner } from "effect/unstable/process";
 
-const killGroup = (pid: number, signal: "SIGKILL" | "SIGTERM"): string => {
-  try {
-    process.kill(-pid, signal);
-    return "";
-  } catch (unsignalled) {
-    return `E2E_PROCESS_GROUP_UNSIGNALLED ${String(unsignalled)}`;
-  }
-};
+const killGroup = (pid: number, signal: "SIGKILL" | "SIGTERM"): Effect.Effect<void> =>
+  Effect.try({
+    try: () => {
+      process.kill(-pid, signal);
+    },
+    catch: (unsignalled) => failed("E2E_PROCESS_GROUP_UNSIGNALLED", unsignalled),
+  }).pipe(Effect.ignore);
 
-const stopGroup = async (child: ChildProcess): Promise<void> => {
-  const { pid } = child;
-  if (pid === undefined) {
-    return;
-  }
-  killGroup(pid, "SIGTERM");
-  await Promise.race([once(child, "exit"), delay(stopTimeout, undefined, { ref: false })]);
-  killGroup(pid, "SIGKILL");
-};
+const stopGroup = (
+  handle: ChildProcessSpawner.ChildProcessHandle,
+): Effect.Effect<void, never, ChildProcessSpawner.ChildProcessSpawner> =>
+  Effect.gen(function* stopProcessGroup() {
+    const pid = Number(handle.pid);
+    yield* killGroup(pid, "SIGTERM");
+    yield* handle.exitCode.pipe(
+      Effect.asVoid,
+      Effect.ignore,
+      Effect.timeout("30 seconds"),
+      Effect.ignore,
+    );
+    yield* killGroup(pid, "SIGKILL");
+  });
 
 export { stopGroup };

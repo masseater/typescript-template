@@ -1,4 +1,4 @@
-import { context, metrics, SpanStatusCode, trace } from "@opentelemetry/api";
+import { context, metrics, SpanStatusCode, trace, type Span } from "@opentelemetry/api";
 import { logs, SeverityNumber } from "@opentelemetry/api-logs";
 import {
   ATTR_PROCESS_COMMAND_ARGS,
@@ -10,6 +10,7 @@ import {
   inheritedContext,
   startTelemetry,
 } from "@repo/ai-native-telemetry";
+import { Effect } from "effect";
 import { once } from "es-toolkit";
 
 import type { Command } from "../spool/parse-command.ts";
@@ -27,37 +28,51 @@ const SERVICE_NAME = "mst-command";
 
 const instrumented = (): boolean => startTelemetry(SERVICE_NAME).enabled;
 
-export const childEnvironment = (): NodeJS.ProcessEnv =>
-  instrumented() ? environmentCarryingContext() : process.env;
+export const childEnvironment = (): NodeJS.ProcessEnv | undefined =>
+  instrumented() ? environmentCarryingContext() : undefined;
 
-export const measureCommand = async (input: {
+const measureSpan = (input: {
   readonly command: Command;
   readonly run: () => Promise<number>;
-}): Promise<number> => {
-  if (!instrumented()) {
-    return input.run();
-  }
-  return context.with(inheritedContext(), async () =>
-    trace.getTracer(INSTRUMENTATION_NAME).startActiveSpan(input.command.join(" "), async (span) => {
+  readonly span: Span;
+}): Promise<number> =>
+  Effect.runPromise(
+    Effect.gen(function* measureActiveSpan() {
       const startedAt = performance.now();
-      span.setAttributes({
+      input.span.setAttributes({
         [ATTR_PROCESS_EXECUTABLE_NAME]: input.command[0],
         [ATTR_PROCESS_COMMAND_ARGS]: [...input.command],
       });
-      const exitCode = await input.run();
+      const exitCode = yield* Effect.promise(() => input.run());
       commandDuration().record(performance.now() - startedAt, {
         [ATTR_PROCESS_EXECUTABLE_NAME]: input.command[0],
         [ATTR_PROCESS_EXIT_CODE]: exitCode,
       });
-      span.setAttribute(ATTR_PROCESS_EXIT_CODE, exitCode);
+      input.span.setAttribute(ATTR_PROCESS_EXIT_CODE, exitCode);
       if (exitCode !== 0) {
-        span.setStatus({ code: SpanStatusCode.ERROR });
+        input.span.setStatus({ code: SpanStatusCode.ERROR });
       }
-      span.end();
+      input.span.end();
       return exitCode;
     }),
   );
-};
+
+const recordSpan = (input: {
+  readonly command: Command;
+  readonly run: () => Promise<number>;
+}): Promise<number> =>
+  context.with(inheritedContext(), () =>
+    trace
+      .getTracer(INSTRUMENTATION_NAME)
+      .startActiveSpan(input.command.join(" "), (span) =>
+        measureSpan({ command: input.command, run: input.run, span }),
+      ),
+  );
+
+export const measureCommand = (input: {
+  readonly command: Command;
+  readonly run: () => Promise<number>;
+}): Promise<number> => (instrumented() ? recordSpan(input) : input.run());
 
 export const recordCommandRecord = (input: {
   readonly commandLine: string;

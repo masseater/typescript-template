@@ -1,22 +1,39 @@
-import { once } from "node:events";
-import { createServer } from "node:http";
-import { text } from "node:stream/consumers";
-
+import { NodeHttpServer } from "@effect/platform-node";
 import { mailpitSendPath } from "@repo/config";
-import { Effect, Ref } from "effect";
+import { Context, Effect, Exit, Layer, Ref, Scope } from "effect";
+import { HttpServer, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
-import { freePort, loopback, loopbackOrigin } from "./ports.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
+import { loopbackOrigin } from "./ports.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
-const accepted = 202;
-const notFound = 404;
-const deliveryTimeout = 60_000;
-
-type MailSink = {
-  readonly origin: string;
-  readonly stop: () => Promise<void>;
-  readonly waitForLink: (recipient: string, prefix: string) => Promise<string>;
+const requestPath = (url: string): string => {
+  const path = url.startsWith("http") ? new URL(url).pathname : url;
+  return path.split("?")[0] ?? path;
 };
+
+const accepted = 202;
+
+const notFound = 404;
+
+const recordDelivery = (
+  deliveries: Ref.Ref<readonly string[]>,
+): Effect.Effect<
+  HttpServerResponse.HttpServerResponse,
+  JourneyFailure,
+  HttpServerRequest.HttpServerRequest
+> =>
+  Effect.gen(function* acceptMail() {
+    const incoming = yield* HttpServerRequest.HttpServerRequest;
+    if (incoming.method !== "POST" || requestPath(incoming.url) !== mailpitSendPath) {
+      return HttpServerResponse.text("", { status: notFound });
+    }
+    const delivered = yield* incoming.text.pipe(
+      Effect.mapError((cause) => failed("E2E_MAIL_BODY_UNREADABLE", cause)),
+    );
+    yield* Ref.update(deliveries, (recordedDeliveries) => [...recordedDeliveries, delivered]);
+    return HttpServerResponse.text("{}", { status: accepted });
+  });
 
 const findLink = (search: {
   readonly deliveries: readonly string[];
@@ -30,39 +47,74 @@ const findLink = (search: {
     .filter((link) => link.startsWith(search.prefix));
 };
 
-const startMailSink = async (): Promise<MailSink> => {
-  const deliveries = Ref.makeUnsafe<readonly string[]>([]);
-  const port = await freePort();
-  const server = createServer((incoming, outgoing) => {
-    Effect.runFork(
-      Effect.promise(async () => {
-        if (incoming.method !== "POST" || incoming.url !== mailpitSendPath) {
-          outgoing.writeHead(notFound).end();
-          return;
-        }
-        const delivered = await text(incoming);
-        Effect.runSync(Ref.set(deliveries, [...Ref.getUnsafe(deliveries), delivered]));
-        outgoing.writeHead(accepted, { "content-type": "application/json" }).end("{}");
-      }),
-    );
+const nextLink = (search: {
+  readonly deliveries: Ref.Ref<readonly string[]>;
+  readonly prefix: string;
+  readonly recipient: string;
+}): Effect.Effect<string | undefined> =>
+  Ref.get(search.deliveries).pipe(
+    Effect.map((recordedDeliveries) =>
+      findLink({
+        deliveries: recordedDeliveries,
+        prefix: search.prefix,
+        recipient: search.recipient,
+      }).at(0),
+    ),
+  );
+
+const linkArrives = (search: {
+  readonly deliveries: Ref.Ref<readonly string[]>;
+  readonly prefix: string;
+  readonly recipient: string;
+}): Effect.Effect<string, JourneyFailure> => {
+  const deliveryTimeout = 60_000;
+  return until({
+    attempt: () => nextLink(search),
+    deadline: deadlineIn(deliveryTimeout),
+    reason: "E2E_VERIFICATION_MAIL_NOT_DELIVERED",
   });
-  server.listen(port, loopback);
-  await once(server, "listening");
-  return {
-    origin: loopbackOrigin(port),
-    stop: async () => {
-      server.closeAllConnections();
-      server.close();
-      await once(server, "close");
-    },
-    waitForLink: async (recipient: string, prefix: string) =>
-      until({
-        attempt: () => findLink({ deliveries: Ref.getUnsafe(deliveries), prefix, recipient }).at(0),
-        deadline: deadlineIn(deliveryTimeout),
-        reason: "E2E_VERIFICATION_MAIL_NOT_DELIVERED",
-      }),
-  };
 };
+
+type MailSink = {
+  readonly origin: string;
+  readonly stop: Effect.Effect<void, JourneyFailure>;
+  readonly waitForLink: (
+    recipient: string,
+    prefix: string,
+  ) => Effect.Effect<string, JourneyFailure>;
+};
+
+const sinkOn = (opened: {
+  readonly deliveries: Ref.Ref<readonly string[]>;
+  readonly port: number;
+  readonly scope: Scope.Scope;
+}): MailSink => ({
+  origin: loopbackOrigin(opened.port),
+  stop: Scope.close(opened.scope, Exit.succeed(undefined)).pipe(
+    Effect.mapError((cause) => failed("E2E_MAIL_SINK_NOT_STOPPED", cause)),
+  ),
+  waitForLink: (recipient: string, prefix: string) =>
+    linkArrives({ deliveries: opened.deliveries, prefix, recipient }),
+});
+
+const listeningPort = (address: HttpServer.Address): Effect.Effect<number, JourneyFailure> =>
+  address._tag === "TcpAddress"
+    ? Effect.succeed(address.port)
+    : Effect.fail(failed("E2E_MAIL_SINK_UNAVAILABLE"));
+
+const startMailSink = (): Effect.Effect<MailSink, JourneyFailure> =>
+  Effect.gen(function* openMailSink() {
+    const scope = yield* Scope.make();
+    const built = yield* Layer.build(NodeHttpServer.layerTest).pipe(
+      Scope.provide(scope),
+      Effect.mapError((cause) => failed("E2E_MAIL_SINK_UNAVAILABLE", cause)),
+    );
+    const server = Context.get(built, HttpServer.HttpServer);
+    const deliveries = yield* Ref.make<readonly string[]>([]);
+    yield* server.serve(recordDelivery(deliveries)).pipe(Scope.provide(scope));
+    const port = yield* listeningPort(server.address);
+    return sinkOn({ deliveries, port, scope });
+  });
 
 export { startMailSink };
 export type { MailSink };

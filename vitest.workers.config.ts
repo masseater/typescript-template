@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
@@ -7,11 +5,12 @@ import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";
-import { Effect } from "effect";
+import { Effect, Path } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
 
 const root = import.meta.dirname;
+const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 const mailRecorder = "MailRecorder";
 const probeMonitor = "ProbeMonitor";
 
@@ -25,7 +24,7 @@ export default defineProject({
   plugins: [
     cloudflareTest({
       additionalExports: { [mailRecorder]: "WorkerEntrypoint" },
-      main: path.join(root, "libs/monitor/src/monitor-fixture.ts"),
+      main: paths.join(root, "libs/monitor/src/monitor-fixture.ts"),
       miniflare: {
         bindings: {
           ALERT_FROM: "monitor@example.test",
@@ -48,7 +47,7 @@ export default defineProject({
     include: [`libs/${workerTests}`, `infra/${workerTests}`, `apps/${workerTests}`],
     name: "workers",
     root,
-    setupFiles: [path.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
+    setupFiles: [paths.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
     testTimeout: 30_000,
   },
 });

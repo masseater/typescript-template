@@ -1,45 +1,54 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 import { describe, expect, test } from "vite-plus/test";
 
+import {
+  dateFrom,
+  joinPath,
+  makeDirectory,
+  makeTempDirectory,
+  removePath,
+  writeFileString,
+} from "../host.ts";
 import { commandIdOf, defaultSpoolRoot, timestampOf } from "./log-destination.ts";
 
 describe("defaultSpoolRoot", () => {
   describe("a start directory nested under an ancestor carrying a package manifest", () => {
-    const markedAncestorDirectory = mkdtempSync(join(tmpdir(), "log-destination-marked-ancestor-"));
+    const markedAncestorDirectory = makeTempDirectory("log-destination-marked-ancestor-");
 
     const it = test.extend("spoolRootOfTheNestedStart", ({}, { onCleanup }) => {
-      const start = join(markedAncestorDirectory, "a", "b");
-      mkdirSync(start, { recursive: true });
+      const start = joinPath(markedAncestorDirectory, "a", "b");
+      makeDirectory(start);
       onCleanup(() => {
-        rmSync(markedAncestorDirectory, { recursive: true, force: true });
+        removePath(markedAncestorDirectory);
       });
-      writeFileSync(join(markedAncestorDirectory, "package.json"), "{}");
+      writeFileString({
+        location: joinPath(markedAncestorDirectory, "package.json"),
+        written: "{}",
+      });
       return defaultSpoolRoot(start);
     });
 
     it("puts the spool beside the manifest that ancestor carries", ({
       spoolRootOfTheNestedStart,
     }) => {
-      expect(spoolRootOfTheNestedStart).toBe(join(markedAncestorDirectory, ".spool"));
+      expect(spoolRootOfTheNestedStart).toBe(joinPath(markedAncestorDirectory, ".spool"));
     });
   });
 
   describe("a start directory with no package manifest above it", () => {
-    const unmarkedStartDirectory = mkdtempSync(join(tmpdir(), "log-destination-unmarked-start-"));
+    const unmarkedStartDirectory = makeTempDirectory("log-destination-unmarked-start-");
 
     const it = test.extend("spoolRootOfTheUnmarkedStart", ({}, { onCleanup }) => {
-      mkdirSync(unmarkedStartDirectory, { recursive: true });
+      makeDirectory(unmarkedStartDirectory);
       onCleanup(() => {
-        rmSync(unmarkedStartDirectory, { recursive: true, force: true });
+        removePath(unmarkedStartDirectory);
       });
       return defaultSpoolRoot(unmarkedStartDirectory);
     });
 
     it("puts the spool beside the start directory itself", ({ spoolRootOfTheUnmarkedStart }) => {
-      expect(spoolRootOfTheUnmarkedStart).toBe(join(unmarkedStartDirectory, ".spool"));
+      expect(spoolRootOfTheUnmarkedStart).toBe(joinPath(unmarkedStartDirectory, ".spool"));
     });
   });
 
@@ -47,7 +56,7 @@ describe("defaultSpoolRoot", () => {
     const it = test.extend("spoolRootOfTheImplicitStart", () => defaultSpoolRoot());
 
     it("begins the search at the working directory", ({ spoolRootOfTheImplicitStart }) => {
-      expect(spoolRootOfTheImplicitStart).toBe(join(process.cwd(), ".spool"));
+      expect(spoolRootOfTheImplicitStart).toBe(joinPath(process.cwd(), ".spool"));
     });
   });
 });
@@ -55,7 +64,7 @@ describe("defaultSpoolRoot", () => {
 describe("timestampOf", () => {
   describe("an instant carrying milliseconds", () => {
     const it = test.extend("timestampOfAnInstant", () =>
-      timestampOf(new Date("2026-08-12T03:04:05.678Z")));
+      timestampOf(dateFrom("2026-08-12T03:04:05.678Z")));
 
     it("drops to seconds in the basic UTC form whose lexical order is time order", ({
       timestampOfAnInstant,

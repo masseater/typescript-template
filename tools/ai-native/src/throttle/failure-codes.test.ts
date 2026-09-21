@@ -1,17 +1,16 @@
-import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 import { attempt } from "es-toolkit";
 import { describe, expect, test } from "vite-plus/test";
 
+import { joinPath, readFileString } from "../host.ts";
 import { failureSpelling } from "./failure-codes.ts";
 
 describe("failureSpelling", () => {
   describe("a refusal the file system named with a code", () => {
     const it = test.extend("theSpellingOfACodedRefusal", () => {
       const [refusal] = attempt<string, Error>(() =>
-        readFileSync(join(tmpdir(), "throttle-marker-that-was-never-written"), "utf8"),
+        readFileString(joinPath(tmpdir(), "throttle-marker-that-was-never-written"), "utf8"),
       );
       return failureSpelling(refusal);
     });

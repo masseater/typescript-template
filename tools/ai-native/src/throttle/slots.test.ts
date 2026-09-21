@@ -1,25 +1,25 @@
-import { spawn } from "node:child_process";
-import {
-  chmodSync,
-  closeSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  openSync,
-  readFileSync,
-  readdirSync,
-  rmdirSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-  writeSync,
-} from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
 
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import {
+  baseName,
+  changeMode,
+  delay,
+  fileExists,
+  fileInfo,
+  joinPath,
+  makeDirectory,
+  makeTempDirectory,
+  readDirectory,
+  readFileString,
+  removeDirectory,
+  removePath,
+  writeFileString,
+} from "../host.ts";
+import { closeDescriptor, openWritableDescriptor, writeDescriptor } from "../host-descriptors.ts";
+import { spawnChild } from "../node-spawn.ts";
 import { failedWithCode } from "./failure-codes.ts";
 import {
   ensureSlots,
@@ -44,9 +44,9 @@ const HOLDER_SOURCE = [
 
 describe("ensureSlots", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
     onCleanup(() => {
-      rmSync(temporarySlotDirectory, { recursive: true, force: true });
+      removePath(temporarySlotDirectory);
     });
     return temporarySlotDirectory;
   });
@@ -56,52 +56,52 @@ describe("ensureSlots", () => {
       .extend("firstSlotMarkerAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return existsSync(join(slotDirectory, "slot-0"));
+        return fileExists(joinPath(slotDirectory, "slot-0"));
       })
       .extend("secondSlotMarkerAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return existsSync(join(slotDirectory, "slot-1"));
+        return fileExists(joinPath(slotDirectory, "slot-1"));
       })
       .extend("thirdSlotMarkerAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return existsSync(join(slotDirectory, "slot-2"));
+        return fileExists(joinPath(slotDirectory, "slot-2"));
       })
       .extend("firstSlotLockAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return existsSync(join(slotDirectory, "slot-0.lock"));
+        return fileExists(joinPath(slotDirectory, "slot-0.lock"));
       })
       .extend("secondSlotLockAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return existsSync(join(slotDirectory, "slot-1.lock"));
+        return fileExists(joinPath(slotDirectory, "slot-1.lock"));
       })
       .extend("thirdSlotLockAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return existsSync(join(slotDirectory, "slot-2.lock"));
+        return fileExists(joinPath(slotDirectory, "slot-2.lock"));
       })
       .extend("firstSlotLockIsAPlainFileAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return statSync(join(slotDirectory, "slot-0.lock")).isFile();
+        return fileInfo(joinPath(slotDirectory, "slot-0.lock")).isFile();
       })
       .extend("secondSlotLockIsAPlainFileAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return statSync(join(slotDirectory, "slot-1.lock")).isFile();
+        return fileInfo(joinPath(slotDirectory, "slot-1.lock")).isFile();
       })
       .extend("thirdSlotLockIsAPlainFileAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return statSync(join(slotDirectory, "slot-2.lock")).isFile();
+        return fileInfo(joinPath(slotDirectory, "slot-2.lock")).isFile();
       })
       .extend("waitersDirectoryAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return existsSync(join(slotDirectory, "waiters"));
+        return fileExists(joinPath(slotDirectory, "waiters"));
       });
 
     it("creates the first slot marker", ({ firstSlotMarkerAfterEnsuringTwice }) => {
@@ -152,16 +152,19 @@ describe("ensureSlots", () => {
   });
 
   describe("a slot ensured again while a live holder keeps it", () => {
-    const it = slotTest.extend(
-      "aRivalArrivingAfterEnsuringOverALiveHold",
-      async ({ slotDirectory }) => {
+    const it = slotTest.extend("aRivalArrivingAfterEnsuringOverALiveHold", ({ slotDirectory }) =>
+      Effect.gen(function* () {
         ensureSlots(slotDirectory, 1);
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
+        const held = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+        );
         ensureSlots(slotDirectory, 1);
-        const rival = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        await held?.release();
+        const rival = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+        );
+        yield* Effect.promise(() => held?.release());
         return rival;
-      },
+      }),
     );
 
     it("leaves the live hold standing", ({ aRivalArrivingAfterEnsuringOverALiveHold }) => {
@@ -172,8 +175,8 @@ describe("ensureSlots", () => {
   describe("a lock the older protocol left behind as a directory", () => {
     const it = slotTest
       .extend("theRefusalOfALockThatIsADirectory", ({ slotDirectory }) => {
-        writeFileSync(join(slotDirectory, "slot-0"), "");
-        mkdirSync(join(slotDirectory, "slot-0.lock"));
+        writeFileString({ location: joinPath(slotDirectory, "slot-0"), written: "" });
+        makeDirectory(joinPath(slotDirectory, "slot-0.lock"));
         try {
           ensureSlots(slotDirectory, 1);
         } catch (refusal) {
@@ -181,15 +184,19 @@ describe("ensureSlots", () => {
         }
         throw new Error("ensureSlots wrote through a lock that is a directory");
       })
-      .extend("aSlotHeldOnceTheLockDirectoryIsDrained", async ({ slotDirectory }) => {
-        writeFileSync(join(slotDirectory, "slot-0"), "");
-        mkdirSync(join(slotDirectory, "slot-0.lock"));
-        rmSync(join(slotDirectory, "slot-0.lock"), { recursive: true });
-        ensureSlots(slotDirectory, 1);
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        await held?.release();
-        return held !== null;
-      });
+      .extend("aSlotHeldOnceTheLockDirectoryIsDrained", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          writeFileString({ location: joinPath(slotDirectory, "slot-0"), written: "" });
+          makeDirectory(joinPath(slotDirectory, "slot-0.lock"));
+          removePath(joinPath(slotDirectory, "slot-0.lock"));
+          ensureSlots(slotDirectory, 1);
+          const held = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+          );
+          yield* Effect.promise(() => held?.release());
+          return held !== null;
+        }),
+      );
 
     it("refuses to initialize over it", ({ theRefusalOfALockThatIsADirectory }) => {
       expect(theRefusalOfALockThatIsADirectory).toBe(true);
@@ -207,7 +214,7 @@ describe("ensureSlots", () => {
       .extend("theRefusalOfCreatingTheLockAsADirectory", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
         try {
-          mkdirSync(join(slotDirectory, "slot-0.lock"));
+          makeDirectory(joinPath(slotDirectory, "slot-0.lock"));
         } catch (refusal) {
           return failedWithCode(refusal, new Set(["EEXIST"]));
         }
@@ -216,7 +223,7 @@ describe("ensureSlots", () => {
       .extend("theRefusalOfReclaimingTheLockAsADirectory", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
         try {
-          rmdirSync(join(slotDirectory, "slot-0.lock"));
+          removeDirectory(joinPath(slotDirectory, "slot-0.lock"));
         } catch (refusal) {
           return failedWithCode(refusal, new Set(["ENOTDIR", "EPERM"]));
         }
@@ -239,20 +246,24 @@ describe("ensureSlots", () => {
 
 describe("tryAcquireAny", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
     onCleanup(() => {
-      rmSync(temporarySlotDirectory, { recursive: true, force: true });
+      removePath(temporarySlotDirectory);
     });
     return temporarySlotDirectory;
   });
 
   describe("the only slot standing free", () => {
-    const it = slotTest.extend("aFirstAcquisitionHoldsASlot", async ({ slotDirectory }) => {
-      ensureSlots(slotDirectory, 1);
-      const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-      await held?.release();
-      return held !== null;
-    });
+    const it = slotTest.extend("aFirstAcquisitionHoldsASlot", ({ slotDirectory }) =>
+      Effect.gen(function* () {
+        ensureSlots(slotDirectory, 1);
+        const held = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+        );
+        yield* Effect.promise(() => held?.release());
+        return held !== null;
+      }),
+    );
 
     it("hands back a slot", ({ aFirstAcquisitionHoldsASlot }) => {
       expect(aFirstAcquisitionHoldsASlot).toBe(true);
@@ -260,13 +271,19 @@ describe("tryAcquireAny", () => {
   });
 
   describe("a rival arriving while the only slot is held", () => {
-    const it = slotTest.extend("aSecondAcquisitionWhileHeld", async ({ slotDirectory }) => {
-      ensureSlots(slotDirectory, 1);
-      const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-      const rival = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-      await held?.release();
-      return rival;
-    });
+    const it = slotTest.extend("aSecondAcquisitionWhileHeld", ({ slotDirectory }) =>
+      Effect.gen(function* () {
+        ensureSlots(slotDirectory, 1);
+        const held = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+        );
+        const rival = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+        );
+        yield* Effect.promise(() => held?.release());
+        return rival;
+      }),
+    );
 
     it("hands back nothing", ({ aSecondAcquisitionWhileHeld }) => {
       expect(aSecondAcquisitionWhileHeld).toBe(null);
@@ -274,14 +291,20 @@ describe("tryAcquireAny", () => {
   });
 
   describe("the only slot after its holder released it", () => {
-    const it = slotTest.extend("anAcquisitionAfterRelease", async ({ slotDirectory }) => {
-      ensureSlots(slotDirectory, 1);
-      const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-      await held?.release();
-      const holdAfterRelease = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-      await holdAfterRelease?.release();
-      return holdAfterRelease !== null;
-    });
+    const it = slotTest.extend("anAcquisitionAfterRelease", ({ slotDirectory }) =>
+      Effect.gen(function* () {
+        ensureSlots(slotDirectory, 1);
+        const held = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+        );
+        yield* Effect.promise(() => held?.release());
+        const holdAfterRelease = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+        );
+        yield* Effect.promise(() => holdAfterRelease?.release());
+        return holdAfterRelease !== null;
+      }),
+    );
 
     it("hands back the slot again", ({ anAcquisitionAfterRelease }) => {
       expect(anAcquisitionAfterRelease).toBe(true);
@@ -290,31 +313,43 @@ describe("tryAcquireAny", () => {
 
   describe("a hold whose release is called more than once", () => {
     const it = slotTest
-      .extend("theHoldTakenBeforeReleasingItTwice", async ({ slotDirectory }) => {
-        ensureSlots(slotDirectory, 1);
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        await held?.release();
-        await held?.release();
-        return held !== null;
-      })
-      .extend("theConcurrentReleaseIsTheFirstRelease", async ({ slotDirectory }) => {
-        ensureSlots(slotDirectory, 1);
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        const firstRelease = held?.release();
-        const concurrentRelease = held?.release();
-        await Promise.all([firstRelease, concurrentRelease]);
-        return concurrentRelease === firstRelease;
-      })
-      .extend("theBytesWrittenToADescriptorOpenedAfterTheRelease", async ({ slotDirectory }) => {
-        ensureSlots(slotDirectory, 1);
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        await held?.release();
-        const unrelatedDescriptor = openSync(join(slotDirectory, "unrelated"), "w");
-        await held?.release();
-        const bytesWritten = writeSync(unrelatedDescriptor, "still-open");
-        closeSync(unrelatedDescriptor);
-        return bytesWritten;
-      });
+      .extend("theHoldTakenBeforeReleasingItTwice", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          ensureSlots(slotDirectory, 1);
+          const held = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+          );
+          yield* Effect.promise(() => held?.release());
+          yield* Effect.promise(() => held?.release());
+          return held !== null;
+        }),
+      )
+      .extend("theConcurrentReleaseIsTheFirstRelease", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          ensureSlots(slotDirectory, 1);
+          const held = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+          );
+          const firstRelease = held?.release();
+          const concurrentRelease = held?.release();
+          yield* Effect.promise(() => Promise.all([firstRelease, concurrentRelease]));
+          return concurrentRelease === firstRelease;
+        }),
+      )
+      .extend("theBytesWrittenToADescriptorOpenedAfterTheRelease", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          ensureSlots(slotDirectory, 1);
+          const held = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+          );
+          yield* Effect.promise(() => held?.release());
+          const unrelatedDescriptor = openWritableDescriptor(joinPath(slotDirectory, "unrelated"));
+          yield* Effect.promise(() => held?.release());
+          const bytesWritten = writeDescriptor(unrelatedDescriptor, "still-open");
+          closeDescriptor(unrelatedDescriptor);
+          return bytesWritten;
+        }),
+      );
 
     it("takes the slot to begin with", ({ theHoldTakenBeforeReleasingItTwice }) => {
       expect(theHoldTakenBeforeReleasingItTwice).toBe(true);
@@ -333,28 +368,36 @@ describe("tryAcquireAny", () => {
 
   describe("a slot marker that cannot take a generation", () => {
     const it = slotTest
-      .extend("theRefusalOfAMarkerThatIsADirectory", async ({ slotDirectory }) => {
-        ensureSlots(slotDirectory, 1);
-        rmSync(join(slotDirectory, "slot-0"));
-        mkdirSync(join(slotDirectory, "slot-0"));
-        try {
-          await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        } catch (refusal) {
-          return failedWithCode(refusal, new Set(["EISDIR", "EPERM"]));
-        }
-        throw new Error("tryAcquireAny swallowed a marker it could not write");
-      })
-      .extend("aSlotHeldAfterAGenerationCouldNotBeRecorded", async ({ slotDirectory }) => {
-        ensureSlots(slotDirectory, 1);
-        rmSync(join(slotDirectory, "slot-0"));
-        mkdirSync(join(slotDirectory, "slot-0"));
-        await Promise.allSettled([tryAcquireAny({ slotDir: slotDirectory, limit: 1 })]);
-        rmSync(join(slotDirectory, "slot-0"), { recursive: true });
-        writeFileSync(join(slotDirectory, "slot-0"), "");
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        await held?.release();
-        return held !== null;
-      });
+      .extend("theRefusalOfAMarkerThatIsADirectory", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          ensureSlots(slotDirectory, 1);
+          removePath(joinPath(slotDirectory, "slot-0"));
+          makeDirectory(joinPath(slotDirectory, "slot-0"));
+          try {
+            yield* Effect.promise(() => tryAcquireAny({ slotDir: slotDirectory, limit: 1 }));
+          } catch (refusal) {
+            return failedWithCode(refusal, new Set(["EISDIR", "EPERM"]));
+          }
+          throw new Error("tryAcquireAny swallowed a marker it could not write");
+        }),
+      )
+      .extend("aSlotHeldAfterAGenerationCouldNotBeRecorded", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          ensureSlots(slotDirectory, 1);
+          removePath(joinPath(slotDirectory, "slot-0"));
+          makeDirectory(joinPath(slotDirectory, "slot-0"));
+          yield* Effect.promise(() =>
+            Promise.allSettled([tryAcquireAny({ slotDir: slotDirectory, limit: 1 })]),
+          );
+          removePath(joinPath(slotDirectory, "slot-0"));
+          writeFileString({ location: joinPath(slotDirectory, "slot-0"), written: "" });
+          const held = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+          );
+          yield* Effect.promise(() => held?.release());
+          return held !== null;
+        }),
+      );
 
     it("lets the refusal escape untouched", ({ theRefusalOfAMarkerThatIsADirectory }) => {
       expect(theRefusalOfAMarkerThatIsADirectory).toBe(true);
@@ -368,18 +411,18 @@ describe("tryAcquireAny", () => {
 
 describe("slotStateFingerprint", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
     onCleanup(() => {
-      rmSync(temporarySlotDirectory, { recursive: true, force: true });
+      removePath(temporarySlotDirectory);
     });
     return temporarySlotDirectory;
   });
 
   describe("two slots standing free", () => {
     const it = test.extend("theFingerprintOfFreeSlots", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
       onCleanup(() => {
-        rmSync(temporarySlotDirectory, { recursive: true, force: true });
+        removePath(temporarySlotDirectory);
       });
       ensureSlots(temporarySlotDirectory, 2);
       return slotStateFingerprint(temporarySlotDirectory, 2);
@@ -391,16 +434,17 @@ describe("slotStateFingerprint", () => {
   });
 
   describe("one slot out of two taken", () => {
-    const it = slotTest.extend(
-      "theFingerprintChangesOnceASlotIsHeld",
-      async ({ slotDirectory }) => {
+    const it = slotTest.extend("theFingerprintChangesOnceASlotIsHeld", ({ slotDirectory }) =>
+      Effect.gen(function* () {
         ensureSlots(slotDirectory, 2);
         const free = slotStateFingerprint(slotDirectory, 2);
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 2 });
+        const held = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
+        );
         const taken = slotStateFingerprint(slotDirectory, 2);
-        await held?.release();
+        yield* Effect.promise(() => held?.release());
         return taken !== free;
-      },
+      }),
     );
 
     it("changes once a slot is held", ({ theFingerprintChangesOnceASlotIsHeld }) => {
@@ -409,15 +453,16 @@ describe("slotStateFingerprint", () => {
   });
 
   describe("a slot its holder has let go", () => {
-    const it = slotTest.extend(
-      "theFingerprintStandsAfterTheHolderLetGo",
-      async ({ slotDirectory }) => {
+    const it = slotTest.extend("theFingerprintStandsAfterTheHolderLetGo", ({ slotDirectory }) =>
+      Effect.gen(function* () {
         ensureSlots(slotDirectory, 2);
-        const held = await tryAcquireAny({ slotDir: slotDirectory, limit: 2 });
+        const held = yield* Effect.promise(() =>
+          tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
+        );
         const whileHeld = slotStateFingerprint(slotDirectory, 2);
-        await held?.release();
+        yield* Effect.promise(() => held?.release());
         return slotStateFingerprint(slotDirectory, 2) === whileHeld;
-      },
+      }),
     );
 
     it("reads as it did while the slot was held", ({ theFingerprintStandsAfterTheHolderLetGo }) => {
@@ -427,26 +472,38 @@ describe("slotStateFingerprint", () => {
 
   describe("a slot taken, released and taken again", () => {
     const it = slotTest
-      .extend("theFingerprintChangesWhenTheSlotIsTakenAnew", async ({ slotDirectory }) => {
-        ensureSlots(slotDirectory, 2);
-        const first = await tryAcquireAny({ slotDir: slotDirectory, limit: 2 });
-        const whileFirstHeld = slotStateFingerprint(slotDirectory, 2);
-        await first?.release();
-        const second = await tryAcquireAny({ slotDir: slotDirectory, limit: 2 });
-        const whileSecondHeld = slotStateFingerprint(slotDirectory, 2);
-        await second?.release();
-        return whileSecondHeld !== whileFirstHeld;
-      })
-      .extend("theGenerationOfTheFirstSlotIsWrittenAnew", async ({ slotDirectory }) => {
-        ensureSlots(slotDirectory, 2);
-        const first = await tryAcquireAny({ slotDir: slotDirectory, limit: 2 });
-        const firstGeneration = readFileSync(join(slotDirectory, "slot-0"), "utf8");
-        await first?.release();
-        const second = await tryAcquireAny({ slotDir: slotDirectory, limit: 2 });
-        const secondGeneration = readFileSync(join(slotDirectory, "slot-0"), "utf8");
-        await second?.release();
-        return secondGeneration !== firstGeneration;
-      });
+      .extend("theFingerprintChangesWhenTheSlotIsTakenAnew", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          ensureSlots(slotDirectory, 2);
+          const first = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
+          );
+          const whileFirstHeld = slotStateFingerprint(slotDirectory, 2);
+          yield* Effect.promise(() => first?.release());
+          const second = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
+          );
+          const whileSecondHeld = slotStateFingerprint(slotDirectory, 2);
+          yield* Effect.promise(() => second?.release());
+          return whileSecondHeld !== whileFirstHeld;
+        }),
+      )
+      .extend("theGenerationOfTheFirstSlotIsWrittenAnew", ({ slotDirectory }) =>
+        Effect.gen(function* () {
+          ensureSlots(slotDirectory, 2);
+          const first = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
+          );
+          const firstGeneration = readFileString(joinPath(slotDirectory, "slot-0"), "utf8");
+          yield* Effect.promise(() => first?.release());
+          const second = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 2 }),
+          );
+          const secondGeneration = readFileString(joinPath(slotDirectory, "slot-0"), "utf8");
+          yield* Effect.promise(() => second?.release());
+          return secondGeneration !== firstGeneration;
+        }),
+      );
 
     it("changes on the second acquisition", ({ theFingerprintChangesWhenTheSlotIsTakenAnew }) => {
       expect(theFingerprintChangesWhenTheSlotIsTakenAnew).toBe(true);
@@ -461,12 +518,12 @@ describe("slotStateFingerprint", () => {
 
   describe("a slot marker that is not on disk", () => {
     const it = test.extend("theFingerprintOfAMissingMarker", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
       onCleanup(() => {
-        rmSync(temporarySlotDirectory, { recursive: true, force: true });
+        removePath(temporarySlotDirectory);
       });
       ensureSlots(temporarySlotDirectory, 1);
-      rmSync(join(temporarySlotDirectory, "slot-0"));
+      removePath(joinPath(temporarySlotDirectory, "slot-0"));
       return slotStateFingerprint(temporarySlotDirectory, 1);
     });
 
@@ -478,72 +535,104 @@ describe("slotStateFingerprint", () => {
 
 describe("a slot whose holder is killed without releasing it", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
     onCleanup(() => {
-      rmSync(temporarySlotDirectory, { recursive: true, force: true });
+      removePath(temporarySlotDirectory);
     });
     return temporarySlotDirectory;
   });
 
   describe("another process holding the only slot", () => {
     const it = slotTest
-      .extend("theFirstWordOfTheHolder", async ({ slotDirectory }, { onCleanup }) => {
-        const holder = spawn(
-          process.execPath,
-          ["-e", HOLDER_SOURCE, new URL("./slots.ts", import.meta.url).href, slotDirectory],
-          { stdio: ["ignore", "pipe", "inherit"] },
-        );
-        onCleanup(() => {
-          if (holder.exitCode === null && holder.signalCode === null) holder.kill("SIGKILL");
-        });
-        const firstEmission = await new Promise<Buffer>((resolve) => {
-          holder.stdout.once("data", (emission: Buffer) => {
-            resolve(emission);
+      .extend("theFirstWordOfTheHolder", ({ slotDirectory }, { onCleanup }) =>
+        Effect.gen(function* () {
+          const holder = spawnChild({
+            executable: process.execPath,
+            handed: [
+              "-e",
+              HOLDER_SOURCE,
+              new URL("./slots.ts", import.meta.url).href,
+              slotDirectory,
+            ],
+            spawnOptions: { stdio: ["ignore", "pipe", "inherit"] },
           });
-        });
-        return String(firstEmission);
-      })
-      .extend("aRivalWhileTheHolderLives", async ({ slotDirectory }, { onCleanup }) => {
-        const holder = spawn(
-          process.execPath,
-          ["-e", HOLDER_SOURCE, new URL("./slots.ts", import.meta.url).href, slotDirectory],
-          { stdio: ["ignore", "pipe", "inherit"] },
-        );
-        onCleanup(() => {
-          if (holder.exitCode === null && holder.signalCode === null) holder.kill("SIGKILL");
-        });
-        await new Promise<void>((resolve) => {
-          holder.stdout.once("data", () => {
-            resolve();
+          onCleanup(() => {
+            if (holder.exitCode === null && holder.signalCode === null) holder.kill("SIGKILL");
           });
-        });
-        return tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-      })
-      .extend("aReplacementOnceTheHolderIsKilled", async ({ slotDirectory }, { onCleanup }) => {
-        const holder = spawn(
-          process.execPath,
-          ["-e", HOLDER_SOURCE, new URL("./slots.ts", import.meta.url).href, slotDirectory],
-          { stdio: ["ignore", "pipe", "inherit"] },
-        );
-        onCleanup(() => {
-          if (holder.exitCode === null && holder.signalCode === null) holder.kill("SIGKILL");
-        });
-        await new Promise<void>((resolve) => {
-          holder.stdout.once("data", () => {
-            resolve();
+          const firstEmission = yield* Effect.promise(
+            () =>
+              new Promise<Buffer>((resolve) => {
+                holder.stdout.once("data", (emission: Buffer) => {
+                  resolve(emission);
+                });
+              }),
+          );
+          return String(firstEmission);
+        }),
+      )
+      .extend("aRivalWhileTheHolderLives", ({ slotDirectory }, { onCleanup }) =>
+        Effect.gen(function* () {
+          const holder = spawnChild({
+            executable: process.execPath,
+            handed: [
+              "-e",
+              HOLDER_SOURCE,
+              new URL("./slots.ts", import.meta.url).href,
+              slotDirectory,
+            ],
+            spawnOptions: { stdio: ["ignore", "pipe", "inherit"] },
           });
-        });
-        const exited = new Promise<void>((resolve) => {
-          holder.once("exit", () => {
-            resolve();
+          onCleanup(() => {
+            if (holder.exitCode === null && holder.signalCode === null) holder.kill("SIGKILL");
           });
-        });
-        holder.kill("SIGKILL");
-        await exited;
-        const replacement = await tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
-        await replacement?.release();
-        return replacement !== null;
-      });
+          yield* Effect.promise(
+            () =>
+              new Promise<void>((resolve) => {
+                holder.stdout.once("data", () => {
+                  resolve();
+                });
+              }),
+          );
+          return tryAcquireAny({ slotDir: slotDirectory, limit: 1 });
+        }),
+      )
+      .extend("aReplacementOnceTheHolderIsKilled", ({ slotDirectory }, { onCleanup }) =>
+        Effect.gen(function* () {
+          const holder = spawnChild({
+            executable: process.execPath,
+            handed: [
+              "-e",
+              HOLDER_SOURCE,
+              new URL("./slots.ts", import.meta.url).href,
+              slotDirectory,
+            ],
+            spawnOptions: { stdio: ["ignore", "pipe", "inherit"] },
+          });
+          onCleanup(() => {
+            if (holder.exitCode === null && holder.signalCode === null) holder.kill("SIGKILL");
+          });
+          yield* Effect.promise(
+            () =>
+              new Promise<void>((resolve) => {
+                holder.stdout.once("data", () => {
+                  resolve();
+                });
+              }),
+          );
+          const exited = new Promise<void>((resolve) => {
+            holder.once("exit", () => {
+              resolve();
+            });
+          });
+          holder.kill("SIGKILL");
+          yield* Effect.promise(() => exited);
+          const replacement = yield* Effect.promise(() =>
+            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+          );
+          yield* Effect.promise(() => replacement?.release());
+          return replacement !== null;
+        }),
+      );
 
     it("says it took the slot", { timeout: 30_000 }, ({ theFirstWordOfTheHolder }) => {
       expect(theFirstWordOfTheHolder).toBe("ready");
@@ -569,9 +658,9 @@ describe("a slot whose holder is killed without releasing it", () => {
 
 describe("sweepWaiters", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
     onCleanup(() => {
-      rmSync(temporarySlotDirectory, { recursive: true, force: true });
+      removePath(temporarySlotDirectory);
     });
     return temporarySlotDirectory;
   });
@@ -580,46 +669,84 @@ describe("sweepWaiters", () => {
     const it = slotTest
       .extend("theSurvivorsBesideTheOwnWaiterEntry", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
-        const waiters = join(slotDirectory, "waiters");
+        const waiters = joinPath(slotDirectory, "waiters");
         enqueueWaiter(slotDirectory);
-        writeFileSync(join(waiters, "0000000000001-broken-aaaaaaaa"), "not a pid\n");
-        mkdirSync(join(waiters, "0000000000002-unreadable-bbbbbbbb"));
-        writeFileSync(join(waiters, "0000000000003-dead-cccccccc"), `${String(EXITED_PID)}\n`);
-        writeFileSync(join(waiters, "0000000000004-root-dddddddd"), "1\n");
+        writeFileString({
+          location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+          written: "not a pid\n",
+        });
+        makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+        writeFileString({
+          location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+          written: `${String(EXITED_PID)}\n`,
+        });
+        writeFileString({
+          location: joinPath(waiters, "0000000000004-root-dddddddd"),
+          written: "1\n",
+        });
         return sweepWaiters(slotDirectory).slice(0, 1);
       })
       .extend("theOwnWaiterEntryIsTheLastSurvivor", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
-        const waiters = join(slotDirectory, "waiters");
+        const waiters = joinPath(slotDirectory, "waiters");
         const ownEntry = enqueueWaiter(slotDirectory);
-        writeFileSync(join(waiters, "0000000000001-broken-aaaaaaaa"), "not a pid\n");
-        mkdirSync(join(waiters, "0000000000002-unreadable-bbbbbbbb"));
-        writeFileSync(join(waiters, "0000000000003-dead-cccccccc"), `${String(EXITED_PID)}\n`);
-        writeFileSync(join(waiters, "0000000000004-root-dddddddd"), "1\n");
-        return sweepWaiters(slotDirectory).at(-1) === basename(ownEntry);
+        writeFileString({
+          location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+          written: "not a pid\n",
+        });
+        makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+        writeFileString({
+          location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+          written: `${String(EXITED_PID)}\n`,
+        });
+        writeFileString({
+          location: joinPath(waiters, "0000000000004-root-dddddddd"),
+          written: "1\n",
+        });
+        return sweepWaiters(slotDirectory).at(-1) === baseName(ownEntry);
       })
       .extend("theWaitersLeftOnDiskThatSweepingDidNotKeep", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
-        const waiters = join(slotDirectory, "waiters");
+        const waiters = joinPath(slotDirectory, "waiters");
         enqueueWaiter(slotDirectory);
-        writeFileSync(join(waiters, "0000000000001-broken-aaaaaaaa"), "not a pid\n");
-        mkdirSync(join(waiters, "0000000000002-unreadable-bbbbbbbb"));
-        writeFileSync(join(waiters, "0000000000003-dead-cccccccc"), `${String(EXITED_PID)}\n`);
-        writeFileSync(join(waiters, "0000000000004-root-dddddddd"), "1\n");
+        writeFileString({
+          location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+          written: "not a pid\n",
+        });
+        makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+        writeFileString({
+          location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+          written: `${String(EXITED_PID)}\n`,
+        });
+        writeFileString({
+          location: joinPath(waiters, "0000000000004-root-dddddddd"),
+          written: "1\n",
+        });
         const survivors = sweepWaiters(slotDirectory);
-        return readdirSync(waiters).filter((waiterFilename) => !survivors.includes(waiterFilename));
+        return readDirectory(waiters).filter(
+          (waiterFilename) => !survivors.includes(waiterFilename),
+        );
       })
       .extend("theSurvivorsSweepingKeptThatAreGoneFromDisk", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
-        const waiters = join(slotDirectory, "waiters");
+        const waiters = joinPath(slotDirectory, "waiters");
         enqueueWaiter(slotDirectory);
-        writeFileSync(join(waiters, "0000000000001-broken-aaaaaaaa"), "not a pid\n");
-        mkdirSync(join(waiters, "0000000000002-unreadable-bbbbbbbb"));
-        writeFileSync(join(waiters, "0000000000003-dead-cccccccc"), `${String(EXITED_PID)}\n`);
-        writeFileSync(join(waiters, "0000000000004-root-dddddddd"), "1\n");
+        writeFileString({
+          location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
+          written: "not a pid\n",
+        });
+        makeDirectory(joinPath(waiters, "0000000000002-unreadable-bbbbbbbb"));
+        writeFileString({
+          location: joinPath(waiters, "0000000000003-dead-cccccccc"),
+          written: `${String(EXITED_PID)}\n`,
+        });
+        writeFileString({
+          location: joinPath(waiters, "0000000000004-root-dddddddd"),
+          written: "1\n",
+        });
         const survivors = sweepWaiters(slotDirectory);
         return survivors.filter(
-          (survivingWaiterFilename) => !readdirSync(waiters).includes(survivingWaiterFilename),
+          (survivingWaiterFilename) => !readDirectory(waiters).includes(survivingWaiterFilename),
         );
       });
 
@@ -643,9 +770,9 @@ describe("sweepWaiters", () => {
 
 describe("removeWaiter", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
     onCleanup(() => {
-      rmSync(temporarySlotDirectory, { recursive: true, force: true });
+      removePath(temporarySlotDirectory);
     });
     return temporarySlotDirectory;
   });
@@ -656,7 +783,7 @@ describe("removeWaiter", () => {
       const waiterEntry = enqueueWaiter(slotDirectory);
       removeWaiter(waiterEntry);
       removeWaiter(waiterEntry);
-      return readdirSync(join(slotDirectory, "waiters"));
+      return readDirectory(joinPath(slotDirectory, "waiters"));
     });
 
     it("tolerates an entry that is already gone", ({ theWaitersLeftAfterRemovingTwice }) => {
@@ -667,26 +794,25 @@ describe("removeWaiter", () => {
 
 describe("enqueueWaiter", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
     onCleanup(() => {
-      rmSync(temporarySlotDirectory, { recursive: true, force: true });
+      removePath(temporarySlotDirectory);
     });
     return temporarySlotDirectory;
   });
 
   describe("two entries enqueued in turn", () => {
-    const it = slotTest.extend(
-      "theSurvivorsOfTwoWaitersEnqueuedInTurn",
-      async ({ slotDirectory }) => {
+    const it = slotTest.extend("theSurvivorsOfTwoWaitersEnqueuedInTurn", ({ slotDirectory }) =>
+      Effect.gen(function* () {
         ensureSlots(slotDirectory, 1);
         const first = enqueueWaiter(slotDirectory);
-        await delay(5);
+        yield* Effect.promise(() => delay(5));
         const second = enqueueWaiter(slotDirectory);
         return (
           sweepWaiters(slotDirectory).join("\n") ===
-          [first, second].map((enqueuedWaiter) => basename(enqueuedWaiter)).join("\n")
+          [first, second].map((enqueuedWaiter) => baseName(enqueuedWaiter)).join("\n")
         );
-      },
+      }),
     );
 
     it("names them so they sort by creation order", ({
@@ -700,13 +826,13 @@ describe("enqueueWaiter", () => {
 describe("a slot directory this process may not read", () => {
   describe("a fingerprint read off a directory closed to this process", () => {
     const it = test.extend("theFingerprintOfAClosedSlotDirectory", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
       onCleanup(() => {
-        chmodSync(temporarySlotDirectory, 0o700);
-        rmSync(temporarySlotDirectory, { recursive: true, force: true });
+        changeMode(temporarySlotDirectory, 0o700);
+        removePath(temporarySlotDirectory);
       });
       ensureSlots(temporarySlotDirectory, 1);
-      chmodSync(temporarySlotDirectory, 0o000);
+      changeMode(temporarySlotDirectory, 0o000);
       return slotStateFingerprint(temporarySlotDirectory, 1);
     });
 
@@ -719,13 +845,13 @@ describe("a slot directory this process may not read", () => {
 
   describe("a sweep over an entry closed to this process", () => {
     const it = test.extend("theRefusalOfAClosedWaiterEntry", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = mkdtempSync(join(tmpdir(), "throttle-slots-"));
+      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
       onCleanup(() => {
-        chmodSync(temporarySlotDirectory, 0o700);
-        rmSync(temporarySlotDirectory, { recursive: true, force: true });
+        changeMode(temporarySlotDirectory, 0o700);
+        removePath(temporarySlotDirectory);
       });
       ensureSlots(temporarySlotDirectory, 1);
-      chmodSync(enqueueWaiter(temporarySlotDirectory), 0o000);
+      changeMode(enqueueWaiter(temporarySlotDirectory), 0o000);
       try {
         return sweepWaiters(temporarySlotDirectory);
       } catch (refused) {

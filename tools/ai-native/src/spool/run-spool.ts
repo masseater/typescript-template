@@ -1,11 +1,17 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import { randomBytes } from "node:crypto";
-import { once } from "node:events";
-import { createWriteStream, type WriteStream } from "node:fs";
-import { mkdir, unlink } from "node:fs/promises";
-import { join } from "node:path";
+import { Effect } from "effect";
 
+import { waitEmitterEvent } from "../emitter-wait.ts";
+import {
+  joinPath,
+  makeDirectory,
+  optionalSetting,
+  randomHex,
+  removePath,
+  wallClockDate,
+} from "../host.ts";
 import { STREAM_EVENT } from "../node-event-names.ts";
+import { openWriteStream, type FileWriteStream } from "../node-file-stream.ts";
+import { spawnChild, type SpawnedChild } from "../node-spawn.ts";
 import {
   childEnvironment,
   measureCommand,
@@ -24,13 +30,11 @@ import { parseCommand, type Command } from "./parse-command.ts";
 import { isPassthroughSignalled, runPassthrough } from "./run-passthrough.ts";
 import { createEscapeStripper } from "./strip-escapes.ts";
 
-import type { Duplex, Readable, Writable } from "node:stream";
-
-const defaultIsPassthrough = (): boolean => isPassthroughSignalled(process.env.CI);
+const defaultIsPassthrough = (): boolean => isPassthroughSignalled(optionalSetting("CI"));
 
 export type SpoolDeps = {
-  stdout: Writable;
-  stderr: Writable;
+  stdout: { write: (part: string) => unknown };
+  stderr: { write: (part: string) => unknown };
   now?: () => Date;
   monotonicNow?: () => number;
   uniqueSuffix?: () => string;
@@ -39,8 +43,8 @@ export type SpoolDeps = {
 };
 
 type ResolvedDeps = {
-  stdout: Writable;
-  stderr: Writable;
+  stdout: { write: (part: string) => unknown };
+  stderr: { write: (part: string) => unknown };
   now: () => Date;
   monotonicNow: () => number;
   uniqueSuffix: () => string;
@@ -50,37 +54,54 @@ type ResolvedDeps = {
 const resolveDeps = (deps: SpoolDeps): ResolvedDeps => ({
   stdout: deps.stdout,
   stderr: deps.stderr,
-  now: deps.now ?? (() => new Date()),
+  now: deps.now ?? wallClockDate,
   monotonicNow: deps.monotonicNow ?? (() => performance.now()),
-  uniqueSuffix: deps.uniqueSuffix ?? (() => randomBytes(4).toString("hex")),
+  uniqueSuffix: deps.uniqueSuffix ?? (() => randomHex(4)),
   spoolRoot: deps.spoolRoot ?? defaultSpoolRoot,
 });
 
-const openRecordFile = async (rootDir: string, filePath: string): Promise<WriteStream | Error> => {
+const prepareRecordFile = (rootDir: string, filePath: string): FileWriteStream => {
+  makeDirectory(rootDir);
+  return openWriteStream(filePath);
+};
+
+const recordOpenFailure = (cause: unknown): Error =>
+  cause instanceof Error ? cause : new Error(String(cause));
+
+const openRecordFile = (rootDir: string, filePath: string): Promise<FileWriteStream | Error> => {
   try {
-    await mkdir(rootDir, { recursive: true });
-    const stream = createWriteStream(filePath, { flags: "w" });
-    await once(stream, "open");
-    return stream;
+    const stream = prepareRecordFile(rootDir, filePath);
+    return Effect.runPromise(
+      Effect.promise(() => waitEmitterEvent(stream, "open")).pipe(
+        Effect.map(() => stream),
+        Effect.match({
+          onFailure: recordOpenFailure,
+          onSuccess: (opened) => opened,
+        }),
+      ),
+    );
   } catch (caught) {
-    return caught as Error;
+    return Promise.resolve(recordOpenFailure(caught));
   }
 };
 
-const discardRecord = async (input: {
+const discardRecord = (input: {
   deps: ResolvedDeps;
   commandLine: string;
   filePath: string;
-  fileStream: WriteStream;
+  fileStream: FileWriteStream;
   closed: Promise<ChildEnd>;
   spawnError: Error;
-}): Promise<number> => {
-  await input.closed;
-  input.fileStream.destroy();
-  await unlink(input.filePath);
-  input.deps.stderr.write(startFailureSummary(input.commandLine, input.spawnError));
-  return 127;
-};
+}): Promise<number> =>
+  Effect.runPromise(
+    Effect.gen(function* dropFailedRecord() {
+      yield* Effect.promise(() => input.closed);
+      input.fileStream.destroy();
+      removePath(input.filePath);
+      input.deps.stderr.write(startFailureSummary(input.commandLine, input.spawnError));
+      return 127;
+    }),
+  );
 
 const recordFailureSummary = (
   commandLine: string,
@@ -100,8 +121,11 @@ const excerptOf = (tail: Buffer): string => {
 const tailLimit = 32768;
 
 class SpoolRecording {
-  private readonly fileStream: WriteStream;
-  private readonly strippers: readonly [Duplex, Duplex];
+  private readonly fileStream: FileWriteStream;
+  private readonly strippers: readonly [
+    ReturnType<typeof createEscapeStripper>,
+    ReturnType<typeof createEscapeStripper>,
+  ];
   private failure: Error | undefined = undefined;
   private bytes = 0;
   private newlines = 0;
@@ -109,14 +133,18 @@ class SpoolRecording {
   private tailParts: readonly Buffer[] = [];
   private tailLength = 0;
 
-  constructor(fileStream: WriteStream) {
+  constructor(fileStream: FileWriteStream) {
     this.fileStream = fileStream;
     this.strippers = [createEscapeStripper(), createEscapeStripper()];
     fileStream.on(STREAM_EVENT.failure, (streamError: Error) => {
       this.abort(streamError);
     });
     for (const stripper of this.strippers) {
-      stripper.on(STREAM_EVENT.data, (part: Buffer) => {
+      stripper.on?.(STREAM_EVENT.data, (part: Buffer | Error) => {
+        if (part instanceof Error) {
+          this.abort(part);
+          return;
+        }
         this.observe(part);
       });
     }
@@ -125,8 +153,8 @@ class SpoolRecording {
   private abort(streamError: Error): void {
     this.failure = streamError;
     for (const stripper of this.strippers) {
-      stripper.unpipe(this.fileStream);
-      stripper.resume();
+      stripper.unpipe?.(this.fileStream);
+      stripper.resume?.();
     }
   }
 
@@ -149,27 +177,38 @@ class SpoolRecording {
     }
   }
 
-  async capture(input: { child: ChildProcess; closed: Promise<ChildEnd> }): Promise<ChildEnd> {
-    (input.child.stdout as Readable).pipe(this.strippers[0]).pipe(this.fileStream, { end: false });
-    (input.child.stderr as Readable).pipe(this.strippers[1]).pipe(this.fileStream, { end: false });
-    const [end] = await Promise.all([
-      input.closed,
-      once(this.strippers[0], "end"),
-      once(this.strippers[1], "end"),
-    ]);
-    await this.finish();
-    return end;
+  capture(input: { child: SpawnedChild; closed: Promise<ChildEnd> }): Promise<ChildEnd> {
+    const [stdoutStripper, stderrStripper] = this.strippers;
+    const fileStream = this.fileStream;
+    const finishRecording = (): Promise<void> => this.finish();
+    return Effect.runPromise(
+      Effect.gen(function* captureChild() {
+        input.child.stdout?.pipe(stdoutStripper).pipe(fileStream, { end: false });
+        input.child.stderr?.pipe(stderrStripper).pipe(fileStream, { end: false });
+        const [end] = yield* Effect.promise(() =>
+          Promise.all([
+            input.closed,
+            waitEmitterEvent(stdoutStripper, "end"),
+            waitEmitterEvent(stderrStripper, "end"),
+          ]),
+        );
+        yield* Effect.promise(() => finishRecording());
+        return end;
+      }),
+    );
   }
 
-  private async finish(): Promise<void> {
+  private finish(): Promise<void> {
     if (this.failure !== undefined) {
-      return;
+      return Promise.resolve();
     }
-    await new Promise<void>((resolvePromise) => {
-      this.fileStream.end(() => {
-        resolvePromise();
-      });
-    });
+    return Effect.runPromise(
+      Effect.callback((resume) => {
+        this.fileStream.end(() => {
+          resume(Effect.void);
+        });
+      }),
+    );
   }
 
   get failed(): boolean {
@@ -225,55 +264,74 @@ const reportCompletion = (input: {
   return exitCode;
 };
 
-const recordRun = async (input: {
-  command: Command;
-  deps: ResolvedDeps;
-  filePath: string;
-  fileStream: WriteStream;
-}): Promise<number> => {
-  const recording = new SpoolRecording(input.fileStream);
-  input.fileStream.write(`${input.command.join(" ")}\n\n`);
-  const startedAt = input.deps.monotonicNow();
-  const child = spawn(input.command[0], input.command.slice(1), {
-    stdio: ["inherit", "pipe", "pipe"],
-    env: childEnvironment(),
-  });
-  const closed = waitClose(child);
-  const spawnError = await waitSpawn(child);
-  if (spawnError !== undefined) {
-    return discardRecord({
-      deps: input.deps,
-      commandLine: input.command.join(" "),
-      filePath: input.filePath,
-      fileStream: input.fileStream,
-      closed,
-      spawnError,
-    });
-  }
-  const end = await recording.capture({ child, closed });
-  return reportCompletion({
-    deps: input.deps,
-    commandLine: input.command.join(" "),
-    filePath: input.filePath,
-    recording,
-    end,
-    elapsed: formatElapsed(input.deps.monotonicNow() - startedAt),
+const spawnRecorded = (command: Command): SpawnedChild => {
+  const environment = childEnvironment();
+  return spawnChild({
+    executable: command[0],
+    handed: command.slice(1),
+    spawnOptions:
+      environment === undefined
+        ? { stdio: ["inherit", "pipe", "pipe"] }
+        : { stdio: ["inherit", "pipe", "pipe"], env: environment },
   });
 };
 
-const runEscaped = async (command: Command, deps: ResolvedDeps): Promise<number> => {
-  const rootDir = deps.spoolRoot();
-  const filePath = join(
-    rootDir,
-    `${timestampOf(deps.now())}-${commandIdOf(command)}-${deps.uniqueSuffix()}.log`,
+const recordRun = (input: {
+  command: Command;
+  deps: ResolvedDeps;
+  filePath: string;
+  fileStream: FileWriteStream;
+}): Promise<number> =>
+  Effect.runPromise(
+    Effect.gen(function* recordCommand() {
+      const recording = new SpoolRecording(input.fileStream);
+      input.fileStream.write(`${input.command.join(" ")}\n\n`);
+      const startedAt = input.deps.monotonicNow();
+      const child = spawnRecorded(input.command);
+      const closed = waitClose(child);
+      const spawnError = yield* Effect.promise(() => waitSpawn(child));
+      if (spawnError !== null) {
+        return yield* Effect.promise(() =>
+          discardRecord({
+            deps: input.deps,
+            commandLine: input.command.join(" "),
+            filePath: input.filePath,
+            fileStream: input.fileStream,
+            closed,
+            spawnError,
+          }),
+        );
+      }
+      const end = yield* Effect.promise(() => recording.capture({ child, closed }));
+      return reportCompletion({
+        deps: input.deps,
+        commandLine: input.command.join(" "),
+        filePath: input.filePath,
+        recording,
+        end,
+        elapsed: formatElapsed(input.deps.monotonicNow() - startedAt),
+      });
+    }),
   );
-  const opened = await openRecordFile(rootDir, filePath);
-  if (opened instanceof Error) {
-    deps.stderr.write(recordFailureSummary(command.join(" "), { filePath, reason: opened }));
-    return 1;
-  }
-  return recordRun({ command, deps, filePath, fileStream: opened });
-};
+
+const runEscaped = (command: Command, deps: ResolvedDeps): Promise<number> =>
+  Effect.runPromise(
+    Effect.gen(function* runRecorded() {
+      const rootDir = deps.spoolRoot();
+      const filePath = joinPath(
+        rootDir,
+        `${timestampOf(deps.now())}-${commandIdOf(command)}-${deps.uniqueSuffix()}.log`,
+      );
+      const opened = yield* Effect.promise(() => openRecordFile(rootDir, filePath));
+      if (opened instanceof Error) {
+        deps.stderr.write(recordFailureSummary(command.join(" "), { filePath, reason: opened }));
+        return 1;
+      }
+      return yield* Effect.promise(() =>
+        recordRun({ command, deps, filePath, fileStream: opened }),
+      );
+    }),
+  );
 
 const usageText = [
   "usage: spool -- <command> [args...]",
@@ -289,11 +347,11 @@ const usageText = [
   "127 when the command cannot start, 1 when recording fails, 2 on usage errors",
 ].join("\n");
 
-export const runSpool = async (argv: string[], deps: SpoolDeps): Promise<number> => {
+export const runSpool = (argv: string[], deps: SpoolDeps): Promise<number> => {
   const command = parseCommand(argv);
   if (command === undefined) {
     deps.stderr.write(`${usageText}\n`);
-    return 2;
+    return Promise.resolve(2);
   }
   const resolved = resolveDeps(deps);
   return measureCommand({

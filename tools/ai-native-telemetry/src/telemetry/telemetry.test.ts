@@ -2,6 +2,7 @@ import { context, metrics, propagation, trace, TraceFlags } from "@opentelemetry
 import { logs } from "@opentelemetry/api-logs";
 import { globalErrorHandler } from "@opentelemetry/core";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
+import { Effect } from "effect";
 import { pick } from "es-toolkit";
 import { describe, expect, onTestFinished, test, vi } from "vite-plus/test";
 
@@ -31,46 +32,51 @@ const ACTIVE_TRACEPARENT = `00-${ACTIVE_TRACE_ID}-${ACTIVE_SPAN_ID}-01`;
 
 describe("startTelemetry", () => {
   describe("an environment that never asked for telemetry", () => {
-    const it = test.extend("spansExportedWithoutAsking", async () => {
-      vi.stubEnv("MST_TELEMETRY", undefined);
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      onTestFinished(() => {
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      vi.resetModules();
-      const exporterModule = await import("@opentelemetry/exporter-trace-otlp-http");
-      const exported = vi.fn<(spanName: string) => void>();
-      vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
-        (batch, resultCallback) => {
-          for (const span of batch.filter(
-            (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
-          )) {
-            exported(span.name);
-          }
-          resultCallback({ code: 0 });
-        },
-      );
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
-        span.end();
-      });
-      process.emit("beforeExit", 0);
-      await started.shutdown();
-      return exported;
-    });
+    const it = test.extend("spansExportedWithoutAsking", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", undefined);
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+          });
+          vi.resetModules();
+          const exporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-trace-otlp-http"),
+          );
+          const exported = vi.fn<(spanName: string) => void>();
+          vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
+            (batch, resultCallback) => {
+              for (const span of batch.filter(
+                (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
+              )) {
+                exported(span.name);
+              }
+              resultCallback({ code: 0 });
+            },
+          );
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
+            span.end();
+          });
+          process.emit("beforeExit", 0);
+          yield* Effect.promise(() => started.shutdown());
+          return exported;
+        }),
+      ));
 
     it("hands the exporter nothing at all", ({ spansExportedWithoutAsking }) => {
       expect(spansExportedWithoutAsking).toHaveBeenCalledTimes(0);
@@ -78,46 +84,51 @@ describe("startTelemetry", () => {
   });
 
   describe("an environment that asked for telemetry but disabled the sdk", () => {
-    const it = test.extend("spansExportedWithADisabledSdk", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", "true");
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      onTestFinished(() => {
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      vi.resetModules();
-      const exporterModule = await import("@opentelemetry/exporter-trace-otlp-http");
-      const exported = vi.fn<(spanName: string) => void>();
-      vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
-        (batch, resultCallback) => {
-          for (const span of batch.filter(
-            (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
-          )) {
-            exported(span.name);
-          }
-          resultCallback({ code: 0 });
-        },
-      );
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
-        span.end();
-      });
-      process.emit("beforeExit", 0);
-      await started.shutdown();
-      return exported;
-    });
+    const it = test.extend("spansExportedWithADisabledSdk", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", "true");
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+          });
+          vi.resetModules();
+          const exporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-trace-otlp-http"),
+          );
+          const exported = vi.fn<(spanName: string) => void>();
+          vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
+            (batch, resultCallback) => {
+              for (const span of batch.filter(
+                (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
+              )) {
+                exported(span.name);
+              }
+              resultCallback({ code: 0 });
+            },
+          );
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
+            span.end();
+          });
+          process.emit("beforeExit", 0);
+          yield* Effect.promise(() => started.shutdown());
+          return exported;
+        }),
+      ));
 
     it("hands the exporter nothing even though it was asked", ({
       spansExportedWithADisabledSdk,
@@ -127,50 +138,59 @@ describe("startTelemetry", () => {
   });
 
   describe("an environment that asked for telemetry", () => {
-    const it = test.extend("spansExportedAfterAsking", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      vi.resetModules();
-      const exporterModule = await import("@opentelemetry/exporter-trace-otlp-http");
-      const exported = vi.fn<(spanName: string) => void>();
-      vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
-        (batch, resultCallback) => {
-          for (const span of batch.filter(
-            (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
-          )) {
-            exported(span.name);
-          }
-          resultCallback({ code: 0 });
-        },
-      );
-      const stopped = vi
-        .spyOn(exporterModule.OTLPTraceExporter.prototype, "shutdown")
-        .mockResolvedValue();
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      onTestFinished(async () => {
-        await started.shutdown();
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
-        span.end();
-      });
-      process.emit("beforeExit", 0);
-      await vi.waitUntil(() => stopped.mock.calls.length > 0);
-      return exported;
-    });
+    const it = test.extend("spansExportedAfterAsking", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          vi.resetModules();
+          const exporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-trace-otlp-http"),
+          );
+          const exported = vi.fn<(spanName: string) => void>();
+          vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
+            (batch, resultCallback) => {
+              for (const span of batch.filter(
+                (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
+              )) {
+                exported(span.name);
+              }
+              resultCallback({ code: 0 });
+            },
+          );
+          const stopped = vi
+            .spyOn(exporterModule.OTLPTraceExporter.prototype, "shutdown")
+            .mockResolvedValue();
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          onTestFinished(() =>
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.promise(() => started.shutdown());
+                process.exitCode = undefined;
+                process.removeAllListeners("beforeExit");
+                context.disable();
+                propagation.disable();
+                trace.disable();
+                metrics.disable();
+                logs.disable();
+              }),
+            ),
+          );
+          trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
+            span.end();
+          });
+          process.emit("beforeExit", 0);
+          yield* Effect.promise(() => vi.waitUntil(() => stopped.mock.calls.length > 0));
+          return exported;
+        }),
+      ));
 
     it("hands the exporter what was recorded under it", ({ spansExportedAfterAsking }) => {
       expect(spansExportedAfterAsking).toHaveBeenCalledExactlyOnceWith(MEASURED_SPAN);
@@ -178,51 +198,60 @@ describe("startTelemetry", () => {
   });
 
   describe("a second entry asking for telemetry that already started", () => {
-    const it = test.extend("servicesExportedAfterTheSecondEntry", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      vi.resetModules();
-      const exporterModule = await import("@opentelemetry/exporter-trace-otlp-http");
-      const exported = vi.fn<(serviceName: unknown) => void>();
-      vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
-        (batch, resultCallback) => {
-          for (const span of batch.filter(
-            (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
-          )) {
-            exported(span.resource.attributes[ATTR_SERVICE_NAME]);
-          }
-          resultCallback({ code: 0 });
-        },
-      );
-      const stopped = vi
-        .spyOn(exporterModule.OTLPTraceExporter.prototype, "shutdown")
-        .mockResolvedValue();
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      onTestFinished(async () => {
-        await started.shutdown();
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      telemetry.startTelemetry(SECOND_MEASURED_SERVICE);
-      trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
-        span.end();
-      });
-      process.emit("beforeExit", 0);
-      await vi.waitUntil(() => stopped.mock.calls.length > 0);
-      return exported;
-    });
+    const it = test.extend("servicesExportedAfterTheSecondEntry", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          vi.resetModules();
+          const exporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-trace-otlp-http"),
+          );
+          const exported = vi.fn<(serviceName: unknown) => void>();
+          vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "export").mockImplementation(
+            (batch, resultCallback) => {
+              for (const span of batch.filter(
+                (candidate) => candidate.instrumentationScope.name === TRACER_NAME,
+              )) {
+                exported(span.resource.attributes[ATTR_SERVICE_NAME]);
+              }
+              resultCallback({ code: 0 });
+            },
+          );
+          const stopped = vi
+            .spyOn(exporterModule.OTLPTraceExporter.prototype, "shutdown")
+            .mockResolvedValue();
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          onTestFinished(() =>
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.promise(() => started.shutdown());
+                process.exitCode = undefined;
+                process.removeAllListeners("beforeExit");
+                context.disable();
+                propagation.disable();
+                trace.disable();
+                metrics.disable();
+                logs.disable();
+              }),
+            ),
+          );
+          telemetry.startTelemetry(SECOND_MEASURED_SERVICE);
+          trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
+            span.end();
+          });
+          process.emit("beforeExit", 0);
+          yield* Effect.promise(() => vi.waitUntil(() => stopped.mock.calls.length > 0));
+          return exported;
+        }),
+      ));
 
     it("keeps the service the first entry named", ({ servicesExportedAfterTheSecondEntry }) => {
       expect(servicesExportedAfterTheSecondEntry).toHaveBeenCalledExactlyOnceWith(MEASURED_SERVICE);
@@ -230,51 +259,65 @@ describe("startTelemetry", () => {
   });
 
   describe("a process winding down after telemetry started", () => {
-    const it = test.extend("stoppedExporters", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      vi.resetModules();
-      const stopped = vi.fn<(stoppedSignal: string) => void>();
-      const traceExporterModule = await import("@opentelemetry/exporter-trace-otlp-http");
-      vi.spyOn(traceExporterModule.OTLPTraceExporter.prototype, "shutdown").mockImplementation(
-        async () => {
-          stopped("traces");
-        },
-      );
-      const metricExporterModule = await import("@opentelemetry/exporter-metrics-otlp-http");
-      vi.spyOn(metricExporterModule.OTLPMetricExporter.prototype, "shutdown").mockImplementation(
-        async () => {
-          stopped("metrics");
-        },
-      );
-      const logExporterModule = await import("@opentelemetry/exporter-logs-otlp-http");
-      vi.spyOn(logExporterModule.OTLPLogExporter.prototype, "shutdown").mockImplementation(
-        async () => {
-          stopped("logs");
-        },
-      );
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      onTestFinished(async () => {
-        await started.shutdown();
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      process.emit("beforeExit", 0);
-      await started.shutdown();
-      return stopped;
-    });
+    const it = test.extend("stoppedExporters", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          vi.resetModules();
+          const stopped = vi.fn<(stoppedSignal: string) => void>();
+          const traceExporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-trace-otlp-http"),
+          );
+          vi.spyOn(traceExporterModule.OTLPTraceExporter.prototype, "shutdown").mockImplementation(
+            () => {
+              stopped("traces");
+            },
+          );
+          const metricExporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-metrics-otlp-http"),
+          );
+          vi.spyOn(
+            metricExporterModule.OTLPMetricExporter.prototype,
+            "shutdown",
+          ).mockImplementation(() => {
+            stopped("metrics");
+          });
+          const logExporterModule = yield* Effect.promise(
+            () => import("@opentelemetry/exporter-logs-otlp-http"),
+          );
+          vi.spyOn(logExporterModule.OTLPLogExporter.prototype, "shutdown").mockImplementation(
+            () => {
+              stopped("logs");
+            },
+          );
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          onTestFinished(() =>
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.promise(() => started.shutdown());
+                process.exitCode = undefined;
+                process.removeAllListeners("beforeExit");
+                context.disable();
+                propagation.disable();
+                trace.disable();
+                metrics.disable();
+                logs.disable();
+              }),
+            ),
+          );
+          process.emit("beforeExit", 0);
+          yield* Effect.promise(() => started.shutdown());
+          return stopped;
+        }),
+      ));
 
     it("stops every exporter it started", ({ stoppedExporters }) => {
       expect(stoppedExporters).toHaveBeenCalledTimes(3);
@@ -283,36 +326,43 @@ describe("startTelemetry", () => {
 
   describe("an export that fails", () => {
     describe("the exit code the process carried when the failure was reported", () => {
-      const it = test.extend("exitCodeCarriedIntoTheReport", async () => {
-        vi.stubEnv("MST_TELEMETRY", "1");
-        vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-        vi.resetModules();
-        const telemetry = await import("./telemetry.ts");
-        const started = telemetry.startTelemetry(MEASURED_SERVICE);
-        onTestFinished(async () => {
-          await started.shutdown();
-          process.exitCode = undefined;
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
-        });
-        const marked = vi.fn<(exitCode: unknown) => void>();
-        vi.spyOn(process.stderr, "write").mockImplementation(() => {
-          marked(process.exitCode);
-          return true;
-        });
-        globalErrorHandler(new Error("the collector refused"));
-        return marked;
-      });
+      const it = test.extend("exitCodeCarriedIntoTheReport", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            vi.stubEnv("MST_TELEMETRY", "1");
+            vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            vi.resetModules();
+            const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+            const started = telemetry.startTelemetry(MEASURED_SERVICE);
+            onTestFinished(() =>
+              Effect.runPromise(
+                Effect.gen(function* () {
+                  yield* Effect.promise(() => started.shutdown());
+                  process.exitCode = undefined;
+                  process.removeAllListeners("beforeExit");
+                  context.disable();
+                  propagation.disable();
+                  trace.disable();
+                  metrics.disable();
+                  logs.disable();
+                }),
+              ),
+            );
+            const marked = vi.fn<(exitCode: unknown) => void>();
+            vi.spyOn(process.stderr, "write").mockImplementation(() => {
+              marked(process.exitCode);
+              return true;
+            });
+            globalErrorHandler(new Error("the collector refused"));
+            return marked;
+          }),
+        ));
 
       it("marks the process as failed before the report goes out", ({
         exitCodeCarriedIntoTheReport,
@@ -322,36 +372,43 @@ describe("startTelemetry", () => {
     });
 
     describe("a failure carrying an error", () => {
-      const it = test.extend("thrownErrorReport", async () => {
-        vi.stubEnv("MST_TELEMETRY", "1");
-        vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-        vi.resetModules();
-        const telemetry = await import("./telemetry.ts");
-        const started = telemetry.startTelemetry(MEASURED_SERVICE);
-        onTestFinished(async () => {
-          await started.shutdown();
-          process.exitCode = undefined;
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
-        });
-        const written = vi.fn<(failureReport: string) => void>();
-        vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
-          written(String(failureReport));
-          return true;
-        });
-        globalErrorHandler(new Error("the collector refused"));
-        return written;
-      });
+      const it = test.extend("thrownErrorReport", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            vi.stubEnv("MST_TELEMETRY", "1");
+            vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            vi.resetModules();
+            const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+            const started = telemetry.startTelemetry(MEASURED_SERVICE);
+            onTestFinished(() =>
+              Effect.runPromise(
+                Effect.gen(function* () {
+                  yield* Effect.promise(() => started.shutdown());
+                  process.exitCode = undefined;
+                  process.removeAllListeners("beforeExit");
+                  context.disable();
+                  propagation.disable();
+                  trace.disable();
+                  metrics.disable();
+                  logs.disable();
+                }),
+              ),
+            );
+            const written = vi.fn<(failureReport: string) => void>();
+            vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
+              written(String(failureReport));
+              return true;
+            });
+            globalErrorHandler(new Error("the collector refused"));
+            return written;
+          }),
+        ));
 
       it("names the message the error carried", ({ thrownErrorReport }) => {
         expect(thrownErrorReport).toHaveBeenCalledExactlyOnceWith(
@@ -361,36 +418,43 @@ describe("startTelemetry", () => {
     });
 
     describe("a failure carrying a value that is not an error", () => {
-      const it = test.extend("thrownNonErrorReport", async () => {
-        vi.stubEnv("MST_TELEMETRY", "1");
-        vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-        vi.resetModules();
-        const telemetry = await import("./telemetry.ts");
-        const started = telemetry.startTelemetry(MEASURED_SERVICE);
-        onTestFinished(async () => {
-          await started.shutdown();
-          process.exitCode = undefined;
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
-        });
-        const written = vi.fn<(failureReport: string) => void>();
-        vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
-          written(String(failureReport));
-          return true;
-        });
-        globalErrorHandler({ code: "503" });
-        return written;
-      });
+      const it = test.extend("thrownNonErrorReport", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            vi.stubEnv("MST_TELEMETRY", "1");
+            vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            vi.resetModules();
+            const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+            const started = telemetry.startTelemetry(MEASURED_SERVICE);
+            onTestFinished(() =>
+              Effect.runPromise(
+                Effect.gen(function* () {
+                  yield* Effect.promise(() => started.shutdown());
+                  process.exitCode = undefined;
+                  process.removeAllListeners("beforeExit");
+                  context.disable();
+                  propagation.disable();
+                  trace.disable();
+                  metrics.disable();
+                  logs.disable();
+                }),
+              ),
+            );
+            const written = vi.fn<(failureReport: string) => void>();
+            vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
+              written(String(failureReport));
+              return true;
+            });
+            globalErrorHandler({ code: "503" });
+            return written;
+          }),
+        ));
 
       it("names the value that was thrown", ({ thrownNonErrorReport }) => {
         expect(thrownNonErrorReport).toHaveBeenCalledExactlyOnceWith(
@@ -400,39 +464,44 @@ describe("startTelemetry", () => {
     });
 
     describe("a shutdown that cannot reach the sink", () => {
-      const it = test.extend("shutdownFailureReport", async () => {
-        vi.stubEnv("MST_TELEMETRY", "1");
-        vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-        onTestFinished(() => {
-          process.exitCode = undefined;
-          process.removeAllListeners("beforeExit");
-          context.disable();
-          propagation.disable();
-          trace.disable();
-          metrics.disable();
-          logs.disable();
-        });
-        vi.resetModules();
-        const exporterModule = await import("@opentelemetry/exporter-trace-otlp-http");
-        vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "shutdown").mockRejectedValue(
-          new Error("the collector went away"),
-        );
-        const telemetry = await import("./telemetry.ts");
-        const started = telemetry.startTelemetry(MEASURED_SERVICE);
-        const written = vi.fn<(failureReport: string) => void>();
-        vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
-          written(String(failureReport));
-          return true;
-        });
-        await started.shutdown();
-        return written;
-      });
+      const it = test.extend("shutdownFailureReport", () =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            vi.stubEnv("MST_TELEMETRY", "1");
+            vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+            });
+            vi.resetModules();
+            const exporterModule = yield* Effect.promise(
+              () => import("@opentelemetry/exporter-trace-otlp-http"),
+            );
+            vi.spyOn(exporterModule.OTLPTraceExporter.prototype, "shutdown").mockRejectedValue(
+              new Error("the collector went away"),
+            );
+            const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+            const started = telemetry.startTelemetry(MEASURED_SERVICE);
+            const written = vi.fn<(failureReport: string) => void>();
+            vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
+              written(String(failureReport));
+              return true;
+            });
+            yield* Effect.promise(() => started.shutdown());
+            return written;
+          }),
+        ));
 
       it("reports the failure instead of leaving the rejection unhandled", ({
         shutdownFailureReport,
@@ -447,31 +516,38 @@ describe("startTelemetry", () => {
 
 describe("inheritedContext", () => {
   describe("an environment carrying a trace context", () => {
-    const it = test.extend("inheritedSpanContext", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      vi.stubEnv("TRACEPARENT", INHERITED_TRACEPARENT);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      vi.resetModules();
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      onTestFinished(async () => {
-        await started.shutdown();
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      return trace.getSpanContext(telemetry.inheritedContext());
-    });
+    const it = test.extend("inheritedSpanContext", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          vi.stubEnv("TRACEPARENT", INHERITED_TRACEPARENT);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          vi.resetModules();
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          onTestFinished(() =>
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.promise(() => started.shutdown());
+                process.exitCode = undefined;
+                process.removeAllListeners("beforeExit");
+                context.disable();
+                propagation.disable();
+                trace.disable();
+                metrics.disable();
+                logs.disable();
+              }),
+            ),
+          );
+          return trace.getSpanContext(telemetry.inheritedContext());
+        }),
+      ));
 
     it("names the span the caller was started from", ({ inheritedSpanContext }) => {
       expect(inheritedSpanContext).toStrictEqual({
@@ -484,31 +560,38 @@ describe("inheritedContext", () => {
   });
 
   describe("an environment carrying no trace context", () => {
-    const it = test.extend("spanContextInheritedFromNothing", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      vi.stubEnv("TRACEPARENT", undefined);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      vi.resetModules();
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      onTestFinished(async () => {
-        await started.shutdown();
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      return trace.getSpanContext(telemetry.inheritedContext());
-    });
+    const it = test.extend("spanContextInheritedFromNothing", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          vi.stubEnv("TRACEPARENT", undefined);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          vi.resetModules();
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          onTestFinished(() =>
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.promise(() => started.shutdown());
+                process.exitCode = undefined;
+                process.removeAllListeners("beforeExit");
+                context.disable();
+                propagation.disable();
+                trace.disable();
+                metrics.disable();
+                logs.disable();
+              }),
+            ),
+          );
+          return trace.getSpanContext(telemetry.inheritedContext());
+        }),
+      ));
 
     it("names no span at all", ({ spanContextInheritedFromNothing }) => {
       expect(spanContextInheritedFromNothing).toBe(undefined);
@@ -518,38 +601,45 @@ describe("inheritedContext", () => {
 
 describe("environmentCarryingContext", () => {
   describe("an environment carried out of an active trace", () => {
-    const it = test.extend("traceCarriedToAChild", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      vi.stubEnv("TRACEPARENT", INHERITED_TRACEPARENT);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      vi.resetModules();
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      onTestFinished(async () => {
-        await started.shutdown();
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      return context.with(
-        trace.setSpanContext(context.active(), {
-          traceId: ACTIVE_TRACE_ID,
-          spanId: ACTIVE_SPAN_ID,
-          traceFlags: TraceFlags.SAMPLED,
+    const it = test.extend("traceCarriedToAChild", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          vi.stubEnv("TRACEPARENT", INHERITED_TRACEPARENT);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          vi.resetModules();
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          onTestFinished(() =>
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.promise(() => started.shutdown());
+                process.exitCode = undefined;
+                process.removeAllListeners("beforeExit");
+                context.disable();
+                propagation.disable();
+                trace.disable();
+                metrics.disable();
+                logs.disable();
+              }),
+            ),
+          );
+          return context.with(
+            trace.setSpanContext(context.active(), {
+              traceId: ACTIVE_TRACE_ID,
+              spanId: ACTIVE_SPAN_ID,
+              traceFlags: TraceFlags.SAMPLED,
+            }),
+            () => pick(telemetry.environmentCarryingContext(), ["TRACEPARENT"]),
+          );
         }),
-        () => pick(telemetry.environmentCarryingContext(), ["TRACEPARENT"]),
-      );
-    });
+      ));
 
     it("overwrites the trace the wrapper itself was handed", ({ traceCarriedToAChild }) => {
       expect(traceCarriedToAChild).toStrictEqual({ TRACEPARENT: ACTIVE_TRACEPARENT });
@@ -557,31 +647,38 @@ describe("environmentCarryingContext", () => {
   });
 
   describe("an environment carried out of no trace at all", () => {
-    const it = test.extend("traceCarriedToAChildOfNoSpan", async () => {
-      vi.stubEnv("MST_TELEMETRY", "1");
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      vi.stubEnv("TRACEPARENT", undefined);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      vi.resetModules();
-      const telemetry = await import("./telemetry.ts");
-      const started = telemetry.startTelemetry(MEASURED_SERVICE);
-      onTestFinished(async () => {
-        await started.shutdown();
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      return pick(telemetry.environmentCarryingContext(), ["TRACEPARENT"]);
-    });
+    const it = test.extend("traceCarriedToAChildOfNoSpan", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", "1");
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          vi.stubEnv("TRACEPARENT", undefined);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          vi.resetModules();
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          const started = telemetry.startTelemetry(MEASURED_SERVICE);
+          onTestFinished(() =>
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.promise(() => started.shutdown());
+                process.exitCode = undefined;
+                process.removeAllListeners("beforeExit");
+                context.disable();
+                propagation.disable();
+                trace.disable();
+                metrics.disable();
+                logs.disable();
+              }),
+            ),
+          );
+          return pick(telemetry.environmentCarryingContext(), ["TRACEPARENT"]);
+        }),
+      ));
 
     it("hands the child no trace at all", ({ traceCarriedToAChildOfNoSpan }) => {
       expect(traceCarriedToAChildOfNoSpan).toStrictEqual({});
@@ -589,37 +686,40 @@ describe("environmentCarryingContext", () => {
   });
 
   describe("an environment holding a name with no value", () => {
-    const it = test.extend("environmentCarriedToAChild", async () => {
-      vi.stubEnv("MST_TELEMETRY", undefined);
-      vi.stubEnv("OTEL_SDK_DISABLED", undefined);
-      process.removeAllListeners("beforeExit");
-      context.disable();
-      propagation.disable();
-      trace.disable();
-      metrics.disable();
-      logs.disable();
-      onTestFinished(() => {
-        process.exitCode = undefined;
-        process.removeAllListeners("beforeExit");
-        context.disable();
-        propagation.disable();
-        trace.disable();
-        metrics.disable();
-        logs.disable();
-      });
-      vi.resetModules();
-      const telemetry = await import("./telemetry.ts");
-      vi.stubGlobal(
-        "process",
-        Object.create(process, {
-          env: {
-            value: { MST_TELEMETRY_KEPT: "kept", MST_TELEMETRY_UNSET: undefined },
-            enumerable: true,
-          },
+    const it = test.extend("environmentCarriedToAChild", () =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          vi.stubEnv("MST_TELEMETRY", undefined);
+          vi.stubEnv("OTEL_SDK_DISABLED", undefined);
+          process.removeAllListeners("beforeExit");
+          context.disable();
+          propagation.disable();
+          trace.disable();
+          metrics.disable();
+          logs.disable();
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+          });
+          vi.resetModules();
+          const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
+          vi.stubGlobal(
+            "process",
+            Object.create(process, {
+              env: {
+                value: { MST_TELEMETRY_KEPT: "kept", MST_TELEMETRY_UNSET: undefined },
+                enumerable: true,
+              },
+            }),
+          );
+          return telemetry.environmentCarryingContext();
         }),
-      );
-      return telemetry.environmentCarryingContext();
-    });
+      ));
 
     it("leaves out the name that had no value", ({ environmentCarriedToAChild }) => {
       expect(environmentCarriedToAChild).toStrictEqual({ MST_TELEMETRY_KEPT: "kept" });

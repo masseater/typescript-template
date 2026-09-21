@@ -1,22 +1,24 @@
-import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  realpathSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
+import { env as processEnvironment } from "node:process";
 import { fileURLToPath } from "node:url";
 
+import { Effect } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
+import {
+  delay,
+  fileExists,
+  fileInfo,
+  joinPath,
+  makeTempDirectory,
+  readDirectory,
+  readFileString,
+  realPath,
+  removePath,
+  writeFileString,
+} from "../host.ts";
+import { spawnChild, spawnChildSync } from "../node-spawn.ts";
 import { runSpool } from "./run-spool.ts";
 
 vi.mock(import("./run-spool.ts"), { spy: true });
@@ -42,14 +44,17 @@ const PASSTHROUGH_SCRIPT = 'console.log("raw through"); process.exit(4);';
 
 describe("spool cli", () => {
   describe("the entry module", () => {
-    const it = test.extend("theCallTheEntryMadeToRunSpool", async ({}, { onCleanup }) => {
-      const inheritedCode = process.exitCode;
-      onCleanup(() => {
-        process.exitCode = inheritedCode;
-      });
-      await import("./cli.ts");
-      return vi.mocked(runSpool);
-    });
+    const it = test.extend("theCallTheEntryMadeToRunSpool", ({}, { onCleanup }) =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const inheritedCode = process.exitCode;
+          onCleanup(() => {
+            process.exitCode = inheritedCode;
+          });
+          yield* Effect.promise(() => import("./cli.ts"));
+          return vi.mocked(runSpool);
+        }),
+      ));
 
     it("hands runSpool the arguments and the streams of the process it runs in", ({
       theCallTheEntryMadeToRunSpool,
@@ -64,19 +69,23 @@ describe("spool cli", () => {
   describe("a wrapped command writing far more than a screenful", () => {
     const it = test
       .extend("theWorkTreeOfALargeOutput", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
         return workTree;
       })
       .extend("theRunWrappingALargeOutput", ({ theWorkTreeOfALargeOutput }) =>
-        spawnSync(process.execPath, [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT], {
-          cwd: theWorkTreeOfALargeOutput,
-          env: { ...process.env, CI: "" },
-          encoding: "utf8",
-          maxBuffer: 64 * 1024 * 1024,
+        spawnChildSync({
+          executable: process.execPath,
+          handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
+          spawnOptions: {
+            cwd: theWorkTreeOfALargeOutput,
+            env: { ...processEnvironment, CI: "" },
+            encoding: "utf8",
+            maxBuffer: 64 * 1024 * 1024,
+          },
         }),
       )
       .extend("theExitCodeOfALargeOutputRun", ({ theRunWrappingALargeOutput }) => {
@@ -99,45 +108,53 @@ describe("spool cli", () => {
         "theLogLineOfALargeOutputNamesTheSpoolDirectory",
         ({ theLogLineOfALargeOutput, theWorkTreeOfALargeOutput }) =>
           theLogLineOfALargeOutput.includes(
-            `spool: log: ${join(theWorkTreeOfALargeOutput, ".spool")}`,
+            `spool: log: ${joinPath(theWorkTreeOfALargeOutput, ".spool")}`,
           ),
       )
       .extend("theLogLineOfALargeOutputCountsEveryByteAndLine", ({ theLogLineOfALargeOutput }) =>
         theLogLineOfALargeOutput.includes("(5000000 bytes, 50000 lines)"),
       )
       .extend("theRecordsLeftByALargeOutput", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        spawnSync(process.execPath, [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT], {
-          cwd: workTree,
-          env: { ...process.env, CI: "" },
-          encoding: "utf8",
-          maxBuffer: 64 * 1024 * 1024,
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+        spawnChildSync({
+          executable: process.execPath,
+          handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
+          spawnOptions: {
+            cwd: workTree,
+            env: { ...processEnvironment, CI: "" },
+            encoding: "utf8",
+            maxBuffer: 64 * 1024 * 1024,
+          },
         });
-        return readdirSync(join(workTree, ".spool"));
+        return readDirectory(joinPath(workTree, ".spool"));
       })
       .extend("theCountOfRecordsLeftByALargeOutput", ({ theRecordsLeftByALargeOutput }) => {
         const { length } = theRecordsLeftByALargeOutput;
         return length;
       })
       .extend("theSizeOfTheRecordLeftByALargeOutput", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        spawnSync(process.execPath, [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT], {
-          cwd: workTree,
-          env: { ...process.env, CI: "" },
-          encoding: "utf8",
-          maxBuffer: 64 * 1024 * 1024,
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+        spawnChildSync({
+          executable: process.execPath,
+          handed: [CLI_PATH, "--", process.execPath, "-e", LARGE_OUTPUT_SCRIPT],
+          spawnOptions: {
+            cwd: workTree,
+            env: { ...processEnvironment, CI: "" },
+            encoding: "utf8",
+            maxBuffer: 64 * 1024 * 1024,
+          },
         });
-        const recorded = readdirSync(join(workTree, ".spool")).at(0);
+        const recorded = readDirectory(joinPath(workTree, ".spool")).at(0);
         if (recorded === undefined) throw new Error("the run left no record behind");
-        const { size } = statSync(join(workTree, ".spool", recorded));
+        const { size } = fileInfo(joinPath(workTree, ".spool", recorded));
         return size;
       });
 
@@ -195,21 +212,21 @@ describe("spool cli", () => {
   describe("a wrapped command under CI", () => {
     const it = test
       .extend("theRunUnderCi", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        return spawnSync(
-          process.execPath,
-          [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
-          {
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+        return spawnChildSync({
+          executable: process.execPath,
+          handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
+          spawnOptions: {
             cwd: workTree,
-            env: { ...process.env, CI: "true" },
+            env: { ...processEnvironment, CI: "true" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
-        );
+        });
       })
       .extend("theExitCodeOfARunUnderCi", ({ theRunUnderCi }) => {
         const { status } = theRunUnderCi;
@@ -225,18 +242,22 @@ describe("spool cli", () => {
         theRunUnderCi.stdout.includes("spool: log:"),
       )
       .extend("theSpoolDirectoryExistsAfterARunUnderCi", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        spawnSync(process.execPath, [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT], {
-          cwd: workTree,
-          env: { ...process.env, CI: "true" },
-          encoding: "utf8",
-          maxBuffer: 64 * 1024 * 1024,
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+        spawnChildSync({
+          executable: process.execPath,
+          handed: [CLI_PATH, "--", process.execPath, "-e", PASSTHROUGH_SCRIPT],
+          spawnOptions: {
+            cwd: workTree,
+            env: { ...processEnvironment, CI: "true" },
+            encoding: "utf8",
+            maxBuffer: 64 * 1024 * 1024,
+          },
         });
-        return existsSync(join(workTree, ".spool"));
+        return fileExists(joinPath(workTree, ".spool"));
       });
 
     it(
@@ -283,16 +304,20 @@ describe("spool cli", () => {
   describe("an invocation naming no command", () => {
     const it = test
       .extend("theRunWithoutACommand", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        return spawnSync(process.execPath, [CLI_PATH], {
-          cwd: workTree,
-          env: { ...process.env, CI: "" },
-          encoding: "utf8",
-          maxBuffer: 64 * 1024 * 1024,
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+        return spawnChildSync({
+          executable: process.execPath,
+          handed: [CLI_PATH],
+          spawnOptions: {
+            cwd: workTree,
+            env: { ...processEnvironment, CI: "" },
+            encoding: "utf8",
+            maxBuffer: 64 * 1024 * 1024,
+          },
         });
       })
       .extend("theExitCodeOfARunWithoutACommand", ({ theRunWithoutACommand }) => {
@@ -335,14 +360,14 @@ describe("spool cli", () => {
   describe("a wrapped command that is itself a wrapping", () => {
     const it = test
       .extend("theDoublyWrappedRun", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        return spawnSync(
-          process.execPath,
-          [
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+        return spawnChildSync({
+          executable: process.execPath,
+          handed: [
             CLI_PATH,
             "--",
             process.execPath,
@@ -352,13 +377,13 @@ describe("spool cli", () => {
             "-e",
             NESTED_OUTPUT_SCRIPT,
           ],
-          {
+          spawnOptions: {
             cwd: workTree,
-            env: { ...process.env, CI: "" },
+            env: { ...processEnvironment, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
-        );
+        });
       })
       .extend("theExitCodeOfADoublyWrappedRun", ({ theDoublyWrappedRun }) => {
         const { status } = theDoublyWrappedRun;
@@ -372,14 +397,14 @@ describe("spool cli", () => {
         return length;
       })
       .extend("theRecordsLeftByADoublyWrappedRun", ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
+        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
         onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
+          removePath(workTree);
         });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        spawnSync(
-          process.execPath,
-          [
+        writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+        spawnChildSync({
+          executable: process.execPath,
+          handed: [
             CLI_PATH,
             "--",
             process.execPath,
@@ -389,15 +414,15 @@ describe("spool cli", () => {
             "-e",
             NESTED_OUTPUT_SCRIPT,
           ],
-          {
+          spawnOptions: {
             cwd: workTree,
-            env: { ...process.env, CI: "" },
+            env: { ...processEnvironment, CI: "" },
             encoding: "utf8",
             maxBuffer: 64 * 1024 * 1024,
           },
-        );
-        return readdirSync(join(workTree, ".spool")).map((recordedFileName) =>
-          readFileSync(join(workTree, ".spool", recordedFileName), "utf8"),
+        });
+        return readDirectory(joinPath(workTree, ".spool")).map((recordedFileName) =>
+          readFileString(joinPath(workTree, ".spool", recordedFileName), "utf8"),
         );
       })
       .extend(
@@ -518,97 +543,109 @@ describe("spool cli", () => {
 
   describe("a wrapped command writing faster than the record can be flushed", () => {
     const it = test
-      .extend("theExitCodeOfAFastWriterRun", async ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
-        onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
-        });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        const child = spawn(
-          process.execPath,
-          [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-          {
-            cwd: workTree,
-            env: { ...process.env, CI: "" },
-            stdio: ["ignore", "pipe", "pipe"],
-          },
-        );
-        await once(child, "close");
-        const { exitCode } = child;
-        return exitCode;
-      })
-      .extend("theCountOfRecordsLeftByAFastWriter", async ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
-        onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
-        });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        const child = spawn(
-          process.execPath,
-          [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-          {
-            cwd: workTree,
-            env: { ...process.env, CI: "" },
-            stdio: ["ignore", "pipe", "pipe"],
-          },
-        );
-        await once(child, "close");
-        const { length } = readdirSync(join(workTree, ".spool"));
-        return length;
-      })
-      .extend("theSizeOfTheRecordLeftByAFastWriter", async ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
-        onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
-        });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        const child = spawn(
-          process.execPath,
-          [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-          {
-            cwd: workTree,
-            env: { ...process.env, CI: "" },
-            stdio: ["ignore", "pipe", "pipe"],
-          },
-        );
-        await once(child, "close");
-        const recorded = readdirSync(join(workTree, ".spool")).at(0);
-        if (recorded === undefined) throw new Error("the run left no record behind");
-        const { size } = statSync(join(workTree, ".spool", recorded));
-        return size;
-      })
-      .extend("theResidentMemoryOfAFastWriter", async ({}, { onCleanup }) => {
-        const workTree = realpathSync(mkdtempSync(join(tmpdir(), "spool-cli-test-")));
-        onCleanup(() => {
-          rmSync(workTree, { recursive: true, force: true });
-        });
-        writeFileSync(join(workTree, "package.json"), "{}");
-        const child = spawn(
-          process.execPath,
-          [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-          {
-            cwd: workTree,
-            env: { ...process.env, CI: "" },
-            stdio: ["ignore", "pipe", "pipe"],
-          },
-        );
-        const sampledBytes = (): number => {
-          const sampled = spawnSync("ps", ["-o", "rss=", "-p", String(child.pid)], {
-            encoding: "utf8",
+      .extend("theExitCodeOfAFastWriterRun", ({}, { onCleanup }) =>
+        Effect.gen(function* () {
+          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+          onCleanup(() => {
+            removePath(workTree);
           });
-          const kiloBytes = Number.parseInt(sampled.stdout.trim(), 10);
-          return Number.isNaN(kiloBytes) ? 0 : kiloBytes * 1024;
-        };
-        const highestUntilClosed = async (highest: number): Promise<number> => {
-          if (child.exitCode !== null || child.signalCode !== null) return highest;
-          await delay(50);
-          return highestUntilClosed(Math.max(highest, sampledBytes()));
-        };
-        const sampling = highestUntilClosed(0);
-        await once(child, "close");
-        const highestSampled = await sampling;
-        return highestSampled;
-      })
+          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+          const child = spawnChild({
+            executable: process.execPath,
+            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
+            spawnOptions: {
+              cwd: workTree,
+              env: { ...processEnvironment, CI: "" },
+              stdio: ["ignore", "pipe", "pipe"],
+            },
+          });
+          yield* Effect.promise(() => once(child, "close"));
+          const { exitCode } = child;
+          return exitCode;
+        }))
+      .extend("theCountOfRecordsLeftByAFastWriter", ({}, { onCleanup }) =>
+        Effect.gen(function* () {
+          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+          onCleanup(() => {
+            removePath(workTree);
+          });
+          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+          const child = spawnChild({
+            executable: process.execPath,
+            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
+            spawnOptions: {
+              cwd: workTree,
+              env: { ...processEnvironment, CI: "" },
+              stdio: ["ignore", "pipe", "pipe"],
+            },
+          });
+          yield* Effect.promise(() => once(child, "close"));
+          const { length } = readDirectory(joinPath(workTree, ".spool"));
+          return length;
+        }),
+      )
+      .extend("theSizeOfTheRecordLeftByAFastWriter", ({}, { onCleanup }) =>
+        Effect.gen(function* () {
+          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+          onCleanup(() => {
+            removePath(workTree);
+          });
+          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+          const child = spawnChild({
+            executable: process.execPath,
+            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
+            spawnOptions: {
+              cwd: workTree,
+              env: { ...processEnvironment, CI: "" },
+              stdio: ["ignore", "pipe", "pipe"],
+            },
+          });
+          yield* Effect.promise(() => once(child, "close"));
+          const recorded = readDirectory(joinPath(workTree, ".spool")).at(0);
+          if (recorded === undefined) throw new Error("the run left no record behind");
+          const { size } = fileInfo(joinPath(workTree, ".spool", recorded));
+          return size;
+        }),
+      )
+      .extend("theResidentMemoryOfAFastWriter", ({}, { onCleanup }) =>
+        Effect.gen(function* () {
+          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+          onCleanup(() => {
+            removePath(workTree);
+          });
+          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+          const child = spawnChild({
+            executable: process.execPath,
+            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
+            spawnOptions: {
+              cwd: workTree,
+              env: { ...processEnvironment, CI: "" },
+              stdio: ["ignore", "pipe", "pipe"],
+            },
+          });
+          const sampledBytes = (): number => {
+            const sampled = spawnChildSync({
+              executable: "ps",
+              handed: ["-o", "rss=", "-p", String(child.pid)],
+              spawnOptions: {
+                encoding: "utf8",
+              },
+            });
+            const kiloBytes = Number.parseInt(sampled.stdout.trim(), 10);
+            return Number.isNaN(kiloBytes) ? 0 : kiloBytes * 1024;
+          };
+          const highestUntilClosed = (highest: number) =>
+            Effect.gen(function* () {
+              if (child.exitCode !== null || child.signalCode !== null) return highest;
+              yield* Effect.promise(() => delay(50));
+              return highestUntilClosed(Math.max(highest, sampledBytes()));
+            });
+          const sampling = highestUntilClosed(0);
+          yield* Effect.promise(() => once(child, "close"));
+          const highestSampled = yield* Effect.promise(() => sampling);
+          return highestSampled;
+        }),
+      )
       .extend(
         "aFastWriterWasEverSeenHoldingMemory",
         ({ theResidentMemoryOfAFastWriter }) => theResidentMemoryOfAFastWriter > 0,
