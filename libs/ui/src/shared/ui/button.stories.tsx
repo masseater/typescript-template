@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { expect } from "storybook/test";
 
 import preview from "../../../storybook/preview";
@@ -17,15 +18,18 @@ export const Danger = meta.story({
 
 export const Small = meta.story({
   args: { children: "編集", size: "small", type: "button" },
-  play: async ({ canvas }) => {
-    const button = canvas.getByRole("button", { name: "編集" });
-    const bounds = button.getBoundingClientRect();
-    await expect(bounds.width).toBeGreaterThanOrEqual(24);
-    await expect(bounds.height).toBeGreaterThanOrEqual(24);
-    const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const fontPx = Number.parseFloat(getComputedStyle(button).fontSize);
-    await expect(fontPx).toBeLessThan(rootPx);
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* measureSmallButton() {
+        const button = canvas.getByRole("button", { name: "編集" });
+        const bounds = button.getBoundingClientRect();
+        yield* Effect.promise(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
+        yield* Effect.promise(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
+        const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+        const fontPx = Number.parseFloat(getComputedStyle(button).fontSize);
+        yield* Effect.promise(() => expect(fontPx).toBeLessThan(rootPx));
+      }),
+    ),
 });
 
 export const Disabled = meta.story({
@@ -34,13 +38,16 @@ export const Disabled = meta.story({
 
 export const IconOnly = meta.story({
   args: { "aria-label": "閉じる", children: "×", size: "small", type: "button" },
-  play: async ({ canvas }) => {
-    const button = canvas.getByRole("button", { name: "閉じる" });
-    const bounds = button.getBoundingClientRect();
-    await expect(bounds.width).toBeGreaterThanOrEqual(24);
-    await expect(bounds.height).toBeGreaterThanOrEqual(24);
-    const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
-    const fontPx = Number.parseFloat(getComputedStyle(button).fontSize);
-    await expect(fontPx).toBeLessThan(rootPx);
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* measureIconOnlyButton() {
+        const button = canvas.getByRole("button", { name: "閉じる" });
+        const bounds = button.getBoundingClientRect();
+        yield* Effect.promise(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
+        yield* Effect.promise(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
+        const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+        const fontPx = Number.parseFloat(getComputedStyle(button).fontSize);
+        yield* Effect.promise(() => expect(fontPx).toBeLessThan(rootPx));
+      }),
+    ),
 });
