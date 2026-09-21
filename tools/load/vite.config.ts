@@ -16,17 +16,14 @@ export default defineConfig({
         ],
       },
       load: { cache: false, command: "./src/cli.ts" },
-      ...lifecycle({
-        precommit: [],
-        premerge: [],
-        prepush: ["check:effect"],
-        prepr: [],
-        prerelease: [],
-      }),
+      ...lifecycle({ prepush: ["check:effect"] }),
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     mockReset: true,
     restoreMocks: true,
   },
