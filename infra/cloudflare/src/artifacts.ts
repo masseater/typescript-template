@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { serverOnlyMarkers } from "@repo/vite-config";
@@ -48,20 +45,19 @@ const ArtifactWrites = Context.Reference<ArtifactMode>("@repo/infra-cloudflare/A
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
 const PUBLIC_ASSET_EXTENSIONS: ReadonlySet<string> = new Set([
   ".css",
+  ".eot",
   ".otf",
   ".ttf",
   ".woff",
   ".woff2",
 ]);
 
-function isPublicAsset(file: string): boolean {
-  return PUBLIC_ASSET_EXTENSIONS.has(path.extname(file));
-}
-
 interface WorkerModule {
   readonly contentFile: string;
   readonly name: string;
 }
+
+const isPublicAsset = (file: string): boolean => PUBLIC_ASSET_EXTENSIONS.has(path.extname(file));
 
 const workerModuleGlobs = [
   ...[...MODULE_EXTENSIONS].map((extension) => `**/*${extension}`),
@@ -117,13 +113,13 @@ const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArt
   return clientFiles;
 });
 
-function assertPublicAssetsPublished(
+function assertServerPublicAssetsPublished(
   output: BuildOutput,
-  publicAssets: readonly string[],
+  assetFiles: readonly string[],
   clientFiles: readonly string[],
 ): Effect.Effect<void, ArtifactFailure> {
   return Effect.all(
-    publicAssets.map((file) => {
+    assetFiles.map((file) => {
       const publicFile = path.join(output.client, path.relative(output.server, file));
       const published = clientFiles.includes(publicFile)
         ? sameContent(file, publicFile)
@@ -176,7 +172,7 @@ const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerMod
       .filter((file) => !isPublicAsset(file))
       .map((file) => workerModule(output.server, file)),
   );
-  yield* assertPublicAssetsPublished(output, publicAssets, clientFiles);
+  yield* assertServerPublicAssetsPublished(output, publicAssets, clientFiles);
   if ((yield* io(async () => stat(path.join(output.server, MAIN_MODULE)))).size === 0) {
     return yield* fail("worker_entry_empty");
   }

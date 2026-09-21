@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { spawnSync } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createRequire } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 const entry = createRequire(import.meta.url).resolve("@repo/vite-config");

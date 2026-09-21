@@ -25,7 +25,6 @@ type AppServices =
   | TelemetryFlusher;
 
 function configuredAppLayer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   config: AppConfig,
   audience: Application,
   routes: Readonly<Record<string, string>>,

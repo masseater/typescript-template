@@ -21,7 +21,6 @@ const endpoint = `https://api.cloudflare.com/client/v4/accounts/${target.account
 const databaseId = "22222222-2222-4222-8222-222222222222";
 
 function mockServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<typeof setupServer>
 ): Effect.Effect<SetupServer, never, Scope.Scope> {
   return Effect.acquireRelease(

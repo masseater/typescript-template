@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import {
   mkdir,
   mkdtemp,
@@ -10,9 +9,7 @@ import {
   unlink,
   writeFile,
 } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
@@ -62,6 +59,7 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
   await writeFiles(client, {
     "app.js": "export const publicValue = 1;",
     "app.js.map": "private source map",
+    "face.woff2": "font",
     "styles.css": "body{color:red}",
   });
   await writeFiles(sourceMapDirectories(root, "service-member").client, {
@@ -73,6 +71,7 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
     ".env.production": "AUTH_SECRET=private",
     ".vite/manifest.json": "{}",
     "chunks/handler.js": "export default {};",
+    "face.woff2": "font",
     "index.js": 'export { default } from "./chunks/handler.js";',
     "styles.css": "body{color:red}",
   });
@@ -115,8 +114,10 @@ it.effect(
       assert.match(artifacts.release, /^[0-9a-f]{16}$/u);
       assert.deepStrictEqual(yield* run(async () => readdir(artifacts.clientDirectory)), [
         "app.js",
+        "face.woff2",
         "styles.css",
       ]);
+      assert.ok(artifacts.modules.every((module) => path.extname(module.name) !== ".woff2"));
       assert.strictEqual(
         yield* run(async () => readFile(path.join(client, "app.js.map"), "utf-8")),
         "private source map",
@@ -256,29 +257,10 @@ it.effect("refuses server CSS that differs from its public asset", () =>
   }).pipe(Effect.scoped),
 );
 
-it.effect("does not upload matching public fonts as worker modules", () =>
+it.effect("refuses server fonts that are missing from the public client assets", () =>
   Effect.gen(function* program() {
-    const { client, root, server } = yield* userBuild;
-    yield* run(async () => {
-      await writeFiles(client, { "fonts/heading.woff2": "font" });
-      await writeFiles(server, { "fonts/heading.woff2": "font" });
-    });
-    const artifacts = yield* load(root, "service-member");
-    assert.notInclude(
-      artifacts.modules.map((module) => module.name),
-      "fonts/heading.woff2",
-    );
-    assert.include(
-      artifacts.clientFiles.map((file) => path.relative(artifacts.clientDirectory, file)),
-      "fonts/heading.woff2",
-    );
-  }).pipe(Effect.scoped),
-);
-
-it.effect("refuses a server font that was never published as a public asset", () =>
-  Effect.gen(function* program() {
-    const { root, server } = yield* userBuild;
-    yield* run(async () => writeFiles(server, { "fonts/heading.woff2": "font" }));
+    const { client, root } = yield* userBuild;
+    yield* run(async () => unlink(path.join(client, "face.woff2")));
     assert.strictEqual(
       yield* failureCode(root, "service-member"),
       "server_css_without_public_asset",
