@@ -46,7 +46,6 @@ export {
   isAlreadyExists,
   isNotFound,
   layer,
-  mapFileError,
   urlPath,
   withFileSystem,
 };
