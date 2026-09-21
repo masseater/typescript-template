@@ -81,7 +81,7 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
     readonly summary: string | undefined;
     readonly version: string;
   }) {
-    const actor = yield* requirePublishingAdmin(draft.sessionId);
+    const actor = yield* requireAdmin(draft.sessionId);
     const [created] = yield* query((database) =>
       database
         .insert(agreementVersion)
@@ -111,7 +111,7 @@ const reviseAgreementDraft = Effect.fn("reviseAgreementDraft")(
     readonly sessionId: string;
     readonly summary: string | undefined;
   }) {
-    yield* requirePublishingAdmin(revision.sessionId);
+    yield* requireAdmin(revision.sessionId);
     const [revised] = yield* query((database) =>
       database
         .update(agreementVersion)

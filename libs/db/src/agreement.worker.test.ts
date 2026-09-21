@@ -1,9 +1,13 @@
 import { assert, it } from "@effect/vitest";
-import { AGREEMENT_KIND, APPLICATION, ROLE } from "@repo/config";
+import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
-import { createAgreementDraft, publishAgreementVersion } from "./agreement-admin.ts";
+import {
+  createAgreementDraft,
+  listAgreementVersions,
+  publishAgreementVersion,
+} from "./agreement-admin.ts";
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import {
   acceptAgreementVersions,
@@ -193,6 +197,28 @@ it.effect("rejects a duplicate version label", () =>
       }),
     );
     assert.strictEqual(failure._tag, "AgreementVersionTaken");
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("lets a view-only admin draft an agreement but not publish it", () =>
+  Effect.gen(function* program() {
+    yield* addUser({
+      permission: ADMIN_PERMISSION.viewer,
+      role: ROLE.administrator,
+      userId: "viewer",
+    });
+    const sessionId = yield* addSession({ audience: APPLICATION.admin, userId: "viewer" });
+    assert.strictEqual((yield* listAgreementVersions(sessionId)).canPublish, false);
+    const draft = yield* createAgreementDraft({
+      body: "draft",
+      kind: AGREEMENT_KIND.terms,
+      sessionId,
+      summary: undefined,
+      version: "terms-9",
+    });
+    const failure = yield* Effect.flip(publishAgreementVersion({ id: draft.id, sessionId }));
+    assert.strictEqual(failure._tag, "PermissionRequired");
+    assert.strictEqual((yield* publishedAgreement(AGREEMENT_KIND.terms))?.version, "terms-1");
   }).pipe(Effect.provide(TestDatabase)),
 );
 
