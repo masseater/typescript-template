@@ -1,4 +1,4 @@
-import { GROUP_JOIN_POLICY } from "@repo/db/group-join-policy";
+import { GROUP_JOIN_POLICY } from "@repo/config";
 import {
   Button,
   ButtonLink,

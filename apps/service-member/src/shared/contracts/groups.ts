@@ -1,4 +1,4 @@
-import { groupJoinPolicies } from "@repo/db/group-join-policy";
+import { groupJoinPolicies } from "@repo/config";
 import { Schema } from "effect";
 
 import { Identifier } from "./member.ts";

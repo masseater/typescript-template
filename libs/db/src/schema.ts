@@ -282,8 +282,8 @@ export { follow, memberOnboarding, onboardingSteps } from "./member-social-schem
 export { notification, notificationPreference } from "./notification-schema.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
 export type { NotificationKind } from "@repo/config";
-export { GROUP_JOIN_POLICY, groupJoinPolicies } from "./group-join-policy.ts";
-export type { GroupJoinPolicy } from "./group-join-policy.ts";
+export { GROUP_JOIN_POLICY, groupJoinPolicies } from "@repo/config";
+export type { GroupJoinPolicy } from "@repo/config";
 export {
   CONVERSATION_KIND,
   GROUP_MEMBERSHIP_ROLE,

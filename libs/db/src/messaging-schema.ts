@@ -7,7 +7,8 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-import { groupJoinPolicies } from "./group-join-policy.ts";
+import { groupJoinPolicies } from "@repo/config";
+
 import { user } from "./identity-schema.ts";
 
 /** @canonical-values db.conversation-kind */
