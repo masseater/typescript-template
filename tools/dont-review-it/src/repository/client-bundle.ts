@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+const { mkdtemp, readFile, readdir, rm } = process.getBuiltinModule("fs/promises");
+const { tmpdir } = process.getBuiltinModule("os");
+const path = process.getBuiltinModule("path");
+const { fileURLToPath } = process.getBuiltinModule("url");
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { serverOnlyMarkers } from "@repo/vite-config";

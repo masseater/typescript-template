@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { isDeepStrictEqual } from "node:util";
+const { isDeepStrictEqual } = process.getBuiltinModule("util");
 
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";

@@ -1,4 +1,4 @@
-import { homedir, userInfo } from "node:os";
+const { homedir, userInfo } = process.getBuiltinModule("os");
 
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 

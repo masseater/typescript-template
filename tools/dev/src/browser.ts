@@ -1,3 +1,5 @@
+import { env as processEnvironment } from "node:process";
+
 import { exitWith, markFailed } from "@repo/cli";
 import { applicationOrigins, applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
@@ -52,7 +54,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
-  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...args, "open", `${origin}${applicationReadyPaths[app]}`], {
     cwd: root,
     env,

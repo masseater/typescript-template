@@ -1,4 +1,4 @@
-import { fileURLToPath } from "node:url";
+const { fileURLToPath } = process.getBuiltinModule("url");
 
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
@@ -140,4 +140,3 @@ const runDeployment = Effect.fn("runDeployment")(function* runDeployment(
 });
 
 export { runDeployment };
-export type { Deployment };

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { parseArgs } from "node:util";
+const { parseArgs } = process.getBuiltinModule("util");
 
 import { causeRecord, runCli } from "@repo/cli";
 import { APPLICATION, applicationOrigins } from "@repo/config";
