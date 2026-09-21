@@ -8,23 +8,30 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  resultError,
+  type RequestResult,
 } from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
 import { staffTableColumns } from "#pages/staff/model/staff-labels.ts";
 import { StaffRow } from "./staff-row.tsx";
 
-import type { StaffListState } from "#pages/staff/model/staff-list.ts";
+import type { ListedStaff } from "#pages/staff/model/staff-list.ts";
 import type { ReactElement } from "react";
 
 function StaffTable({
+  listing,
   onReload,
-  state,
-}: Readonly<{ onReload: () => void; state: StaffListState }>): ReactElement {
-  if (state.status === "failed") {
+}: Readonly<{
+  listing: RequestResult<readonly ListedStaff[]>;
+  onReload: () => void;
+}>): ReactElement {
+  const failure = resultError(listing);
+  if (failure !== undefined) {
     return (
       <div className="flex flex-col items-start gap-2">
         <StatusMessage variant={STATUS_VARIANT.failure}>
-          一覧を取得できませんでした。{state.message}
+          一覧を取得できませんでした。{failure}
         </StatusMessage>
         <Button type="button" onClick={onReload}>
           再試行
@@ -32,6 +39,7 @@ function StaffTable({
       </div>
     );
   }
+  const loaded = AsyncResult.isSuccess(listing) && !listing.waiting;
   return (
     <Table>
       <TableHeader>
@@ -42,16 +50,16 @@ function StaffTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {state.status === "loading" ? (
+        {loaded ? (
+          listing.value.map((member) => (
+            <StaffRow key={member.id} member={member} onChanged={onReload} />
+          ))
+        ) : (
           <TableRow>
             <TableCell colSpan={staffTableColumns.length}>
               <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
             </TableCell>
           </TableRow>
-        ) : (
-          state.staff.map((member) => (
-            <StaffRow key={member.id} member={member} onChanged={onReload} />
-          ))
         )}
       </TableBody>
     </Table>

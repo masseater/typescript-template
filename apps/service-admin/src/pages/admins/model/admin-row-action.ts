@@ -1,7 +1,8 @@
-import { errorMessage } from "@repo/auth-ui";
+import { useAtom } from "@effect/atom-react";
 import { apiData } from "@repo/runtime/client";
-import { STATUS_VARIANT, useToast } from "@repo/ui";
-import { useState } from "react";
+import { STATUS_VARIANT, localState, request, resultError, useToast } from "@repo/ui";
+import { Option } from "effect";
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
 import {
@@ -47,47 +48,59 @@ async function perform(admin: ListedAdmin, operation: RowOperation): Promise<str
 const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
   AdminPermission.literals.some((permission) => permission === value);
 
+const useRowConfirming = localState(Option.none<RowOperation>());
+
+const changeAtom = Atom.family((adminId: string) => {
+  void adminId;
+  return Atom.fn(
+    ({ admin, operation }: Readonly<{ admin: ListedAdmin; operation: RowOperation }>) =>
+      request(async () => perform(admin, operation)),
+  );
+});
+
 function useAdminRowAction(admin: ListedAdmin, onChanged: () => void): AdminRowAction {
   const notify = useToast();
-  const [confirming, setConfirming] = useState<RowOperation>();
-  const [pending, setPending] = useState(false);
+  const [confirming, setConfirming] = useRowConfirming();
+  const [changeState, run] = useAtom(changeAtom(admin.id), { mode: "promiseExit" });
   function handlePermissionChange(permission: string): void {
     if (isAdminPermission(permission) && permission !== admin.permission) {
-      setConfirming({ kind: "permission", permission });
+      setConfirming(Option.some({ kind: "permission", permission }));
     }
   }
   function handleStateChange(accountState: ListedAdmin["accountState"]): void {
-    setConfirming({ accountState, kind: "state" });
+    setConfirming(Option.some({ accountState, kind: "state" }));
   }
   function handleOpenChange(open: boolean): void {
     if (!open) {
-      setConfirming(undefined);
+      setConfirming(Option.none());
+    }
+  }
+  async function execute(operation: RowOperation): Promise<void> {
+    const change = AsyncResult.fromExit(await run({ admin, operation }));
+    if (AsyncResult.isSuccess(change)) {
+      notify(STATUS_VARIANT.success, change.value);
+      onChanged();
+      return;
+    }
+    const failure = resultError(change);
+    if (failure !== undefined) {
+      notify(STATUS_VARIANT.failure, failure);
     }
   }
   function handleConfirm(): void {
-    if (confirming === undefined) {
+    if (Option.isNone(confirming)) {
       return;
     }
-    setConfirming(undefined);
-    setPending(true);
-    async function run(operation: RowOperation): Promise<void> {
-      try {
-        notify(STATUS_VARIANT.success, await perform(admin, operation));
-        onChanged();
-      } catch (error) {
-        notify(STATUS_VARIANT.failure, errorMessage(error));
-      }
-      setPending(false);
-    }
-    void run(confirming);
+    setConfirming(Option.none());
+    void execute(confirming.value);
   }
   return {
-    confirming,
+    confirming: Option.getOrUndefined(confirming),
     handleConfirm,
     handleOpenChange,
     handlePermissionChange,
     handleStateChange,
-    pending,
+    pending: changeState.waiting,
   };
 }
 

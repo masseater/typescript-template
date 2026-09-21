@@ -1,7 +1,7 @@
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { formatWarekiDate } from "@repo/ui";
-import { useEffect, useState } from "react";
+import { formatWarekiDate, requestAtom, type RequestResult } from "@repo/ui";
 
 import { wikiClient } from "#shared/api/index.ts";
 import { StaffList } from "#shared/contracts/index.ts";
@@ -12,54 +12,31 @@ interface ListedStaff {
   readonly email: string;
   readonly id: string;
   readonly name: string;
-  readonly permission: StaffSummary["permission"];
+  readonly permission?: StaffSummary["permission"];
   readonly registeredOn: string;
 }
 
-type StaffListState =
-  | Readonly<{ message: string; status: "failed" }>
-  | Readonly<{ staff: readonly ListedStaff[]; status: "loaded" }>
-  | Readonly<{ status: "loading" }>;
-
-async function fetchStaff(): Promise<StaffListState> {
+async function listStaff(): Promise<readonly ListedStaff[]> {
   try {
-    const staff = apiData(StaffList, await wikiClient().staff.get());
-    return {
-      staff: staff.map(({ createdAt, ...member }) => ({
-        ...member,
-        registeredOn: formatWarekiDate(createdAt),
-      })),
-      status: "loaded",
-    };
-  } catch (error) {
-    return { message: errorMessage(error), status: "failed" };
+    const { api } = await wikiClient();
+    const staff = apiData(StaffList, await api.staff.get());
+    return staff.map(({ createdAt, ...member }) => ({
+      ...member,
+      registeredOn: formatWarekiDate(createdAt),
+    }));
+  } catch (failure) {
+    throw new Error(errorMessage(failure));
   }
 }
 
-function useStaffList(): Readonly<{ reload: () => void; state: StaffListState }> {
-  const [attempt, setAttempt] = useState(0);
-  const [outcome, setOutcome] = useState<Readonly<{ attempt: number; state: StaffListState }>>();
-  useEffect(() => {
-    const controller = { active: true };
-    async function load(): Promise<void> {
-      const state = await fetchStaff();
-      if (controller.active) {
-        setOutcome({ attempt, state });
-      }
-    }
-    void load();
-    return (): void => {
-      controller.active = false;
-    };
-  }, [attempt]);
-  function reload(): void {
-    setAttempt((current) => current + 1);
-  }
-  return {
-    reload,
-    state: outcome?.attempt === attempt ? outcome.state : { status: "loading" },
-  };
+const staffListAtom = requestAtom(async () => listStaff());
+
+function useStaffList(): Readonly<{
+  listing: RequestResult<readonly ListedStaff[]>;
+  reload: () => void;
+}> {
+  return { listing: useAtomValue(staffListAtom), reload: useAtomRefresh(staffListAtom) };
 }
 
 export { useStaffList };
-export type { ListedStaff, StaffListState };
+export type { ListedStaff };
