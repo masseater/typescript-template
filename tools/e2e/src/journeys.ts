@@ -198,6 +198,7 @@ const openListedSetting = (
     yield* seeHeading(stage.page, "設定");
     yield* pageStep(() =>
       stage.page
+        .getByRole("main")
         .getByRole("list")
         .getByRole("link", { exact: true, name: visit.listedSetting.name })
         .click(),

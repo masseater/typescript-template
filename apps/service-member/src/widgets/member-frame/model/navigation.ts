@@ -83,4 +83,3 @@ function titleForPath(pathname: string): string {
 }
 
 export { memberNavItems, titleForPath };
-export type { MemberNavItem };

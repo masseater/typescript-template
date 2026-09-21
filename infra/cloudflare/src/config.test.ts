@@ -11,6 +11,7 @@ import { verificationSettings } from "./verification-fixture.ts";
 import type {
   Ai,
   D1Database,
+  DurableObjectNamespace,
   KVNamespace,
   R2Bucket,
   SendEmail,
@@ -62,6 +63,17 @@ const userBindings: AppBindings<"service-member"> = {
     delete: (): Promise<undefined> => Promise.resolve(undefined),
     get: (): Promise<null> => Promise.resolve(null),
     put: (): Promise<null> => Promise.resolve(null),
+  }),
+  JOBS: binding({ send: async (): Promise<undefined> => undefined }),
+  PROCESS: binding({
+    create: async (): Promise<{ id: string }> => ({ id: "job" }),
+    get: async (): Promise<{ status: () => Promise<{ status: string }> }> => ({
+      status: async () => ({ status: "complete" }),
+    }),
+  }),
+  USER_INBOX: binding<DurableObjectNamespace>({
+    get: (): undefined => undefined,
+    idFromName: (): undefined => undefined,
   }),
 };
 

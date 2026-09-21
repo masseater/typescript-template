@@ -1,5 +1,6 @@
-import { ROLE } from "@repo/config";
-import { and, desc, eq, inArray, onboardingSteps, query, schema } from "@repo/db";
+import { ROLE } from "@repo/config/identity";
+import { onboardingSteps, query, schema } from "@repo/db";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 const { follow, memberOnboarding, user } = schema;

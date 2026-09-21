@@ -108,6 +108,18 @@ function appServerEntry<Requirements>(
   return serveApp(runtime, startRoute(handler), reporting);
 }
 
+function withQueue(
+  worker: FetchWorker,
+  queue: (
+    batch: MessageBatch,
+    environment: unknown,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    context: ExecutionContext,
+  ) => Promise<void>,
+): FetchWorker & { readonly queue: typeof queue } {
+  return { ...worker, queue };
+}
+
 function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {
   return (request) =>
     Effect.gen(function* startRouteProgram() {
@@ -122,7 +134,7 @@ function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<
     });
 }
 
-export { appServerEntry, serveApp, serveWorker, startRoute };
+export { appServerEntry, serveApp, serveWorker, startRoute, withQueue };
 export { workerRuntime } from "./worker-runtime.ts";
 export type { AppRoute, FetchWorker };
 export type { WorkerRuntime } from "./worker-runtime.ts";

@@ -1257,6 +1257,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
+      '@repo/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
