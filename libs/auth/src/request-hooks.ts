@@ -75,17 +75,17 @@ const totpUpgradableMethods: ReadonlySet<string> = new Set([
 const markTotpSessionStrong = async function markTotpSessionStrong(
   scope: HookScope,
 ): Promise<void> {
-  const current = await currentSessionOf(scope);
+  const sessionRecord = await currentSessionOf(scope);
   if (
-    current &&
-    sessionIsLive(current, scope.audience) &&
-    totpUpgradableMethods.has(current.session.authenticationMethod)
+    sessionRecord &&
+    sessionIsLive(sessionRecord, scope.audience) &&
+    totpUpgradableMethods.has(sessionRecord.session.authenticationMethod)
   ) {
     await scope.run(
       markSessionStrong({
         audience: scope.audience,
         method: AUTHENTICATION_METHOD.passwordTotp,
-        sessionId: current.session.id,
+        sessionId: sessionRecord.session.id,
       }),
     );
   }
@@ -94,14 +94,14 @@ const markTotpSessionStrong = async function markTotpSessionStrong(
 const revokeSessionsAfterFactorChange = async function revokeSessionsAfterFactorChange(
   scope: HookScope,
 ): Promise<void> {
-  const current = await currentSessionOf(scope);
-  if (current && sessionIsLive(current, scope.audience)) {
-    await scope.run(revokeUserSessions(current.user.id));
+  const sessionRecord = await currentSessionOf(scope);
+  if (sessionRecord && sessionIsLive(sessionRecord, scope.audience)) {
+    await scope.run(revokeUserSessions(sessionRecord.user.id));
   }
 };
 
-const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(value: unknown): boolean {
-  const url = typeof value === "string" ? URL.parse(value) : undefined;
+const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(redirectCandidate: unknown): boolean {
+  const url = typeof redirectCandidate === "string" ? URL.parse(redirectCandidate) : undefined;
   return url?.protocol === "http:" && loopbackHosts.includes(url.hostname);
 };
 
@@ -120,23 +120,23 @@ const registersLoopbackClient = function registersLoopbackClient(
 };
 
 const rejectUnsafeFields = function rejectUnsafeFields(
-  ctx: Readonly<Pick<HookContext, "body" | "path">>,
+  hookRequest: Readonly<Pick<HookContext, "body" | "path">>,
 ): void {
-  const body: unknown = ctx.body;
-  const fields = Predicate.isObject(body) ? body : {};
-  if ("trustDevice" in fields && fields.trustDevice === true) {
+  const requestBody: unknown = hookRequest.body;
+  const fields = Predicate.isObject(requestBody) ? requestBody : {};
+  if ("trustDevice" in fields && fields["trustDevice"] === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }
-  if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path)) {
+  if ("oauth_query" in fields && !oauthQueryPaths.has(hookRequest.path)) {
     deny("OAUTH_QUERY_NOT_ACCEPTED");
   }
-  if (registersLoopbackClient(ctx.path, fields)) {
+  if (registersLoopbackClient(hookRequest.path, fields)) {
     Object.assign(fields, { application_type: "native" });
   }
   if (
-    ctx.path === "/passkey/verify-registration" &&
+    hookRequest.path === "/passkey/verify-registration" &&
     "createSession" in fields &&
-    fields.createSession === true
+    fields["createSession"] === true
   ) {
     deny("REGISTRATION_SESSION_DISABLED");
   }
@@ -229,32 +229,32 @@ const enforceFactorChanges = async function enforceFactorChanges(
 
 const enforceSessionPolicy = function enforceSessionPolicy(
   { audience, ctx, run }: HookScope,
-  current: SessionRecord,
+  sessionRecord: SessionRecord,
 ): Promise<void> {
-  if (!sessionIsLive(current, audience)) {
+  if (!sessionIsLive(sessionRecord, audience)) {
     deny("SESSION_INVALID");
   }
-  if (ctx.path === emailChangePath && !isRecentlyStrong(current.session)) {
+  if (ctx.path === emailChangePath && !isRecentlyStrong(sessionRecord.session)) {
     deny("STRONG_AUTH_REQUIRED");
   }
   const input = {
     audience,
     path: ctx.path,
-    role: current.user.role,
-    strong: isStrongMethod(current.session.authenticationMethod),
-    userId: current.user.id,
+    role: sessionRecord.user.role,
+    strong: isStrongMethod(sessionRecord.session.authenticationMethod),
+    userId: sessionRecord.user.id,
   };
   enforceAdminAccess(input);
   return enforceFactorChanges(input, run);
 };
 
 const confirmsEmailChange = function confirmsEmailChange(
-  ctx: Readonly<Pick<HookContext, "path" | "query">>,
+  hookRequest: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
-  const query: unknown = ctx.query;
+  const query: unknown = hookRequest.query;
   const token = Predicate.isObject(query) && "token" in query ? query['token'] : undefined;
   return (
-    ctx.path === emailVerificationPath &&
+    hookRequest.path === emailVerificationPath &&
     typeof token === "string" &&
     emailChangeTarget(token) !== undefined
   );
@@ -264,9 +264,9 @@ const notifyEmailChange = async function notifyEmailChange(
   scope: HookScope,
   onEmailChangeRequested: (email: string) => Promise<void>,
 ): Promise<void> {
-  const current = await currentSessionOf(scope);
-  if (current && sessionIsLive(current, scope.audience)) {
-    await onEmailChangeRequested(current.user.email);
+  const sessionRecord = await currentSessionOf(scope);
+  if (sessionRecord && sessionIsLive(sessionRecord, scope.audience)) {
+    await onEmailChangeRequested(sessionRecord.user.email);
   }
 };
 
@@ -298,11 +298,11 @@ const createRequestHooks = function createRequestHooks({
     before: createAuthMiddleware(async (ctx) => {
       rejectUnsafeFields(ctx);
       const scope = { audience, ctx, run };
-      const current = await runSessionLookup(scope);
-      const present = current !== null && current.session.expiresAt > new Date();
+      const sessionRecord = await runSessionLookup(scope);
+      const present = sessionRecord !== null && sessionRecord.session.expiresAt > new Date();
       await verifyChallengeAudience(scope, present);
       if (present) {
-        await enforceSessionPolicy(scope, current);
+        await enforceSessionPolicy(scope, sessionRecord);
       } else if (confirmsEmailChange(ctx)) {
         deny("SESSION_REQUIRED");
       }

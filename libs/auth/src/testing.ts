@@ -27,4 +27,5 @@ export { BrowserClient, origins } from "./browser-client.ts";
 export { mailSubjects } from "./email.ts";
 export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-box.ts";
 export { UnexpectedStatus } from "./unexpected-status.ts";
-export { startAuthorization, wikiAdministrator, wikiOrigin } from "./wiki-oauth.ts";
+export { redirectUri, startAuthorization, wikiAdministrator, wikiOrigin } from "./wiki-oauth.ts";
+export type { AuthorizationFlow } from "./wiki-oauth.ts";

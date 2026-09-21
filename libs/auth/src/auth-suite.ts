@@ -23,7 +23,7 @@ import type { AuthFailure } from "./auth-failure.ts";
 
 const PASSWORD = "test-password-safe-123";
 const secret = "integration-test-secret-at-least-32-characters-long";
-const TotpEnrollment = Schema.Struct({
+const AuthenticatorEnrollment = Schema.Struct({
   backupCodes: Schema.Array(Schema.String),
   totpURI: Schema.String,
 });
@@ -181,7 +181,7 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application,
 
 const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: BrowserClient) {
   const enabled = yield* client.json("/two-factor/enable", { password: PASSWORD });
-  const enrollment = yield* Schema.decodeUnknownEffect(TotpEnrollment)(enabled.body);
+  const enrollment = yield* Schema.decodeUnknownEffect(AuthenticatorEnrollment)(enabled.body);
   const authenticator = URI.parse(enrollment.totpURI);
   yield* requireStatus(httpStatus.ok, {
     client,
