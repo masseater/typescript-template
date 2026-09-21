@@ -185,6 +185,7 @@ const config = ({
       "infra/cloudflare/src/account-inspection.ts": ["types"],
       "infra/cloudflare/src/account-lookup.ts": ["exports"],
       "infra/cloudflare/src/account-read.ts": ["exports"],
+      "infra/cloudflare/src/ci-env.ts": ["types"],
       "infra/cloudflare/src/config.ts": ["exports"],
       "infra/cloudflare/src/credentials.ts": ["exports"],
       "infra/cloudflare/src/deploy-token.ts": ["exports", "types"],
