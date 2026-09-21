@@ -32,16 +32,14 @@ describe("dashboard header icon buttons", () => {
     });
     await router.load();
     const markup = renderToStaticMarkup(
-      createElement(
-        RouterContextProvider,
-        { router },
-        createElement(DashboardHeader, {
-          collapsed: false,
-          navigationOpen: false,
-          onToggleCollapsed: () => undefined,
-          onToggleNavigation: () => undefined,
-        }),
-      ),
+      <RouterContextProvider router={router}>
+        <DashboardHeader
+          collapsed={false}
+          navigationOpen={false}
+          onToggleCollapsed={() => undefined}
+          onToggleNavigation={() => undefined}
+        />
+      </RouterContextProvider>,
     );
     return ["メニュー", "サイドバーを畳む"].map((accessibleName) => {
       const matched = new RegExp(

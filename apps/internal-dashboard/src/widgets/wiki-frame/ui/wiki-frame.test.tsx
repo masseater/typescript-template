@@ -33,15 +33,13 @@ describe("wiki header icon button", () => {
     });
     await router.load();
     const markup = renderToStaticMarkup(
-      createElement(
-        RegistryProvider,
-        null,
-        createElement(
-          RouterContextProvider,
-          { router },
-          createElement(WikiFrame, null, createElement("div")),
-        ),
-      ),
+      <RegistryProvider>
+        <RouterContextProvider router={router}>
+          <WikiFrame>
+            <div />
+          </WikiFrame>
+        </RouterContextProvider>
+      </RegistryProvider>,
     );
     const matched =
       /<button\b(?=[^>]*aria-label="文書の木")(?=[^>]*class="([^"]*)")[^>]*>([\s\S]*?)<\/button>/u.exec(
