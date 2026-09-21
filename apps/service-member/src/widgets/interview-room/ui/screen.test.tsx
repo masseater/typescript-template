@@ -1,6 +1,5 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { FieldValidationMessageProvider } from "@repo/ui";
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -33,27 +32,25 @@ function renderScreen(
   view: InterviewViewData,
   extra?: Readonly<{ failure?: string; heard?: string; turnFailed?: boolean; typing?: boolean }>,
 ): string {
-  const screen: ReactElement = createElement(
-    FieldValidationMessageProvider,
-    { messages: fieldValidationMessages("ja") },
-    createElement(
-      RegistryProvider,
-      null,
-      createElement(InterviewScreen, {
-        busy: false,
-        failure: extra?.failure,
-        heard: extra?.heard,
-        onConsent: noop,
-        onFinish: noop,
-        onRestart: noop,
-        onRetry: noop,
-        onSave: noop,
-        onSay: noop,
-        turnFailed: extra?.turnFailed ?? false,
-        typing: extra?.typing ?? false,
-        view,
-      }),
-    ),
+  const screen: ReactElement = (
+    <FieldValidationMessageProvider messages={fieldValidationMessages("ja")}>
+      <RegistryProvider>
+        <InterviewScreen
+          busy={false}
+          failure={extra?.failure}
+          heard={extra?.heard}
+          onConsent={noop}
+          onFinish={noop}
+          onRestart={noop}
+          onRetry={noop}
+          onSave={noop}
+          onSay={noop}
+          turnFailed={extra?.turnFailed ?? false}
+          typing={extra?.typing ?? false}
+          view={view}
+        />
+      </RegistryProvider>
+    </FieldValidationMessageProvider>
   );
   return renderToStaticMarkup(screen);
 }
