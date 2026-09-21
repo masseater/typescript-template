@@ -12,6 +12,7 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@better-auth/api-key": "catalog:",
     "@cloudflare/tanstack-ai": "0.2.1",
     "@effect/atom-react": "catalog:",
     "@inlang/paraglide-js": "catalog:",
@@ -26,6 +27,7 @@
     "@tanstack/ai": "0.54.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "lucide-react": "catalog:",

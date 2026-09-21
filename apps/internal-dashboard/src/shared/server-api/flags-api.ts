@@ -1,13 +1,7 @@
 import { verifySession } from "@repo/auth";
-import {
-  FeatureFlags,
-  FlagEditorRequired,
-  requireFlagEditor,
-  toggleFlag,
-  toggleFlagRemote,
-} from "@repo/feature-flags";
+import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
 import { httpStatus } from "@repo/observability";
-import { apiRoot, createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
+import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
 
@@ -52,9 +46,9 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 });
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
-  return createApi(apiRoot)
+  return createApi("")
     .get("/flags", api.route(FlagList, listFlags, {}))
-    .patch("/flags", api.route(FlagToggled, patchFlag, { ...failures, FlagEditorRequired }));
+    .patch("/flags", api.route(FlagToggled, patchFlag, failures));
 }
 
 export { flagsApi };

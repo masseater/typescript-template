@@ -1,4 +1,4 @@
-import { AccountMenu } from "@repo/auth-ui";
+import { AccountMenu, useSessionUser } from "@repo/auth-ui";
 import { localState } from "@repo/ui";
 
 import { DashboardHeader } from "./dashboard-header.tsx";
@@ -11,13 +11,10 @@ const useCollapsed = localState(false);
 
 function DashboardFrame({
   children,
-  email,
-  name,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-  email: string;
-  name: string;
 }>): ReactElement {
+  const { email, name } = useSessionUser();
   const [navigationOpen, setNavigationOpen] = useNavigationOpen();
   const [collapsed, setCollapsed] = useCollapsed();
   function toggleNavigation(): void {
