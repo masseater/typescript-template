@@ -1,6 +1,10 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { spawn } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createInterface } from "node:readline";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { Readable } from "node:stream";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
 import { cliStderr, cliStdout } from "@repo/cli";
@@ -45,6 +49,7 @@ function spawnAlchemy(
 ): Effect.Effect<number, AlchemyFailure> {
   return Effect.callback<number, AlchemyFailure>((resume) => {
     const child = spawn(alchemyBinary, [...args], {
+      // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
       env: { ...process.env, ALCHEMY_TELEMETRY_DISABLED: "1" },
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],

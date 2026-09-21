@@ -123,4 +123,3 @@ function missingPermissions(granted: readonly PermissionGroup[]): readonly strin
 }
 
 export { STATE_STORE_SCRIPT_NAME, deployTokenPermissions, missingPermissions };
-export type { PermissionGroup, RequiredPermission };

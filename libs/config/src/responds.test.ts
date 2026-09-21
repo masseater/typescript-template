@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createServer } from "node:http";
 
 import { assert, it } from "@effect/vitest";
@@ -5,7 +6,9 @@ import { Effect } from "effect";
 
 import { respondedSuccessfully, waitUntilResponds } from "./responds.ts";
 
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import type { IncomingMessage, Server, ServerResponse } from "node:http";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import type { Socket } from "node:net";
 import type { Scope } from "effect";
 
