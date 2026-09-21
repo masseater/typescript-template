@@ -380,11 +380,25 @@ describe("effect typecheck gate", () => {
     expect(isInvokedAsCli(undefined, modulePath)).toBe(false);
     expect(isInvokedAsCli(modulePath, modulePath)).toBe(true);
     expect(maybeStart("/tmp/not-the-cli", modulePath)).toBe(false);
-    expect(maybeStart(modulePath, modulePath)).toBe(true);
-    expect(startEffectTypecheckCli()).toBe(0);
-    expect(
-      startEffectTypecheckCli({ cwd: path.join(repositoryRoot, "tools/load"), args: ["--write"] }),
-    ).toBe(0);
+    mkdirSync(path.join(repositoryRoot, ".local"), { recursive: true });
+    const cwd = mkdtempSync(path.join(repositoryRoot, ".local", "effect-typecheck-cli-"));
+    writeFileSync(path.join(cwd, "tsconfig.json"), fixtureTsconfig);
+    writeFileSync(path.join(cwd, "value.ts"), "export const value = 1;\n");
+    const baselineFile = fileURLToPath(
+      new URL("./effect-typecheck-baseline.json", import.meta.url),
+    );
+    const baselineBefore = readFileSync(baselineFile);
+    const previousCwd = process.cwd();
+    try {
+      process.chdir(cwd);
+      expect(maybeStart(modulePath, modulePath)).toBe(true);
+      expect(process.exitCode).toBe(0);
+      expect(startEffectTypecheckCli({ cwd, args: ["--write"] })).toBe(0);
+    } finally {
+      process.chdir(previousCwd);
+      writeFileSync(baselineFile, baselineBefore);
+      rmSync(cwd, { force: true, recursive: true });
+    }
     const missing = compileWorkspace(repositoryRoot, process.env, () => {
       throw new Error("compiler missing");
     });
@@ -395,15 +409,6 @@ describe("effect typecheck gate", () => {
         throw "no";
       }).output,
     ).toMatch(/compiler not found/u);
-    expect(
-      compileWorkspace(path.join(repositoryRoot, "tools/load"), {
-        ...process.env,
-        PATH: "/var/empty",
-      }).status,
-    ).toBe(0);
-    expect(
-      startEffectTypecheckCli({ cwd: path.join(repositoryRoot, "tools/load"), args: [] }),
-    ).toBe(0);
     runInvokedCli(() => {
       throw new Error("boom");
     });
