@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { appendFile } from "node:fs/promises";
 
 import { runCli } from "@repo/cli";
@@ -26,6 +27,7 @@ function writeOutput(
 
 runCli(
   Effect.gen(function* program() {
+    // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
     const environment = process.env;
     const preparation = yield* writeCiSecretsFile(environment);
     if (preparation.status === "unconfigured") {

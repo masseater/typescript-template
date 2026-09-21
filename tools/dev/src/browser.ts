@@ -52,6 +52,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
+  // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...args, "open", `${origin}${applicationReadyPaths[app]}`], {
     cwd: root,
