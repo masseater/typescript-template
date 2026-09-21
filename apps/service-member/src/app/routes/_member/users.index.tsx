@@ -5,16 +5,25 @@ import {
   PaidPlanRequired,
   UsersFailed,
   UsersPending,
-  loadMembers,
+  membersOptions,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
 import { UsersRoute } from "./-users-route.tsx";
 
 import type { UsersSearch } from "#pages/users/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
+
+function withoutPage(search: UsersSearch): UsersSearch {
+  if (search.page === undefined) {
+    return search;
+  }
+  const { page: _page, ...filters } = search;
+  return filters;
+}
 
 function requireUsersSearch(raw: unknown): UsersSearch {
   try {
-    return normalizeUsersSearch(raw);
+    return withoutPage(normalizeUsersSearch(raw));
   } catch (error) {
     if (error instanceof InvalidUsersSearch) {
       throw redirect({ replace: true, search: {}, to: "/users" });
@@ -23,11 +32,9 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   }
 }
 
-async function loadMembersOrUpgrade(
-  search: UsersSearch,
-): Promise<Awaited<ReturnType<typeof loadMembers>>> {
+async function loadMembersOrUpgrade(queries: QueryClient, search: UsersSearch): Promise<unknown> {
   try {
-    return await loadMembers(search);
+    return await queries.ensureInfiniteQueryData(membersOptions(search));
   } catch (error) {
     if (error instanceof PaidPlanRequired) {
       throw redirect({ replace: true, search: {}, to: "/upgrade" });
@@ -47,11 +54,16 @@ const Route = createFileRoute("/_member/users/")({
     location: Readonly<{ searchStr: string }>;
     search: UsersSearch;
   }>) => {
-    if (location.searchStr !== defaultStringifySearch(search)) {
-      throw redirect({ replace: true, search, to: "/users" });
+    const normalized = withoutPage(search);
+    if (location.searchStr !== defaultStringifySearch(normalized)) {
+      throw redirect({ replace: true, search: normalized, to: "/users" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembersOrUpgrade(deps),
+  loader: async ({
+    context,
+    deps,
+  }: Readonly<{ context: Readonly<{ queryClient: QueryClient }>; deps: UsersSearch }>) =>
+    loadMembersOrUpgrade(context.queryClient, deps),
   component: UsersRoute,
   errorComponent: UsersFailed,
   pendingComponent: UsersPending,

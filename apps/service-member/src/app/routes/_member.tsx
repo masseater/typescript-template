@@ -4,11 +4,16 @@ import { enterMemberFrame } from "#app/entry-conditions.ts";
 import { loadNavBadges } from "#widgets/member-frame/index.ts";
 import { MemberLayout } from "./-member-layout.tsx";
 
+import type { QueryClient } from "@tanstack/react-query";
+
 const Route = createFileRoute("/_member")({
   beforeLoad: async ({
+    context,
     location,
-  }: Readonly<{ location: Readonly<{ href: string; pathname: string }> }>) =>
-    enterMemberFrame(location.href, location.pathname),
+  }: Readonly<{
+    context: Readonly<{ queryClient: QueryClient }>;
+    location: Readonly<{ href: string; pathname: string }>;
+  }>) => enterMemberFrame(context.queryClient, location.href, location.pathname),
   loader: async () => loadNavBadges(),
   component: MemberLayout,
 });

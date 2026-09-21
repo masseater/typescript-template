@@ -1,15 +1,15 @@
-import { loginPath } from "@repo/auth-ui";
+import { loginPath, sessionOptions } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
-import { loadSession } from "#entities/session/index.ts";
-import { loadOnboardingStep } from "#pages/account/welcome/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
 import { loadRecoveryOffer } from "#pages/recovery/index.ts";
+import { onboardingOptions } from "#pages/account/welcome/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { Session } from "#entities/session/index.ts";
 import type { OnboardingStep } from "#shared/contracts/index.ts";
+import type { QueryClient } from "@tanstack/react-query";
 
 const entrances: ReadonlySet<string> = new Set(["/", "/login", "/signup"]);
 
@@ -23,25 +23,29 @@ const welcomePath = {
   recovery: "/welcome/recovery",
 } as const;
 
-async function enterPublicFrame(pathname: string): Promise<void> {
+async function currentSession(queries: QueryClient): Promise<Session | undefined> {
+  return queries.fetchQuery(sessionOptions);
+}
+
+async function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void> {
   if (!entrances.has(pathname)) {
     return;
   }
-  const session = await loadSession();
-  if (session !== undefined) {
+  if ((await currentSession(queries)) !== undefined) {
     throw redirect({ to: "/home" });
   }
 }
 
 async function enterMemberFrame(
+  queries: QueryClient,
   href: string,
   pathname: string,
 ): Promise<{ agreements: Agreements; memberBoard: boolean; session: Session }> {
-  const session = await loadSession();
+  const session = await currentSession(queries);
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
   }
-  const step = await loadOnboardingStep();
+  const step = await queries.fetchQuery(onboardingOptions);
   if (step !== "done") {
     const offer = await loadRecoveryOffer();
     if (offer.available && pathname !== welcomePath.recovery) {
@@ -63,13 +67,14 @@ async function enterMemberFrame(
 }
 
 async function enterWelcomeFrame(
+  queries: QueryClient,
   href: string,
 ): Promise<{ session: Session; step: OnboardingStep }> {
-  const session = await loadSession();
+  const session = await currentSession(queries);
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
   }
-  const step = await loadOnboardingStep();
+  const step = await queries.fetchQuery(onboardingOptions);
   if (step === "done") {
     throw redirect({ to: "/home" });
   }

@@ -62,7 +62,10 @@ catalog:
   "@shadcn/lint": 0.1.0
   "@tailwindcss/vite": 4.3.3
   "@tanstack/intent": 0.3.6
+  "@tanstack/react-form": 1.33.5
+  "@tanstack/react-query": 5.103.1
   "@tanstack/react-router": 1.170.36
+  "@tanstack/react-router-ssr-query": 1.167.3
   "@tanstack/react-start": 1.168.54
   "@types/node": 26.6.1
   "@types/react": 19.3.0
