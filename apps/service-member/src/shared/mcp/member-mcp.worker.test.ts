@@ -3,8 +3,8 @@ import { AuthApps, authTest, authTestSecret, runWith } from "@repo/auth/testing"
 import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS } from "@repo/config";
 import { query, recordSubscription, schema } from "@repo/db";
 import { httpStatus } from "@repo/observability";
-import { appLayer } from "@repo/runtime/bindings";
 import { unavailable } from "@repo/runtime/account";
+import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
