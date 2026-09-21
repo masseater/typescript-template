@@ -186,6 +186,11 @@ const config = ({
       "apps/service-admin": {
         ...app,
         ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+        project: [
+          "src/**/*.{ts,tsx}!",
+          "src/**/*.css",
+          "!src/shared/admin/admin-oauth-fixture.ts!",
+        ],
       },
       "apps/service-member": {
         ...app,

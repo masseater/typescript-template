@@ -284,7 +284,12 @@ describe("member suspension", () => {
           });
           const audit = yield* auditActionsOf("member");
           return {
-            audit: audit.map((event) => [event.action, event.actorId, event.actorKind]),
+            audit: audit.map((event) => [
+              event.action,
+              event.actorId,
+              event.actorKind,
+              event.channel,
+            ]),
             listed: listed.users.map((listedUser) => [listedUser.id, listedUser.accountState]),
             restored,
             session,
@@ -295,8 +300,8 @@ describe("member suspension", () => {
     it("loses live sessions, stays listed for admins and can be restored", ({ outcome }) => {
       expect(outcome).toStrictEqual({
         audit: [
-          ["member_suspended", "actor-operator", ROLE.administrator],
-          ["member_unsuspended", "actor-operator", ROLE.administrator],
+          ["member_suspended", "actor-operator", ROLE.administrator, "ui"],
+          ["member_unsuspended", "actor-operator", ROLE.administrator, "ui"],
         ],
         listed: [["member", ACCOUNT_STATE.suspended]],
         restored: { accountState: ACCOUNT_STATE.active, id: "member" },

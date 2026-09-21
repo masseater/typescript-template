@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { signedSessionCookie } from "@repo/auth/testing";
 import { APPLICATION, ROLE, STAFF_PERMISSION } from "@repo/config";
-import { Database } from "@repo/db";
+import { AUDIT_CHANNEL, Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
 import { FLAG_KEY } from "@repo/feature-flags";
 import { httpStatus } from "@repo/observability";
@@ -147,7 +147,12 @@ describe("staff API authorization", () => {
       yield* app.as("editor", removal);
       const audit = yield* Effect.provide(auditActionsOf("target"), Database.layer(env.DB));
       assert.deepStrictEqual(audit, [
-        { action: "staff_removed", actorId: "editor", actorKind: ROLE.staff },
+        {
+          action: "staff_removed",
+          actorId: "editor",
+          actorKind: ROLE.staff,
+          channel: AUDIT_CHANNEL.ui,
+        },
       ]);
       yield* app.stop;
     }),

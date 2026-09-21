@@ -14,6 +14,7 @@ export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
 export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
 export {
+  AUDIT_CHANNEL,
   NOTIFICATION_KIND,
   auditEvent,
   notificationKinds,
