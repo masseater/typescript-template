@@ -1,6 +1,14 @@
-import { Effect, Result, Schema } from "effect";
+import { DateTime, Effect, Result, Schema } from "effect";
 
-import { FeedPostRecord, InboxEvent, NotificationKind, NotificationRecord } from "./messages.ts";
+import {
+  CreateFeedPost,
+  CreateNotification,
+  FeedPostRecord,
+  InboxEvent,
+  MarkRead,
+  NotificationKind,
+  NotificationRecord,
+} from "./messages.ts";
 
 interface InboxBindings {
   readonly USER_INBOX: DurableObjectNamespace;
@@ -8,42 +16,24 @@ interface InboxBindings {
 
 const schemaVersion = 1;
 
-const CreateNotification = Schema.Struct({
-  id: Schema.String,
-  kind: NotificationKind,
-  subjectId: Schema.String,
-});
-
-const CreateFeedPost = Schema.Struct({
-  actorId: Schema.String,
-  body: Schema.String,
-  id: Schema.String,
-  threadId: Schema.String,
-  title: Schema.String,
-});
-
-const MarkRead = Schema.Struct({
-  ids: Schema.Array(Schema.String),
-});
-
 const NotificationRow = Schema.Struct({
-  created_at: Schema.Number,
+  created_at: Schema.Finite,
   id: Schema.String,
   kind: NotificationKind,
-  read_at: Schema.NullOr(Schema.Number),
+  read_at: Schema.NullOr(Schema.Finite),
   subject_id: Schema.String,
 });
 
 const FeedPostRow = Schema.Struct({
   actor_id: Schema.String,
   body: Schema.String,
-  created_at: Schema.Number,
+  created_at: Schema.Finite,
   id: Schema.String,
   thread_id: Schema.String,
   title: Schema.String,
 });
 
-const encodeEvent = Schema.encodeEffect(InboxEvent);
+const encodeEventJson = Schema.encodeEffect(Schema.fromJsonString(InboxEvent));
 const decodeNotificationRow = Schema.decodeUnknownResult(NotificationRow);
 const decodeFeedPostRow = Schema.decodeUnknownResult(FeedPostRow);
 
@@ -68,14 +58,16 @@ function feedPostOf(row: typeof FeedPostRow.Type): FeedPostRecord {
   };
 }
 
+function nowMillis(): number {
+  return DateTime.toEpochMillis(DateTime.nowUnsafe());
+}
+
 class UserInbox {
   private readonly ctx: DurableObjectState;
 
   public constructor(ctx: DurableObjectState, _env: InboxBindings) {
     this.ctx = ctx;
-    ctx.blockConcurrencyWhile(async () => {
-      this.migrate();
-    });
+    ctx.blockConcurrencyWhile(() => Promise.resolve(this.migrate()));
   }
 
   private migrate(): void {
@@ -103,9 +95,9 @@ class UserInbox {
     this.ctx.storage.sql.exec("INSERT INTO schema_migration (id) VALUES (?)", schemaVersion);
   }
 
-  public async fetch(request: Request): Promise<Response> {
+  public fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade") === "websocket") {
-      return this.acceptSocket();
+      return Promise.resolve(this.acceptSocket());
     }
     const path = URL.parse(request.url)?.pathname ?? "";
     if (request.method === "POST" && path.endsWith("/notifications")) {
@@ -118,16 +110,16 @@ class UserInbox {
       return this.createFeedPost(request);
     }
     if (request.method === "GET" && path.endsWith("/snapshot")) {
-      return Response.json(this.snapshot());
+      return Promise.resolve(Response.json(this.snapshot()));
     }
-    return new Response(undefined, { status: 404 });
+    return Promise.resolve(new Response(undefined, { status: 404 }));
   }
 
   private acceptSocket(): Response {
     const pair = new WebSocketPair();
     this.ctx.acceptWebSocket(pair[1]);
     const encoded = Result.getOrElse(
-      Schema.encodeResult(InboxEvent)({
+      Schema.encodeResult(Schema.fromJsonString(InboxEvent))({
         notifications: this.listNotifications(),
         posts: this.listFeedPosts(),
         type: "snapshot",
@@ -135,67 +127,91 @@ class UserInbox {
       () => undefined,
     );
     if (encoded !== undefined) {
-      pair[1].send(JSON.stringify(encoded));
+      pair[1].send(encoded);
     }
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
 
-  public async webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): Promise<void> {
+  public webSocketMessage(socket: WebSocket, message: string | ArrayBuffer): Promise<void> {
     if (typeof message !== "string") {
-      return;
+      return Promise.resolve();
     }
-    const parsedJson = Result.try((): unknown => JSON.parse(message));
-    const parsed = Result.isSuccess(parsedJson)
-      ? Result.getOrElse(Schema.decodeUnknownResult(MarkRead)(parsedJson.success), () => undefined)
-      : undefined;
+    const parsed = Result.getOrElse(
+      Schema.decodeResult(Schema.fromJsonString(MarkRead))(message),
+      () => undefined,
+    );
     if (parsed === undefined) {
-      return;
+      return Promise.resolve();
     }
     this.markRead(parsed.ids);
-    const encoded = await Effect.runPromise(
-      encodeEvent({
-        notifications: this.listNotifications(),
-        posts: this.listFeedPosts(),
-        type: "snapshot",
+    const inbox = this;
+    return Effect.runPromise(
+      Effect.gen(function* pushSnapshot() {
+        socket.send(
+          yield* encodeEventJson({
+            notifications: inbox.listNotifications(),
+            posts: inbox.listFeedPosts(),
+            type: "snapshot",
+          }),
+        );
       }),
     );
-    socket.send(JSON.stringify(encoded));
   }
 
-  private async createNotification(request: Request): Promise<Response> {
-    const body: unknown = await request.json();
-    const decoded = Schema.decodeUnknownResult(CreateNotification)(body);
-    if (Result.isFailure(decoded)) {
-      return new Response(undefined, { status: 400 });
-    }
-    const record = this.insertNotification(decoded.success);
-    await this.broadcast({ notification: record, type: "notification" });
-    return Response.json(record);
+  private createNotification(request: Request): Promise<Response> {
+    const inbox = this;
+    return Effect.runPromise(
+      Effect.gen(function* create() {
+        const decoded = Schema.decodeResult(Schema.fromJsonString(CreateNotification))(
+          yield* Effect.promise(() => request.text()),
+        );
+        if (Result.isFailure(decoded)) {
+          return new Response(undefined, { status: 400 });
+        }
+        const record = inbox.insertNotification(decoded.success);
+        yield* Effect.promise(() =>
+          inbox.broadcast({ notification: record, type: "notification" }),
+        );
+        return Response.json(record);
+      }),
+    );
   }
 
-  private async createFeedPost(request: Request): Promise<Response> {
-    const body: unknown = await request.json();
-    const decoded = Schema.decodeUnknownResult(CreateFeedPost)(body);
-    if (Result.isFailure(decoded)) {
-      return new Response(undefined, { status: 400 });
-    }
-    const record = this.insertFeedPost(decoded.success);
-    await this.broadcast({ post: record, type: "feed_post" });
-    return Response.json(record);
+  private createFeedPost(request: Request): Promise<Response> {
+    const inbox = this;
+    return Effect.runPromise(
+      Effect.gen(function* create() {
+        const decoded = Schema.decodeResult(Schema.fromJsonString(CreateFeedPost))(
+          yield* Effect.promise(() => request.text()),
+        );
+        if (Result.isFailure(decoded)) {
+          return new Response(undefined, { status: 400 });
+        }
+        const record = inbox.insertFeedPost(decoded.success);
+        yield* Effect.promise(() => inbox.broadcast({ post: record, type: "feed_post" }));
+        return Response.json(record);
+      }),
+    );
   }
 
-  private async markNotificationsRead(request: Request): Promise<Response> {
-    const body: unknown = await request.json();
-    const decoded = Schema.decodeUnknownResult(MarkRead)(body);
-    if (Result.isFailure(decoded)) {
-      return new Response(undefined, { status: 400 });
-    }
-    this.markRead(decoded.success.ids);
-    return Response.json({ ok: true });
+  private markNotificationsRead(request: Request): Promise<Response> {
+    const inbox = this;
+    return Effect.runPromise(
+      Effect.gen(function* mark() {
+        const decoded = Schema.decodeResult(Schema.fromJsonString(MarkRead))(
+          yield* Effect.promise(() => request.text()),
+        );
+        if (Result.isFailure(decoded)) {
+          return new Response(undefined, { status: 400 });
+        }
+        inbox.markRead(decoded.success.ids);
+        return Response.json({ ok: true });
+      }),
+    );
   }
 
-  private insertNotification(input: typeof CreateNotification.Type): NotificationRecord {
-    const createdAt = Date.now();
+  private insertNotification(input: CreateNotification): NotificationRecord {
+    const createdAt = nowMillis();
     this.ctx.storage.sql.exec(
       "INSERT INTO notification (id, kind, subject_id, created_at, read_at) VALUES (?, ?, ?, ?, NULL)",
       input.id,
@@ -212,8 +228,8 @@ class UserInbox {
     };
   }
 
-  private insertFeedPost(input: typeof CreateFeedPost.Type): FeedPostRecord {
-    const createdAt = Date.now();
+  private insertFeedPost(input: CreateFeedPost): FeedPostRecord {
+    const createdAt = nowMillis();
     this.ctx.storage.sql.exec(
       "INSERT INTO feed_post (id, thread_id, actor_id, title, body, created_at) VALUES (?, ?, ?, ?, ?, ?)",
       input.id,
@@ -234,7 +250,7 @@ class UserInbox {
   }
 
   private markRead(ids: readonly string[]): void {
-    const readAt = Date.now();
+    const readAt = nowMillis();
     for (const id of ids) {
       this.ctx.storage.sql.exec(
         "UPDATE notification SET read_at = ? WHERE id = ? AND read_at IS NULL",
@@ -278,12 +294,16 @@ class UserInbox {
     };
   }
 
-  private async broadcast(event: InboxEvent): Promise<void> {
-    const encoded = await Effect.runPromise(encodeEvent(event));
-    const payload = JSON.stringify(encoded);
-    for (const socket of this.ctx.getWebSockets()) {
-      socket.send(payload);
-    }
+  private broadcast(event: InboxEvent): Promise<void> {
+    const sockets = this.ctx.getWebSockets();
+    return Effect.runPromise(
+      Effect.gen(function* send() {
+        const payload = yield* encodeEventJson(event);
+        for (const socket of sockets) {
+          socket.send(payload);
+        }
+      }),
+    );
   }
 }
 

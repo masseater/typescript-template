@@ -12,7 +12,7 @@ const memberFlags = Effect.fn("memberFlags")(function* memberFlags() {
   return { memberBoard };
 });
 
-function flagsApi(api: ApiRoutes<AppServices | FeatureFlags>) {
+function flagsApi<Requirements>(api: ApiRoutes<AppServices | FeatureFlags | Requirements>) {
   return createApi("").get("/flags", api.route(MemberFlags, memberFlags, {}));
 }
 

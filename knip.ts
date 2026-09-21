@@ -15,6 +15,8 @@ const workspaces = {
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
+      "oxlint",
+      "oxlint-tsgolint",
     ],
     project: ["*.{js,ts}"],
     vitest: {
@@ -74,7 +76,6 @@ const workspaces = {
     },
   },
   "tools/ai-native": {
-    ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
@@ -87,7 +88,7 @@ const workspaces = {
       "src/repository/lint.ts!",
       "src/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@repo/observability!", "@tanstack/intent"],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
     project: [
       "src/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
@@ -247,7 +248,6 @@ const config = ({
       },
       "libs/vite-config": {
         entry: [
-          ...productionOnly("src/effect-typecheck.ts!"),
           "src/cloudflare-workers-loader.mjs",
           "src/cloudflare-workers-stub.mjs",
           "src/cloudflare-workflows-stub.mjs",

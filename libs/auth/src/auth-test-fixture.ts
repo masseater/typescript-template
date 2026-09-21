@@ -75,18 +75,18 @@ const authTestLayer = authApps.pipe(
 
 type AuthTestServices = Layer.Success<typeof authTestLayer>;
 
-const provideAuth = async (
+const provideAuth = (
   {},
   { onCleanup }: { readonly onCleanup: (cleanup: () => Promise<void>) => void },
 ): Promise<Context.Context<AuthTestServices>> => {
   const scope = Scope.makeUnsafe();
-  onCleanup(async () => Effect.runPromise(Scope.close(scope, Exit.void)));
+  onCleanup(() => Effect.runPromise(Scope.close(scope, Exit.void)));
   return Effect.runPromise(Layer.buildWithScope(authTestLayer, scope));
 };
 
 const authTest = () => test.extend("auth", provideAuth);
 
-const runWith = async <Value, Failure>(
+const runWith = <Value, Failure>(
   auth: Context.Context<AuthTestServices>,
   program: () => Effect.Effect<Value, Failure, AuthTestServices>,
 ): Promise<Value> => {
@@ -149,7 +149,7 @@ const verifyEmail = Effect.fn("verifyEmail")(function* verifyEmail(email: string
   const member = (yield* AuthApps)[APPLICATION.user];
   const link = yield* verificationLink(email);
   const token = new URLSearchParams(link.hash.slice(1)).get("token") ?? "";
-  yield* Effect.promise(async () => member.instance.api.verifyEmail({ query: { token } }));
+  yield* Effect.promise(() => member.instance.api.verifyEmail({ query: { token } }));
 });
 
 const registerVerified = Effect.fn("registerVerified")(function* registerVerified(email: string) {

@@ -10,7 +10,7 @@ import { jsonResponse } from "./responses.ts";
 
 import type { Reporting, RequestRejected } from "@repo/observability";
 import type { Cause } from "effect";
-import type { AnyElysia, Context } from "elysia";
+import type { AnyElysia } from "elysia";
 import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import type { WorkerRuntime } from "./worker-runtime.ts";
 
@@ -18,6 +18,12 @@ type Decodable = Schema.Top & { readonly DecodingServices: never };
 type Handler<Value, Failures, Requirements> = (
   request: Request,
 ) => Effect.Effect<Value, Failures, Requirements>;
+interface ElysiaContext {
+  readonly request: Request;
+}
+interface ElysiaStreamContext extends ElysiaContext {
+  readonly set: { readonly headers: Record<string, string | number> };
+}
 interface ServerSentEvent {
   readonly data: unknown;
   readonly event: string;
@@ -26,7 +32,7 @@ interface FailedEvent {
   readonly data: Readonly<{ message: string; status: FailureStatus }>;
   readonly event: "failed";
 }
-type ElysiaHandler = (context: { readonly request: Request }) => Promise<Response>;
+type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
 type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
 interface ApiRoutes<Requirements> {
@@ -35,7 +41,7 @@ interface ApiRoutes<Requirements> {
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ) => (context: Context) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
+  ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
@@ -44,7 +50,7 @@ interface ApiRoutes<Requirements> {
     response: Schema.Codec<Value, Encoded>,
     handler: Handler<Value, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  ) => (context: Context) => Promise<Encoded | Failed>;
+  ) => (context: ElysiaContext) => Promise<Encoded | Failed>;
 }
 
 const missingMessage = "見つかりませんでした。";
@@ -94,24 +100,30 @@ function elysiaServer(app: AnyElysia): {
     HEAD: ElysiaHandler;
   }>;
 } {
-  async function handle(context: { readonly request: Request }): Promise<Response> {
-    return app.fetch(context.request);
+  function handle(context: ElysiaContext): Promise<Response> {
+    return Promise.resolve(app.fetch(context.request));
   }
-  async function handleHead(context: { readonly request: Request }): Promise<Response> {
-    const { headers: asked, url } = context.request;
-    const response = await app.fetch(new Request(url, { headers: asked, method: "GET" }));
-    const headers = new Headers(response.headers);
-    if (headers.get("content-type")?.startsWith(eventStreamType) === true) {
-      void response.body?.cancel();
-    } else {
-      const body = await response.arrayBuffer();
-      headers.set("content-length", String(body.byteLength));
-    }
-    return new Response(undefined, {
-      headers,
-      status: response.status,
-      statusText: response.statusText,
-    });
+  function handleHead(context: ElysiaContext): Promise<Response> {
+    return Effect.runPromise(
+      Effect.gen(function* handleHeadProgram() {
+        const { headers: asked, url } = context.request;
+        const response = yield* Effect.promise(() =>
+          Promise.resolve(app.fetch(new Request(url, { headers: asked, method: "GET" }))),
+        );
+        const headers = new Headers(response.headers);
+        if (headers.get("content-type")?.startsWith(eventStreamType) === true) {
+          void response.body?.cancel();
+        } else {
+          const body = yield* Effect.promise(() => response.arrayBuffer());
+          headers.set("content-length", String(body.byteLength));
+        }
+        return new Response(undefined, {
+          headers,
+          status: response.status,
+          statusText: response.statusText,
+        });
+      }),
+    );
   }
   return {
     handlers: {
@@ -233,19 +245,22 @@ function apiRoutes<Requirements>(
   runtime: WorkerRuntime<Requirements, unknown>,
   reporting: Reporting,
 ): ApiRoutes<Requirements> {
-  async function settle<Value>(
-    context: { readonly request: Request },
+  function settle<Value>(
+    context: ElysiaContext,
     program: (request: Request) => Effect.Effect<Value, never, Requirements>,
     unavailable: (cause: Readonly<Cause.Cause<unknown>>) => Effect.Effect<Value>,
   ): Promise<Value> {
-    const exit = await runtime.runPromiseExit(program(context.request));
-    return Exit.isSuccess(exit) ? exit.value : Effect.runPromise(unavailable(exit.cause));
+    return runtime
+      .runPromiseExit(program(context.request))
+      .then((exit) =>
+        Exit.isSuccess(exit) ? exit.value : Effect.runPromise(unavailable(exit.cause)),
+      );
   }
   function raw<Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
   ): ElysiaHandler {
-    return async (context): Promise<Response> =>
+    return (context): Promise<Response> =>
       settle(context, respondRaw(handler, failures), (cause) =>
         unavailableResponse(cause, reporting),
       );
@@ -254,8 +269,8 @@ function apiRoutes<Requirements>(
     response: Schema.Codec<Value, Encoded>,
     handler: Handler<Value, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  ): (context: Context) => Promise<Encoded | Failed> {
-    return async (context): Promise<Encoded | Failed> =>
+  ): (context: ElysiaContext) => Promise<Encoded | Failed> {
+    return (context): Promise<Encoded | Failed> =>
       settle(context, respondValue(response, handler, failures), (cause) =>
         unavailableStatus(cause, reporting),
       );
@@ -265,15 +280,15 @@ function apiRoutes<Requirements>(
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ): (context: Context) => Promise<EventStream<Encoded | FailedEvent> | Failed> {
+  ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed> {
     const open = openStream(event, handler, failures);
-    return async (context): Promise<EventStream<Encoded | FailedEvent> | Failed> => {
-      const opened = await settle(context, open, (cause) => unavailableStatus(cause, reporting));
-      if (opened instanceof EventFeed) {
-        Object.assign(context.set.headers, streamHeaders);
-      }
-      return opened;
-    };
+    return (context): Promise<EventStream<Encoded | FailedEvent> | Failed> =>
+      settle(context, open, (cause) => unavailableStatus(cause, reporting)).then((opened) => {
+        if (opened instanceof EventFeed) {
+          Object.assign(context.set.headers, streamHeaders);
+        }
+        return opened;
+      });
   }
   return { events, raw, route };
 }

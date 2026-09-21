@@ -10,7 +10,7 @@ import { accountTokenRef } from "./tokens.ts";
 const stack = Stack(
   stackName("error-monitor"),
   stackOptions,
-  monitorProgram(errorMonitorWorker.name, {
+  monitorProgram("error", {
     artifact: monitorArtifact("error-monitor"),
     className: errorMonitorWorker.className,
     cron: errorMonitorWorker.cron,

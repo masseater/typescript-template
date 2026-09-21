@@ -3,6 +3,7 @@ import { Schema } from "effect";
 const onboardingSteps = ["agreement", "choose", "profile", "interview", "done"] as const;
 
 const OnboardingStep = Schema.Literals(onboardingSteps);
+type OnboardingStep = typeof OnboardingStep.Type;
 
 const OnboardingView = Schema.Struct({
   step: OnboardingStep,
@@ -17,8 +18,9 @@ const FeedItem = Schema.Struct({
   actorName: Schema.String,
   kind: Schema.Literal("profile"),
   profile: Schema.String,
-  updatedAt: Schema.Number,
+  updatedAt: Schema.Finite,
 });
+type FeedItem = typeof FeedItem.Type;
 
 const HomeFeed = Schema.Struct({
   items: Schema.Array(FeedItem),

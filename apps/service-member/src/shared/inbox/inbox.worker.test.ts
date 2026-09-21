@@ -32,10 +32,8 @@ it.effect("stores a notification and a feed post for one user", () =>
     assert.strictEqual(post.id, "p1");
     const namespace = env[userInboxBinding];
     const stub = namespace.get(namespace.idFromName(userId));
-    const snapshot = yield* Effect.promise(async () => {
-      const response = await stub.fetch("https://inbox.internal/snapshot");
-      return response.json();
-    });
+    const response = yield* Effect.promise(() => stub.fetch("https://inbox.internal/snapshot"));
+    const snapshot = yield* Effect.promise(() => response.json());
     assert.deepStrictEqual(snapshot, {
       notifications: [notification],
       posts: [post],

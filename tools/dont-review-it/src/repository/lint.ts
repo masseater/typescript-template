@@ -354,7 +354,14 @@ const lintOptions = {
     "dont-review-it/no-detached-test-file--move-beside-source": [
       LINT_SEVERITY.ERROR,
       {
-        testFileSuffixes: [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx", ".worker.test.ts"],
+        testFileSuffixes: [
+          ".test.ts",
+          ".test.tsx",
+          ".spec.ts",
+          ".spec.tsx",
+          ".worker.test.ts",
+          ".node.test.ts",
+        ],
       },
     ],
     "dont-review-it/no-fixture-forward-subject--yield-sut-output": [
@@ -415,7 +422,7 @@ const overridePluginMismatches = (overrides: typeof lintOptions.overrides): read
     if (plugins === undefined) {
       return [];
     }
-    const enabled = new Set(plugins);
+    const enabled = new Set<string>(plugins);
     return Object.keys(override.rules ?? {}).flatMap((rule) => {
       const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
       if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {

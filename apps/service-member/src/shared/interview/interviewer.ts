@@ -64,7 +64,7 @@ function complete(
 ): Effect.Effect<UnderstandingData, UnderstandingFailed> {
   return Effect.tryPromise({
     catch: (cause) => new UnderstandingFailed({ cause, reason: "model_failed" }),
-    try: async () =>
+    try: () =>
       chat({
         adapter: createWorkersAiChat(model, access),
         messages: [{ content: request(state, utterance), role: "user" }],

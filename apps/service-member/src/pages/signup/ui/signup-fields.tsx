@@ -8,25 +8,31 @@ import {
   useTextInput,
   type TextInput,
 } from "@repo/ui";
+import { Effect } from "effect";
 
 import type { ReactElement, SyntheticEvent } from "react";
 
-const signUp = async (
+const signUp = (
   fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
   onSent: () => void,
-): Promise<void> => {
-  const { email, name, password } = fields;
-  requireSuccess(
-    await authClient.signUp.email({
-      callbackURL: "/login",
-      email: email.value,
-      name: name.value,
-      password: password.value,
+): Promise<void> =>
+  Effect.runPromise(
+    Effect.gen(function* registerAccount() {
+      const { email, name, password } = fields;
+      requireSuccess(
+        yield* Effect.promise(() =>
+          authClient.signUp.email({
+            callbackURL: "/login",
+            email: email.value,
+            name: name.value,
+            password: password.value,
+          }),
+        ),
+      );
+      password.handleChange("");
+      onSent();
     }),
   );
-  password.handleChange("");
-  onSent();
-};
 
 const SignUpFields = ({
   action,
@@ -40,7 +46,7 @@ const SignUpFields = ({
   const password = useTextInput();
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
-    action.run(async () => signUp({ email, name: accountName, password }, onSent));
+    action.run(() => signUp({ email, name: accountName, password }, onSent));
   };
   return (
     <form onSubmit={submit} aria-busy={action.pending}>

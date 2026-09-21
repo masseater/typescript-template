@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { receiverOrigin } from "@repo/local";
-import { Effect } from "effect";
+import { Clock, Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 
@@ -54,7 +54,7 @@ const lokiStreams = {
 it.effect("exported telemetry pairs the receiver's span and log for one trace", () =>
   Effect.gen(function* program() {
     const queried: string[] = [];
-    const before = Date.now();
+    const before = yield* Clock.currentTimeMillis;
     const telemetry = yield* Effect.acquireUseRelease(
       Effect.sync(() => {
         const server = setupServer(
@@ -98,6 +98,6 @@ it.effect("exported telemetry pairs the receiver's span and log for one trace", 
     const start =
       Number(new URL(String(queried[0])).searchParams.get("start")) / nanosecondsPerMillisecond;
     assert.isAtLeast(start, before - minutes * millisecondsPerMinute);
-    assert.isAtMost(start, Date.now() - minutes * millisecondsPerMinute);
+    assert.isAtMost(start, (yield* Clock.currentTimeMillis) - minutes * millisecondsPerMinute);
   }),
 );

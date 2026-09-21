@@ -1,22 +1,38 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { createServer } from "node:http";
-
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { respondedSuccessfully, waitUntilResponds } from "./responds.ts";
 
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import type { IncomingMessage, Server, ServerResponse } from "node:http";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import type { Socket } from "node:net";
 import type { Scope } from "effect";
 
-type Reply = (request: IncomingMessage, response: ServerResponse) => void;
+type NodeSocket = {
+  readonly destroy: () => void;
+  readonly on: (event: "close", listener: () => void) => void;
+};
+
+type NodeResponse = {
+  readonly end: (body?: string) => void;
+  readonly writeHead: (status: number) => void;
+};
+
+type NodeServer = {
+  readonly address: () => { readonly port: number } | string | null;
+  readonly close: (done: (error?: Error) => void) => void;
+  readonly listen: (port: number, host: string, done: () => void) => void;
+  readonly on: (event: "connection", listener: (socket: NodeSocket) => void) => void;
+};
+
+const nodeHttp = process.getBuiltinModule("http") as {
+  readonly createServer: (
+    listener?: (request: unknown, response: NodeResponse) => void,
+  ) => NodeServer;
+};
+
+type Reply = (request: unknown, response: NodeResponse) => void;
 
 interface Listening {
-  readonly server: Server;
-  readonly sockets: Set<Socket>;
+  readonly server: NodeServer;
+  readonly sockets: Set<NodeSocket>;
   readonly url: string;
 }
 
@@ -25,8 +41,8 @@ const refused = "connection refused";
 function listen(reply: Reply): Effect.Effect<Listening, never, Scope.Scope> {
   return Effect.acquireRelease(
     Effect.callback<Listening>((resume) => {
-      const sockets = new Set<Socket>();
-      const server = createServer(reply);
+      const sockets = new Set<NodeSocket>();
+      const server = nodeHttp.createServer(reply);
       server.on("connection", (socket) => {
         sockets.add(socket);
         socket.on("close", () => {
@@ -64,7 +80,7 @@ it.effect("returns the status when the response is acceptable", () =>
       response.writeHead(200);
       response.end("ok");
     });
-    const status = yield* waitUntilResponds<number | string>({
+    const status = yield* waitUntilResponds({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,
@@ -84,7 +100,7 @@ it.effect("accepts an empty successful response", () =>
       response.writeHead(204);
       response.end();
     });
-    const status = yield* waitUntilResponds<number | string>({
+    const status = yield* waitUntilResponds({
       accept: respondedSuccessfully,
       method: "POST",
       onStatus: (rejected) => rejected,
@@ -101,7 +117,7 @@ it.effect("reports a status that is not acceptable", () =>
       response.writeHead(503);
       response.end("later");
     });
-    const status = yield* waitUntilResponds<number | string>({
+    const status = yield* waitUntilResponds({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,
@@ -114,27 +130,17 @@ it.effect("reports a status that is not acceptable", () =>
 
 it.effect("reports a target that never accepts the connection", () =>
   Effect.gen(function* program() {
-    const port = yield* Effect.promise(async () => {
-      const server = createServer();
-      await new Promise<void>((resolve) => {
-        server.listen(0, "127.0.0.1", () => {
-          resolve();
+    const port = yield* Effect.callback<number>((resume) => {
+      const server = nodeHttp.createServer();
+      server.listen(0, "127.0.0.1", () => {
+        const address = server.address();
+        const chosen = typeof address === "object" && address !== null ? address.port : 0;
+        server.close(() => {
+          resume(Effect.succeed(chosen));
         });
       });
-      const address = server.address();
-      const chosen = typeof address === "object" && address !== null ? address.port : 0;
-      await new Promise<void>((resolve, reject) => {
-        server.close((error) => {
-          if (error === undefined) {
-            resolve();
-          } else {
-            reject(error);
-          }
-        });
-      });
-      return chosen;
     });
-    const reason = yield* waitUntilResponds<string>({
+    const reason = yield* waitUntilResponds({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: () => "status",
@@ -148,7 +154,7 @@ it.effect("reports a target that never accepts the connection", () =>
 it.effect("stops waiting when the response exceeds the timeout", () =>
   Effect.gen(function* program() {
     const { url } = yield* listen(() => undefined);
-    const reason = yield* waitUntilResponds<string>({
+    const reason = yield* waitUntilResponds({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: () => "status",
@@ -168,7 +174,7 @@ it.live("retries until the target responds successfully", () =>
       response.writeHead(attempts < 3 ? 503 : 200);
       response.end(attempts < 3 ? "later" : "ok");
     });
-    const status = yield* waitUntilResponds<number | string>({
+    const status = yield* waitUntilResponds({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,
@@ -189,7 +195,7 @@ it.live("stops after the configured retries are exhausted", () =>
       response.writeHead(503);
       response.end("later");
     });
-    const status = yield* waitUntilResponds<number | string>({
+    const status = yield* waitUntilResponds({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,

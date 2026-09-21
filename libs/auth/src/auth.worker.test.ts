@@ -6,8 +6,8 @@ import { audienceOnEmptyDatabase } from "./testing.ts";
 
 describe("Auth.layer on a database without migrations", () => {
   const it = test
-    .extend("wikiBuild", async () => Effect.runPromise(audienceOnEmptyDatabase(APPLICATION.wiki)))
-    .extend("userBuild", async () => Effect.runPromise(audienceOnEmptyDatabase(APPLICATION.user)));
+    .extend("wikiBuild", () => Effect.runPromise(audienceOnEmptyDatabase(APPLICATION.wiki)))
+    .extend("userBuild", () => Effect.runPromise(audienceOnEmptyDatabase(APPLICATION.user)));
 
   it("fails the wiki while the OAuth provider initializes", ({ wikiBuild }) => {
     expect(wikiBuild).toBe("AuthFailure");

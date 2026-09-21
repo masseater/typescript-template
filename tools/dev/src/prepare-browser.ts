@@ -80,7 +80,15 @@ const program = Effect.gen(function* prepareBrowser() {
     }
   }).pipe(Effect.scoped);
   yield* Console.info(
-    JSON.stringify({
+    yield* Schema.encodeEffect(
+      Schema.fromJsonString(
+        Schema.Struct({
+          event: Schema.Literal("local.browser_cli_prepared"),
+          globalConfigurationChanged: Schema.Boolean,
+          playwrightBrowser: Schema.String,
+        }),
+      ),
+    )({
       event: "local.browser_cli_prepared",
       globalConfigurationChanged: false,
       playwrightBrowser: PLAYWRIGHT_BROWSER,

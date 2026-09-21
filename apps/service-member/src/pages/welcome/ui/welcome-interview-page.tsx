@@ -1,20 +1,27 @@
 import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { MemberPage } from "#widgets/member-page/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { ReactElement } from "react";
 
+function finishWelcome(goHome: () => Promise<unknown>): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* skipInterview() {
+      yield* Effect.promise(() => saveOnboardingStep("done"));
+      yield* Effect.promise(() => goHome());
+    }),
+  );
+}
+
 function WelcomeInterviewPage(): ReactElement {
   const navigate = useNavigate();
   const action = useAction();
 
   const finish = (): void => {
-    action.run(async () => {
-      await saveOnboardingStep("done");
-      await navigate({ to: "/home" });
-    });
+    action.run(() => finishWelcome(() => navigate({ to: "/home" })));
   };
 
   return (

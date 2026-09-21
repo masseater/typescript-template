@@ -4,6 +4,7 @@ import a11y from "@storybook/addon-a11y";
 import vitest from "@storybook/addon-vitest";
 import { definePreview } from "@storybook/react-vite";
 import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/react-router";
+import { Effect } from "effect";
 import msw from "msw-storybook-addon";
 
 import { FieldValidationMessageProvider } from "../src/shared/ui/field-validation-message-provider.tsx";
@@ -39,4 +40,8 @@ const preview = definePreview({
   tags: ["test"],
 });
 
+const playTask = <TaskResult,>(task: () => TaskResult): Effect.Effect<Awaited<TaskResult>> =>
+  Effect.promise(() => Promise.resolve(task()));
+
+export { playTask };
 export default preview;

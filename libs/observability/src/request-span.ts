@@ -98,11 +98,22 @@ export const failureAttributesOf = (
   return { ...attributes, "error.fingerprint": fingerprint, "error.tag": failureTag };
 };
 
-export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> =>
-  logAt("Error", {
-    attributes: failureAttributesOf(Cause.squash(cause)),
+export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> => {
+  const attributes = failureAttributesOf(Cause.squash(cause));
+  return logAt("Error", {
+    attributes: {
+      "error.fingerprint": attributes["error.fingerprint"],
+      "error.locations": attributes["error.locations"],
+      ...(typeof attributes["error.type"] === "string"
+        ? { "error.type": attributes["error.type"] }
+        : {}),
+      ...(typeof attributes["error.tag"] === "string"
+        ? { "error.tag": attributes["error.tag"] }
+        : {}),
+    },
     eventName: "application.error",
   });
+};
 
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 

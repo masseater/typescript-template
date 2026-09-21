@@ -1,6 +1,12 @@
+import { Effect, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { errorAttributes, errorFingerprint, fingerprintIdentity } from "./errors.ts";
+
+const encodeJson = (value: unknown): string =>
+  Effect.runSync(
+    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(Effect.orDie),
+  );
 
 const deepFrames = 6;
 const fingerprintPattern = /^[0-9a-f]{8}$/u;
@@ -23,7 +29,7 @@ describe("error attributes", () => {
       locations: "app.js:12:3\n/assets/web.js:34:5",
       type: "TypeError",
     });
-    expect(JSON.stringify(attributes)).not.toMatch(/private|secret|Users/u);
+    expect(encodeJson(attributes)).not.toMatch(/private|secret|Users/u);
   });
 
   it("does not serialize thrown objects or unsafe custom error names", () => {

@@ -24,7 +24,7 @@ const resolveFrames = Effect.fn("resolveFrames")(function* resolveFrames(input: 
   readonly locations: readonly string[];
   readonly release: string;
 }) {
-  const decoded = yield* Schema.decodeUnknownEffect(SymbolicateInput)(input).pipe(
+  const decoded = yield* Schema.decodeEffect(SymbolicateInput)(input).pipe(
     Effect.mapError(() => new SymbolicateFailure({ reason: "arguments_invalid" })),
   );
   const repositoryRoot = yield* urlPath(new URL("../../../", import.meta.url));
@@ -37,7 +37,16 @@ const resolveFrames = Effect.fn("resolveFrames")(function* resolveFrames(input: 
     decoded.locations,
   );
   yield* Console.info(
-    JSON.stringify({
+    yield* Schema.encodeEffect(
+      Schema.fromJsonString(
+        Schema.Struct({
+          app: Schema.Literals(applications),
+          event: Schema.Literal("observe.symbolicated"),
+          frames: Schema.Unknown,
+          release: Schema.String,
+        }),
+      ),
+    )({
       app: decoded.app,
       event: "observe.symbolicated",
       frames,
