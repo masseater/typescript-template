@@ -118,6 +118,29 @@ const showCached = (root: string, filename: string): Effect.Effect<string, Index
   return gitOutput(root, ["show", `:${filename}`], false);
 };
 
+const addedText = (root: string): Effect.Effect<ReadonlyMap<string, string>, IndexUnreadable> => {
+  return Effect.map(
+    gitOutput(root, ["diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff"], true),
+    (diff) => {
+      const added = new Map<string, string[]>();
+      let filename = "";
+      for (const line of diff.split("\n")) {
+        if (line.startsWith("+++ b/")) {
+          filename = line.slice("+++ b/".length);
+          continue;
+        }
+        if (filename === "" || !line.startsWith("+") || line.startsWith("+++")) {
+          continue;
+        }
+        const lines = added.get(filename) ?? [];
+        lines.push(line.slice(1));
+        added.set(filename, lines);
+      }
+      return new Map([...added.entries()].map(([name, lines]) => [name, lines.join("\n")]));
+    },
+  );
+};
+
 const prefixScanForIndex = Effect.fn("prefixScanForIndex")(function* prefixScanForIndex(
   root: string,
   environmentValues: readonly DeploymentValue[],
@@ -165,27 +188,27 @@ const indexSecretHits = Effect.fn("indexSecretHits")(function* indexSecretHits(
     }
   }
 
+  const introduced = yield* addedText(root);
   for (const entry of environmentValues) {
     if (entry.key === PREFIX_KEY) {
-      const candidates = yield* filesMatchingFixed(root, entry.value);
-      for (const filename of candidates) {
-        const content = yield* showCached(root, filename);
-        const pattern =
-          scan === "word"
-            ? wordPattern(entry.value)
-            : new RegExp(
-                `(?<![0-9A-Za-z_-])${entry.value.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`)}(?=[-/])`,
-                "u",
-              );
+      const pattern =
+        scan === "word"
+          ? wordPattern(entry.value)
+          : new RegExp(
+              `(?<![0-9A-Za-z_-])${entry.value.replaceAll(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`)}(?=[-/])`,
+              "u",
+            );
+      for (const [filename, content] of introduced) {
         if (pattern.test(content)) {
           add(filename, `deployment-value:${entry.key}`);
         }
       }
       continue;
     }
-    const matched = yield* filesMatchingFixed(root, entry.value);
-    for (const filename of matched) {
-      add(filename, `deployment-value:${entry.key}`);
+    for (const [filename, content] of introduced) {
+      if (content.includes(entry.value)) {
+        add(filename, `deployment-value:${entry.key}`);
+      }
     }
   }
 
