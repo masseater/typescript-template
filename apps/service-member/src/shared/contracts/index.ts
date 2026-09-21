@@ -29,7 +29,6 @@ export {
   maximumBoardBodyLength,
   maximumBoardPage,
   maximumBoardTitleLength,
-  withdrawnAuthorName,
 } from "./board.ts";
 export {
   ContactAccepted,
