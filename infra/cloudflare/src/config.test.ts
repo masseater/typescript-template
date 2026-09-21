@@ -40,7 +40,13 @@ const sharedBindings = {
   EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
   EMAIL_FROM: settings.mailFrom,
   FLAGSHIP_ACCOUNT_ID: settings.accountId,
-  FLAGS: binding<Flagship.App>({ appId: "flagship-app-id" }),
+  FLAGS: binding<Flagship.App>({
+    appId: "flagship-app-id",
+    getBooleanValue: async (): Promise<boolean> => false,
+    getNumberValue: async (): Promise<number> => 0,
+    getObjectValue: async (): Promise<object> => ({}),
+    getStringValue: async (): Promise<string> => "",
+  }),
   OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 
