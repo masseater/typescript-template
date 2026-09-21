@@ -1,11 +1,13 @@
-import { CheckboxField, FormColumn, Page, StatusMessage } from "@repo/ui";
-import { useState } from "react";
+import { CheckboxField, FormColumn, Page, StatusMessage, localState } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
+const useMessageMail = localState(false);
+const useBoardMail = localState(false);
+
 function NotificationsPage(): ReactElement {
-  const [messageMail, setMessageMail] = useState(false);
-  const [boardMail, setBoardMail] = useState(false);
+  const [messageMail, setMessageMail] = useMessageMail();
+  const [boardMail, setBoardMail] = useBoardMail();
   return (
     <Page title="通知">
       <StatusMessage>通知の配信はまだありません。既定はオフです。</StatusMessage>
