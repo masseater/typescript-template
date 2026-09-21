@@ -10,6 +10,7 @@ describe("choose how to fill the page", () => {
     const html = renderToStaticMarkup(
       createElement(ChooseView, {
         blocked: false,
+        error: undefined,
         onInterview: () => undefined,
         onProfile: () => undefined,
       }),

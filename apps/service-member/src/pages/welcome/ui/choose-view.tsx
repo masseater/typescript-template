@@ -11,7 +11,7 @@ function ChooseView({
   onProfile,
 }: Readonly<{
   blocked: boolean;
-  error?: string;
+  error: string | undefined;
   onInterview: () => void;
   onProfile: () => void;
 }>): ReactElement {
