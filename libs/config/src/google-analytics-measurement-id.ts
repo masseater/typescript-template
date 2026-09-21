@@ -2,8 +2,6 @@ import { Schema } from "effect";
 
 const GoogleAnalyticsMeasurementId = Schema.String.check(Schema.isPattern(/^G-[A-Z0-9]{1,48}$/u));
 
-type GoogleAnalyticsMeasurementId = typeof GoogleAnalyticsMeasurementId.Type;
-
 function activeGoogleAnalyticsMeasurementId(input: {
   readonly GOOGLE_ANALYTICS_MEASUREMENT_ID?: string | undefined;
   readonly local: boolean;
@@ -15,4 +13,3 @@ function activeGoogleAnalyticsMeasurementId(input: {
 }
 
 export { GoogleAnalyticsMeasurementId, activeGoogleAnalyticsMeasurementId };
-export type { GoogleAnalyticsMeasurementId };

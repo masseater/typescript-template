@@ -338,8 +338,19 @@ const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSes
   token: string,
 ) {
   const { instance } = yield* Auth;
-  const cookiePrefix = instance.options.advanced?.cookiePrefix;
-  const secret = instance.options.secret;
+  const options: unknown = instance.options;
+  const advanced =
+    typeof options === "object" && options !== null && "advanced" in options
+      ? options.advanced
+      : undefined;
+  const cookiePrefix =
+    typeof advanced === "object" && advanced !== null && "cookiePrefix" in advanced
+      ? advanced.cookiePrefix
+      : undefined;
+  const secret =
+    typeof options === "object" && options !== null && "secret" in options
+      ? options.secret
+      : undefined;
   if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
     return yield* new SessionRequired();
   }

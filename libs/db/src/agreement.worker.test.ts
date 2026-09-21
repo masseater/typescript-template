@@ -87,6 +87,10 @@ it.effect("records who accepted which version and when, then clears the pending 
   Effect.gen(function* program() {
     yield* addUser({ userId: "member" });
     const failure = yield* Effect.flip(requireSignupAgreements("member"));
+    assert.strictEqual(failure._tag, "AgreementRequired");
+    if (failure._tag !== "AgreementRequired") {
+      return;
+    }
     assert.deepStrictEqual(failure.kinds.toSorted(), [
       AGREEMENT_KIND.privacy,
       AGREEMENT_KIND.terms,
@@ -149,6 +153,10 @@ it.effect("asks again only for the kind whose accepted version was superseded", 
       AGREEMENT_KIND.terms,
     ]);
     const blocked = yield* Effect.flip(requireCurrentAgreements("member"));
+    assert.strictEqual(blocked._tag, "AgreementRequired");
+    if (blocked._tag !== "AgreementRequired") {
+      return;
+    }
     assert.deepStrictEqual(blocked.kinds, [AGREEMENT_KIND.terms]);
     yield* acceptAllPending("member");
     yield* requireCurrentAgreements("member");

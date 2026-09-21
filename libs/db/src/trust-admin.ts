@@ -92,8 +92,9 @@ const readReport = Effect.fn("readReport")(function* readReport(
   if (row === undefined) {
     return yield* new TrustSubjectNotFound();
   }
+  const targetMemberId = row.targetMemberId;
   const target =
-    row.targetMemberId === null
+    targetMemberId === null
       ? undefined
       : (yield* query((database) =>
           database
@@ -103,7 +104,7 @@ const readReport = Effect.fn("readReport")(function* readReport(
               name: user.name,
             })
             .from(user)
-            .where(eq(user.id, row.targetMemberId))
+            .where(eq(user.id, targetMemberId))
             .limit(1),
         ))[0];
   const actions = yield* query((database) =>

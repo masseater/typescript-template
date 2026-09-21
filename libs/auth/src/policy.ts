@@ -21,9 +21,9 @@ const enrollmentPaths = new Set([
   "/passkey/verify-authentication",
 ]);
 
-const deny = (denial: string): never => {
+function deny(denial: string): never {
   throw new APIError("FORBIDDEN", { message: denial });
-};
+}
 
 const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 

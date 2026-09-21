@@ -28,7 +28,7 @@ function getSchemaShape(): Record<string, string[]> {
 
 function runStatement(
   sql: string,
-  ...params: readonly (string | number)[]
+  ...params: readonly (string | number | null)[]
 ): Effect.Effect<D1Result, DatabaseFailure> {
   return Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),

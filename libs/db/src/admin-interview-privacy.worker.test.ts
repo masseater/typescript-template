@@ -3,7 +3,7 @@ import { APPLICATION, ROLE } from "@repo/config";
 import { Effect } from "effect";
 
 import { listAgreementVersions, listUsers, readAgreementVersion } from "./admin.ts";
-import { startInterview, storeInterview } from "./interview.ts";
+import { startInterview } from "./interview.ts";
 import { addSession, addUser } from "./records-fixture.ts";
 import { TestDatabase } from "./testing.ts";
 

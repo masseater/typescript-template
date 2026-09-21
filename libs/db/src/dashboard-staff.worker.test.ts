@@ -74,7 +74,7 @@ it.effect("returns empty trends for buckets outside the requested range", () =>
         clientKind: CLIENT_KIND.total,
         computedAt: new Date("1999-01-01T00:00:00.000Z"),
         id: "old-snapshot",
-        metric: "members",
+        metric: METRIC_KEY.memberCount,
         period: "daily",
         value: 99,
       });

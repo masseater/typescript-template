@@ -220,9 +220,13 @@ export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft:
   readonly sessionId: string;
 }) {
   const actor = yield* requireAdmin(draft.sessionId, ADMIN_PERMISSION.owner);
+  const channel = draft.channel;
   return yield* issueInvite({
     audience: APPLICATION.admin,
-    audit: { ...adminActor(actor, AUDIT_ACTION.adminInvited), channel: draft.channel },
+    audit: {
+      ...adminActor(actor, AUDIT_ACTION.adminInvited),
+      ...(channel === undefined ? {} : { channel }),
+    },
     email: draft.email,
     permission: draft.permission,
   });

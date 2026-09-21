@@ -12,14 +12,7 @@ import {
 } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { bucketFor, currentSnapshotValues, refreshMetricSnapshots } from "./metric-snapshot.ts";
-import {
-  auditEvent,
-  metricSnapshot,
-  user,
-  type AuditAction,
-  type MetricKey,
-  type MetricPeriod,
-} from "./schema.ts";
+import { auditEvent, metricSnapshot, user, type AuditAction, type MetricKey } from "./schema.ts";
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_TREND_DAYS = 30;

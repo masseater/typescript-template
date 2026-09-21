@@ -94,7 +94,7 @@ const loadSnapshot = Effect.fn("loadMemberSnapshot")(function* loadSnapshot(memb
       .from(agreementAcceptance)
       .where(eq(agreementAcceptance.userId, memberId)),
   );
-  const snapshot: MemberSnapshot = {
+  const snapshot: typeof MemberSnapshot.Type = {
     agreements: agreements.map((row) => ({
       acceptedAt: row.acceptedAt.getTime(),
       versionId: row.versionId,

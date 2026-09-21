@@ -72,7 +72,6 @@ export {
   GoogleAnalyticsMeasurementId,
   activeGoogleAnalyticsMeasurementId,
 } from "./google-analytics-measurement-id.ts";
-export type { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
 export {
   googleAnalyticsConnectSrc,
   googleAnalyticsImgSrc,
