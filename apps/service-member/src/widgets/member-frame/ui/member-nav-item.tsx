@@ -23,7 +23,7 @@ function MemberNavItemLink({
         activeOptions={activeOptions}
         title={name}
         aria-label={name}
-        {...(layout === "tab" ? { className: "px-1 py-2 text-center" } : {})}
+        className={layout === "tab" ? "px-1 py-2 text-center" : "px-3 py-2"}
       >
         <span className="flex flex-col items-center gap-1">
           <span className="relative">
