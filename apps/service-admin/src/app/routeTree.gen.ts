@@ -22,6 +22,7 @@ import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as AdminMembersIdRouteImport } from './routes/_admin/members.$id'
+import { Route as PublicInviteTokenRouteImport } from './routes/_public/invite.$token'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/_admin',
@@ -86,6 +87,11 @@ const AdminMembersIdRoute = AdminMembersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminMembersRoute,
 } as any)
+const PublicInviteTokenRoute = PublicInviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => PublicRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AdminIndexRoute
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/members/$id': typeof AdminMembersIdRoute
+  '/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AdminIndexRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/members/$id': typeof AdminMembersIdRoute
+  '/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/api/$': typeof ApiSplatRoute
   '/_admin/': typeof AdminIndexRoute
   '/_admin/members/$id': typeof AdminMembersIdRoute
+  '/_public/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/api/$'
     | '/members/$id'
+    | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/api/$'
     | '/members/$id'
+    | '/invite/$token'
   id:
     | '__root__'
     | '/_admin'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/_admin/'
     | '/_admin/members/$id'
+    | '/_public/invite/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -272,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMembersIdRouteImport
       parentRoute: typeof AdminMembersRoute
     }
+    '/_public/invite/$token': {
+      id: '/_public/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof PublicInviteTokenRouteImport
+      parentRoute: typeof PublicRoute
+    }
   }
 }
 
@@ -312,11 +331,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface PublicRouteChildren {
   PublicLoginRoute: typeof PublicLoginRoute
   PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
+  PublicInviteTokenRoute: typeof PublicInviteTokenRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
   PublicLoginRoute: PublicLoginRoute,
   PublicVerifyEmailRoute: PublicVerifyEmailRoute,
+  PublicInviteTokenRoute: PublicInviteTokenRoute,
 }
 
 const PublicRouteWithChildren =

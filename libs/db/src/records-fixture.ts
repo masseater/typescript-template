@@ -1,11 +1,20 @@
 import { type Application } from "@repo/config";
-import { AUTHENTICATION_METHOD, ROLE, type Role } from "@repo/config/identity";
+import {
+  ADMIN_PERMISSION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  STAFF_PERMISSION,
+  type AccountPermission,
+  type AccountState,
+  type Role,
+} from "@repo/config/identity";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { query, type Database } from "./database.ts";
 import {
   account,
+  auditEvent,
   oauthAccessToken,
   oauthClient,
   oauthConsent,
@@ -18,23 +27,51 @@ import type { DatabaseFailure } from "./database-failure.ts";
 
 export const recordedAt = new Date("2026-01-01T00:00:00.000Z");
 
+const topPermission: Readonly<Record<Role, AccountPermission | null>> = {
+  admin: ADMIN_PERMISSION.owner,
+  member: null,
+  staff: STAFF_PERMISSION.editor,
+};
+
 export const addUser = (added: {
   readonly userId: string;
   readonly role?: Role;
+  readonly permission?: AccountPermission;
+  readonly accountState?: AccountState;
   readonly emailVerified?: boolean;
 }): Effect.Effect<void, DatabaseFailure, Database> => {
+  const role = added.role ?? ROLE.member;
   return query(async (database): Promise<void> => {
     await database.insert(user).values({
+      ...(added.accountState === undefined ? {} : { accountState: added.accountState }),
       createdAt: recordedAt,
       email: `${added.userId}@example.com`,
       emailVerified: added.emailVerified ?? true,
       id: added.userId,
       name: added.userId,
-      role: added.role ?? ROLE.member,
+      permission: added.permission ?? topPermission[role],
+      role,
       updatedAt: recordedAt,
     });
   });
 };
+
+export const auditActionsOf = Effect.fn("auditActionsOf")(function* auditActionsOf(
+  targetId: string,
+) {
+  const events = yield* query((database) =>
+    database
+      .select({
+        action: auditEvent.action,
+        actorId: auditEvent.actorId,
+        actorKind: auditEvent.actorKind,
+      })
+      .from(auditEvent)
+      .where(eq(auditEvent.targetId, targetId))
+      .orderBy(auditEvent.createdAt),
+  );
+  return events;
+});
 
 export const addCredential = (userId: string): Effect.Effect<void, DatabaseFailure, Database> => {
   return query(async (database): Promise<void> => {
@@ -56,6 +93,7 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
   readonly userId: string;
   readonly audience: Application;
   readonly strong?: boolean;
+  readonly token?: string;
 }) {
   const sessionId = crypto.randomUUID();
   const owners = yield* query(async (database) =>
@@ -73,7 +111,7 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
       expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
       id: sessionId,
       securityVersion,
-      token: crypto.randomUUID(),
+      token: opened.token ?? crypto.randomUUID(),
       updatedAt: new Date(),
       userId: opened.userId,
     });

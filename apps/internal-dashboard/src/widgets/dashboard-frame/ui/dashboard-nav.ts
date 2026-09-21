@@ -1,3 +1,4 @@
+import { STAFF_PERMISSION, grantsStaffLevel, type StaffPermission } from "@repo/config";
 import {
   FlagIcon,
   LayoutDashboardIcon,
@@ -13,6 +14,7 @@ type DashboardNavPath = "/" | "/audit" | "/flags" | "/inquiries" | "/staff";
 type DashboardNavItem = Readonly<{
   icon: LucideIcon;
   label: string;
+  requires: StaffPermission;
   to: DashboardNavPath;
 }>;
 
@@ -24,20 +26,34 @@ type DashboardNavGroup = Readonly<{
 const dashboardNavGroups: readonly DashboardNavGroup[] = [
   {
     items: [
-      { icon: LayoutDashboardIcon, label: "概要", to: "/" },
-      { icon: MessageSquareIcon, label: "問い合わせ", to: "/inquiries" },
-      { icon: ScrollTextIcon, label: "監査ログ", to: "/audit" },
+      { icon: LayoutDashboardIcon, label: "概要", requires: STAFF_PERMISSION.viewer, to: "/" },
+      {
+        icon: MessageSquareIcon,
+        label: "問い合わせ",
+        requires: STAFF_PERMISSION.viewer,
+        to: "/inquiries",
+      },
+      { icon: ScrollTextIcon, label: "監査ログ", requires: STAFF_PERMISSION.viewer, to: "/audit" },
     ],
     label: "状況",
   },
   {
     items: [
-      { icon: FlagIcon, label: "機能フラグ", to: "/flags" },
-      { icon: UsersIcon, label: "メンバー", to: "/staff" },
+      { icon: FlagIcon, label: "機能フラグ", requires: STAFF_PERMISSION.viewer, to: "/flags" },
+      { icon: UsersIcon, label: "メンバー", requires: STAFF_PERMISSION.editor, to: "/staff" },
     ],
     label: "運営",
   },
 ];
+
+function visibleNavGroups(held: string | null): readonly DashboardNavGroup[] {
+  return dashboardNavGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => grantsStaffLevel(held, item.requires)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
 
 const dashboardPageTitles: Readonly<Record<DashboardNavPath | "/security", string>> = {
   "/": "概要",
@@ -48,5 +64,5 @@ const dashboardPageTitles: Readonly<Record<DashboardNavPath | "/security", strin
   "/staff": "メンバー",
 };
 
-export { dashboardNavGroups, dashboardPageTitles };
+export { dashboardPageTitles, visibleNavGroups };
 export type { DashboardNavPath };

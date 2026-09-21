@@ -1,4 +1,6 @@
-import { dashboardNavGroups } from "./dashboard-nav.ts";
+import { useSessionUser } from "@repo/auth-ui";
+
+import { visibleNavGroups } from "./dashboard-nav.ts";
 import { DashboardNavigationItem } from "./dashboard-navigation-item.tsx";
 
 import type { ReactElement } from "react";
@@ -10,6 +12,7 @@ function DashboardNavigation({
   collapsed: boolean;
   onNavigate: () => void;
 }>): ReactElement {
+  const { permission } = useSessionUser();
   return (
     <nav
       id="dashboard-navigation"
@@ -17,7 +20,7 @@ function DashboardNavigation({
       className="flex flex-1 flex-col overflow-y-auto"
     >
       <div className="flex flex-1 flex-col gap-4 p-2">
-        {dashboardNavGroups.map((group) => (
+        {visibleNavGroups(permission).map((group) => (
           <div key={group.label} className="flex flex-col gap-1">
             {collapsed ? null : (
               <p className="px-3 text-sm leading-tight font-bold text-muted-foreground">

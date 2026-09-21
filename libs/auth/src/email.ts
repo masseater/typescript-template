@@ -8,6 +8,7 @@ const mailSubjects = {
   emailChangeNotice: "メールアドレスの変更が申請されました",
   emailChangeVerification: "新しいメールアドレスの確認",
   existingAccount: "このメールアドレスは登録済みです",
+  invite: "アカウントへの招待",
   verification: "メールアドレスの確認",
 } as const;
 
@@ -145,6 +146,20 @@ const sendEmailChangeNotice = (
     subject: mailSubjects.emailChangeNotice,
   });
 
+const sendInviteEmail = (
+  settings: MailSettings,
+  invitation: { readonly email: string; readonly url: string },
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  if (URL.parse(invitation.url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
+  return deliver(settings, {
+    subject: mailSubjects.invite,
+    text: `アカウントへ招待されました。次のリンクを開いてパスワードを設定してください。リンクは 7 日で無効になります。\n${invitation.url}`,
+    to: invitation.email,
+  }).pipe(withSpan("email.invite"));
+};
+
 const sendContactEmail = (
   settings: MailSettings,
   outbound: Readonly<{
@@ -165,6 +180,7 @@ export {
   sendEmailChangeNotice,
   sendEmailChangeVerification,
   sendExistingAccountNotice,
+  sendInviteEmail,
   sendVerificationEmail,
 };
 export type { MailSettings };
