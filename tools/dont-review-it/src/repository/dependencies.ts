@@ -151,12 +151,14 @@ const developmentOnlyDependencyViolations = (
   });
 };
 
+const libraryCommandPackages = new Set([
+  "libs/db-local/package.json",
+  "libs/vite-config/package.json",
+]);
+
 const libraryMixedSurfaceViolations = (workspaces: readonly WorkspaceManifest[]): string[] => {
   return workspaces.flatMap(({ area, file, manifest }) => {
-    if (area !== "libs") {
-      return [];
-    }
-    if (file === "libs/db-local/package.json") {
+    if (area !== "libs" || libraryCommandPackages.has(file)) {
       return [];
     }
     const bin = field(manifest, "bin");

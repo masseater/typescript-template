@@ -30,6 +30,19 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
+      - &beads
+        run: |
+          case "${{ runner.arch }}" in
+            X64) archive=beads_1.3.0_linux_amd64.tar.gz ;;
+            ARM64) archive=beads_1.3.0_linux_arm64.tar.gz ;;
+            *) echo "unsupported runner arch: ${{ runner.arch }}" >&2; exit 1 ;;
+          esac
+          curl -fsSL -o "$archive" "https://github.com/gastownhall/beads/releases/download/v1.3.0/$archive"
+          curl -fsSL -o checksums.txt "https://github.com/gastownhall/beads/releases/download/v1.3.0/checksums.txt"
+          grep "  $archive" checksums.txt | sha256sum -c -
+          tar -xzf "$archive" bd
+          sudo install -m 755 bd /usr/local/bin/bd
+          bd version
       - &vite-task-cache
         id: vite-task-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -54,6 +67,7 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
+      - *beads
       - *vite-task-cache
       - run: vp run -r premerge
 
@@ -76,6 +90,7 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
+      - *beads
       - run: vp check
       - run: vp run -r prepr
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
