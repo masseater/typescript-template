@@ -1,33 +1,33 @@
 import {
+  type ActionState,
+  ActionStatus,
   Button,
   ConfirmDialog,
   Field,
   FormColumn,
   Page,
-  STATUS_VARIANT,
   StatusMessage,
-  useAction,
+  localState,
 } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
-import { useState, type ReactElement } from "react";
 
-import {
-  createApiKey,
-  revokeApiKey,
-  type CreatedApiKey,
-  type ListedApiKey,
-} from "../api/api-keys.ts";
+import { revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
+import { useApiKeyForm } from "#pages/settings/model/api-key-form.ts";
+
+import type { ReactElement } from "react";
+
+const useRevokeConfirming = localState(false);
 
 function ApiKeyItem({
   action,
   entry,
   onRevoked,
 }: Readonly<{
-  action: ReturnType<typeof useAction>["action"];
+  action: ActionState;
   entry: ListedApiKey;
   onRevoked: () => void;
 }>): ReactElement {
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useRevokeConfirming();
   const label = entry.name ?? "名前のない API キー";
   const revoke = (): void => {
     setConfirming(false);
@@ -66,26 +66,14 @@ function ApiKeyItem({
 
 function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactElement {
   const router = useRouter();
-  const { action } = useAction();
-  const [name, setName] = useState("");
-  const [issued, setIssued] = useState<CreatedApiKey | undefined>(undefined);
-
   const reload = (): void => {
     void router.invalidate();
   };
-
-  const issue = (): void => {
-    const trimmed = name.trim();
-    if (trimmed === "") {
-      return;
-    }
-    action.run(async () => {
-      const created = await createApiKey(trimmed);
-      setIssued(created);
-      setName("");
-      reload();
-    });
-  };
+  const form = useApiKeyForm(reload);
+  const issuedNotice =
+    form.issued === undefined
+      ? undefined
+      : `発行した API キー（この画面を離れると再表示できません）: ${form.issued.key}`;
 
   return (
     <Page title="AI と API">
@@ -93,32 +81,26 @@ function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactEle
         <Field
           label="キーの名前"
           name="api-key-name"
-          onChange={(event) => {
-            setName(event.target.value);
-          }}
-          value={name}
+          onValueChange={form.handleNameChange}
+          value={form.name}
         />
         <Button
           aria-label="APIキーを発行する"
-          disabled={action.blocked || name.trim() === ""}
-          onClick={issue}
+          disabled={form.action.blocked || form.name.trim() === ""}
+          onClick={form.issue}
           type="button"
           variant="primary"
         >
           APIキーを発行
         </Button>
+        <ActionStatus action={form.action} notice={issuedNotice} />
       </FormColumn>
-      {issued === undefined ? null : (
-        <StatusMessage variant={STATUS_VARIANT.success}>
-          発行した API キー（この画面を離れると再表示できません）: {issued.key}
-        </StatusMessage>
-      )}
       {keys.length === 0 ? (
         <StatusMessage>API キーはまだありません。</StatusMessage>
       ) : (
         <ul>
           {keys.map((entry) => (
-            <ApiKeyItem action={action} entry={entry} key={entry.id} onRevoked={reload} />
+            <ApiKeyItem action={form.action} entry={entry} key={entry.id} onRevoked={reload} />
           ))}
         </ul>
       )}

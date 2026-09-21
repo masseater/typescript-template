@@ -5,7 +5,13 @@ import { NotFoundPage } from "./not-found.tsx";
 
 const createAppRouter = <TRouteTree extends AnyRoute>(
   routeTree: TRouteTree,
-  routerContext?: NonNullable<Parameters<typeof createRouter<TRouteTree>>[0]["context"]>,
+  routerConfig?: Readonly<{
+    rewrite?: Readonly<{
+      input: (parts: Readonly<{ url: URL }>) => URL;
+      output: (parts: Readonly<{ url: URL }>) => URL;
+    }>;
+    routerContext?: object;
+  }>,
 ): ReturnType<typeof createRouter<TRouteTree>> => {
   const nonce = nonceOptions();
   const router = {
@@ -13,7 +19,8 @@ const createAppRouter = <TRouteTree extends AnyRoute>(
     defaultPreloadStaleTime: 0,
     routeTree,
     scrollRestoration: true as const,
-    ...(routerContext === undefined ? {} : { context: routerContext }),
+    ...(routerConfig?.routerContext === undefined ? {} : { context: routerConfig.routerContext }),
+    ...(routerConfig?.rewrite === undefined ? {} : { rewrite: routerConfig.rewrite }),
     ...(nonce.ssr === undefined ? {} : { ssr: nonce.ssr }),
   };
   return createRouter(router as Parameters<typeof createRouter<TRouteTree>>[0]);

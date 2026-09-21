@@ -1,5 +1,5 @@
 import { apiKeyClient } from "@better-auth/api-key/client";
-import { createAuthClient } from "better-auth/react";
+import { createAuthClient } from "better-auth/client";
 
 const memberAuthClient = createAuthClient({
   basePath: "/api/auth",
