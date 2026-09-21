@@ -13,13 +13,13 @@ Feature-Sliced Design は、フロントエンドのコードをレイヤー、�
 
 [TanStack Start](/tech-stack/tanstack-start) のルートファイルは `app/routes` に置く。URL と、ページの public API を繋ぐだけにして、画面の中身は持たない。
 
-| ファイル | 役割 |
-| --- | --- |
-| `src/app/routes/_member/users.$id.tsx` | `/users/123` とページを繋ぐ |
-| `src/pages/profile/index.ts` | スライスの外から import できる公開 API |
-| `src/pages/profile/ui/` | その画面の表示 |
-| `src/pages/profile/api/` | その画面の取得 |
-| `src/pages/profile/model/` | その画面の型と検証 |
+| ファイル                               | 役割                                   |
+| -------------------------------------- | -------------------------------------- |
+| `src/app/routes/_member/users.$id.tsx` | `/users/123` とページを繋ぐ            |
+| `src/pages/profile/index.ts`           | スライスの外から import できる公開 API |
+| `src/pages/profile/ui/`                | その画面の表示                         |
+| `src/pages/profile/api/`               | その画面の取得                         |
+| `src/pages/profile/model/`             | その画面の型と検証                     |
 
 ```tsx
 import { ProfilePage, loadMember } from "#pages/profile/index.ts";

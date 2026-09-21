@@ -6,6 +6,7 @@ description: Cloudflare 上に残る資源を Effect のプログラムとして
 Alchemy は、Cloudflare 上の資源の目標を Effect のプログラムに書く。適用するとアカウントがその記述へ合う。`alchemy plan` は、いまのアカウントと記述の差分を出す。状態ファイルは、記述した名前とアカウント上の資源との対応を持つ。管理画面だけで作った Worker は、このプログラムに残らない。
 
 ```ts
+// prettier-ignore
 const worker = yield* Worker("Worker", {
   name: "app",
   main: "./dist/index.js",
