@@ -1,4 +1,4 @@
-/** @canonical-values db.audit-action */
+/** @canonical-values config.audit-action */
 export const auditActions = [
   "flag_toggled",
   "role_changed",
@@ -34,7 +34,7 @@ export const AUDIT_ACTION = {
   inquiryReplied: auditActions[14],
 } as const;
 
-/** @canonical-values db.client-kind */
+/** @canonical-values config.client-kind */
 export const clientKinds = ["ai", "bot", "human", "total"] as const;
 export const CLIENT_KIND = {
   ai: clientKinds[0],
@@ -43,7 +43,7 @@ export const CLIENT_KIND = {
   total: clientKinds[3],
 } as const;
 
-/** @canonical-values db.metric-key */
+/** @canonical-values config.metric-key */
 export const metricKeys = [
   "member_count",
   "message_count",
@@ -57,6 +57,6 @@ export const METRIC_KEY = {
   wikiSessionCount: metricKeys[3],
 } as const;
 
-/** @canonical-values db.metric-period */
+/** @canonical-values config.metric-period */
 export const metricPeriods = ["daily", "weekly"] as const;
 export const METRIC_PERIOD = { daily: metricPeriods[0], weekly: metricPeriods[1] } as const;

@@ -10,8 +10,7 @@
     "./testing": "./src/testing.ts",
     "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts",
-    "./inquiry-staff": "./src/inquiry-staff.ts",
-    "./dashboard-literals": "./src/dashboard-literals.ts"
+    "./inquiry-staff": "./src/inquiry-staff.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

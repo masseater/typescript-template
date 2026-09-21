@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import { auditActions } from "@repo/db/dashboard-literals";
+import { auditActions } from "@repo/config";
 import { localState, requestAtom, type RequestResult } from "@repo/ui";
 import { Schema } from "effect";
 import { Atom } from "effect/unstable/reactivity";

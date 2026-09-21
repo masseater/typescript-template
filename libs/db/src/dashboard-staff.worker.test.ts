@@ -1,15 +1,16 @@
 import { assert, it } from "@effect/vitest";
-import { APPLICATION, ROLE } from "@repo/config";
-import { and, eq } from "drizzle-orm";
-import { Effect } from "effect";
-
 import {
+  APPLICATION,
   AUDIT_ACTION,
   CLIENT_KIND,
   METRIC_KEY,
   METRIC_PERIOD,
+  ROLE,
   auditActions,
-} from "./dashboard-literals.ts";
+} from "@repo/config";
+import { and, eq } from "drizzle-orm";
+import { Effect } from "effect";
+
 import { dashboardStaff } from "./dashboard-staff.ts";
 import { query } from "./database.ts";
 import { bucketFor, refreshMetricSnapshots } from "./metric-snapshot.ts";

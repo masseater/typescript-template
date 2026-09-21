@@ -1,15 +1,15 @@
-import { ROLE } from "@repo/config";
+import {
+  METRIC_KEY,
+  METRIC_PERIOD,
+  ROLE,
+  auditActions,
+  metricKeys,
+  metricPeriods,
+} from "@repo/config";
 import { and, count, desc, eq, gte, lte } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, type ClientKind } from "./client-kind.ts";
-import {
-  METRIC_KEY,
-  METRIC_PERIOD,
-  auditActions,
-  metricKeys,
-  metricPeriods,
-} from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { bucketFor, currentSnapshotValues, refreshMetricSnapshots } from "./metric-snapshot.ts";
 import { auditEvent, metricSnapshot, user, type AuditAction, type MetricKey } from "./schema.ts";

@@ -1,4 +1,4 @@
-import { ADMIN_PERMISSION, type AgreementKind } from "@repo/config";
+import { ADMIN_PERMISSION, AUDIT_ACTION, type AgreementKind } from "@repo/config";
 import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -6,7 +6,6 @@ import { agreementVersion } from "./agreement-schema.ts";
 import { AgreementVersionTaken } from "./agreement-version-taken.ts";
 import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts";
 import { auditWhen } from "./audit.ts";
-import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 

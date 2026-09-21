@@ -149,3 +149,13 @@ export { GROUP_JOIN_POLICY, groupJoinPolicies } from "./group-join-policy.ts";
 export type { GroupJoinPolicy } from "./group-join-policy.ts";
 export { INQUIRY_STATUS, inquiryStatuses } from "./inquiry-status.ts";
 export type { InquiryStatus } from "./inquiry-status.ts";
+export {
+  AUDIT_ACTION,
+  CLIENT_KIND,
+  METRIC_KEY,
+  METRIC_PERIOD,
+  auditActions,
+  clientKinds,
+  metricKeys,
+  metricPeriods,
+} from "./dashboard-literals.ts";

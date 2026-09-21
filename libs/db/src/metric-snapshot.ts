@@ -1,9 +1,15 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import {
+  APPLICATION,
+  METRIC_KEY,
+  METRIC_PERIOD,
+  ROLE,
+  clientKinds,
+  metricPeriods,
+} from "@repo/config";
 import { count, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, clientKindOf, type ClientKind } from "./client-kind.ts";
-import { METRIC_KEY, METRIC_PERIOD, clientKinds, metricPeriods } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { metricSnapshot, session, user, type MetricKey, type MetricPeriod } from "./schema.ts";
 

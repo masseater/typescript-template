@@ -1,5 +1,6 @@
 import {
   APPLICATION,
+  AUDIT_ACTION,
   ROLE,
   STAFF_PERMISSION,
   staffPermissions,
@@ -9,7 +10,6 @@ import { and, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
-import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { issueInvite } from "./invite.ts";
 import { LastEditorRequired } from "./last-editor-required.ts";

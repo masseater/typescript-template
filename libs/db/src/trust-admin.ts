@@ -1,24 +1,23 @@
 import {
   ACCOUNT_STATE,
   ADMIN_PERMISSION,
+  AUDIT_ACTION,
   MODERATION_KIND,
   REPORT_STATUS,
   ROLE,
+  type ReportStatus,
 } from "@repo/config";
 import { count, desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Clock, Effect } from "effect";
 
 import { auditWhenTargeted } from "./audit.ts";
-import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { user } from "./identity-schema.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import { AUDIT_CHANNEL } from "./schema.ts";
 import { memberReport, moderationAction } from "./trust-schema.ts";
 import { TrustSubjectNotFound, TrustTargetUnavailable } from "./trust.ts";
-
-import type { ReportStatus } from "@repo/config";
 
 const targetUser = alias(user, "report_target");
 const reporterUser = alias(user, "report_reporter");

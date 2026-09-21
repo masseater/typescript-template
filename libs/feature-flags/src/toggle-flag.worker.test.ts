@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { AUDIT_ACTION, auditEvent, query } from "@repo/db";
-import { auditActions } from "@repo/db/dashboard-literals";
+import { auditActions } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, Layer } from "effect";
 

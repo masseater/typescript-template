@@ -1,8 +1,7 @@
-import { ADMIN_PERMISSION } from "@repo/config";
+import { ADMIN_PERMISSION, AUDIT_ACTION } from "@repo/config";
 import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
-import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
 import { InquiryForbidden } from "./inquiry-forbidden.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";

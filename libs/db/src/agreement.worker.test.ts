@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, ROLE } from "@repo/config";
+import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, AUDIT_ACTION, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -19,7 +19,6 @@ import {
   requireSignupAgreements,
   withdrawAgreementKind,
 } from "./agreement.ts";
-import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { addSession, addUser } from "./records-fixture.ts";
 import { auditEvent } from "./schema.ts";

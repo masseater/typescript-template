@@ -1,4 +1,4 @@
-import { CLIENT_KIND, clientKinds } from "./dashboard-literals.ts";
+import { CLIENT_KIND, clientKinds } from "@repo/config";
 
 type ClientKind = (typeof clientKinds)[number];
 

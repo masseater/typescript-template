@@ -1,11 +1,20 @@
-import { AUTHENTICATION_METHOD, ROLE, accountPermissions, applications, roles } from "@repo/config";
+import {
+  AUTHENTICATION_METHOD,
+  ROLE,
+  accountPermissions,
+  applications,
+  auditActions,
+  clientKinds,
+  metricKeys,
+  metricPeriods,
+  roles,
+} from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { apikey } from "./api-key-schema.ts";
 import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
-import { auditActions, clientKinds, metricKeys, metricPeriods } from "./dashboard-literals.ts";
 import { session, user } from "./identity-schema.ts";
 import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 import { interview } from "./interview-schema.ts";

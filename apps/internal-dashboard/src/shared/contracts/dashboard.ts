@@ -1,4 +1,4 @@
-import { auditActions, clientKinds, metricKeys, metricPeriods } from "@repo/db/dashboard-literals";
+import { auditActions, clientKinds, metricKeys, metricPeriods } from "@repo/config";
 import { Schema } from "effect";
 
 const OverviewCard = Schema.Struct({

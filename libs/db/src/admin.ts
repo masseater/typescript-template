@@ -1,4 +1,4 @@
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, AUDIT_ACTION } from "@repo/config";
 import {
   ACCOUNT_STATE,
   ADMIN_PERMISSION,
@@ -14,7 +14,6 @@ import { Effect, Schema } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
 import { containsKeyword } from "./contains-keyword.ts";
-import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
