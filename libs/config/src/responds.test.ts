@@ -29,7 +29,6 @@ describe.for(probeCases)(
   ([, method, writeHead, timeoutMilliseconds, retryTimes, pinnedProbe]) => {
     const it = test.extend("observedProbe", async ({}, { onCleanup }) => {
       const attemptDirectory = await mkdtemp(path.join(tmpdir(), "responds-"));
-      onCleanup(() => rm(attemptDirectory, { force: true, recursive: true }));
       const server = createServer((_incoming, outgoing) => {
         if (writeHead === "silent") {
           return;
@@ -49,19 +48,19 @@ describe.for(probeCases)(
         outgoing.writeHead(httpStatus);
         outgoing.end(httpStatus === 204 ? undefined : "ok");
       });
-      onCleanup(
-        () =>
-          new Promise<void>((resolve, reject) => {
-            server.closeAllConnections();
-            server.close((closeFailure) => {
-              if (closeFailure === undefined) {
-                resolve();
-                return;
-              }
-              reject(closeFailure);
-            });
-          }),
-      );
+      onCleanup(async () => {
+        await new Promise<void>((resolve, reject) => {
+          server.closeAllConnections();
+          server.close((closeFailure) => {
+            if (closeFailure === undefined) {
+              resolve();
+              return;
+            }
+            reject(closeFailure);
+          });
+        });
+        await rm(attemptDirectory, { force: true, recursive: true });
+      });
       const url = await new Promise<string>((resolve, reject) => {
         server.listen(0, "127.0.0.1", () => {
           const address = server.address();

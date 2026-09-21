@@ -27,6 +27,8 @@ const workerBindings = {
   EMAIL: { send: queueMicrotask },
 };
 
+const { AI: _aiBinding, ...requiredWorkerBindings } = workerBindings;
+
 const budgetWithinReserve = {
   budgetJpy: 5000,
   fixedCostUsd: 40,
@@ -68,7 +70,7 @@ describe("readConfig", () => {
   it("accepts the bindings the worker declares", ({ workerConfig }) => {
     expect(workerConfig).toStrictEqual({
       ...local,
-      ...workerBindings,
+      ...requiredWorkerBindings,
       APP_RELEASE: "local",
       MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
       local: true,
