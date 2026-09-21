@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "@better-auth/api-key": "catalog:",
+    "@better-auth/oauth-provider": "1.7.5",
     "@cloudflare/tanstack-ai": "0.2.1",
     "@effect/atom-react": "catalog:",
     "@inlang/paraglide-js": "catalog:",
+    "@modelcontextprotocol/server": "2.0.0",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",

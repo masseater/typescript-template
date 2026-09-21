@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { query } from "./database.ts";

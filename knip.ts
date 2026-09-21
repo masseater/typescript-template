@@ -191,6 +191,11 @@ const config = ({
         ...app,
         entry: [...app.entry, "src/shared/photo/image-fixture.ts"],
         ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+        project: [
+          "src/**/*.{ts,tsx}!",
+          "src/**/*.css",
+          "!src/shared/server-api/member-oauth-fixture.ts!",
+        ],
       },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],

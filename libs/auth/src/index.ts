@@ -17,7 +17,6 @@ export {
   sendVerificationEmail,
 } from "./email.ts";
 export type { MailSettings } from "./email.ts";
-export type { MailSettings } from "./email.ts";
 export { ApiKeyWriteForbidden } from "./api-key-write-forbidden.ts";
 export {
   apiKeyFromHeaders,

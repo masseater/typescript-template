@@ -1,4 +1,5 @@
 import { requireSuccess } from "@repo/auth-ui";
+import { memberApiKeyReadPermissions } from "@repo/config";
 
 import { memberAuthClient } from "#shared/auth/index.ts";
 
@@ -11,6 +12,11 @@ type ListedApiKey = Readonly<{
 
 type CreatedApiKey = ListedApiKey & Readonly<{ key: string }>;
 
+type ApiKeyChoice = Readonly<{
+  messageSend: boolean;
+  profileUpdate: boolean;
+}>;
+
 async function loadApiKeys(): Promise<readonly ListedApiKey[]> {
   const listed = requireSuccess(await memberAuthClient.apiKey.list({}));
   return listed.apiKeys.map((entry) => ({
@@ -21,10 +27,18 @@ async function loadApiKeys(): Promise<readonly ListedApiKey[]> {
   }));
 }
 
-async function createApiKey(name: string): Promise<CreatedApiKey> {
+async function createApiKey(name: string, choice: ApiKeyChoice): Promise<CreatedApiKey> {
+  const profile = choice.profileUpdate
+    ? ["read", "update"]
+    : [...memberApiKeyReadPermissions.profile];
   const created = requireSuccess(
     await memberAuthClient.apiKey.create({
       name,
+      permissions: {
+        ...memberApiKeyReadPermissions,
+        ...(choice.messageSend ? { messages: ["send"] } : {}),
+        profile,
+      },
     }),
   );
   return {

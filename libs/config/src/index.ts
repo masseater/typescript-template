@@ -84,3 +84,5 @@ export { NOTIFICATION_KIND, notificationKinds } from "./notifications.ts";
 export type { NotificationKind } from "./notifications.ts";
 export { CONVERSATION_KIND, conversationKinds } from "./messaging.ts";
 export type { ConversationKind } from "./messaging.ts";
+export { MEMBER_MCP_SCOPE, memberMcpScopes, memberMcpToolScopes } from "./member-mcp.ts";
+export type { MemberMcpScope } from "./member-mcp.ts";

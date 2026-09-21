@@ -1,6 +1,7 @@
 import { mcp } from "@better-auth/mcp";
 import { passkey } from "@better-auth/passkey";
 import { APPLICATION, type Application } from "@repo/config";
+import { memberMcpScopes } from "@repo/config";
 import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 
@@ -73,6 +74,22 @@ const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
   ];
 };
 
+const memberAuthorizationServer = (origin: string): AuthPlugin[] => {
+  return [
+    jwt({ disableSettingJwtHeader: true }),
+    mcp({
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      clientRegistrationAllowedScopes: [...memberMcpScopes],
+      clientRegistrationDefaultScopes: [...memberMcpScopes],
+      consentPage: "/consent",
+      loginPage: "/login",
+      resource: `${origin}/mcp`,
+      scopes: [...memberMcpScopes],
+    }),
+  ];
+};
+
 const authPlugins = ({
   audience,
   origin,
@@ -82,7 +99,9 @@ const authPlugins = ({
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
     passkeyPlugin({ audience, origin, run }),
-    ...(audience === APPLICATION.user ? [memberApiKeyPlugin()] : []),
+    ...(audience === APPLICATION.user
+      ? [memberApiKeyPlugin(), ...memberAuthorizationServer(origin)]
+      : []),
     ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
   ];
 };

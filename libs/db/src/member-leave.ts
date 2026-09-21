@@ -119,29 +119,31 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
 ) {
   const now = new Date();
   if (snapshot.onboarding !== undefined) {
+    const onboarding = snapshot.onboarding;
     yield* query((database) =>
       database
         .insert(memberOnboarding)
         .values({
-          step: snapshot.onboarding.step as (typeof memberOnboarding.$inferInsert)["step"],
-          updatedAt: new Date(snapshot.onboarding.updatedAt),
+          step: onboarding.step as (typeof memberOnboarding.$inferInsert)["step"],
+          updatedAt: new Date(onboarding.updatedAt),
           userId: memberId,
         })
         .onConflictDoNothing(),
     );
   }
   if (snapshot.interview !== undefined) {
+    const interviewRow = snapshot.interview;
     yield* query((database) =>
       database
         .insert(interview)
         .values({
-          day: snapshot.interview.day,
-          savedSheet: snapshot.interview.savedSheet,
-          state: snapshot.interview.state,
-          turns: snapshot.interview.turns,
-          updatedAt: new Date(snapshot.interview.updatedAt),
+          day: interviewRow.day,
+          savedSheet: interviewRow.savedSheet,
+          state: interviewRow.state,
+          turns: interviewRow.turns,
+          updatedAt: new Date(interviewRow.updatedAt),
           userId: memberId,
-          version: snapshot.interview.version,
+          version: interviewRow.version,
         })
         .onConflictDoNothing(),
     );

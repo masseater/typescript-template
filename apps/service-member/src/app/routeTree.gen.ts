@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MemberRouteImport } from './routes/_member'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as WelcomeRouteImport } from './routes/_welcome'
+import { Route as ConsentRouteImport } from './routes/consent'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known.$'
 import { Route as MemberAgreementRouteImport } from './routes/_member/agreement'
 import { Route as MemberHomeRouteImport } from './routes/_member/home'
 import { Route as MemberNotificationsRouteImport } from './routes/_member/notifications'
@@ -63,6 +66,21 @@ const PublicRoute = PublicRouteImport.update({
 } as any)
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/_welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsentRoute = ConsentRouteImport.update({
+  id: '/consent',
+  path: '/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
+  id: '/.well-known/$',
+  path: '/.well-known/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MemberAgreementRoute = MemberAgreementRouteImport.update({
@@ -271,6 +289,9 @@ const WelcomeWelcomeRecoveryRoute = WelcomeWelcomeRecoveryRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/agreement': typeof MemberAgreementRoute
   '/home': typeof MemberHomeRoute
   '/notifications': typeof MemberNotificationsRoute
@@ -313,6 +334,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/agreement': typeof MemberAgreementRoute
   '/home': typeof MemberHomeRoute
   '/notifications': typeof MemberNotificationsRoute
@@ -358,6 +382,9 @@ export interface FileRoutesById {
   '/_member': typeof MemberRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_welcome': typeof WelcomeRouteWithChildren
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/_member/agreement': typeof MemberAgreementRoute
   '/_member/home': typeof MemberHomeRoute
   '/_member/notifications': typeof MemberNotificationsRoute
@@ -403,6 +430,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
     | '/agreement'
     | '/home'
     | '/notifications'
@@ -445,6 +475,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
     | '/agreement'
     | '/home'
     | '/notifications'
@@ -489,6 +522,9 @@ export interface FileRouteTypes {
     | '/_member'
     | '/_public'
     | '/_welcome'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
     | '/_member/agreement'
     | '/_member/home'
     | '/_member/notifications'
@@ -535,6 +571,9 @@ export interface RootRouteChildren {
   MemberRoute: typeof MemberRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   WelcomeRoute: typeof WelcomeRouteWithChildren
+  ConsentRoute: typeof ConsentRoute
+  McpRoute: typeof McpRoute
+  DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiSplatRoute: typeof ApiSplatRoute
 }
 
@@ -559,6 +598,27 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consent': {
+      id: '/consent'
+      path: '/consent'
+      fullPath: '/consent'
+      preLoaderRoute: typeof ConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/$': {
+      id: '/.well-known/$'
+      path: '/.well-known/$'
+      fullPath: '/.well-known/$'
+      preLoaderRoute: typeof DotwellKnownSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_member/agreement': {
@@ -953,6 +1013,9 @@ const rootRouteChildren: RootRouteChildren = {
   MemberRoute: MemberRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   WelcomeRoute: WelcomeRouteWithChildren,
+  ConsentRoute: ConsentRoute,
+  McpRoute: McpRoute,
+  DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport

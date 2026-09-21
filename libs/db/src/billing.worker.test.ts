@@ -28,7 +28,10 @@ function addMember(id: string): Effect.Effect<unknown, unknown> {
 
 const countEvents = Effect.map(
   runStatement("SELECT count(*) AS count FROM stripe_event"),
-  (result) => result.results[0]?.["count"],
+  (result) => {
+    const row = result.results[0] as { count: number } | undefined;
+    return row?.count;
+  },
 );
 
 const monthLater = new Date("2026-10-20T00:00:00.000Z");

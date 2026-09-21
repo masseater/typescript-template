@@ -1,7 +1,9 @@
+import { MEMBER_MCP_SCOPE } from "@repo/config";
 import {
   type ActionState,
   ActionStatus,
   Button,
+  CheckboxField,
   ConfirmDialog,
   Field,
   FormColumn,
@@ -12,6 +14,7 @@ import {
 import { useRouter } from "@tanstack/react-router";
 
 import { revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
+import { scopeLabel } from "#pages/settings/api/mcp-consent.ts";
 import { useApiKeyForm } from "#pages/settings/model/api-key-form.ts";
 
 import type { ReactElement } from "react";
@@ -83,6 +86,16 @@ function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactEle
           name="api-key-name"
           onValueChange={form.handleNameChange}
           value={form.name}
+        />
+        <CheckboxField
+          checked={form.profileUpdate}
+          label={scopeLabel(MEMBER_MCP_SCOPE.profileUpdate)}
+          onCheckedChange={form.handleProfileUpdateChange}
+        />
+        <CheckboxField
+          checked={form.messageSend}
+          label={scopeLabel(MEMBER_MCP_SCOPE.messageSend)}
+          onCheckedChange={form.handleMessageSendChange}
         />
         <Button
           aria-label="APIキーを発行する"

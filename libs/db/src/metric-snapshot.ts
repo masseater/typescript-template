@@ -1,5 +1,5 @@
 import { APPLICATION, ROLE } from "@repo/config";
-import { and, count, eq, sql } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, clientKindOf, type ClientKind } from "./client-kind.ts";

@@ -38,6 +38,8 @@ export const routes = {
   "/api/verify-email": "verify-email-api",
   "/contact": "contact",
   "/login": "login",
+  "/mcp": "member-mcp",
+  "/consent": "member-mcp-consent",
   "/messages": "messages",
   "/messages/*": "conversation",
   "/privacy": "privacy-document",
