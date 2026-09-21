@@ -276,6 +276,7 @@ const lintOptions = {
         "infra/cloudflare/**",
         "infra/local/**",
         "libs/config/**",
+        "libs/vite-config/**",
         "tools/dev/**",
         "tools/dont-review-it/src/repository/client-bundle.ts",
       ],

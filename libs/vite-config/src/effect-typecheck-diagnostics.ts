@@ -1,9 +1,5 @@
 import { withoutCheckoutPath } from "./effect-typecheck-path.ts";
 
-const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as const;
-
-type MissingExportCode = (typeof missingExportCodes)[number];
-
 const locatedDiagnosticLine = /^(.+)\((\d+),(\d+)\): error (TS\d+): (.*)$/u;
 const prettyDiagnosticLine = /^(.+):(\d+):(\d+) - error (TS\d+): (.*)$/u;
 const looseDiagnosticLine = /^error (TS\d+): (.*)$/u;
@@ -79,19 +75,29 @@ const compareCounted = (left: CountedDiagnostic, right: CountedDiagnostic): numb
 };
 
 const countDiagnostics = (diagnostics: readonly Diagnostic[]): readonly CountedDiagnostic[] => {
-  const grouped = diagnostics.reduce<Readonly<Record<string, CountedDiagnostic>>>(
-    (groupedDiagnostics, diagnostic) => {
+  const grouped = diagnostics.reduce<ReadonlyMap<string, CountedDiagnostic>>(
+    (countedByFingerprint, diagnostic) => {
       const fingerprint = fingerprintOf(diagnostic);
-      const existing = groupedDiagnostics[fingerprint];
-      return {
-        ...groupedDiagnostics,
-        [fingerprint]: { ...diagnostic, count: (existing?.count ?? 0) + 1 },
-      };
+      const existing = countedByFingerprint.get(fingerprint);
+      return new Map([
+        ...countedByFingerprint,
+        [
+          fingerprint,
+          {
+            file: diagnostic.file,
+            code: diagnostic.code,
+            message: diagnostic.message,
+            count: (existing?.count ?? 0) + 1,
+          },
+        ],
+      ]);
     },
-    {},
+    new Map(),
   );
-  return Object.values(grouped).toSorted(compareCounted);
+  return [...grouped.values()].toSorted(compareCounted);
 };
+
+const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as const;
 
 const missingExportCodeSet: ReadonlySet<string> = new Set(missingExportCodes);
 
