@@ -1,1 +1,6 @@
-re-push so GitHub records a synchronize event; the first push created the PR without a check run
+Revision history for #1031:
+
+rev 2 (content) 2026-09-21 05:20 UTC — re-push so GitHub records a synchronize event; the first push created the PR without a check run
+rev 1 (initial) 2026-09-21 05:20 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1031,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"2d01942d14653e6a8aa3f7c0235e38f224587b61","timestamp_iso":"2026-09-21T05:20:29Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"2d01942d14653e6a8aa3f7c0235e38f224587b61","new_sha":"7692867ec7cf4a16cbfc7dba4e3c563cd0408e0c","timestamp_iso":"2026-09-21T05:20:29Z","reason":"re-push so GitHub records a synchronize event; the first push created the PR without a check run","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/2d01942d14653e6a8aa3f7c0235e38f224587b61...7692867ec7cf4a16cbfc7dba4e3c563cd0408e0c"}]} -->
