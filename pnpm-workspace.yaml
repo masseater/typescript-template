@@ -73,8 +73,8 @@ catalog:
   class-variance-authority: 0.7.1
   cn: 0.3.0
   dependency-cruiser: 18.3.1
-  drizzle-kit: 1.0.0-rc.4
-  drizzle-orm: 1.0.0-rc.4
+  drizzle-kit: 1.0.0-rc.5-ab785fc
+  drizzle-orm: 1.0.0-rc.5-ab785fc
   effect: 4.0.0-rc.112
   es-toolkit: 1.52.0
   lucide-react: 1.47.0
