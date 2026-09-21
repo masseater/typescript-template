@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "@repo/config/repository-root";
 import { describe, expect, it } from "vite-plus/test";
@@ -41,6 +42,20 @@ describe("check:dev local D1", () => {
     expect(devStartSource).toMatch(/localDatabaseVariable/u);
     expect(devStartSource).toMatch(/makeTempDirectory/u);
     expect(devStartSource).toMatch(/db:migrate:local/u);
+    expect(devStartSource).toMatch(/failureBodyLimit/u);
     expect(viteSource).toMatch(/persistState: \{ path: localDatabaseDirectory\(\) \}/u);
+  });
+
+  it("hosts core as an auxiliary worker on the same local D1", () => {
+    expect.hasAssertions();
+    expect(viteSource).toMatch(/auxiliaryWorkers: \[coreDevWorker\]/u);
+    expect(viteSource).toMatch(/binding: "CORE"/u);
+    expect(viteSource).toMatch(/d1_databases: \[localDatabase\]/u);
+    expect(viteSource).toMatch(/elysiaAot\(appRoot\)/u);
+    const aotSource = readFileSync(new URL("./elysia-aot.ts", import.meta.url), "utf8");
+    expect(aotSource).toMatch(/environment\.name === "ssr"/u);
+    expect(aotSource).toMatch(/id === "elysia"/u);
+    expect(aotSource).toMatch(/fileURLToPath\(import\.meta\.resolve\("elysia"\)\)/u);
+    expect(fileURLToPath(import.meta.resolve("elysia"))).toMatch(/\/dist\/index\.mjs$/u);
   });
 });

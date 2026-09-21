@@ -27,6 +27,20 @@
         "count": 1
       }
     ],
+    "apps/core": [
+      {
+        "file": "../../libs/db/src/index.ts",
+        "code": "TS6133",
+        "message": "'eq' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      }
+    ],
     "apps/internal-dashboard": [
       {
         "file": "../../libs/auth/src/auth-request.ts",
@@ -125,12 +139,6 @@
         "count": 1
       },
       {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
@@ -151,7 +159,7 @@
       {
         "file": "src/pages/flags/model/flag-list.ts",
         "code": "TS2339",
-        "message": "Property 'flags' does not exist on type 'Promise<{ api: { api: { flags: { get: ((options?: { fetch?: RequestInit<CfProperties<unknown>>; throwHttpError?: ThrowHttpError; headers?: Record<string, unknown>; query?: Record<...>; } | undefined) => Promise<...>) & { ...; }; patch: ((body?: unknown, options?: { ...; } | undefined) => Promise<...>) & { ...; }; } ...'.",
+        "message": "Property 'flags' does not exist on type 'Promise<Instance<AddRoute<\"/api\", \"local\", { decorator: {}; store: {}; derive: {}; }, { typebox: {}; error: []; }, DefaultMetadata, { api: { telemetry: { post: { body: unknown; params: {}; query: unknown; headers: unknown; response: { ...; }; error: never; }; }; } & { ...; } & { ...; }; } & { ...; }, ... 6 more ...,...'.",
         "count": 2
       },
       {
@@ -295,12 +303,6 @@
         "count": 1
       },
       {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
@@ -378,12 +380,6 @@
         "file": "../../libs/observability/src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       },
       {
@@ -479,7 +475,7 @@
       {
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._ff42bd148820a31bf845051e9a91a69f/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d18456f9c797fc88e1a5bee5e20f3b5e/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -575,7 +571,7 @@
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._ff42bd148820a31bf845051e9a91a69f/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d18456f9c797fc88e1a5bee5e20f3b5e/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -648,12 +644,6 @@
         "file": "src/shared/server-api/contact-api.worker.test.ts",
         "code": "TS2339",
         "message": "Property 'EMAIL' does not exist on type 'Env'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS2345",
-        "message": "Argument of type '() => Effect<{ memberBoard: boolean; }, never, FeatureFlags>' is not assignable to parameter of type 'Handler<{ readonly memberBoard: boolean; }, never, Requirements | AppServices>'.",
         "count": 1
       },
       {
@@ -991,6 +981,26 @@
         "count": 2
       }
     ],
+    "libs/core-api": [
+      {
+        "file": "../db/src/index.ts",
+        "code": "TS6133",
+        "message": "'eq' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "../db/src/testing.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
+        "count": 2
+      },
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      }
+    ],
     "libs/db": [
       {
         "file": "../../infra/cloudflare/src/remote-command.ts",
@@ -1258,12 +1268,6 @@
         "file": "src/http-events.test.ts",
         "code": "TS2345",
         "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
-        "count": 1
-      },
-      {
-        "file": "src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       }
     ],

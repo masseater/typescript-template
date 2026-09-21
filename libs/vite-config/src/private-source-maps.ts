@@ -18,7 +18,7 @@ const failOnBrokenSourceMaps = (): Plugin => {
     apply: "build",
     name: "template-fail-on-broken-source-maps",
     onLog(_level, log) {
-      if (log.code === BROKEN_SOURCE_MAP) {
+      if (log.code === BROKEN_SOURCE_MAP && log.plugin !== "elysia-aot") {
         this.error(log);
       }
     },

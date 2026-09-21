@@ -12,6 +12,7 @@ import type {
   Ai,
   D1Database,
   DurableObjectNamespace,
+  Fetcher,
   KVNamespace,
   R2Bucket,
   SendEmail,
@@ -32,6 +33,7 @@ const sharedBindings = {
   APP_RELEASE: release,
   ASSETS: binding<Service>({ fetch: async (): Promise<Response> => new Response() }),
   AUTH_SECRET: "runtime-secret-of-at-least-32-characters",
+  CORE: binding<Fetcher>({ fetch: async (): Promise<Response> => new Response() }),
   DB: binding<D1Database>({
     batch: async (): Promise<never[]> => [],
     prepare: (): undefined => undefined,
