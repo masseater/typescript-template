@@ -64,4 +64,4 @@ const affectedTests = (
 };
 
 export { affectedTests };
-export type { AffectedTests, WorkspacePackage };
+export type { WorkspacePackage };
