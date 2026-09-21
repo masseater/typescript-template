@@ -2,9 +2,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import { applicationPorts, grants, loopbackAddress, type Application } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -310,6 +311,9 @@ const appConfig = (
           d1_databases: [localDatabase],
           main: "./src/app/server.ts",
           name: `template-${app}`,
+          ...(grants(app, "storage")
+            ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
+            : {}),
         },
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },

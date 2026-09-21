@@ -3,6 +3,10 @@ import { expect, waitFor } from "storybook/test";
 
 import preview from "../../../storybook/preview";
 import { Field } from "./field";
+import { FieldValidationMessageProvider } from "./field-validation-message-provider";
+
+import type { ReactElement } from "react";
+import type { FieldValidationMessages } from "./field-validation-messages";
 
 const meta = preview.meta({ args: { onValueChange: noop, value: "" }, component: Field });
 
@@ -85,6 +89,35 @@ export const Missing = meta.story({
     await userEvent.tab();
     await waitFor(async () => {
       await expect(canvas.getByText("入力してください。")).toBeInTheDocument();
+    });
+  },
+});
+
+const englishFieldValidationMessages = {
+  patternMismatch: "Follow the requested format.",
+  tooLong: "Too many characters.",
+  tooShort: "Not enough characters.",
+  typeMismatch: "Enter a valid format.",
+  valueMissing: "Enter a value.",
+} as const satisfies FieldValidationMessages;
+
+const withEnglishFieldValidation = (Story: () => ReactElement): ReactElement => (
+  <FieldValidationMessageProvider messages={englishFieldValidationMessages}>
+    <Story />
+  </FieldValidationMessageProvider>
+);
+
+export const EnglishMissing = meta.story({
+  args: { label: "ユーザー名", name: "name", required: true, value: undefined },
+  decorators: [withEnglishFieldValidation],
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "x");
+    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("Enter a value.")).toBeInTheDocument();
     });
   },
 });
