@@ -68,6 +68,67 @@ const locatedDiagnosticLine = /^(.+)\((\d+),(\d+)\): error (TS\d+): (.*)$/u;
 const prettyDiagnosticLine = /^(.+):(\d+):(\d+) - error (TS\d+): (.*)$/u;
 const looseDiagnosticLine = /^error (TS\d+): (.*)$/u;
 
+const checkoutMarker = "<repo>";
+
+const checkoutRoots = (repositoryRoot: string): readonly string[] => {
+  const resolved = path.resolve(repositoryRoot);
+  try {
+    const real = realpathSync(resolved);
+    return real === resolved ? [resolved] : [real, resolved];
+  } catch {
+    return [resolved];
+  }
+};
+
+const withoutCheckoutPath = (text: string, repositoryRoot: string): string => {
+  const roots = checkoutRoots(repositoryRoot).toSorted((left, right) => right.length - left.length);
+  let current = text;
+  for (const root of roots) {
+    let result = "";
+    let cursor = 0;
+    while (cursor < current.length) {
+      const found = current.indexOf(root, cursor);
+      if (found === -1) {
+        result += current.slice(cursor);
+        break;
+      }
+      const after = found + root.length;
+      const next = current[after];
+      result += current.slice(cursor, found);
+      if (next === undefined || next === "/") {
+        result += checkoutMarker;
+      } else {
+        result += root;
+      }
+      cursor = after;
+    }
+    current = result;
+  }
+  return current;
+};
+
+const portableDiagnostic = (diagnostic: Diagnostic, repositoryRoot: string): Diagnostic => ({
+  file: withoutCheckoutPath(diagnostic.file, repositoryRoot),
+  code: diagnostic.code,
+  message: withoutCheckoutPath(diagnostic.message, repositoryRoot),
+});
+
+const portableBaseline = (
+  baseline: TypecheckBaseline,
+  repositoryRoot: string,
+): TypecheckBaseline => ({
+  version: 1,
+  workspaces: Object.fromEntries(
+    Object.entries(baseline.workspaces).map(([workspace, entries]) => [
+      workspace,
+      entries.map((entry) => ({
+        ...portableDiagnostic(entry, repositoryRoot),
+        count: entry.count,
+      })),
+    ]),
+  ),
+});
+
 const fingerprintOf = (entry: Diagnostic): string =>
   JSON.stringify([entry.file, entry.code, entry.message]);
 
@@ -330,13 +391,18 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
   }
   const compiled = asked.compile();
   asked.print(printedOutput(compiled.output));
-  const diagnostics = parseTscOutput(compiled.output);
+  const diagnostics = parseTscOutput(compiled.output).map((diagnostic) =>
+    portableDiagnostic(diagnostic, asked.repositoryRoot),
+  );
   if (diagnostics.length === 0 && compiled.status !== 0) {
     asked.print("typecheck gate: compiler exited without diagnostics\n");
     return 1;
   }
   const workspace = workspaceOf(asked.cwd, asked.repositoryRoot);
-  const baseline = parseBaseline(asked.readText(asked.baselinePath));
+  const baseline = portableBaseline(
+    parseBaseline(asked.readText(asked.baselinePath)),
+    asked.repositoryRoot,
+  );
   if (asked.args.includes(writeFlag)) {
     const alwaysFail = alwaysFailing(diagnostics);
     if (alwaysFail.length > 0) {
@@ -404,12 +470,19 @@ const reportCliFailure = (error: unknown): void => {
   process.stderr.write(error instanceof Error ? `${error.message}\n` : "typecheck gate failed\n");
 };
 
-const runInvokedCli = (start: () => number = startEffectTypecheckCli): void => {
+const invokedCode = (start: () => number): number => {
   try {
-    process.exitCode = start();
+    const code = start();
+    process.exitCode = code;
+    return code;
   } catch (error) {
     reportCliFailure(error);
+    return 1;
   }
+};
+
+const runInvokedCli = (start: () => number = startEffectTypecheckCli): void => {
+  invokedCode(start);
 };
 
 const maybeStart = (argv1: string | undefined, modulePath: string): boolean => {
@@ -420,7 +493,48 @@ const maybeStart = (argv1: string | undefined, modulePath: string): boolean => {
   return true;
 };
 
-maybeStart(process.argv[1], fileURLToPath(import.meta.url));
+const exitAfterFlush = (
+  code: number,
+  exit: (code: number) => void,
+  streams: readonly NodeJS.WritableStream[],
+): void => {
+  const pending: NodeJS.WritableStream[] = [];
+  for (const stream of streams) {
+    if (stream.writable) {
+      pending.push(stream);
+    }
+  }
+  if (pending.length === 0) {
+    exit(code);
+    return;
+  }
+  let remaining = pending.length;
+  const step = (): void => {
+    remaining -= 1;
+    if (remaining === 0) {
+      exit(code);
+    }
+  };
+  for (const stream of pending) {
+    stream.write("", step);
+  }
+};
+
+const exitInvokedCli = (
+  argv1: string | undefined,
+  modulePath: string,
+  start: () => number = startEffectTypecheckCli,
+  exit: (code: number) => void = process.exit,
+  streams: readonly NodeJS.WritableStream[] = [process.stdout, process.stderr],
+): boolean => {
+  if (!isInvokedAsCli(argv1, modulePath)) {
+    return false;
+  }
+  exitAfterFlush(invokedCode(start), exit, streams);
+  return true;
+};
+
+exitInvokedCli(process.argv[1], fileURLToPath(import.meta.url));
 
 export {
   binRelative,
@@ -432,6 +546,8 @@ export {
   evaluateTypecheck,
   isInvokedAsCli,
   locateCompiler,
+  exitAfterFlush,
+  exitInvokedCli,
   maybeStart,
   missingExportCodes,
   parseBaseline,
