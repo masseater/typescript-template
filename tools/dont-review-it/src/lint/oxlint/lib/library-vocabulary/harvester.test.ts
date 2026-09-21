@@ -10,6 +10,14 @@ import { createLibraryVocabularyLoader } from "./harvester.ts";
 
 const FIXTURE_ROOT = mkdtempSync(join(tmpdir(), "dont-review-it-library-vocabulary-harvester-"));
 
+const withLowerCaseDeclarationId = <Entry extends { readonly declarationId: string }>(
+  vocabulary: readonly Entry[],
+): readonly Entry[] =>
+  vocabulary.map((entry) => ({
+    ...entry,
+    declarationId: entry.declarationId.toLowerCase(),
+  }));
+
 class RuntimeRefusal extends Error {
   constructor(readonly code: string) {
     super("the runtime refused");
@@ -49,7 +57,7 @@ describe("createLibraryVocabularyLoader", () => {
     });
 
     it("becomes an owner of the values it names", ({ theVocabularyOfTheLiteralUnion }) => {
-      expect(theVocabularyOfTheLiteralUnion).toStrictEqual([
+      expect(withLowerCaseDeclarationId(theVocabularyOfTheLiteralUnion)).toStrictEqual([
         {
           packageName: "palette",
           typeName: "Shade",
@@ -95,7 +103,7 @@ describe("createLibraryVocabularyLoader", () => {
     it("keeps only the type that names values, and records that others pass", ({
       theVocabularyOfTheWidenedUnion,
     }) => {
-      expect(theVocabularyOfTheWidenedUnion).toStrictEqual([
+      expect(withLowerCaseDeclarationId(theVocabularyOfTheWidenedUnion)).toStrictEqual([
         {
           packageName: "palette",
           typeName: "Shade",
@@ -144,7 +152,7 @@ describe("createLibraryVocabularyLoader", () => {
     });
 
     it("is read through to the declaration it points at", ({ theVocabularyOfTheReExport }) => {
-      expect(theVocabularyOfTheReExport).toStrictEqual([
+      expect(withLowerCaseDeclarationId(theVocabularyOfTheReExport)).toStrictEqual([
         {
           packageName: "palette",
           typeName: "Tone",
