@@ -1,5 +1,5 @@
 // oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { execFile } from "node:child_process";
+import { execFile, type ExecFileOptions } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
 // oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
@@ -8,8 +8,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { promisify } from "node:util";
 
 import {
   applicationPorts,
@@ -31,8 +29,22 @@ type RouteName = App | "mailpit";
 
 const ROOT_HASH_LENGTH = 12;
 
-// oxlint-disable-next-line typescript/strict-void-return -- promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits
-const execFileAsync = promisify(execFile);
+function execFileAsync(
+  file: string,
+  args: readonly string[],
+  options: ExecFileOptions,
+): Promise<{ stderr: string | Buffer; stdout: string | Buffer }> {
+  return new Promise((resolve, reject) => {
+    execFile(file, [...args], options, (error, stdout, stderr) => {
+      if (error !== null) {
+        reject(error);
+        return;
+      }
+      resolve({ stderr, stdout });
+    });
+  });
+}
+
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
 const credentialsFile = new URL("runtime.json", local);
@@ -71,7 +83,7 @@ function logFileUrl(name: string): URL {
 function run(
   file: string,
   args: readonly string[],
-  options: Parameters<typeof execFileAsync>[2],
+  options: ExecFileOptions,
 ): Effect.Effect<unknown, LocalCommandFailure> {
   return Effect.tryPromise({
     catch: () => failure("process_failed"),

@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
 import {
@@ -274,6 +273,21 @@ const lintOptions = {
         ],
       },
     },
+    {
+      files: ["libs/db/src/testing.ts", "libs/monitor/src/monitor-fixture.ts"],
+      rules: {
+        "typescript/no-namespace": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "infra/cloudflare/src/unix-permission-bits.ts",
+        "tools/dev/src/unix-permission-bits.ts",
+      ],
+      rules: {
+        "no-bitwise": LINT_SEVERITY.OFF,
+      },
+    },
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,
@@ -298,6 +312,7 @@ const lintOptions = {
           "vitest.config.ts",
           "vitest.mutation.config.ts",
           "vitest.workers.config.ts",
+          "vitest.workers.main.ts",
           "worker.ts",
         ],
       },

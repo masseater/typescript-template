@@ -11,6 +11,7 @@ import { verificationSettings } from "./verification-fixture.ts";
 import type {
   Ai,
   D1Database,
+  DurableObjectNamespace,
   KVNamespace,
   R2Bucket,
   SendEmail,
@@ -22,9 +23,7 @@ import type { AppBindings } from "./bindings.ts";
 const release = "0".repeat(16);
 const settings = verificationSettings;
 
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- the type parameter names the Cloudflare binding a partial stub stands in for in this config test
 function binding<Binding>(value: object): Binding {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the assertion is the cast that turns the partial stub into the Cloudflare binding this config test supplies
   return value as Binding;
 }
 
@@ -64,6 +63,17 @@ const userBindings: AppBindings<"service-member"> = {
     delete: async (): Promise<undefined> => undefined,
     get: async (): Promise<null> => null,
     put: async (): Promise<null> => null,
+  }),
+  JOBS: binding({ send: async (): Promise<undefined> => undefined }),
+  PROCESS: binding({
+    create: async (): Promise<{ id: string }> => ({ id: "job" }),
+    get: async (): Promise<{ status: () => Promise<{ status: string }> }> => ({
+      status: async () => ({ status: "complete" }),
+    }),
+  }),
+  USER_INBOX: binding<DurableObjectNamespace>({
+    get: (): undefined => undefined,
+    idFromName: (): undefined => undefined,
   }),
 };
 
