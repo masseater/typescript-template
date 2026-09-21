@@ -152,9 +152,14 @@ const typecheckInputs = [
 ] as const;
 
 const effectDiagnostics = {
+  "check:effect:gate": {
+    command: "check-effect-typecheck",
+    input: [...typecheckInputs],
+  },
   "check:effect": {
     command:
-      "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+    dependsOn: ["check:effect:gate"],
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
