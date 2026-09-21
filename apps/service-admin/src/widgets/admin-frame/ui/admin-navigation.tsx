@@ -22,7 +22,7 @@ function AdminNavigation({
               {group.items.map((item) => (
                 <AdminNavigationItem
                   key={item.to}
-                  badge={item.badge}
+                  {...(item.badge === undefined ? {} : { badge: item.badge })}
                   collapsed={collapsed}
                   icon={item.icon}
                   label={item.label}
