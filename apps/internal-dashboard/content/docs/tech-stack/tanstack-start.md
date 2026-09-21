@@ -3,29 +3,19 @@ title: TanStack Start
 description: URL を画面に対応させ、初期データとサーバー専用の処理を扱うフレームワーク
 ---
 
-ファイル名が URL になる。
+TanStack Start は、React の画面とサーバー側の処理を同じルーティングに載せる。実行は Cloudflare Workers で、開発時も workerd である。
 
-| ファイル | 結果 |
-| --- | --- |
-| `src/routes/_member.tsx` | レイアウト。URL には出ない |
-| `src/routes/_member/users.$id.tsx` | `/users/123` |
-| `src/routes/_member/-form.tsx` | ルートにならない |
+経路は `src/routes` のファイル名から決まる。`_member/users.$id.tsx` は `/users/123` になり、フォルダ `_member` は URL に出ない。`-form.tsx` のように名前が `-` で始まるファイルはルートにならないので、ルートの隣にコンポーネントを置ける。
 
-`_` で始まる区間はパスに入らない。`-` で始まるファイルはルートツリーの外に置ける。`$id` がその位置の値で、上の例では `123` である。
+その URL を開いたときにサーバーで走るのが loader で、返すのは画面の初期データだけである。表示したあとに同じデータを取り直す処理は loader に書かない。[TanStack Query](/tech-stack/tanstack-query) の `queryKey` に書く。
 
-`/users/123` を開いたときの初期データは、`users.$id.tsx` の loader が返す。開いたあとに同じユーザーを取り直すキャッシュは loader にはない。それは [TanStack Query](/tech-stack/tanstack-query) が持つ。
-
-クリックからサーバーの処理を呼ぶときは `createServerFn` を使う。
+ブラウザから呼べて、本体がサーバーでだけ実行される関数は `createServerFn` である。`handler` は URL として公開されない。ブラウザ以外が HTTP で呼ぶ API は、サーバールートに置く。
 
 ```ts
 const renameUser = createServerFn({ method: "POST" })
   .validator((input: { readonly id: string; readonly name: string }) => input)
   .handler(async ({ data }) => data.name);
 ```
-
-`renameUser` はクライアントから呼べる。`handler` が実行されるのはサーバーだけである。この関数は、外部に公開する URL にはならない。外から HTTP で受ける入口はサーバールートである。
-
-実行環境は Cloudflare Workers で、開発時も本番と同じ workerd で動く。
 
 ## 参考文献
 

@@ -3,7 +3,7 @@ title: Effect
 description: 成功値、失敗の種類、必要なサービスを型に持つ記述を、入口で実行するライブラリ
 ---
 
-`findUser` を定義しただけでは、データベースは見に行かない。
+Effect は、成功の値と失敗と必要なサービスを型に載せた値を作り、その値を作った時点では処理を実行しない。文書とサンプルは v4 を見る。v3 の `Effect.gen` や Service の書き方は、この形と揃わない。
 
 ```ts
 import { Context, Effect, Schema } from "effect";
@@ -29,13 +29,11 @@ const findUser = Effect.fn("findUser")(function* (id: string) {
 });
 ```
 
-`findUser("123")` が返すのは、まだ実行されていない記述である。`Effect.runPromise` したときに `find` が走り、ユーザーがいなければ `UserNotFound` が結果として返る。`throw` ではないので、呼び出し側は `UserNotFound` を成功へ変換するか、失敗のまま残すかを型で分岐する。`Database` を渡さずに `runPromise` すると、コンパイルが失敗する。
+`findUser("123")` は `Effect` を返すだけで、`find` はまだ呼ばれない。`Effect.runPromise` したときに `find` が走り、行が無ければ `UserNotFound` が結果になる。例外にはならない。`Database` を渡さない `runPromise` はコンパイルできない。どの失敗を成功の値に変えて、どれを失敗のまま返すかは、呼び出し側が型を見て決める。
 
-この書き方は v4 である。v3 の記事にある `Effect.gen` やサービスの形は、そのまま置き換わらない。
+JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功するまでフィールドを読まない。
 
-リクエストの JSON は `unknown` である。`Schema.decodeUnknownEffect` が成功した値だけが、次の処理へ渡る。
-
-画面が「読み込み中か、ユーザーか、`UserNotFound` か」を一つの購読で持つときは、Effect Atom（`effect/unstable/reactivity` の `Atom`）を使う。[TanStack Query](/tech-stack/tanstack-query) の `["user", id]` は、別の部品と同じ結果を共有するキャッシュである。Atom はそのキャッシュを持たない。
+画面の購読が、待っているか、値があるか、失敗したかを一つの値で持つときは Atom（`effect/unstable/reactivity`）を使う。同じキーを複数の部品が見るキャッシュは [TanStack Query](/tech-stack/tanstack-query) で、Atom はそれを持たない。
 
 ## 参考文献
 

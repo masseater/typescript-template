@@ -3,31 +3,25 @@ title: TypeScript
 description: 画面からインフラの宣言までを同一の型検査の下に置く言語
 ---
 
-画面もサーバーもインフラの宣言も、同じ TypeScript の型検査を通る。クライアントとサーバーが同じ型を参照するので、API の形を別の仕様書としてもう一度書かない。
+画面、サーバー、インフラの宣言は同じ TypeScript を通る。クライアントとサーバーが同じ型を参照するので、API の形を別の仕様として持たない。
 
-`noUncheckedIndexedAccess` では、`names[0]` の型は `string | undefined` になる。先頭に要素があることは、型には含まれない。
+`noUncheckedIndexedAccess` では、添字アクセスの型が `T | undefined` になる。`ids[0]` を `string` として使うには、要素があることを先に確認する。
 
 ```ts
-const names = ["ana", "bao"];
-const first: string | undefined = names[0];
+const ids = ["u1", "u2"];
+const first: string | undefined = ids[0];
 ```
 
-`first` を `string` として使うには、値が入っていることを分岐で確認する。
-
-`exactOptionalPropertyTypes` では、プロパティを書かないことと、`undefined` を渡すことが別になる。`name?: string` は「`name` が無い」を許す。次の代入は型検査で失敗する。
+`exactOptionalPropertyTypes` では、プロパティを省略することと `undefined` を代入することが別の型になる。下の代入は失敗する。`{}` は `Profile` として通る。
 
 ```ts
 type Profile = { name?: string };
-const explicit: Profile = { name: undefined };
+const assigned: Profile = { name: undefined };
 ```
 
-`{}` は `Profile` として通る。
+`verbatimModuleSyntax` では、型だけの名前を `import type` で入れる。`import { User }` のように値の import と混ぜると、型検査が失敗する。
 
-型だけの名前を値の import に混ぜると、`verbatimModuleSyntax` が失敗させる。`User` が型だけなら `import type { User }` と書く。
-
-外から来た JSON は、届いた時点では `unknown` である。[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` が成功した値だけを、その先の処理が読む。
-
-[Effect](/tech-stack/effect) の `findUser` は `Database` と `UserNotFound` を型に持つ。`Database` を渡さない、`UserNotFound` を処理しない、のどちらも `tsc` が落とす。エディタの補完と診断は `@effect/language-service` が出す。
+実行時に外から入った値には型が無い。フィールドを読む前に、[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` へ通す。Effect が型に残した失敗と、渡していないサービスは `tsc` がエラーにする。エディタ上の診断は `@effect/language-service` が出す。
 
 ## 参考文献
 
