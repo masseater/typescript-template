@@ -46,6 +46,7 @@ const ArtifactWrites = Context.Reference<ArtifactMode>("@repo/infra-cloudflare/A
   defaultValue: (): ArtifactMode => "describe",
 });
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
+const PUBLIC_ASSET_EXTENSIONS: ReadonlySet<string> = new Set([".css", ".woff2"]);
 
 interface WorkerModule {
   readonly contentFile: string;
@@ -106,13 +107,13 @@ const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArt
   return clientFiles;
 });
 
-function assertServerCssPublished(
+function assertServerPublicAssetsPublished(
   output: BuildOutput,
-  cssFiles: readonly string[],
+  assetFiles: readonly string[],
   clientFiles: readonly string[],
 ): Effect.Effect<void, ArtifactFailure> {
   return Effect.all(
-    cssFiles.map((file) => {
+    assetFiles.map((file) => {
       const publicFile = path.join(output.client, path.relative(output.server, file));
       const published = clientFiles.includes(publicFile)
         ? sameContent(file, publicFile)
@@ -159,13 +160,15 @@ const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerMod
   if (!serverFiles.includes(path.join(output.server, MAIN_MODULE))) {
     return yield* fail("worker_entry_missing_index_js");
   }
-  const cssFiles = serverFiles.filter((file) => path.extname(file) === ".css");
+  const publicAssets = serverFiles.filter((file) =>
+    PUBLIC_ASSET_EXTENSIONS.has(path.extname(file)),
+  );
   const code = yield* Effect.all(
     serverFiles
-      .filter((file) => path.extname(file) !== ".css")
+      .filter((file) => !PUBLIC_ASSET_EXTENSIONS.has(path.extname(file)))
       .map((file) => workerModule(output.server, file)),
   );
-  yield* assertServerCssPublished(output, cssFiles, clientFiles);
+  yield* assertServerPublicAssetsPublished(output, publicAssets, clientFiles);
   if ((yield* io(async () => stat(path.join(output.server, MAIN_MODULE)))).size === 0) {
     return yield* fail("worker_entry_empty");
   }
