@@ -256,6 +256,36 @@ it.effect("refuses server CSS that differs from its public asset", () =>
   }).pipe(Effect.scoped),
 );
 
+it.effect("uploads server fonts that already sit next to the public stylesheet", () =>
+  Effect.gen(function* program() {
+    const { client, root, server } = yield* userBuild;
+    yield* run(async () => {
+      await writeFiles(client, { "face.woff2": "font-bytes" });
+      await writeFiles(server, { "face.woff2": "font-bytes" });
+    });
+    const artifacts = yield* load(root, "service-member");
+    assert.deepStrictEqual(
+      artifacts.modules.map((module) => module.name),
+      ["chunks/handler.js", "index.js"],
+    );
+    assert.deepStrictEqual(
+      (yield* run(async () => readdir(artifacts.clientDirectory))).toSorted(),
+      ["app.js", "face.woff2", "styles.css"],
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses a server font that never reached the public assets", () =>
+  Effect.gen(function* program() {
+    const { root, server } = yield* userBuild;
+    yield* run(async () => writeFiles(server, { "face.woff2": "font-bytes" }));
+    assert.strictEqual(
+      yield* failureCode(root, "service-member"),
+      "server_css_without_public_asset",
+    );
+  }).pipe(Effect.scoped),
+);
+
 it.effect("never writes through a link placed in the staging directory", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
