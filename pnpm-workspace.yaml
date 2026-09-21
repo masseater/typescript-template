@@ -59,7 +59,7 @@ catalog:
   "@effect/platform-node": 4.0.0-rc.112
   "@effect/vitest": 4.0.0-rc.112
   "@mergifyio/vitest": 0.3.7
-  "@shadcn/lint": 0.1.0
+  "@shadcn/lint": 0.1.1
   "@tailwindcss/vite": 4.3.3
   "@tanstack/intent": 0.3.6
   "@tanstack/react-router": 1.170.36
@@ -78,7 +78,7 @@ catalog:
   drizzle-orm: 1.0.0-rc.4
   effect: 4.0.0-rc.112
   es-toolkit: 1.52.0
-  lucide-react: 1.46.0
+  lucide-react: 1.47.0
   miniflare: 5.20260917.0-alpha
   motion: 13.4.0
   msw: 2.15.0
