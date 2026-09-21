@@ -51,4 +51,3 @@ function useVisibilityForm(initial: Visibility, onSaved: () => Promise<void>): V
 }
 
 export { useVisibilityForm };
-export type { VisibilityForm };
