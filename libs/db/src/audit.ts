@@ -73,4 +73,4 @@ const auditWhenTargeted = (database: DrizzleDatabase, entry: AuditEntry, actorIs
 };
 
 export { auditRow, auditWhen, auditWhenTargeted };
-export type { AuditEntry, AuditedChange };
+export type { AuditEntry };
