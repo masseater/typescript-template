@@ -209,12 +209,6 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS377004",
-        "message": "This Effect requires a service that is missing from the expected Effect context: `FlagEditorAccess`. effect(missingEffectContext)",
-        "count": 1
-      },
-      {
         "file": "src/shared/wiki/authorize-mcp.ts",
         "code": "TS18046",
         "message": "'instance.handler' is of type 'unknown'.",
