@@ -27,7 +27,7 @@ function InquiryReplyForm({
             返信する
           </Button>
           <Button
-            disabled={form.pending}
+            disabled={form.blocked}
             onClick={form.handleClose}
             type="button"
             variant="secondary"
