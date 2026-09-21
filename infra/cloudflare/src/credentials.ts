@@ -1,10 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { lstat, open } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { parseEnv } from "node:util";
 
 import { deploymentKeys } from "@repo/observability/deployment-keys";
@@ -13,7 +9,6 @@ import { Effect, Schema } from "effect";
 import { secretsFile } from "./deployment.ts";
 import { projectName } from "./project.ts";
 
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { FileHandle } from "node:fs/promises";
 
 const GROUP_AND_OTHER_PERMISSIONS = 0o077;
@@ -49,7 +44,7 @@ const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle:
   if (
     !metadata.isFile() ||
     metadata.nlink !== 1 ||
-    // oxlint-disable-next-line no-bitwise
+    // oxlint-disable-next-line no-bitwise -- Unix file modes and open flags are bit fields, so the group-and-other mask and the no-follow open flag are written with bitwise operators
     (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0
   ) {
     return yield* Effect.fail(
@@ -80,7 +75,7 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
         cause instanceof Error && "code" in cause && cause.code === "ELOOP"
           ? new SecretsFileFailure({ code: "secrets_file_symlink_forbidden", keys: [] })
           : new SecretsFileFailure({ code: "secrets_file_missing", keys: [] }),
-      // oxlint-disable-next-line no-bitwise
+      // oxlint-disable-next-line no-bitwise -- Unix file modes and open flags are bit fields, so the group-and-other mask and the no-follow open flag are written with bitwise operators
       try: async () => open(filename, constants.O_RDONLY | constants.O_NOFOLLOW),
     }),
     readOwnerOnly,

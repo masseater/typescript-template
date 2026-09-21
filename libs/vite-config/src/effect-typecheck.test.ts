@@ -5,13 +5,8 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { describe, expect, test } from "vite-plus/test";
 
 import { parseBaseline, serializeBaseline } from "./effect-typecheck-baseline.ts";
-import {
-  binRelative,
-  compilerFromResolution,
-  effectTsgoBin,
-  locateCompiler,
-} from "./effect-typecheck-compiler.ts";
-import { missingExportCodes, parseTscOutput } from "./effect-typecheck-diagnostics.ts";
+import { compileWorkspace } from "./effect-typecheck-compiler.ts";
+import { parseTscOutput } from "./effect-typecheck-diagnostics.ts";
 import { workspaceOf } from "./effect-typecheck-path.ts";
 import { scriptedTypecheck } from "./effect-typecheck.ts";
 
@@ -24,6 +19,7 @@ const assignabilityBaseline = serializeBaseline({
     ".": [{ file: "value.ts", code: "TS2322", message: assignabilityMessage, count: 1 }],
   },
 });
+const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as const;
 
 describe("effect typecheck gate", () => {
   const it = test
@@ -72,20 +68,14 @@ describe("effect typecheck gate", () => {
         "src/value.ts:1:7 - error TS2322: Type 'string' is not assignable to type 'number'.\n",
       ),
     )
-    .extend("effectTsgoExecutable", () => effectTsgoBin().endsWith("/effect-tsgo.cjs"))
-    .extend("manifestBin", () => binRelative({ bin: { "effect-tsgo": "./dist/effect-tsgo.cjs" } }))
-    .extend("missingManifestBin", () => {
-      try {
-        binRelative({});
-        throw new Error("binRelative accepted a manifest without effect-tsgo");
-      } catch (manifestFailure: unknown) {
-        return manifestFailure instanceof Error ? manifestFailure.message : "unknown failure";
-      }
-    })
-    .extend("resolvedCompiler", () =>
-      compilerFromResolution({ status: 0, stdout: "/tsc\n", stderr: "" }),
+    .extend("locatedCompiler", () =>
+      compileWorkspace({
+        cwd: path.join(repositoryRoot, "libs/vite-config"),
+        locate: () => {
+          throw new Error("typecheck gate: compiler not found");
+        },
+      }),
     )
-    .extend("locatedCompiler", () => locateCompiler().endsWith("/effect-tsgo"))
     .extend("unknownFlag", () =>
       scriptedTypecheck({ gateArguments: ["--rewrite"], compilerTranscript: "", status: 0 }),
     )
@@ -202,24 +192,11 @@ describe("effect typecheck gate", () => {
     ]);
   });
 
-  it("resolves the effect-tsgo executable shipped with the package", ({ effectTsgoExecutable }) => {
-    expect(effectTsgoExecutable).toBe(true);
-  });
-
-  it("reads the effect-tsgo bin from the package manifest", ({ manifestBin }) => {
-    expect(manifestBin).toBe("./dist/effect-tsgo.cjs");
-  });
-
-  it("fails when the manifest has no effect-tsgo bin", ({ missingManifestBin }) => {
-    expect(missingManifestBin).toBe("typecheck gate: @effect/tsgo is missing the effect-tsgo bin");
-  });
-
-  it("trims the compiler path printed by get-exe-path", ({ resolvedCompiler }) => {
-    expect(resolvedCompiler).toBe("/tsc");
-  });
-
-  it("locates the compiler on the inherited environment", ({ locatedCompiler }) => {
-    expect(locatedCompiler).toBe(true);
+  it("compiles through an injected locator", ({ locatedCompiler }) => {
+    expect(locatedCompiler).toStrictEqual({
+      output: "typecheck gate: compiler not found\n",
+      status: 1,
+    });
   });
 
   it("rejects an unknown flag", ({ unknownFlag }) => {

@@ -11,7 +11,7 @@ import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import type { D1Migration } from "cloudflare:test";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
+  // oxlint-disable-next-line typescript/no-namespace -- Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;

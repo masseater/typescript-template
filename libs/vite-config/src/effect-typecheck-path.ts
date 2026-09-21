@@ -41,4 +41,4 @@ const workspaceOf = (cwd: string, repositoryRootPath: string): string => {
   return relativePath === "" ? "." : relativePath.split(path.sep).join("/");
 };
 
-export { checkoutMarker, withoutCheckoutPath, workspaceOf };
+export { withoutCheckoutPath, workspaceOf };

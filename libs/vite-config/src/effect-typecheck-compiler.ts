@@ -84,12 +84,5 @@ const compileWorkspace = (
   }
 };
 
-export {
-  binRelative,
-  combinedOutput,
-  compileWorkspace,
-  compilerFromResolution,
-  effectTsgoBin,
-  locateCompiler,
-};
-export type { CompilerResult, SpawnTranscript };
+export { compileWorkspace };
+export type { CompilerResult };

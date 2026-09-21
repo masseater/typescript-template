@@ -63,4 +63,3 @@ const rowsForWorkspace = (
 ): readonly CountedDiagnostic[] => baseline.workspaces[workspace] ?? [];
 
 export { parseBaseline, portableBaseline, rowsForWorkspace, serializeBaseline };
-export type { TypecheckBaseline };

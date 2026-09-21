@@ -1,14 +1,8 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { promisify } from "node:util";
 
 import {
@@ -31,7 +25,7 @@ type RouteName = App | "mailpit";
 
 const ROOT_HASH_LENGTH = 12;
 
-// oxlint-disable-next-line typescript/strict-void-return
+// oxlint-disable-next-line typescript/strict-void-return -- promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits
 const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
@@ -71,7 +65,6 @@ function logFileUrl(name: string): URL {
 function run(
   file: string,
   args: readonly string[],
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   options: Parameters<typeof execFileAsync>[2],
 ): Effect.Effect<unknown, LocalCommandFailure> {
   return Effect.tryPromise({

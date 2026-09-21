@@ -188,12 +188,10 @@ const formatReport = (verdict: TypecheckVerdict): string => {
 export {
   alwaysFailing,
   compareCounted,
-  diagnosticOf,
   evaluateTypecheck,
   formatReport,
-  missingExportCodes,
   parseTscOutput,
   portableDiagnostic,
   snapshotOf,
 };
-export type { CountedDiagnostic, Diagnostic, MissingExportCode, TypecheckVerdict };
+export type { CountedDiagnostic, Diagnostic };
