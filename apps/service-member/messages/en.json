@@ -1,0 +1,19 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "login_title": "Log in",
+  "login_to_signup": "Don't have an account?",
+  "signup_link": "Sign up",
+  "signup_title": "Sign up",
+  "signup_to_login": "Already have an account?",
+  "login_link": "Log in",
+  "signup_sent_title": "Check your email",
+  "signup_sent_body": "Open the link in the email to verify your address, then log in.",
+  "signup_sent_login": "Go to log in",
+  "signup_pending": "Creating your account.",
+  "contact_link": "Contact",
+  "hero_title": "Start by having your own page",
+  "hero_body": "Write an intro and find people you care about. Protect your account with passkeys and two-factor authentication.",
+  "locale_ja": "日本語",
+  "locale_en": "English",
+  "locale_label": "Language"
+}
