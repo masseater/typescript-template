@@ -1,24 +1,31 @@
 import { defineConfig } from "vite-plus";
 
+const typecheckInput = [
+  { auto: true },
+  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
+  { base: "workspace", pattern: "**/*.{ts,tsx}" },
+  { base: "workspace", pattern: "**/package.json" },
+  { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
+  { base: "workspace", pattern: "!**/node_modules/**" },
+  { base: "workspace", pattern: "!**/dist/**" },
+  { base: "workspace", pattern: "!**/.paraglide/**" },
+  { base: "workspace", pattern: "!**/.local/**" },
+] as const;
+
 export default defineConfig({
   run: {
     tasks: {
+      "check:effect:gate": {
+        command: "check-effect-typecheck",
+        input: [...typecheckInput],
+      },
       "check:effect": {
         command:
-          "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-        input: [
-          { auto: true },
-          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-          { base: "workspace", pattern: "**/*.{ts,tsx}" },
-          { base: "workspace", pattern: "**/package.json" },
-          { base: "workspace", pattern: "**/tsconfig*.json" },
-          { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
-          { base: "workspace", pattern: "!**/node_modules/**" },
-          { base: "workspace", pattern: "!**/dist/**" },
-          { base: "workspace", pattern: "!**/.paraglide/**" },
-          { base: "workspace", pattern: "!**/.local/**" },
-        ],
+          "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+        dependsOn: ["check:effect:gate"],
+        input: [...typecheckInput],
       },
       precommit: { command: [], dependsOn: [] },
       prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
