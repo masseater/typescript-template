@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createHash } from "node:crypto";
 
 import { appEnvKey, applicationOrigins, mailpitOrigin } from "@repo/config";

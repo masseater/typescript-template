@@ -1,10 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createInterface } from "node:readline";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { Readable } from "node:stream";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { Effect, Schema } from "effect";
@@ -47,14 +43,13 @@ function spawnAlchemy(
 ): Effect.Effect<number, AlchemyFailure> {
   return Effect.callback<number, AlchemyFailure>((resume) => {
     const child = spawn(alchemyBinary, [...args], {
-      // oxlint-disable-next-line node/no-process-env
       env: { ...process.env, ALCHEMY_TELEMETRY_DISABLED: "1" },
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    // oxlint-disable-next-line project/process-boundary
+    // oxlint-disable-next-line project/process-boundary -- the alchemy child process writes its stdout and stderr through this process, which is the boundary those streams cross
     forward(child.stdout, process.stdout, confidential);
-    // oxlint-disable-next-line project/process-boundary
+    // oxlint-disable-next-line project/process-boundary -- the alchemy child process writes its stdout and stderr through this process, which is the boundary those streams cross
     forward(child.stderr, process.stderr, confidential);
     child.on("error", () => {
       resume(Effect.fail(new AlchemyFailure({ code: "alchemy_command_failed" })));

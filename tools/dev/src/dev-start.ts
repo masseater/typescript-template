@@ -86,14 +86,12 @@ const isolatedDatabase = Effect.acquireRelease(
           }),
       ),
     );
-    // oxlint-disable-next-line node/no-process-env
     process.env[localDatabaseVariable] = directory;
     yield* migrateDatabase(path.join(repositoryRoot, "node_modules/.bin/vp"));
     return directory;
   }),
   (directory) =>
     Effect.gen(function* cleanupDatabase() {
-      // oxlint-disable-next-line node/no-process-env
       delete process.env[localDatabaseVariable];
       const fs = yield* FileSystem.FileSystem;
       yield* fs.remove(directory, { force: true, recursive: true }).pipe(Effect.ignore);

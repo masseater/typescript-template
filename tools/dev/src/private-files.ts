@@ -25,7 +25,7 @@ const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
 ) {
   const path = yield* urlPath(location);
   const entry = yield* withFileSystem((fs) => fs.stat(path));
-  // oxlint-disable-next-line no-bitwise
+  // oxlint-disable-next-line no-bitwise -- group and other permission bits are masked out of the file mode to refuse a credentials file others can read
   if ((entry.mode & groupAndOtherPermissions) !== 0) {
     return yield* failure("credentials_permissions_invalid");
   }
