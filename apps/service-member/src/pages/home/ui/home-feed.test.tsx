@@ -10,8 +10,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import { overwriteGetLocale } from "#paraglide/runtime.js";
-import { presentFeed } from "./home-page.tsx";
-import { HomeFeed } from "./home-feed.tsx";
+import { HomeFeed, presentFeed } from "./home-feed.tsx";
 
 import type { HomeEntry } from "./home-feed.tsx";
 

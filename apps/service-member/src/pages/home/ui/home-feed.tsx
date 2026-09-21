@@ -18,6 +18,19 @@ type HomeFeedState =
   | { readonly status: "pending" }
   | { readonly entries: readonly HomeEntry[]; readonly status: "ready" };
 
+function presentFeed(
+  items: readonly { actorId: string; actorName: string; profile: string; updatedAt: number }[],
+  label: (updatedAt: number) => string,
+): readonly HomeEntry[] {
+  return items.map((item) => ({
+    actorId: item.actorId,
+    actorName: item.actorName,
+    change: item.profile === "" ? m.home_profile_empty() : item.profile,
+    key: `${item.actorId}-${item.updatedAt}`,
+    updatedAtLabel: label(item.updatedAt),
+  }));
+}
+
 function PersonLink({ entry }: Readonly<{ entry: HomeEntry }>): ReactElement {
   return (
     <TextLink to="/users/$id" params={{ id: entry.actorId }}>
@@ -78,5 +91,5 @@ function HomeFeed({ state }: Readonly<{ state: HomeFeedState }>): ReactElement {
   );
 }
 
-export { HomeFeed };
+export { HomeFeed, presentFeed };
 export type { HomeEntry, HomeFeedState };
