@@ -1,10 +1,10 @@
-import { Effect, Ref } from "effect";
+import { Effect, Predicate, Ref } from "effect";
 
-import { isRecord, type LogSink } from "./structured-logs.ts";
+import type { LogSink } from "./structured-logs.ts";
 
 const parsedLine = (line: string): Readonly<Record<string, unknown>> => {
   const decoded: unknown = JSON.parse(line);
-  if (!isRecord(decoded)) {
+  if (!Predicate.isObject(decoded)) {
     return { "log.unparsed": line };
   }
   return decoded;

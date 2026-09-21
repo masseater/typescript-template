@@ -217,6 +217,7 @@ describe("inspection coverage", () => {
       awaitingPresetPackages.map((pattern) => pattern.replace(/\/\*\*$/u, "")).toSorted(),
     );
     expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
+    expect(reachable(".", ["prepush", "prepr", "premerge"])).not.toContain("check:types");
   });
 
   it("typechecks workspace vite configs and the quality doctor config", () => {
