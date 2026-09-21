@@ -113,7 +113,10 @@ const portableDiagnostic = (diagnostic: Diagnostic, repositoryRoot: string): Dia
   message: withoutCheckoutPath(diagnostic.message, repositoryRoot),
 });
 
-const portableBaseline = (baseline: TypecheckBaseline, repositoryRoot: string): TypecheckBaseline => ({
+const portableBaseline = (
+  baseline: TypecheckBaseline,
+  repositoryRoot: string,
+): TypecheckBaseline => ({
   version: 1,
   workspaces: Object.fromEntries(
     Object.entries(baseline.workspaces).map(([workspace, entries]) => [

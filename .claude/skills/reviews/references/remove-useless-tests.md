@@ -18,7 +18,7 @@ description: 無意味なテストを見つけて削除する。
 
 ```ts
 expect(effectDiagnostics["check:effect"].command).toBe(
-  "\"$(effect-tsgo get-exe-path)\" --pretty false --noEmit -p tsconfig.json && ...",
+  '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json && ...',
 );
 ```
 
@@ -27,9 +27,7 @@ expect(effectDiagnostics["check:effect"].command).toBe(
 代わりに、外部から見える契約や維持すべき依存関係をテストする。
 
 ```ts
-expect(appRun.tasks.build.dependsOn).toEqual(
-  expect.arrayContaining(["check:effect"]),
-);
+expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
 ```
 
 ## 判断
