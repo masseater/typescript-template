@@ -71,7 +71,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
-    crons: target === APPLICATION.user ? [memberLeavePurgeCron] : undefined,
+    ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env,
     main: artifacts.mainModule,
