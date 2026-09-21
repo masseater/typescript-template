@@ -56,7 +56,7 @@ function shownAuthor(row: {
   readonly authorId: string | null;
   readonly authorName: string | null;
 }): BoardAuthor | null {
-  // oxlint-disable-next-line unicorn/no-null
+  // oxlint-disable-next-line unicorn/no-null -- a removed author is SQL null, and the summary keeps that null instead of inventing a name
   return row.authorId === null || row.authorName === null
     ? null
     : { id: row.authorId, name: row.authorName };

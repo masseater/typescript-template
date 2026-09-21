@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createServer } from "node:http";
 
 import { assert, it } from "@effect/vitest";

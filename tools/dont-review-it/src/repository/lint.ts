@@ -1,4 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
 import {
@@ -271,6 +271,20 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           { considerDefaultExhaustiveForUnions: true },
         ],
+      },
+    },
+    {
+      files: [
+        "infra/budget-monitor/**",
+        "infra/cloudflare/**",
+        "infra/local/**",
+        "libs/config/**",
+        "tools/dev/**",
+        "tools/dont-review-it/src/repository/client-bundle.ts",
+      ],
+      rules: {
+        "import/no-nodejs-modules": LINT_SEVERITY.OFF,
+        "node/no-process-env": LINT_SEVERITY.OFF,
       },
     },
   ],

@@ -27,7 +27,6 @@ function tick(count: number): typeof Tick.Type {
   return { data: { count }, event: "tick" };
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function open(ticks: Ticks): Effect.Effect<Response> {
   const app = createApi("/api").get(
     "/events",

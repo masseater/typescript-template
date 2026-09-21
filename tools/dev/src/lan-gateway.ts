@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createPublicKey } from "node:crypto";
 
 import { loopbackAddress } from "@repo/config";
@@ -55,7 +54,6 @@ function launchGateway(): Effect.Effect<unknown, LocalCommandFailure, Path.Path>
 const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
   const portlessHomePath = yield* urlPath(portlessHome);
   const portlessEnvironment = {
-    // oxlint-disable-next-line node/no-process-env
     ...process.env,
     PORTLESS_STATE_DIR: portlessHomePath,
     PORTLESS_SYNC_HOSTS: "0",
