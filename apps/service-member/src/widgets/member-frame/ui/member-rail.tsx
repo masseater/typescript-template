@@ -5,13 +5,15 @@ import { memberHasPaidPlan, memberNavItems } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
-import type { Session } from "#entities/session/model/session.ts";
 import type { ReactElement } from "react";
 
 function MemberRail({
   memberBoard,
   user,
-}: Readonly<{ memberBoard: boolean; user: Session["user"] }>): ReactElement {
+}: Readonly<{
+  memberBoard: boolean;
+  user: Readonly<{ id: string; name: string }>;
+}>): ReactElement {
   const items = memberNavItems(memberHasPaidPlan, memberBoard);
   return (
     <aside className="hidden w-32 shrink-0 flex-col border-r border-border bg-card md:flex">

@@ -13,15 +13,13 @@ import { MemberRail } from "./member-rail.tsx";
 import { MemberTabs } from "./member-tabs.tsx";
 import { MemberTopBar } from "./member-top-bar.tsx";
 
-import type { Session } from "#entities/session/model/session.ts";
-
 const member = {
   email: "member@example.com",
   id: "member-1",
   name: "会員",
   role: "member",
   twoFactorEnabled: false,
-} as const satisfies Session["user"];
+} as const;
 
 describe("member navigation", () => {
   const it = test

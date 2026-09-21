@@ -4,10 +4,11 @@ import { serviceName } from "#shared/config/index.ts";
 import { titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
-import type { Session } from "#entities/session/model/session.ts";
 import type { ReactElement } from "react";
 
-function MemberTopBar({ user }: Readonly<{ user: Session["user"] }>): ReactElement {
+function MemberTopBar({
+  user,
+}: Readonly<{ user: Readonly<{ id: string; name: string }> }>): ReactElement {
   const { pathname } = useLocation();
   return (
     <header className="flex items-center gap-3 border-b border-border bg-card px-3 py-2 md:hidden">
