@@ -15,5 +15,10 @@
   "hero_body": "自己紹介を書いて、気になる人を探せます。アカウントはパスキーと 2 段階認証で守れます。",
   "locale_ja": "日本語",
   "locale_en": "English",
-  "locale_label": "言語"
+  "locale_label": "言語",
+  "field_value_missing": "入力してください。",
+  "field_type_mismatch": "正しい形式で入力してください。",
+  "field_pattern_mismatch": "指定された形式で入力してください。",
+  "field_too_short": "文字数が足りません。",
+  "field_too_long": "文字数が多すぎます。"
 }

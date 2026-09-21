@@ -10,7 +10,7 @@ function InquiriesPage(): ReactElement {
       <p className="text-base leading-normal text-muted-foreground">
         読むだけの画面です。返信は管理者アプリで行います。
       </p>
-      <StatusMessage variant={STATUS_VARIANT.pending}>
+      <StatusMessage variant={STATUS_VARIANT.empty}>
         問い合わせの一覧はまだありません。
       </StatusMessage>
     </OpsPage>
