@@ -5,7 +5,7 @@ import { serviceName } from "#shared/config/index.ts";
 import { memberNavItems, titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { Session } from "#entities/session/model/session.ts";
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 const collapsedMemberMark = "ユーザー";
