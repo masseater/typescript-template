@@ -12,20 +12,14 @@ concurrency:
 
 jobs:
   prerelease:
-    runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          clean: ${{ vars.CI_RUNNER == '' }}
-      - if: vars.CI_RUNNER != ''
-        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy -e .artifacts -e .spool
-      - if: vars.CI_RUNNER != ''
-        run: rm -rf .local/d1
       - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           node-version-file: package.json
-          cache: ${{ vars.CI_RUNNER == '' }}
+          cache: true
       - run: vp run -r prerelease
 
   load:
