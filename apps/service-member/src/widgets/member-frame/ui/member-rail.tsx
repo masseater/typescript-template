@@ -5,7 +5,7 @@ import { memberHasPaidPlan, memberNavItems } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { Session } from "#entities/session/model/session.ts";
 import type { ReactElement } from "react";
 
 function MemberRail({
@@ -14,9 +14,9 @@ function MemberRail({
 }: Readonly<{ memberBoard: boolean; user: Session["user"] }>): ReactElement {
   const items = memberNavItems(memberHasPaidPlan, memberBoard);
   return (
-    <aside className="hidden w-16 shrink-0 flex-col border-r border-border bg-card md:flex">
+    <aside className="hidden w-32 shrink-0 flex-col border-r border-border bg-card md:flex">
       <div className="border-b border-border px-2 py-3 text-center">
-        <NavigationLink to="/home" variant="brand" className="text-sm">
+        <NavigationLink to="/home" variant="brand" className="text-sm leading-tight">
           {serviceName}
         </NavigationLink>
       </div>
