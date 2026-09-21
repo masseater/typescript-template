@@ -12,6 +12,12 @@ type AuditEntry = Readonly<{
   targetId: string;
 }>;
 
+interface AuditedChange {
+  readonly action: AuditAction;
+  readonly actorId: string;
+  readonly targetId: string;
+}
+
 const auditRow = (entry: AuditEntry): typeof auditEvent.$inferInsert => ({
   action: entry.action,
   actorId: entry.actorId,
@@ -21,15 +27,10 @@ const auditRow = (entry: AuditEntry): typeof auditEvent.$inferInsert => ({
   targetId: entry.targetId,
 });
 
-const auditWhenTargeted = (database: DrizzleDatabase, entry: AuditEntry, actorIsLive: SQL): SQL => {
-  const columns = [
-    [auditEvent.action, entry.action],
-    [auditEvent.actorId, entry.actorId],
-    [auditEvent.actorKind, entry.actorKind],
-    [auditEvent.createdAt, Date.now()],
-    [auditEvent.id, crypto.randomUUID()],
-    [auditEvent.targetId, entry.targetId],
-  ] as const;
+const insertWhere = (
+  columns: ReadonlyArray<readonly [{ readonly name: string }, unknown]>,
+  condition: SQL,
+): SQL => {
   const columnNames = sql.join(
     columns.map(([column]) => sql.identifier(column.name)),
     sql`, `,
@@ -38,12 +39,38 @@ const auditWhenTargeted = (database: DrizzleDatabase, entry: AuditEntry, actorIs
     columns.map(([, columnValue]) => sql`${columnValue}`),
     sql`, `,
   );
+  return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE ${condition}`;
+};
+
+const auditWhen = (change: AuditedChange, targeted: SQL): SQL =>
+  insertWhere(
+    [
+      [auditEvent.action, change.action],
+      [auditEvent.actorId, change.actorId],
+      [auditEvent.createdAt, Date.now()],
+      [auditEvent.id, crypto.randomUUID()],
+      [auditEvent.targetId, change.targetId],
+    ],
+    sql`EXISTS (${targeted})`,
+  );
+
+const auditWhenTargeted = (database: DrizzleDatabase, entry: AuditEntry, actorIsLive: SQL): SQL => {
   const targeted = database
     .select({ id: user.id })
     .from(user)
     .where(sql`${user.id} = ${entry.targetId} AND ${actorIsLive}`);
-  return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE ${exists(targeted)}`;
+  return insertWhere(
+    [
+      [auditEvent.action, entry.action],
+      [auditEvent.actorId, entry.actorId],
+      [auditEvent.actorKind, entry.actorKind],
+      [auditEvent.createdAt, Date.now()],
+      [auditEvent.id, crypto.randomUUID()],
+      [auditEvent.targetId, entry.targetId],
+    ],
+    exists(targeted),
+  );
 };
 
-export { auditRow, auditWhenTargeted };
-export type { AuditEntry };
+export { auditRow, auditWhen, auditWhenTargeted };
+export type { AuditEntry, AuditedChange };

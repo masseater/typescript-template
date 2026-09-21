@@ -1,4 +1,4 @@
-import { type Application } from "@repo/config";
+import { type Application, type ProfileVisibility } from "@repo/config";
 import {
   ADMIN_PERMISSION,
   AUTHENTICATION_METHOD,
@@ -39,6 +39,8 @@ export const addUser = (added: {
   readonly permission?: AccountPermission;
   readonly accountState?: AccountState;
   readonly emailVerified?: boolean;
+  readonly searchable?: boolean;
+  readonly visibility?: ProfileVisibility;
 }): Effect.Effect<void, DatabaseFailure, Database> => {
   const role = added.role ?? ROLE.member;
   return query(async (database): Promise<void> => {
@@ -52,6 +54,8 @@ export const addUser = (added: {
       permission: added.permission ?? topPermission[role],
       role,
       updatedAt: recordedAt,
+      ...(added.searchable === undefined ? {} : { searchable: added.searchable }),
+      ...(added.visibility === undefined ? {} : { visibility: added.visibility }),
     });
   });
 };

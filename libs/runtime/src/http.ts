@@ -4,14 +4,21 @@ import { Elysia, sse, status } from "elysia";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
 
 import { AppOrigin } from "./app-origin.ts";
-import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
+import { failureBody, failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
 import { jsonResponse } from "./responses.ts";
 
 import type { Reporting, RequestRejected } from "@repo/observability";
 import type { Cause } from "effect";
 import type { AnyElysia } from "elysia";
-import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
+import type {
+  CommonFailure,
+  Failure,
+  FailureBody,
+  FailureStatus,
+  FailureTable,
+  Tagged,
+} from "./failures.ts";
 import type { WorkerRuntime } from "./worker-runtime.ts";
 
 type Decodable = Schema.Top & { readonly DecodingServices: never };
@@ -33,7 +40,7 @@ interface FailedEvent {
   readonly event: "failed";
 }
 type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
-type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
+type Failed = ReturnType<typeof status<FailureStatus, FailureBody>>;
 type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
 interface ApiRoutes<Requirements> {
   readonly events: <Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
@@ -42,6 +49,10 @@ interface ApiRoutes<Requirements> {
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
+  readonly guard: <Failures extends Tagged>(
+    handler: Handler<void, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ) => (context: ElysiaContext) => Promise<Failed | undefined>;
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
@@ -127,7 +138,7 @@ function elysiaServer(app: AnyElysia): {
 }
 
 function failedStatus(failure: Failure): Failed {
-  return status(failure.status, { error: failure.message });
+  return status(failure.status, failureBody(failure));
 }
 
 function unavailableResponse(
@@ -163,6 +174,17 @@ function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
   return (request) =>
     handler(request).pipe(
       Effect.flatMap((value) => Effect.orDie(encode(value))),
+      Effect.catchCause((cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus))),
+    );
+}
+
+function respondGuard<Failures extends Tagged, Requirements>(
+  handler: Handler<void, Failures, Requirements>,
+  failures: FailureTable<Exclude<Failures, CommonFailure>>,
+): (request: Request) => Effect.Effect<Failed | undefined, never, Requirements> {
+  return (request) =>
+    handler(request).pipe(
+      Effect.as(undefined),
       Effect.catchCause((cause) => reportedFailure(failures, cause).pipe(Effect.map(failedStatus))),
     );
 }
@@ -265,6 +287,15 @@ function apiRoutes<Requirements>(
         unavailableStatus(cause, reporting),
       );
   }
+  function guard<Failures extends Tagged>(
+    handler: Handler<void, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ): (context: ElysiaContext) => Promise<Failed | undefined> {
+    return async (context): Promise<Failed | undefined> =>
+      settle(context, respondGuard(handler, failures), (cause) =>
+        unavailableStatus(cause, reporting),
+      );
+  }
   function events<Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
@@ -280,7 +311,7 @@ function apiRoutes<Requirements>(
       return opened;
     };
   }
-  return { events, raw, route };
+  return { events, guard, raw, route };
 }
 
 export { AppOrigin } from "./app-origin.ts";

@@ -8,9 +8,10 @@ import { and, eq, gt, isNull, type SQL } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { auditRow, type AuditEntry } from "./audit.ts";
+import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { InviteRejected } from "./invite-rejected.ts";
-import { AUDIT_ACTION, account, auditEvent, invite, user } from "./schema.ts";
+import { account, auditEvent, invite, user } from "./schema.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
 

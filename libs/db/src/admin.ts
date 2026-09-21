@@ -14,11 +14,12 @@ import { Effect, Schema } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
 import { containsKeyword } from "./contains-keyword.ts";
+import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
-import { AUDIT_ACTION, user } from "./schema.ts";
+import { user } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
@@ -267,6 +268,15 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
 });
 
 export { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
+export {
+  AgreementVersionTaken,
+  AgreementVersionUnavailable,
+  createAgreementDraft,
+  listAgreementVersions,
+  publishAgreementVersion,
+  readAgreementVersion,
+  reviseAgreementDraft,
+} from "./agreement-admin.ts";
 export { InviteRejected } from "./invite-rejected.ts";
 export { LastAdminRequired } from "./last-admin-required.ts";
 export { PermissionRequired } from "./permission-required.ts";
