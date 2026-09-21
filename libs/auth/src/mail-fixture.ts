@@ -1,5 +1,5 @@
 import { setupNetwork } from "@msw/cloudflare";
-import { mailpitOrigin } from "@repo/config";
+import { mailpitOrigin, mailpitSendPath } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
@@ -14,7 +14,7 @@ type Delivery = {
 
 const mailConfig = {
   EMAIL_FROM: "no-reply@example.test",
-  MAILPIT_SEND_URL: `${mailpitOrigin}/api/v1/send`,
+  MAILPIT_SEND_URL: `${mailpitOrigin}${mailpitSendPath}`,
 };
 const knownSubjects = new Set<string>(Object.values(mailSubjects));
 const MailpitMessage = Schema.Struct({

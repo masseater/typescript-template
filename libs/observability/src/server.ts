@@ -8,7 +8,7 @@ export type { TelemetryFlusher } from "./otlp.ts";
 export { TelemetryInvalid } from "./telemetry-invalid.ts";
 export { httpStatus } from "./http-status.ts";
 export { ingestBrowser } from "./ingress.ts";
-export { RequestEntropy, observeRequest, reportFailure } from "./request-span.ts";
+export { observeRequest, reportFailure } from "./request-span.ts";
 export { logAt, logCause, statusSeverity } from "./severity.ts";
 export type { Severity } from "./severity.ts";
 export { redactSecrets, redactedField } from "./redact.ts";

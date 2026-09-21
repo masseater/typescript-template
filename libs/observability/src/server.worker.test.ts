@@ -1,20 +1,22 @@
 import { Effect, Layer } from "effect";
+import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  CurrentRequest,
-  RequestEntropy,
-  Telemetry,
-  ingestBrowser,
-  observeRequest,
-} from "./server.ts";
-import { fixedSpans, recordedLogs } from "./testing.ts";
+import { RequestEntropy } from "./request-span.ts";
+import { fixedSpans, recordedLogs } from "./server-testing.ts";
+import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
 
-const fixedEntropy = Layer.succeed(RequestEntropy, {
-  epochMilliseconds: () => 1_800_000_000_000,
-  monotonicMilliseconds: () => 0,
-  requestId: () => "22222222-2222-4222-8222-222222222222",
-});
+const fixedNow = 1_800_000_000_000;
+const clockEntropy = RequestEntropy.defaultValue();
+
+const fixedEntropy = Layer.merge(
+  Layer.succeed(RequestEntropy, {
+    epochMilliseconds: () => clockEntropy.epochMilliseconds(),
+    monotonicMilliseconds: () => clockEntropy.monotonicMilliseconds(),
+    requestId: () => "22222222-2222-4222-8222-222222222222",
+  }),
+  Layer.effectDiscard(TestClock.setTime(fixedNow)).pipe(Layer.provideMerge(TestClock.layer())),
+);
 
 const testOrigin = new URL("http://localhost");
 
