@@ -60,6 +60,13 @@ const apiBoundaryFiles = [
   "libs/runtime/src/account.ts",
 ];
 
+const authUiServerReadsAwaitingQuery = [
+  "libs/auth-ui/src/email-change-verification.tsx",
+  "libs/auth-ui/src/email-verification.tsx",
+  "libs/auth-ui/src/use-passkeys.ts",
+  "libs/auth-ui/src/use-session.ts",
+];
+
 const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages, ...uiQualityInspectionFiles],
@@ -70,18 +77,6 @@ const lintOptions = {
   ],
   options: { denyWarnings: true, typeAware: true, typeCheck: true },
   overrides: [
-    {
-      files: [
-        "libs/auth-ui/src/email-change-verification.tsx",
-        "libs/auth-ui/src/email-verification.tsx",
-        "libs/auth-ui/src/use-passkeys.ts",
-        "libs/auth-ui/src/use-session.ts",
-      ],
-      rules: {
-        "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
-        "project/atom-server-data": LINT_SEVERITY.OFF,
-      },
-    },
     {
       files: templateWorkspaces,
       plugins: ["react"],
@@ -240,6 +235,13 @@ const lintOptions = {
       },
     },
     {
+      files: authUiServerReadsAwaitingQuery,
+      rules: {
+        "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
+        "project/atom-server-data": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: reactElementTypeFiles,
       rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
     },
@@ -345,7 +347,9 @@ const lintOptions = {
 const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
   {},
   lintOptions.rules,
-  ...lintOptions.overrides.map((override) => override.rules ?? {}),
+  ...lintOptions.overrides
+    .filter((override) => override.files?.includes("libs/**") === true)
+    .map((override) => override.rules ?? {}),
 );
 
 const builtInPlugins = new Set([
