@@ -1,6 +1,13 @@
-import { Avatar, Button, ButtonLink, Heading, formatWarekiMonth, useAction } from "@repo/ui";
+import {
+  Avatar,
+  Button,
+  ButtonLink,
+  Heading,
+  formatWarekiMonth,
+  localState,
+  useAction,
+} from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { followMember, unfollowMember } from "#pages/profile/api/follow.ts";
 import { SocialLinks } from "#shared/social-link";
@@ -11,19 +18,22 @@ import { ProfileShare } from "./profile-share.tsx";
 import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
 
+const useFollowingOverride = localState<boolean | undefined>(undefined);
+
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
   const router = useRouter();
   const followAction = useAction();
-  const [following, setFollowing] = useState(member.following ?? false);
+  const [followingOverride, setFollowingOverride] = useFollowingOverride();
+  const following = followingOverride ?? member.following ?? false;
 
   const toggleFollow = (): void => {
     followAction.run(async () => {
       if (following) {
         await unfollowMember(member.id);
-        setFollowing(false);
+        setFollowingOverride(false);
       } else {
         await followMember(member.id);
-        setFollowing(true);
+        setFollowingOverride(true);
       }
       await router.invalidate();
     });

@@ -1,5 +1,5 @@
 import { APPLICATION } from "@repo/config";
-import { appConfig } from "@repo/vite-config";
+import { appConfig, paraglideAppPlugin } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-export default defineConfig(appConfig(APPLICATION.admin));
+export default defineConfig(appConfig(APPLICATION.admin, [paraglideAppPlugin()]));

@@ -5,10 +5,10 @@ import {
   Page,
   STATUS_VARIANT,
   StatusMessage,
+  localState,
   useAction,
   useToast,
 } from "@repo/ui";
-import { useState } from "react";
 
 import {
   loadNotificationPreferences,
@@ -18,19 +18,27 @@ import {
 import type { NotificationPreferences } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
+const useDraft = localState<NotificationPreferences | undefined>(undefined);
+
 function NotificationsPage({
   initial,
 }: Readonly<{ initial: NotificationPreferences }>): ReactElement {
   const notify = useToast();
   const saveAction = useAction();
-  const [messageMail, setMessageMail] = useState(initial.messageMail);
-  const [boardMail, setBoardMail] = useState(initial.boardMail);
+  const [draft, setDraft] = useDraft();
+  const preferences = draft ?? initial;
+
+  const setMessageMail = (messageMail: boolean): void => {
+    setDraft({ ...preferences, messageMail });
+  };
+  const setBoardMail = (boardMail: boolean): void => {
+    setDraft({ ...preferences, boardMail });
+  };
 
   const save = (): void => {
     saveAction.run(async () => {
-      const saved = await saveNotificationPreferences({ boardMail, messageMail });
-      setMessageMail(saved.messageMail);
-      setBoardMail(saved.boardMail);
+      const saved = await saveNotificationPreferences(preferences);
+      setDraft(saved);
       notify("success", "通知設定を保存しました。");
     });
   };
@@ -42,12 +50,12 @@ function NotificationsPage({
       )}
       <FormColumn>
         <CheckboxField
-          checked={messageMail}
+          checked={preferences.messageMail}
           label="メッセージのメール通知"
           onCheckedChange={setMessageMail}
         />
         <CheckboxField
-          checked={boardMail}
+          checked={preferences.boardMail}
           label="掲示板のメール通知"
           onCheckedChange={setBoardMail}
         />

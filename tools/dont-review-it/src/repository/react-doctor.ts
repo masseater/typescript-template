@@ -8,6 +8,7 @@ import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
+import { ANALYSIS_TIMEOUT, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 interface Scan {
@@ -98,26 +99,44 @@ const unclassifiedRules = Effect.fn("unclassifiedRules")(function* unclassifiedR
     .map((rule) => `${rule.key} ${rule.source} ${rule.severity}`);
 });
 
+const SCAN_ATTEMPTS = 3;
+
+const skippedIn = (report: typeof Scanned.Type): string[] => [
+  ...report.projects.flatMap((entry) => skippedOf(entry)),
+  ...(report.skippedProjects ?? []).map(({ directory, reason }) => `${directory} ${reason}`),
+];
+
+const scanProjects = Effect.fn("scanProjects")(function* scanProjects() {
+  let attempt = 0;
+  let scanned = yield* scan(["tools/dont-review-it", "--json"]);
+  let report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(
+    Effect.tapError(() => Console.error(scanned.stdout)),
+  );
+  while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
+    attempt += 1;
+    yield* Console.error(
+      JSON.stringify({ attempt, event: "quality.react_doctor_retry", reason: ANALYSIS_TIMEOUT }),
+    );
+    scanned = yield* scan(["tools/dont-review-it", "--json"]);
+    report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(
+      Effect.tapError(() => Console.error(scanned.stdout)),
+    );
+  }
+  return { report, scanned };
+});
+
 const inspect = Effect.fn("inspect")(function* inspect() {
-  const [{ failed, stderr, stdout }, listed] = yield* Effect.all(
-    [
-      scan(["tools/dont-review-it", "--json"]),
-      scan(["rules", "list", "--json", "-c", "tools/dont-review-it"]),
-    ],
+  const [{ report, scanned }, listed] = yield* Effect.all(
+    [scanProjects(), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
     { concurrency: "unbounded" },
   );
+  const { failed, stderr } = scanned;
   if (failed && stderr !== "") {
     yield* Console.error(stderr);
   }
-  const report = yield* Schema.decodeUnknownEffect(Report)(stdout).pipe(
-    Effect.tapError(() => Console.error(stdout)),
-  );
   const unclassified = yield* unclassifiedRules(listed);
   const findings = report.projects.flatMap((entry) => findingsOf(entry));
-  const skipped = [
-    ...report.projects.flatMap((entry) => skippedOf(entry)),
-    ...(report.skippedProjects ?? []).map(({ directory, reason }) => `${directory} ${reason}`),
-  ];
+  const skipped = skippedIn(report);
   const found = new Set(report.projects.map((entry) => entry.project.projectName));
   const missing = applications.map((name) => `@repo/${name}`).filter((name) => !found.has(name));
   return {
