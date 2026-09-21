@@ -1,5 +1,6 @@
 const rootOnDemandChecks = {
   "check:repository": "dont-review-it check-repository",
+  "check:types": "dont-review-it-typecheck",
 };
 
 const onDemandGateEntries = new Set([
@@ -7,6 +8,10 @@ const onDemandGateEntries = new Set([
   "tools/dev: verify",
 ]);
 
-const frozenOnDemandGateEntries = [".: check:repository", "tools/dev: verify"] as const;
+const frozenOnDemandGateEntries = [
+  ".: check:repository",
+  ".: check:types",
+  "tools/dev: verify",
+] as const;
 
 export { frozenOnDemandGateEntries, onDemandGateEntries, rootOnDemandChecks };
