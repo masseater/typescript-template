@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { appRun, effectRun, lifecycle } from "./vite.ts";
+import { appRun, coveredTestableLibraryRun, effectRun, lifecycle } from "./vite.ts";
 
 describe("lifecycle", () => {
   it("fills omitted stages with inherited gates only", () => {
@@ -45,5 +45,12 @@ describe("lifecycle", () => {
       cache: false,
       command: "vp preview",
     });
+  });
+
+  it("keeps Cloudflare worker tests off the coverage gate", () => {
+    expect.hasAssertions();
+    expect(coveredTestableLibraryRun.tasks!["test"]?.command).toContain(
+      "--exclude '**/*.worker.test.ts'",
+    );
   });
 });

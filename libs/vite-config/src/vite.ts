@@ -232,7 +232,7 @@ const testRun = {
 
 const testCoverageRun = {
   test: {
-    command: "vp test run --coverage",
+    command: "vp test run --coverage --exclude '**/*.worker.test.ts'",
     input: [...testTaskInput],
     output: [{ base: "workspace", pattern: "coverage/**" }],
   },
