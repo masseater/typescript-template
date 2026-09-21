@@ -194,5 +194,5 @@ runCli(
         announceFailure({ crossed: failed.crossed, exitCode: failed.code, reason: failed.reason }),
     }),
   ),
-  (cause) => causeRecord("load.run_failed", cause, { reason: "unexpected" }),
+  (cause) => causeRecord("load.run_failed", { cause, fields: { reason: "unexpected" } }),
 );

@@ -148,7 +148,10 @@ const query = Effect.fn("query")(function* query() {
 });
 
 runCli(values.help ? help : query(), (cause) =>
-  causeRecord("observability.query_failed", cause, {
-    remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
+  causeRecord("observability.query_failed", {
+    cause,
+    fields: {
+      remediation: positionals[0] === "exported" ? remediation.exported : remediation.explorer,
+    },
   }),
 );
