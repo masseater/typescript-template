@@ -393,5 +393,6 @@ export {
 };
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
+export { runTypecheckGate } from "./effect-typecheck.ts";
 export type { Tasks };
 export { devBoundary };

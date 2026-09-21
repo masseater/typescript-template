@@ -8,7 +8,7 @@ import { createServer } from "node:http";
 import { Auth } from "@repo/auth";
 import { APPLICATION, applicationOrigins, mailpitSendPath } from "@repo/config";
 import { Database } from "@repo/db";
-import { localDatabasePlatform } from "@repo/db-local/platform";
+import { localDatabasePlatform } from "@repo/db-local";
 import { ensureAdminRole } from "@repo/db/bootstrap";
 import { createEmailVerificationToken } from "better-auth/api";
 import { Effect, Layer, Schema } from "effect";

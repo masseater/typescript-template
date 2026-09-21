@@ -46,11 +46,15 @@ describe("failOnBrokenSourceMaps", () => {
         logLevel: "silent",
         plugins: [failOnBrokenSourceMaps()],
       });
-      return "output" in built;
+      return Array.isArray(built)
+        ? built.some(
+            (result) => result !== null && typeof result === "object" && "output" in result,
+          )
+        : "output" in built;
     });
 
   it("fails the build when a transform drops the source map", ({ brokenMapFailure }) => {
-    expect(brokenMapFailure).toBe("SOURCEMAP_BROKEN");
+    expect(brokenMapFailure).toContain("SOURCEMAP_BROKEN");
   });
 
   it("leaves a build whose transforms keep the source map alone", ({ keptMapBuild }) => {

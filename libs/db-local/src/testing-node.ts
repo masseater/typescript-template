@@ -185,4 +185,5 @@ export const describeDatabase = Effect.fn("describeDatabase")(function* describe
   };
 });
 
+export { localDatabasePlatform } from "./local-platform.ts";
 export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, executeD1RawBatch, runStatement };
