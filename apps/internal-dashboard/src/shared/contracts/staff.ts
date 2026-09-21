@@ -9,7 +9,7 @@ const StaffSummary = Schema.Struct({
   email: Schema.String,
   id: Schema.String,
   name: Schema.String,
-  permission: Schema.NullOr(StaffPermission),
+  permission: Schema.optional(StaffPermission),
 });
 
 const StaffList = Schema.Array(StaffSummary);
@@ -22,7 +22,7 @@ const StaffPermissionChange = Schema.Struct({ id: Identifier, permission: StaffP
 
 const StaffPermissionChanged = Schema.Struct({
   id: Schema.String,
-  permission: Schema.NullOr(StaffPermission),
+  permission: Schema.optional(StaffPermission),
 });
 
 const StaffRemoval = Schema.Struct({ id: Identifier });
