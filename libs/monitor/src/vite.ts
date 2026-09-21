@@ -15,7 +15,7 @@ function monitorWorkerVite() {
     },
     run: {
       tasks: {
-        "check:effect": effectDiagnostics["check:effect"],
+        ...effectDiagnostics,
         build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
         ...lifecycle({
           prepush: ["check:effect"],

@@ -238,14 +238,14 @@ const intentValidation = {
 
 const effectRun = {
   tasks: {
-    "check:effect": effectDiagnostics["check:effect"],
+    ...effectDiagnostics,
     ...lifecycle({ prepush: ["check:effect"] }),
   },
 } satisfies RunConfig;
 
 const appRun = {
   tasks: {
-    "check:effect": effectDiagnostics["check:effect"],
+    ...effectDiagnostics,
     check: sliceBoundaries.check,
     build: {
       command: "vp build",
