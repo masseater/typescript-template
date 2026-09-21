@@ -5,9 +5,11 @@ import { Cause, Console, Effect } from "effect";
 
 import { localDatabasePlatform } from "./local-platform.ts";
 
-function failed(error: string): Readonly<Record<string, unknown>> {
-  return { action: "local_migration", error, success: false };
-}
+const failed = (failureCode: string): Readonly<Record<string, unknown>> => ({
+  action: "local_migration",
+  error: failureCode,
+  success: false,
+});
 
 runCli(
   Effect.gen(function* program() {

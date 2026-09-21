@@ -4,7 +4,7 @@ import { localDatabase } from "@repo/db/local";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
-import type { D1Database, D1Result } from "@cloudflare/workers-types";
+import type { D1Database, D1PreparedStatement, D1Result } from "@cloudflare/workers-types";
 import type { RemoteFailure } from "../../db/src/remote-input.ts";
 
 const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
@@ -14,10 +14,12 @@ const HttpQuery = Schema.Struct({
 });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-const boundStatements = (database: D1Database, requestJson: unknown) => {
-  return Schema.decodeUnknownPromise(HttpBatch)(requestJson).then(({ batch }) =>
-    batch.map((query) => database.prepare(query.sql).bind(...(query.params ?? []))),
-  );
+const boundStatements = async (
+  database: D1Database,
+  requestJson: unknown,
+): Promise<D1PreparedStatement[]> => {
+  const { batch } = await Schema.decodeUnknownPromise(HttpBatch)(requestJson);
+  return batch.map((query) => database.prepare(query.sql).bind(...(query.params ?? [])));
 };
 
 const executeD1HttpBatch = async (
@@ -28,12 +30,10 @@ const executeD1HttpBatch = async (
   return { result: executedStatements, success: true };
 };
 
-const columnValues = (row: unknown): readonly unknown[] => {
-  if (typeof row !== "object" || row === null) {
-    throw new TypeError("D1 raw emulation expected a column object");
-  }
-  return Object.values(row);
-};
+const ColumnRecord = Schema.Record(Schema.String, Schema.Unknown);
+
+const columnValues = (columnRecord: unknown): readonly unknown[] =>
+  Object.values(Schema.decodeUnknownSync(ColumnRecord)(columnRecord));
 
 const executeD1RawBatch = async (
   database: D1Database,
@@ -48,7 +48,9 @@ const executeD1RawBatch = async (
   const executedStatements = await database.batch(await boundStatements(database, requestJson));
   return {
     result: executedStatements.map((executedStatement) => ({
-      results: { rows: executedStatement.results.map((row) => columnValues(row)) },
+      results: {
+        rows: executedStatement.results.map((columnRecord) => columnValues(columnRecord)),
+      },
       success: true,
     })),
     success: true,
@@ -57,20 +59,19 @@ const executeD1RawBatch = async (
 
 class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
-function runStatement(
+const runStatement = (
   sql: string,
-  ...params: readonly (string | number)[]
-): Effect.Effect<D1Result, unknown, TestBinding> {
-  return Effect.gen(function* statement() {
+  ...bindings: readonly (string | number)[]
+): Effect.Effect<D1Result, unknown, TestBinding> =>
+  Effect.gen(function* statement() {
     const database = yield* TestBinding;
     return yield* Effect.tryPromise(async () =>
       database
         .prepare(sql)
-        .bind(...params)
+        .bind(...bindings)
         .run(),
     );
   });
-}
 
 const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
   TestBinding,
@@ -119,8 +120,10 @@ const pragmaRows = Effect.fn("pragmaRows")(function* pragmaRows(inspected: {
   return yield* Schema.decodeUnknownEffect(PragmaRows)(listing.results);
 });
 
-const isPrimaryKeyColumn = (column: Readonly<Record<string, unknown>>): boolean =>
-  column["pk"] === 1;
+const PrimaryKeyColumn = Schema.Struct({ pk: Schema.Unknown });
+
+const isPrimaryKeyColumn = (column: unknown): boolean =>
+  Schema.decodeUnknownSync(PrimaryKeyColumn)(column).pk === 1;
 
 const positionalKeys: ReadonlySet<string> = new Set(["cid", "id", "seq"]);
 
@@ -135,11 +138,16 @@ const comparableRow = (pragmaRow: Readonly<Record<string, unknown>>): string =>
       .map((column) => [column, pragmaRow[column]]),
   );
 
+const NotNullColumn = Schema.Struct({ notnull: Schema.Unknown });
+
+const notNullFlag = (column: unknown): unknown =>
+  Schema.decodeUnknownSync(NotNullColumn)(column).notnull;
+
 const primaryKeyFlagsOf = Effect.fn("primaryKeyFlagsOf")(function* primaryKeyFlagsOf(
   table: string,
 ) {
   const columns = yield* pragmaRows({ pragma: "table_info", table });
-  return columns.filter(isPrimaryKeyColumn).map((column) => column["notnull"]);
+  return columns.filter(isPrimaryKeyColumn).map(notNullFlag);
 });
 
 export const primaryKeyNullability = Effect.fn("primaryKeyNullability")(

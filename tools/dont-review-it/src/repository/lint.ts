@@ -32,7 +32,6 @@ const awaitingPresetPackages = [
   "libs/cli/**",
   "libs/config/**",
   "libs/db/**",
-  "libs/db-local/**",
   "libs/monitor/**",
   "libs/observability/**",
   "libs/runtime/**",
