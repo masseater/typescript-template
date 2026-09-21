@@ -17,7 +17,10 @@ const workspaces = {
       "dependency-cruiser",
     ],
     project: ["*.{js,ts}"],
-    vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
+    vitest: {
+      config: ["vite.config.ts", "vitest.mutation.config.ts"],
+      entry: ["vitest.workers.main.ts"],
+    },
   },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
