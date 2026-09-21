@@ -1,4 +1,3 @@
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -20,26 +19,22 @@ const messages = {
 
 const Probe = (): ReactElement => {
   const value = useFieldValidationMessages();
-  return createElement(
-    "span",
-    null,
-    fieldValidationMessageKinds.map((kind) => value[kind]).join(""),
-  );
+  return <span>{fieldValidationMessageKinds.map((kind) => value[kind]).join("")}</span>;
 };
 
 describe("field validation messages", () => {
   it("throws without a provider", () => {
     expect.hasAssertions();
-    expect(() => renderToStaticMarkup(createElement(Probe))).toThrow(
-      "Field validation messages are missing.",
-    );
+    expect(() => renderToStaticMarkup(<Probe />)).toThrow("Field validation messages are missing.");
   });
 
   it("supplies the messages from the provider", () => {
     expect.hasAssertions();
     expect(
       renderToStaticMarkup(
-        createElement(FieldValidationMessageProvider, { messages }, createElement(Probe)),
+        <FieldValidationMessageProvider messages={messages}>
+          <Probe />
+        </FieldValidationMessageProvider>,
       ),
     ).toBe("<span>vtpsl</span>");
   });
