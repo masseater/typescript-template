@@ -1,4 +1,5 @@
 export { AccountMenu } from "./account-menu";
+export { AccountSecurity } from "./account-security";
 export { EmailChangeForm } from "./email-change-form";
 export { EmailChangeVerification } from "./email-change-verification";
 export { EmailVerification } from "./email-verification";
