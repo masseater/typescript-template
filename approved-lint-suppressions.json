@@ -12,30 +12,6 @@
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
-    "path": "apps/internal-dashboard/src/widgets/dashboard-frame/ui/dashboard-navigation-item.tsx",
-    "rule": "click-events-have-key-events",
-    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
-    "approver": "the owner of the package that renders this navigation link"
-  },
-  {
-    "path": "apps/internal-dashboard/src/widgets/dashboard-frame/ui/dashboard-navigation-item.tsx",
-    "rule": "no-static-element-interactions",
-    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
-    "approver": "the owner of the package that renders this navigation link"
-  },
-  {
-    "path": "apps/service-admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
-    "rule": "click-events-have-key-events",
-    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
-    "approver": "the owner of the package that renders this navigation link"
-  },
-  {
-    "path": "apps/service-admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
-    "rule": "no-static-element-interactions",
-    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
-    "approver": "the owner of the package that renders this navigation link"
-  },
-  {
     "path": "apps/service-member/src/app/routes/_member/board.$id.tsx",
     "rule": "sort-keys",
     "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
