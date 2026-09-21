@@ -11,17 +11,18 @@ function registerCloudflareStubs(): void {
   if (cloudflareStubsRegistered) {
     return;
   }
-  register(new URL("./cloudflare-workers-loader.mjs", import.meta.url));
+  register(new URL("./cloudflare-workers-loader.mjs", import.meta.url).href);
   cloudflareStubsRegistered = true;
 }
 
 function elysiaAot(appRoot: string): Plugin {
   registerCloudflareStubs();
-  const plugin = aot(path.join(appRoot, "src/shared/server-api/server-app.ts"), {
+  const { apply, ...plugin } = aot(path.join(appRoot, "src/shared/server-api/server-app.ts"), {
     production: false,
     target: "workerd",
   });
-  return { ...plugin, apply: undefined };
+  void apply;
+  return plugin;
 }
 
 export { elysiaAot };
