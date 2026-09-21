@@ -1,13 +1,13 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawnSync } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
-import { Writable } from "node:stream";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules
+import { Writable } from "node:stream";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
@@ -516,7 +516,7 @@ exitAfterFlush(1, process.exit, [process.stdout, process.stderr]);
     });
     expect(result.status).toBe(1);
     expect(result.stdout ?? "").toHaveLength(200003);
-    expect(result.stdout ?? "").toEndWith("END");
+    expect((result.stdout ?? "").endsWith("END")).toBe(true);
   });
 
   it("fails the vite task when the gate fails and does not run the next command", () => {
