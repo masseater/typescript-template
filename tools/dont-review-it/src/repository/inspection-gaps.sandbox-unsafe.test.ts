@@ -156,7 +156,6 @@ describe("inspection coverage", () => {
       "libs/monitor/**",
       "libs/observability/**",
       "libs/runtime/**",
-      "libs/user-inbox/**",
       "libs/vite-config/**",
       "tools/commander/**",
       "tools/dev/**",

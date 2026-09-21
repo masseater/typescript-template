@@ -1,9 +1,10 @@
 import { verifySession } from "@repo/auth";
 import { unavailable } from "@repo/runtime/account";
 import { createApi } from "@repo/runtime/http";
-import { openRealtime } from "@repo/user-inbox";
 import { env } from "cloudflare:workers";
 import { Effect } from "effect";
+
+import { openRealtime } from "#shared/inbox/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";

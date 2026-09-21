@@ -200,7 +200,10 @@ function declaredOf(props: Readonly<Record<string, unknown>>): unknown {
   return Object.fromEntries(
     Object.entries(props)
       .filter(([property]) => property !== BINDING_PROPERTY)
-      .map(([property, value]: readonly [string, unknown]) => [property, declaredValue(value)]),
+      .flatMap(([property, value]) => {
+        const declared = declaredValue(value);
+        return declared === undefined ? [] : [[property, declared] as const];
+      }),
   );
 }
 

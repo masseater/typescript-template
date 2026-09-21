@@ -8,7 +8,7 @@ import {
   readJobs,
 } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime";
+import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { consumeJobs } from "@repo/runtime/jobs";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
