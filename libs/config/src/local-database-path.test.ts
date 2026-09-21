@@ -1,33 +1,39 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdtemp, rm } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { localDatabaseDirectory, localDatabaseVariable } from "./local-database-path.ts";
+import { localDatabase, localDatabaseDirectory, localDatabaseVariable } from "./local-database-path.ts";
 
-describe("local database path", () => {
-  it("reads the persist directory from the environment at call time", async () => {
-    expect.hasAssertions();
-    const directory = await mkdtemp(path.join(tmpdir(), "template-local-database-path-"));
-    // oxlint-disable-next-line node/no-process-env
-    const previous = process.env[localDatabaseVariable];
-    try {
-      // oxlint-disable-next-line node/no-process-env
-      process.env[localDatabaseVariable] = directory;
-      expect(localDatabaseDirectory()).toBe(path.resolve(directory));
-    } finally {
-      if (previous === undefined) {
-        // oxlint-disable-next-line node/no-process-env
-        delete process.env[localDatabaseVariable];
-      } else {
-        // oxlint-disable-next-line node/no-process-env
-        process.env[localDatabaseVariable] = previous;
-      }
-      await rm(directory, { force: true, recursive: true });
-    }
+const overriddenDirectory = path.resolve("/tmp/template-db");
+const blankEnvironment = { [localDatabaseVariable]: "" };
+const missingEnvironment = {};
+const overriddenEnvironment = { [localDatabaseVariable]: "/tmp/template-db" };
+
+describe("localDatabaseDirectory", () => {
+  const it = test.extend("persistedDirectory", () => localDatabaseDirectory(overriddenEnvironment));
+
+  it("reads the persist directory from the environment passed in", ({ persistedDirectory }) => {
+    expect(persistedDirectory).toBe(overriddenDirectory);
+  });
+});
+
+describe("a blank database directory override", () => {
+  const repositoryDefault = localDatabaseDirectory(missingEnvironment);
+  const it = test.extend("persistedDirectory", () => localDatabaseDirectory(blankEnvironment));
+
+  it("falls back to the repository directory", ({ persistedDirectory }) => {
+    expect(persistedDirectory).toBe(repositoryDefault);
+  });
+});
+
+describe("localDatabase", () => {
+  const it = test.extend("sharedDatabase", () => localDatabase);
+
+  it("names the shared local database", ({ sharedDatabase }) => {
+    expect(sharedDatabase).toStrictEqual({
+      binding: "DB",
+      database_id: "00000000-0000-0000-0000-000000000001",
+      database_name: "template-shared",
+    });
   });
 });

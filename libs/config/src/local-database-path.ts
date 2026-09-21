@@ -3,15 +3,17 @@ import path from "node:path";
 const localDatabaseVariable = "TEMPLATE_LOCAL_DATABASE";
 const repositoryDirectory = path.join(import.meta.dirname, "../../../.local/d1");
 
-const localDatabaseDirectory = (): string => {
-  const override = process.env[localDatabaseVariable];
-  return override === undefined || override === "" ? repositoryDirectory : path.resolve(override);
-};
-
 const localDatabase = {
   binding: "DB",
   database_id: "00000000-0000-0000-0000-000000000001",
   database_name: "template-shared",
+};
+
+const localDatabaseDirectory = (
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+): string => {
+  const override = environment[localDatabaseVariable];
+  return override === undefined || override === "" ? repositoryDirectory : path.resolve(override);
 };
 
 const localDatabasePersistence = localDatabaseDirectory();
