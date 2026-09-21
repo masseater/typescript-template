@@ -1,0 +1,1 @@
+CI cancelled at 15 minutes while the trace upload was still running. Give the full-suite jobs 25 minutes, and drop the vocabulary assertion change because main already compares those paths case-insensitively.
