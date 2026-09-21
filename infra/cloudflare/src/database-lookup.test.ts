@@ -1,4 +1,5 @@
 import { assert, it } from "@effect/vitest";
+import { httpStatus } from "@repo/config";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
@@ -9,7 +10,7 @@ import type { Scope } from "effect";
 import type { SetupServer } from "msw/node";
 
 const HEX_ID_LENGTH = 32;
-const FORBIDDEN_STATUS = 403;
+const FORBIDDEN_STATUS = httpStatus.forbidden;
 
 const access = {
   accountId: "a".repeat(HEX_ID_LENGTH),
