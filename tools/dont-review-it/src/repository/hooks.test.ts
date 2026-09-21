@@ -329,8 +329,10 @@ describe("lifecycle contents", () => {
 
   it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
+    expect(dependencies(".", "prepush")).toContain("check:code");
     expect(reachable(".", ["prepush"])).toEqual(
       expect.arrayContaining([
+        "check:code",
         "check:effect",
         "knip",
         "check:client",
