@@ -435,54 +435,6 @@
         "count": 1
       },
       {
-        "file": "src/app/entry-conditions.ts",
-        "code": "TS2749",
-        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
-        "count": 2
-      },
-      {
-        "file": "src/app/entry-conditions.ts",
-        "code": "TS6196",
-        "message": "'OnboardingStep' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/app/entry-conditions.ts",
-        "code": "TS7053",
-        "message": "Element implicitly has an 'any' type because expression of type 'OnboardingStep' can't be used to index type '{ readonly agreement: \"/welcome/agreement\"; readonly choose: \"/welcome/choose\"; readonly interview: \"/welcome/interview\"; readonly profile: \"/welcome/profile\"; }'.",
-        "count": 2
-      },
-      {
-        "file": "src/app/routes/_welcome.tsx",
-        "code": "TS2322",
-        "message": "Type 'string | undefined' is not assignable to type 'string'.",
-        "count": 1
-      },
-      {
-        "file": "src/app/routes/_welcome.tsx",
-        "code": "TS2749",
-        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
-        "count": 1
-      },
-      {
-        "file": "src/app/routes/_welcome.tsx",
-        "code": "TS6196",
-        "message": "'OnboardingStep' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/app/routes/_welcome/welcome.index.tsx",
-        "code": "TS7053",
-        "message": "Element implicitly has an 'any' type because expression of type 'OnboardingStep' can't be used to index type '{ readonly agreement: \"/welcome/agreement\"; readonly choose: \"/welcome/choose\"; readonly interview: \"/welcome/interview\"; readonly profile: \"/welcome/profile\"; }'.",
-        "count": 1
-      },
-      {
-        "file": "src/app/routes/_welcome/welcome.recovery.tsx",
-        "code": "TS7053",
-        "message": "Element implicitly has an 'any' type because expression of type 'OnboardingStep' can't be used to index type '{ readonly agreement: \"/welcome/agreement\"; readonly choose: \"/welcome/choose\"; readonly interview: \"/welcome/interview\"; readonly profile: \"/welcome/profile\"; }'.",
-        "count": 1
-      },
-      {
         "file": "src/app/server.ts",
         "code": "TS7006",
         "message": "Parameter '_controller' implicitly has an 'any' type.",
@@ -498,18 +450,6 @@
         "file": "src/app/server.ts",
         "code": "TS7006",
         "message": "Parameter 'context' implicitly has an 'any' type.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/account/welcome/api/onboarding.ts",
-        "code": "TS2749",
-        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
-        "count": 3
-      },
-      {
-        "file": "src/pages/account/welcome/api/onboarding.ts",
-        "code": "TS6196",
-        "message": "'OnboardingStep' is declared but never used.",
         "count": 1
       },
       {
