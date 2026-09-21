@@ -38,8 +38,7 @@ const unrecorded = (
   );
   return browserEvents.filter(
     (browserEvent, position) =>
-      !HashSet.has(recorded, browserEvent.spanId) &&
-      firstAt.get(browserEvent.spanId) === position,
+      !HashSet.has(recorded, browserEvent.spanId) && firstAt.get(browserEvent.spanId) === position,
   );
 };
 
