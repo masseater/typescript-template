@@ -29,7 +29,13 @@ const findUser = Effect.fn("findUser")(function* (id: string) {
 });
 ```
 
-`findUser("123")` は `Effect` を返すだけで、`find` はまだ呼ばれない。`Effect.runPromise` したときに `find` が走り、行が無ければ `UserNotFound` が結果になる。例外にはならない。`Database` を渡さない `runPromise` はコンパイルできない。どの失敗を成功の値に変えて、どれを失敗のまま返すかは、呼び出し側が型を見て決める。
+`findUser("123")` は `Effect` を返すだけで、`find` はまだ呼ばれない。`Effect.runPromise` したときに `find` が走り、行が無ければ `UserNotFound` が結果になる。例外にはならない。`Database` を渡さない `runPromise` は、その型の時点で TypeScript がコンパイルを失敗させる。どの失敗を成功の値に変えて、どれを失敗のまま返すかは、呼び出し側が型を見て決める。
+
+`findUser("123")` の戻り値を yield も `runPromise` もしていない呼び出しは、TypeScript だけでは通る。それを失敗させるのが `effect-tsgo`（`@effect/tsgo`）である。TypeScript のネイティブコンパイラに Effect の診断を足した実行ファイルで、`tsgo` と並べては使わない。未処理の失敗が残っていること、必要なサービスがまだ型に残っていること、yield していない Effect は、入口にたどり着く前にここで出る。TypeScript 7 では、エディタ側のプラグイン名は `tsconfig` の `@effect/language-service` のままで、中身は `@effect/tsgo` が提供する。`@effect/language-service` パッケージは TypeScript 7 より前向けである。
+
+```sh
+effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning
+```
 
 JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功するまでフィールドを読まない。
 
@@ -44,4 +50,7 @@ JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功�
 - 公式 — [Schema](https://effect.website/docs/v4/schema/introduction)
 - 公式 — [Expected Errors](https://effect.website/docs/v4/error-management/expected-errors)
 - サンプル — [Playground](https://effect.website/play)
+- 公式 — [Effect-TS/tsgo](https://github.com/Effect-TS/tsgo)
+- 公式 — [@effect/tsgo](https://www.npmjs.com/package/@effect/tsgo)
+- 公式 — [Effect-TS/language-service](https://github.com/Effect-TS/language-service)
 - 記事 — [Effect v4 RC: August 2026 Updates](https://effect.website/blog/effect-v4-rc-august-recap)

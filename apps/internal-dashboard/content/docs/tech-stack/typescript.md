@@ -21,7 +21,7 @@ const assigned: Profile = { name: undefined };
 
 `verbatimModuleSyntax` では、型だけの名前を `import type` で入れる。`import { User }` のように値の import と混ぜると、型検査が失敗する。
 
-実行時に外から入った値には型が無い。フィールドを読む前に、[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` へ通す。Effect が型に残した失敗と、渡していないサービスは `tsc` がエラーにする。エディタ上の診断は `@effect/language-service` が出す。
+実行時に外から入った値には型が無い。フィールドを読む前に、[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` へ通す。`runPromise` の型に失敗やサービスが残っているときは、TypeScript がコンパイルを失敗させる。yield していない Effect のように、入口より前で出す診断は [Effect](/tech-stack/effect) の `effect-tsgo` が持つ。
 
 ## 参考文献
 
