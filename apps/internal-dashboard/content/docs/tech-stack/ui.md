@@ -1,16 +1,19 @@
 ---
 title: Base UI と shadcn
-description: 挙動は Base UI、見た目の部品はこのリポジトリの libs/ui が持つ
+description: 挙動は Base UI、見た目の部品はリポジトリの中に置く
 ---
 
-画面の部品は 2 段です。挙動と、見た目をこのリポジトリが持つことと、を分けています。
+画面の部品は 2 段です。挙動と、見た目をリポジトリが持つことと、を分けています。
 
-## Base UI は挙動だけを持つ
+Base UI（`@base-ui/react`）は、見た目を持たない挙動です。ボタンが無効になること、メニューがキーボードで開くこと、ダイアログがフォーカスを閉じ込めることを、部品が担当します。画面はクラス名を足して、その挙動を包みます。
 
-Base UI（`@base-ui/react`）は、見た目を持たない挙動です。ボタンが無効になること、メニューがキーボードで開くこと、ダイアログがフォーカスを閉じ込めることを、部品が担当します。`libs/ui` の `Button` は `@base-ui/react/button` を包み、クラス名だけを足しています。チェックボックス、メニュー、トースト、確認ダイアログも同じ形で、対応する Base UI の部品を包んでいます。
+shadcn は、その挙動の上に載せる部品を、依存パッケージのまま黒箱で使うのではなく、リポジトリの中へ置いて持つやり方です。見た目は Tailwind CSS のクラスと CSS 変数です。色、角丸、影、文字は部品側が持ち、画面は余白のようにレイアウトだけを足します。
 
-## shadcn の部品はリポジトリの中にある
+部品を足すときの判断は [フロントエンド](/guidelines/frontend) です。
 
-shadcn は、その挙動の上に載せる部品を、依存パッケージのまま黒箱で使うのではなく、このリポジトリの中へ置いて持つやり方です。実体は `libs/ui/src/shared/ui` にあり、見た目は Tailwind CSS のクラスと CSS 変数です。どの style から始めたかは `libs/ui/components.json` の `base-vega` が持っています。
+## 公式と読みもの
 
-画面が import するのは `@repo/ui` です。Base UI を import しているのは `libs/ui` の部品です。色、角丸、影、文字は部品側が持ち、画面は余白のようにレイアウトだけを足します。この境界を外から変えることは `@shadcn/lint` が見ます。部品を足すときの判断は [フロントエンド](/guidelines/frontend) です。
+- 挙動の公式は [Base UI](https://base-ui.com/) です。最初に読むなら [Overview](https://base-ui.com/react/overview) と [Button](https://base-ui.com/react/components/button) です。
+- 部品の置き方の公式は [shadcn/ui](https://ui.shadcn.com/docs) です。設定ファイルの意味は [components.json](https://ui.shadcn.com/docs/components-json)、TanStack Start への足し方は [TanStack Start のインストール](https://ui.shadcn.com/docs/installation/tanstack) にあります。
+- 見た目の組み合わせをブラウザで組むなら [shadcn/create](https://ui.shadcn.com/create) です。
+- Base UI を既定にした理由は [July 2026 - Base UI as the Default](https://ui.shadcn.com/docs/changelog/2026-07-base-ui-default) にあります。
