@@ -1,34 +1,37 @@
-import { ROLE } from "@repo/config";
-import { and, eq, gt, inArray, isNull, lte } from "drizzle-orm";
+import { ROLE, memberRetentionDays } from "@repo/config";
+import { and, desc, eq, gt, inArray, isNull, lte } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
 import { query } from "./database.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
-import { follow, memberOnboarding } from "./member-social-schema.ts";
+import { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
 import { user } from "./schema.ts";
 import { revokeUserSessions } from "./security.ts";
 import { UserNotFound } from "./user-not-found.ts";
 
-const retentionDays = 30;
-const retentionMilliseconds = retentionDays * 24 * 60 * 60 * 1000;
+const retentionMilliseconds = memberRetentionDays * 24 * 60 * 60 * 1000;
 
-type MemberSnapshot = Readonly<{
-  followers: readonly string[];
-  following: readonly string[];
-  interview?: Readonly<{
-    day: string;
-    savedSheet: unknown;
-    state: unknown;
-    turns: number;
-    updatedAt: number;
-    version: number;
-  }>;
-  onboarding?: Readonly<{
-    step: string;
-    updatedAt: number;
-  }>;
-}>;
+const MemberSnapshot = Schema.Struct({
+  followers: Schema.Array(Schema.String),
+  following: Schema.Array(Schema.String),
+  interview: Schema.optionalKey(
+    Schema.Struct({
+      day: Schema.String,
+      savedSheet: Schema.Unknown,
+      state: Schema.Unknown,
+      turns: Schema.Number,
+      updatedAt: Schema.Number,
+      version: Schema.Number,
+    }),
+  ),
+  onboarding: Schema.optionalKey(
+    Schema.Struct({
+      step: Schema.Literals(onboardingSteps),
+      updatedAt: Schema.Number,
+    }),
+  ),
+});
 
 class MemberLeaveUnavailable extends Schema.TaggedError<MemberLeaveUnavailable>()(
   "MemberLeaveUnavailable",
@@ -97,35 +100,50 @@ const loadSnapshot = Effect.fn("loadMemberSnapshot")(function* loadSnapshot(memb
 
 const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnapshot(
   memberId: string,
-  snapshot: MemberSnapshot,
+  snapshot: typeof MemberSnapshot.Type,
 ) {
   const now = new Date();
-  if (snapshot.onboarding !== undefined) {
+  const onboarding = snapshot.onboarding;
+  if (onboarding !== undefined) {
     yield* query((database) =>
       database
         .insert(memberOnboarding)
         .values({
-          step: snapshot.onboarding.step as (typeof memberOnboarding.$inferInsert)["step"],
-          updatedAt: new Date(snapshot.onboarding.updatedAt),
+          step: onboarding.step,
+          updatedAt: new Date(onboarding.updatedAt),
           userId: memberId,
         })
-        .onConflictDoNothing(),
+        .onConflictDoUpdate({
+          set: { step: onboarding.step, updatedAt: new Date(onboarding.updatedAt) },
+          target: memberOnboarding.userId,
+        }),
     );
   }
-  if (snapshot.interview !== undefined) {
+  const savedInterview = snapshot.interview;
+  if (savedInterview !== undefined) {
     yield* query((database) =>
       database
         .insert(interview)
         .values({
-          day: snapshot.interview.day,
-          savedSheet: snapshot.interview.savedSheet,
-          state: snapshot.interview.state,
-          turns: snapshot.interview.turns,
-          updatedAt: new Date(snapshot.interview.updatedAt),
+          day: savedInterview.day,
+          savedSheet: savedInterview.savedSheet,
+          state: savedInterview.state,
+          turns: savedInterview.turns,
+          updatedAt: new Date(savedInterview.updatedAt),
           userId: memberId,
-          version: snapshot.interview.version,
+          version: savedInterview.version,
         })
-        .onConflictDoNothing(),
+        .onConflictDoUpdate({
+          set: {
+            day: savedInterview.day,
+            savedSheet: savedInterview.savedSheet,
+            state: savedInterview.state,
+            turns: savedInterview.turns,
+            updatedAt: new Date(savedInterview.updatedAt),
+            version: savedInterview.version,
+          },
+          target: interview.userId,
+        }),
     );
   }
   const followRows = [
@@ -165,6 +183,7 @@ const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryO
       .from(withdrawnMember)
       .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
       .where(pendingRecovery(member.email, checkedAt))
+      .orderBy(desc(withdrawnMember.withdrawnAt))
       .limit(1),
   );
   if (pending === undefined) {
@@ -198,12 +217,17 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
       .from(withdrawnMember)
       .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
       .where(pendingRecovery(member.email, checkedAt))
+      .orderBy(desc(withdrawnMember.withdrawnAt))
       .limit(1),
   );
   if (pending === undefined) {
     return yield* new RecoveryExpired();
   }
   const { withdrawn } = pending;
+  const snapshot = yield* Schema.decodeUnknownEffect(MemberSnapshot)(withdrawn.snapshot).pipe(
+    Effect.tapError(() => Effect.log(`member_leave.snapshot_invalid member=${withdrawn.memberId}`)),
+    Effect.mapError(() => new RecoveryUnavailable()),
+  );
   const restoredAt = new Date();
   yield* query(async (database) => {
     await database
@@ -217,7 +241,7 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
       })
       .where(eq(user.id, memberId));
   });
-  yield* restoreSnapshot(memberId, withdrawn.snapshot as MemberSnapshot);
+  yield* restoreSnapshot(memberId, snapshot);
   yield* query(async (database) => {
     await database.batch([
       database
@@ -251,6 +275,7 @@ const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(m
       .from(withdrawnMember)
       .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
       .where(pendingRecovery(member.email, checkedAt))
+      .orderBy(desc(withdrawnMember.withdrawnAt))
       .limit(1),
   );
   if (pending === undefined) {
@@ -344,6 +369,5 @@ export {
   declineRecovery,
   findRecoveryOffer,
   purgeExpiredWithdrawnMembers,
-  retentionDays,
   withdrawMember,
 };

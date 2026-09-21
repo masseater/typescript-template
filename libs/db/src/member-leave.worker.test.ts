@@ -12,15 +12,8 @@ import {
   purgeExpiredWithdrawnMembers,
   withdrawMember,
 } from "./member-leave.ts";
-import { addOAuthGrant, addSession, addUser } from "./records-fixture.ts";
-import {
-  leaveRequest as leaveRequestTable,
-  oauthAccessToken,
-  oauthConsent,
-  oauthRefreshToken,
-  schema,
-  session,
-} from "./schema.ts";
+import { addOAuthGrant, addSession, addUser, oauthGrantCounts } from "./records-fixture.ts";
+import { leaveRequest as leaveRequestTable, schema, session } from "./schema.ts";
 import { findUser, getSessionSecurity } from "./security.ts";
 import { TestDatabase } from "./testing.ts";
 
@@ -62,29 +55,6 @@ const countWithdrawnMember = (memberId: string) =>
     return row?.count ?? 0;
   });
 
-const countOAuthGrants = (memberId: string) =>
-  Effect.gen(function* grants() {
-    const access = yield* query((database) =>
-      database
-        .select({ id: oauthAccessToken.id })
-        .from(oauthAccessToken)
-        .where(eq(oauthAccessToken.userId, memberId)),
-    );
-    const refresh = yield* query((database) =>
-      database
-        .select({ id: oauthRefreshToken.id })
-        .from(oauthRefreshToken)
-        .where(eq(oauthRefreshToken.userId, memberId)),
-    );
-    const consent = yield* query((database) =>
-      database
-        .select({ id: oauthConsent.id })
-        .from(oauthConsent)
-        .where(eq(oauthConsent.userId, memberId)),
-    );
-    return { access: access.length, consent: consent.length, refresh: refresh.length };
-  });
-
 const countLiveSessions = (memberId: string) =>
   query(async (database) => {
     const sessions = await database
@@ -117,10 +87,10 @@ describe("withdrawMember", () => {
           const sessionId = yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
           yield* withdrawMember("leaver", { immediate: false });
           return {
-            grants: yield* countOAuthGrants("leaver"),
+            grants: yield* oauthGrantCounts("leaver"),
             liveSession: yield* getSessionSecurity(sessionId, APPLICATION.user),
             member: yield* findUser("leaver"),
-            visibleToOther: yield* getMember("viewer"),
+            stillListed: yield* getMember("leaver"),
             withdrawn: yield* countWithdrawnMember("leaver"),
           };
         }),
@@ -133,7 +103,7 @@ describe("withdrawMember", () => {
 
     it("moves the member out of the active directory", ({ leftMember }) => {
       expect(leftMember.member).toBeUndefined();
-      expect(leftMember.visibleToOther).toBeUndefined();
+      expect(leftMember.stillListed).toBeUndefined();
       expect(leftMember.withdrawn).toBe(1);
     });
   });
@@ -177,6 +147,38 @@ describe("findRecoveryOffer", () => {
 
     it("shows the recovery offer", ({ offer }) => {
       expect(offer).toStrictEqual({ available: true, previousName: "Former Name" });
+    });
+  });
+
+  describe("two withdrawn snapshots for the same email", () => {
+    const it = test.extend("offer", async () =>
+      runTest(
+        Effect.gen(function* loadOffer() {
+          yield* addMember({
+            email: "returning@example.com",
+            name: "Older Name",
+            userId: "older",
+          });
+          yield* withdrawMember("older", { immediate: false });
+          yield* addMember({
+            email: "returning@example.com",
+            name: "Newer Name",
+            userId: "newer",
+          });
+          yield* withdrawMember("newer", { immediate: false });
+          yield* query((database) =>
+            database
+              .update(withdrawnMember)
+              .set({ withdrawnAt: new Date("2020-01-01T00:00:00.000Z") })
+              .where(eq(withdrawnMember.memberId, "older")),
+          );
+          yield* addMember({ email: "returning@example.com", userId: "newcomer" });
+          return yield* findRecoveryOffer("newcomer");
+        }),
+      ));
+
+    it("offers the latest snapshot", ({ offer }) => {
+      expect(offer).toStrictEqual({ available: true, previousName: "Newer Name" });
     });
   });
 

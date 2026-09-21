@@ -7,9 +7,16 @@ import { RecoveryChoice } from "#pages/recovery/ui/recovery-choice.tsx";
 
 import type { ReactElement } from "react";
 
-const agreementPath = "/welcome/agreement";
-
-function WelcomeRecoveryPage(): ReactElement {
+function WelcomeRecoveryPage({
+  nextPath,
+}: Readonly<{
+  nextPath:
+    | "/home"
+    | "/welcome/agreement"
+    | "/welcome/choose"
+    | "/welcome/interview"
+    | "/welcome/profile";
+}>): ReactElement {
   const navigate = useNavigate();
   const { error, offer } = useRecoveryOffer();
   const available = offer?.available === true;
@@ -17,8 +24,8 @@ function WelcomeRecoveryPage(): ReactElement {
     if (offer === undefined || available) {
       return;
     }
-    void navigate({ to: agreementPath, replace: true });
-  }, [available, navigate, offer]);
+    void navigate({ replace: true, to: nextPath });
+  }, [available, navigate, nextPath, offer]);
   if (error !== undefined) {
     return (
       <Page title="過去のデータの復旧">
@@ -37,7 +44,7 @@ function WelcomeRecoveryPage(): ReactElement {
     <RecoveryChoice
       previousName={offer.previousName}
       onDecided={() => {
-        void navigate({ to: agreementPath });
+        void navigate({ to: nextPath });
       }}
     />
   );

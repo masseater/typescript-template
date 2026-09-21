@@ -1,4 +1,4 @@
-import { Email, photoSlots, profileVisibilities } from "@repo/config";
+import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
@@ -10,7 +10,6 @@ const maximumKeywordLength = 100;
 const secondPage = 2;
 const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
-const memberRetentionDays = 30;
 const maximumContactNameLength = 100;
 const maximumContactMessageLength = 4000;
 

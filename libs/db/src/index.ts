@@ -78,7 +78,6 @@ export {
   declineRecovery,
   findRecoveryOffer,
   purgeExpiredWithdrawnMembers,
-  retentionDays,
   withdrawMember,
 } from "./member-leave.ts";
 export {
