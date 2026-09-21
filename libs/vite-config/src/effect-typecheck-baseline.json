@@ -665,7 +665,7 @@
       {
         "file": "src/shared/mcp/member-mcp.worker.test.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -689,7 +689,7 @@
       {
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -755,7 +755,7 @@
       {
         "file": "src/shared/members/members.worker.test.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -803,7 +803,7 @@
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 3
       },
       {
@@ -941,13 +941,13 @@
       {
         "file": "src/shared/server-api/groups.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
         "count": 2
       },
       {
         "file": "src/shared/server-api/groups.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 2
       },
       {
@@ -1055,7 +1055,7 @@
       {
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
         "count": 1
       },
       {
@@ -1175,13 +1175,13 @@
       {
         "file": "src/shared/server-api/messaging.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
         "count": 1
       },
       {
         "file": "src/shared/server-api/messaging.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 2
       },
       {
@@ -1367,7 +1367,7 @@
       {
         "file": "src/shared/server-api/messaging.worker.test.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -1391,7 +1391,7 @@
       {
         "file": "src/shared/server-api/notifications.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._2570c67f9c11ef81c17249fb6625e778/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4._d90c6eaf291b932ddc0b52bcf5989479/node_modules/drizzle-orm/sql/sql\").SQL<unknown> | undefined'.",
         "count": 2
       },
       {

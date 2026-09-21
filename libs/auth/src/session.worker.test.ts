@@ -1,7 +1,12 @@
-import { ACCOUNT_STATE, APPLICATION, AUTHENTICATION_METHOD, ROLE } from "@repo/config";
+import {
+  ACCOUNT_STATE,
+  ADMIN_PERMISSION,
+  APPLICATION,
+  AUTHENTICATION_METHOD,
+  ROLE,
+} from "@repo/config";
 import { getSessionSecurity } from "@repo/db";
-import { setMemberState, setUserRole } from "@repo/db/admin";
-import { runStatement } from "@repo/db/testing";
+import { setMemberState } from "@repo/db/admin";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
@@ -10,6 +15,7 @@ import { SessionInvalid } from "./session-invalid.ts";
 import { SessionRequired } from "./session-required.ts";
 import {
   AuthApps,
+  assignRoleByEmail,
   authTest,
   bootstrapVerifiedAdmin,
   clientOf,
@@ -21,7 +27,7 @@ import {
   signIn,
   signInAgainAfterTotp,
   signInAs,
-  wikiAdministrator,
+  wikiStaff,
 } from "./testing.ts";
 
 describe("verifySession", () => {
@@ -52,6 +58,7 @@ describe("verifySession", () => {
           email: "admin@example.com",
           id: "user-1",
           name: "admin@example.com",
+          permission: ADMIN_PERMISSION.owner,
           role: ROLE.administrator,
           twoFactorEnabled: false,
         },
@@ -79,6 +86,7 @@ describe("verifySession", () => {
           email: "admin@example.com",
           id: "user-1",
           name: "admin@example.com",
+          permission: ADMIN_PERMISSION.owner,
           role: ROLE.administrator,
           twoFactorEnabled: true,
         },
@@ -134,6 +142,7 @@ describe("verifySession", () => {
           email: "totp@example.com",
           id: "user-1",
           name: "totp@example.com",
+          permission: null,
           role: ROLE.member,
           twoFactorEnabled: true,
         },
@@ -141,67 +150,46 @@ describe("verifySession", () => {
     });
   });
 
-  describe.for([APPLICATION.user, APPLICATION.admin] as const)(
-    "an administrator signed in to %s with a recovery code",
-    (audience) => {
-      const it = authTest().extend("recovery", async ({ auth }) =>
-        runWith(auth, () =>
-          Effect.gen(function* recover() {
-            yield* bootstrapVerifiedAdmin("admin@example.com");
-            const { backupCodes } = yield* enableTotp(
-              yield* signInAs(APPLICATION.admin, "admin@example.com"),
-            );
-            const client = yield* pendingSecondFactor(audience, "admin@example.com");
-            yield* requireStatus(200, {
-              client,
-              endpoint: "/two-factor/verify-backup-code",
-              jsonFields: { code: backupCodes[0] },
-            });
-            const verified = yield* client.verify(true);
-            const security = yield* getSessionSecurity(verified.session.id, audience);
-            return {
-              audience: security?.session.audience,
-              authenticationMethod: security?.session.authenticationMethod,
-              verified,
-            };
-          }),
-        ),
-      );
-
-      it("is a weak session that stays on the recovery code", ({ recovery }) => {
-        expect(recovery).toStrictEqual({
-          audience,
-          authenticationMethod: AUTHENTICATION_METHOD.recovery,
-          verified: {
-            session: { id: "session-4" },
-            strong: false,
-            user: {
-              email: "admin@example.com",
-              id: "user-1",
-              name: "admin@example.com",
-              role: ROLE.administrator,
-              twoFactorEnabled: true,
-            },
-          },
-        });
-      });
-    },
-  );
-
-  describe("user app cookies replayed against the admin app", () => {
-    const it = authTest().extend("replayed", async ({ auth }) =>
+  describe("an administrator signed in with a recovery code", () => {
+    const it = authTest().extend("recovery", async ({ auth }) =>
       runWith(auth, () =>
-        Effect.gen(function* replay() {
+        Effect.gen(function* recover() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
-          const client = yield* signInAs(APPLICATION.user, "admin@example.com");
-          const admin = (yield* AuthApps)[APPLICATION.admin];
-          return yield* Effect.flip(client.transferTo(admin).verify(true));
+          const { backupCodes } = yield* enableTotp(
+            yield* signInAs(APPLICATION.admin, "admin@example.com"),
+          );
+          const client = yield* pendingSecondFactor(APPLICATION.admin, "admin@example.com");
+          yield* requireStatus(200, {
+            client,
+            endpoint: "/two-factor/verify-backup-code",
+            jsonFields: { code: backupCodes[0] },
+          });
+          const verified = yield* client.verify(true);
+          const security = yield* getSessionSecurity(verified.session.id, APPLICATION.admin);
+          return {
+            authenticationMethod: security?.session.authenticationMethod,
+            verified,
+          };
         }),
       ),
     );
 
-    it("is not a session of the admin app", ({ replayed }) => {
-      expect(replayed).toStrictEqual(new SessionInvalid());
+    it("is a weak session that stays on the recovery code", ({ recovery }) => {
+      expect(recovery).toStrictEqual({
+        authenticationMethod: AUTHENTICATION_METHOD.recovery,
+        verified: {
+          session: { id: "session-4" },
+          strong: false,
+          user: {
+            email: "admin@example.com",
+            id: "user-1",
+            name: "admin@example.com",
+            permission: ADMIN_PERMISSION.owner,
+            role: ROLE.administrator,
+            twoFactorEnabled: true,
+          },
+        },
+      });
     });
   });
 
@@ -217,6 +205,23 @@ describe("verifySession", () => {
 
     it("is refused because administrators are not members", ({ status }) => {
       expect(status).toBe(403);
+    });
+  });
+
+  describe("user app cookies replayed against the admin app", () => {
+    const it = authTest().extend("replayed", async ({ auth }) =>
+      runWith(auth, () =>
+        Effect.gen(function* replay() {
+          yield* registerVerified("member@example.com");
+          const client = yield* signInAs(APPLICATION.user, "member@example.com");
+          const admin = (yield* AuthApps)[APPLICATION.admin];
+          return yield* Effect.flip(client.transferTo(admin).verify(true));
+        }),
+      ),
+    );
+
+    it("is not a session of the admin app", ({ replayed }) => {
+      expect(replayed).toStrictEqual(new SessionInvalid());
     });
   });
 
@@ -253,32 +258,6 @@ describe("verifySession", () => {
     });
   });
 
-  describe("a user promoted by an administrator", () => {
-    const it = authTest().extend("promoted", async ({ auth }) =>
-      runWith(auth, () =>
-        Effect.gen(function* promote() {
-          yield* bootstrapVerifiedAdmin("owner@example.com");
-          const owner = yield* signInAs(APPLICATION.admin, "owner@example.com");
-          yield* enableTotp(owner);
-          const authority = yield* owner.verify();
-          yield* registerVerified("target@example.com");
-          const promotedClient = yield* signInAs(APPLICATION.user, "target@example.com");
-          const promotedUser = yield* promotedClient.verify();
-          yield* setUserRole({
-            role: ROLE.administrator,
-            sessionId: authority.session.id,
-            targetId: promotedUser.user.id,
-          });
-          return yield* Effect.flip(promotedClient.verify());
-        }),
-      ),
-    );
-
-    it("loses the session it held", ({ promoted }) => {
-      expect(promoted).toStrictEqual(new SessionRequired());
-    });
-  });
-
   describe("a user who posts role, audience and strength updates", () => {
     const it = authTest().extend("selfAssigned", async ({ auth }) =>
       runWith(auth, () =>
@@ -312,6 +291,7 @@ describe("verifySession", () => {
             email: "reader@example.com",
             id: "user-1",
             name: "reader@example.com",
+            permission: null,
             role: ROLE.member,
             twoFactorEnabled: false,
           },
@@ -320,21 +300,14 @@ describe("verifySession", () => {
     });
   });
 
-  describe("a wiki administrator demoted to member", () => {
+  describe("a staff member demoted to member", () => {
     const it = authTest().extend("demoted", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* demote() {
-          const wiki = yield* wikiAdministrator("owner@example.com");
+          const wiki = yield* wikiStaff("owner@example.com");
           yield* registerVerified("second@example.com");
-          yield* runStatement(
-            "UPDATE user SET role = 'admin' WHERE email = ?",
-            "second@example.com",
-          );
-          yield* runStatement(
-            "UPDATE user SET role = ? WHERE email = ?",
-            ROLE.member,
-            "owner@example.com",
-          );
+          yield* assignRoleByEmail("second@example.com", ROLE.staff);
+          yield* assignRoleByEmail("owner@example.com", ROLE.member);
           return yield* Effect.flip(wiki.verify());
         }),
       ),

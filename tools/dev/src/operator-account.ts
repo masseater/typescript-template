@@ -6,7 +6,13 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 
 import { Auth } from "@repo/auth";
-import { APPLICATION, applicationOrigins, applications, mailpitSendPath, type Application } from "@repo/config";
+import {
+  APPLICATION,
+  applicationOrigins,
+  applications,
+  mailpitSendPath,
+  type Application,
+} from "@repo/config";
 import { Database } from "@repo/db";
 import { ensureAdminRole, type BootstrapKind } from "@repo/db/bootstrap";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "@repo/db/local";
