@@ -62,7 +62,8 @@ function agreementApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/agreements",
-      ...api.route({ response: AgreementsView },
+      ...api.route(
+        { response: AgreementsView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -73,7 +74,8 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/agreements/accept",
-      ...api.route({ response: AgreementsView },
+      ...api.route(
+        { response: AgreementsView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -86,7 +88,8 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/agreements/published",
-      ...api.route({ response: PublishedAgreementView },
+      ...api.route(
+        { response: PublishedAgreementView },
         (request) =>
           Effect.gen(function* handle() {
             const { kind } = yield* readSearchParams(PublishedAgreementQuery, request);

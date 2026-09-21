@@ -48,7 +48,8 @@ function photoApi(api: ApiRoutes<AppServices | PhotoStore>) {
     )
     .put(
       "/profile/photo",
-      ...api.route({ response: PhotoView },
+      ...api.route(
+        { response: PhotoView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -61,7 +62,8 @@ function photoApi(api: ApiRoutes<AppServices | PhotoStore>) {
     )
     .delete(
       "/profile/photo",
-      ...api.route({ response: PhotoView },
+      ...api.route(
+        { response: PhotoView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

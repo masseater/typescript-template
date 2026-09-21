@@ -24,7 +24,8 @@ function dashboardApi(api: ApiRoutes<WikiServices>) {
     )
     .get(
       "/metrics/trend",
-      ...api.route({ response: MetricTrend },
+      ...api.route(
+        { response: MetricTrend },
         (request) =>
           Effect.gen(function* handle() {
             const query = yield* readSearchParams(TrendQuery, request);
@@ -35,7 +36,8 @@ function dashboardApi(api: ApiRoutes<WikiServices>) {
     )
     .get(
       "/audit",
-      ...api.route({ response: StaffAuditPage },
+      ...api.route(
+        { response: StaffAuditPage },
         (request) =>
           Effect.gen(function* handle() {
             const page = yield* readSearchParams(AuditPageQuery, request);

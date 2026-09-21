@@ -39,7 +39,9 @@ import type { OpsMail } from "./ops-mail.ts";
 const failures = { ...memberFailures, ...apiKeyWriteFailure, ...paidFailures };
 
 function memberApi(
-  api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoStore | ProfileLayoutAssembler | Stripe>,
+  api: ApiRoutes<
+    AppServices | Interviewer | OpsMail | PhotoStore | ProfileLayoutAssembler | Stripe
+  >,
 ) {
   return createApi(apiRoot)
     .use(apiDocs(APPLICATION.user))
