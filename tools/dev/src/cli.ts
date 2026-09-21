@@ -10,13 +10,15 @@ import { ciRunner } from "./ci-runner.ts";
 import { failure } from "./failure.ts";
 import { application, root, run } from "./local-environment.ts";
 import { ensureOperators, operatorExists } from "./operator-account.ts";
+import { layer } from "./platform.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
+import type { DevServices } from "./platform.ts";
 
-type Command = Effect.Effect<unknown, LocalCommandFailure>;
+type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
 const firstUserArgumentIndex = 2;
 
@@ -44,8 +46,8 @@ const appCommands = new Map<string, (app: App, args: readonly string[]) => Comma
   ["browser", browser],
   ["browser-command", browserCommand],
   ["logs", logs],
-  ["start", start],
-  ["stop", stop],
+  ["start", start as (app: App, args: readonly string[]) => Command],
+  ["stop", stop as (app: App, args: readonly string[]) => Command],
 ]);
 
 function writeReport(report: unknown): Effect.Effect<void> {
@@ -66,9 +68,11 @@ function selectCommand(action: string, args: readonly string[]): Command {
 
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
-runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), (cause) =>
-  causeRecord("local.application_command_failed", cause, {
-    remediation:
-      "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
-  }),
+runCli(
+  selectCommand(action, args).pipe(Effect.flatMap(writeReport), Effect.provide(layer)),
+  (cause) =>
+    causeRecord("local.application_command_failed", cause, {
+      remediation:
+        "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+    }),
 );

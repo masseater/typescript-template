@@ -1,6 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-
 import { APPLICATION, applicationOrigins } from "@repo/config";
 import { Effect } from "effect";
 import { URI } from "otpauth";
@@ -17,6 +14,7 @@ import {
   run,
 } from "./local-environment.ts";
 import { ensureOperators, operatorFile } from "./operator-account.ts";
+import { urlPath } from "./platform.ts";
 
 import type { App, Credentials } from "./local-environment.ts";
 import type { Operator } from "./operator-account.ts";
@@ -54,7 +52,8 @@ const sessionArguments = Effect.fn("sessionArguments")(function* sessionArgument
 ) {
   const launch =
     credentials.origins === "loopback" ? ([] as const) : yield* browserLaunchArguments();
-  return ["--config", fileURLToPath(browserConfig), ...launch, "--session", sessionName(app)];
+  const config = yield* urlPath(browserConfig);
+  return ["--config", config, ...launch, "--session", sessionName(app)];
 });
 
 const agent = Effect.fn("agent")(function* agent(
@@ -141,7 +140,7 @@ const authenticate = Effect.fn("authenticate")(function* authenticate(
     email: operator.email,
     event: "local.browser_authenticated",
     ok: true,
-    operatorFile: fileURLToPath(operatorFile),
+    operatorFile: yield* urlPath(operatorFile),
     origin,
     secretsPrinted: false,
     session: sessionName(app),
