@@ -1,0 +1,19 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "login_title": "ログイン",
+  "login_to_signup": "アカウントをお持ちでない方は",
+  "signup_link": "新規登録",
+  "signup_title": "新規登録",
+  "signup_to_login": "アカウントをお持ちの方は",
+  "login_link": "ログイン",
+  "signup_sent_title": "確認メールを送りました",
+  "signup_sent_body": "メールのリンクを開いてメールアドレスの確認を済ませてから、ログインしてください。",
+  "signup_sent_login": "ログインへ",
+  "signup_pending": "登録を処理しています。",
+  "contact_link": "お問い合わせ",
+  "hero_title": "自分のページを持つところから始まる",
+  "hero_body": "自己紹介を書いて、気になる人を探せます。アカウントはパスキーと 2 段階認証で守れます。",
+  "locale_ja": "日本語",
+  "locale_en": "English",
+  "locale_label": "言語"
+}

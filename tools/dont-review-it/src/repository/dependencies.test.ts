@@ -56,7 +56,10 @@ describe("application package boundaries", () => {
 describe("replaced packages", () => {
   it.for([
     { kind: "exact", dependency: "styled-components" },
+    { kind: "exact", dependency: "i18next" },
+    { kind: "exact", dependency: "react-intl" },
     { kind: "prefix", dependency: "@pulumi/cloudflare" },
+    { kind: "prefix", dependency: "@lingui/core" },
   ])("rejects a workspace that declares $dependency ($kind)", ({ dependency }) => {
     expect.hasAssertions();
     const violations = retiredDependencyViolations([
