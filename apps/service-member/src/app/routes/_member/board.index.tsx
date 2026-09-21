@@ -22,7 +22,6 @@ function requireBoardSearch(raw: unknown): BoardSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/board/")({
   validateSearch: requireBoardSearch,
   loaderDeps: ({ search }: Readonly<{ search: BoardSearch }>) => ({ page: search.page ?? 1 }),

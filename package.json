@@ -8,6 +8,7 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/tsgo": "0.45.0",
+    "@mergifyio/vitest": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/db-local": "workspace:*",
@@ -39,7 +40,7 @@
   "engines": {
     "node": ">=26.9.0"
   },
-  "packageManager": "pnpm@12.4.1",
+  "packageManager": "pnpm@12.4.2",
   "normativeDocuments": {
     "fileName": "AGENTS.md",
     "directories": [

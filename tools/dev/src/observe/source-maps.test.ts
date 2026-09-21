@@ -1,14 +1,8 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-
 import { assert, it } from "@effect/vitest";
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
-import { Effect } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 
+import { layer } from "../platform.ts";
 import { symbolicate } from "./source-maps.ts";
 
 const release = "0".repeat(16);
@@ -22,27 +16,35 @@ function sourceMap(source: string): string {
   });
 }
 
-async function createTemporaryRoot(): Promise<string> {
-  const temporary = await mkdtemp(path.join(tmpdir(), "template-symbolicate-"));
-  return realpath(temporary);
-}
-
-async function writeReleaseMaps(root: string): Promise<void> {
+const writeReleaseMaps = Effect.fn("writeReleaseMaps")(function* writeReleaseMaps(root: string) {
+  const path = yield* Path.Path;
+  const fs = yield* FileSystem.FileSystem;
   const directory = path.join(sourceMapDirectories(root, "service-member").releases, release);
-  await mkdir(path.join(directory, "client/assets"), { recursive: true });
-  await mkdir(path.join(directory, "server/assets"), { recursive: true });
-  await writeFile(
+  yield* fs.makeDirectory(path.join(directory, "client/assets"), { recursive: true });
+  yield* fs.makeDirectory(path.join(directory, "server/assets"), { recursive: true });
+  yield* fs.writeFileString(
     path.join(directory, "client/assets/index-abc.js.map"),
     sourceMap("../../../../../libs/ui/src/form.tsx"),
   );
-  await writeFile(
+  yield* fs.writeFileString(
     path.join(directory, "server/assets/auth-def.js.map"),
     sourceMap("../../../../../libs/auth/src/index.ts"),
   );
-}
+});
 
-const temporaryRoot = Effect.acquireRelease(Effect.promise(createTemporaryRoot), (root) =>
-  Effect.promise(async () => rm(root, { force: true, recursive: true })),
+const temporaryRoot = Effect.acquireRelease(
+  FileSystem.FileSystem.pipe(
+    Effect.flatMap((fs) =>
+      fs
+        .makeTempDirectory({ prefix: "template-symbolicate-" })
+        .pipe(Effect.flatMap((root) => fs.realPath(root))),
+    ),
+  ),
+  (root) =>
+    FileSystem.FileSystem.pipe(
+      Effect.flatMap((fs) => fs.remove(root, { recursive: true })),
+      Effect.ignore,
+    ),
 );
 
 const expectedFrames: unknown[] = [
@@ -70,7 +72,7 @@ const expectedFrames: unknown[] = [
 it.effect("stack locations resolve to repository sources through the release's private maps", () =>
   Effect.gen(function* program() {
     const root = yield* temporaryRoot;
-    yield* Effect.promise(async () => writeReleaseMaps(root));
+    yield* writeReleaseMaps(root);
     const frames = yield* symbolicate({ app: "service-member", release, repositoryRoot: root }, [
       "/assets/index-abc.js:2:3",
       "auth-def.js:2:1",
@@ -79,5 +81,5 @@ it.effect("stack locations resolve to repository sources through the release's p
       "private@example.com",
     ]);
     assert.deepStrictEqual<unknown>(frames, expectedFrames);
-  }).pipe(Effect.scoped),
+  }).pipe(Effect.scoped, Effect.provide(layer)),
 );

@@ -234,7 +234,7 @@ function apiRoutes<Requirements>(
   reporting: Reporting,
 ): ApiRoutes<Requirements> {
   async function settle<Value>(
-    context: Context,
+    context: { readonly request: Request },
     program: (request: Request) => Effect.Effect<Value, never, Requirements>,
     unavailable: (cause: Readonly<Cause.Cause<unknown>>) => Effect.Effect<Value>,
   ): Promise<Value> {

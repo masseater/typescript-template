@@ -1,10 +1,20 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
 
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
-import { APPLICATION, appEnvKey, applications, grants } from "@repo/config";
+import {
+  APPLICATION,
+  appEnvKey,
+  applications,
+  grants,
+  jobsQueueBinding,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  userInboxBinding,
+  userInboxClassName,
+} from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
@@ -29,6 +39,7 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
+import { cacheNamespaceTitle, fileBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Application } from "@repo/config";
@@ -107,6 +118,21 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
+      ...(grants(app, "jobs")
+        ? [
+            `${jobsQueueBinding}:queue:queueId=<unresolved PropExpr>:queueName=<unresolved PropExpr>`,
+            `${jobsWorkflowBinding}:workflow:className=${jobsWorkflowClass}:workflowName=<unresolved EffectExpr>`,
+          ]
+        : []),
+      ...(grants(app, "realtime")
+        ? [`${userInboxBinding}:durable_object_namespace:className=${userInboxClassName}`]
+        : []),
+      ...(grants(app, "storage")
+        ? [
+            `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
+            `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
+          ]
+        : []),
     ].toSorted(),
     declared: {
       ...sharedWorker,
@@ -122,6 +148,42 @@ function applicationResource(app: Application, release: string): ResourceInvento
     },
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
+  };
+}
+
+function jobsResources(app: Application): Readonly<Record<string, ResourceInventory>> {
+  if (!grants(app, "jobs")) {
+    return {};
+  }
+  return {
+    Jobs: {
+      adopt: false,
+      bindings: [],
+      declared: {},
+      removalPolicy: "destroy",
+      type: "Cloudflare.Queues.Queue",
+    },
+    JobsConsumer: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        queueId: "<unresolved PropExpr>",
+        scriptName: "<unresolved PropExpr>",
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Queues.Consumer",
+    },
+    Process: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        className: jobsWorkflowClass,
+        scriptName: "<unresolved PropExpr>",
+        workflowName: "<unresolved EffectExpr>",
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Workflow",
+    },
   };
 }
 
@@ -188,10 +250,15 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
   app: Application,
 ) {
   const artifacts = yield* loadArtifacts(repositoryRoot, app);
-  return declaredStack(app, { Worker: applicationResource(app, artifacts.release) });
+  return declaredStack(app, {
+    ...jobsResources(app),
+    Worker: applicationResource(app, artifacts.release),
+  });
 });
 
-const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInventory>> = {
+const staticExpected: Readonly<
+  Record<Exclude<StackName, Application | "flagship">, StackInventory>
+> = {
   core: declaredStack("core", {
     Worker: {
       adopt: false,
@@ -283,6 +350,22 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       },
       removalPolicy: "destroy",
       type: "Cloudflare.Workers.ObservabilityDestination",
+    },
+  }),
+  storage: declaredStack("storage", {
+    Cache: {
+      adopt: false,
+      bindings: [],
+      declared: { title: cacheNamespaceTitle(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.KV.Namespace",
+    },
+    Files: {
+      adopt: false,
+      bindings: [],
+      declared: { name: fileBucketName(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.R2.Bucket",
     },
   }),
   tokens: declaredStack("tokens", {

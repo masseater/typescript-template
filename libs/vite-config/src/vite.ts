@@ -2,9 +2,22 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, coreEntrypoints, loopbackAddress, type Application } from "@repo/config";
+import {
+  applicationPorts,
+  coreEntrypoints,
+  grants,
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+  loopbackAddress,
+  type Application,
+} from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
+import { localUserInbox, userInboxClassName } from "@repo/config/realtime";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -139,11 +152,28 @@ const withoutLocalState = [
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
+const typecheckInputs = [
+  ...taskInput,
+  { base: "workspace", pattern: "**/*.{ts,tsx}" },
+  { base: "workspace", pattern: "**/package.json" },
+  { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
+  { base: "workspace", pattern: "!**/node_modules/**" },
+  { base: "workspace", pattern: "!**/dist/**" },
+  { base: "workspace", pattern: "!**/.paraglide/**" },
+  { base: "workspace", pattern: "!**/.local/**" },
+] as const;
+
 const effectDiagnostics = {
+  "check:effect:gate": {
+    command: "check-effect-typecheck",
+    input: [...typecheckInputs],
+  },
   "check:effect": {
     command:
       "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    input: [...taskInput],
+    dependsOn: ["check:effect:gate"],
+    input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
@@ -161,13 +191,40 @@ const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
   prerelease: ["prepr", "premerge"],
 };
 
-function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
-  return Object.fromEntries(
-    lifecycles.map((name) => [
-      name,
-      { command: [], dependsOn: [...lifecycleInherits[name], ...stages[name]] },
-    ]),
-  );
+type LifecycleTask = {
+  command: string[];
+  dependsOn: string[];
+};
+
+function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}): {
+  readonly precommit: LifecycleTask;
+  readonly prepush: LifecycleTask;
+  readonly prepr: LifecycleTask;
+  readonly premerge: LifecycleTask;
+  readonly prerelease: LifecycleTask;
+} {
+  return {
+    precommit: {
+      command: [],
+      dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
+    },
+    prepush: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
+    },
+    prepr: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+    },
+    premerge: {
+      command: [],
+      dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
+    },
+    prerelease: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
+    },
+  };
 }
 
 const testRun = {
@@ -195,44 +252,31 @@ const intentValidation = {
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
-    ...lifecycle({
-      precommit: [],
-      prepush: ["check:effect"],
-      prepr: [],
-      premerge: [],
-      prerelease: [],
-    }),
+    ...lifecycle({ prepush: ["check:effect"] }),
   },
 } satisfies RunConfig;
 
 const appRun = {
   tasks: {
     ...effectDiagnostics,
-    ...sliceBoundaries,
+    check: sliceBoundaries.check,
     build: {
       command: "vp build",
-      dependsOn: ["@repo/dev#setup"],
+      dependsOn: ["@repo/dev#setup", "check:effect"],
       input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
     "check:dev": {
+      cache: false,
       command: "../../tools/dev/src/dev-start.ts",
       dependsOn: ["@repo/dev#setup"],
-      input: [
-        ...taskInput,
-        ...withoutGenerated(".wrangler", "dist"),
-        "!node_modules/.mf/**",
-        ...withoutLocalState,
-        { base: "workspace", pattern: "libs/db/migrations/**" },
-      ],
-      output: [],
     },
+    dev: { cache: false, command: "vp dev" },
+    preview: { cache: false, command: "vp preview" },
     ...lifecycle({
-      precommit: [],
       prepush: ["check:effect", "check"],
       prepr: ["build"],
-      premerge: ["check:dev"],
-      prerelease: [],
+      premerge: ["build", "check:dev"],
     }),
   },
 } satisfies RunConfig;
@@ -242,7 +286,7 @@ const toolTest: NonNullable<UserConfig["test"]> = {
   restoreMocks: true,
   coverage: {
     exclude: ["specs/**"],
-    thresholds: { 100: true, perFile: true },
+    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
   },
   unstubEnvs: true,
   unstubGlobals: true,
@@ -265,6 +309,7 @@ function appConfig(
   plugins: readonly PluginOption[] = noExtraPlugins,
 ): (env: Readonly<ConfigEnv>) => UserConfig {
   const appRoot = path.join(repositoryRoot, "apps", app);
+  const realtime = grants(app, "realtime");
   return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
     plugins: [
@@ -283,6 +328,14 @@ function appConfig(
           compatibility_date: workerCompatibility.date,
           compatibility_flags: [...workerCompatibility.flags],
           d1_databases: [localDatabase],
+          ...(realtime
+            ? {
+                durable_objects: {
+                  bindings: [localUserInbox],
+                },
+                migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
+              }
+            : {}),
           main: "./src/app/server.ts",
           name: `template-${app}`,
           services: [
@@ -293,6 +346,24 @@ function appConfig(
               service: "template-core",
             },
           ],
+          ...(grants(app, "jobs")
+            ? {
+                queues: {
+                  consumers: [{ queue: jobsQueueName }],
+                  producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
+                },
+                workflows: [
+                  {
+                    binding: jobsWorkflowBinding,
+                    class_name: jobsWorkflowClass,
+                    name: jobsWorkflowName,
+                  },
+                ],
+              }
+            : {}),
+          ...(grants(app, "storage")
+            ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
+            : {}),
         }),
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },

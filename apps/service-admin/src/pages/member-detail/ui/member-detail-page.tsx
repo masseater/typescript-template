@@ -14,23 +14,19 @@ function MemberDetailPage({ memberId }: Readonly<{ memberId: string }>): ReactEl
           <Heading as="h2" size="section">
             状態
           </Heading>
-          <StatusMessage variant={STATUS_VARIANT.pending}>
-            状態の要約はまだありません。
-          </StatusMessage>
+          <StatusMessage variant={STATUS_VARIANT.empty}>状態の要約はまだありません。</StatusMessage>
         </article>
         <article className="rounded-lg border border-border p-3">
           <Heading as="h2" size="section">
             契約
           </Heading>
-          <StatusMessage variant={STATUS_VARIANT.pending}>
-            契約の要約はまだありません。
-          </StatusMessage>
+          <StatusMessage variant={STATUS_VARIANT.empty}>契約の要約はまだありません。</StatusMessage>
         </article>
         <article className="rounded-lg border border-border p-3">
           <Heading as="h2" size="section">
             問い合わせ
           </Heading>
-          <StatusMessage variant={STATUS_VARIANT.pending}>
+          <StatusMessage variant={STATUS_VARIANT.empty}>
             問い合わせの履歴はまだありません。
           </StatusMessage>
         </article>
@@ -38,7 +34,7 @@ function MemberDetailPage({ memberId }: Readonly<{ memberId: string }>): ReactEl
           <Heading as="h2" size="section">
             通報と処置
           </Heading>
-          <StatusMessage variant={STATUS_VARIANT.pending}>
+          <StatusMessage variant={STATUS_VARIANT.empty}>
             通報と処置の履歴はまだありません。
           </StatusMessage>
         </article>

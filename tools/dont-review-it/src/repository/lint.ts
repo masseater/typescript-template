@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import {
@@ -29,7 +28,6 @@ const awaitingPresetPackages = [
   "infra/health-monitor/**",
   "infra/local/**",
   "libs/auth/**",
-  "libs/cli/**",
   "libs/config/**",
   "libs/db/**",
   "libs/db-local/**",
@@ -37,7 +35,6 @@ const awaitingPresetPackages = [
   "libs/observability/**",
   "libs/runtime/**",
   "libs/vite-config/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -46,7 +43,6 @@ const templateWorkspaces = [
   "apps/**",
   "libs/**",
   "infra/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/e2e/**",
   "tools/load/**",
@@ -277,9 +273,47 @@ const lintOptions = {
         ],
       },
     },
+    {
+      files: [
+        "infra/budget-monitor/**",
+        "infra/cloudflare/**",
+        "infra/local/**",
+        "libs/config/**",
+        "libs/db/src/local.ts",
+        "libs/db/src/missing-record-return.test.ts",
+        "libs/vite-config/**/*.test.ts",
+        "tools/dev/**",
+        "tools/dont-review-it/src/configs/oxlint.ts",
+        "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
+        "tools/dont-review-it/src/repository/**",
+      ],
+      rules: {
+        "import/no-nodejs-modules": LINT_SEVERITY.OFF,
+        "node/no-process-env": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/db/src/testing.ts", "libs/monitor/src/monitor-fixture.ts"],
+      rules: {
+        "typescript/no-namespace": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "infra/cloudflare/src/unix-permission-bits.ts",
+        "tools/dev/src/unix-permission-bits.ts",
+      ],
+      rules: {
+        "no-bitwise": LINT_SEVERITY.OFF,
+      },
+    },
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,
+    "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
+      LINT_SEVERITY.ERROR,
+      { branches: 50, functions: 50, lines: 50, statements: 50 },
+    ],
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,
       {
@@ -297,6 +331,7 @@ const lintOptions = {
           "vitest.config.ts",
           "vitest.mutation.config.ts",
           "vitest.workers.config.ts",
+          "vitest.workers.main.ts",
           "worker.ts",
         ],
       },

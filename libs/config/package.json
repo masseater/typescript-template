@@ -5,8 +5,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./local-database-path": "./src/local-database-path.ts",
+    "./realtime": "./src/realtime.ts",
     "./repository-root": "./src/repository-root.ts",
     "./paging": "./src/paging.ts",
+    "./storage": "./src/storage.ts",
     "./worker": "./src/worker.ts",
     "./identity": "./src/identity.ts"
   },

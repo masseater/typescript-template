@@ -4,21 +4,23 @@ import { assertCoreNotPublic, corePublicViolation } from "./core-guard.ts";
 
 import type { StackInventory } from "./inventory.ts";
 
+const privateWorkerDeclared = {
+  bundle: false,
+  name: "template-core",
+  workersDev: { enabled: false, previewsEnabled: false },
+};
+const privateWorker = {
+  adopt: false,
+  bindings: [],
+  declared: privateWorkerDeclared,
+  removalPolicy: "destroy",
+  type: "Cloudflare.Worker",
+};
 const privateCore: StackInventory = {
   dependencies: [],
   name: "template-core",
   resources: {
-    Worker: {
-      adopt: false,
-      bindings: [],
-      declared: {
-        bundle: false,
-        name: "template-core",
-        workersDev: { enabled: false, previewsEnabled: false },
-      },
-      removalPolicy: "destroy",
-      type: "Cloudflare.Worker",
-    },
+    Worker: privateWorker,
   },
 };
 
@@ -72,9 +74,9 @@ describe("assertCoreNotPublic", () => {
         ...privateCore,
         resources: {
           Worker: {
-            ...privateCore.resources["Worker"],
+            ...privateWorker,
             declared: {
-              ...privateCore.resources["Worker"].declared,
+              ...privateWorkerDeclared,
               domain: { name: "core.example.com", zoneId: "zone" },
             },
           },

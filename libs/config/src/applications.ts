@@ -10,7 +10,7 @@ export const APPLICATION = {
 
 export const ApplicationName = Schema.Literals(applications);
 export type Application = (typeof applications)[number];
-export type ServiceName = Application | "commander";
+export type ServiceName = Application;
 
 const SERVICE_MEMBER_PORT = 3001;
 const SERVICE_ADMIN_PORT = 3002;
@@ -26,12 +26,12 @@ export const applicationReadyPaths: Readonly<Record<Application, string>> = {
   "service-member": "/login",
 };
 
-const capabilities = ["ai"] as const;
+const capabilities = ["ai", "jobs", "realtime", "storage"] as const;
 export type Capability = (typeof capabilities)[number];
 const applicationCapabilities = {
   "internal-dashboard": ["ai"],
   "service-admin": [],
-  "service-member": ["ai"],
+  "service-member": ["ai", "jobs", "realtime", "storage"],
 } as const satisfies Readonly<Record<Application, readonly Capability[]>>;
 
 export type CapabilityOf<App extends Application> = (typeof applicationCapabilities)[App][number];
@@ -67,3 +67,4 @@ export const storybookOrigin = `http://localhost:${STORYBOOK_PORT}`;
 const MAILPIT_PORT = 8025;
 export const mailpitPort = MAILPIT_PORT;
 export const mailpitOrigin = loopbackOrigin(MAILPIT_PORT);
+export const mailpitSendPath = "/api/v1/send";

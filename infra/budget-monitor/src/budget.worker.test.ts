@@ -127,7 +127,6 @@ it.effect("missing cost, failed API envelope and empty usage are not treated as 
     for (const input of [
       { result: [], success: true },
       { result: [record], success: false },
-      // oxlint-disable-next-line unicorn/no-null
       { result: [{ ...record, BilledCost: null }], success: true },
     ]) {
       assert.strictEqual(yield* code(usageFrom(input, account, now)), "billing_response_invalid");

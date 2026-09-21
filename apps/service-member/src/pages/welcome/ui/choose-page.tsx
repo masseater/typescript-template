@@ -1,7 +1,8 @@
-import { Button, Heading, useAction } from "@repo/ui";
+import { useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
+import { ChooseView } from "./choose-view.tsx";
 
 import type { ReactElement } from "react";
 
@@ -17,35 +18,16 @@ function ChoosePage(): ReactElement {
   };
 
   return (
-    <main className="flex flex-col gap-4">
-      <Heading as="h1" size="page">
-        プロフィールの作り方
-      </Heading>
-      <p className="text-base leading-normal text-foreground">
-        自分で入力するか、AI にインタビューしてもらうかを選べます。
-      </p>
-      {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
-      <Button
-        disabled={action.blocked}
-        onClick={() => {
-          choose("profile");
-        }}
-        type="button"
-        variant="primary"
-      >
-        自分で入力する
-      </Button>
-      <Button
-        disabled={action.blocked}
-        onClick={() => {
-          choose("interview");
-        }}
-        type="button"
-        variant="secondary"
-      >
-        AI にインタビューしてもらう
-      </Button>
-    </main>
+    <ChooseView
+      blocked={action.blocked}
+      error={action.error}
+      onInterview={() => {
+        choose("interview");
+      }}
+      onProfile={() => {
+        choose("profile");
+      }}
+    />
   );
 }
 

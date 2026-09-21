@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readdirSync, readFileSync } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vite-plus/test";

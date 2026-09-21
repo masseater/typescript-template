@@ -9,6 +9,7 @@ import type { MonitorStack } from "./monitors.ts";
 const application = ["database", "flagship"] as const;
 const wikiApplication = [...application, "tokens"] as const;
 const servedApplication = [...application, "core"] as const;
+const memberServed = [...servedApplication, "storage"] as const;
 const wikiServed = [...wikiApplication, "core"] as const;
 const stackReferences = {
   "service-admin": servedApplication,
@@ -20,13 +21,15 @@ const stackReferences = {
   "error-monitor": ["tokens"],
   "health-monitor": [],
   observability: [],
+  storage: [],
   tokens: [],
-  "service-member": servedApplication,
+  "service-member": memberServed,
   "internal-dashboard": wikiServed,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<
-    Record<Exclude<Application, typeof APPLICATION.wiki>, typeof servedApplication> &
+    Record<typeof APPLICATION.admin, typeof servedApplication> &
+      Record<typeof APPLICATION.user, typeof memberServed> &
       Record<typeof APPLICATION.wiki, typeof wikiServed>
   > &
   Readonly<Record<MonitorStack, readonly string[]>>;
@@ -51,6 +54,7 @@ const stackNames = [
   "email",
   "database",
   "flagship",
+  "storage",
   "observability",
   "core",
   "tokens",

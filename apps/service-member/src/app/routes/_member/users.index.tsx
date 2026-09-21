@@ -22,7 +22,6 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/users/")({
   validateSearch: requireUsersSearch,
   loaderDeps: ({ search }: Readonly<{ search: UsersSearch }>) => search,

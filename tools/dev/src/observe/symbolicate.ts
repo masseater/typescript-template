@@ -1,13 +1,10 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { parseArgs } from "node:util";
-
 import { causeRecord, runCli } from "@repo/cli";
 import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
 
+import { layer, urlPath } from "../platform.ts";
 import { symbolicate } from "./source-maps.ts";
 
 class SymbolicateFailure extends Schema.TaggedError<SymbolicateFailure>()("SymbolicateFailure", {
@@ -22,47 +19,53 @@ const SymbolicateInput = Schema.Struct({
   release: Schema.String.check(Schema.isPattern(/^[0-9a-f]{16}$/u)),
 });
 
-const { values, positionals } = parseArgs({
-  allowPositionals: true,
-  options: {
-    app: { type: "string" },
-    help: { default: false, type: "boolean" },
-    release: { type: "string" },
-  },
-});
-
-const help = Console.info(
-  JSON.stringify({
-    locations: "error.locations lines from Workers Logs, such as /assets/index-abc.js:1:234",
-    readOnly: true,
-    usage: `vp run --filter @repo/dev symbolicate --app <${applications.join("|")}> --release <APP_RELEASE> <location>...`,
-  }),
-);
-
-const resolveFrames = Effect.gen(function* resolveFrames() {
-  const input = yield* Schema.decodeUnknownEffect(SymbolicateInput)({
-    app: values.app,
-    locations: positionals.flatMap((value) => value.split("\n")).filter(Boolean),
-    release: values.release,
-  }).pipe(Effect.mapError(() => new SymbolicateFailure({ reason: "arguments_invalid" })));
+const resolveFrames = Effect.fn("resolveFrames")(function* resolveFrames(input: {
+  readonly app: (typeof applications)[number];
+  readonly locations: readonly string[];
+  readonly release: string;
+}) {
+  const decoded = yield* Schema.decodeUnknownEffect(SymbolicateInput)(input).pipe(
+    Effect.mapError(() => new SymbolicateFailure({ reason: "arguments_invalid" })),
+  );
+  const repositoryRoot = yield* urlPath(new URL("../../../", import.meta.url));
   const frames = yield* symbolicate(
     {
-      app: input.app,
-      release: input.release,
-      repositoryRoot: fileURLToPath(new URL("../../../", import.meta.url)),
+      app: decoded.app,
+      release: decoded.release,
+      repositoryRoot,
     },
-    input.locations,
+    decoded.locations,
   );
   yield* Console.info(
     JSON.stringify({
-      app: input.app,
+      app: decoded.app,
       event: "observe.symbolicated",
       frames,
-      release: input.release,
+      release: decoded.release,
     }),
   );
 });
 
-runCli(values.help ? help : resolveFrames, (cause) =>
-  causeRecord("observe.symbolicate_failed", cause),
+const symbolicateCommand = Command.make(
+  "symbolicate",
+  {
+    app: Flag.choice("app", applications).pipe(Flag.withDescription("Application to symbolicate")),
+    locations: Argument.variadic(Argument.string("location")).pipe(
+      Argument.withDescription("Workers log locations"),
+    ),
+    release: Flag.string("release").pipe(Flag.withDescription("Release id")),
+  },
+  Effect.fn(function* resolve({ app, locations, release }) {
+    yield* resolveFrames({
+      app,
+      locations: locations.flatMap((value) => value.split("\n")).filter(Boolean),
+      release,
+    });
+  }),
+).pipe(
+  Command.withDescription("Resolve Workers log locations through release source maps"),
+  Command.run({ renderErrors: false, version: "0.0.0" }),
+  Effect.provide(layer),
 );
+
+runCli(symbolicateCommand, (cause) => causeRecord("observe.symbolicate_failed", { cause }));

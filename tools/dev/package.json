@@ -12,6 +12,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",

@@ -1,6 +1,21 @@
-import { APPLICATION, grants } from "@repo/config";
+import {
+  APPLICATION,
+  grants,
+  jobsWorkflowClass,
+  userInboxBinding,
+  userInboxClassName,
+} from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { coreEntrypoints } from "@repo/core-api/entrypoints";
-import { Email, Worker, WorkerEntrypoint, Workers } from "alchemy/Cloudflare";
+import {
+  DurableObject,
+  Email,
+  Queues,
+  Worker,
+  WorkerEntrypoint,
+  Workers,
+  Workflow,
+} from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
@@ -9,16 +24,37 @@ import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
+import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
-  return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+function appEnv(
+  target: Application,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shared: SharedEnv,
+): Effect.Effect<DeclaredEnv> {
+  const withAi: DeclaredEnv = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  const withRealtime: DeclaredEnv = grants(target, "realtime")
+    ? {
+        ...withAi,
+        [userInboxBinding]: DurableObject(userInboxBinding, { className: userInboxClassName }),
+      }
+    : withAi;
+  if (!grants(target, "storage")) {
+    return Effect.succeed(withRealtime);
+  }
+  return Effect.gen(function* withStorageBindings() {
+    const withStorage: DeclaredEnv = {
+      ...withRealtime,
+      [cacheNamespaceBinding]: yield* cacheNamespaceRef(),
+      [fileBucketBinding]: yield* fileBucketRef(),
+    };
+    return withStorage;
+  });
 }
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
@@ -33,7 +69,8 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const flags = yield* flagshipAppRef();
   const core = yield* coreWorkerRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const shared = appEnv(target, {
+  const jobsQueue = grants(target, "jobs") ? yield* Queues.Queue("Jobs", {}) : undefined;
+  const shared: DeclaredEnv = yield* appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     AUTH_SECRET: secret,
@@ -52,14 +89,23 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
           ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
         }),
   });
-  const env: DeclaredEnv | WikiEnv =
-    target === APPLICATION.wiki
+  const env = {
+    ...(target === APPLICATION.wiki
       ? {
           ...shared,
           FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
           FLAGSHIP_APP_ID: flags.appId,
         }
-      : shared;
+      : shared),
+    ...(jobsQueue === undefined
+      ? {}
+      : {
+          JOBS: jobsQueue,
+          PROCESS: Workflow<{ jobId: string }>("Process", {
+            className: jobsWorkflowClass,
+          }),
+        }),
+  };
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
@@ -72,6 +118,12 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     rules: [{ globs: workerModuleGlobs }],
     workersDev: workerSubdomain,
   });
+  if (jobsQueue !== undefined) {
+    yield* Queues.Consumer("JobsConsumer", {
+      queueId: jobsQueue.queueId,
+      scriptName: worker.workerName,
+    });
+  }
   return { origin: worker.url, workerName: worker.workerName };
 });
 

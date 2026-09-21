@@ -1,14 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, open, readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-
 import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
-import { Effect } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 
-import { fileIo } from "./failure.ts";
 import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 import {
   lanOrigin,
@@ -20,6 +12,7 @@ import {
   running,
   socket,
 } from "./local-environment.ts";
+import { urlPath, withFileSystem, withPath } from "./platform.ts";
 import { privateFileMode } from "./private-files.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
@@ -49,7 +42,6 @@ function httpStatus(app: App, origin: string): Effect.Effect<number | null> {
     }),
   ).pipe(
     Effect.match({
-      // oxlint-disable-next-line unicorn/no-null
       onFailure: () => null,
       onSuccess: (response) => response.status,
     }),
@@ -60,15 +52,22 @@ function appOrigin(app: App, origins: "lan" | "loopback" | undefined): string {
   return origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
 }
 
-function appStatus(app: App, origins: "lan" | "loopback" | undefined): Effect.Effect<AppStatus> {
+function appStatus(
+  app: App,
+  origins: "lan" | "loopback" | undefined,
+): Effect.Effect<AppStatus, LocalCommandFailure, Path.Path> {
   const origin = appOrigin(app, origins);
   return Effect.all({ httpStatus: httpStatus(app, origin), processRunning: running(app) }).pipe(
-    Effect.map((observed) => ({
-      app,
-      logFile: fileURLToPath(logFileUrl(app)),
-      origin,
-      ...observed,
-    })),
+    Effect.flatMap((observed) =>
+      urlPath(logFileUrl(app)).pipe(
+        Effect.map((logFile) => ({
+          app,
+          logFile,
+          origin,
+          ...observed,
+        })),
+      ),
+    ),
   );
 }
 
@@ -100,14 +99,18 @@ const connection = Effect.fn("connection")(function* connection() {
 });
 
 const launch = Effect.fn("launch")(function* launch(app: App) {
-  const log = fileURLToPath(logFileUrl(app));
-  yield* Effect.acquireUseRelease(
-    fileIo(async () => open(log, "a", privateFileMode)),
-    () => Effect.void,
-    (file) => fileIo(async () => file.close()),
+  const log = yield* urlPath(logFileUrl(app));
+  yield* Effect.scoped(
+    Effect.gen(function* touchLog() {
+      const fs = yield* FileSystem.FileSystem;
+      const file = yield* fs.open(log, { flag: "a", mode: privateFileMode });
+      yield* file.sync;
+    }),
   );
-  yield* fileIo(async () => chmod(log, privateFileMode));
-  const vp = JSON.stringify(path.join(root, "node_modules/.bin/vp"));
+  yield* withFileSystem((fs) => fs.chmod(log, privateFileMode));
+  const vp = yield* withPath((path) =>
+    Effect.succeed(JSON.stringify(path.join(root, "node_modules/.bin/vp"))),
+  );
   const command = `exec ${vp} run --filter @repo/${app} preview >> ${JSON.stringify(log)} 2>&1`;
   return yield* run(
     "tmux",
@@ -134,8 +137,15 @@ const stop = Effect.fn("stop")(function* stop(app: App) {
   return yield* status();
 });
 
-function logs(app: App): Effect.Effect<{ app: App; log: string }, LocalCommandFailure> {
-  return fileIo(async () => readFile(logFileUrl(app), "utf-8")).pipe(
+function logs(
+  app: App,
+): Effect.Effect<
+  { app: App; log: string },
+  LocalCommandFailure,
+  FileSystem.FileSystem | Path.Path
+> {
+  return urlPath(logFileUrl(app)).pipe(
+    Effect.flatMap((path) => withFileSystem((fs) => fs.readFileString(path))),
     Effect.map((log) => ({ app, log })),
   );
 }

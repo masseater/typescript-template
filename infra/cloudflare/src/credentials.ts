@@ -1,10 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { lstat, open } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { parseEnv } from "node:util";
 
 import { deploymentKeys } from "@repo/observability/deployment-keys";
@@ -12,11 +8,9 @@ import { Effect, Schema } from "effect";
 
 import { secretsFile } from "./deployment.ts";
 import { projectName } from "./project.ts";
+import { modeAllowsGroupOrOther, openFlagsReadOnlyNoFollow } from "./unix-permission-bits.ts";
 
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { FileHandle } from "node:fs/promises";
-
-const GROUP_AND_OTHER_PERMISSIONS = 0o077;
 
 function declaredKeys(contents: string): ReadonlySet<string> {
   return new Set(Object.keys(parseEnv(contents)));
@@ -46,12 +40,7 @@ const readOwnerOnly = Effect.fn("readOwnerOnly")(function* readOwnerOnly(handle:
     catch: failure("secrets_file_unreadable"),
     try: async () => handle.stat(),
   });
-  if (
-    !metadata.isFile() ||
-    metadata.nlink !== 1 ||
-    // oxlint-disable-next-line no-bitwise
-    (metadata.mode & GROUP_AND_OTHER_PERMISSIONS) !== 0
-  ) {
+  if (!metadata.isFile() || metadata.nlink !== 1 || modeAllowsGroupOrOther(metadata.mode)) {
     return yield* Effect.fail(
       new SecretsFileFailure({ code: "secrets_file_readable_by_others", keys: [] }),
     );
@@ -80,8 +69,8 @@ const verifySecretsFile = Effect.fn("verifySecretsFile")(function* verifySecrets
         cause instanceof Error && "code" in cause && cause.code === "ELOOP"
           ? new SecretsFileFailure({ code: "secrets_file_symlink_forbidden", keys: [] })
           : new SecretsFileFailure({ code: "secrets_file_missing", keys: [] }),
-      // oxlint-disable-next-line no-bitwise
-      try: async () => open(filename, constants.O_RDONLY | constants.O_NOFOLLOW),
+      try: async () =>
+        open(filename, openFlagsReadOnlyNoFollow(constants.O_RDONLY, constants.O_NOFOLLOW)),
     }),
     readOwnerOnly,
     closeHandle,

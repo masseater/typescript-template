@@ -264,7 +264,7 @@ const projectPlugin = definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/dont-review-it/src/repository/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
+        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/dont-review-it/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
       ),
     },
     "cross-request-state": {
@@ -330,7 +330,7 @@ const projectPlugin = definePlugin({
     "process-boundary": {
       create: processBoundaryVisitor,
       meta: metadata(
-        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.exitCode と NodeRuntime.runMain を参照できるのは ${cliImplementation} だけで、そこでも process.stdout と process.stderr は参照できません。`,
+        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console か @repo/cli の cliStdout / cliStderr、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.stdout・process.stderr・process.exitCode・NodeRuntime.runMain を参照できるのは ${cliImplementation} だけです。`,
       ),
     },
     "retired-imports": {

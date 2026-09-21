@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdir, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";

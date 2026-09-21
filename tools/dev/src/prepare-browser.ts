@@ -1,17 +1,9 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
-import { execFile } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, readdir } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createRequire } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { promisify } from "node:util";
-
 import { causeRecord, runCli } from "@repo/cli";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, FileSystem, Path, Schema, Stream } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+
+import { layer } from "./platform.ts";
 
 class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
   "PrepareBrowserFailure",
@@ -28,63 +20,72 @@ class PrepareBrowserFailure extends Schema.TaggedError<PrepareBrowserFailure>()(
 const EXECUTABLE_MODE = 0o755;
 const PLAYWRIGHT_BROWSER = "chromium";
 
-// oxlint-disable-next-line typescript/strict-void-return
-const execFileAsync = promisify(execFile);
-const require = createRequire(import.meta.url);
-
-function fileIo<Value>(
-  operation: () => Promise<Value>,
-): Effect.Effect<Value, PrepareBrowserFailure> {
-  return Effect.tryPromise({
-    catch: () => new PrepareBrowserFailure({ reason: "file_io_failed" }),
-    try: operation,
-  });
-}
-
-function packageDirectory(
+function resolvePackageDirectory(
+  path: Path.Path,
   specifier: string,
   reason: "browser_cli_missing" | "playwright_cli_missing",
 ): Effect.Effect<string, PrepareBrowserFailure> {
   return Effect.try({
     catch: () => new PrepareBrowserFailure({ reason }),
-    try: () => path.dirname(require.resolve(`${specifier}/package.json`)),
-  });
+    try: () => new URL(import.meta.resolve(`${specifier}/package.json`)),
+  }).pipe(
+    Effect.flatMap((url) =>
+      path.fromFileUrl(url).pipe(
+        Effect.map((resolved) => path.dirname(resolved)),
+        Effect.mapError(() => new PrepareBrowserFailure({ reason })),
+      ),
+    ),
+  );
 }
 
-const prepareAgentBrowser = Effect.fn("prepareAgentBrowser")(function* prepareAgentBrowser() {
-  const directory = path.join(
-    yield* packageDirectory("agent-browser", "browser_cli_missing"),
+const program = Effect.gen(function* prepareBrowser() {
+  const path = yield* Path.Path;
+  const fs = yield* FileSystem.FileSystem;
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const agentDirectory = path.join(
+    yield* resolvePackageDirectory(path, "agent-browser", "browser_cli_missing"),
     "bin",
   );
-  for (const name of yield* fileIo(async () => readdir(directory))) {
+  for (const name of yield* fs
+    .readDirectory(agentDirectory)
+    .pipe(Effect.mapError(() => new PrepareBrowserFailure({ reason: "file_io_failed" })))) {
     if (/^agent-browser-(?:darwin|linux(?:-musl)?)-(?:arm64|x64)$/u.test(name)) {
-      yield* fileIo(async () => chmod(path.join(directory, name), EXECUTABLE_MODE));
+      yield* fs
+        .chmod(path.join(agentDirectory, name), EXECUTABLE_MODE)
+        .pipe(Effect.mapError(() => new PrepareBrowserFailure({ reason: "file_io_failed" })));
     }
   }
-});
-
-const preparePlaywright = Effect.fn("preparePlaywright")(function* preparePlaywright() {
-  const cli = path.join(yield* packageDirectory("playwright", "playwright_cli_missing"), "cli.js");
-  const { stdout } = yield* Effect.tryPromise({
-    catch: () => new PrepareBrowserFailure({ reason: "playwright_install_failed" }),
-    try: async () => execFileAsync(process.execPath, [cli, "install", PLAYWRIGHT_BROWSER]),
-  });
-  if (!Schema.is(Schema.String)(stdout)) {
-    return yield* new PrepareBrowserFailure({ reason: "playwright_install_failed" });
-  }
-});
-
-runCli(
-  Effect.gen(function* program() {
-    yield* prepareAgentBrowser();
-    yield* preparePlaywright();
-    yield* Console.info(
-      JSON.stringify({
-        event: "local.browser_cli_prepared",
-        globalConfigurationChanged: false,
-        playwrightBrowser: PLAYWRIGHT_BROWSER,
-      }),
+  const cli = path.join(
+    yield* resolvePackageDirectory(path, "playwright", "playwright_cli_missing"),
+    "cli.js",
+  );
+  yield* Effect.gen(function* installPlaywright() {
+    const handle = yield* spawner
+      .spawn(
+        ChildProcess.make(process.execPath, [cli, "install", PLAYWRIGHT_BROWSER], {
+          extendEnv: true,
+          stderr: "pipe",
+          stdin: "ignore",
+          stdout: "pipe",
+        }),
+      )
+      .pipe(
+        Effect.mapError(() => new PrepareBrowserFailure({ reason: "playwright_install_failed" })),
+      );
+    const stdout = yield* Stream.mkString(Stream.decodeText(handle.stdout)).pipe(
+      Effect.mapError(() => new PrepareBrowserFailure({ reason: "playwright_install_failed" })),
     );
-  }),
-  (cause) => causeRecord("local.browser_cli_prepare_failed", cause),
-);
+    if (!Schema.is(Schema.String)(stdout)) {
+      return yield* new PrepareBrowserFailure({ reason: "playwright_install_failed" });
+    }
+  }).pipe(Effect.scoped);
+  yield* Console.info(
+    JSON.stringify({
+      event: "local.browser_cli_prepared",
+      globalConfigurationChanged: false,
+      playwrightBrowser: PLAYWRIGHT_BROWSER,
+    }),
+  );
+}).pipe(Effect.scoped, Effect.provide(layer));
+
+runCli(program, (cause) => causeRecord("local.browser_cli_prepare_failed", { cause }));

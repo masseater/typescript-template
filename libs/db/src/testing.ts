@@ -11,7 +11,6 @@ import type { D1Database, D1Result } from "@cloudflare/workers-types";
 import type { D1Migration } from "cloudflare:test";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly DB: D1Database;

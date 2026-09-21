@@ -30,7 +30,7 @@ function DashboardHeader({
         aria-expanded={navigationOpen}
         aria-controls="dashboard-navigation"
         onClick={onToggleNavigation}
-        className="cursor-pointer rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator md:hidden"
+        className="inline-flex min-h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator md:hidden"
       >
         <Icon icon={MenuIcon} />
       </button>
@@ -39,7 +39,7 @@ function DashboardHeader({
         aria-label={collapsed ? "サイドバーを開く" : "サイドバーを畳む"}
         aria-pressed={collapsed}
         onClick={onToggleCollapsed}
-        className="hidden cursor-pointer rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator md:inline-flex"
+        className="hidden min-h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator md:inline-flex"
       >
         <Icon icon={PanelLeftIcon} />
       </button>

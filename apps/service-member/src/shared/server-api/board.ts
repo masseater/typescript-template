@@ -56,7 +56,6 @@ function shownAuthor(row: {
   readonly authorId: string | null;
   readonly authorName: string | null;
 }): BoardAuthor | null {
-  // oxlint-disable-next-line unicorn/no-null
   return row.authorId === null || row.authorName === null
     ? null
     : { id: row.authorId, name: row.authorName };

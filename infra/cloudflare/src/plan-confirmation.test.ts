@@ -37,12 +37,10 @@ function action(kind: PlannedAction["action"], logicalId: string): PlannedAction
 }
 
 function nativePlan(shape: Readonly<Record<string, unknown>>): Plan {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   return shape as unknown as Plan;
 }
 
 function expression(logicalId: string): unknown {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   return new ResourceExpr({ LogicalId: logicalId, Type: "Cloudflare.Test" } as never);
 }
 

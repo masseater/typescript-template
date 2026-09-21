@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { Effect, Schema } from "effect";

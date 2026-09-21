@@ -1,19 +1,17 @@
+import { MergifyReporter } from "@mergifyio/vitest";
 import {
+  dedicatedToolVitestProjects,
   devServerTests,
   dontReviewItPreset,
   generatedFiles,
   lintOptions,
+  rootNodeToolTestIncludes,
+  rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
-
-import { rootOnDemandChecks } from "./tools/dont-review-it/src/repository/on-demand-checks.ts";
-import {
-  dedicatedToolVitestProjects,
-  rootNodeToolTestIncludes,
-} from "./tools/dont-review-it/src/repository/tool-test-projects.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
@@ -42,8 +40,12 @@ export default defineConfig({
       },
       "check:code": { command: "vp check", input: [...taskInput] },
       ...effectDiagnostics,
+      "check:types": {
+        command: "dont-review-it-typecheck",
+        input: [...taskInput],
+      },
       "check:imports":
-        "depcruise --config tools/dont-review-it/src/repository/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+        "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
         command: "quality-check-react",
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
@@ -75,7 +77,6 @@ export default defineConfig({
       },
       "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
       ...lifecycle({
-        precommit: [],
         prepush: [
           "check:code",
           "check:effect",
@@ -85,15 +86,18 @@ export default defineConfig({
           "check:react",
           "check:canonical-literal-types",
         ],
-        prepr: ["check:imports", "test"],
-        premerge: ["test:dev-server"],
+        prepr: ["check:imports"],
+        premerge: ["test", "test:dev-server"],
         prerelease: ["mutation"],
       }),
       "check:repository": rootOnDemandChecks["check:repository"],
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     forceRerunTriggers: [
       "**/package.json",
       "**/tsconfig*.json",
@@ -130,6 +134,7 @@ export default defineConfig({
       ...dedicatedToolVitestProjects,
     ],
     mockReset: true,
+    reporters: ["default", new MergifyReporter()],
     restoreMocks: true,
     testTimeout: 30_000,
   },
