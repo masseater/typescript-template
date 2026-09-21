@@ -10,8 +10,6 @@ import { Schema } from "effect";
 
 const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as const;
 
-type MissingExportCode = (typeof missingExportCodes)[number];
-
 const missingExportCodeSet: ReadonlySet<string> = new Set(missingExportCodes);
 
 const writeFlag = "--write";
