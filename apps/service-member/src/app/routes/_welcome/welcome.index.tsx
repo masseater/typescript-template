@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { welcomePath } from "#app/entry-conditions.ts";
-import { loadOnboardingStep } from "#pages/welcome/index.ts";
+import { loadOnboardingStep } from "#pages/account/welcome/index.ts";
 
 const Route = createFileRoute("/_welcome/welcome/")({
   beforeLoad: async () => {

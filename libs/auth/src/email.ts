@@ -5,6 +5,7 @@ import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 
 const mailSubjects = {
   contact: "お問い合わせ",
+  emailChangeCompleted: "メールアドレスが変更されました",
   emailChangeNotice: "メールアドレスの変更が申請されました",
   emailChangeVerification: "新しいメールアドレスの確認",
   existingAccount: "このメールアドレスは登録済みです",
@@ -145,6 +146,16 @@ const sendEmailChangeNotice = (
     subject: mailSubjects.emailChangeNotice,
   });
 
+const sendEmailChangeCompleted = (
+  settings: MailSettings,
+  notice: LinkedMail,
+): Effect.Effect<void, EmailDeliveryFailed> =>
+  deliverLink(settings, notice, {
+    lead: "このアカウントのメールアドレスの変更が確定しました。心当たりがない場合は、次のリンクからセキュリティ設定を確認してください。",
+    span: "email.email_change_completed",
+    subject: mailSubjects.emailChangeCompleted,
+  });
+
 const sendContactEmail = (
   settings: MailSettings,
   outbound: Readonly<{
@@ -162,6 +173,7 @@ const sendContactEmail = (
 export { mailSubjects };
 export {
   sendContactEmail,
+  sendEmailChangeCompleted,
   sendEmailChangeNotice,
   sendEmailChangeVerification,
   sendExistingAccountNotice,

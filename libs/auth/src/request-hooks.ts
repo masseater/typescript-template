@@ -22,7 +22,7 @@ import {
   isStrongMethod,
   sessionIsLive,
 } from "./policy.ts";
-import { emailChangeTarget } from "./verification-token.ts";
+import { emailChangePrevious, emailChangeTarget } from "./verification-token.ts";
 
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
@@ -248,14 +248,21 @@ const enforceSessionPolicy = function enforceSessionPolicy(
   return enforceFactorChanges(input, run);
 };
 
+const queryToken = function queryToken(
+  ctx: Readonly<Pick<HookContext, "query">>,
+): string | undefined {
+  const query: unknown = ctx.query;
+  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
+  return typeof token === "string" ? token : undefined;
+};
+
 const confirmsEmailChange = function confirmsEmailChange(
   ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
-  const query: unknown = ctx.query;
-  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
+  const token = queryToken(ctx);
   return (
     ctx.path === emailVerificationPath &&
-    typeof token === "string" &&
+    token !== undefined &&
     emailChangeTarget(token) !== undefined
   );
 };
@@ -270,12 +277,25 @@ const notifyEmailChange = async function notifyEmailChange(
   }
 };
 
+const notifyEmailChangeCompleted = async function notifyEmailChangeCompleted(
+  scope: HookScope,
+  onEmailChangeCompleted: (email: string) => Promise<void>,
+): Promise<void> {
+  const token = queryToken(scope.ctx);
+  const previous = token === undefined ? undefined : emailChangePrevious(token);
+  if (previous !== undefined) {
+    await onEmailChangeCompleted(previous);
+  }
+};
+
 const createRequestHooks = function createRequestHooks({
   audience,
+  onEmailChangeCompleted,
   onEmailChangeRequested,
   run,
 }: {
   readonly audience: Application;
+  readonly onEmailChangeCompleted: (email: string) => Promise<void>;
   readonly onEmailChangeRequested: (email: string) => Promise<void>;
   readonly run: Run;
 }): RequestHooks {
@@ -293,6 +313,9 @@ const createRequestHooks = function createRequestHooks({
       }
       if (ctx.path === emailChangePath) {
         await notifyEmailChange(scope, onEmailChangeRequested);
+      }
+      if (confirmsEmailChange(ctx)) {
+        await notifyEmailChangeCompleted(scope, onEmailChangeCompleted);
       }
     }),
     before: createAuthMiddleware(async (ctx) => {

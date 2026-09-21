@@ -9,7 +9,18 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 パス: `/settings`。
 
-プロフィール・メールアドレス・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
+プロフィール・公開範囲・メールアドレス・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・規約への同意・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
+
+## 公開範囲
+
+パス: `/settings/visibility`。既定は「全会員」で、一覧と検索には載せない側である。
+
+1. 見出し「公開範囲」
+2. 「プロフィールを見られる人」（全会員 / 自分だけ）
+3. 「会員一覧と検索に載せる」
+4. 「保存」
+
+「自分だけ」にすると、リンクを知っている会員にもプロフィールと写真を見せない。判定の実体は [会員のつながり](/data-model/member-graph) が持つ。
 
 ## メールアドレス
 
@@ -72,6 +83,14 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 引き止めのページを挟まない。解約のボタンは、ほかの操作と同じ大きさと色の濃さにする。
 
+## 規約への同意
+
+パス: `/settings/agreements`。実体は [信頼と安全](/data-model/trust) の AgreementAcceptance が持つ。
+
+1. 見出し「規約への同意」
+2. 未同意の版。無ければ最新に同意していることを出し、あれば版の一覧と [規約への同意](/pages/member-agreement) へのリンクを出す
+3. 同意の履歴（種類・版・同意した日）
+
 ## 退会
 
 パス: `/settings/leave`。
@@ -87,6 +106,7 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 ```mermaid
 flowchart TD
   settings["/settings"] --> profile["/settings/profile"]
+  settings --> visibility["/settings/visibility"]
   settings --> email["/settings/email"]
   email -- 新しいアドレスに届いたリンク --> verify["/verify-email-change"]
   settings --> notifications["/settings/notifications"]
@@ -94,6 +114,7 @@ flowchart TD
   settings --> interview["/settings/interview"]
   settings --> ai["/settings/ai"]
   settings --> plan["/settings/plan"]
+  settings --> agreements["/settings/agreements"]
   settings --> leave["/settings/leave"]
   settings --> support["/support"]
   plan -- 有料プランを見る --> upgrade["/upgrade"]

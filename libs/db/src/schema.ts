@@ -1,9 +1,11 @@
 import { AUTHENTICATION_METHOD, applications } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
+import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
 import {
   jwks,
@@ -109,12 +111,18 @@ const rateLimit = sqliteTable(
 );
 
 /** @canonical-values db.audit-action */
-export const auditActions = ["flag_toggled", "role_changed", "user_deleted"] as const;
+export const auditActions = [
+  "flag_toggled",
+  "role_changed",
+  "user_deleted",
+  "agreement_published",
+] as const;
 export type AuditAction = (typeof auditActions)[number];
 export const AUDIT_ACTION = {
   flagToggled: auditActions[0],
   roleChanged: auditActions[1],
   userDeleted: auditActions[2],
+  agreementPublished: auditActions[3],
 } as const;
 
 const auditEvent = sqliteTable(
@@ -132,12 +140,16 @@ const auditEvent = sqliteTable(
 
 const schema = {
   account,
+  agreementAcceptance,
+  agreementVersion,
   auditEvent,
   boardPost,
   boardThread,
   follow,
   interview,
+  leaveRequest,
   memberOnboarding,
+  withdrawnMember,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -155,6 +167,7 @@ const schema = {
 };
 
 export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
+export { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 export {
   jwks,
   oauthAccessToken,
@@ -168,4 +181,5 @@ export {
 export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

@@ -24,6 +24,7 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
   "./observability.ts",
   "./service-admin.ts",
   "./service-member.ts",
+  "./storage.ts",
   "./tokens.ts",
   "./zone.ts",
 ]);
@@ -53,6 +54,7 @@ describe("alchemy stacks", () => {
       "service-admin",
       "service-member",
     ]);
+    expect(violationsWhenLast("storage")).toStrictEqual(["service-member"]);
     expect(violationsWhenLast("flagship")).toStrictEqual([
       "internal-dashboard",
       "service-admin",

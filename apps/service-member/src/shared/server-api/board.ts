@@ -3,18 +3,24 @@ import { query, schema } from "@repo/db";
 import { and, count, desc, eq, sql } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
+import { withdrawnAuthorName } from "#shared/contracts/board.ts";
 import { BoardMemberRequired } from "./board-member-required.ts";
 import { BoardThreadNotFound } from "./board-thread-not-found.ts";
 
-const { boardPost, boardThread, user } = schema;
+const { boardPost, boardThread, user, withdrawnMember } = schema;
 
 interface BoardAuthor {
   readonly id: string;
   readonly name: string;
 }
 
+interface WithdrawnAuthor {
+  readonly name: typeof withdrawnAuthorName;
+  readonly withdrawn: true;
+}
+
 interface BoardThreadSummary {
-  readonly author: BoardAuthor | null;
+  readonly author: BoardAuthor | WithdrawnAuthor | null;
   readonly createdAt: number;
   readonly id: string;
   readonly lastPostedAt: number;
@@ -23,7 +29,7 @@ interface BoardThreadSummary {
 }
 
 interface BoardPostView {
-  readonly author: BoardAuthor | null;
+  readonly author: BoardAuthor | WithdrawnAuthor | null;
   readonly body: string;
   readonly createdAt: number;
   readonly id: string;
@@ -35,13 +41,14 @@ interface Page {
 }
 
 const boardMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
-const authorColumns = { authorId: user.id, authorName: user.name };
+const authorColumns = { authorName: user.name, withdrawnId: withdrawnMember.memberId };
 const threadColumns = {
   ...authorColumns,
   createdAt: boardThread.createdAt,
   id: boardThread.id,
   lastPostedAt: boardThread.lastPostedAt,
   postCount: boardThread.postCount,
+  storedAuthorId: boardThread.authorId,
   title: boardThread.title,
 };
 const postColumns = {
@@ -49,27 +56,34 @@ const postColumns = {
   body: boardPost.body,
   createdAt: boardPost.createdAt,
   id: boardPost.id,
+  storedAuthorId: boardPost.authorId,
 };
 const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
 
 function shownAuthor(row: {
-  readonly authorId: string | null;
   readonly authorName: string | null;
-}): BoardAuthor | null {
+  readonly storedAuthorId: string | null;
+  readonly withdrawnId: string | null;
+}): BoardAuthor | WithdrawnAuthor | null {
+  if (row.storedAuthorId !== null && row.authorName !== null) {
+    return { id: row.storedAuthorId, name: row.authorName };
+  }
+  if (row.withdrawnId !== null) {
+    return { name: withdrawnAuthorName, withdrawn: true };
+  }
   // oxlint-disable-next-line unicorn/no-null
-  return row.authorId === null || row.authorName === null
-    ? null
-    : { id: row.authorId, name: row.authorName };
+  return null;
 }
 
 function shownThread(row: {
-  readonly authorId: string | null;
   readonly authorName: string | null;
   readonly createdAt: Readonly<Date>;
   readonly id: string;
   readonly lastPostedAt: Readonly<Date>;
   readonly postCount: number;
+  readonly storedAuthorId: string | null;
   readonly title: string;
+  readonly withdrawnId: string | null;
 }): BoardThreadSummary {
   return {
     author: shownAuthor(row),
@@ -82,11 +96,12 @@ function shownThread(row: {
 }
 
 function shownPost(row: {
-  readonly authorId: string | null;
   readonly authorName: string | null;
   readonly body: string;
   readonly createdAt: Readonly<Date>;
   readonly id: string;
+  readonly storedAuthorId: string | null;
+  readonly withdrawnId: string | null;
 }): BoardPostView {
   return {
     author: shownAuthor(row),
@@ -121,6 +136,7 @@ const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThread
       .select(threadColumns)
       .from(boardThread)
       .leftJoin(user, and(eq(user.id, boardThread.authorId), boardMember))
+      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
       .orderBy(desc(boardThread.lastPostedAt), desc(boardThread.id))
       .limit(page.limit)
       .offset(page.offset),
@@ -140,6 +156,7 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
       .select(threadColumns)
       .from(boardThread)
       .leftJoin(user, and(eq(user.id, boardThread.authorId), boardMember))
+      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
       .where(eq(boardThread.id, threadId))
       .limit(1),
   );
@@ -151,6 +168,7 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
       .select(postColumns)
       .from(boardPost)
       .leftJoin(user, and(eq(user.id, boardPost.authorId), boardMember))
+      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardPost.authorId))
       .where(eq(boardPost.threadId, threadId))
       .orderBy(boardPost.createdAt, boardPost.id)
       .limit(page.limit)
