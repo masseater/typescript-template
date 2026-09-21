@@ -36,11 +36,5 @@ export {
 } from "./member.ts";
 export { MemberFlags } from "./flags.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
-export {
-  InquiryCreate,
-  InquiryList,
-  InquiryQuery,
-  InquiryReply,
-  InquiryThread,
-} from "./support.ts";
+export { InquiryCreate, InquiryList, InquiryReply, InquiryThread } from "./support.ts";
 export { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";

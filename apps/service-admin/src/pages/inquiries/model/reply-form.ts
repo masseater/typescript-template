@@ -11,7 +11,6 @@ interface ReplyForm {
   readonly handleBodyChange: (value: string) => void;
   readonly handleClose: () => void;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly pending: boolean;
 }
 
 const useBody = localState("");
@@ -40,9 +39,7 @@ function useReplyForm(inquiryId: string, onChanged: () => void): ReplyForm {
     handleBodyChange: setBody,
     handleClose,
     handleSubmit,
-    pending: action.pending,
   };
 }
 
 export { useReplyForm };
-export type { ReplyForm };

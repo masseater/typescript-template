@@ -15,7 +15,7 @@ function AdminNavigation({
   onNavigate: () => void;
 }>): ReactElement {
   const pendingState = useAtomValue(pendingCountAtom);
-  const pendingCount = AsyncResult.isSuccess(pendingState) ? pendingState.value : 0;
+  const pendingCount = AsyncResult.isSuccess(pendingState) ? pendingState.value : undefined;
 
   return (
     <nav id="admin-navigation" aria-label="メイン" className="flex flex-1 flex-col overflow-y-auto">
@@ -31,7 +31,11 @@ function AdminNavigation({
               {group.items.map((item) => (
                 <AdminNavigationItem
                   key={item.to}
-                  badge={item.to === "/inquiries" && pendingCount > 0 ? pendingCount : undefined}
+                  badge={
+                    item.to === "/inquiries" && pendingCount !== undefined && pendingCount > 0
+                      ? pendingCount
+                      : undefined
+                  }
                   collapsed={collapsed}
                   icon={item.icon}
                   label={item.label}

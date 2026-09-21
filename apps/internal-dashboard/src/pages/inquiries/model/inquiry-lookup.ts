@@ -79,4 +79,3 @@ function useInquiryLookup(): InquiryLookup {
 }
 
 export { useInquiryLookup };
-export type { InquiryLookup, StaffInquirySummary };

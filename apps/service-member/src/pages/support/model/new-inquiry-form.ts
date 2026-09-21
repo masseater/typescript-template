@@ -39,4 +39,3 @@ function useNewInquiryForm(onCreated: (inquiryId: string) => void): NewInquiryFo
 }
 
 export { useNewInquiryForm };
-export type { NewInquiryForm };
