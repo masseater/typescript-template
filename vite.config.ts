@@ -75,8 +75,9 @@ export default defineConfig({
       },
       "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
       ...lifecycle({
-        precommit: ["check:code"],
+        precommit: [],
         prepush: [
+          "check:code",
           "check:effect",
           "knip",
           "check:client",

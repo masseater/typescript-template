@@ -1,0 +1,7 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "admin_login_title": "Admin log in",
+  "locale_ja": "日本語",
+  "locale_en": "English",
+  "locale_label": "Language"
+}
