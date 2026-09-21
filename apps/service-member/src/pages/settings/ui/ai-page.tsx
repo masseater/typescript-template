@@ -87,7 +87,7 @@ function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactEle
         <Button
           aria-label="APIキーを発行する"
           disabled={form.action.blocked || form.name.trim() === ""}
-          onClick={form.issue}
+          onClick={form.handleIssue}
           type="button"
           variant="primary"
         >

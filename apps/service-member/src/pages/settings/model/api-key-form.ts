@@ -6,7 +6,7 @@ import { createApiKey, type CreatedApiKey } from "#pages/settings/api/api-keys.t
 interface ApiKeyForm {
   readonly action: ActionState;
   readonly handleNameChange: (value: string) => void;
-  readonly issue: () => void;
+  readonly handleIssue: () => void;
   readonly issued: CreatedApiKey | undefined;
   readonly name: string;
 }
@@ -17,7 +17,7 @@ function useApiKeyForm(onIssued: () => void): ApiKeyForm {
   const name = useTextInput();
   const [issued, setIssued] = useIssued();
   const action = useAction();
-  function issue(): void {
+  function handleIssue(): void {
     const trimmed = name.value.trim();
     if (trimmed === "") {
       return;
@@ -32,7 +32,7 @@ function useApiKeyForm(onIssued: () => void): ApiKeyForm {
   return {
     action,
     handleNameChange: name.handleChange,
-    issue,
+    handleIssue,
     issued: Option.getOrUndefined(issued),
     name: name.value,
   };
