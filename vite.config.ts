@@ -1,20 +1,17 @@
 import { MergifyReporter } from "@mergifyio/vitest";
 import {
+  dedicatedToolVitestProjects,
   devServerTests,
   dontReviewItPreset,
   generatedFiles,
   lintOptions,
+  rootNodeToolTestIncludes,
+  rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
 import { lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
-
-import { rootOnDemandChecks } from "./tools/dont-review-it/src/repository/on-demand-checks.ts";
-import {
-  dedicatedToolVitestProjects,
-  rootNodeToolTestIncludes,
-} from "./tools/dont-review-it/src/repository/tool-test-projects.ts";
 
 const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
