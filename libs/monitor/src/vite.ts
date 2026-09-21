@@ -3,8 +3,8 @@ import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 const monitorWorkerVite = (): {
   readonly pack: {
     readonly deps: {
-      readonly alwaysBundle: readonly string[];
-      readonly onlyBundle: readonly string[];
+      alwaysBundle: string[];
+      onlyBundle: string[];
     };
     readonly entry: { readonly index: string };
     readonly format: string;
