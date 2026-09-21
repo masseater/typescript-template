@@ -17,13 +17,17 @@ const stackReferences = {
   "error-monitor": ["tokens"],
   "health-monitor": [],
   observability: [],
+  storage: [],
   tokens: [],
-  "service-member": application,
+  "service-member": [...application, "storage"],
   "internal-dashboard": wikiApplication,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<
-    Record<Exclude<Application, typeof APPLICATION.wiki>, typeof application> &
+    Record<
+      Exclude<Application, typeof APPLICATION.wiki>,
+      readonly [...typeof application, ...string[]]
+    > &
       Record<typeof APPLICATION.wiki, typeof wikiApplication>
   > &
   Readonly<Record<MonitorStack, readonly string[]>>;
@@ -47,6 +51,7 @@ const stackNames = [
   "email",
   "database",
   "flagship",
+  "storage",
   "observability",
   "tokens",
   ...monitorStacks,

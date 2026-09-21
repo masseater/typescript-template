@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
@@ -35,8 +36,10 @@ export default defineProject({
         compatibilityFlags: [...workerCompatibility.flags],
         d1Databases: { [localDatabase.binding]: localDatabase.database_id },
         durableObjects: { [monitorBinding]: { className: probeMonitor, useSQLite: true } },
+        kvNamespaces: { [localCacheNamespace.binding]: localCacheNamespace.id },
         outboundService: (outbound: { readonly url: string }) =>
           Response.json({ blocked: outbound.url }, { status: 403 }),
+        r2Buckets: { [localFileBucket.binding]: localFileBucket.bucket_name },
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
       },
     }),
