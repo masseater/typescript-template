@@ -11,7 +11,9 @@ description: 主要技術を、初めて読む人向けに説明し、公式・�
 
 - [TanStack Start](/tech-stack/tanstack-start) — URL と画面、サーバーで行う処理
 - [TypeScript](/tech-stack/typescript) — 画面からインフラの宣言までを通す言語
+- [Vite+](/tech-stack/vite-plus) — 開発、検査、テスト、依存のインストールをまとめた `vp`
 - [Effect](/tech-stack/effect) — 失敗と依存を型に載せる書き方
+- [Drizzle](/tech-stack/drizzle) — SQLite のテーブルとクエリ
 - [TanStack Query](/tech-stack/tanstack-query) — サーバーのデータをクライアントが共有して読む仕組み
 - [Base UI と shadcn](/tech-stack/ui) — 挙動と、リポジトリが持つ見た目の部品
 - [Alchemy](/tech-stack/alchemy) — Cloudflare に残る資源の宣言
