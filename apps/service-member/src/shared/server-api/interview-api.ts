@@ -4,15 +4,15 @@ import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect, Schema } from "effect";
 
-import { InterviewView, Utterance } from "#shared/interview/contracts.ts";
+import { InterviewView, Utterance } from "#shared/interview/index.ts";
 import {
   openInterview,
   restartInterview,
   saveInterview,
   takeTurn,
-} from "#shared/interview/index.ts";
+} from "#shared/interview/server.ts";
 
-import type { Interviewer } from "#shared/interview/index.ts";
+import type { Interviewer } from "#shared/interview/server.ts";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
