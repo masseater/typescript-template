@@ -3,19 +3,19 @@ import type { ProbeResult } from "./probe.ts";
 type HealthState = Readonly<Record<string, boolean>>;
 
 const decideHealthAlerts = (
-  probeResults: readonly ProbeResult[],
+  healthProbes: readonly ProbeResult[],
   priorState: HealthState,
 ): {
   readonly notifications: ProbeResult[];
   readonly state: Record<string, boolean>;
 } => {
-  const notifications = probeResults.filter(
-    (probeResult) => (priorState[probeResult.service] ?? true) !== probeResult.healthy,
+  const notifications = healthProbes.filter(
+    (healthProbe) => (priorState[healthProbe.service] ?? true) !== healthProbe.healthy,
   );
-  const nextState = Object.fromEntries(
-    probeResults.map((probeResult) => [probeResult.service, probeResult.healthy]),
+  const healthState = Object.fromEntries(
+    healthProbes.map((healthProbe) => [healthProbe.service, healthProbe.healthy]),
   );
-  return { notifications, state: nextState };
+  return { notifications, state: healthState };
 };
 
 const formatHealthMessage = (notifications: readonly ProbeResult[]): string =>

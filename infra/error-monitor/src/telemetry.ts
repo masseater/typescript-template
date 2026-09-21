@@ -35,7 +35,6 @@ const QueryEnvelope = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-
 const groupedError = (
   aggregateRow: typeof Aggregate.Type,
 ): {
@@ -131,20 +130,24 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
   );
 });
 
-const collectPages = Effect.fn("collectPages")(function* collectPages(
-  queryWindow: QueryWindow,
-  offsetBy: number,
-  aggregates: readonly (typeof Aggregate.Type)[],
-): Generator<
+const collectPages = Effect.fn("collectPages")(function* collectPages(asked: {
+  readonly aggregates: readonly (typeof Aggregate.Type)[];
+  readonly offsetBy: number;
+  readonly queryWindow: QueryWindow;
+}): Generator<
   Effect.Effect<unknown, ErrorMonitorFailure>,
   readonly (typeof Aggregate.Type)[],
   never
 > {
-  const page = yield* fetchPage(queryWindow, offsetBy);
-  const collected = [...aggregates, ...page];
+  const page = yield* fetchPage(asked.queryWindow, asked.offsetBy);
+  const collected = [...asked.aggregates, ...page];
   return page.length < QUERY_LIMIT
     ? collected
-    : yield* collectPages(queryWindow, offsetBy + QUERY_LIMIT, collected);
+    : yield* collectPages({
+        aggregates: collected,
+        offsetBy: asked.offsetBy + QUERY_LIMIT,
+        queryWindow: asked.queryWindow,
+      });
 });
 
 const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroups(
@@ -157,11 +160,16 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
   if (!isCloudflareId(queryWindow.accountId)) {
     return yield* telemetryFailure("telemetry_account_invalid")();
   }
-  const aggregates = yield* collectPages(queryWindow, 0, []);
+  const aggregates = yield* collectPages({ aggregates: [], offsetBy: 0, queryWindow });
   const collected = aggregates.map((aggregateRow) => groupedError(aggregateRow));
   return {
-    dropped: collected.reduce((droppedCount, row) => droppedCount + row.dropped, 0),
-    groups: collected.flatMap((row) => (row.grouped === undefined ? [] : [row.grouped])),
+    dropped: collected.reduce(
+      (droppedCount, collectedGroup) => droppedCount + collectedGroup.dropped,
+      0,
+    ),
+    groups: collected.flatMap((collectedGroup) =>
+      collectedGroup.grouped === undefined ? [] : [collectedGroup.grouped],
+    ),
   };
 });
 

@@ -14,7 +14,7 @@ const healthTarget = {
 } as const;
 
 describe("a healthy application", () => {
-  const it = test.extend("probeResult", async ({}, { onCleanup }) => {
+  const it = test.extend("healthProbe", async ({}, { onCleanup }) => {
     const healthApi = setupServer(
       http.get(healthEndpoint, () =>
         HttpResponse.json({ ok: true, release, service: "service-member" }),
@@ -27,8 +27,8 @@ describe("a healthy application", () => {
     return Effect.runPromise(probeService(healthTarget));
   });
 
-  it("reports its own service name and release", ({ probeResult }) => {
-    expect(probeResult).toStrictEqual({
+  it("reports its own service name and release", ({ healthProbe }) => {
+    expect(healthProbe).toStrictEqual({
       detail: `release_${release}`,
       healthy: true,
       service: "service-member",
@@ -38,7 +38,7 @@ describe("a healthy application", () => {
 
 describe.for([
   [
-    "answering for another application",
+    "healthResponseing for another application",
     "payload_invalid",
     (): Response => HttpResponse.json({ ok: true, release, service: "service-admin" }),
   ],
@@ -53,9 +53,9 @@ describe.for([
     (): Response => HttpResponse.text("<!doctype html>"),
   ],
   ["unreachable", "unreachable", (): Response => HttpResponse.error()],
-] as const)("an application %s", ([, detail, answer]) => {
-  const it = test.extend("probeResult", async ({}, { onCleanup }) => {
-    const healthApi = setupServer(http.get(healthEndpoint, answer));
+] as const)("an application %s", ([, detail, healthResponse]) => {
+  const it = test.extend("healthProbe", async ({}, { onCleanup }) => {
+    const healthApi = setupServer(http.get(healthEndpoint, healthResponse));
     healthApi.listen({ onUnhandledRequest: "error" });
     onCleanup(() => {
       healthApi.close();
@@ -63,8 +63,8 @@ describe.for([
     return Effect.runPromise(probeService(healthTarget));
   });
 
-  it("is unhealthy", ({ probeResult }) => {
-    expect(probeResult).toStrictEqual({
+  it("is unhealthy", ({ healthProbe }) => {
+    expect(healthProbe).toStrictEqual({
       detail,
       healthy: false,
       service: "service-member",

@@ -24,7 +24,6 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
-
 const requestHealth = (healthTarget: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> =>
   Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
     fetch(healthTarget.healthEndpoint, {
@@ -44,7 +43,7 @@ const observedProbe = (asked: {
   service: asked.healthTarget.service,
 });
 
-const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
+const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHealthPayload(
   healthTarget: HealthTarget,
   healthResponse: ProbeResponse,
 ) {
@@ -79,7 +78,7 @@ const probeService = Effect.fn("probeService")(function* probeService(healthTarg
       healthy: false,
     });
   }
-  return yield* payloadResult(healthTarget, healthResponse.value);
+  return yield* decodeHealthPayload(healthTarget, healthResponse.value);
 });
 
 export { probeService };

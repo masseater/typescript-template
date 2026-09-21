@@ -40,34 +40,34 @@ describe.for([
   [{ SERVICE_MEMBER_ORIGIN: "http://app.example.com" }],
   [{ INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com/docs" }],
 ] as const)("invalid settings %s", ([override]) => {
-  const it = test.extend("failureCode", async () => {
-    const configFailure = await Effect.runPromise(
-      Effect.flip(parseHealthMonitorConfig({ ...valid, ...override })),
-    );
-    return configFailure.code;
-  });
+  const it = test.extend("configFailure", async () =>
+    Effect.runPromise(Effect.flip(parseHealthMonitorConfig({ ...valid, ...override }))));
 
-  it("refuses the configuration", ({ failureCode }) => {
-    expect(failureCode).toBe("health_monitor_config_invalid");
+  it("refuses the configuration", ({ configFailure }) => {
+    expect(configFailure).toStrictEqual({
+      _tag: "HealthMonitorFailure",
+      code: "health_monitor_config_invalid",
+    });
   });
 });
 
 describe("shared origins", () => {
-  const it = test.extend("failureCode", async () => {
-    const configFailure = await Effect.runPromise(
+  const it = test.extend("configFailure", async () =>
+    Effect.runPromise(
       Effect.flip(
         parseHealthMonitorConfig({
           ...valid,
           INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com",
         }),
       ),
-    );
-    return configFailure.code;
-  });
+    ));
 
   it("refuses a configuration that points two applications at the same origin", ({
-    failureCode,
+    configFailure,
   }) => {
-    expect(failureCode).toBe("health_monitor_origins_must_differ");
+    expect(configFailure).toStrictEqual({
+      _tag: "HealthMonitorFailure",
+      code: "health_monitor_origins_must_differ",
+    });
   });
 });

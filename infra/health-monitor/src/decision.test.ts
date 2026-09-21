@@ -23,11 +23,14 @@ describe("first check", () => {
 });
 
 describe("ongoing outage", () => {
-  const it = test.extend("notifications", () =>
-    decideHealthAlerts([down], { "service-member": false }).notifications);
+  const it = test.extend("healthDecision", () =>
+    decideHealthAlerts([down], { "service-member": false }));
 
-  it("stays quiet", ({ notifications }) => {
-    expect(notifications).toStrictEqual([]);
+  it("stays quiet", ({ healthDecision }) => {
+    expect(healthDecision).toStrictEqual({
+      notifications: [],
+      state: { "service-member": false },
+    });
   });
 });
 
@@ -44,11 +47,11 @@ describe("recovery", () => {
 });
 
 describe("alert message", () => {
-  const it = test.extend("message", () =>
+  const it = test.extend("alertMessage", () =>
     formatHealthMessage([down, { ...healthy, service: "internal-dashboard" }]));
 
-  it("names every changed application and points at the log event", ({ message }) => {
-    expect(message).toBe(
+  it("names every changed application and points at the log event", ({ alertMessage }) => {
+    expect(alertMessage).toStrictEqual(
       [
         "- [停止] service-member (status_500)",
         "- [復旧] internal-dashboard (release_abc)",

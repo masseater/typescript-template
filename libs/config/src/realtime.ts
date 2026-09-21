@@ -4,10 +4,11 @@ import { bindingWith, decode } from "./environment.ts";
 
 import type { DurableObjectNamespace } from "@cloudflare/workers-types";
 
-const userInboxClassName = "UserInbox";
 const realtimePath = "/api/realtime";
 
 const userInboxBinding = "USER_INBOX";
+
+const userInboxClassName = "UserInbox";
 
 const localUserInbox = {
   class_name: userInboxClassName,

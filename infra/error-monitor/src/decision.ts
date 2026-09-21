@@ -5,11 +5,10 @@ type Notification = ErrorGroup & {
   readonly reason: "new" | "regressed";
 };
 
-const FORGET_AFTER_DAYS = 7;
 const MILLISECONDS_PER_DAY = 86_400_000;
 
 const quietPeriod = MILLISECONDS_PER_DAY;
-const forgetAfter = FORGET_AFTER_DAYS * MILLISECONDS_PER_DAY;
+const forgetAfter = 7 * MILLISECONDS_PER_DAY;
 
 const decideNotifications = (asked: {
   readonly errorGroups: readonly ErrorGroup[];
