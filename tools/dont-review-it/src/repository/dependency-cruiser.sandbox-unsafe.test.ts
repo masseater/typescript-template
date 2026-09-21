@@ -210,6 +210,14 @@ const accepted: readonly Case[] = [
     },
   ],
   [
+    "no-package-escape",
+    {
+      "knip.ts": "export default {};\n",
+      "tools/dont-review-it/src/repository-checks/knip-ignores.test.ts":
+        'export * from "../../../../knip.ts";\n',
+    },
+  ],
+  [
     "no-database-admin-outside-admin",
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],

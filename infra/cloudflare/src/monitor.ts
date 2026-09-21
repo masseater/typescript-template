@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile } from "node:fs/promises";
 
 import { monitorBinding } from "@repo/monitor";

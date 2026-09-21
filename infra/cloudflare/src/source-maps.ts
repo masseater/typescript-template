@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { access, chmod, copyFile, lstat, mkdir, readFile, readdir } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { sourceMapDirectories, sourceMapManifest } from "@repo/vite-config/source-maps";
@@ -9,9 +7,7 @@ import { Effect, Schema } from "effect";
 import { ArtifactFailure, fail, io, isMissing } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
 
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { Application } from "@repo/config";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
@@ -47,26 +43,24 @@ function copyMap(
   });
 }
 
-function copyEntry(
-  entry: MapEntry,
-  source: string,
-  destination: string,
-): Effect.Effect<number, ArtifactFailure> {
-  if (entry.isSymbolicLink()) {
-    return fail("source_map_symlink_forbidden");
-  }
-  const from = path.join(source, entry.name);
-  const to = path.join(destination, entry.name);
-  if (entry.isDirectory()) {
-    // oxlint-disable-next-line typescript/no-use-before-define
-    return copyMaps(from, to);
-  }
-  return entry.isFile() && entry.name.endsWith(".map")
-    ? copyMap(from, destination, to)
-    : Effect.succeed(0);
-}
-
 function copyMaps(source: string, destination: string): Effect.Effect<number, ArtifactFailure> {
+  const copyEntry = (
+    entry: MapEntry,
+    entrySource: string,
+    entryDestination: string,
+  ): Effect.Effect<number, ArtifactFailure> => {
+    if (entry.isSymbolicLink()) {
+      return fail("source_map_symlink_forbidden");
+    }
+    const from = path.join(entrySource, entry.name);
+    const to = path.join(entryDestination, entry.name);
+    if (entry.isDirectory()) {
+      return copyMaps(from, to);
+    }
+    return entry.isFile() && entry.name.endsWith(".map")
+      ? copyMap(from, entryDestination, to)
+      : Effect.succeed(0);
+  };
   return directoryExists(source).pipe(
     Effect.flatMap((exists) =>
       exists
