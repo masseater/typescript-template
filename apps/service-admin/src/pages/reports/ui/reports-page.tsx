@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 function ReportsPage(): ReactElement {
   return (
     <OpsPage title="通報">
-      <StatusMessage variant={STATUS_VARIANT.pending}>通報の一覧はまだありません。</StatusMessage>
+      <StatusMessage variant={STATUS_VARIANT.empty}>通報の一覧はまだありません。</StatusMessage>
     </OpsPage>
   );
 }

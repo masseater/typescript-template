@@ -8,7 +8,8 @@ import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 const iconClassName = "mt-0.5 size-4 shrink-0";
 
-const icons: Readonly<Record<StatusVariant, ReactElement>> = {
+const icons: Readonly<Record<StatusVariant, ReactElement | null>> = {
+  empty: null,
   failure: <CircleAlertIcon aria-hidden="true" className={cn(iconClassName, "text-destructive")} />,
   info: <InfoIcon aria-hidden="true" className={cn(iconClassName, "text-muted-foreground")} />,
   pending: <Spinner />,
@@ -16,6 +17,7 @@ const icons: Readonly<Record<StatusVariant, ReactElement>> = {
 };
 
 const tones: Readonly<Record<StatusVariant, string>> = {
+  empty: "text-muted-foreground",
   failure: "text-destructive",
   info: "text-foreground",
   pending: "text-muted-foreground",
