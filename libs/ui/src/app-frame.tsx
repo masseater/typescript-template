@@ -35,8 +35,7 @@ const trackedPathAtom = Atom.family((slot: string) => {
 
 const graphemeSegmenter = new Intl.Segmenter();
 
-const graphemeCount = (mark: string): number =>
-  Array.from(graphemeSegmenter.segment(mark)).length;
+const graphemeCount = (mark: string): number => Array.from(graphemeSegmenter.segment(mark)).length;
 
 const readableCollapsedMark = (mark: string): string => {
   if (graphemeCount(mark) < 2) {
