@@ -95,3 +95,10 @@ export {
   reportSubjects,
 } from "./trust.ts";
 export type { ModerationKind, ReportReason, ReportStatus, ReportSubject } from "./trust.ts";
+export {
+  GROUP_JOIN_POLICY,
+  GROUP_MEMBERSHIP_ROLE,
+  groupJoinPolicies,
+  groupMembershipRoles,
+} from "./groups.ts";
+export type { GroupJoinPolicy, GroupMembershipRole } from "./groups.ts";

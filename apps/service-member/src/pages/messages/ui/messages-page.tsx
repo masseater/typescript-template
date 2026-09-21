@@ -2,6 +2,7 @@ import { PageNavigation, TextLink } from "@repo/ui";
 
 import { ComposeForm } from "./compose-form.tsx";
 import { ConversationRow } from "./conversation-row.tsx";
+import { CreateGroupForm } from "./create-group-form.tsx";
 import { MessagesBody } from "./messages-body.tsx";
 import { MessagesPageLink } from "./messages-page-link.tsx";
 
@@ -25,6 +26,8 @@ function MessagesPage({
   }
   return (
     <MessagesBody>
+      <CreateGroupForm />
+      <TextLink to="/groups">公開グループ</TextLink>
       {composePeer === undefined ? null : (
         <ComposeForm recipientId={composePeer.id} recipientName={composePeer.name} />
       )}

@@ -1,4 +1,4 @@
-import { CONVERSATION_KIND } from "@repo/config";
+import { conversationKinds } from "@repo/config";
 import { Schema } from "effect";
 
 import { Identifier, pageNumber } from "./member.ts";
@@ -29,7 +29,7 @@ const ConversationPeer = Schema.Struct({
 
 const ConversationSummary = Schema.Struct({
   id: Schema.String,
-  kind: Schema.Literal(CONVERSATION_KIND.direct),
+  kind: Schema.Literals(conversationKinds),
   lastMessageAt: Schema.Number,
   lastMessagePreview: Schema.String,
   peer: ConversationPeer,
@@ -54,7 +54,9 @@ const ConversationQuery = Schema.Struct({
 const ConversationView = Schema.Struct({
   conversation: Schema.Struct({
     blocked: Schema.Boolean,
+    groupId: Schema.NullOr(Schema.String),
     id: Schema.String,
+    kind: Schema.Literals(conversationKinds),
     peer: ConversationPeer,
     total: Schema.Finite,
   }),

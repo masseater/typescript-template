@@ -1,3 +1,4 @@
+import { CONVERSATION_KIND } from "@repo/config";
 import { Heading, PageNavigation, STATUS_VARIANT, StatusMessage, TextLink } from "@repo/ui";
 
 import { ConversationBody } from "./conversation-body.tsx";
@@ -16,6 +17,7 @@ function ConversationPage({
 }: Readonly<{ search: ConversationSearch; thread: ConversationThread }>): ReactElement {
   const current = search.page ?? 1;
   const last = Math.max(1, Math.ceil(thread.total / thread.pageSize));
+  const group = thread.conversation.kind === CONVERSATION_KIND.group;
   function pageLink(target: PageTarget): ReactElement {
     return <ConversationPageLink conversationId={thread.conversation.id} target={target} />;
   }
@@ -24,14 +26,21 @@ function ConversationPage({
       <Heading as="h1" size="page">
         {thread.conversation.peer.name}
       </Heading>
-      {thread.conversation.peer.withdrawn ? null : (
+      {group ? (
+        <TextLink
+          to="/groups/$id"
+          params={{ id: thread.conversation.groupId ?? thread.conversation.peer.id }}
+        >
+          グループ
+        </TextLink>
+      ) : thread.conversation.peer.withdrawn ? null : (
         <TextLink to="/users/$id" params={{ id: thread.conversation.peer.id }}>
           プロフィール
         </TextLink>
       )}
       <ul className="flex flex-col gap-3">
         {thread.messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble key={message.id} kind={thread.conversation.kind} message={message} />
         ))}
       </ul>
       <PageNavigation current={current} last={last} renderLink={pageLink} />

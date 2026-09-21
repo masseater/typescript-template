@@ -20,6 +20,7 @@ import { billingApi } from "./billing-api.ts";
 import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
+import { groupsApi } from "./groups-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { leaveApi } from "./leave-api.ts";
 import { memberFailures } from "./member-failures.ts";
@@ -112,6 +113,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     )
     .use(boardApi(api))
     .use(messagingApi(api))
+    .use(groupsApi(api))
     .use(trustApi(api));
 }
 

@@ -6,6 +6,7 @@ import { apikey } from "./api-key-schema.ts";
 import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { auditActions, clientKinds, metricKeys, metricPeriods } from "./dashboard-literals.ts";
+import { groupInvite, groupMembership, memberGroup } from "./group-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
@@ -169,9 +170,12 @@ const schema = {
   directMessage,
   metricSnapshot,
   follow,
+  groupInvite,
+  groupMembership,
   interview,
   leaveRequest,
   memberOnboarding,
+  memberGroup,
   memberBlock,
   memberReport,
   moderationAction,
@@ -225,6 +229,7 @@ export { interview } from "./interview-schema.ts";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export { groupInvite, groupMembership, memberGroup } from "./group-schema.ts";
 export { notification, notificationPreference } from "./notification-schema.ts";
 export { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";

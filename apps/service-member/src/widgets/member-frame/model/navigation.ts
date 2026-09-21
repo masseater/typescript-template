@@ -85,6 +85,9 @@ function titleForPath(pathname: string): string {
   if (pathname.startsWith("/messages/")) {
     return "会話";
   }
+  if (pathname.startsWith("/groups")) {
+    return "グループ";
+  }
   if (pathname.startsWith("/support/")) {
     return "お問い合わせ";
   }

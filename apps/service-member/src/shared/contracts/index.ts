@@ -86,4 +86,14 @@ export {
   messagingConversationPageSize,
   messagingMessagePageSize,
 } from "./messaging.ts";
+export {
+  GroupCreate,
+  GroupCreated,
+  GroupJoin,
+  GroupJoined,
+  GroupQuery,
+  GroupView,
+  OpenGroupList,
+  maximumGroupNameLength,
+} from "./groups.ts";
 export { Blocked, BlockMember, ReportCreate, ReportFiled } from "./trust.ts";
