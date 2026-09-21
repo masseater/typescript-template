@@ -1,16 +1,22 @@
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 
-const monitorWorkerVite = () => ({
+import type { UserConfig } from "vite-plus";
+import type { PackUserConfig } from "vite-plus/pack";
+
+const monitorWorkerVite = (): {
+  readonly pack: PackUserConfig;
+  readonly run: NonNullable<UserConfig["run"]>;
+} => ({
   pack: {
     deps: {
       alwaysBundle: ["effect", "@repo/monitor"],
       onlyBundle: ["effect", "@repo/monitor"],
     },
     entry: { index: "src/worker.ts" },
-    format: "esm" as const,
+    format: "esm",
     outExtensions: (): { readonly js: ".js" } => ({ js: ".js" }),
-    platform: "browser" as const,
-    target: "es2023" as const,
+    platform: "browser",
+    target: "es2023",
   },
   run: {
     tasks: {
