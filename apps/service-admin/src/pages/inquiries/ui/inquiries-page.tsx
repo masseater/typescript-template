@@ -1,10 +1,11 @@
 import { useAtomValue } from "@effect/atom-react";
-import { Heading, NavigationLink, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
+import { NavigationLink, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useInquiryList, useInquiryStatusFilter } from "#pages/inquiries/model/inquiry-list.ts";
 import { INQUIRY_STATUS, inquiryStatusLabel } from "#pages/inquiries/model/status-label.ts";
 import { pendingCountAtom } from "#shared/api/index.ts";
+import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -29,10 +30,7 @@ function InquiriesPage(): ReactElement {
   const pendingCount = AsyncResult.isSuccess(pendingState) ? pendingState.value : undefined;
 
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <Heading as="h1" size="page">
-        問い合わせ
-      </Heading>
+    <OpsPage title="問い合わせ">
       {pendingCount !== undefined && (
         <p className="text-sm leading-normal text-muted-foreground">対応待ち: {pendingCount} 件</p>
       )}
@@ -56,7 +54,7 @@ function InquiriesPage(): ReactElement {
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       )}
       {inquiries !== undefined && inquiries.length === 0 && (
-        <StatusMessage variant={STATUS_VARIANT.pending}>
+        <StatusMessage variant={STATUS_VARIANT.empty}>
           条件に一致する問い合わせはありません。
         </StatusMessage>
       )}
@@ -88,7 +86,7 @@ function InquiriesPage(): ReactElement {
           </tbody>
         </table>
       )}
-    </main>
+    </OpsPage>
   );
 }
 

@@ -11,6 +11,7 @@ import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useAuditList } from "#pages/audit/model/audit-list.ts";
 import { DataTable } from "#shared/ui/data-table.tsx";
+import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -35,10 +36,7 @@ function AuditPage(): ReactElement {
   const page = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <Heading as="h1" size="page">
-        監査ログ
-      </Heading>
+    <OpsPage title="監査ログ">
       <form onSubmit={handleSubmit}>
         <FormColumn>
           <Field
@@ -62,7 +60,7 @@ function AuditPage(): ReactElement {
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       )}
       {page !== undefined && page.events.length === 0 && (
-        <StatusMessage variant={STATUS_VARIANT.pending}>監査ログはまだありません。</StatusMessage>
+        <StatusMessage variant={STATUS_VARIANT.empty}>監査ログはまだありません。</StatusMessage>
       )}
       {page !== undefined && page.events.length > 0 && (
         <section aria-label="監査ログ一覧">
@@ -84,7 +82,7 @@ function AuditPage(): ReactElement {
           />
         </section>
       )}
-    </main>
+    </OpsPage>
   );
 }
 

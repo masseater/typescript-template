@@ -15,7 +15,7 @@ const Raise = ({
   variant,
 }: Readonly<{
   title: string;
-  variant: (typeof STATUS_VARIANT)[keyof Omit<typeof STATUS_VARIANT, "info" | "pending">];
+  variant: (typeof STATUS_VARIANT)[keyof Omit<typeof STATUS_VARIANT, "empty" | "info" | "pending">];
 }>): ReactElement => {
   const raise = useToast();
   const show = (): void => {

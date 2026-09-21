@@ -17,3 +17,7 @@ export const FailureStatus = meta.story({
 export const PendingStatus = meta.story({
   args: { children: "認証設定を更新しています。", variant: STATUS_VARIANT.pending },
 });
+
+export const EmptyStatus = meta.story({
+  args: { children: "一覧はまだありません。", variant: STATUS_VARIANT.empty },
+});

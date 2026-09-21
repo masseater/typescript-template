@@ -2,6 +2,7 @@ import { ROLE } from "@repo/config";
 import { Button, Field, FormColumn, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { useInquiryLookup } from "#pages/inquiries/model/inquiry-lookup.ts";
+import { OpsPage } from "#widgets/ops-page/index.ts";
 import { InquiryCounts } from "./inquiry-counts.tsx";
 
 import type { ReactElement } from "react";
@@ -17,10 +18,7 @@ function InquiriesPage(): ReactElement {
   const { counts, error, memberInquiries, selected } = lookup;
 
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <Heading as="h1" size="page">
-        問い合わせ
-      </Heading>
+    <OpsPage title="問い合わせ">
       <p className="text-base leading-normal text-muted-foreground">
         読むだけの画面です。返信は管理者アプリで行います。
       </p>
@@ -58,7 +56,7 @@ function InquiriesPage(): ReactElement {
             会員の問い合わせ
           </Heading>
           {memberInquiries.length === 0 ? (
-            <StatusMessage variant={STATUS_VARIANT.pending}>問い合わせはありません。</StatusMessage>
+            <StatusMessage variant={STATUS_VARIANT.empty}>問い合わせはありません。</StatusMessage>
           ) : (
             <ul className="flex flex-col gap-2">
               {memberInquiries.map((inquiry) => (
@@ -100,7 +98,7 @@ function InquiriesPage(): ReactElement {
           </ul>
         </section>
       )}
-    </main>
+    </OpsPage>
   );
 }
 

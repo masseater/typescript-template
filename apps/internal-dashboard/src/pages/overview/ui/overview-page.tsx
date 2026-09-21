@@ -4,6 +4,7 @@ import { AsyncResult } from "effect/unstable/reactivity";
 import { metricLabel } from "#pages/overview/model/metric-label.ts";
 import { useOverview } from "#pages/overview/model/overview.ts";
 import { DataTable } from "#shared/ui/data-table.tsx";
+import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -13,10 +14,7 @@ function OverviewPage(): ReactElement {
   const overview = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <Heading as="h1" size="page">
-        概要
-      </Heading>
+    <OpsPage title="概要">
       {overview === undefined && error === undefined && (
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       )}
@@ -52,6 +50,14 @@ function OverviewPage(): ReactElement {
           />
         </section>
       )}
+      {overview !== undefined && overview.trend.length === 0 && (
+        <section aria-label="推移" className="rounded-lg border border-border p-3">
+          <Heading as="h2" size="section">
+            推移
+          </Heading>
+          <StatusMessage variant={STATUS_VARIANT.empty}>推移のグラフはまだありません。</StatusMessage>
+        </section>
+      )}
       <a
         href="https://analytics.google.com/"
         target="_blank"
@@ -60,7 +66,7 @@ function OverviewPage(): ReactElement {
       >
         Google Analytics を開く
       </a>
-    </main>
+    </OpsPage>
   );
 }
 

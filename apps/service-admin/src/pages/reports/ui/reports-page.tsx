@@ -1,5 +1,5 @@
 import { REPORT_REASON, REPORT_STATUS } from "@repo/config";
-import { Heading, NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { OpsPage } from "#widgets/ops-page/index.ts";
 
@@ -34,9 +34,6 @@ function ReportsPage({
 }>): ReactElement {
   return (
     <OpsPage title="通報">
-      <Heading as="h1" size="page">
-        通報
-      </Heading>
       <div className="flex flex-wrap gap-2">
         <NavigationLink search={{}} to="/reports">
           すべて
@@ -48,7 +45,7 @@ function ReportsPage({
         ))}
       </div>
       {reports.length === 0 ? (
-        <StatusMessage variant={STATUS_VARIANT.pending}>
+        <StatusMessage variant={STATUS_VARIANT.empty}>
           {status === undefined ? "通報はまだありません。" : "この状態の通報はありません。"}
         </StatusMessage>
       ) : (
