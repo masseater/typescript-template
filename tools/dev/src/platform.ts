@@ -34,6 +34,12 @@ function withFileSystem<A>(
   return FileSystem.FileSystem.pipe(Effect.flatMap(operation), Effect.mapError(mapFileError));
 }
 
+function withPath<A>(
+  operation: (path: Path.Path) => Effect.Effect<A, PlatformError.PlatformError>,
+): Effect.Effect<A, LocalCommandFailure, Path.Path> {
+  return Path.Path.pipe(Effect.flatMap(operation), Effect.mapError(mapFileError));
+}
+
 function urlPath(url: URL): Effect.Effect<string, LocalCommandFailure, Path.Path> {
   return Path.Path.pipe(
     Effect.flatMap((path) => path.fromFileUrl(url)),
@@ -41,4 +47,4 @@ function urlPath(url: URL): Effect.Effect<string, LocalCommandFailure, Path.Path
   );
 }
 
-export { type DevServices, isAlreadyExists, isNotFound, layer, urlPath, withFileSystem };
+export { type DevServices, isAlreadyExists, isNotFound, layer, urlPath, withFileSystem, withPath };
