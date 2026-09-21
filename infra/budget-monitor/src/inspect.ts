@@ -18,5 +18,5 @@ runCli(
     const decision = yield* evaluateBudget(usage, config);
     yield* Console.log(JSON.stringify({ event: "budget.inspected", ...decision }));
   }),
-  (cause) => causeRecord("budget.inspect_failed", cause),
+  (cause) => causeRecord("budget.inspect_failed", { cause }),
 );
