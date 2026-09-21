@@ -1251,18 +1251,6 @@
         "code": "TS4094",
         "message": "Property 'run' of exported anonymous class type may not be private or protected.",
         "count": 1
-      },
-      {
-        "file": "src/vite.test.ts",
-        "code": "TS2339",
-        "message": "Property 'premerge' does not exist on type '{ \"check:effect:gate\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; \"check:effect\": { ...; }; build: { ...; }; }'.",
-        "count": 1
-      },
-      {
-        "file": "src/vite.test.ts",
-        "code": "TS2339",
-        "message": "Property 'prepr' does not exist on type '{ \"check:effect:gate\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; \"check:effect\": { ...; }; build: { ...; }; }'.",
-        "count": 1
       }
     ],
     "libs/observability": [
