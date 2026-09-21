@@ -1,19 +1,44 @@
-import { UserNotFound, containsKeyword, query, schema } from "@repo/db";
-import { and, count, desc, eq, or } from "drizzle-orm";
+import {
+  UserNotFound,
+  containsKeyword,
+  profileListed,
+  profileVisibleTo,
+  query,
+  schema,
+} from "@repo/db";
+import { and, count, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
+import { photoVersion } from "#shared/photo/index.ts";
+
 const { follow, user } = schema;
+
+type PhotoVersions = Readonly<{ company: string | null; face: string | null }>;
 
 type Member = Readonly<{
   id: string;
   joined: string;
   name: string;
+  photos: PhotoVersions;
   profile: string;
   socialLinks: readonly string[];
 }>;
 
+type Profile = Readonly<{
+  email: string;
+  id: string;
+  name: string;
+  photos: PhotoVersions;
+  profile: string;
+  socialLinks: readonly string[];
+}>;
+
+type PhotoKeyColumns = Readonly<{ companyPhotoKey: string | null; facePhotoKey: string | null }>;
+
 const monthLength = "YYYY-MM".length;
+const photoColumns = { companyPhotoKey: user.companyPhotoKey, facePhotoKey: user.facePhotoKey };
 const memberColumns = {
+  ...photoColumns,
   createdAt: user.createdAt,
   id: user.id,
   name: user.name,
@@ -22,6 +47,7 @@ const memberColumns = {
 };
 
 const profileColumns = {
+  ...photoColumns,
   email: user.email,
   id: user.id,
   name: user.name,
@@ -29,26 +55,51 @@ const profileColumns = {
   socialLinks: user.socialLinks,
 };
 
+function photosOf({ companyPhotoKey, facePhotoKey }: PhotoKeyColumns): PhotoVersions {
+  return { company: photoVersion(companyPhotoKey), face: photoVersion(facePhotoKey) };
+}
+
 function shown({
+  companyPhotoKey,
   createdAt,
+  facePhotoKey,
   ...member
-}: Readonly<{
-  createdAt: Readonly<Date>;
-  id: string;
-  name: string;
-  profile: string;
-  socialLinks: readonly string[];
-}>): Member {
-  return { ...member, joined: createdAt.toISOString().slice(0, monthLength) };
+}: PhotoKeyColumns &
+  Readonly<{
+    createdAt: Readonly<Date>;
+    id: string;
+    name: string;
+    profile: string;
+    socialLinks: readonly string[];
+  }>): Member {
+  return {
+    ...member,
+    joined: createdAt.toISOString().slice(0, monthLength),
+    photos: photosOf({ companyPhotoKey, facePhotoKey }),
+  };
+}
+
+function ownProfile({
+  companyPhotoKey,
+  facePhotoKey,
+  ...profile
+}: PhotoKeyColumns &
+  Readonly<{
+    email: string;
+    id: string;
+    name: string;
+    profile: string;
+    socialLinks: readonly string[];
+  }>): Profile {
+  return { ...profile, photos: photosOf({ companyPhotoKey, facePhotoKey }) };
 }
 
 const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, memberId: string) {
-  const visible = or(eq(user.emailVerified, true), eq(user.id, viewerId));
   const [member] = yield* query((database) =>
     database
       .select(memberColumns)
       .from(user)
-      .where(and(eq(user.id, memberId), visible))
+      .where(and(eq(user.id, memberId), profileVisibleTo(viewerId)))
       .limit(1),
   );
   if (!member) {
@@ -74,7 +125,7 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
   readonly offset: number;
 }) {
   const named = page.keyword === undefined ? undefined : containsKeyword(user.name, page.keyword);
-  const listed = and(eq(user.emailVerified, true), named);
+  const listed = and(profileListed, named);
   const members = yield* query((database) =>
     database
       .select(memberColumns)
@@ -95,7 +146,7 @@ const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) 
     database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
   );
   // oxlint-disable-next-line unicorn/no-null
-  return profile ?? null;
+  return profile === undefined ? null : ownProfile(profile);
 });
 
 const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
@@ -116,7 +167,7 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
   if (!profile) {
     return yield* new UserNotFound();
   }
-  return profile;
+  return ownProfile(profile);
 });
 
 export { getMember, getProfile, listMembers, updateProfile };

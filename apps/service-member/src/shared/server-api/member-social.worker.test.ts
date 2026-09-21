@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { ROLE } from "@repo/config";
+import { PROFILE_VISIBILITY, ROLE } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";
@@ -9,6 +9,7 @@ import { Effect, Layer } from "effect";
 import { advanceOnboarding, followMember, homeFeed, stepOf } from "./member-social.ts";
 import { OpsMail } from "./ops-mail.ts";
 
+import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;
@@ -27,6 +28,7 @@ const testLayer = Layer.merge(
 const addUser = (added: {
   readonly userId: string;
   readonly emailVerified?: boolean;
+  readonly visibility?: ProfileVisibility;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
   query(async (database): Promise<void> => {
     await database.insert(user).values({
@@ -37,6 +39,7 @@ const addUser = (added: {
       name: added.userId,
       role: ROLE.member,
       updatedAt: recordedAt,
+      visibility: added.visibility ?? PROFILE_VISIBILITY.allMembers,
     });
   });
 
@@ -67,6 +70,20 @@ it.effect("omits unverified followees from the feed", () =>
     );
     assert.deepStrictEqual(yield* homeFeed("viewer"), []);
   }).pipe(Effect.provide(testLayer)),
+);
+
+it.effect("the home feed drops followees who closed their profile", () =>
+  Effect.gen(function* program() {
+    yield* addUser({ userId: "viewer" });
+    yield* addUser({ userId: "hidden", visibility: PROFILE_VISIBILITY.self });
+    yield* addUser({ userId: "open" });
+    yield* followMember("viewer", "hidden");
+    yield* followMember("viewer", "open");
+    assert.deepStrictEqual(
+      (yield* homeFeed("viewer")).map((item) => item.actorId),
+      ["open"],
+    );
+  }).pipe(Effect.provide(TestDatabase)),
 );
 
 it.effect("treats missing onboarding rows as the agreement step", () =>

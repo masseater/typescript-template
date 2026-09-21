@@ -37,6 +37,30 @@ export {
   revokeUserSessions,
 } from "./security.ts";
 export {
+  canViewProfile,
+  clearPhotoKeys,
+  photoKeysOf,
+  profileListed,
+  profileVisibleTo,
+  readVisibility,
+  setPhotoKey,
+  updateVisibility,
+  visiblePhotoKey,
+} from "./member-profile.ts";
+export type { PhotoKeys, VisibilitySettings } from "./member-profile.ts";
+export {
+  AgreementRequired,
+  AgreementVersionUnavailable,
+  acceptAgreementVersions,
+  acceptedAgreements,
+  pendingAgreementKinds,
+  pendingAgreements,
+  publishedAgreement,
+  requireCurrentAgreements,
+  requireSignupAgreements,
+} from "./agreement.ts";
+export type { AcceptedAgreement, PublishedAgreement } from "./agreement.ts";
+export {
   InterviewConflict,
   InterviewLimitReached,
   countInterviewTurn,
@@ -44,3 +68,14 @@ export {
   startInterview,
   storeInterview,
 } from "./interview.ts";
+export {
+  MemberLeaveUnavailable,
+  RecoveryExpired,
+  RecoveryUnavailable,
+  acceptRecovery,
+  declineRecovery,
+  findRecoveryOffer,
+  purgeExpiredWithdrawnMembers,
+  retentionDays,
+  withdrawMember,
+} from "./member-leave.ts";
