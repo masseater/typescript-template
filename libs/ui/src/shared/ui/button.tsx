@@ -5,8 +5,6 @@ import { buttonVariants } from "./button-variants";
 
 import type { Children } from "./types";
 
-type ButtonAction = () => void | Promise<void>;
-
 const Button = ({
   "aria-label": ariaLabel,
   action,
@@ -19,7 +17,7 @@ const Button = ({
 }: Children &
   Readonly<{
     "aria-label"?: string;
-    action?: ButtonAction;
+    action?: () => void | Promise<void>;
     disabled?: boolean;
     onClick?: MouseEventHandler;
     size?: "medium" | "small";
