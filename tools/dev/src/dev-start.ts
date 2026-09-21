@@ -2,7 +2,12 @@
 import { env as processEnvironment } from "node:process";
 
 import { reportFailed, runCli } from "@repo/cli";
-import { applicationReadyPaths, applications, loopbackAddress } from "@repo/config";
+import {
+  applicationReadyPaths,
+  applications,
+  loopbackAddress,
+  waitUntilResponds,
+} from "@repo/config";
 import { localDatabaseVariable } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Cause, Console, Effect, FileSystem, Path, Result, Schema } from "effect";
@@ -137,29 +142,15 @@ const listeningOrigin = isolatedDatabase.pipe(
   }),
 );
 
-const failureBodyLimit = 500;
-
 function probe(origin: string, pathname: string): Effect.Effect<number, DevStartFailure> {
-  return Effect.tryPromise({
-    catch: (error) =>
-      error instanceof DevStartFailure
-        ? error
-        : new DevStartFailure({ reason: `${pathname} did not answer: ${describe(error)}` }),
-    try: async () => {
-      const response = await fetch(new URL(pathname, origin).href, {
-        method: "GET",
-        redirect: "manual",
-        signal: AbortSignal.timeout(requestTimeoutMilliseconds),
-      });
-      if (response.status === successStatus) {
-        await response.body?.cancel();
-        return response.status;
-      }
-      const body = (await response.text()).slice(0, failureBodyLimit);
-      throw new DevStartFailure({
-        reason: `${pathname} responded ${response.status}${body === "" ? "" : `: ${body}`}`,
-      });
-    },
+  return waitUntilResponds({
+    accept: (status) => status === successStatus,
+    method: "GET",
+    onStatus: (status) => new DevStartFailure({ reason: `${pathname} responded ${status}` }),
+    onUnreachable: (error) =>
+      new DevStartFailure({ reason: `${pathname} did not answer: ${describe(error)}` }),
+    timeoutMilliseconds: requestTimeoutMilliseconds,
+    url: new URL(pathname, origin).href,
   });
 }
 
