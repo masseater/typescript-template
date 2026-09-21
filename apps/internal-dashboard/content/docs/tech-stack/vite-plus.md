@@ -3,9 +3,17 @@ title: Vite+
 description: 開発サーバー、検査、テスト、依存関係のインストールを vp に統合したツールチェーン
 ---
 
-Vite+ は、Vite に検査とタスク実行を加えたツールチェーンである。入口のコマンドは `vite` ではなく `vp` であり、開発サーバー、ビルド、テスト、lint、フォーマット、モノレポのタスクをここから実行する。構成は Vite、Rolldown、Vitest、Oxlint、Oxfmt、タスクランナーである。
+打つコマンドは `vp` である。
 
-依存を追加するコマンドは `vp install` である。このコマンドは、そのプロジェクトが使っているパッケージマネージャを起動する。
+```sh
+vp dev
+vp test
+vp install effect
+```
+
+Vite+ は Vite に、テスト、lint、フォーマット、モノレポのタスク実行を足したものである。入口は `vite` ではない。中身は Vite、Rolldown、Vitest、Oxlint、Oxfmt である。
+
+`vp install` は、パッケージの解決を自分ではしない。そのリポジトリが使っているパッケージマネージャを起動する。
 
 ## 参考文献
 

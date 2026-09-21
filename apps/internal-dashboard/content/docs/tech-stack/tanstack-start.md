@@ -3,15 +3,29 @@ title: TanStack Start
 description: URL を画面に対応させ、初期データとサーバー専用の処理を扱うフレームワーク
 ---
 
-TanStack Start は、React の画面と、その画面のためにサーバーで行う処理を、一つのフレームワークとして書く。実行環境は Cloudflare Workers で、開発時も本番と同じ実行系（workerd）で動作する。
+ファイル名が URL になる。
 
-経路はファイルの配置から決まる。ファイル名が URL の区間になり、名前がアンダースコアで始まる区間は URL に含まれないレイアウトになる。
+| ファイル | 結果 |
+| --- | --- |
+| `src/routes/_member.tsx` | レイアウト。URL には出ない |
+| `src/routes/_member/users.$id.tsx` | `/users/123` |
+| `src/routes/_member/-form.tsx` | ルートにならない |
 
-loader は、その URL へ遷移するときにサーバーで実行され、画面の初期データを返す。表示が終わったあとの再取得や、部品のあいだでの共有はしない。
+`_` で始まる区間はパスに入らない。`-` で始まるファイルはルートツリーの外に置ける。`$id` がその位置の値で、上の例では `123` である。
 
-server function は `createServerFn` で定義する。クライアントから呼び出せるが、本体が実行されるのはサーバーだけである。呼び出しの手続きはこのアプリケーションのクライアント向けであり、外部のクライアントが HTTP として契約する API ではない。外部からの呼び出しを受けるときは、サーバールートを使う。
+`/users/123` を開いたときの初期データは、`users.$id.tsx` の loader が返す。開いたあとに同じユーザーを取り直すキャッシュは loader にはない。それは [TanStack Query](/tech-stack/tanstack-query) が持つ。
 
-表示後にクライアントがデータを保持し、再取得し、同じキーの部品のあいだで共有する機構は [TanStack Query](/tech-stack/tanstack-query) である。
+クリックからサーバーの処理を呼ぶときは `createServerFn` を使う。
+
+```ts
+const renameUser = createServerFn({ method: "POST" })
+  .validator((input: { readonly id: string; readonly name: string }) => input)
+  .handler(async ({ data }) => data.name);
+```
+
+`renameUser` はクライアントから呼べる。`handler` が実行されるのはサーバーだけである。この関数は、外部に公開する URL にはならない。外から HTTP で受ける入口はサーバールートである。
+
+実行環境は Cloudflare Workers で、開発時も本番と同じ workerd で動く。
 
 ## 参考文献
 

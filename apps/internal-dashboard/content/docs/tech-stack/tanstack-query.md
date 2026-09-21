@@ -3,13 +3,25 @@ title: TanStack Query
 description: サーバー上のデータをクライアントが保持し、再取得し、部品間で共有するライブラリ
 ---
 
-TanStack Query は、サーバー上のデータをクライアントが取得し、その鮮度を扱うライブラリである。`useState` と `fetch` を画面の中で組むと、同じデータを複数の部品がそれぞれ保持する。Query は取得結果をキーに紐づけ、同じキーの部品がその結果を共有する。
+同じユーザーを、ヘッダーとサイドバーの両方が表示する。
 
-遷移時の初期データは、このキャッシュではない。[TanStack Start](/tech-stack/tanstack-start) の loader が、その URL へ遷移するときに初期データを返す。loader は表示後に結果を保持しない。
+```ts
+const userOptions = queryOptions({
+  queryKey: ["user", id],
+  queryFn: () => fetchUser(id),
+});
 
-一つの購読の状態も、このキャッシュではない。[Effect](/tech-stack/effect) の Atom は、成功、失敗、待機をその購読の値として表す。キーから結果を引くキャッシュは持たない。
+const header = useQuery(userOptions);
+const sidebar = useQuery(userOptions);
+```
 
-定義は `queryOptions` にまとめ、画面は `useQuery` で購読する。更新の手続きは `useMutation` で書く。
+両方とも `["user", id]` を見る。取得は一回で、どちらかが再取得すると、もう片方も新しい結果を受け取る。`useState` と `fetch` を部品ごとに書くと、この共有は起きず、古い名前が片方だけ残る。
+
+`/users/123` を開いた直後の初期データは、[TanStack Start](/tech-stack/tanstack-start) の loader が返す。loader は `["user", id]` を持たない。
+
+[Effect](/tech-stack/effect) の Atom は、その購読ひとつが「読み込み中か、ユーザーか、失敗か」を表す。別の部品が同じキーで結果を引くキャッシュではない。
+
+名前を変えたあとに取り直す手続きは `useMutation` で書く。
 
 ## 参考文献
 

@@ -3,19 +3,39 @@ title: Effect
 description: 成功値、失敗の種類、必要なサービスを型に持つ記述を、入口で実行するライブラリ
 ---
 
-Effect は、非同期処理を、成功の値、失敗の種類、必要なサービスを型に持つ記述として扱うライブラリである。
+`findUser` を定義しただけでは、データベースは見に行かない。
 
-対象は v4 である。v3 向けの文書やサンプルは、以下の API と一致しない。
+```ts
+import { Context, Effect, Schema } from "effect";
 
-`Effect.fn` または `Effect.gen` で記述を組み立てても、その時点では処理は実行されない。実行されるのは、入口で `runPromise` したときである。`runPromise` した側は、成功の値か、型に含まれる失敗かを結果として受け取る。失敗を捕捉されない例外として外へ出すと、どの失敗があり得るかを型で区別できない。
+class UserNotFound extends Schema.TaggedError<UserNotFound>()("UserNotFound", {
+  id: Schema.String,
+}) {}
 
-呼び出し側は、どの失敗を成功の値へ変換し、どれを失敗のまま残すかを、型で区別する。
+class Database extends Context.Service<
+  Database,
+  {
+    readonly find: (id: string) => Effect.Effect<{ readonly name: string } | undefined>;
+  }
+>()("Database") {}
 
-データベースや設定といった依存は、引数で渡す代わりに `yield*` でサービスから取る。足りないサービスは型に残る。入口で供給しなければ、コンパイルが失敗する。
+const findUser = Effect.fn("findUser")(function* (id: string) {
+  const db = yield* Database;
+  const user = yield* db.find(id);
+  if (user === undefined) {
+    return yield* new UserNotFound({ id });
+  }
+  return user;
+});
+```
 
-外部から入った未知の値、たとえば環境変数や JSON は、Effect Schema で検証してから後続の処理へ渡す。検証に失敗した値は、その先へ渡らない。
+`findUser("123")` が返すのは、まだ実行されていない記述である。`Effect.runPromise` したときに `find` が走り、ユーザーがいなければ `UserNotFound` が結果として返る。`throw` ではないので、呼び出し側は `UserNotFound` を成功へ変換するか、失敗のまま残すかを型で分岐する。`Database` を渡さずに `runPromise` すると、コンパイルが失敗する。
 
-画面が取得結果を購読するときは、Effect Atom（`effect/unstable/reactivity` の `Atom`）を使える。一つの購読が、成功、失敗、待機を一つの値で表す。[TanStack Query](/tech-stack/tanstack-query) はキーごとに取得結果を共有するが、Atom はその購読一個の状態を表す。
+この書き方は v4 である。v3 の記事にある `Effect.gen` やサービスの形は、そのまま置き換わらない。
+
+リクエストの JSON は `unknown` である。`Schema.decodeUnknownEffect` が成功した値だけが、次の処理へ渡る。
+
+画面が「読み込み中か、ユーザーか、`UserNotFound` か」を一つの購読で持つときは、Effect Atom（`effect/unstable/reactivity` の `Atom`）を使う。[TanStack Query](/tech-stack/tanstack-query) の `["user", id]` は、別の部品と同じ結果を共有するキャッシュである。Atom はそのキャッシュを持たない。
 
 ## 参考文献
 

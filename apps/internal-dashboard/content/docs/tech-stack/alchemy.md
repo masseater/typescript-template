@@ -3,13 +3,23 @@ title: Alchemy
 description: Cloudflare 上に残る資源を Effect のプログラムとして宣言する
 ---
 
-Alchemy は、Cloudflare 上に残る資源を TypeScript と Effect で宣言する。開発者は目標の状態をプログラムとして書き、適用するとアカウントがその宣言に一致する。管理画面で Worker やデータベースを作ると、その操作は宣言に残らない。実行環境自体の説明は [Cloudflare](/tech-stack/cloudflare) にある。
+Worker の目標状態は、プログラムに書く。
 
-対象は v2 である。v1 は `async` / `await` で資源を宣言し、v2 は Effect のプログラムとして宣言する。
+```ts
+const worker = yield* Worker("Worker", {
+  name: "app",
+  main: "./dist/index.js",
+  env: { DB: database },
+});
+```
 
-`alchemy plan` は、宣言と実アカウントの差分を計算する。適用はその差分をアカウントへ反映する。状態ファイルは、宣言した資源と、アカウント上の実体との対応を保持する。
+`env.DB` が、Worker のコードから見る binding になる。binding の説明は [Cloudflare](/tech-stack/cloudflare) にある。`alchemy plan` は、今のアカウントとこの宣言の差を表示する。適用すると、アカウントが宣言に一致する。状態ファイルは、宣言した `"Worker"` とアカウント上の実体との対応を覚えておく。
 
-一つの単位へまとめる条件、適用を行う主体、状態ファイルの扱いは、[インフラ](/guidelines/infrastructure) が定める。
+コンソールで Worker を作っても、このプログラムには一行も現れない。
+
+これは v2 の書き方である。v1 のサンプルは `async` / `await` で資源を宣言する。
+
+一つの単位へまとめる条件、適用を行う主体、状態ファイルの置き場所は [インフラ](/guidelines/infrastructure) が定める。
 
 ## 参考文献
 

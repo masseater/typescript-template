@@ -3,13 +3,22 @@ title: Cloudflare
 description: アプリケーションを Workers として実行し、外部依存を binding として渡す
 ---
 
-アプリケーションの実行環境は Cloudflare Workers である。常駐するサーバープロセスはなく、リクエストが届いたときに Worker が応答する。開発時も本番と同じ実行系（workerd）で動作する。資源の宣言は [Alchemy](/tech-stack/alchemy) で行う。
+データベースは、接続文字列ではなく `env.DB` で渡される。
 
-Worker の外にある依存、たとえばデータベース、メール送信、機能フラグは、接続文字列をコードに書かない。実行環境が binding として、その資源へのインタフェースを Worker に渡す。接続文字列をコードに書くと、資源の所在がソースと実行環境の両方に分かれ、宣言とずれる。
+```ts
+export default {
+  async fetch(_request, env) {
+    const row = await env.DB.prepare("select name from user where id = ?").bind("123").first();
+    return Response.json(row);
+  },
+};
+```
 
-D1 は SQLite のデータベースである。
+常駐するプロセスはない。リクエストが来たときに `fetch` が動き、応答を返したあとのメモリは残らない。開発時も本番と同じ workerd で動く。
 
-Durable Objects は、同じ実体へのアクセスを同じオブジェクトへ届ける。Worker はリクエストのあいだで状態を保持しないため、そのオブジェクトが状態を持ち続ける必要があるときに使う。
+`env.DB` の実体は D1 で、中身は SQLite である。接続先をソースに書くと、宣言を変えてもその文字列は古いまま残る。`DB` を宣言へ書くのは [Alchemy](/tech-stack/alchemy) である。
+
+部屋ごとのチャットのように、リクエストをまたいで同じ状態を触るときは Durable Objects を使う。部屋の id ごとにオブジェクトが一つあり、そのオブジェクトが接続とメッセージを持つ。`fetch` が終わると消えるメモリには、その状態は置けない。
 
 ## 参考文献
 

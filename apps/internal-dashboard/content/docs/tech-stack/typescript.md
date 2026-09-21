@@ -3,17 +3,31 @@ title: TypeScript
 description: 画面からインフラの宣言までを同一の型検査の下に置く言語
 ---
 
-TypeScript は、画面からインフラの宣言までを同じ型検査の対象にする。クライアントとサーバーが同じ型を参照するため、API の形を別の仕様としてもう一度書かなくてよい。
+画面もサーバーもインフラの宣言も、同じ TypeScript の型検査を通る。クライアントとサーバーが同じ型を参照するので、API の形を別の仕様書としてもう一度書かない。
 
-配列やレコードの添字に要素があることは、型だけでは決まらない。`noUncheckedIndexedAccess` を有効にすると、添字アクセスの型は `T | undefined` になり、要素の存在を別途確認しないと値として使えない。
+`noUncheckedIndexedAccess` では、`names[0]` の型は `string | undefined` になる。先頭に要素があることは、型には含まれない。
 
-プロパティを書かないことと、値として `undefined` を渡すことは別である。`exactOptionalPropertyTypes` を有効にすると、この二つは型の上でも別になり、省略可能なプロパティへ `undefined` を代入すると型検査が失敗する。
+```ts
+const names = ["ana", "bao"];
+const first: string | undefined = names[0];
+```
 
-型だけの import を値の import と同じ構文で書くと、実行時に残る import と区別できない。`verbatimModuleSyntax` を有効にすると、型だけの import は `import type` でなければ型検査が失敗する。
+`first` を `string` として使うには、値が入っていることを分岐で確認する。
 
-外部から入った未知の値は、型として扱う前に Effect Schema で検証する。検証の定義は [Effect](/tech-stack/effect) にある。
+`exactOptionalPropertyTypes` では、プロパティを書かないことと、`undefined` を渡すことが別になる。`name?: string` は「`name` が無い」を許す。次の代入は型検査で失敗する。
 
-Effect が要求するサービスが入口で供給されていないこと、および処理していない失敗が型に残っていることは、TypeScript の型検査が検出する。エディタ上の補完と診断は `@effect/language-service` が提供する。
+```ts
+type Profile = { name?: string };
+const explicit: Profile = { name: undefined };
+```
+
+`{}` は `Profile` として通る。
+
+型だけの名前を値の import に混ぜると、`verbatimModuleSyntax` が失敗させる。`User` が型だけなら `import type { User }` と書く。
+
+外から来た JSON は、届いた時点では `unknown` である。[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` が成功した値だけを、その先の処理が読む。
+
+[Effect](/tech-stack/effect) の `findUser` は `Database` と `UserNotFound` を型に持つ。`Database` を渡さない、`UserNotFound` を処理しない、のどちらも `tsc` が落とす。エディタの補完と診断は `@effect/language-service` が出す。
 
 ## 参考文献
 

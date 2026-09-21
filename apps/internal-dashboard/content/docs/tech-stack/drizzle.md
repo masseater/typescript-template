@@ -3,11 +3,29 @@ title: Drizzle
 description: SQL に近い TypeScript で SQLite のテーブルとクエリを定義する ORM
 ---
 
-Drizzle は、SQL に近い TypeScript でテーブルとクエリを書く ORM である。テーブル定義が行の型の源泉になり、マイグレーションは Drizzle Kit がその定義から生成する。対象のデータベースは SQLite であり、Cloudflare ではその実体が [D1](/tech-stack/cloudflare) になる。
+テーブルを TypeScript で書くと、行の型はそこから出る。
 
-D1 には対話的なトランザクションがない。対話的なトランザクションは、先行する文の結果を見てから次の文を送る。複数の書き込みを一つの呼び出しにまとめるときは batch を使う。batch は、複数の文を一度に送り、その組として実行する。
+```ts
+const user = sqliteTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+});
 
-テーブル定義から Effect Schema を生成できる。外部入力の検証と行の形を、テーブル定義とは別のスキーマとして手で二重に書かずに済む。検証の定義は [Effect](/tech-stack/effect) にある。
+const found = await db.select().from(user).where(eq(user.id, "123"));
+```
+
+`found` の要素は `{ id: string; name: string }` になる。列を足すと、この型も、Drizzle Kit が生成するマイグレーションも変わる。接続先は SQLite で、Cloudflare ではその実体が [D1](/tech-stack/cloudflare) である。
+
+D1 には、結果を見てから次の SQL を送る対話的なトランザクションがない。二つの挿入が先に決まっているなら、`batch` で一度に送る。`audit` は `user` と同じく `sqliteTable` で定義したテーブルである。
+
+```ts
+await db.batch([
+  db.insert(user).values({ id: "123", name: "ana" }),
+  db.insert(audit).values({ userId: "123", action: "create" }),
+]);
+```
+
+行の検証をテーブルと別に手書きしないときは、`createSelectSchema(user)` で Effect Schema を生成する。検証に失敗した値をどう扱うかは [Effect](/tech-stack/effect) にある。
 
 ## 参考文献
 
