@@ -1,3 +1,5 @@
+import { localState } from "@repo/ui";
+import { Option } from "effect";
 import { useDocsSearch } from "fumadocs-core/search/client";
 import {
   SearchDialog,
@@ -10,7 +12,6 @@ import {
   SearchDialogList,
   SearchDialogOverlay,
 } from "fumadocs-ui/components/dialog/search";
-import { useMemo, useState } from "react";
 
 import type { SortedResult } from "fumadocs-core/search";
 import type { SharedProps } from "fumadocs-ui/components/dialog/search";
@@ -25,6 +26,7 @@ interface WikiSearchResult {
 
 const searchApi = "/api/search";
 const keywordOnlyNotice = "意味検索が使えないため、キーワード検索のみです。";
+const useSearchMode = localState(Option.none<SearchMode>());
 
 function searchClient(onMode: (mode: SearchMode | undefined) => void) {
   return {
@@ -44,8 +46,10 @@ function searchClient(onMode: (mode: SearchMode | undefined) => void) {
 }
 
 function WikiSearchDialog({ onOpenChange, open }: SharedProps): ReactElement {
-  const [mode, setMode] = useState<SearchMode | undefined>();
-  const client = useMemo(() => searchClient(setMode), []);
+  const [mode, setMode] = useSearchMode();
+  const client = searchClient((next) => {
+    setMode(next === undefined ? Option.none() : Option.some(next));
+  });
   const { search, setSearch, query } = useDocsSearch({ client });
   return (
     <SearchDialog
@@ -65,7 +69,9 @@ function WikiSearchDialog({ onOpenChange, open }: SharedProps): ReactElement {
         <SearchDialogList items={query.data === "empty" ? null : query.data} />
       </SearchDialogContent>
       <SearchDialogFooter>
-        {mode === "keyword_only" ? <span>{keywordOnlyNotice}</span> : null}
+        {Option.isSome(mode) && mode.value === "keyword_only" ? (
+          <span>{keywordOnlyNotice}</span>
+        ) : null}
       </SearchDialogFooter>
     </SearchDialog>
   );

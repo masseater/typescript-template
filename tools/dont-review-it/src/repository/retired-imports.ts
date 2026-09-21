@@ -1,5 +1,5 @@
 import { importVisitor, reportViolation, type LintContext, type Node } from "./lint-context.ts";
-import { replacementFor } from "./retired-packages.ts";
+import { replacementForImport } from "./retired-packages.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
@@ -8,7 +8,7 @@ const retiredImportsVisitor = (inspection: LintContext): Visitor => {
     if (
       node.type === "Literal" &&
       typeof node.value === "string" &&
-      replacementFor(node.value) !== undefined
+      replacementForImport(node.value) !== undefined
     ) {
       reportViolation(inspection, node);
     }
