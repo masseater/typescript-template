@@ -2,7 +2,9 @@ import { Context, Effect, Schema } from "effect";
 
 import { EmbeddingFailed } from "./embedding-failed.ts";
 
-import type { Ai } from "@cloudflare/workers-types";
+type WorkerModel = {
+  readonly run: (model: string, input: { readonly text: string[] }) => Promise<unknown>;
+};
 
 interface EmbedderShape {
   readonly available: boolean;
@@ -16,7 +18,10 @@ const embeddingBatch = 32;
 const EmbeddingOutput = Schema.Struct({ data: Schema.Array(Schema.Array(Schema.Finite)) });
 const decodeOutput = Schema.decodeUnknownEffect(EmbeddingOutput);
 
-const embedBatch = Effect.fn("embedBatch")(function* embedBatch(ai: Ai, text: readonly string[]) {
+const embedBatch = Effect.fn("embedBatch")(function* embedBatch(
+  ai: WorkerModel,
+  text: readonly string[],
+) {
   const output = yield* Effect.tryPromise({
     catch: () => new EmbeddingFailed({ reason: "unavailable" }),
     try: async () => ai.run(embeddingModel, { text: [...text] }),
@@ -36,7 +41,7 @@ function batches(texts: readonly string[]): readonly (readonly string[])[] {
   );
 }
 
-function embedWith(ai: Ai | undefined): EmbedderShape["embed"] {
+function embedWith(ai: WorkerModel | undefined): EmbedderShape["embed"] {
   return (texts) =>
     ai === undefined
       ? Effect.fail(new EmbeddingFailed({ reason: "unavailable" }))

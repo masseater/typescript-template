@@ -1,4 +1,5 @@
 import { assert, it } from "@effect/vitest";
+import { httpStatus } from "@repo/config";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
@@ -26,8 +27,8 @@ const access = {
 const account = `https://api.cloudflare.com/client/v4/accounts/${access.accountId}`;
 const zone = `https://api.cloudflare.com/client/v4/zones/${verificationSettings.zoneId}`;
 const { hostname } = new URL(verificationSettings.origins["service-member"]);
-const NOT_FOUND_STATUS = 404;
-const FORBIDDEN_STATUS = 403;
+const NOT_FOUND_STATUS = httpStatus.notFound;
+const FORBIDDEN_STATUS = httpStatus.forbidden;
 const SECRETS_STORE_PAGE_LIMIT = 100;
 const tokenId = "a".repeat(32);
 const granted = deployTokenPermissions.map((required) => ({ name: required.satisfiedBy[0].name }));

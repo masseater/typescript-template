@@ -4,6 +4,7 @@
   "type": "module",
   "imports": {
     "#dev-*": "./dev-*.ts",
+    "#paraglide/*": "./.paraglide/*",
     "#*": "./src/*"
   },
   "scripts": {
@@ -12,6 +13,8 @@
   },
   "dependencies": {
     "@cloudflare/tanstack-ai": "0.2.1",
+    "@effect/atom-react": "catalog:",
+    "@inlang/paraglide-js": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
