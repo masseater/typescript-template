@@ -17,7 +17,10 @@ const workspaces = {
       "dependency-cruiser",
     ],
     project: ["*.{js,ts}"],
-    vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
+    vitest: {
+      config: ["vite.config.ts", "vitest.mutation.config.ts"],
+      entry: ["vitest.workers.main.ts"],
+    },
   },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
@@ -44,6 +47,10 @@ const workspaces = {
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
+    project: ["src/**/*.ts!"],
+  },
+  "libs/user-inbox": {
+    ignoreDependencies: ["cloudflare"],
     project: ["src/**/*.ts!"],
   },
   "libs/runtime": {

@@ -1,23 +1,21 @@
 {
-  "name": "@repo/monitor",
+  "name": "@repo/user-inbox",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./vite": "./src/vite.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {},
   "dependencies": {
-    "@repo/config": "workspace:*",
-    "@repo/observability": "workspace:*",
-    "@repo/vite-config": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
-    "@repo/runtime": "workspace:*",
-    "typescript": "catalog:"
+    "@repo/vite-config": "workspace:*",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

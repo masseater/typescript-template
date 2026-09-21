@@ -1,5 +1,11 @@
-import { APPLICATION, grants } from "@repo/config";
-import { Email, Worker, Workers } from "alchemy/Cloudflare";
+import {
+  APPLICATION,
+  grants,
+  jobsWorkflowClass,
+  userInboxBinding,
+  userInboxClassName,
+} from "@repo/config";
+import { DurableObject, Email, Queues, Worker, Workers, Workflow } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
@@ -16,7 +22,13 @@ import type { SharedConfig } from "./config.ts";
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
-  return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  const withAi = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  return grants(target, "realtime")
+    ? {
+        ...withAi,
+        [userInboxBinding]: DurableObject(userInboxBinding, { className: userInboxClassName }),
+      }
+    : withAi;
 }
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
@@ -30,6 +42,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
+  const jobsQueue = grants(target, "jobs") ? yield* Queues.Queue("Jobs", {}) : undefined;
   const shared = appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
@@ -48,7 +61,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
           ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
         }),
   });
-  const env: DeclaredEnv | WikiEnv =
+  const baseEnv: DeclaredEnv | WikiEnv =
     target === APPLICATION.wiki
       ? {
           ...shared,
@@ -56,6 +69,17 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
           FLAGSHIP_APP_ID: flags.appId,
         }
       : shared;
+  const env = {
+    ...baseEnv,
+    ...(jobsQueue === undefined
+      ? {}
+      : {
+          JOBS: jobsQueue,
+          PROCESS: Workflow<{ jobId: string }>("Process", {
+            className: jobsWorkflowClass,
+          }),
+        }),
+  };
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
@@ -68,6 +92,12 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     rules: [{ globs: workerModuleGlobs }],
     workersDev: workerSubdomain,
   });
+  if (jobsQueue !== undefined) {
+    yield* Queues.Consumer("JobsConsumer", {
+      queueId: jobsQueue.queueId,
+      scriptName: worker.workerName,
+    });
+  }
   return { origin: worker.url, workerName: worker.workerName };
 });
 

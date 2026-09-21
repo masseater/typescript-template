@@ -1,8 +1,10 @@
+import { Process, consumeJobs } from "@repo/runtime/jobs";
 import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 import { monitorWorker } from "./index.ts";
 
+import type { JobsBindings } from "@repo/config";
 import type { MonitorBindings } from "./index.ts";
 import type { SentMail } from "./mail-recorder.ts";
 
@@ -46,9 +48,15 @@ const probeMonitor = monitorWorker<MonitorBindings>({
 });
 
 const ProbeMonitor = probeMonitor.Worker;
+const probeHandler = probeMonitor.handler;
+const workersHandler = {
+  ...probeHandler,
+  queue: async (batch: MessageBatch, environment: unknown): Promise<void> =>
+    consumeJobs(batch, environment as JobsBindings),
+};
 
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
-export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
+export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure, probeHandler };
 export type { Outcome };
-export default probeMonitor.handler;
+export default workersHandler;
