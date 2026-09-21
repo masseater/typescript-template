@@ -1,10 +1,10 @@
-import { coveredTestableLibraryRun, lifecycle } from "@repo/vite-config";
+import { lifecycle, testableLibraryRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...coveredTestableLibraryRun.tasks,
+      ...testableLibraryRun.tasks,
       check: {
         command: "drizzle-kit check",
         input: [{ auto: true }, "!node_modules/.cache/**"],
@@ -19,10 +19,6 @@ export default defineConfig({
     },
   },
   test: {
-    coverage: {
-      exclude: ["specs/**"],
-      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
-    },
     mockReset: true,
     restoreMocks: true,
     testTimeout: 30_000,

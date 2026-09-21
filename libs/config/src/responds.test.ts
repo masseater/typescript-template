@@ -64,7 +64,7 @@ it.effect("returns the status when the response is acceptable", () =>
       response.writeHead(200);
       response.end("ok");
     });
-    const status = yield* waitUntilResponds({
+    const status = yield* waitUntilResponds<number | string>({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,
@@ -84,7 +84,7 @@ it.effect("accepts an empty successful response", () =>
       response.writeHead(204);
       response.end();
     });
-    const status = yield* waitUntilResponds({
+    const status = yield* waitUntilResponds<number | string>({
       accept: respondedSuccessfully,
       method: "POST",
       onStatus: (rejected) => rejected,
@@ -101,7 +101,7 @@ it.effect("reports a status that is not acceptable", () =>
       response.writeHead(503);
       response.end("later");
     });
-    const status = yield* waitUntilResponds({
+    const status = yield* waitUntilResponds<number | string>({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,
@@ -134,7 +134,7 @@ it.effect("reports a target that never accepts the connection", () =>
       });
       return chosen;
     });
-    const reason = yield* waitUntilResponds({
+    const reason = yield* waitUntilResponds<string>({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: () => "status",
@@ -148,7 +148,7 @@ it.effect("reports a target that never accepts the connection", () =>
 it.effect("stops waiting when the response exceeds the timeout", () =>
   Effect.gen(function* program() {
     const { url } = yield* listen(() => undefined);
-    const reason = yield* waitUntilResponds({
+    const reason = yield* waitUntilResponds<string>({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: () => "status",
@@ -168,7 +168,7 @@ it.live("retries until the target responds successfully", () =>
       response.writeHead(attempts < 3 ? 503 : 200);
       response.end(attempts < 3 ? "later" : "ok");
     });
-    const status = yield* waitUntilResponds({
+    const status = yield* waitUntilResponds<number | string>({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,
@@ -189,7 +189,7 @@ it.live("stops after the configured retries are exhausted", () =>
       response.writeHead(503);
       response.end("later");
     });
-    const status = yield* waitUntilResponds({
+    const status = yield* waitUntilResponds<number | string>({
       accept: respondedSuccessfully,
       method: "GET",
       onStatus: (rejected) => rejected,

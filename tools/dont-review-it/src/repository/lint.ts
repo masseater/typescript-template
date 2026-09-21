@@ -30,11 +30,9 @@ const awaitingPresetPackages = [
   "libs/auth/**",
   "libs/config/**",
   "libs/db/**",
-  "libs/db-local/**",
   "libs/monitor/**",
   "libs/observability/**",
   "libs/runtime/**",
-  "libs/vite-config/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -368,7 +366,7 @@ const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
     .map((override) => override.rules ?? {}),
 );
 
-const builtInPlugins = new Set([
+const builtInPlugins: ReadonlySet<string> = new Set([
   "eslint",
   "import",
   "jest",

@@ -2,7 +2,6 @@ import { realpath } from "node:fs/promises";
 import path from "node:path";
 
 import { httpStatus, type Application } from "@repo/config";
-import { Predicate } from "effect";
 
 import { privatePath } from "./private-path.ts";
 
@@ -27,8 +26,13 @@ const decodedPathname = (encodedPathname: string, remainingDepth: number): strin
     : decodedPathname(decodedOnce, remainingDepth - 1);
 };
 
-const isMissingPath = (cause: unknown): boolean =>
-  Predicate.isObject(cause) && "code" in cause && cause["code"] === "ENOENT";
+const isMissingPath = (cause: unknown): boolean => {
+  if (typeof cause !== "object" || cause === null || !("code" in cause)) {
+    return false;
+  }
+  const errnoCause: { readonly code?: unknown } = cause;
+  return errnoCause.code === "ENOENT";
+};
 
 const resolvePath = async (
   file: string,
