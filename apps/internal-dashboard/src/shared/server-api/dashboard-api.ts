@@ -20,12 +20,11 @@ function dashboardApi(api: ApiRoutes<WikiServices>) {
   return createApi("")
     .get(
       "/overview",
-      api.route(StaffOverview, () => dashboardStaff.overview(), failures),
+      ...api.route({ response: StaffOverview }, () => dashboardStaff.overview(), failures),
     )
     .get(
       "/metrics/trend",
-      api.route(
-        MetricTrend,
+      ...api.route({ response: MetricTrend },
         (request) =>
           Effect.gen(function* handle() {
             const query = yield* readSearchParams(TrendQuery, request);
@@ -36,8 +35,7 @@ function dashboardApi(api: ApiRoutes<WikiServices>) {
     )
     .get(
       "/audit",
-      api.route(
-        StaffAuditPage,
+      ...api.route({ response: StaffAuditPage },
         (request) =>
           Effect.gen(function* handle() {
             const page = yield* readSearchParams(AuditPageQuery, request);

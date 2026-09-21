@@ -15,6 +15,7 @@ export {
   loopbackOrigin,
   mailpitOrigin,
   mailpitPort,
+  scalarReferencePath,
   storybookOrigin,
   storybookPort,
 } from "./applications.ts";

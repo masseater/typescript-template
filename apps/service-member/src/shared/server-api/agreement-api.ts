@@ -9,7 +9,7 @@ import {
 } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
-import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { createApi, failureBy, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import {
@@ -21,13 +21,16 @@ import {
 
 import type { AgreementRequired } from "@repo/db";
 import type { AppServices } from "@repo/runtime";
-import type { ApiRoutes, Failure } from "@repo/runtime/http";
+import type { ApiRoutes } from "@repo/runtime/http";
 
-const agreementRequired = (error: AgreementRequired): Failure => ({
-  details: { kinds: error.kinds },
-  message: "最新の利用規約への同意が必要です。",
-  status: httpStatus.preconditionRequired,
-});
+const agreementRequired = failureBy(
+  [httpStatus.preconditionRequired],
+  (error: AgreementRequired) => ({
+    details: { kinds: error.kinds },
+    message: "最新の利用規約への同意が必要です。",
+    status: httpStatus.preconditionRequired,
+  }),
+);
 
 const failures = {
   ...unavailable,
@@ -59,8 +62,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/agreements",
-      api.route(
-        AgreementsView,
+      ...api.route({ response: AgreementsView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -71,8 +73,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/agreements/accept",
-      api.route(
-        AgreementsView,
+      ...api.route({ response: AgreementsView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -85,8 +86,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/agreements/published",
-      api.route(
-        PublishedAgreementView,
+      ...api.route({ response: PublishedAgreementView },
         (request) =>
           Effect.gen(function* handle() {
             const { kind } = yield* readSearchParams(PublishedAgreementQuery, request);

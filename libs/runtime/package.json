@@ -11,6 +11,7 @@
     "./contracts": "./src/contracts.ts",
     "./account": "./src/account.ts",
     "./testing": "./src/app-fixture.ts",
+    "./reference-coverage": "./src/reference-coverage.ts",
     "./security": "./src/security.ts"
   },
   "scripts": {},
@@ -19,6 +20,7 @@
     "@effect/sql-d1": "4.0.0-rc.112",
     "@effect/sql-sqlite-do": "4.0.0-rc.112",
     "@elysiajs/eden": "1.4.9",
+    "@elysiajs/openapi": "1.4.16",
     "@repo/auth": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
@@ -33,6 +35,7 @@
     "@msw/cloudflare": "catalog:",
     "@repo/vite-config": "workspace:*",
     "msw": "catalog:",
+    "playwright": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
     "wrangler": "catalog:"

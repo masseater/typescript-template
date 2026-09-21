@@ -11,6 +11,7 @@
     "@cloudflare/vite-plugin": "1.54.10",
     "@inlang/paraglide-js": "catalog:",
     "@repo/config": "workspace:*",
+    "@scalar/api-reference": "1.69.0",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "catalog:",

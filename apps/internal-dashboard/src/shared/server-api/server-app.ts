@@ -1,14 +1,14 @@
 import { handleAuthRequest } from "@repo/auth";
-import { sessionApi, unavailable } from "@repo/runtime/account";
-import { apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
+import { authUnavailable, databaseUnavailable } from "@repo/runtime/account";
+import { apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { dashboardApi } from "./dashboard-api.ts";
-import { flagsApi } from "./flags-api.ts";
 import { serveMcp } from "./mcp.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { searchWiki } from "./search.ts";
 import { staffApi } from "./staff-api.ts";
+import { wikiRoutes } from "./wiki-api.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 
@@ -24,15 +24,13 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
     : Effect.succeed(jsonResponse({ mode: "semantic", results: [] }));
 }
 
-const wikiApi = createApi(apiRoot)
-  .use(sessionApi(api))
+const wikiApi = wikiRoutes(api)
   .use(staffApi(api))
-  .use(flagsApi(api))
   .use(dashboardApi(api))
-  .get("/search", api.raw(search, {}));
+  .get("/search", ...api.raw(search, {}));
 
 const wikiProtocol = createApi("")
-  .all("/mcp", api.raw(serveMcp, unavailable))
-  .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
+  .all("/mcp", ...api.raw(serveMcp, databaseUnavailable))
+  .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, authUnavailable));
 
 export { wikiApi, wikiProtocol };

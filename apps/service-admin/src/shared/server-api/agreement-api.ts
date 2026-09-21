@@ -48,8 +48,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/agreements",
-      api.route(
-        AgreementVersionList,
+      ...api.route({ response: AgreementVersionList },
         (request) =>
           Effect.gen(function* handle() {
             const { session } = yield* verifySession(request.headers);
@@ -61,8 +60,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/agreements/version",
-      api.route(
-        AgreementVersionDetail,
+      ...api.route({ response: AgreementVersionDetail },
         (request) =>
           Effect.gen(function* handle() {
             const { session } = yield* verifySession(request.headers);
@@ -74,8 +72,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/agreements",
-      api.route(
-        AgreementVersionSaved,
+      ...api.route({ response: AgreementVersionSaved },
         (request) =>
           Effect.gen(function* handle() {
             const { session } = yield* verifySession(request.headers);
@@ -93,8 +90,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .patch(
       "/agreements",
-      api.route(
-        AgreementVersionSaved,
+      ...api.route({ response: AgreementVersionSaved },
         (request) =>
           Effect.gen(function* handle() {
             const { session } = yield* verifySession(request.headers);
@@ -111,8 +107,7 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/agreements/publish",
-      api.route(
-        AgreementPublished,
+      ...api.route({ response: AgreementPublished },
         (request) =>
           Effect.gen(function* handle() {
             const { session } = yield* verifySession(request.headers);

@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
 import { httpStatus } from "@repo/observability";
-import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
+import { createApi, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
 
@@ -24,9 +24,11 @@ const listFlags = Effect.fn("listFlags")(function* listFlags(request: Request) {
   return { flags: entries };
 });
 
-const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
+const patchFlag = Effect.fn("patchFlag")(function* patchFlag(
+  request: Request,
+  change: typeof FlagToggle.Type,
+) {
   const { user } = yield* requireFlagEditor(request.headers);
-  const change = yield* readJsonBody(FlagToggle, request);
   const config = yield* readWikiConfig(env);
   if (
     config.FLAGSHIP_API_TOKEN !== undefined &&
@@ -47,8 +49,11 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
   return createApi("")
-    .get("/flags", api.route(FlagList, listFlags, {}))
-    .patch("/flags", api.route(FlagToggled, patchFlag, failures));
+    .get("/flags", ...api.route({ response: FlagList }, listFlags, {}))
+    .patch(
+      "/flags",
+      ...api.route({ body: FlagToggle, response: FlagToggled }, patchFlag, failures),
+    );
 }
 
 export { flagsApi };

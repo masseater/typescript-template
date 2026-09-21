@@ -62,8 +62,7 @@ const failures = {
 function onboardingStepApi(api: ApiRoutes<AppServices>) {
   return createApi("").get(
     "/onboarding",
-    api.route(
-      OnboardingView,
+    ...api.route({ response: OnboardingView },
       (request) =>
         Effect.gen(function* handle() {
           const { user } = yield* verifySession(request.headers);
@@ -78,8 +77,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .post(
       "/onboarding",
-      api.route(
-        OnboardingView,
+      ...api.route({ response: OnboardingView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -95,8 +93,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/home/feed",
-      api.route(
-        HomeFeed,
+      ...api.route({ response: HomeFeed },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -107,8 +104,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/social/follow",
-      api.route(
-        FollowState,
+      ...api.route({ response: FollowState },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -120,8 +116,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .put(
       "/social/follow",
-      api.route(
-        FollowMember,
+      ...api.route({ response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -134,8 +129,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .delete(
       "/social/follow",
-      api.route(
-        FollowMember,
+      ...api.route({ response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -148,8 +142,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/social/followers",
-      api.route(
-        FollowList,
+      ...api.route({ response: FollowList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -161,8 +154,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/social/following",
-      api.route(
-        FollowList,
+      ...api.route({ response: FollowList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -174,8 +166,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/notifications",
-      api.route(
-        NotificationList,
+      ...api.route({ response: NotificationList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -186,8 +177,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/notifications/unread",
-      api.route(
-        NotificationUnread,
+      ...api.route({ response: NotificationUnread },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -198,8 +188,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/notifications/read",
-      api.route(
-        FollowMember,
+      ...api.route({ response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -212,8 +201,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/notifications/read-all",
-      api.route(
-        FollowMember,
+      ...api.route({ response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -225,8 +213,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/notifications/preferences",
-      api.route(
-        NotificationPreferences,
+      ...api.route({ response: NotificationPreferences },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -237,8 +224,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .patch(
       "/notifications/preferences",
-      api.route(
-        NotificationPreferences,
+      ...api.route({ response: NotificationPreferences },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -250,8 +236,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/nav/badges",
-      api.route(
-        NavBadges,
+      ...api.route({ response: NavBadges },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

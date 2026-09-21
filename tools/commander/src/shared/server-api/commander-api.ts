@@ -1,5 +1,5 @@
 import { httpStatus, ingestBrowser } from "@repo/observability";
-import { AppOrigin, apiRoot, apiRoutes, createApi, readJsonBody } from "@repo/runtime/http";
+import { AppOrigin, apiRoot, apiRoutes, createApi, failureBy } from "@repo/runtime/http";
 import { Effect, PubSub, Schema, Stream } from "effect";
 
 import { Done, NoInput, ServerEvent, TextInput } from "#shared/contract/index.ts";
@@ -23,11 +23,14 @@ const rejected = {
 };
 const failures = {
   ...rejected,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  BdFailure: (failure: BdFailure) =>
-    failure.reason === "rejected"
-      ? { message: "見つかりませんでした。", status: httpStatus.notFound }
-      : { message: "bd を実行できませんでした。", status: httpStatus.internalServerError },
+  BdFailure: failureBy(
+    [httpStatus.notFound, httpStatus.internalServerError],
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (failure: BdFailure) =>
+      failure.reason === "rejected"
+        ? { message: "見つかりませんでした。", status: httpStatus.notFound }
+        : { message: "bd を実行できませんでした。", status: httpStatus.internalServerError },
+  ),
 };
 
 const trustedHost = Effect.fn("commander.api.trustedHost")(function* trustedHost(request: Request) {
@@ -57,9 +60,11 @@ const events = Effect.fn("commander.api.events")(function* events(request: Reque
   return Stream.unwrap(connected);
 });
 
-const say = Effect.fn("commander.api.say")(function* say(request: Request) {
+const say = Effect.fn("commander.api.say")(function* say(
+  request: Request,
+  { text }: typeof TextInput.Type,
+) {
   yield* trustedHost(request);
-  const { text } = yield* readJsonBody(TextInput, request);
   const { chat } = yield* Commander;
   yield* chat.send(text);
   return done;
@@ -67,15 +72,16 @@ const say = Effect.fn("commander.api.say")(function* say(request: Request) {
 
 const stop = Effect.fn("commander.api.stop")(function* stop(request: Request) {
   yield* trustedHost(request);
-  yield* readJsonBody(NoInput, request);
   const { chat } = yield* Commander;
   yield* chat.stop;
   return done;
 });
 
-const comment = Effect.fn("commander.api.comment")(function* comment(request: Request) {
+const comment = Effect.fn("commander.api.comment")(function* comment(
+  request: Request,
+  { text }: typeof TextInput.Type,
+) {
   yield* trustedHost(request);
-  const { text } = yield* readJsonBody(TextInput, request);
   const { board } = yield* Commander;
   const id = commentRoute.exec(request.url)?.pathname.groups["id"] ?? "";
   yield* board.comment(id, text);
@@ -86,7 +92,6 @@ const createLedger = Effect.fn("commander.api.createLedger")(function* createLed
   request: Request,
 ) {
   yield* trustedHost(request);
-  yield* readJsonBody(NoInput, request);
   const { board } = yield* Commander;
   yield* board.create;
   return done;
@@ -94,12 +99,15 @@ const createLedger = Effect.fn("commander.api.createLedger")(function* createLed
 
 function commanderApi(api: ApiRoutes<Services>) {
   return createApi("")
-    .post("/telemetry", api.raw(ingestBrowser, {}))
-    .get("/events", api.events(ServerEvent, events, rejected))
-    .post("/chat", api.route(Done, say, rejected))
-    .post("/chat/stop", api.route(Done, stop, rejected))
-    .post("/tasks/:id/comments", api.route(Done, comment, failures))
-    .post("/ledger", api.route(Done, createLedger, failures));
+    .post("/telemetry", ...api.raw(ingestBrowser, {}))
+    .get("/events", ...api.events(ServerEvent, events, rejected))
+    .post("/chat", ...api.route({ body: TextInput, response: Done }, say, rejected))
+    .post("/chat/stop", ...api.route({ body: NoInput, response: Done }, stop, rejected))
+    .post(
+      "/tasks/:id/comments",
+      ...api.route({ body: TextInput, response: Done }, comment, failures),
+    )
+    .post("/ledger", ...api.route({ body: NoInput, response: Done }, createLedger, failures));
 }
 
 function commanderApp(runtime: WorkerRuntime<Services, unknown>, reporting: Reporting) {

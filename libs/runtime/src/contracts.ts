@@ -2,6 +2,8 @@ import { applications } from "@repo/config";
 import { accountPermissions, roles } from "@repo/config/identity";
 import { Schema } from "effect";
 
+type Decodable = Schema.Top & { readonly DecodingServices: never };
+
 const maximumTokenLength = 4096;
 const maximumIdentifierLength = 256;
 
@@ -73,3 +75,4 @@ export {
   maximumPasswordLength,
   minimumPasswordLength,
 };
+export type { Decodable };

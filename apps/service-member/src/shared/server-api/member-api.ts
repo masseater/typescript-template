@@ -1,7 +1,8 @@
 import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
+import { APPLICATION } from "@repo/config";
 import { UserNotFound, requirePaid } from "@repo/db";
 import { accountApi } from "@repo/runtime/account";
-import { apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { apiDocs, apiRoot, createApi } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { paidFailures } from "#shared/billing/index.ts";
@@ -38,6 +39,7 @@ const failures = { ...memberFailures, ...apiKeyWriteFailure, ...paidFailures };
 
 function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoStore | Stripe>) {
   return createApi(apiRoot)
+    .use(apiDocs(APPLICATION.user))
     .use(accountApi(api))
     .use(contactApi(api))
     .use(flagsApi(api))
@@ -52,8 +54,8 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     .use(visibilityApi(api))
     .get(
       "/profile",
-      api.route(
-        ProfileView,
+      ...api.route(
+        { response: ProfileView },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
@@ -68,12 +70,11 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     )
     .get(
       "/member",
-      api.route(
-        MemberView,
-        (request) =>
+      ...api.route(
+        { query: MemberQuery, response: MemberView },
+        (request, { id }) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
-            const { id } = yield* readSearchParams(MemberQuery, request);
             return yield* getMember(user.id, id);
           }),
         failures,
@@ -81,13 +82,12 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     )
     .get(
       "/members",
-      api.route(
-        MemberList,
-        (request) =>
+      ...api.route(
+        { query: MemberListQuery, response: MemberList },
+        (request, { keyword, page }) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
             yield* requirePaid(user.id);
-            const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
             const offset = (page - 1) * memberPageSize;
             const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
             return { ...list, pageSize: memberPageSize };
@@ -97,12 +97,11 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     )
     .patch(
       "/profile",
-      api.route(
-        ProfileView,
-        (request) =>
+      ...api.route(
+        { body: ProfileUpdate, response: ProfileView },
+        (request, values) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionWriter(request.headers);
-            const values = yield* readJsonBody(ProfileUpdate, request);
             return yield* updateProfile(user.id, values);
           }),
         failures,

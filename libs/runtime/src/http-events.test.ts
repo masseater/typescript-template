@@ -3,7 +3,8 @@ import { Telemetry, httpStatus } from "@repo/observability";
 import { Deferred, Effect, Layer, Queue, Schema, Stream } from "effect";
 
 import { apiServerClient } from "./client.ts";
-import { AppOrigin, apiRoutes, createApi, elysiaServer, readSearchParams } from "./http.ts";
+import { AppOrigin, apiRoutes, createApi, elysiaServer } from "./http.ts";
+import { InputInvalid } from "./input-invalid.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
 const origin = "http://localhost:3001";
@@ -19,6 +20,7 @@ const Tick = Schema.Struct({
 const Query = Schema.Struct({ from: Schema.NumberFromString });
 const decodeTick = Schema.decodeUnknownEffect(Tick);
 const second = 2;
+const invalidInput = { message: "入力内容を確認してください。", status: httpStatus.badRequest };
 
 type Ticks = Stream.Stream<typeof Tick.Type>;
 type FrameReader = Readonly<Pick<ReadableStreamDefaultReader<unknown>, "cancel" | "read">>;
@@ -31,7 +33,7 @@ function tick(count: number): typeof Tick.Type {
 function open(ticks: Ticks): Effect.Effect<Response> {
   const app = createApi("/api").get(
     "/events",
-    api.events(Tick, () => Effect.succeed(ticks), {}),
+    ...api.events(Tick, () => Effect.succeed(ticks), {}),
   );
   return Effect.promise(async () => app.fetch(new Request(`${origin}/api/events`)));
 }
@@ -110,7 +112,7 @@ describe("an event stream route seen by its callers", () => {
     Effect.gen(function* program() {
       const silentAfterFirst = Stream.make(tick(1)).pipe(Stream.concat(Stream.never));
       const ticks = api.events(Tick, () => Effect.succeed(silentAfterFirst), {});
-      const { handlers } = elysiaServer(createApi("/api").get("/events", ticks));
+      const { handlers } = elysiaServer(createApi("/api").get("/events", ...ticks));
       const { HEAD: head } = handlers;
       const request = new Request(`${origin}/api/events`, { method: "HEAD" });
       const response = yield* Effect.promise(async () => head({ request }));
@@ -127,10 +129,15 @@ describe("an event stream route seen by its callers", () => {
       const ticks = api.events(
         Tick,
         (request) =>
-          readSearchParams(Query, request).pipe(Effect.map(({ from }) => Stream.make(tick(from)))),
-        {},
+          Schema.decodeUnknownEffect(Query)(
+            Object.fromEntries(new URL(request.url).searchParams),
+          ).pipe(
+            Effect.mapError(() => new InputInvalid()),
+            Effect.map(({ from }) => Stream.make(tick(from))),
+          ),
+        { InputInvalid: invalidInput },
       );
-      const app = createApi("/api").get("/events", ticks);
+      const app = createApi("/api").get("/events", ...ticks);
       const request = new Request(`${origin}/api/events`);
       const response = yield* Effect.promise(async () => app.fetch(request));
       const body: unknown = yield* Effect.promise(async () => response.json());
@@ -144,7 +151,7 @@ describe("an event stream route seen by its callers", () => {
   it.effect("reaches the typed client as event objects the contract decodes", () =>
     Effect.gen(function* program() {
       const ticks = api.events(Tick, () => Effect.succeed(Stream.make(tick(1), tick(second))), {});
-      const client = apiServerClient(createApi("/api").get("/events", ticks), {});
+      const client = apiServerClient(createApi("/api").get("/events", ...ticks), {});
       const reply = yield* Effect.promise(async () => client.api.events.get());
       assert.isNotNull(reply.data);
       const received = Stream.fromAsyncIterable(reply.data, (cause) => cause).pipe(
