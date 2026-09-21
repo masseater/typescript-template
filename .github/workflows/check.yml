@@ -16,7 +16,7 @@ jobs:
   check:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: &runner ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - &checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -73,7 +73,7 @@ jobs:
   merge-queue:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - *checkout
       - *clean-workspace
@@ -88,7 +88,7 @@ jobs:
   e2e:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - *checkout
       - *clean-workspace
@@ -102,7 +102,7 @@ jobs:
   cache:
     if: github.event_name == 'push' && vars.CI_RUNNER == ''
     runs-on: *runner
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - *checkout
       - *browser-cache
