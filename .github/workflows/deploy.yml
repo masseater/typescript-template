@@ -22,19 +22,16 @@ jobs:
   staging:
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.target == 'staging')
     environment: staging
-    runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          clean: ${{ vars.CI_RUNNER == '' }}
           ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.sha }}
-      - if: vars.CI_RUNNER != ''
-        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy
       - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           node-version-file: package.json
-          cache: ${{ vars.CI_RUNNER == '' }}
+          cache: true
       - id: prepare
         run: vp run --filter @repo/infra-cloudflare prepare:ci-env
         env:
@@ -64,19 +61,16 @@ jobs:
   production:
     if: github.event_name == 'workflow_dispatch' && inputs.target == 'production'
     environment: production
-    runs-on: ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          clean: ${{ vars.CI_RUNNER == '' }}
           ref: main
-      - if: vars.CI_RUNNER != ''
-        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy
       - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           node-version-file: package.json
-          cache: ${{ vars.CI_RUNNER == '' }}
+          cache: true
       - id: prepare
         run: vp run --filter @repo/infra-cloudflare prepare:ci-env
         env:
