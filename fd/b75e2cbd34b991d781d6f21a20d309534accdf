@@ -1,1 +1,6 @@
-CI cancelled at 15 minutes while the trace upload was still running. Give the full-suite jobs 25 minutes, and drop the vocabulary assertion change because main already compares those paths case-insensitively.
+Revision history for #1068:
+
+rev 2 (content) 2026-09-21 13:35 UTC — CI cancelled at 15 minutes while the trace upload was still running. Give the full-suite jobs 25 minutes, and drop the vocabulary assertion change because main already compares those paths case-insensitively.
+rev 1 (initial) 2026-09-21 13:35 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1068,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"e45a1cc229e4ab24d711ad3a3e837736e87ce5f1","timestamp_iso":"2026-09-21T13:35:51Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"e45a1cc229e4ab24d711ad3a3e837736e87ce5f1","new_sha":"fdb75e2cbd34b991d781d6f21a20d309534accdf","timestamp_iso":"2026-09-21T13:35:51Z","reason":"CI cancelled at 15 minutes while the trace upload was still running. Give the full-suite jobs 25 minutes, and drop the vocabulary assertion change because main already compares those paths case-insensitively.","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/e45a1cc229e4ab24d711ad3a3e837736e87ce5f1...fdb75e2cbd34b991d781d6f21a20d309534accdf"}]} -->
