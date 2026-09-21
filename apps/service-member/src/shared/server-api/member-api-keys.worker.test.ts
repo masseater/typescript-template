@@ -73,9 +73,10 @@ async function request(
 
 it.effect("lets API keys read allowed resources and rejects writes", () => {
   const environment = appEnvironment();
+  const base = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
   const services = Layer.mergeAll(
-    Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-    Layer.orDie(memberRequirementLayer(environment)),
+    base,
+    Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
   );
   const app = memberApi(
     apiRoutes(

@@ -651,19 +651,13 @@
       {
         "file": "src/app.ts",
         "code": "TS2375",
-        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: Redacted<string>; DB: Database; EMAIL: SendEmail; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID: string; ... 10 more ...; PHOTOS?: Bucket; } | { ...; } | { ...; } | { ...; }' is not assignable to type 'DeclaredEnv | WikiEnv' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: Redacted<string>; DB: Database; EMAIL: SendEmail; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID: string; ... 7 more ...; FLAGSHIP_APP_ID: Output<...>; } | { ...; } | DeclaredEnv' is not assignable to type 'DeclaredEnv | WikiEnv' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
       {
         "file": "src/artifacts.test.ts",
         "code": "TS2503",
         "message": "Cannot find namespace 'Scope'.",
-        "count": 1
-      },
-      {
-        "file": "src/check-stacks.ts",
-        "code": "TS2741",
-        "message": "Property 'flagship' is missing in type '{ \"budget-monitor\": StackInventory; database: StackInventory; email: StackInventory; \"error-monitor\": StackInventory; ... 4 more ...; zone: StackInventory; }' but required in type 'Readonly<Record<\"budget-monitor\" | \"database\" | \"email\" | \"error-monitor\" | \"flagship\" | \"health-monitor\" | \"observability\" | \"storage\" | \"tokens\" | \"zone\", StackInventory>>'.",
         "count": 1
       },
       {

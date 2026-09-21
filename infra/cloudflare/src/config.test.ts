@@ -8,7 +8,15 @@ import { parseDeploymentCommand, traceDestination, workerObservability } from ".
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-import type { Ai, D1Database, R2Bucket, SendEmail, Service } from "@cloudflare/workers-types";
+import type {
+  Ai,
+  D1Database,
+  KVNamespace,
+  R2Bucket,
+  SendEmail,
+  Service,
+} from "@cloudflare/workers-types";
+import type { Flagship } from "alchemy/Cloudflare";
 import type { AppBindings } from "./bindings.ts";
 
 const release = "0".repeat(16);
@@ -32,7 +40,13 @@ const sharedBindings = {
   EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
   EMAIL_FROM: settings.mailFrom,
   FLAGSHIP_ACCOUNT_ID: settings.accountId,
-  FLAGS: binding({ appId: "flags" }),
+  FLAGS: binding<Flagship.App>({
+    appId: "flagship-app-id",
+    getBooleanValue: async (): Promise<boolean> => false,
+    getNumberValue: async (): Promise<number> => 0,
+    getObjectValue: async (): Promise<object> => ({}),
+    getStringValue: async (): Promise<string> => "",
+  }),
   OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 
@@ -41,7 +55,12 @@ const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
   AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
   APP_ORIGIN: settings.origins["service-member"],
-  PHOTOS: binding<R2Bucket>({
+  CACHE: binding<KVNamespace>({
+    delete: async (): Promise<undefined> => undefined,
+    get: async (): Promise<null> => null,
+    put: async (): Promise<undefined> => undefined,
+  }),
+  FILES: binding<R2Bucket>({
     delete: async (): Promise<undefined> => undefined,
     get: async (): Promise<null> => null,
     put: async (): Promise<null> => null,
@@ -136,8 +155,10 @@ it.effect("every application reads exactly the bindings its Worker declares", ()
     assert.strictEqual(admin.APP_RELEASE, release);
     assert.isUndefined(yield* readAi(adminBindings));
     assert.isDefined(yield* readAi(userBindings));
-    assert.isUndefined(yield* readStorage(adminBindings));
-    assert.isDefined(yield* readStorage(userBindings));
+    assert.isUndefined((yield* readStorage(adminBindings)).files);
+    assert.isUndefined((yield* readStorage(adminBindings)).cache);
+    assert.isDefined((yield* readStorage(userBindings)).files);
+    assert.isDefined((yield* readStorage(userBindings)).cache);
     const missing = yield* readConfig({ ...userBindings, DB: undefined }).pipe(Effect.flip);
     assert.instanceOf(missing, ConfigurationInvalid);
   }),

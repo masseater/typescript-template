@@ -27,6 +27,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     ".": "./src/index.ts",
     "./contracts": "./src/contracts.ts",
     "./security": "./src/security.ts",
+    "./storage": "./src/storage.ts",
   },
   "libs/auth-ui": { ".": "./src/index.ts" },
   "libs/ui": { ".": "./src/index.ts" },

@@ -1,12 +1,9 @@
 import { isPhotoContentType } from "@repo/config";
-import { readStorage } from "@repo/config/storage";
-import { withSpan } from "@repo/observability";
+import { FileStore, StorageFailed } from "@repo/runtime";
 import { Context, Effect, Layer } from "effect";
 
 import { PhotoStorageFailed } from "./photo-storage-failed.ts";
 
-import type { R2Bucket } from "@cloudflare/workers-types";
-import type { ConfigurationInvalid } from "@repo/config";
 import type { SanitizedImage } from "./image.ts";
 
 interface PhotoStoreShape {
@@ -15,65 +12,49 @@ interface PhotoStoreShape {
   readonly remove: (keys: readonly string[]) => Effect.Effect<void, PhotoStorageFailed>;
 }
 
-type Bucket = Pick<R2Bucket, "delete" | "get" | "put">;
-
-const unavailable = Effect.fail(new PhotoStorageFailed({ reason: "unavailable" }));
-
-function attempt<Value>(
-  operation: string,
-  run: () => Promise<Value>,
-): Effect.Effect<Value, PhotoStorageFailed> {
-  return Effect.tryPromise({
-    catch: (cause) => new PhotoStorageFailed({ cause, reason: "operation_failed" }),
-    try: run,
-  }).pipe(withSpan(`photo.${operation}`));
-}
-
-function storeOf(bucket: Bucket): PhotoStoreShape {
-  return {
-    get: (key) =>
-      attempt("get", async () => {
-        const object = await bucket.get(key);
-        if (object === null) {
-          return undefined;
-        }
-        const contentType = object.httpMetadata?.contentType;
-        if (!isPhotoContentType(contentType)) {
-          throw new TypeError(`stored photo ${key} has content type ${String(contentType)}`);
-        }
-        return { bytes: new Uint8Array(await object.arrayBuffer()), contentType };
-      }),
-    put: (key, photo) =>
-      attempt("put", async () => {
-        await bucket.put(key, photo.bytes, { httpMetadata: { contentType: photo.contentType } });
-      }),
-    remove: (keys) =>
-      keys.length === 0
-        ? Effect.void
-        : attempt("delete", async () => {
-            await bucket.delete([...keys]);
-          }),
-  };
-}
-
-const unavailableStore: PhotoStoreShape = {
-  get: () => unavailable,
-  put: () => unavailable,
-  remove: () => unavailable,
-};
+const mapFailure = (cause: StorageFailed): PhotoStorageFailed =>
+  new PhotoStorageFailed({ cause, reason: cause.reason });
 
 class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
   "#shared/photo/PhotoStore",
 ) {
-  public static layer(bucket: Bucket | undefined): Layer.Layer<PhotoStore> {
-    return Layer.succeed(
+  public static fromFileStore(): Layer.Layer<PhotoStore, never, FileStore> {
+    return Layer.effect(
       PhotoStore,
-      PhotoStore.of(bucket === undefined ? unavailableStore : storeOf(bucket)),
+      Effect.gen(function* photoStoreFromFiles() {
+        const files = yield* FileStore;
+        return PhotoStore.of({
+          get: (key) =>
+            files.get(key).pipe(
+              Effect.mapError(mapFailure),
+              Effect.flatMap((stored) => {
+                if (stored === undefined) {
+                  return Effect.succeed(undefined);
+                }
+                if (!isPhotoContentType(stored.contentType)) {
+                  return Effect.fail(
+                    new PhotoStorageFailed({
+                      cause: new TypeError(
+                        `stored photo ${key} has content type ${String(stored.contentType)}`,
+                      ),
+                      reason: "operation_failed",
+                    }),
+                  );
+                }
+                return Effect.succeed({
+                  bytes: stored.bytes,
+                  contentType: stored.contentType,
+                } satisfies SanitizedImage);
+              }),
+            ),
+          put: (key, photo) =>
+            files
+              .put(key, { bytes: photo.bytes, contentType: photo.contentType })
+              .pipe(Effect.mapError(mapFailure)),
+          remove: (keys) => files.remove(keys).pipe(Effect.mapError(mapFailure)),
+        });
+      }),
     );
-  }
-
-  public static fromEnvironment(env: unknown): Layer.Layer<PhotoStore, ConfigurationInvalid> {
-    return Layer.unwrap(Effect.map(readStorage(env), (bucket) => PhotoStore.layer(bucket)));
   }
 }
 

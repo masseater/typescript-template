@@ -2,16 +2,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import {
-  APPLICATION,
-  applicationPorts,
-  grants,
-  loopbackAddress,
-  type Application,
-} from "@repo/config";
+import { applicationPorts, grants, loopbackAddress, type Application } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { localPhotoBucket } from "@repo/config/storage";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -53,9 +47,6 @@ function previewDevVars(appRoot: string): Plugin {
 
 const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
-  "libs/db/src/dashboard-literals.ts",
-  "libs/db/src/group-join-policy.ts",
-  "libs/db/src/inquiry-status.ts",
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
   "libs/runtime/src/security.ts",
@@ -313,9 +304,10 @@ function appConfig(
           compatibility_flags: [...workerCompatibility.flags],
           d1_databases: [localDatabase],
           main: "./src/app/server.ts",
-          ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
           name: `template-${app}`,
-          ...(grants(app, "storage") ? { r2_buckets: [localPhotoBucket] } : {}),
+          ...(grants(app, "storage")
+            ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
+            : {}),
         },
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },

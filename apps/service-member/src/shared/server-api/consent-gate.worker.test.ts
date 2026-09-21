@@ -28,12 +28,13 @@ const ConsentRequiredBody = Schema.Struct({
 
 function memberApp() {
   const environment = appEnvironment();
-  const runtime = workerRuntime(() =>
-    Layer.mergeAll(
-      Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.orDie(memberRequirementLayer(environment)),
-    ),
-  );
+  const runtime = workerRuntime(() => {
+    const base = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
+    return Layer.mergeAll(
+      base,
+      Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
+    );
+  });
   return { app: memberApi(apiRoutes(runtime, reporting)), runtime };
 }
 

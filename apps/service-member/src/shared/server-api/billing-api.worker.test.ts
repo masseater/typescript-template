@@ -50,12 +50,13 @@ function billingApp() {
     STRIPE_SECRET_KEY: "sk_test_placeholder",
     STRIPE_WEBHOOK_SECRET: webhookSecret,
   });
-  const runtime = workerRuntime(() =>
-    Layer.mergeAll(
-      Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.orDie(memberRequirementLayer(environment)),
-    ),
-  );
+  const runtime = workerRuntime(() => {
+    const base = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
+    return Layer.mergeAll(
+      base,
+      Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
+    );
+  });
   const api = apiRoutes(runtime, reporting);
   return memberApi(api);
 }

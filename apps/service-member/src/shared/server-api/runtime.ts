@@ -11,8 +11,9 @@ import type { Reporting } from "@repo/observability";
 
 const service = APPLICATION.user;
 const reporting: Reporting = { service };
-const runtime = workerRuntime(() =>
-  Layer.mergeAll(appLayer(env, service, routes), memberRequirementLayer(env)),
-);
+const runtime = workerRuntime(() => {
+  const base = appLayer(env, service, routes);
+  return Layer.mergeAll(base, memberRequirementLayer(env).pipe(Layer.provide(base)));
+});
 
 export { reporting, runtime };

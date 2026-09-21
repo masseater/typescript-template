@@ -23,7 +23,7 @@ function memberRequirementLayer(environment: unknown) {
       ),
     ),
     Interviewer.fromEnvironment(environment),
-    PhotoStore.fromEnvironment(environment),
+    PhotoStore.fromFileStore(),
     ProfileLayoutAssembler.fromEnvironment(environment),
     Stripe.fromEnvironment(environment),
   );

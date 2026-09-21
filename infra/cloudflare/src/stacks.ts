@@ -7,7 +7,6 @@ import type { Application } from "@repo/config";
 import type { MonitorStack } from "./monitors.ts";
 
 const application = ["database", "flagship"] as const;
-const memberApplication = [...application, "storage"] as const;
 const wikiApplication = [...application, "tokens"] as const;
 const stackReferences = {
   "service-admin": application,
@@ -20,13 +19,15 @@ const stackReferences = {
   observability: [],
   storage: [],
   tokens: [],
-  "service-member": memberApplication,
+  "service-member": [...application, "storage"],
   "internal-dashboard": wikiApplication,
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<
-    Record<typeof APPLICATION.admin, typeof application> &
-      Record<typeof APPLICATION.user, typeof memberApplication> &
+    Record<
+      Exclude<Application, typeof APPLICATION.wiki>,
+      readonly [...typeof application, ...string[]]
+    > &
       Record<typeof APPLICATION.wiki, typeof wikiApplication>
   > &
   Readonly<Record<MonitorStack, readonly string[]>>;
@@ -49,8 +50,8 @@ const stackNames = [
   "zone",
   "email",
   "database",
-  "storage",
   "flagship",
+  "storage",
   "observability",
   "tokens",
   ...monitorStacks,

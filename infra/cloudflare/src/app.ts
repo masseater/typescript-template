@@ -1,5 +1,5 @@
 import { APPLICATION, grants } from "@repo/config";
-import { photoBucketBinding } from "@repo/config/storage";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
@@ -9,26 +9,34 @@ import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { authSecret, otlpAuthorization, settings, stripeSettings } from "./settings.ts";
-import { photoBucketRef } from "./storage.ts";
+import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
-import type { R2 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 import type { BillingEnv, DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-const appEnv = Effect.fn("appEnv")(function* appEnv(
+function appEnv(
   target: Application,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shared: SharedEnv,
   billing: BillingEnv | undefined,
-) {
-  const ai = grants(target, "ai") ? { AI: Workers.AI("AI") } : {};
-  const storage: Partial<Record<typeof photoBucketBinding, R2.Bucket>> = grants(target, "storage")
-    ? { [photoBucketBinding]: yield* photoBucketRef() }
-    : {};
-  return { ...shared, ...ai, ...storage, ...(billing ?? {}) } satisfies DeclaredEnv;
-});
+): Effect.Effect<DeclaredEnv> {
+  const withAi: DeclaredEnv = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  const withBilling: DeclaredEnv = { ...withAi, ...(billing ?? {}) };
+  if (!grants(target, "storage")) {
+    return Effect.succeed(withBilling);
+  }
+  return Effect.gen(function* withStorageBindings() {
+    const withStorage: DeclaredEnv = {
+      ...withBilling,
+      [cacheNamespaceBinding]: yield* cacheNamespaceRef(),
+      [fileBucketBinding]: yield* fileBucketRef(),
+    };
+    return withStorage;
+  });
+}
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
@@ -44,7 +52,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const shared = yield* appEnv(
+  const shared: DeclaredEnv = yield* appEnv(
     target,
     {
       APP_ORIGIN: origin,
