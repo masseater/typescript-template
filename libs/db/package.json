@@ -14,9 +14,6 @@
     "./inquiry-status": "./src/inquiry-status.ts",
     "./dashboard-literals": "./src/dashboard-literals.ts"
   },
-  "scripts": {
-    "db:generate": "drizzle-kit generate"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "better-auth": "catalog:",

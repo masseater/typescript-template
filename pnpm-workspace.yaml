@@ -58,6 +58,7 @@ catalog:
   "@effect/atom-react": 4.0.0-rc.112
   "@effect/platform-node": 4.0.0-rc.112
   "@effect/vitest": 4.0.0-rc.112
+  "@mergifyio/vitest": 0.3.7
   "@shadcn/lint": 0.1.0
   "@tailwindcss/vite": 4.3.3
   "@tanstack/intent": 0.3.6

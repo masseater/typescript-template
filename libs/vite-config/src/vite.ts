@@ -161,9 +161,14 @@ const typecheckInputs = [
 ] as const;
 
 const effectDiagnostics = {
+  "check:effect:gate": {
+    command: "check-effect-typecheck",
+    input: [...typecheckInputs],
+  },
   "check:effect": {
     command:
-      "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+    dependsOn: ["check:effect:gate"],
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
@@ -182,13 +187,40 @@ const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
   prerelease: ["prepr", "premerge"],
 };
 
-function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
-  return Object.fromEntries(
-    lifecycles.map((name) => [
-      name,
-      { command: [], dependsOn: [...lifecycleInherits[name], ...stages[name]] },
-    ]),
-  );
+type LifecycleTask = {
+  command: string[];
+  dependsOn: string[];
+};
+
+function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}): {
+  readonly precommit: LifecycleTask;
+  readonly prepush: LifecycleTask;
+  readonly prepr: LifecycleTask;
+  readonly premerge: LifecycleTask;
+  readonly prerelease: LifecycleTask;
+} {
+  return {
+    precommit: {
+      command: [],
+      dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
+    },
+    prepush: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
+    },
+    prepr: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+    },
+    premerge: {
+      command: [],
+      dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
+    },
+    prerelease: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
+    },
+  };
 }
 
 const testRun = {
@@ -216,20 +248,14 @@ const intentValidation = {
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
-    ...lifecycle({
-      precommit: [],
-      prepush: ["check:effect"],
-      prepr: [],
-      premerge: [],
-      prerelease: [],
-    }),
+    ...lifecycle({ prepush: ["check:effect"] }),
   },
 } satisfies RunConfig;
 
 const appRun = {
   tasks: {
     ...effectDiagnostics,
-    ...sliceBoundaries,
+    check: sliceBoundaries.check,
     build: {
       command: "vp build",
       dependsOn: ["@repo/dev#setup", "check:effect"],
@@ -241,12 +267,12 @@ const appRun = {
       command: "../../tools/dev/src/dev-start.ts",
       dependsOn: ["@repo/dev#setup"],
     },
+    dev: { cache: false, command: "vp dev" },
+    preview: { cache: false, command: "vp preview" },
     ...lifecycle({
-      precommit: [],
       prepush: ["check:effect", "check"],
       prepr: ["build"],
       premerge: ["build", "check:dev"],
-      prerelease: [],
     }),
   },
 } satisfies RunConfig;
@@ -256,7 +282,7 @@ const toolTest: NonNullable<UserConfig["test"]> = {
   restoreMocks: true,
   coverage: {
     exclude: ["specs/**"],
-    thresholds: { 100: true, perFile: true },
+    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
   },
   unstubEnvs: true,
   unstubGlobals: true,

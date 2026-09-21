@@ -12,7 +12,7 @@ export const APPLICATION = {
 
 export const ApplicationName = Schema.Literals(applications);
 export type Application = (typeof applications)[number];
-export type ServiceName = Application | "commander";
+export type ServiceName = Application;
 
 const SERVICE_MEMBER_PORT = 3001;
 const SERVICE_ADMIN_PORT = 3002;
