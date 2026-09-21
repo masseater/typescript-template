@@ -4,5 +4,11 @@
     "lib": ["ES2025", "DOM"],
     "types": ["vite-plus/client", "@cloudflare/workers-types", "node"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    ".paraglide/**/*.ts",
+    ".paraglide/**/*.js"
+  ]
 }

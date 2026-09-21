@@ -4,6 +4,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   CONFLICTED_FILE,
   conflict,
+  save,
   stage,
   withEmptyDirectory,
   withRepository,
@@ -48,6 +49,38 @@ describe("index secret scanning", () => {
       await expect(Effect.runPromise(indexSecretHits(root, []))).resolves.toStrictEqual({
         hits: [{ filename: ".env", rules: ["private-file"] }],
         scan: "word",
+      });
+    });
+  });
+
+  it("flags a deployment value introduced by the staged patch", async () => {
+    expect.assertions(1);
+    await withRepository(async (root) => {
+      await stage(root, "new.txt", "zzprefix-user\n");
+      await expect(
+        Effect.runPromise(indexSecretHits(root, [{ key: "TEMPLATE_PREFIX", value: "zzprefix" }])),
+      ).resolves.toStrictEqual({
+        hits: [{ filename: "new.txt", rules: ["deployment-value:TEMPLATE_PREFIX"] }],
+        scan: "separated",
+      });
+    });
+  });
+
+  it("leaves a deployment value that is already on main out of a later patch", async () => {
+    expect.assertions(1);
+    await withRepository(async (root) => {
+      await save(root, "existing.txt", "zzprefix-user\n");
+      await stage(root, "note.txt", "unrelated\n");
+      await expect(
+        Effect.runPromise(
+          indexSecretHits(root, [
+            { key: "TEMPLATE_APP_DOMAIN", value: "zzprefix-user" },
+            { key: "TEMPLATE_PREFIX", value: "zzprefix" },
+          ]),
+        ),
+      ).resolves.toStrictEqual({
+        hits: [],
+        scan: "separated",
       });
     });
   });

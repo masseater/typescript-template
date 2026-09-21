@@ -1,6 +1,9 @@
 {
   "name": "@repo/vite-config",
   "private": true,
+  "bin": {
+    "check-effect-typecheck": "./src/effect-typecheck.ts"
+  },
   "type": "module",
   "exports": {
     ".": "./src/vite.ts",
@@ -9,6 +12,8 @@
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "1.54.10",
+    "@effect/tsgo": "0.45.0",
+    "@inlang/paraglide-js": "catalog:",
     "@repo/config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:",
