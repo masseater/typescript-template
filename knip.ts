@@ -169,8 +169,10 @@ const config = ({
     ignoreIssues: {
       "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/server-app.ts": ["exports"],
       "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/service-admin/src/shared/server-api/server-app.ts": ["exports"],
       "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/inbox/binding.ts": ["exports"],
@@ -182,6 +184,7 @@ const config = ({
       "apps/service-member/src/shared/server-api/jobs-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/realtime-api.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/server-app.ts": ["exports"],
       "libs/db/src/testing.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
@@ -246,7 +249,12 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "libs/vite-config": {
-        entry: productionOnly("src/effect-typecheck.ts!"),
+        entry: [
+          ...productionOnly("src/effect-typecheck.ts!"),
+          "src/cloudflare-workers-loader.mjs",
+          "src/cloudflare-workers-stub.mjs",
+          "src/cloudflare-workflows-stub.mjs",
+        ],
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
