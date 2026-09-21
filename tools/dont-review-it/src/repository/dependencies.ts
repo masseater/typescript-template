@@ -72,12 +72,7 @@ const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): 
 
 const rootOnlyPackages: Readonly<
   Record<string, { readonly owners: readonly string[]; readonly runner: string }>
-> = {
-  "react-doctor": {
-    owners: ["tools/dont-review-it/package.json"],
-    runner: "ルートの vp run check:react",
-  },
-};
+> = {};
 
 type LocalExecutableName = "commander";
 
