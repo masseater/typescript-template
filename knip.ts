@@ -140,6 +140,7 @@ const scripts = {
     "src/observe/verify.ts!",
     "src/observe/symbolicate.ts!",
     "src/observe/receiver-check.ts!",
+    "src/verify/cli.ts!",
   ],
 };
 
@@ -221,7 +222,6 @@ const config = ({
       "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
-        ignoreDependencies: ["playwright"],
         project: ["src/**/*.ts!"],
       },
       "tools/load": {

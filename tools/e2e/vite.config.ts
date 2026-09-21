@@ -17,6 +17,7 @@ export default defineConfig({
         command: "vp test run",
         dependsOn: ["@repo/dev#setup", ...applicationChecks],
       },
+      verify: { cache: false, command: "./src/verify/cli.ts" },
       ...lifecycle({
         precommit: [],
         premerge: [],
