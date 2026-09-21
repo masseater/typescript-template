@@ -1,7 +1,13 @@
 import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
+import {
+  checkCode,
+  effectDiagnostics,
+  intentValidation,
+  lifecycle,
+  testCoverageRun,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -9,10 +15,12 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       ...intentValidation,
-      ...testRun,
+      ...checkCode,
+      ...testCoverageRun,
       ...lifecycle({
+        precommit: ["check:code"],
         prepush: ["check:effect", "check"],
-        prepr: ["test"],
+        premerge: ["test"],
       }),
     },
   },

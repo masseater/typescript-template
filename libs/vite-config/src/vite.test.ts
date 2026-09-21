@@ -4,11 +4,14 @@ import { describe, expect, test } from "vite-plus/test";
 import {
   appConfig,
   appRun,
+  checkCode,
   effectDiagnostics,
   effectRun,
   lifecycle,
   sliceBoundaries,
   taskInput,
+  testRun,
+  workspaceCheckImports,
 } from "./vite.ts";
 
 import type { ConfigEnv, PluginOption } from "vite-plus";
@@ -50,20 +53,44 @@ describe("effectRun", () => {
     expect(effectWorkspaceRun).toStrictEqual({
       tasks: {
         ...effectDiagnostics,
-        ...lifecycle({ prepush: ["check:effect"] }),
+        ...checkCode,
+        ...workspaceCheckImports,
+        ...lifecycle({
+          precommit: ["check:code"],
+          prepush: ["check:effect", "check:imports"],
+        }),
       },
     });
   });
 });
 
 describe("appRun", () => {
-  const it = test.extend("applicationRun", () => appRun);
+  const it = test.extend("applicationRun", () => appRun("service-member"));
 
   it("type-checks, builds, and starts before the stages that ship an app", ({ applicationRun }) => {
     expect(applicationRun).toStrictEqual({
       tasks: {
         ...effectDiagnostics,
         check: sliceBoundaries.check,
+        ...checkCode,
+        ...workspaceCheckImports,
+        ...testRun,
+        "check:client": {
+          command: "quality-check-client --application service-member",
+          input: [
+            ...taskInput,
+            "!**/dist/**",
+            "!**/node_modules/.cache/**",
+            { base: "workspace", pattern: "!.local" },
+            { base: "workspace", pattern: "!.local/**" },
+          ],
+          output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+        },
+        "check:react": {
+          command: "quality-check-react --application service-member",
+          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+          output: [{ auto: true }, "!**/node_modules/.cache/**"],
+        },
         build: {
           command: "vp build",
           dependsOn: ["@repo/dev#setup", "check:effect"],
@@ -86,9 +113,10 @@ describe("appRun", () => {
         dev: { cache: false, command: "vp dev" },
         preview: { cache: false, command: "vp preview" },
         ...lifecycle({
-          prepush: ["check:effect", "check"],
+          precommit: ["check:code"],
+          prepush: ["check:effect", "check", "check:imports", "check:react", "check:client"],
           prepr: ["build"],
-          premerge: ["build", "check:dev"],
+          premerge: ["test", "check:dev"],
         }),
       },
     });
