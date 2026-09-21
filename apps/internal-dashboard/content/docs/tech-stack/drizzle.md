@@ -36,7 +36,7 @@ await db.batch([
 SQLite では、ファイルに書いた複数の文をまとめて実行しない。文のあいだに `--> statement-breakpoint` を置く。
 
 ```sql
-ALTER TABLE `user` ADD `profile` text DEFAULT '' NOT NULL;
+ALTER TABLE `user` RENAME COLUMN `bio` TO `profile`;
 --> statement-breakpoint
 UPDATE `user` SET `profile` = '' WHERE `profile` IS NULL;
 ```
