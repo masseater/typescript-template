@@ -78,6 +78,12 @@ const lintOptions = {
   options: { denyWarnings: true, typeAware: true, typeCheck: true },
   overrides: [
     {
+      files: ["apps/service-member/src/**/*.tsx", "libs/auth-ui/src/**/*.tsx"],
+      rules: {
+        "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.ERROR,
+      },
+    },
+    {
       files: templateWorkspaces,
       plugins: ["react"],
       rules: {
