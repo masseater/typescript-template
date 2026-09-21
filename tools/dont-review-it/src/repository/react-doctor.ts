@@ -119,7 +119,11 @@ const scanProjects = Effect.fn("scanProjects")(function* scanProjects() {
   while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
     attempt += 1;
     yield* Console.error(
-      JSON.stringify({ attempt, event: "quality.react_doctor_retry", reason: ANALYSIS_TIMEOUT }),
+      JSON.stringify({
+        attempt,
+        event: "quality.react_doctor_retry",
+        reason: "transient-analysis-failure",
+      }),
     );
     scanned = yield* scan(["tools/dont-review-it", "--json"]);
     report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(

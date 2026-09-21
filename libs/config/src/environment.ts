@@ -182,13 +182,6 @@ const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   return AI;
 });
 
-const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(input: unknown) {
-  const config = yield* readConfig(input);
-  return { ...config, AI: yield* readAi(input) };
-});
-
-type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
-
 const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfig(input: unknown) {
   const scalars = yield* decode(StripeScalars, input);
   const mode = stripeKeyMode(scalars.STRIPE_SECRET_KEY);
@@ -217,7 +210,6 @@ export {
   readConfig,
   readEnvironment,
   readStripeConfig,
-  readWikiConfig,
   stripeKeyModes,
 };
-export type { AppConfig, AssetFetcher, StripeConfig, StripeKeyMode, WikiConfig };
+export type { AppConfig, AssetFetcher, StripeConfig, StripeKeyMode };
