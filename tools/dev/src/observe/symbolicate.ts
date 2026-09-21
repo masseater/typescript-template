@@ -68,4 +68,4 @@ const symbolicateCommand = Command.make(
   Effect.provide(layer),
 );
 
-runCli(symbolicateCommand, (cause) => causeRecord("observe.symbolicate_failed", cause));
+runCli(symbolicateCommand, (cause) => causeRecord("observe.symbolicate_failed", { cause }));

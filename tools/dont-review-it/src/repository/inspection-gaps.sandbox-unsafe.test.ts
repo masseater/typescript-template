@@ -151,7 +151,6 @@ describe("inspection coverage", () => {
       "infra/health-monitor/**",
       "infra/local/**",
       "libs/auth/**",
-      "libs/cli/**",
       "libs/config/**",
       "libs/db/**",
       "libs/db-local/**",
