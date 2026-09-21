@@ -6,30 +6,25 @@ import { definePreview } from "@storybook/react-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/react-router";
 import msw from "msw-storybook-addon";
-import { useState, type ReactElement } from "react";
+
+import type { ReactElement } from "react";
 
 const router = createRouter({ routeTree: createRootRoute() });
 
-const Providers = ({ children }: Readonly<{ children: ReactElement }>): ReactElement => {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-      }),
-  );
-  return (
-    <RegistryProvider>
-      <QueryClientProvider client={queryClient}>
-        <RouterContextProvider router={router}>{children}</RouterContextProvider>
-      </QueryClientProvider>
-    </RegistryProvider>
-  );
-};
-
 const withProviders = (Story: () => ReactElement): ReactElement => (
-  <Providers>
-    <Story />
-  </Providers>
+  <RegistryProvider>
+    <QueryClientProvider
+      client={
+        new QueryClient({
+          defaultOptions: { queries: { retry: false } },
+        })
+      }
+    >
+      <RouterContextProvider router={router}>
+        <Story />
+      </RouterContextProvider>
+    </QueryClientProvider>
+  </RegistryProvider>
 );
 
 const preview = definePreview({
