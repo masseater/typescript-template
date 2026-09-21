@@ -162,18 +162,6 @@
     "approver": "the owner of the package that augments the Cloudflare workers env"
   },
   {
-    "path": "libs/monitor/src/mail-recorder.ts",
-    "rule": "class-methods-use-this",
-    "grounds": "WorkerEntrypoint publishes send and taken as instance RPC methods, while the recorded mail is the module array those methods share",
-    "approver": "the owner of the package that exposes this worker entrypoint"
-  },
-  {
-    "path": "libs/monitor/src/monitor-fixture.ts",
-    "rule": "no-namespace",
-    "grounds": "Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding",
-    "approver": "the owner of the package that augments the Cloudflare workers env"
-  },
-  {
     "path": "tools/dev/src/applications.ts",
     "rule": "no-null",
     "grounds": "a failed readiness probe is recorded as JSON null so the status event still carries the httpStatus field",
