@@ -16,7 +16,7 @@ import { MemberRail } from "./member-rail.tsx";
 import { MemberTabs } from "./member-tabs.tsx";
 import { MemberTopBar } from "./member-top-bar.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { SessionView } from "@repo/auth-ui";
 
 const member = {
   email: "member@example.com",
@@ -24,7 +24,7 @@ const member = {
   name: "会員",
   role: ROLE.member,
   twoFactorEnabled: false,
-} as const satisfies Session["user"];
+} as const satisfies SessionView["user"];
 
 const destinations = [
   { label: "ホーム", path: "/home" },

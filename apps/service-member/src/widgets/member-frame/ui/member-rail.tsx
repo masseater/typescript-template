@@ -5,13 +5,13 @@ import { memberNavItems } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { SessionView } from "@repo/auth-ui";
 import type { ReactElement } from "react";
 
 function MemberRail({
   memberBoard,
   user,
-}: Readonly<{ memberBoard: boolean; user: Session["user"] }>): ReactElement {
+}: Readonly<{ memberBoard: boolean; user: SessionView["user"] }>): ReactElement {
   const items = memberNavItems(memberBoard, user.id);
   return (
     <aside className="hidden w-32 shrink-0 flex-col border-r border-border bg-card md:flex">
