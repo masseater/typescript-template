@@ -17,7 +17,7 @@ import {
   uiSharedPartFiles,
 } from "./ui-lint-settings.ts";
 
-const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
+const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.paraglide/**"];
 
 const awaitingPresetPackages = [
   "apps/service-admin/**",
@@ -125,6 +125,7 @@ const lintOptions = {
           },
         ],
         "project/annotations": LINT_SEVERITY.ERROR,
+        "project/atom-state": LINT_SEVERITY.ERROR,
         "project/boundaries": LINT_SEVERITY.ERROR,
         "project/cross-request-state": LINT_SEVERITY.ERROR,
         "project/effect-failures": LINT_SEVERITY.ERROR,
