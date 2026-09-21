@@ -37,6 +37,7 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workerd-linux-arm64@1.20260917.1"
   - "@cloudflare/workerd-windows-64@1.20260917.1"
   - workerd@1.20260917.1
+  - effect-cf@0.47.0
 catalog:
   "@cloudflare/flagship": 0.5.0
   "@openfeature/server-sdk": 1.23.0
@@ -105,6 +106,9 @@ peerDependencyRules:
     "@effect/atom-react>scheduler": ^0.28.0
     vite: "*"
     vitest: "*"
+    effect: ">=4.0.0-rc.112"
+    "@effect/sql-d1": ">=4.0.0-rc.112"
+    "@effect/sql-sqlite-do": ">=4.0.0-rc.112"
 patchedDependencies:
   "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch
   fumadocs-mdx@15.4.1: patches/fumadocs-mdx@15.4.1.patch

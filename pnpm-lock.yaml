@@ -1267,6 +1267,12 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
+      '@effect/sql-d1':
+        specifier: 4.0.0-rc.112
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)
+      '@effect/sql-sqlite-do':
+        specifier: 4.0.0-rc.112
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)
       '@elysiajs/eden':
         specifier: 1.4.9
         version: 1.4.9(elysia@1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.0(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@7.0.2))
@@ -1285,6 +1291,9 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
+      effect-cf:
+        specifier: 0.47.0
+        version: 0.47.0(@cloudflare/vitest-plugin@1.1.12(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11))(@cloudflare/workers-types@5.20260916.1)(@effect/sql-d1@4.0.0-rc.112(effect@4.0.0-rc.112))(@effect/sql-sqlite-do@4.0.0-rc.112(effect@4.0.0-rc.112))(@modelcontextprotocol/server@2.0.0)(effect@4.0.0-rc.112)
       elysia:
         specifier: 1.4.30
         version: 1.4.30(@sinclair/typebox@0.34.52)(exact-mirror@1.2.6)(file-type@22.1.0(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@7.0.2)
@@ -2831,8 +2840,18 @@ packages:
       effect: 4.0.0-rc.112
       redis: '>=5.0.0 <7.0.0'
 
+  '@effect/sql-d1@4.0.0-rc.112':
+    resolution: {integrity: sha512-Wxdr6aU3pBHqhyBiybzbHmEK7qZ2w4iy0IxBgJHe9BLleYzCxObOaBQI9qq/VZSqEvc0IaOBMpbk2zh3dlPNSQ==}
+    peerDependencies:
+      effect: 4.0.0-rc.112
+
   '@effect/sql-d1@4.0.0-rc.115':
     resolution: {integrity: sha512-o2JkGjN02NBMxwDtJbwcC4teyMiOApqN085fdVMid4FUC6ixj/WyKyPpe51QGOMQQTTl2BkXccA/IwDIywGXlA==}
+    peerDependencies:
+      effect: 4.0.0-rc.112
+
+  '@effect/sql-sqlite-do@4.0.0-rc.112':
+    resolution: {integrity: sha512-PewNVasimmhrdxYbNU91O0YlCcalIHOoF0H5XAWXrmzcEQrKM7kVCyb5h0gmJAZjBM4ZgWRvPY0PUOfbNmWchQ==}
     peerDependencies:
       effect: 4.0.0-rc.112
 
@@ -8547,6 +8566,32 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
+  effect-cf@0.47.0:
+    resolution: {integrity: sha512-c59DPlVv2MuGksE1DdYETKB0MP+npdNANwrZ+w4GoPjhZ4dvD0AQP9FuClZkp5ygA2M7WutEgDKY2hPAQwskvg==}
+    peerDependencies:
+      '@cloudflare/computer': ^0.2.0
+      '@cloudflare/sandbox': ^0.13.0-next.738.2
+      '@cloudflare/vitest-plugin': ^1.0.0
+      '@cloudflare/workers-types': ^5.20260825.1
+      '@effect/sql-d1': ^4.0.0-rc.115
+      '@effect/sql-pg': ^4.0.0-rc.115
+      '@effect/sql-sqlite-do': ^4.0.0-rc.115
+      '@modelcontextprotocol/server': ^2.0.0
+      effect: 4.0.0-rc.112
+    peerDependenciesMeta:
+      '@cloudflare/computer':
+        optional: true
+      '@cloudflare/sandbox':
+        optional: true
+      '@cloudflare/vitest-plugin':
+        optional: true
+      '@cloudflare/workers-types':
+        optional: true
+      '@effect/sql-pg':
+        optional: true
+      '@modelcontextprotocol/server':
+        optional: true
+
   effect@4.0.0-rc.112:
     resolution: {integrity: sha512-wXxwuh1Ywnv4cPRM3Wfa0vDwuOHnZ1TsTgHJkG9XgzND6inhBH9n1vBxhg3iIXOia/OrpmvVmd3lrD4vq6bF3A==}
 
@@ -13053,9 +13098,18 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@effect/sql-d1@4.0.0-rc.112(effect@4.0.0-rc.112)':
+    dependencies:
+      '@cloudflare/workers-types': 5.20260916.1
+      effect: 4.0.0-rc.112
+
   '@effect/sql-d1@4.0.0-rc.115(effect@4.0.0-rc.112)':
     dependencies:
       '@cloudflare/workers-types': 5.20260916.1
+      effect: 4.0.0-rc.112
+
+  '@effect/sql-sqlite-do@4.0.0-rc.112(effect@4.0.0-rc.112)':
+    dependencies:
       effect: 4.0.0-rc.112
 
   '@effect/sql-sqlite-do@4.0.0-rc.115(effect@4.0.0-rc.112)':
@@ -18101,6 +18155,16 @@ snapshots:
     optional: true
 
   ee-first@1.1.1: {}
+
+  effect-cf@0.47.0(@cloudflare/vitest-plugin@1.1.12(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11))(@cloudflare/workers-types@5.20260916.1)(@effect/sql-d1@4.0.0-rc.112(effect@4.0.0-rc.112))(@effect/sql-sqlite-do@4.0.0-rc.112(effect@4.0.0-rc.112))(@modelcontextprotocol/server@2.0.0)(effect@4.0.0-rc.112):
+    dependencies:
+      '@effect/sql-d1': 4.0.0-rc.112(effect@4.0.0-rc.112)
+      '@effect/sql-sqlite-do': 4.0.0-rc.112(effect@4.0.0-rc.112)
+      effect: 4.0.0-rc.112
+    optionalDependencies:
+      '@cloudflare/vitest-plugin': 1.1.12(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11)
+      '@cloudflare/workers-types': 5.20260916.1
+      '@modelcontextprotocol/server': 2.0.0
 
   effect@4.0.0-rc.112:
     dependencies:

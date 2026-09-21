@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { Layer } from "effect";
 import { TestClock } from "effect/testing";
 
-import { appLayer } from "./index.ts";
+import { appLayer } from "./bindings.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
 import type { AppServices } from "./index.ts";

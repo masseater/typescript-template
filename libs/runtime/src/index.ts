@@ -1,15 +1,14 @@
 import { Auth } from "@repo/auth";
-import { readConfig } from "@repo/config";
 import { Database } from "@repo/db";
 import { Telemetry } from "@repo/observability";
-import { Effect, Layer } from "effect";
+import { Layer } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
 import { DatabaseHealth } from "./database-health.ts";
 
 import type { AuthFailure } from "@repo/auth";
-import type { AppConfig, Application, ConfigurationInvalid } from "@repo/config";
+import type { AppConfig, Application } from "@repo/config";
 import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
 
 type AppServices =
@@ -52,15 +51,5 @@ function configuredAppLayer(
   return services.pipe(Layer.provideMerge(telemetry));
 }
 
-function appLayer(
-  env: unknown,
-  audience: Exclude<Application, "internal-dashboard">,
-  routes: Readonly<Record<string, string>>,
-): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
-  return Layer.unwrap(
-    readConfig(env).pipe(Effect.map((config) => configuredAppLayer(config, audience, routes))),
-  );
-}
-
-export { appLayer, configuredAppLayer };
+export { configuredAppLayer };
 export type { AppServices };
