@@ -1,10 +1,6 @@
 import { Schema } from "effect";
 
-import {
-  compareCounted,
-  portableDiagnostic,
-  type CountedDiagnostic,
-} from "./effect-typecheck-diagnostics.ts";
+import { compareCounted, portableDiagnostic } from "./effect-typecheck-diagnostics.ts";
 
 const BaselineRow = Schema.Struct({
   file: Schema.String,
@@ -57,9 +53,4 @@ const portableBaseline = (
   ),
 });
 
-const rowsForWorkspace = (
-  baseline: TypecheckBaseline,
-  workspace: string,
-): readonly CountedDiagnostic[] => baseline.workspaces[workspace] ?? [];
-
-export { parseBaseline, portableBaseline, rowsForWorkspace, serializeBaseline };
+export { parseBaseline, portableBaseline, serializeBaseline };
