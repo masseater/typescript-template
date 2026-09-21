@@ -176,6 +176,7 @@ const config = ({
       "libs/db/src/testing.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.ts": ["unlisted"],
       "libs/runtime/src/app-fixture.ts": ["unlisted"],
+      "libs/runtime/src/bindings.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
