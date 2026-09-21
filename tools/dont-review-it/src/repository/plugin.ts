@@ -3,7 +3,12 @@ import { definePlugin, type RuleMeta, type Visitor } from "vite-plus/lint/plugin
 import { RESPONSE_FACTORY_MEMBER } from "../lint/oxlint/lib/spec-syntax/host-object-constructions.ts";
 import { aliasVisitor, originVisitor } from "./alias-visitor.ts";
 import { boundariesVisitor, rawD1Modules } from "./boundaries.ts";
-import { effectFailuresVisitor, effectStackVisitor } from "./effect-rules.ts";
+import {
+  atomStateVisitor,
+  effectFailuresVisitor,
+  effectStackVisitor,
+  forbiddenStateList,
+} from "./effect-rules.ts";
 import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
@@ -242,6 +247,12 @@ const projectPlugin = definePlugin({
       create: annotationVisitor,
       meta: metadata(
         "Effect.annotateLogs / annotateCurrentSpan / withSpan を直接呼べません。OTLP の logger と tracer は注釈と span 属性を fiber と span から直接読むため、logger を包んでも伏せ字が届きません。libs/observability の annotateLogs / annotateSpan / withSpan を使い、宛先へ出る属性を必ず伏せ字の規則に通してください。",
+      ),
+    },
+    "atom-state": {
+      create: atomStateVisitor,
+      meta: metadata(
+        `クライアントの UI 状態は Effect Atom で持ってください。${forbiddenStateList} は使えません。サーバーデータの取得は TanStack Query、フォームの値は TanStack Form に任せ、Atom には画面の一時状態だけを載せてください。`,
       ),
     },
     boundaries: {

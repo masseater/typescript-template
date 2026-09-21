@@ -1,15 +1,21 @@
-import { StatusMessage, STATUS_VARIANT } from "@repo/ui";
-import { useState, type ReactElement } from "react";
+import { StatusMessage, STATUS_VARIANT, localState } from "@repo/ui";
+import { Option } from "effect";
 
 import { TotpEnrollment } from "./totp-enrollment";
 import { TotpPasswordForm } from "./totp-password-form";
 
+import type { ReactElement } from "react";
 import type { Enrollment, SettingsContext } from "./mfa-types";
 
+const useEnrollment = localState(Option.none<Enrollment>());
+
 const TotpSettings = ({ context }: Readonly<{ context: SettingsContext }>): ReactElement => {
-  const [enrollment, setEnrollment] = useState<Enrollment>();
+  const [enrollment, setEnrollment] = useEnrollment();
+  const enroll = (started: Enrollment): void => {
+    setEnrollment(Option.some(started));
+  };
   const clearEnrollment = (): void => {
-    setEnrollment(undefined);
+    setEnrollment(Option.none());
   };
   return (
     <>
@@ -25,15 +31,11 @@ const TotpSettings = ({ context }: Readonly<{ context: SettingsContext }>): Reac
       <p className="text-sm text-muted-foreground">
         設定用のリンクとバックアップコードは秘密情報です。ログやチャットに貼らず、安全な場所に保管してください。
       </p>
-      <TotpPasswordForm
-        context={context}
-        enrolling={enrollment !== undefined}
-        onEnroll={setEnrollment}
-      />
-      {enrollment !== undefined && (
+      <TotpPasswordForm context={context} enrolling={Option.isSome(enrollment)} onEnroll={enroll} />
+      {Option.isSome(enrollment) && (
         <TotpEnrollment
           action={context.action}
-          enrollment={enrollment}
+          enrollment={enrollment.value}
           onVerified={clearEnrollment}
         />
       )}

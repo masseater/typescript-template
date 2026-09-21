@@ -1,4 +1,4 @@
-import { photoSlots, profileVisibilities } from "@repo/config";
+import { Email, photoSlots, profileVisibilities } from "@repo/config";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
@@ -108,7 +108,7 @@ const MemberList = Schema.Struct({
 });
 
 const ContactSubmission = Schema.Struct({
-  email: Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u)),
+  email: Email,
   message: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactMessageLength)),
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactNameLength)),
 });
