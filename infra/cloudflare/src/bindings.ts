@@ -44,7 +44,6 @@ type WikiEnv = SharedEnv &
   }>;
 
 interface CapabilityEnv {
-  readonly ai: Readonly<{ AI: AIBinding }>;
   readonly billing: BillingEnv;
   readonly jobs: Readonly<{
     JOBS: Queues.Queue;
@@ -54,6 +53,7 @@ interface CapabilityEnv {
   readonly storage: Readonly<
     Record<typeof fileBucketBinding, R2.Bucket> & Record<typeof cacheNamespaceBinding, KV.Namespace>
   >;
+  readonly "workers-ai": Readonly<{ AI: AIBinding }>;
 }
 
 type UnionToIntersection<Union> = (Union extends unknown ? (value: Union) => void : never) extends (

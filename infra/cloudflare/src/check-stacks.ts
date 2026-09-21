@@ -115,7 +115,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
-      ...(grants(app, "ai") ? ["AI:ai"] : []),
+      ...(grants(app, "workers-ai") ? ["AI:ai"] : []),
       ...(grants(app, "jobs")
         ? [
             `${jobsQueueBinding}:queue:queueId=<unresolved PropExpr>:queueName=<unresolved PropExpr>`,

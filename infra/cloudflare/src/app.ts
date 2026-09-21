@@ -29,7 +29,9 @@ function appEnv(
   shared: SharedEnv,
   billing: BillingEnv | undefined,
 ): Effect.Effect<DeclaredEnv> {
-  const withAi: DeclaredEnv = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  const withAi: DeclaredEnv = grants(target, "workers-ai")
+    ? { ...shared, AI: Workers.AI("AI") }
+    : shared;
   const withBilling: DeclaredEnv = { ...withAi, ...(billing ?? {}) };
   const withRealtime: DeclaredEnv = grants(target, "realtime")
     ? {
