@@ -1,9 +1,14 @@
-import { Effect, Predicate, Ref } from "effect";
+import { Effect, Predicate, Ref, Schema } from "effect";
 
 import type { LogSink } from "./structured-logs.ts";
 
+const decodeJson = (line: string): unknown =>
+  Effect.runSync(
+    Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(line).pipe(Effect.orDie),
+  );
+
 const parsedLine = (line: string): Readonly<Record<string, unknown>> => {
-  const decoded: unknown = JSON.parse(line);
+  const decoded: unknown = decodeJson(line);
   if (!Predicate.isObject(decoded)) {
     return { "log.unparsed": line };
   }

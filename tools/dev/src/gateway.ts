@@ -28,7 +28,7 @@ function openUpstream(target: number): Effect.Effect<Socket, SocketError, Scope.
 function proxyConnection(target: number, client: Socket): Effect.Effect<void, never, never> {
   return Effect.scoped(
     openUpstream(target).pipe(
-      Effect.catch(() => Effect.succeed(undefined)),
+      Effect.orElseSucceed(() => undefined),
       Effect.flatMap((upstream) =>
         upstream === undefined
           ? Effect.void
@@ -52,11 +52,21 @@ function proxyConnection(target: number, client: Socket): Effect.Effect<void, ne
 }
 
 const program = Effect.gen(function* gateway() {
-  const target = yield* Schema.decodeUnknownEffect(ProxyPort)(Number(process.argv[2])).pipe(
+  const target = yield* Schema.decodeEffect(ProxyPort)(Number(process.argv[2])).pipe(
     Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
   );
   const server = yield* SocketServer;
-  yield* Console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
+  yield* Console.info(
+    yield* Schema.encodeEffect(
+      Schema.fromJsonString(
+        Schema.Struct({
+          event: Schema.Literal("local.gateway_listening"),
+          port: Schema.Finite,
+          target: Schema.Finite,
+        }),
+      ),
+    )({ event: "local.gateway_listening", port: 443, target }),
+  );
   return yield* server.run(
     Effect.fnUntraced(function* handleClient(client: Socket) {
       yield* proxyConnection(target, client);

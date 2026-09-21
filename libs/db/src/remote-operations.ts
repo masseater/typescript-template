@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import { drizzle as connectD1 } from "drizzle-orm/d1";
 import { migrate as applyD1MigrationFiles } from "drizzle-orm/d1/migrator";
 import { readMigrationFiles } from "drizzle-orm/migrator";
-import { Effect, Schema } from "effect";
+import { Clock, Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
 import { remoteDatabase, remoteExecutor } from "./remote-http.ts";
@@ -66,7 +66,7 @@ const queryValues = <Result>(
 ): Effect.Effect<unknown, RemoteFailure> => {
   return Effect.tryPromise({
     catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
-    try: async () => database.values(query),
+    try: () => database.values(query),
   });
 };
 
@@ -127,7 +127,7 @@ const migrateDatabase = <Result>(
     const applied = yield* appliedMigrations(database, migrations);
     yield* Effect.tryPromise({
       catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
-      try: async () => apply({ migrationsFolder: folder }),
+      try: () => apply({ migrationsFolder: folder }),
     });
     if ((yield* appliedMigrations(database, migrations)) !== migrations.length) {
       return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
@@ -141,11 +141,7 @@ const migrateD1 = (
   folder: string = migrationsFolder,
 ): Effect.Effect<number, RemoteFailure> => {
   const database = connectD1(binding);
-  return migrateDatabase(
-    database,
-    async (config) => applyD1MigrationFiles(database, config),
-    folder,
-  );
+  return migrateDatabase(database, (config) => applyD1MigrationFiles(database, config), folder);
 };
 
 const readHistory = Effect.fn("readHistory")(function* readHistory(
@@ -214,7 +210,10 @@ const bootstrapDatabase = <Result>(
     if ((yield* appliedMigrations(database, migrations)) !== migrations.length) {
       return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
     }
-    const rows = yield* queryValues(database, bootstrapStatement(email)).pipe(
+    const rows = yield* queryValues(
+      database,
+      bootstrapStatement(email, yield* Clock.currentTimeMillis),
+    ).pipe(
       Effect.flatMap((listed) =>
         Schema.decodeUnknownEffect(Schema.Array(BootstrappedRow))(listed).pipe(
           Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
@@ -235,6 +234,7 @@ const bootstrapDatabase = <Result>(
 export {
   APPLICATION_TABLES,
   MIGRATIONS_TABLE_PRESENT,
+  RemoteFailure,
   bootstrapDatabase,
   fail,
   loadRemoteMigrations,

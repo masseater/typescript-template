@@ -1,7 +1,8 @@
+import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { ConfirmDialog } from "./confirm-dialog";
 
 const meta = preview.meta({
@@ -19,9 +20,13 @@ export const Closed = meta.story({ args: { open: false } });
 
 export const Danger = meta.story({
   args: { open: true, variant: "danger" },
-  play: async () => {
-    await expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
-  },
+  play: () =>
+    Effect.runPromise(
+      Effect.gen(function* findConfirmDialog() {
+        const dialog = yield* playTask(() => screen.findByRole("alertdialog"));
+        yield* playTask(() => expect(dialog).toBeInTheDocument());
+      }),
+    ),
 });
 
 export const Primary = meta.story({

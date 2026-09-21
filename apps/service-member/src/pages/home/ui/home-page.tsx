@@ -1,5 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
 import { requestAtom, resultError } from "@repo/ui";
+import { DateTime, Effect } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { loadHomeFeed } from "#pages/home/api/feed.ts";
@@ -21,12 +22,17 @@ const feedTimeLabels: Readonly<Record<Locale, Intl.DateTimeFormat>> = {
   ja: new Intl.DateTimeFormat("ja", feedTimeOptions),
 };
 
-const feedAtom = requestAtom(async (): Promise<readonly HomeEntry[]> => {
-  const updatedAtLabel = feedTimeLabels[getLocale()];
-  return presentFeed(await loadHomeFeed(), (updatedAt) =>
-    updatedAtLabel.format(new Date(updatedAt)),
-  );
-});
+const feedAtom = requestAtom((): Promise<readonly HomeEntry[]> =>
+  Effect.runPromise(
+    Effect.gen(function* labeledFeed() {
+      const updatedAtLabel = feedTimeLabels[getLocale()];
+      const feed = yield* Effect.promise(() => loadHomeFeed());
+      return presentFeed(feed, (updatedAt) =>
+        updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(updatedAt))),
+      );
+    }),
+  ),
+);
 
 function homeState(
   failure: string | undefined,

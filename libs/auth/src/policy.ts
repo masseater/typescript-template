@@ -6,6 +6,7 @@ import {
   type AuthenticationMethod,
 } from "@repo/config/identity";
 import { APIError } from "better-auth/api";
+import { DateTime } from "effect";
 
 const enrollmentPaths = new Set([
   "/get-session",
@@ -37,11 +38,11 @@ const isRecentlyStrong = (
     readonly authenticatedAt: Date | null;
     readonly authenticationMethod: string;
   },
-  now: Date = new Date(),
+  nowMillis: number = DateTime.toEpochMillis(DateTime.nowUnsafe()),
 ): boolean =>
   isStrongMethod(sessionRecord.authenticationMethod) &&
   sessionRecord.authenticatedAt !== null &&
-  now.getTime() - sessionRecord.authenticatedAt.getTime() < STEP_UP_MILLISECONDS;
+  nowMillis - sessionRecord.authenticatedAt.getTime() < STEP_UP_MILLISECONDS;
 
 const sessionIsLive = (
   sessionRecord: {
@@ -57,7 +58,7 @@ const sessionIsLive = (
   },
   audience: Application,
 ): boolean =>
-  sessionRecord.session.expiresAt > new Date() &&
+  sessionRecord.session.expiresAt.getTime() > DateTime.toEpochMillis(DateTime.nowUnsafe()) &&
   sessionRecord.session.audience === audience &&
   sessionRecord.session.securityVersion === sessionRecord.user.securityVersion &&
   sessionRecord.user.emailVerified;
@@ -72,19 +73,22 @@ const authenticationMethodFor = (path: string | undefined): AuthenticationMethod
   (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
   AUTHENTICATION_METHOD.password;
 
-const assertEligibleUser: <
+function assertEligibleUser<
   TUser extends { readonly emailVerified: boolean; readonly role: string },
->(
-  eligibleUser: TUser | undefined,
-  audience: Application,
-) => asserts eligibleUser is TUser = (eligibleUser, audience) => {
-  if (eligibleUser === undefined || !eligibleUser.emailVerified) {
-    deny("VERIFIED_EMAIL_REQUIRED");
+>(eligibleUser: TUser | undefined, audience: Application): asserts eligibleUser is TUser {
+  if (
+    eligibleUser !== undefined &&
+    eligibleUser.emailVerified &&
+    (audience === APPLICATION.user || eligibleUser.role === ROLE.administrator)
+  ) {
+    return;
   }
-  if (audience !== APPLICATION.user && eligibleUser.role !== ROLE.administrator) {
-    deny("ADMIN_REQUIRED");
-  }
-};
+  deny(
+    eligibleUser !== undefined && eligibleUser.emailVerified
+      ? "ADMIN_REQUIRED"
+      : "VERIFIED_EMAIL_REQUIRED",
+  );
+}
 
 export {
   assertEligibleUser,

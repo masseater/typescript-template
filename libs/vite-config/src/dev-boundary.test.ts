@@ -1,12 +1,11 @@
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
 import { applications, loopbackAddress, loopbackOrigin } from "@repo/config";
+import { Effect, Schema } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 import { createServer } from "vite-plus";
 import { describe, expect, test as baseTest } from "vite-plus/test";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { filesystem, paths } from "./host.ts";
 import { applicationsExcept } from "./private-path.ts";
 
 const okStatus = 200;
@@ -16,11 +15,16 @@ const hexRadix = 16;
 const refusalText = "Private development resource denied";
 const administratorDatabaseModulePath = "libs/db/src/admin.ts?raw";
 const administratorDatabaseSource = 'export const label = "private-admin-database";';
+const httpLayer = FetchHttpClient.layer;
 
 describe.each(applications)("the %s development server", (application) => {
   const foreignApplications = applicationsExcept(application);
   const applicationEntrySource = `export const label = "${application}-module";`;
-  const servedApplicationEntryModule = `export default ${JSON.stringify(applicationEntrySource)}`;
+  const servedApplicationEntryModule = `export default ${Effect.runSync(
+    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(applicationEntrySource).pipe(
+      Effect.orDie,
+    ),
+  )}`;
   const ownApplicationEntryPoints = ["/", "/@vite/client", "/src/entry.js"];
   const servedOwnApplicationEntryPoints = Object.fromEntries(
     ownApplicationEntryPoints.map((entryPoint) => [entryPoint, okStatus]),
@@ -39,7 +43,11 @@ describe.each(applications)("the %s development server", (application) => {
     guardedFilePaths.map((guardedFile) => [
       guardedFile,
       guardedFile === administratorDatabaseModulePath && application === "service-admin"
-        ? `${okStatus} export default ${JSON.stringify(administratorDatabaseSource)};\n`
+        ? `${okStatus} export default ${Effect.runSync(
+            Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+              administratorDatabaseSource,
+            ).pipe(Effect.orDie),
+          )};\n`
         : `${forbiddenStatus} ${refusalText}`,
     ]),
   );
@@ -65,127 +73,188 @@ describe.each(applications)("the %s development server", (application) => {
   );
 
   const it = baseTest
-    .extend("repositoryRoot", async ({}, { onCleanup }) => {
-      const temporaryDirectory = await mkdtemp(path.join(tmpdir(), `${application}-dev-boundary-`));
-      onCleanup(async () => {
-        await rm(temporaryDirectory, { force: true, recursive: true });
-      });
-      const repositoryRoot = await realpath(temporaryDirectory);
-      const applicationRoot = path.join(repositoryRoot, "apps", application);
-      await Promise.all(
-        [
-          ...applications.map((candidate) => `apps/${candidate}/src`),
-          "libs/db/src",
-          "libs/ui",
-          ".local",
-          "tools",
-        ].map(async (folder) => {
-          await mkdir(path.join(repositoryRoot, folder), { recursive: true });
+    .extend("repositoryRoot", ({}, { onCleanup }) => {
+      const built = Effect.runPromise(
+        Effect.gen(function* repositoryRootProgram() {
+          const temporaryDirectory = yield* filesystem.makeTempDirectory({
+            prefix: `${application}-dev-boundary-`,
+          });
+          const repositoryRoot = yield* filesystem.realPath(temporaryDirectory);
+          const applicationRoot = paths.join(repositoryRoot, "apps", application);
+          yield* Effect.forEach(
+            [
+              ...applications.map((candidate) => `apps/${candidate}/src`),
+              "libs/db/src",
+              "libs/ui",
+              ".local",
+              "tools",
+            ],
+            (folder) =>
+              filesystem.makeDirectory(paths.join(repositoryRoot, folder), { recursive: true }),
+            { concurrency: "unbounded" },
+          );
+          yield* Effect.all(
+            [
+              filesystem.writeFileString(
+                paths.join(applicationRoot, "index.html"),
+                '<html><body>App<script type="module" src="/src/entry.js"></script></body></html>',
+              ),
+              filesystem.writeFileString(
+                paths.join(applicationRoot, "src/entry.js"),
+                applicationEntrySource,
+              ),
+              ...foreignApplications.map((foreign) =>
+                filesystem.writeFileString(
+                  paths.join(repositoryRoot, `apps/${foreign}/src/private.js`),
+                  'export const label = "private-application-module";',
+                ),
+              ),
+              filesystem.writeFileString(
+                paths.join(repositoryRoot, "libs/db/src/remote-cli.ts"),
+                'export const label = "private-remote-database";',
+              ),
+              filesystem.writeFileString(
+                paths.join(repositoryRoot, "libs/db/src/admin.ts"),
+                administratorDatabaseSource,
+              ),
+              filesystem.writeFileString(
+                paths.join(repositoryRoot, ".local/runtime.json"),
+                '{"password":"test-secret-marker"}',
+              ),
+              filesystem.writeFileString(
+                paths.join(applicationRoot, ".dev.vars"),
+                'AUTH_SECRET="test-secret-marker-dev-vars"',
+              ),
+              filesystem.writeFileString(
+                paths.join(repositoryRoot, "tools/private.js"),
+                'export const label = "private-internal-module";',
+              ),
+              filesystem.symlink(
+                paths.join(repositoryRoot, ".local/runtime.json"),
+                paths.join(applicationRoot, "src/alias.json"),
+              ),
+            ],
+            { concurrency: "unbounded" },
+          );
+          return { repositoryRoot, temporaryDirectory };
         }),
       );
-      await Promise.all([
-        writeFile(
-          path.join(applicationRoot, "index.html"),
-          '<html><body>App<script type="module" src="/src/entry.js"></script></body></html>',
-        ),
-        writeFile(path.join(applicationRoot, "src/entry.js"), applicationEntrySource),
-        ...foreignApplications.map(async (foreign) =>
-          writeFile(
-            path.join(repositoryRoot, `apps/${foreign}/src/private.js`),
-            'export const label = "private-application-module";',
+      onCleanup(() =>
+        Effect.runPromise(
+          Effect.promise(() => built).pipe(
+            Effect.flatMap(({ temporaryDirectory }) =>
+              filesystem.remove(temporaryDirectory, { force: true, recursive: true }),
+            ),
           ),
         ),
-        writeFile(
-          path.join(repositoryRoot, "libs/db/src/remote-cli.ts"),
-          'export const label = "private-remote-database";',
-        ),
-        writeFile(path.join(repositoryRoot, "libs/db/src/admin.ts"), administratorDatabaseSource),
-        writeFile(
-          path.join(repositoryRoot, ".local/runtime.json"),
-          '{"password":"test-secret-marker"}',
-        ),
-        writeFile(
-          path.join(applicationRoot, ".dev.vars"),
-          'AUTH_SECRET="test-secret-marker-dev-vars"',
-        ),
-        writeFile(
-          path.join(repositoryRoot, "tools/private.js"),
-          'export const label = "private-internal-module";',
-        ),
-        symlink(
-          path.join(repositoryRoot, ".local/runtime.json"),
-          path.join(applicationRoot, "src/alias.json"),
-        ),
-      ]);
-      return repositoryRoot;
+      );
+      return Effect.runPromise(
+        Effect.promise(() => built).pipe(Effect.map(({ repositoryRoot }) => repositoryRoot)),
+      );
     })
-    .extend("devServerOrigin", async ({ repositoryRoot }, { onCleanup }) => {
-      const devServer = await createServer({
-        configFile: false,
-        logLevel: "silent",
-        plugins: [devBoundary(application, repositoryRoot)],
-        root: path.join(repositoryRoot, "apps", application),
-        server: { host: loopbackAddress, port: 0, strictPort: true },
-      });
-      onCleanup(async () => {
-        await devServer.close();
-      });
-      await devServer.listen();
-      const listeningAddress = devServer.httpServer?.address();
-      if (listeningAddress === undefined || listeningAddress === null) {
-        throw new Error("TEST_SERVER_ADDRESS_REQUIRED");
-      }
-      if (typeof listeningAddress === "string") {
-        throw new Error("TEST_SERVER_ADDRESS_REQUIRED");
-      }
-      return loopbackOrigin(listeningAddress.port);
-    })
-    .extend("statusesOfTheOwnApplicationEntryPoints", async ({ devServerOrigin }) =>
-      Object.fromEntries(
-        await Promise.all(
-          ownApplicationEntryPoints.map(async (entryPoint): Promise<readonly [string, number]> => {
-            const served = await fetch(new URL(entryPoint, devServerOrigin));
-            return [entryPoint, served.status];
-          }),
+    .extend("devServerOrigin", ({ repositoryRoot }, { onCleanup }) => {
+      const started = Effect.runPromise(
+        Effect.gen(function* startDevServer() {
+          const devServer = yield* Effect.promise(() =>
+            createServer({
+              configFile: false,
+              logLevel: "silent",
+              plugins: [devBoundary(application, repositoryRoot)],
+              root: paths.join(repositoryRoot, "apps", application),
+              server: { host: loopbackAddress, port: 0, strictPort: true },
+            }),
+          );
+          yield* Effect.promise(() => devServer.listen());
+          const listeningAddress = devServer.httpServer?.address();
+          if (listeningAddress === undefined || listeningAddress === null) {
+            return yield* Effect.die("TEST_SERVER_ADDRESS_REQUIRED");
+          }
+          if (typeof listeningAddress === "string") {
+            return yield* Effect.die("TEST_SERVER_ADDRESS_REQUIRED");
+          }
+          return { devServer, origin: loopbackOrigin(listeningAddress.port) };
+        }),
+      );
+      onCleanup(() =>
+        Effect.runPromise(
+          Effect.promise(() => started).pipe(
+            Effect.flatMap(({ devServer }) => Effect.promise(() => devServer.close())),
+          ),
         ),
+      );
+      return Effect.runPromise(
+        Effect.promise(() => started).pipe(Effect.map(({ origin }) => origin)),
+      );
+    })
+    .extend("statusesOfTheOwnApplicationEntryPoints", ({ devServerOrigin }) =>
+      Effect.runPromise(
+        Effect.forEach(
+          ownApplicationEntryPoints,
+          (entryPoint) =>
+            Effect.gen(function* ownApplicationEntryPoint() {
+              const servedPage = yield* HttpClient.get(new URL(entryPoint, devServerOrigin).href);
+              return [entryPoint, servedPage.status] as const;
+            }).pipe(Effect.provide(httpLayer), Effect.orDie),
+          { concurrency: "unbounded" },
+        ).pipe(Effect.map((statusPairs) => Object.fromEntries(statusPairs))),
       ),
     )
-    .extend("textOfTheApplicationEntryModule", async ({ devServerOrigin }) => {
-      const served = await fetch(new URL("/src/entry.js?raw", devServerOrigin));
-      return served.text();
-    })
-    .extend("responsesOfTheGuardedFiles", async ({ devServerOrigin, repositoryRoot }) =>
-      Object.fromEntries(
-        await Promise.all(
-          guardedFilePaths.map(async (guardedFile): Promise<readonly [string, string]> => {
-            const served = await fetch(
-              new URL(`/@fs/${repositoryRoot}/${guardedFile}`, devServerOrigin),
-            );
-            return [guardedFile, `${served.status} ${await served.text()}`];
-          }),
-        ),
+    .extend("textOfTheApplicationEntryModule", ({ devServerOrigin }) =>
+      Effect.runPromise(
+        Effect.gen(function* applicationEntryModuleText() {
+          const servedPage = yield* HttpClient.get(
+            new URL("/src/entry.js?raw", devServerOrigin).href,
+          );
+          return yield* servedPage.text;
+        }).pipe(Effect.provide(httpLayer), Effect.orDie),
       ),
     )
-    .extend("responsesOfTheUndecidableRequests", async ({ devServerOrigin }) =>
-      Object.fromEntries(
-        await Promise.all(
-          undecidablePaths.map(async (undecidablePath): Promise<readonly [string, string]> => {
-            const served = await fetch(new URL(undecidablePath, devServerOrigin));
-            return [undecidablePath, `${served.status} ${await served.text()}`];
-          }),
-        ),
+    .extend("responsesOfTheGuardedFiles", ({ devServerOrigin, repositoryRoot }) =>
+      Effect.runPromise(
+        Effect.forEach(
+          guardedFilePaths,
+          (guardedFile) =>
+            Effect.gen(function* guardedFilePage() {
+              const servedPage = yield* HttpClient.get(
+                new URL(`/@fs/${repositoryRoot}/${guardedFile}`, devServerOrigin).href,
+              );
+              const pageBody = yield* servedPage.text;
+              return [guardedFile, `${servedPage.status} ${pageBody}`] as const;
+            }).pipe(Effect.provide(httpLayer), Effect.orDie),
+          { concurrency: "unbounded" },
+        ).pipe(Effect.map((responsePairs) => Object.fromEntries(responsePairs))),
       ),
     )
-    .extend("statusesOfThePrivateModules", async ({ devServerOrigin, repositoryRoot }) =>
-      Object.fromEntries(
-        await Promise.all(
-          privateModulePaths.map(async (privateModule): Promise<readonly [string, number]> => {
-            const served = await fetch(
-              new URL(privateModule.replace("{repository}", repositoryRoot), devServerOrigin),
-            );
-            return [privateModule, served.status];
-          }),
-        ),
+    .extend("responsesOfTheUndecidableRequests", ({ devServerOrigin }) =>
+      Effect.runPromise(
+        Effect.forEach(
+          undecidablePaths,
+          (undecidablePath) =>
+            Effect.gen(function* undecidablePage() {
+              const servedPage = yield* HttpClient.get(
+                new URL(undecidablePath, devServerOrigin).href,
+              );
+              const pageBody = yield* servedPage.text;
+              return [undecidablePath, `${servedPage.status} ${pageBody}`] as const;
+            }).pipe(Effect.provide(httpLayer), Effect.orDie),
+          { concurrency: "unbounded" },
+        ).pipe(Effect.map((responsePairs) => Object.fromEntries(responsePairs))),
+      ),
+    )
+    .extend("statusesOfThePrivateModules", ({ devServerOrigin, repositoryRoot }) =>
+      Effect.runPromise(
+        Effect.forEach(
+          privateModulePaths,
+          (privateModule) =>
+            Effect.gen(function* privateModulePage() {
+              const servedPage = yield* HttpClient.get(
+                new URL(privateModule.replace("{repository}", repositoryRoot), devServerOrigin)
+                  .href,
+              );
+              return [privateModule, servedPage.status] as const;
+            }).pipe(Effect.provide(httpLayer), Effect.orDie),
+          { concurrency: "unbounded" },
+        ).pipe(Effect.map((statusPairs) => Object.fromEntries(statusPairs))),
       ),
     );
 

@@ -1,3 +1,4 @@
+import { Effect, Schema } from "effect";
 import { expect } from "vite-plus/test";
 
 type ParsedFields = {
@@ -12,31 +13,42 @@ type HostMessage = Request | Response;
 
 const jsonMediaType = "application/json";
 
-const parsedBodyOf = async (hostMessage: HostMessage): Promise<unknown> => {
-  const bodyText = await hostMessage.clone().text();
-  if (bodyText === "") return null;
-  const mediaType = hostMessage.headers.get("content-type") ?? "";
-  return mediaType.startsWith(jsonMediaType) ? (JSON.parse(bodyText) as unknown) : bodyText;
-};
+const parsedBodyOf = (hostMessage: HostMessage) =>
+  Effect.gen(function* parsedBody() {
+    const bodyText = yield* Effect.promise(() => hostMessage.clone().text());
+    if (bodyText === "") return null;
+    const mediaType = hostMessage.headers.get("content-type") ?? "";
+    return mediaType.startsWith(jsonMediaType)
+      ? yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(bodyText)
+      : bodyText;
+  }).pipe(Effect.orDie);
 
-const parsedFieldsOf = async (hostMessage: HostMessage): Promise<ParsedFields> => ({
-  ...(hostMessage instanceof Request
-    ? { method: hostMessage.method, url: hostMessage.url }
-    : { status: hostMessage.status }),
-  headers: Object.fromEntries(hostMessage.headers.entries()),
-  body: await parsedBodyOf(hostMessage),
-});
+const parsedFieldsOf = (hostMessage: HostMessage) =>
+  Effect.gen(function* parsedFields() {
+    return {
+      ...(hostMessage instanceof Request
+        ? { method: hostMessage.method, url: hostMessage.url }
+        : { status: hostMessage.status }),
+      headers: Object.fromEntries(hostMessage.headers.entries()),
+      body: yield* parsedBodyOf(hostMessage),
+    };
+  }).pipe(Effect.orDie);
 
 expect.extend({
-  async toHaveParsedFields(received: HostMessage, expectedFields: ParsedFields) {
-    const receivedFields = await parsedFieldsOf(received);
-    return {
-      pass: this.equals(receivedFields, expectedFields),
-      message: () =>
-        `expected parsed fields ${this.utils.printExpected(expectedFields)}, received ${this.utils.printReceived(receivedFields)}`,
-      actual: receivedFields,
-      expected: expectedFields,
-    };
+  toHaveParsedFields(received: HostMessage, expectedFields: ParsedFields) {
+    const matcher = this;
+    return Effect.runPromise(
+      Effect.gen(function* matchParsedFields() {
+        const receivedFields = yield* parsedFieldsOf(received);
+        return {
+          pass: matcher.equals(receivedFields, expectedFields),
+          message: () =>
+            `expected parsed fields ${matcher.utils.printExpected(expectedFields)}, received ${matcher.utils.printReceived(receivedFields)}`,
+          actual: receivedFields,
+          expected: expectedFields,
+        };
+      }),
+    );
   },
 });
 

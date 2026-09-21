@@ -1,11 +1,28 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { recommended } from "@effect/tsgo/oxlint-presets";
 import { appRun, effectDiagnostics } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
 import { repositoryRoot } from "./repository-root.ts";
+
+const camelRule = (name: string): string =>
+  name
+    .replace(/^effecttsgo\//u, "")
+    .replace(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase());
+
+const EFFECT_LANGUAGE_SERVICE = {
+  name: "@effect/language-service",
+  includeSuggestionsInTsc: true,
+  ignoreEffectSuggestionsInTscExitCode: false,
+  ignoreEffectWarningsInTscExitCode: false,
+  ignoreEffectErrorsInTscExitCode: false,
+  diagnosticSeverity: Object.fromEntries(
+    Object.keys(recommended.rules ?? {}).map((name) => [camelRule(name), "error"]),
+  ),
+} as const;
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../{apps,libs,infra,tools}/*/vite.config.ts",
@@ -14,6 +31,32 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob(
 const projects: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../{apps,libs,infra,tools}/*/tsconfig.json",
   { eager: true },
+);
+const projectTexts: Readonly<Record<string, string>> = import.meta.glob(
+  [
+    "../../../../tsconfig.base.json",
+    "../../tsconfig/base.json",
+    "../../../../{apps,libs,infra,tools}/*/tsconfig.json",
+  ],
+  { eager: true, import: "default", query: "?raw" },
+);
+
+type Tsconfig = {
+  readonly compilerOptions?: {
+    readonly plugins?: readonly unknown[];
+  };
+};
+
+const parsedProjects = Object.entries(projectTexts)
+  .map(([file, text]) => ({
+    file,
+    project: JSON.parse(text) as Tsconfig,
+    text,
+  }))
+  .toSorted((left, right) => left.file.localeCompare(right.file));
+
+const sharedProjects = parsedProjects.filter(
+  ({ file }) => file.endsWith("tsconfig.base.json") || file.endsWith("tsconfig/base.json"),
 );
 
 const environment = { command: "serve", mode: "development" };
@@ -55,20 +98,32 @@ describe("effect diagnostics coverage", () => {
     );
   });
 
-  it("fails the gate before effect diagnostics and before the bundle", () => {
-    expect.assertions(4);
-    const gates = Object.values(configs)
-      .map((config) => namedTask(config, "check:effect:gate"))
-      .filter((task) => task !== undefined);
-    expect(gates).toStrictEqual(gates.map(() => effectDiagnostics["check:effect:gate"]));
-    expect(gates).toHaveLength(declarations.length);
-    expect(effectDiagnostics["check:effect"]).toEqual(
-      expect.objectContaining({
-        command:
-          "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-        dependsOn: ["check:effect:gate"],
-      }),
+  it("typechecks with effect-tsgo before the bundle", () => {
+    expect.assertions(2);
+    expect(effectDiagnostics["check:effect"].command).toBe(
+      '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
     );
     expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
+  });
+
+  it("keeps Effect language-service diagnostics on and failing tsc", () => {
+    expect.assertions(4);
+    const declared = parsedProjects.flatMap(
+      ({ project }) => project.compilerOptions?.plugins ?? [],
+    );
+    const languageService = declared.filter(
+      (plugin) => field(plugin, "name") === "@effect/language-service",
+    );
+    expect(languageService).toStrictEqual(
+      languageService.map(() => EFFECT_LANGUAGE_SERVICE as unknown),
+    );
+    expect(languageService.map((plugin) => field(plugin, "diagnostics"))).not.toContain(false);
+    expect(
+      parsedProjects.filter(({ text }) => text.includes('"diagnostics": false')),
+    ).toStrictEqual([]);
+    expect(sharedProjects.map(({ project }) => project.compilerOptions?.plugins)).toStrictEqual([
+      [EFFECT_LANGUAGE_SERVICE],
+      [EFFECT_LANGUAGE_SERVICE],
+    ]);
   });
 });

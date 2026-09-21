@@ -1,7 +1,7 @@
 import { APPLICATION } from "@repo/config";
 import { runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
-import { Effect } from "effect";
+import { Clock, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import {
@@ -51,7 +51,7 @@ const signInStatuses = Effect.fn("signInStatuses")(function* signInStatuses() {
 
 describe("email change", () => {
   describe("a member signed in with the password only", () => {
-    const it = authTest().extend("outcome", async ({ auth }) =>
+    const it = authTest().extend("outcome", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* requestWeakly() {
           yield* registerVerified(OLD_EMAIL);
@@ -76,13 +76,13 @@ describe("email change", () => {
   });
 
   describe("a member whose strong authentication is stale", () => {
-    const it = authTest().extend("denied", async ({ auth }) =>
+    const it = authTest().extend("denied", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* requestStale() {
           const client = yield* strongMember();
           yield* runStatement(
             "UPDATE session SET authenticated_at = ? WHERE user_id = (SELECT id FROM user WHERE email = ?)",
-            Date.now() - MINUTES_AGO * MILLISECONDS_PER_MINUTE,
+            (yield* Clock.currentTimeMillis) - MINUTES_AGO * MILLISECONDS_PER_MINUTE,
             OLD_EMAIL,
           );
           return yield* requestChange(client);
@@ -99,7 +99,7 @@ describe("email change", () => {
   });
 
   describe("a member who just verified the authenticator app", () => {
-    const it = authTest().extend("outcome", async ({ auth }) =>
+    const it = authTest().extend("outcome", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* requestStrongly() {
           const client = yield* strongMember();
@@ -138,7 +138,7 @@ describe("email change", () => {
   });
 
   describe("a confirmation link opened without the member's session", () => {
-    const it = authTest().extend("outcome", async ({ auth }) =>
+    const it = authTest().extend("outcome", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* confirmAnonymously() {
           const client = yield* strongMember();
@@ -162,7 +162,7 @@ describe("email change", () => {
   });
 
   describe("a confirmation link opened with the member's session", () => {
-    const it = authTest().extend("outcome", async ({ auth }) =>
+    const it = authTest().extend("outcome", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* confirm() {
           const client = yield* strongMember();
@@ -191,7 +191,7 @@ describe("email change", () => {
   });
 
   describe("a change to an address that is already registered", () => {
-    const it = authTest().extend("outcome", async ({ auth }) =>
+    const it = authTest().extend("outcome", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* requestTaken() {
           yield* registerVerified("taken@example.com");
@@ -212,7 +212,7 @@ describe("email change", () => {
   });
 
   describe("an administrator on the admin app", () => {
-    const it = authTest().extend("denied", async ({ auth }) =>
+    const it = authTest().extend("denied", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* requestAsAdmin() {
           yield* bootstrapVerifiedAdmin("admin@example.com");

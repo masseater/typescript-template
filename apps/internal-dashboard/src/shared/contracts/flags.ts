@@ -8,6 +8,7 @@ const FlagEntry = Schema.Struct({
   enabled: Schema.Boolean,
   key: FlagKey,
 });
+type FlagEntry = typeof FlagEntry.Type;
 
 const FlagList = Schema.Struct({
   flags: Schema.Array(FlagEntry),

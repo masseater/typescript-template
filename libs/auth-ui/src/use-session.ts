@@ -1,25 +1,29 @@
 import { useAtomValue } from "@effect/atom-react";
 import { httpStatus } from "@repo/observability/http-status";
 import { requestAtom, resultError } from "@repo/ui";
+import { Effect } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 
+import { browserGet } from "./browser-http.ts";
 import { SessionView, decodeJson, type SessionView as SessionData } from "./protocol.ts";
 
 const sessionEndpoint = "/api/session";
 
-const fetchSession = async (endpoint: string): Promise<SessionData | undefined> => {
-  const served = await fetch(endpoint, { cache: "no-store", credentials: "same-origin" });
-  if (served.status === httpStatus.unauthorized) {
-    return undefined;
-  }
-  if (!served.ok) {
-    throw new Error(`セッションの取得に失敗しました（HTTP ${served.status}）。`);
-  }
-  const sessionJson: unknown = await served.json();
-  return decodeJson(SessionView, sessionJson);
-};
+const fetchSession = (endpoint: string): Effect.Effect<SessionData | undefined> =>
+  Effect.gen(function* readSession() {
+    const served = yield* browserGet(endpoint, { cache: "no-store", credentials: "same-origin" });
+    if (served.status === httpStatus.unauthorized) {
+      return undefined;
+    }
+    if (served.status < 200 || served.status >= 300) {
+      return yield* Effect.die(
+        new Error(`セッションの取得に失敗しました（HTTP ${served.status}）。`),
+      );
+    }
+    return decodeJson(SessionView, yield* served.json.pipe(Effect.orDie));
+  });
 
-const sessionAtom = requestAtom(async () => fetchSession(sessionEndpoint));
+const sessionAtom = requestAtom(() => Effect.runPromise(fetchSession(sessionEndpoint)));
 
 const useSession = (): {
   readonly error: string | undefined;

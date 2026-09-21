@@ -1,7 +1,6 @@
-import path from "node:path";
-
 import { APPLICATION, type Application } from "@repo/config";
 
+import { paths } from "./host.ts";
 import { applicationsExcept } from "./private-path.ts";
 
 import type { UserConfig } from "vite-plus";
@@ -20,8 +19,8 @@ const serverOptions = ({
     fs: {
       allow: [
         applicationRoot,
-        path.join(repositoryRoot, "libs"),
-        path.join(repositoryRoot, "node_modules"),
+        paths.join(repositoryRoot, "libs"),
+        paths.join(repositoryRoot, "node_modules"),
       ],
       deny: [
         ".env",

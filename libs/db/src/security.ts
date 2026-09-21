@@ -1,7 +1,7 @@
 import { type Application } from "@repo/config";
 import { ROLE, type StrongAuthenticationMethod } from "@repo/config/identity";
 import { and, count, eq, gt, lte } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { query } from "./database.ts";
 import {
@@ -18,7 +18,7 @@ class SessionRevoked extends Schema.TaggedError<SessionRevoked>()("SessionRevoke
 
 export const hasVerificationAudience = Effect.fn("hasVerificationAudience")(
   function* hasVerificationAudience(identifier: string, audience: Application) {
-    const checkedAt = new Date();
+    const checkedAt = DateTime.toDate(yield* DateTime.now);
 
     const [pendingVerification] = yield* query((database) =>
       database
@@ -86,7 +86,7 @@ export const getSessionSecurity = Effect.fn("getSessionSecurity")(function* getS
   sessionId: string,
   audience: Application,
 ) {
-  const checkedAt = new Date();
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
 
   const [liveSession] = yield* query((database) =>
     database
@@ -129,10 +129,11 @@ export const markSessionStrong = Effect.fn("markSessionStrong")(
     readonly method: StrongAuthenticationMethod;
   }) {
     const { audience, method, sessionId } = strengthened;
+    const authenticatedAt = DateTime.toDate(yield* DateTime.now);
     const [strongSession] = yield* query((database) =>
       database
         .update(session)
-        .set({ authenticatedAt: new Date(), authenticationMethod: method })
+        .set({ authenticatedAt, authenticationMethod: method })
         .where(and(eq(session.id, sessionId), eq(session.audience, audience)))
         .returning({ id: session.id }),
     );
@@ -145,13 +146,15 @@ export const markSessionStrong = Effect.fn("markSessionStrong")(
 export const revokeUserSessions = Effect.fn("revokeUserSessions")(function* revokeUserSessions(
   userId: string,
 ) {
-  yield* query(async (database): Promise<void> => {
-    await database.batch([
-      database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
-      database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
-      database.delete(session).where(eq(session.userId, userId)),
-    ]);
-  });
+  yield* query((database) =>
+    database
+      .batch([
+        database.delete(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
+        database.delete(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
+        database.delete(session).where(eq(session.userId, userId)),
+      ])
+      .then(() => undefined),
+  );
 });
 
 export const findWikiReader = Effect.fn("findWikiReader")(function* findWikiReader(userId: string) {
@@ -177,7 +180,7 @@ export const claimMailSlot = Effect.fn("claimMailSlot")(function* claimMailSlot(
   readonly identifier: string;
   readonly until: Date;
 }) {
-  const claimedAt = new Date();
+  const claimedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .delete(verification)

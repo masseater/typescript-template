@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 
+import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -25,7 +26,7 @@ export default defineConfig({
   test: {
     experimental: {
       openTelemetry: {
-        enabled: process.env.MST_TELEMETRY !== undefined,
+        enabled: telemetryAsked,
         sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
       },
     },

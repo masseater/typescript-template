@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
-import { Cause, Effect } from "effect";
+import { Cause, Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { annotateSpan, withSpan } from "./annotations.ts";
@@ -53,14 +53,21 @@ const observed = function observed(
   const seen = { authorization: [] as string[], logs: [] as unknown[], traces: [] as unknown[] };
   const lines: unknown[] = [];
   function collect(signal: "logs" | "traces"): Parameters<typeof http.post>[1] {
-    return async ({ request }) => {
-      seen.authorization.push(request.headers.get("authorization") ?? "");
-      seen[signal].push(await request.json());
-      return responding();
-    };
+    return ({ request }) =>
+      Effect.runPromise(
+        Effect.gen(function* collectRequest() {
+          seen.authorization.push(request.headers.get("authorization") ?? "");
+          seen[signal].push(yield* Effect.promise(() => request.json()));
+          return responding();
+        }),
+      );
   }
   function record(line: string): void {
-    lines.push(JSON.parse(line));
+    lines.push(
+      Effect.runSync(
+        Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(line).pipe(Effect.orDie),
+      ),
+    );
   }
   const telemetry = Telemetry.layer({
     log: { error: record, info: record, warn: record },
@@ -93,12 +100,14 @@ const observed = function observed(
 };
 
 const traceIds = function traceIds(payload: readonly unknown[]): readonly string[] {
-  const matches = JSON.stringify(payload).matchAll(exportedTraceIds);
+  const matches = Effect.runSync(
+    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(payload),
+  ).matchAll(exportedTraceIds);
   return Array.from(matches, (match) => match.groups?.["traceId"] ?? "");
 };
 
 const assertLogAttributes = function assertLogAttributes(logs: readonly unknown[]): void {
-  const record = JSON.stringify(logs);
+  const record = Effect.runSync(Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(logs));
   for (const attribute of ["duration_ms", "request_id", "route", "status"]) {
     assert.include(record, `{"key":"${attribute}","value":`);
   }
@@ -147,7 +156,9 @@ it.effect("a secret an attribute carries reaches neither the endpoint nor the lo
         eventName: "authentication.failed",
       }),
     );
-    const exported = JSON.stringify(telemetry.logs);
+    const exported = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+      telemetry.logs,
+    );
     assert.notInclude(exported, leaked);
     assert.include(exported, "authentication.failed");
     assert.include(exported, "[redacted]");
@@ -187,10 +198,16 @@ const spanned = Effect.void.pipe(
 it.effect("a secret an annotation or a span attribute carries reaches no destination", () =>
   Effect.gen(function* program() {
     const telemetry = yield* observed({ authorization, endpoint }, accepted, annotated);
-    const exported = JSON.stringify([telemetry.logs, telemetry.traces]);
+    const exported = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+      telemetry.logs,
+      telemetry.traces,
+    ]);
     assert.notInclude(exported, leaked);
     assert.include(exported, "[redacted]");
-    assert.include(JSON.stringify(telemetry.logs), '{"key":"interview_id","value":');
+    assert.include(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(telemetry.logs),
+      '{"key":"interview_id","value":',
+    );
     assert.containSubset(telemetry.lines, [{ auth_token: "[redacted]", interview_id: "abc" }]);
   }),
 );
@@ -198,7 +215,9 @@ it.effect("a secret an annotation or a span attribute carries reaches no destina
 it.effect("a secret withSpan attributes carry reaches no destination", () =>
   Effect.gen(function* program() {
     const telemetry = yield* observed({ authorization, endpoint }, accepted, spanned);
-    const exported = JSON.stringify(telemetry.traces);
+    const exported = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+      telemetry.traces,
+    );
     assert.notInclude(exported, leaked);
     assert.include(exported, "[redacted]");
     assert.include(exported, '{"key":"interview_id","value":');
@@ -208,7 +227,9 @@ it.effect("a secret withSpan attributes carry reaches no destination", () =>
 it.effect("the endpoint receives the severity the status code asks for", () =>
   Effect.gen(function* program() {
     const telemetry = yield* observed({ authorization, endpoint }, accepted, refused);
-    const record = JSON.stringify(telemetry.logs);
+    const record = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+      telemetry.logs,
+    );
     assert.include(record, '"severityText":"Info"');
     assert.include(record, '"severityText":"Warn"');
     assert.notInclude(record, '"severityText":"Error"');
@@ -222,7 +243,9 @@ it.effect("a secret the cause of a failure carries reaches no destination", () =
       eventName: "application.error",
     });
     const telemetry = yield* observed({ authorization, endpoint }, accepted, failing);
-    const exported = JSON.stringify(telemetry.logs);
+    const exported = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+      telemetry.logs,
+    );
     assert.notInclude(exported, leaked);
     assert.notInclude(exported, '"key":"log.error"');
     assert.include(exported, "no such table: jwks");

@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { query } from "./database.ts";
@@ -16,6 +15,7 @@ export { AUDIT_ACTION, auditEvent, onboardingSteps, schema } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
+export { and, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 export { checkDatabase };
 export {
   claimMailSlot,

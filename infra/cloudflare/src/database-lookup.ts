@@ -32,7 +32,7 @@ const findDatabaseId = Effect.fn("findDatabaseId")(function* findDatabaseId(
   );
   const matches = listed.result.filter((database) => database.name === name);
   if (matches.length > 1) {
-    return yield* Effect.fail(unavailable([source.shape, "ambiguous_name"]));
+    return yield* unavailable([source.shape, "ambiguous_name"]);
   }
   return matches[0]?.uuid;
 });
@@ -43,7 +43,7 @@ const lookupDatabaseId = Effect.fn("lookupDatabaseId")(function* lookupDatabaseI
 ) {
   const found = yield* findDatabaseId(access, name);
   if (found === undefined) {
-    return yield* Effect.fail(unavailable([databaseSource(access.accountId).shape, "absent"]));
+    return yield* unavailable([databaseSource(access.accountId).shape, "absent"]);
   }
   return found;
 });

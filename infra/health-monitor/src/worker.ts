@@ -19,13 +19,10 @@ const health = monitorWorker<Bindings>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseHealthMonitorConfig(env);
-      const results = yield* Effect.all(
-        healthTargets(config).map((target) => probeService(target)),
-        {
-          concurrency: "unbounded",
-        },
-      );
-      const previous = yield* Effect.promise(async () => ctx.storage.get<HealthState>("state"));
+      const results = yield* Effect.forEach(healthTargets(config), probeService, {
+        concurrency: "unbounded",
+      });
+      const previous = yield* Effect.promise(() => ctx.storage.get<HealthState>("state"));
       const decision = decideHealthAlerts(results, previous ?? {});
       const down = results.filter((result) => !result.healthy).map((result) => result.service);
       if (decision.notifications.length > 0) {
@@ -37,7 +34,7 @@ const health = monitorWorker<Bindings>({
           text: formatHealthMessage(decision.notifications),
         });
       }
-      yield* Effect.promise(async () => ctx.storage.put("state", decision.state));
+      yield* Effect.promise(() => ctx.storage.put("state", decision.state));
       return {
         down,
         notified: decision.notifications.length,

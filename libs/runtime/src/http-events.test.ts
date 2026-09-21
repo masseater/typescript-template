@@ -13,10 +13,10 @@ const runtime = workerRuntime(() => context);
 const api = apiRoutes(runtime, { service: "service-member" });
 
 const Tick = Schema.Struct({
-  data: Schema.Struct({ count: Schema.NumberFromString }),
+  data: Schema.Struct({ count: Schema.FiniteFromString }),
   event: Schema.Literal("tick"),
 });
-const Query = Schema.Struct({ from: Schema.NumberFromString });
+const Query = Schema.Struct({ from: Schema.FiniteFromString });
 const decodeTick = Schema.decodeUnknownEffect(Tick);
 const second = 2;
 
@@ -32,7 +32,7 @@ function open(ticks: Ticks): Effect.Effect<Response> {
     "/events",
     api.events(Tick, () => Effect.succeed(ticks), {}),
   );
-  return Effect.promise(async () => app.fetch(new Request(`${origin}/api/events`)));
+  return Effect.promise(() => Promise.resolve(app.fetch(new Request(`${origin}/api/events`))));
 }
 
 function frames(response: Response): FrameReader {
@@ -40,7 +40,7 @@ function frames(response: Response): FrameReader {
 }
 
 function nextFrame(reader: FrameReader): Effect.Effect<unknown> {
-  return Effect.promise(async () => reader.read()).pipe(
+  return Effect.promise(() => reader.read()).pipe(
     Effect.map(({ value }) =>
       value instanceof Uint8Array ? new TextDecoder().decode(value) : value,
     ),
@@ -48,7 +48,7 @@ function nextFrame(reader: FrameReader): Effect.Effect<unknown> {
 }
 
 function close(reader: FrameReader): Effect.Effect<void> {
-  return Effect.promise(async () => reader.cancel());
+  return Effect.promise(() => reader.cancel());
 }
 
 describe("an event stream route", () => {
@@ -112,8 +112,8 @@ describe("an event stream route seen by its callers", () => {
       const { handlers } = elysiaServer(createApi("/api").get("/events", ticks));
       const { HEAD: head } = handlers;
       const request = new Request(`${origin}/api/events`, { method: "HEAD" });
-      const response = yield* Effect.promise(async () => head({ request }));
-      const text = yield* Effect.promise(async () => response.text());
+      const response = yield* Effect.promise(() => head({ request }));
+      const text = yield* Effect.promise(() => response.text());
       assert.deepStrictEqual(
         [response.status, response.headers.get("content-type"), text],
         [httpStatus.ok, "text/event-stream", ""],
@@ -131,8 +131,8 @@ describe("an event stream route seen by its callers", () => {
       );
       const app = createApi("/api").get("/events", ticks);
       const request = new Request(`${origin}/api/events`);
-      const response = yield* Effect.promise(async () => app.fetch(request));
-      const body: unknown = yield* Effect.promise(async () => response.json());
+      const response = yield* Effect.promise(() => Promise.resolve(app.fetch(request)));
+      const body: unknown = yield* Effect.promise(() => response.json());
       assert.deepStrictEqual(
         [response.status, body],
         [httpStatus.badRequest, { error: "入力内容を確認してください。" }],
@@ -144,8 +144,11 @@ describe("an event stream route seen by its callers", () => {
     Effect.gen(function* program() {
       const ticks = api.events(Tick, () => Effect.succeed(Stream.make(tick(1), tick(second))), {});
       const client = apiServerClient(createApi("/api").get("/events", ticks), {});
-      const reply = yield* Effect.promise(async () => client.api.events.get());
+      const reply = yield* Effect.promise(() => client.api.events.get());
       assert.isNotNull(reply.data);
+      if (Symbol.asyncIterator in reply.data === false) {
+        return yield* Effect.die(reply.data);
+      }
       const received = Stream.fromAsyncIterable(reply.data, (cause) => cause).pipe(
         Stream.mapEffect((event) => decodeTick(event)),
       );

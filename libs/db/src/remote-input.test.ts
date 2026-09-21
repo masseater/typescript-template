@@ -43,7 +43,7 @@ describe("parseRemoteInput", () => {
       "REMOTE_INPUT_INVALID",
     ],
   ] as const)("%s", ([, commandArguments, input, expectedCode]) => {
-    const it = test.extend("refusal", async () =>
+    const it = test.extend("refusal", () =>
       Effect.runPromise(Effect.flip(parseRemoteInput(commandArguments, input))));
 
     it("is refused with the code that names what is wrong", ({ refusal }) => {
@@ -52,7 +52,7 @@ describe("parseRemoteInput", () => {
   });
 
   describe("a plan for a real database", () => {
-    const it = test.extend("remoteInput", async () =>
+    const it = test.extend("remoteInput", () =>
       Effect.runPromise(parseRemoteInput(["migrate", "--plan"], d1Target)));
 
     it("is accepted as a plan that executes nothing", ({ remoteInput }) => {

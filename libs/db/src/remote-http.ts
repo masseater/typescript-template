@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { migrate } from "drizzle-orm/sqlite-proxy/migrator";
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
+import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import { RemoteFailure } from "./remote-input.ts";
 
@@ -43,30 +44,32 @@ const queryFailed = (): RemoteFailure => {
   return new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
 };
 
+const d1Http = Layer.merge(
+  FetchHttpClient.layer,
+  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "error" }),
+);
+
 const readJson = (
   endpoint: string,
   apiToken: string,
   body: unknown,
 ): Effect.Effect<unknown, RemoteFailure> => {
   return Effect.gen(function* responseBody() {
-    const d1Response = yield* Effect.tryPromise({
-      catch: queryFailed,
-      try: async (signal) =>
-        fetch(endpoint, {
-          body: JSON.stringify(body),
-          headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
-          method: "POST",
-          redirect: "error",
-          signal: AbortSignal.any([signal, AbortSignal.timeout(D1_API_TIMEOUT_MS)]),
-        }),
-    });
-    if (!d1Response.ok) {
+    const requestPayload = yield* HttpBody.json(body).pipe(Effect.mapError(queryFailed));
+    const d1Response = yield* HttpClient.post(endpoint, {
+      body: requestPayload,
+      headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
+    }).pipe(
+      Effect.timeout(`${D1_API_TIMEOUT_MS} millis`),
+      Effect.provide(d1Http),
+      Effect.mapError(queryFailed),
+    );
+    if (d1Response.status < 200 || d1Response.status >= 300) {
       return yield* queryFailed();
     }
-    return yield* Effect.tryPromise({
-      catch: queryFailed,
-      try: async (): Promise<unknown> => d1Response.json(),
-    });
+    return yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(d1Response).pipe(
+      Effect.mapError(queryFailed),
+    );
   });
 };
 
@@ -95,24 +98,21 @@ const remoteExecutor = ({
   };
 };
 
-const postRaw = async (
+const postRaw = (
   endpoint: string,
   apiToken: string,
   batch: readonly { readonly params?: readonly unknown[]; readonly sql: string }[],
-): Promise<readonly (typeof RawRows.Type)[]> => {
-  return Effect.runPromise(
-    Effect.gen(function* request() {
-      const responseJson = yield* readJson(endpoint, apiToken, { batch });
-      const { result } = yield* Schema.decodeUnknownEffect(RawResponse)(responseJson).pipe(
-        Effect.mapError(queryFailed),
-      );
-      if (result.length !== batch.length) {
-        return yield* queryFailed();
-      }
-      return result.map((item) => item.results.rows);
-    }),
-  );
-};
+): Effect.Effect<readonly (typeof RawRows.Type)[], RemoteFailure> =>
+  Effect.gen(function* request() {
+    const responseJson = yield* readJson(endpoint, apiToken, { batch });
+    const { result } = yield* Schema.decodeUnknownEffect(RawResponse)(responseJson).pipe(
+      Effect.mapError(queryFailed),
+    );
+    if (result.length !== batch.length) {
+      return yield* queryFailed();
+    }
+    return result.map((item) => item.results.rows);
+  });
 
 const remoteDatabase = ({
   accountId,
@@ -127,28 +127,33 @@ const remoteDatabase = ({
   readonly database: SqliteRemoteDatabase;
 } => {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/raw`;
-  const run = async (
+  const run = (
     sql: string,
     params: readonly unknown[],
     method: SQLiteExecuteMethod,
-  ): Promise<{ rows: unknown[] }> => {
-    const [rows = []] = await postRaw(endpoint, apiToken, [{ params, sql }]);
-    const [firstRow] = rows;
-    return { rows: method === "get" ? [...(firstRow ?? [])] : [...rows] };
-  };
+  ): Promise<{ rows: unknown[] }> =>
+    Effect.runPromise(
+      Effect.gen(function* runRaw() {
+        const [rows = []] = yield* postRaw(endpoint, apiToken, [{ params, sql }]);
+        const [firstRow] = rows;
+        return { rows: method === "get" ? [...(firstRow ?? [])] : [...rows] };
+      }),
+    );
   const database = drizzle(run);
   return {
-    apply: async (config) =>
+    apply: (config) =>
       migrate(
         database,
-        async (queries) => {
+        (queries) => {
           if (queries.length === 0) {
-            return;
+            return Promise.resolve();
           }
-          await postRaw(
-            endpoint,
-            apiToken,
-            queries.map((sql) => ({ sql })),
+          return Effect.runPromise(
+            postRaw(
+              endpoint,
+              apiToken,
+              queries.map((sql) => ({ sql })),
+            ).pipe(Effect.asVoid),
           );
         },
         config,

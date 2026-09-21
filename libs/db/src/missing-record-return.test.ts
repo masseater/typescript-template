@@ -1,21 +1,29 @@
-import { readdirSync, readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-const sourceDirectory = path.dirname(fileURLToPath(import.meta.url));
-
-const productionSources = readdirSync(sourceDirectory).filter(
-  (name) => name.endsWith(".ts") && !name.includes(".test."),
-);
-
 describe("missing database rows", () => {
-  it("does not coalesce an absent row to null", () => {
-    expect.hasAssertions();
-    const coalesced = productionSources.filter((name) =>
-      /\?\?\s*null\b/u.test(readFileSync(path.join(sourceDirectory, name), "utf8")),
-    );
-    expect(coalesced).toStrictEqual([]);
-  });
+  it("does not coalesce an absent row to null", () =>
+    Effect.runPromise(
+      Effect.gen(function* scanSources() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const hostPath = yield* Path.Path;
+        const sourceDirectory = hostPath.dirname(
+          yield* hostPath.fromFileUrl(new URL("./", import.meta.url)),
+        );
+        const names = yield* filesystem.readDirectory(sourceDirectory);
+        const productionSources = names.filter(
+          (name) => name.endsWith(".ts") && !name.includes(".test."),
+        );
+        const coalesced: string[] = [];
+        for (const name of productionSources) {
+          const source = yield* filesystem.readFileString(hostPath.join(sourceDirectory, name));
+          if (/\?\?\s*null\b/u.test(source)) {
+            coalesced.push(name);
+          }
+        }
+        expect.hasAssertions();
+        expect(coalesced).toStrictEqual([]);
+      }).pipe(Effect.orDie, Effect.provide(NodeServices.layer)),
+    ));
 });

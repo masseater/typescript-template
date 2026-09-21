@@ -10,13 +10,16 @@ type RecordedLines = {
   readonly stdwarn: readonly Readonly<Record<string, unknown>>[];
 };
 
-export const recordedLogs = async (
+export const recordedLogs = (
   logging: (sink: LogSink) => Effect.Effect<unknown, unknown>,
-): Promise<RecordedLines> => {
-  const logs = recordingSink();
-  await Effect.runPromise(Effect.orDie(logging(logs.sink)));
-  return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
-};
+): Promise<RecordedLines> =>
+  Effect.runPromise(
+    Effect.gen(function* recordedLogsProgram() {
+      const logs = recordingSink();
+      yield* Effect.orDie(logging(logs.sink));
+      return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
+    }),
+  );
 
 const fixedSpanId = "c".repeat(16);
 const fixedTraceId = "c".repeat(32);

@@ -155,6 +155,23 @@ const redactedField = (fieldName: string, fieldValue: unknown): unknown => {
   if (isSecretKey(fieldName)) {
     return placeholder;
   }
+  if (typeof (fieldValue as { _tag?: unknown })._tag === "string") {
+    const tagged = fieldValue as {
+      readonly _tag: string;
+      readonly cause?: unknown;
+      readonly code?: unknown;
+      readonly keys?: unknown;
+      readonly reason?: unknown;
+    };
+    return {
+      _tag: tagged._tag,
+      ...Object.fromEntries(Object.entries(fieldValue as object)),
+      ...(tagged.cause === undefined ? {} : { cause: tagged.cause }),
+      ...(tagged.reason === undefined ? {} : { reason: tagged.reason }),
+      ...(tagged.code === undefined ? {} : { code: tagged.code }),
+      ...(tagged.keys === undefined ? {} : { keys: tagged.keys }),
+    };
+  }
   if (fieldValue instanceof Error) {
     return { message: fieldValue.message, name: fieldValue.name };
   }
@@ -163,4 +180,21 @@ const redactedField = (fieldName: string, fieldValue: unknown): unknown => {
     : fieldValue;
 };
 
-export { redactSecrets, redactedField };
+const appliedField = (
+  value: unknown,
+  field: (name: string, current: unknown) => unknown,
+  name = "",
+): unknown => {
+  const replaced = field(name, value);
+  if (Array.isArray(replaced)) {
+    return replaced.map((item, index) => appliedField(item, field, String(index)));
+  }
+  if (replaced !== null && typeof replaced === "object") {
+    return Object.fromEntries(
+      Object.entries(replaced).map(([key, item]) => [key, appliedField(item, field, key)]),
+    );
+  }
+  return replaced;
+};
+
+export { appliedField, redactSecrets, redactedField };
