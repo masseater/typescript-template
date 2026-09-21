@@ -25,4 +25,3 @@ const HomeFeed = Schema.Struct({
 });
 
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView };
-export type { OnboardingStep };
