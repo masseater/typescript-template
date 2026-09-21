@@ -33,4 +33,4 @@
 | CSS クラスを手で kebab 設計する | Tailwind ユーティリティと `cva`。`@shadcn/lint` |
 | `[ScreenName]Screen` | `[Name]Page` |
 
-見た目のクラス名を部品の外で足さない。トークンと `data-slot` は既存の `libs/ui` に合わせる。
+見た目のクラス名を部品の外で足さない。トークンと `data-slot` は既存の `libs/ui` に合わせる。props の形は `component-apis.md`。

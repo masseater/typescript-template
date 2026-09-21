@@ -16,6 +16,7 @@
 | `browser()` | ブラウザだけの部分。Suspense の内側 |
 | `useAction`（`@repo/ui`） | ミューテーションの pending と error。pending 中の `run` はキュー。`startTransition` に載る |
 | `Button` の `action` | クリック処理をトランジションに載せる。`onClick` で同じことを手書きしない |
+| 部品 props | `on*Change`、密封、クラスタ。公開 `className` / render prop は禁止（`component-apis.md`） |
 | TanStack Form | フォームの値 |
 | TanStack Query | サーバーデータ |
 | Effect Atom | 画面の一時状態 |
