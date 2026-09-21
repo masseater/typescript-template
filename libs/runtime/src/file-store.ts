@@ -35,32 +35,28 @@ function attempt<Value>(
 function storeOf(bucket: Bucket): FileStoreShape {
   return {
     get: (key) =>
-      attempt("get", async () => {
-        const object = await bucket.get(key);
-        if (object === null) {
-          return undefined;
-        }
-        return {
-          bytes: new Uint8Array(await object.arrayBuffer()),
-          contentType: object.httpMetadata?.contentType,
-        };
-      }),
+      attempt("get", () =>
+        bucket.get(key).then((object) =>
+          object === null
+            ? undefined
+            : object.arrayBuffer().then((buffer) => ({
+                bytes: new Uint8Array(buffer),
+                contentType: object.httpMetadata?.contentType,
+              })),
+        ),
+      ),
     put: (key, file) =>
-      attempt("put", async () => {
-        await bucket.put(
+      attempt("put", () =>
+        bucket.put(
           key,
           file.bytes,
           file.contentType === undefined
             ? undefined
             : { httpMetadata: { contentType: file.contentType } },
-        );
-      }),
+        ),
+      ),
     remove: (keys) =>
-      keys.length === 0
-        ? Effect.void
-        : attempt("delete", async () => {
-            await bucket.delete([...keys]);
-          }),
+      keys.length === 0 ? Effect.void : attempt("delete", () => bucket.delete([...keys])),
   };
 }
 

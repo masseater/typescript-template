@@ -71,7 +71,7 @@ function spawnAlchemy(
 }
 
 function runAlchemy(
-  command: AlchemyCommand,
+  command: readonly string[],
   confidential: readonly Confidential[],
 ): Effect.Effect<number, AlchemyFailure> {
   return isAlchemyCommand(command)
