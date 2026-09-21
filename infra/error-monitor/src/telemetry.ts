@@ -1,6 +1,5 @@
 import { CloudflareId } from "@repo/config";
-import { Duration, Effect, Layer, Schema, SchemaIssue } from "effect";
-import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
+import { Effect, Schema, SchemaIssue } from "effect";
 
 import { ErrorMonitorFailure } from "./config.ts";
 
@@ -28,7 +27,6 @@ interface QueryWindow {
 }
 
 const isCloudflareId = Schema.is(CloudflareId);
-const REQUEST_TIMEOUT_MS = 15_000;
 const QUERY_LIMIT = 2000;
 const WHOLE_BODY = "$";
 const FINGERPRINT = /^[0-9a-f]{8}$/u;
@@ -42,10 +40,7 @@ const QueryEnvelope = Schema.Struct({
   result: Schema.Struct({ calculations: Schema.Array(Calculation) }),
   success: Schema.Literal(true),
 });
-const telemetryHttp = Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "manual" }),
-);
+const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 const issueFormatter = SchemaIssue.makeFormatterStandardSchemaV1({
   leafHook: (issue) => issue._tag,
@@ -109,34 +104,46 @@ function queryPayload(window: QueryWindow, offsetBy: number): unknown {
 }
 
 function queryTelemetry(
+  fetchImpl: typeof fetch,
   window: QueryWindow,
   offsetBy: number,
-): Effect.Effect<HttpClientResponse.HttpClientResponse, ErrorMonitorFailure> {
+): Effect.Effect<Response, ErrorMonitorFailure> {
   return Effect.gen(function* queryTelemetryPage() {
-    const body = yield* HttpBody.json(queryPayload(window, offsetBy));
-    return yield* HttpClient.post(
-      `https://api.cloudflare.com/client/v4/accounts/${window.accountId}/workers/observability/telemetry/query`,
-      {
-        body,
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${window.token}`,
-          "Content-Type": "application/json",
-        },
-      },
-    ).pipe(Effect.timeout(Duration.millis(REQUEST_TIMEOUT_MS)), Effect.provide(telemetryHttp));
-  }).pipe(Effect.mapError(failure("telemetry_http_failed")));
+    const body = yield* encodeJson(queryPayload(window, offsetBy)).pipe(
+      Effect.mapError(failure("telemetry_http_failed")),
+    );
+    return yield* Effect.tryPromise({
+      catch: failure("telemetry_http_failed"),
+      try: (signal) =>
+        fetchImpl(
+          `https://api.cloudflare.com/client/v4/accounts/${window.accountId}/workers/observability/telemetry/query`,
+          {
+            body,
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${window.token}`,
+              "Content-Type": "application/json",
+            },
+            method: "POST",
+            redirect: "manual",
+            signal,
+          },
+        ),
+    });
+  });
 }
 
 const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
   window: QueryWindow,
   offsetBy: number,
 ) {
-  const response = yield* queryTelemetry(window, offsetBy);
-  if (response.status < 200 || response.status >= 300) {
+  const response = yield* queryTelemetry(fetch, window, offsetBy);
+  if (!response.ok) {
     return yield* failure("telemetry_http_failed")();
   }
-  const body = yield* response.json.pipe(Effect.mapError(failure("telemetry_response_invalid")));
+  const body = yield* Effect.tryPromise(() => response.json()).pipe(
+    Effect.mapError(failure("telemetry_response_invalid")),
+  );
   const parsed = yield* Schema.decodeUnknownEffect(QueryEnvelope)(body).pipe(
     Effect.mapError(
       (error) =>

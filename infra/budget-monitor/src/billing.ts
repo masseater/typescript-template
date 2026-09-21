@@ -1,6 +1,5 @@
 import { CloudflareId } from "@repo/config";
-import { DateTime, Duration, Effect, Layer, Schema } from "effect";
-import { FetchHttpClient, HttpClient } from "effect/unstable/http";
+import { DateTime, Effect, Schema } from "effect";
 
 import { BudgetFailure, fail } from "./config.ts";
 
@@ -8,12 +7,7 @@ const MILLISECONDS_PER_HOUR = 3_600_000;
 const FUTURE_CHARGE_TOLERANCE_HOURS = 24;
 const MAX_DATA_AGE_HOURS = 48;
 const isCloudflareId = Schema.is(CloudflareId);
-const REQUEST_TIMEOUT_MS = 15_000;
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
-const billingHttp = Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "manual" }),
-);
 
 const Timestamp = Schema.String.check(
   Schema.makeFilter(
@@ -139,6 +133,21 @@ function httpFailed(): BudgetFailure {
   return new BudgetFailure({ code: "billing_http_failed" });
 }
 
+const requestUsage = (
+  fetchImpl: typeof fetch,
+  accountId: string,
+  token: string,
+): Effect.Effect<Response, BudgetFailure> =>
+  Effect.tryPromise({
+    catch: httpFailed,
+    try: (signal) =>
+      fetchImpl(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, {
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        redirect: "manual",
+        signal,
+      }),
+  });
+
 const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   accountId: string,
   token: string,
@@ -147,20 +156,11 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   if (!isCloudflareId(accountId)) {
     return yield* fail("billing_account_invalid");
   }
-  const response = yield* HttpClient.get(
-    `https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`,
-    {
-      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-    },
-  ).pipe(
-    Effect.timeout(Duration.millis(REQUEST_TIMEOUT_MS)),
-    Effect.provide(billingHttp),
-    Effect.mapError(httpFailed),
-  );
-  if (response.status < 200 || response.status >= 300) {
+  const response = yield* requestUsage(fetch, accountId, token);
+  if (!response.ok) {
     return yield* fail("billing_http_failed");
   }
-  const body = yield* response.json.pipe(
+  const body = yield* Effect.tryPromise(() => response.json()).pipe(
     Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })),
   );
   return yield* summarizeUsage(body, accountId, now);

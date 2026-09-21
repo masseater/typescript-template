@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect, screen, userEvent, waitFor } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
 import { DropdownMenuContent } from "./dropdown-menu-content";
 import { DropdownMenuLinkItem } from "./dropdown-menu-link-item";
@@ -16,15 +16,15 @@ const meta = preview.meta({
     Effect.runPromise(
       Effect.gen(function* followMenuLink() {
         const trigger = canvas.getByRole("button", { name: "アカウント" });
-        yield* Effect.promise(() => userEvent.click(trigger));
-        const menuItem = yield* Effect.promise(() =>
+        yield* playTask(() => userEvent.click(trigger));
+        const menuItem = yield* playTask(() =>
           screen.findByRole("menuitem", { name: "認証設定" }),
         );
-        yield* Effect.promise(() => expect(menuItem).toHaveAttribute("href", "/"));
-        yield* Effect.promise(() => userEvent.click(menuItem));
+        yield* playTask(() => expect(menuItem).toHaveAttribute("href", "/"));
+        yield* playTask(() => userEvent.click(menuItem));
         const menuHasCollapsed = (): Promise<void> =>
           expect(trigger).toHaveAttribute("aria-expanded", "false");
-        yield* Effect.promise(() => waitFor(menuHasCollapsed));
+        yield* playTask(() => waitFor(menuHasCollapsed));
       }),
     ),
   render: ({ children }): ReactElement => (

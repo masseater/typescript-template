@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { expect } from "storybook/test";
 
-import preview from "../storybook/preview";
+import preview, { playTask } from "../storybook/preview";
 import { MFASettings } from "./mfa";
 
 const listPath = "/api/auth/passkey/list-user-passkeys";
@@ -27,8 +27,8 @@ export const NotEnrolled = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* showRegisteredPasskey() {
-        const passkeyName = yield* Effect.promise(() => canvas.findByText("iPhone"));
-        yield* Effect.promise(() => expect(passkeyName).toBeInTheDocument());
+        const passkeyName = yield* playTask(() => canvas.findByText("iPhone"));
+        yield* playTask(() => expect(passkeyName).toBeInTheDocument());
       }),
     ),
 });

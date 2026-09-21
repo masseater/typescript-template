@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { ConfirmDialog } from "./confirm-dialog";
 
 const meta = preview.meta({
@@ -23,8 +23,8 @@ export const Danger = meta.story({
   play: () =>
     Effect.runPromise(
       Effect.gen(function* findConfirmDialog() {
-        const dialog = yield* Effect.promise(() => screen.findByRole("alertdialog"));
-        yield* Effect.promise(() => expect(dialog).toBeInTheDocument());
+        const dialog = yield* playTask(() => screen.findByRole("alertdialog"));
+        yield* playTask(() => expect(dialog).toBeInTheDocument());
       }),
     ),
 });

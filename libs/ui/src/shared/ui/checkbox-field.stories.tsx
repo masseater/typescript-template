@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, fn, userEvent } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { CheckboxField } from "./checkbox-field";
 
 const meta = preview.meta({
@@ -19,8 +19,8 @@ export const Toggles = meta.story({
   play: ({ args, canvas }) =>
     Effect.runPromise(
       Effect.gen(function* toggleCheckbox() {
-        yield* Effect.promise(() => userEvent.click(canvas.getByRole("checkbox")));
-        yield* Effect.promise(() =>
+        yield* playTask(() => userEvent.click(canvas.getByRole("checkbox")));
+        yield* playTask(() =>
           expect(args.onCheckedChange).toHaveBeenCalledWith(true, expect.anything()),
         );
       }),

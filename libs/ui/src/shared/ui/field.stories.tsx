@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, waitFor } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { Field } from "./field";
 import { FieldValidationMessageProvider } from "./field-validation-message-provider";
 
@@ -72,17 +72,17 @@ export const TooShort = meta.story({
   play: ({ canvas, canvasElement }) =>
     Effect.runPromise(
       Effect.gen(function* rejectShortPassword() {
-        const { page, userEvent } = yield* Effect.promise(
+        const { page, userEvent } = yield* playTask(
           () => import("vite-plus/test/browser/context"),
         );
         const rendered = page.elementLocator(canvasElement);
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           userEvent.fill(rendered.getByLabelText("パスワード（12文字以上）"), "short"),
         );
-        yield* Effect.promise(() => userEvent.tab());
+        yield* playTask(() => userEvent.tab());
         const shortPasswordIsRejected = (): Promise<void> =>
           expect(canvas.getByText("文字数が足りません。")).toBeInTheDocument();
-        yield* Effect.promise(() => waitFor(shortPasswordIsRejected));
+        yield* playTask(() => waitFor(shortPasswordIsRejected));
       }),
     ),
 });
@@ -92,16 +92,16 @@ export const Missing = meta.story({
   play: ({ canvas, canvasElement }) =>
     Effect.runPromise(
       Effect.gen(function* rejectEmptyName() {
-        const { page, userEvent } = yield* Effect.promise(
+        const { page, userEvent } = yield* playTask(
           () => import("vite-plus/test/browser/context"),
         );
         const rendered = page.elementLocator(canvasElement);
-        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
-        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));
-        yield* Effect.promise(() => userEvent.tab());
+        yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
+        yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));
+        yield* playTask(() => userEvent.tab());
         const emptyNameIsRejected = (): Promise<void> =>
           expect(canvas.getByText("入力してください。")).toBeInTheDocument();
-        yield* Effect.promise(() => waitFor(emptyNameIsRejected));
+        yield* playTask(() => waitFor(emptyNameIsRejected));
       }),
     ),
 });
@@ -126,16 +126,16 @@ export const EnglishMissing = meta.story({
   play: ({ canvas, canvasElement }) =>
     Effect.runPromise(
       Effect.gen(function* rejectEmptyEnglishName() {
-        const { page, userEvent } = yield* Effect.promise(
+        const { page, userEvent } = yield* playTask(
           () => import("vite-plus/test/browser/context"),
         );
         const rendered = page.elementLocator(canvasElement);
-        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
-        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));
-        yield* Effect.promise(() => userEvent.tab());
+        yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
+        yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));
+        yield* playTask(() => userEvent.tab());
         const emptyNameIsRejected = (): Promise<void> =>
           expect(canvas.getByText("Enter a value.")).toBeInTheDocument();
-        yield* Effect.promise(() => waitFor(emptyNameIsRejected));
+        yield* playTask(() => waitFor(emptyNameIsRejected));
       }),
     ),
 });

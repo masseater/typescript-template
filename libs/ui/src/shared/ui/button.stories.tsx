@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { Button } from "./button";
 
 const meta = preview.meta({ component: Button });
@@ -23,11 +23,11 @@ export const Small = meta.story({
       Effect.gen(function* measureSmallButton() {
         const button = canvas.getByRole("button", { name: "編集" });
         const bounds = button.getBoundingClientRect();
-        yield* Effect.promise(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
-        yield* Effect.promise(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
+        yield* playTask(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
+        yield* playTask(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
         const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
         const fontPx = Number.parseFloat(getComputedStyle(button).fontSize);
-        yield* Effect.promise(() => expect(fontPx).toBeLessThan(rootPx));
+        yield* playTask(() => expect(fontPx).toBeLessThan(rootPx));
       }),
     ),
 });
@@ -43,11 +43,11 @@ export const IconOnly = meta.story({
       Effect.gen(function* measureIconOnlyButton() {
         const button = canvas.getByRole("button", { name: "閉じる" });
         const bounds = button.getBoundingClientRect();
-        yield* Effect.promise(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
-        yield* Effect.promise(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
+        yield* playTask(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
+        yield* playTask(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
         const rootPx = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
         const fontPx = Number.parseFloat(getComputedStyle(button).fontSize);
-        yield* Effect.promise(() => expect(fontPx).toBeLessThan(rootPx));
+        yield* playTask(() => expect(fontPx).toBeLessThan(rootPx));
       }),
     ),
 });

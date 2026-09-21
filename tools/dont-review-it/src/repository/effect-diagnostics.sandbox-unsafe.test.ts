@@ -32,9 +32,31 @@ const projects: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../{apps,libs,infra,tools}/*/tsconfig.json",
   { eager: true },
 );
-const sharedProjects: Readonly<Record<string, unknown>> = import.meta.glob(
-  ["../../../../tsconfig.base.json", "../../tsconfig/base.json"],
-  { eager: true },
+const projectTexts: Readonly<Record<string, string>> = import.meta.glob(
+  [
+    "../../../../tsconfig.base.json",
+    "../../tsconfig/base.json",
+    "../../../../{apps,libs,infra,tools}/*/tsconfig.json",
+  ],
+  { eager: true, import: "default", query: "?raw" },
+);
+
+type Tsconfig = {
+  readonly compilerOptions?: {
+    readonly plugins?: readonly unknown[];
+  };
+};
+
+const parsedProjects = Object.entries(projectTexts)
+  .map(([file, text]) => ({
+    file,
+    project: JSON.parse(text) as Tsconfig,
+    text,
+  }))
+  .toSorted((left, right) => left.file.localeCompare(right.file));
+
+const sharedProjects = parsedProjects.filter(
+  ({ file }) => file.endsWith("tsconfig.base.json") || file.endsWith("tsconfig/base.json"),
 );
 
 const environment = { command: "serve", mode: "development" };
@@ -85,12 +107,9 @@ describe("effect diagnostics coverage", () => {
   });
 
   it("keeps Effect language-service diagnostics on and failing tsc", () => {
-    expect.assertions(3);
-    const declared = [...Object.values(sharedProjects), ...Object.values(projects)].flatMap(
-      (project) => {
-        const plugins = field(field(field(project, "default"), "compilerOptions"), "plugins");
-        return Array.isArray(plugins) ? plugins : [];
-      },
+    expect.assertions(4);
+    const declared = parsedProjects.flatMap(
+      ({ project }) => project.compilerOptions?.plugins ?? [],
     );
     const languageService = declared.filter(
       (plugin) => field(plugin, "name") === "@effect/language-service",
@@ -100,9 +119,11 @@ describe("effect diagnostics coverage", () => {
     );
     expect(languageService.map((plugin) => field(plugin, "diagnostics"))).not.toContain(false);
     expect(
-      Object.values(sharedProjects).map((project) =>
-        field(field(field(project, "default"), "compilerOptions"), "plugins"),
-      ),
-    ).toStrictEqual([[EFFECT_LANGUAGE_SERVICE], [EFFECT_LANGUAGE_SERVICE]]);
+      parsedProjects.filter(({ text }) => text.includes('"diagnostics": false')),
+    ).toStrictEqual([]);
+    expect(sharedProjects.map(({ project }) => project.compilerOptions?.plugins)).toStrictEqual([
+      [EFFECT_LANGUAGE_SERVICE],
+      [EFFECT_LANGUAGE_SERVICE],
+    ]);
   });
 });

@@ -1,61 +1,52 @@
-import { Effect, Layer, Schema } from "effect";
-import {
-  FetchHttpClient,
-  HttpClient,
-  HttpClientRequest,
-  type HttpClientResponse,
-} from "effect/unstable/http";
+import { Effect, Schema } from "effect";
+import { FetchHttpClient, HttpClient, type HttpClientResponse } from "effect/unstable/http";
 
 import { isPasskeyOptionsPath, passkeyUVOptions } from "./protocol.ts";
 
-const browserHttp = Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { credentials: "same-origin" }),
-);
+class BrowserHttpFailed extends Schema.TaggedError<BrowserHttpFailed>()("BrowserHttpFailed", {
+  reason: Schema.Literals(["request", "passkey_options"]),
+}) {}
 
-const headerList = (responseHeaders: Readonly<Record<string, string>>): globalThis.Headers => {
-  const collected = new globalThis.Headers();
-  for (const headerEntry of Object.entries(responseHeaders)) {
-    const headerName = headerEntry[0];
-    const headerContent = headerEntry[1];
-    if (typeof headerContent === "string") {
-      collected.append(headerName, headerContent);
-    }
-  }
-  return collected;
-};
-
-const bufferedResponse = (
-  served: Readonly<{
-    readonly headers: Readonly<Record<string, string>>;
-    readonly status: number;
-  }>,
-  responseBody: ArrayBuffer | string,
-): Response =>
-  new Response(responseBody, {
-    headers: headerList(served.headers),
-    status: served.status,
-  });
+const requestFromBrowser = (
+  fetchImpl: typeof fetch,
+  requested: { readonly input: RequestInfo | URL; readonly init?: RequestInit },
+): Effect.Effect<Response> =>
+  Effect.tryPromise({
+    try: (signal) => fetchImpl(requested.input, { ...requested.init, signal }),
+    catch: () => new BrowserHttpFailed({ reason: "request" }),
+  }).pipe(Effect.orDie);
 
 const executeBrowserRequest = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Effect.Effect<Response> =>
   Effect.gen(function* adaptPasskeyOptions() {
-    const webRequest = new Request(input, init);
-    const served = yield* HttpClient.execute(HttpClientRequest.fromWeb(webRequest)).pipe(
-      Effect.provide(browserHttp),
-    );
-    const { pathname } = new URL(webRequest.url);
-    if (served.status < 200 || served.status >= 300 || !isPasskeyOptionsPath(pathname)) {
-      return bufferedResponse(served, yield* served.arrayBuffer);
+    const served = yield* requestFromBrowser(fetch, {
+      input,
+      ...(init === undefined ? {} : { init }),
+    });
+    if (!served.ok) {
+      return served;
     }
-    const passkeyOptions = passkeyUVOptions(yield* served.json, pathname);
+    const { pathname } = new URL(served.url);
+    if (!isPasskeyOptionsPath(pathname)) {
+      return served;
+    }
+    const passkeyOptions: unknown = yield* Effect.tryPromise({
+      try: () => served.clone().json(),
+      catch: () => new BrowserHttpFailed({ reason: "passkey_options" }),
+    }).pipe(Effect.orDie);
     const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
-      passkeyOptions,
-    );
-    return bufferedResponse(served, encoded);
-  }).pipe(Effect.orDie);
+      passkeyUVOptions(passkeyOptions, pathname),
+    ).pipe(Effect.orDie);
+    return new Response(encoded, {
+      headers: served.headers,
+      status: served.status,
+      statusText: served.statusText,
+    });
+  });
+
+const browserHttp = FetchHttpClient.layer;
 
 const browserGet = (
   endpoint: string,

@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
 import { DropdownMenuContent } from "./dropdown-menu-content";
 import { DropdownMenuItem } from "./dropdown-menu-item";
@@ -17,11 +17,11 @@ const meta = preview.meta({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* openMenuLabel() {
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           userEvent.click(canvas.getByRole("button", { name: "利用者の操作" })),
         );
-        const accountLabel = yield* Effect.promise(() => screen.findByText("taro@example.com"));
-        yield* Effect.promise(() => expect(accountLabel).toBeInTheDocument());
+        const accountLabel = yield* playTask(() => screen.findByText("taro@example.com"));
+        yield* playTask(() => expect(accountLabel).toBeInTheDocument());
       }),
     ),
   render: ({ children }): ReactElement => (

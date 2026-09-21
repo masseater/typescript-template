@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { Checkbox } from "./checkbox";
 
 const meta = preview.meta({
@@ -17,8 +17,8 @@ export const Unchecked = meta.story({
       Effect.gen(function* measureUncheckedCheckbox() {
         const checkbox = canvas.getByRole("checkbox");
         const bounds = checkbox.getBoundingClientRect();
-        yield* Effect.promise(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
-        yield* Effect.promise(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
+        yield* playTask(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
+        yield* playTask(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
       }),
     ),
 });
@@ -36,7 +36,7 @@ export const Checked = meta.story({
         }
         const glyphBounds = glyph.getBoundingClientRect();
         const controlFontPx = Number.parseFloat(getComputedStyle(checkbox).fontSize);
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           expect(
             bounds.width >= 24 &&
               bounds.height >= 24 &&

@@ -1,5 +1,4 @@
-import { Duration, Effect, Layer, Option, Schema } from "effect";
-import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
+import { Effect, Option, Schema } from "effect";
 
 import type { Application as HealthService } from "@repo/config";
 
@@ -14,12 +13,6 @@ interface ProbeResult {
   readonly detail: string;
 }
 
-const REQUEST_TIMEOUT_MS = 10_000;
-const healthHttp = Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "manual" }),
-);
-
 const HealthPayload = Schema.Struct({
   ok: Schema.Literal(true),
   release: Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u)),
@@ -31,22 +24,25 @@ function probeResult(target: HealthTarget, healthy: boolean, detail: string): Pr
 }
 
 function requestHealth(
+  fetchImpl: typeof fetch,
   target: HealthTarget,
-): Effect.Effect<Option.Option<HttpClientResponse.HttpClientResponse>> {
-  return HttpClient.get(`${target.origin}/api/health`, {
-    headers: { accept: "application/json" },
-  }).pipe(
-    Effect.timeout(Duration.millis(REQUEST_TIMEOUT_MS)),
-    Effect.provide(healthHttp),
-    Effect.option,
-  );
+): Effect.Effect<Option.Option<Response>> {
+  return Effect.tryPromise({
+    catch: () => "unreachable" as const,
+    try: (signal) =>
+      fetchImpl(`${target.origin}/api/health`, {
+        headers: { accept: "application/json" },
+        redirect: "manual",
+        signal,
+      }),
+  }).pipe(Effect.option);
 }
 
 const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   target: HealthTarget,
-  response: HttpClientResponse.HttpClientResponse,
+  response: Response,
 ) {
-  const body = yield* response.json.pipe(Effect.option);
+  const body = yield* Effect.tryPromise(() => response.json()).pipe(Effect.option);
   if (Option.isNone(body)) {
     return probeResult(target, false, "body_unreadable");
   }
@@ -58,11 +54,11 @@ const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
 });
 
 const probeService = Effect.fn("probeService")(function* probeService(target: HealthTarget) {
-  const response = yield* requestHealth(target);
+  const response = yield* requestHealth(fetch, target);
   if (Option.isNone(response)) {
     return probeResult(target, false, "unreachable");
   }
-  if (response.value.status < 200 || response.value.status >= 300) {
+  if (!response.value.ok) {
     return probeResult(target, false, `status_${response.value.status}`);
   }
   return yield* payloadResult(target, response.value);

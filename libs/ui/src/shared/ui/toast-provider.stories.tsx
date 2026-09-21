@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { Button } from "./button";
 import { STATUS_VARIANT } from "./status-variants.ts";
 import { ToastProvider } from "./toast-provider";
@@ -38,13 +38,13 @@ export const Success = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* showSuccessToast() {
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           userEvent.click(canvas.getByRole("button", { name: "成功の通知を出す" })),
         );
-        const toast = yield* Effect.promise(() =>
+        const toast = yield* playTask(() =>
           screen.findByText("利用者の権限を変更しました。"),
         );
-        yield* Effect.promise(() => expect(toast).toBeInTheDocument());
+        yield* playTask(() => expect(toast).toBeInTheDocument());
       }),
     ),
 });

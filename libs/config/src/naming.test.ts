@@ -99,7 +99,7 @@ it.effect("retired application and role spellings do not remain in authored sour
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
     const repositoryRoot = paths.resolve(
-      yield* paths.fromFileUrl(new URL(import.meta.url)),
+      yield* paths.fromFileUrl(new URL(".", import.meta.url)),
       "../../..",
     );
     const hits: string[] = [];

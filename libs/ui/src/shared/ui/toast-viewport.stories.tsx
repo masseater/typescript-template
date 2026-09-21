@@ -2,7 +2,7 @@ import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { Effect } from "effect";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { Button } from "./button";
 import { ToastViewport } from "./toast-viewport";
 import { useToast } from "./use-toast";
@@ -39,11 +39,11 @@ export const Stacked = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* showTwoToasts() {
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           userEvent.click(canvas.getByRole("button", { name: "通知を 2 件出す" })),
         );
-        const toast = yield* Effect.promise(() => screen.findByText("確認メールを再送しました。"));
-        yield* Effect.promise(() => expect(toast).toBeInTheDocument());
+        const toast = yield* playTask(() => screen.findByText("確認メールを再送しました。"));
+        yield* playTask(() => expect(toast).toBeInTheDocument());
       }),
     ),
 });

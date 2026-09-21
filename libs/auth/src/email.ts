@@ -1,6 +1,5 @@
 import { withSpan } from "@repo/observability";
-import { Effect } from "effect";
-import { FetchHttpClient, HttpBody, HttpClient } from "effect/unstable/http";
+import { Effect, Schema } from "effect";
 
 import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 
@@ -12,8 +11,6 @@ const mailSubjects = {
   verification: "メールアドレスの確認",
 } as const;
 
-const mailpitTimeoutMilliseconds = 10_000;
-
 type OutboundEmail = {
   readonly from: string;
   readonly subject: string;
@@ -22,26 +19,29 @@ type OutboundEmail = {
 };
 
 const sendThroughMailpit = (
+  fetchImpl: typeof fetch,
   mailpitSendUrl: string,
   outbound: OutboundEmail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
   Effect.gen(function* sendMailpit() {
-    const requestPayload = yield* HttpBody.json({
+    const requestPayload = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
       From: { Email: outbound.from },
       Subject: outbound.subject,
       Text: outbound.text,
       To: [{ Email: outbound.to }],
     }).pipe(Effect.mapError(() => new EmailDeliveryFailed({ reason: "unreachable" })));
-    const delivery = yield* HttpClient.post(mailpitSendUrl, {
-      body: requestPayload,
-      headers: { "content-type": "application/json" },
-    }).pipe(
-      Effect.timeout(`${mailpitTimeoutMilliseconds} millis`),
-      Effect.provide(FetchHttpClient.layer),
-      Effect.provideService(FetchHttpClient.RequestInit, { redirect: "manual" }),
-      Effect.mapError(() => new EmailDeliveryFailed({ reason: "unreachable" })),
-    );
-    if (delivery.status < 200 || delivery.status >= 300) {
+    const delivery = yield* Effect.tryPromise({
+      catch: () => new EmailDeliveryFailed({ reason: "unreachable" }),
+      try: (signal) =>
+        fetchImpl(mailpitSendUrl, {
+          body: requestPayload,
+          headers: { "content-type": "application/json" },
+          method: "POST",
+          redirect: "manual",
+          signal,
+        }),
+    });
+    if (!delivery.ok) {
       return yield* new EmailDeliveryFailed({ reason: "rejected" });
     }
   });
@@ -82,7 +82,7 @@ const deliver = (
   const addressed: OutboundEmail = { ...outbound, from: settings.EMAIL_FROM };
   return settings.MAILPIT_SEND_URL === undefined
     ? sendThroughBinding(settings.EMAIL, addressed)
-    : sendThroughMailpit(settings.MAILPIT_SEND_URL, addressed);
+    : sendThroughMailpit(fetch, settings.MAILPIT_SEND_URL, addressed);
 };
 
 type LinkedMail = {

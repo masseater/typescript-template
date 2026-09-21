@@ -2,7 +2,7 @@ import { Toast as ToastPrimitive } from "@base-ui/react/toast";
 import { Effect } from "effect";
 import { expect, screen, userEvent, waitFor } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { Button } from "./button";
 import { STATUS_VARIANT } from "./status-variants.ts";
 import { ToastItem } from "./toast-item";
@@ -50,13 +50,13 @@ export const Success = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* showSuccessToast() {
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
         );
-        const toast = yield* Effect.promise(() =>
+        const toast = yield* playTask(() =>
           screen.findByText("利用者の権限を変更しました。"),
         );
-        yield* Effect.promise(() => expect(toast).toBeInTheDocument());
+        yield* playTask(() => expect(toast).toBeInTheDocument());
       }),
     ),
 });
@@ -69,13 +69,13 @@ export const Failure = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* showFailureToast() {
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
         );
-        const toasts = yield* Effect.promise(() =>
+        const toasts = yield* playTask(() =>
           screen.findAllByText("利用者の権限を変更できませんでした。"),
         );
-        yield* Effect.promise(() => expect(toasts).not.toHaveLength(0));
+        yield* playTask(() => expect(toasts).not.toHaveLength(0));
       }),
     ),
 });
@@ -84,14 +84,14 @@ export const Closes = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* closeToast() {
-        yield* Effect.promise(() =>
+        yield* playTask(() =>
           userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
         );
-        const close = yield* Effect.promise(() => screen.findByLabelText("通知を閉じる"));
-        yield* Effect.promise(() => userEvent.click(close));
+        const close = yield* playTask(() => screen.findByLabelText("通知を閉じる"));
+        yield* playTask(() => userEvent.click(close));
         const toastHasClosed = (): Promise<void> =>
           expect(screen.queryByLabelText("通知を閉じる")).not.toBeInTheDocument();
-        yield* Effect.promise(() => waitFor(toastHasClosed));
+        yield* playTask(() => waitFor(toastHasClosed));
       }),
     ),
 });
