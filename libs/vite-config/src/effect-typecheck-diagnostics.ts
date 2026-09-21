@@ -79,17 +79,12 @@ const compareCounted = (left: CountedDiagnostic, right: CountedDiagnostic): numb
 };
 
 const countDiagnostics = (diagnostics: readonly Diagnostic[]): readonly CountedDiagnostic[] => {
-  const grouped = diagnostics.reduce<Readonly<Record<string, CountedDiagnostic>>>(
-    (groupedDiagnostics, diagnostic) => {
-      const fingerprint = fingerprintOf(diagnostic);
-      const existing = groupedDiagnostics[fingerprint];
-      return {
-        ...groupedDiagnostics,
-        [fingerprint]: { ...diagnostic, count: (existing?.count ?? 0) + 1 },
-      };
-    },
-    {},
-  );
+  const grouped: Record<string, CountedDiagnostic> = {};
+  for (const diagnostic of diagnostics) {
+    const fingerprint = fingerprintOf(diagnostic);
+    const existing = grouped[fingerprint];
+    grouped[fingerprint] = { ...diagnostic, count: (existing?.count ?? 0) + 1 };
+  }
   return Object.values(grouped).toSorted(compareCounted);
 };
 
