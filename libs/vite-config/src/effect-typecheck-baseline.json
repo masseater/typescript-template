@@ -162,12 +162,6 @@
       },
       {
         "file": "src/pages/flags/ui/flag-row.tsx",
-        "code": "TS2339",
-        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/flags/ui/flag-row.tsx",
         "code": "TS2749",
         "message": "'FlagEntry' refers to a value, but is being used as a type here. Did you mean 'typeof FlagEntry'?",
         "count": 2
@@ -176,12 +170,6 @@
         "file": "src/pages/flags/ui/flag-row.tsx",
         "code": "TS6196",
         "message": "'FlagEntry' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/flags/ui/flags-page.tsx",
-        "code": "TS2339",
-        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
         "count": 1
       },
       {
@@ -323,7 +311,6 @@
         "code": "TS4111",
         "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
-
       }
     ],
     "apps/service-member": [
