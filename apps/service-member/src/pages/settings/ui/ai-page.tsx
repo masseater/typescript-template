@@ -1,4 +1,4 @@
-import { errorMessage } from "@repo/auth-ui";
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { MEMBER_MCP_SCOPE } from "@repo/config";
 import {
   type ActionState,
@@ -12,15 +12,20 @@ import {
   STATUS_VARIANT,
   StatusMessage,
   localState,
+  requestAtom,
+  resultError,
   useAction,
 } from "@repo/ui";
-import { useEffect, useState, type ReactElement } from "react";
+import { AsyncResult } from "effect/unstable/reactivity";
 
 import { loadApiKeys, revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
 import { useApiKeyForm } from "#pages/settings/model/api-key-form.ts";
 import { scopeLabel } from "#shared/contracts/index.ts";
 
+import type { ReactElement } from "react";
+
 const useRevokeConfirming = localState(false);
+const apiKeysAtom = requestAtom(loadApiKeys);
 
 function ApiKeyItem({
   action,
@@ -68,27 +73,12 @@ function ApiKeyItem({
   );
 }
 
-type ListedKeys =
-  | Readonly<{ keys: readonly ListedApiKey[]; status: "ready" }>
-  | Readonly<{ message: string; status: "failed" }>
-  | Readonly<{ status: "pending" }>;
-
 function AiPage(): ReactElement {
-  const [listed, setListed] = useState<ListedKeys>({ status: "pending" });
-  const reload = (): void => {
-    setListed({ status: "pending" });
-    void loadApiKeys()
-      .then((keys) => {
-        setListed({ keys, status: "ready" });
-      })
-      .catch((failure: unknown) => {
-        setListed({ message: errorMessage(failure), status: "failed" });
-      });
-  };
-  useEffect(() => {
-    reload();
-  }, []);
+  const listed = useAtomValue(apiKeysAtom);
+  const reload = useAtomRefresh(apiKeysAtom);
   const form = useApiKeyForm(reload);
+  const failure = resultError(listed);
+  const keys = AsyncResult.isSuccess(listed) ? listed.value : undefined;
   const issuedNotice =
     form.issued === undefined
       ? undefined
@@ -124,15 +114,15 @@ function AiPage(): ReactElement {
         </Button>
         <ActionStatus action={form.action} notice={issuedNotice} />
       </FormColumn>
-      {listed.status === "pending" ? (
+      {failure !== undefined ? (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{failure}</StatusMessage>
+      ) : keys === undefined ? (
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-      ) : listed.status === "failed" ? (
-        <StatusMessage variant={STATUS_VARIANT.failure}>{listed.message}</StatusMessage>
-      ) : listed.keys.length === 0 ? (
+      ) : keys.length === 0 ? (
         <StatusMessage>API キーはまだありません。</StatusMessage>
       ) : (
         <ul>
-          {listed.keys.map((entry) => (
+          {keys.map((entry) => (
             <ApiKeyItem action={form.action} entry={entry} key={entry.id} onRevoked={reload} />
           ))}
         </ul>
