@@ -22,7 +22,6 @@ const awaitingPresetPackages = [
   "apps/service-admin/**",
   "apps/service-member/**",
   "apps/internal-dashboard/**",
-  "infra/budget-monitor/**",
   "infra/cloudflare/**",
   "infra/error-monitor/**",
   "infra/health-monitor/**",
@@ -273,7 +272,6 @@ const lintOptions = {
     },
     {
       files: [
-        "infra/budget-monitor/**",
         "infra/cloudflare/**",
         "libs/config/**",
         "libs/db/src/local.ts",

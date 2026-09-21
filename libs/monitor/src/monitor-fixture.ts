@@ -29,20 +29,27 @@ const probeEvent = "probe_monitor";
 const probeAlert = { subject: "probe alert", text: "probe alert" } as const;
 const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 
+const PROBE_OUTCOME = {
+  die: probeOutcomes[0],
+  fail: probeOutcomes[1],
+  notify: probeOutcomes[2],
+  succeed: probeOutcomes[3],
+} as const;
+
 const probeMonitor = monitorWorker<MonitorBindings>({
   check({ ctx }, notify) {
     return Effect.gen(function* probe() {
       const recordedProbe = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
-      if (recordedProbe === "fail") {
+      if (recordedProbe === PROBE_OUTCOME.fail) {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
       }
-      if (recordedProbe === "die") {
+      if (recordedProbe === PROBE_OUTCOME.die) {
         return yield* Effect.die("the probe was asked to defect");
       }
-      if (recordedProbe === "notify") {
+      if (recordedProbe === PROBE_OUTCOME.notify) {
         yield* notify(probeAlert);
       }
-      return { outcome: recordedProbe ?? "succeed" };
+      return { outcome: recordedProbe ?? PROBE_OUTCOME.succeed };
     });
   },
   event: probeEvent,

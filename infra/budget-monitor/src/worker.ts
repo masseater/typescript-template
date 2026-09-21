@@ -1,42 +1,41 @@
-import { monitorWorker } from "@repo/monitor";
+import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
-import { fetchUsage } from "./billing.ts";
+import { billableUsageEndpoint, fetchUsage } from "./billing.ts";
 import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
 
-import type { MonitorBindings } from "@repo/monitor";
-
-interface Bindings extends MonitorBindings, BudgetMonitorEnv {}
-
-const budget = monitorWorker<Bindings>({
+const budget = monitorWorker<MonitorBindings & BudgetMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
-      const snapshot = yield* fetchUsage(
-        config.CLOUDFLARE_ACCOUNT_ID,
-        config.BILLING_READ_TOKEN,
-        new Date(),
-      );
+      const snapshot = yield* fetchUsage({
+        accountId: config.CLOUDFLARE_ACCOUNT_ID,
+        observedAt: new Date(),
+        token: config.BILLING_READ_TOKEN,
+        usageEndpoint: billableUsageEndpoint(config.CLOUDFLARE_ACCOUNT_ID),
+      });
       const decision = yield* evaluateBudget(snapshot, config);
-      const previous = yield* Effect.promise(async () =>
+      const storedNotifications = yield* Effect.promise(async () =>
         ctx.storage.get<{ period: string; keys: string[] }>("notifications"),
       );
-      const keys = previous?.period === decision.periodStart ? previous.keys : [];
-      if (shouldNotify(decision, keys)) {
+      const notificationKeys =
+        storedNotifications?.period === decision.periodStart ? storedNotifications.keys : [];
+      if (shouldNotify(decision, notificationKeys)) {
         yield* notify({
           subject: `Cloudflare budget: ${decision.level}% threshold`,
           text: JSON.stringify(decision),
         });
         yield* Effect.promise(async () =>
           ctx.storage.put("notifications", {
-            keys: [...keys, decision.notificationKey],
+            keys: [...notificationKeys, decision.notificationKey],
             period: decision.periodStart,
           }),
         );
       }
       return decision;
-    }).pipe(Effect.withSpan("BudgetMonitor.check"));
+    }).pipe(withSpan("BudgetMonitor.check"));
   },
   event: budgetMonitorWorker.event,
   failure: {

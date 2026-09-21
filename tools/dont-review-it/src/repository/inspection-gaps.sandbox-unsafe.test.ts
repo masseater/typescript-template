@@ -145,7 +145,6 @@ describe("inspection coverage", () => {
       "apps/service-admin/**",
       "apps/service-member/**",
       "apps/internal-dashboard/**",
-      "infra/budget-monitor/**",
       "infra/cloudflare/**",
       "infra/error-monitor/**",
       "infra/health-monitor/**",
