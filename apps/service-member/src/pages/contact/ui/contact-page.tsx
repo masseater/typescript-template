@@ -1,5 +1,4 @@
-import { TextLink } from "@repo/ui";
-import { useState } from "react";
+import { TextLink, localState } from "@repo/ui";
 
 import { useContactForm } from "#pages/contact/model/contact-form.ts";
 import { ContactFormFields } from "#pages/contact/ui/contact-form-fields.tsx";
@@ -7,8 +6,10 @@ import { CardPage } from "#shared/ui/index.ts";
 
 import type { ReactElement } from "react";
 
+const useSent = localState(false);
+
 function ContactPage(): ReactElement {
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useSent();
   const form = useContactForm(() => {
     setSent(true);
   });
