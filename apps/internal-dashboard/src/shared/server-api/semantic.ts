@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 
-import { Embedder, EmbeddingFailed } from "#shared/wiki/index.ts";
+import { Embedder } from "#shared/wiki/embedder.ts";
+import { EmbeddingFailed } from "#shared/wiki/embedding-failed.ts";
 
 interface SemanticDocument {
   readonly id: string;
