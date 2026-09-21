@@ -2,7 +2,7 @@ import { redirectTarget } from "@repo/auth-ui";
 import { createFileRoute, getRouteApi, redirect } from "@tanstack/react-router";
 
 import { blocksMember } from "#entities/agreement/index.ts";
-import { ReconsentPage } from "#pages/agreement/index.ts";
+import { ReconsentPage } from "#pages/account/agreement/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { ReactElement } from "react";

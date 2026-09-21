@@ -2,7 +2,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { requestAtom, resultError } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
-import { loadRecoveryOffer } from "#pages/recovery/api/recovery.ts";
+import { loadRecoveryOffer } from "#pages/account/recovery/api/recovery.ts";
 
 import type { RecoveryOfferView } from "#shared/contracts/index.ts";
 

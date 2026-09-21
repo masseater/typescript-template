@@ -1,6 +1,6 @@
 import { useAction } from "@repo/ui";
 
-import { acceptRecovery, declineRecovery } from "#pages/recovery/api/recovery.ts";
+import { acceptRecovery, declineRecovery } from "#pages/account/recovery/api/recovery.ts";
 
 interface RecoveryChoiceState {
   readonly blocked: boolean;

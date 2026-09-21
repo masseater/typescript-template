@@ -1,6 +1,6 @@
 import { Button, FormColumn, Page, StatusMessage } from "@repo/ui";
 
-import { useRecoveryChoice } from "#pages/recovery/model/recovery-choice.ts";
+import { useRecoveryChoice } from "#pages/account/recovery/model/recovery-choice.ts";
 import { memberRetentionDays } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";

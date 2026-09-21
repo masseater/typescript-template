@@ -1,7 +1,7 @@
 import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
-import { useRecoveryOffer } from "#pages/recovery/model/recovery-offer.ts";
-import { RecoveryChoice } from "#pages/recovery/ui/recovery-choice.tsx";
+import { useRecoveryOffer } from "#pages/account/recovery/model/recovery-offer.ts";
+import { RecoveryChoice } from "#pages/account/recovery/ui/recovery-choice.tsx";
 
 import type { ReactElement } from "react";
 
