@@ -1,0 +1,1 @@
+prepr was failing because lifecycle dropped precommit and prerelease checks, and the vocabulary test compared a lowercased temp path with the compiler path
