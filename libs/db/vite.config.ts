@@ -1,10 +1,10 @@
-import { effectDiagnostics, lifecycle } from "@repo/vite-config";
+import { coveredTestableLibraryRun, lifecycle } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...coveredTestableLibraryRun.tasks,
       check: {
         command: "drizzle-kit check",
         input: [{ auto: true }, "!node_modules/.cache/**"],
@@ -12,7 +12,9 @@ export default defineConfig({
       },
       "db:generate": { cache: false, command: "drizzle-kit generate" },
       ...lifecycle({
-        prepush: ["check:effect", "check"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check"],
+        premerge: ["test"],
       }),
     },
   },

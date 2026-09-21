@@ -209,6 +209,12 @@
         "count": 1
       },
       {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `FlagEditorAccess`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
         "file": "src/shared/wiki/authorize-mcp.ts",
         "code": "TS18046",
         "message": "'instance.handler' is of type 'unknown'.",
@@ -1359,6 +1365,96 @@
         "count": 1
       },
       {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<{ plistFile: string; root: string; }, any, any>' is not assignable to parameter of type 'Effect<{ plistFile: string; root: string; }, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 4
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<CiRunnerReport, any, any>' is not assignable to parameter of type 'Effect<CiRunnerReport, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 5
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<LocalCommandFailure, any, any>' is not assignable to parameter of type 'Effect<LocalCommandFailure, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<Path, any, any>' is not assignable to parameter of type 'Effect<Path, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<string, any, any>' is not assignable to parameter of type 'Effect<string, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 4
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 17
+      },
+      {
+        "file": "src/cli.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/cli.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/dev-start.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<never, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/dev-start.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/gateway.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '@effect/platform-node' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/gateway.ts",
+        "code": "TS2352",
+        "message": "Conversion of type 'Effect<never, GatewayFailure, any>' to type 'Effect<void, GatewayFailure, never>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.",
+        "count": 1
+      },
+      {
+        "file": "src/gateway.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/observe/symbolicate.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/observe/symbolicate.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
         "file": "src/operator-account.ts",
         "code": "TS18046",
         "message": "'auth.instance.api' is of type 'unknown'.",
@@ -1369,6 +1465,54 @@
         "code": "TS18046",
         "message": "'auth.instance.handler' is of type 'unknown'.",
         "count": 1
+      },
+      {
+        "file": "src/platform.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '@effect/platform-node' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/prepare-browser.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/prepare-browser.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<Info, any, any>' is not assignable to parameter of type 'Effect<Info, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<string, any, any>' is not assignable to parameter of type 'Effect<string, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<URL, any, any>' is not assignable to parameter of type 'Effect<URL, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<void, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 4
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 10
       },
       {
         "file": "src/private-files.ts",

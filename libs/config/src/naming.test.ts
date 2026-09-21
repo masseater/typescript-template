@@ -1,6 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
@@ -8,7 +7,7 @@ import { Effect } from "effect";
 import { applications } from "./applications.ts";
 import { roles } from "./identity.ts";
 
-const repositoryRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
+const repositoryRoot = path.resolve(import.meta.dirname, "../../..");
 
 const skipDirectories = new Set([
   ".git",
