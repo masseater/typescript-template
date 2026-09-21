@@ -1,1 +1,1 @@
-export class NonRetryableError extends Error {}
+export class NonRetryableError {}
