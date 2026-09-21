@@ -16,6 +16,7 @@
     "check-effect-typecheck": "./src/repository/check-effect-typecheck.ts",
     "dont-review-it": "./src/cli.ts",
     "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts",
+    "dont-review-it-typecheck": "./src/repository/typecheck-workspaces.ts",
     "quality-check-client": "./src/repository/client-bundle.ts",
     "quality-check-imports": "./src/repository/workspace-imports.ts",
     "quality-check-react": "./src/repository/react-doctor.ts"

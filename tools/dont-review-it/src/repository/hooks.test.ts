@@ -248,14 +248,15 @@ describe("lifecycle entry points", () => {
     expect(lifecycleOutsideGates()).toStrictEqual([]);
   });
 
-  it("fails the pull request format gate before the recursive prepr work starts", () => {
+  it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
     expect.hasAssertions();
     expect(workflowRuns("../../../../.github/workflows/check.yml")).toStrictEqual([
-      "vp check",
       "vp run -r prepr",
+      "vp run -w prepr",
+      "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
+      "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
       "vp run -r premerge",
       "vp run --filter @repo/e2e test:e2e",
-      "vp check",
       "vp run -r prepr",
     ]);
   });

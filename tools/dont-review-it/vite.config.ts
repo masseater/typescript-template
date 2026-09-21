@@ -17,6 +17,7 @@ export default defineConfig({
       ...checkCode,
       ...testCoverageRun,
       "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
+      "pr-affected": { cache: false, command: "./src/repository/pr-affected.ts" },
       "clean:shared-task-cache": {
         cache: false,
         command: "./src/repository/clean-shared-task-cache.ts",

@@ -27,6 +27,10 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
+      "check:types": {
+        command: "dont-review-it-typecheck",
+        input: [...taskInput],
+      },
       "check:canonical-literal-types": {
         command: "dont-review-it-canonical-literal-types",
         input: [...taskInput],
