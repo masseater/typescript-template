@@ -164,13 +164,6 @@ const config = ({
   return {
     ignoreDependencies: ["vite"],
     ignoreIssues: {
-      "infra/cloudflare/src/account-lookup.ts": ["exports"],
-      "infra/cloudflare/src/account-read.ts": ["exports"],
-      "infra/cloudflare/src/config.ts": ["exports"],
-      "infra/cloudflare/src/credentials.ts": ["exports"],
-      "infra/cloudflare/src/deploy-token.ts": ["exports"],
-      "infra/cloudflare/src/secrets.ts": ["exports"],
-      "infra/cloudflare/src/verification-fixture.ts": ["exports"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
     },
     treatConfigHintsAsErrors: true,
@@ -205,6 +198,7 @@ const config = ({
           "src/account-fixture.ts",
           "src/inspection-fixture.ts",
         ],
+        ignoreExportsUsedInFile: true,
         project: ["src/**/*.ts!"],
       },
       "infra/local": {
