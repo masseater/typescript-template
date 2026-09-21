@@ -22,6 +22,7 @@ const NotificationUnread = Schema.Struct({
 
 const NavBadges = Schema.Struct({
   notifications: Schema.Finite,
+  paid: Schema.Boolean,
 });
 
 const NotificationId = Schema.Struct({

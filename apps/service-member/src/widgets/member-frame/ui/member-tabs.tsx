@@ -1,4 +1,4 @@
-import { memberHasPaidPlan, memberNavItems } from "../model/navigation.ts";
+import { memberNavItems } from "../model/navigation.ts";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
 import type { ReactElement } from "react";
@@ -8,7 +8,7 @@ function MemberTabs({
   memberBoard,
   navBadges,
 }: Readonly<{ memberBoard: boolean; navBadges: NavBadges }>): ReactElement {
-  const items = memberNavItems(memberHasPaidPlan, memberBoard, navBadges);
+  const items = memberNavItems(navBadges.paid, memberBoard, navBadges);
   return (
     <nav
       aria-label="メイン"

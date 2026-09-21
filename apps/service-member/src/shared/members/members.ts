@@ -4,6 +4,7 @@ import {
   profileListed,
   profileVisibleTo,
   query,
+  requirePaid,
   schema,
 } from "@repo/db";
 import { and, count, desc, eq } from "drizzle-orm";
@@ -141,6 +142,14 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
   return { members: members.map((member) => shown(member)), total: total?.count ?? 0 };
 });
 
+const searchMembers = Effect.fn("searchMembers")(function* searchMembers(
+  viewerId: string,
+  page: { readonly keyword?: string | undefined; readonly limit: number; readonly offset: number },
+) {
+  yield* requirePaid(viewerId);
+  return yield* listMembers(page);
+});
+
 const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {
   const [profile] = yield* query((database) =>
     database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
@@ -170,4 +179,4 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
   return ownProfile(profile);
 });
 
-export { getMember, getProfile, listMembers, updateProfile };
+export { getMember, getProfile, searchMembers, updateProfile };

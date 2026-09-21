@@ -15,13 +15,12 @@ type MemberNavItem = Readonly<{
   to: MemberNavPath;
 }>;
 
-const memberHasPaidPlan = false;
-
 type NavBadges = Readonly<{
   notifications: number;
+  paid: boolean;
 }>;
 
-const emptyNavBadges: NavBadges = { notifications: 0 };
+const emptyNavBadges: NavBadges = { notifications: 0, paid: false };
 
 function memberNavItems(
   paid: boolean,
@@ -94,5 +93,5 @@ function titleForPath(pathname: string): string {
   return "会員";
 }
 
-export { memberHasPaidPlan, memberNavItems, titleForPath };
+export { memberNavItems, titleForPath };
 export type { MemberNavItem, NavBadges };

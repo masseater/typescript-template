@@ -1,5 +1,5 @@
 import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
-import { UserNotFound, requirePaid } from "@repo/db";
+import { UserNotFound } from "@repo/db";
 import { accountApi } from "@repo/runtime/account";
 import { apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
@@ -14,7 +14,7 @@ import {
   ProfileView,
   memberPageSize,
 } from "#shared/contracts/index.ts";
-import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { getMember, getProfile, searchMembers, updateProfile } from "#shared/members/index.ts";
 import { agreementApi, consentGate } from "./agreement-api.ts";
 import { billingApi } from "./billing-api.ts";
 import { boardApi } from "./board-api.ts";
@@ -87,10 +87,9 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
-            yield* requirePaid(user.id);
             const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
             const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
+            const list = yield* searchMembers(user.id, { keyword, limit: memberPageSize, offset });
             return { ...list, pageSize: memberPageSize };
           }),
         failures,

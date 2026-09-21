@@ -1,1 +1,1 @@
-export { getMember, getProfile, listMembers, updateProfile } from "./members.ts";
+export { getMember, getProfile, searchMembers, updateProfile } from "./members.ts";

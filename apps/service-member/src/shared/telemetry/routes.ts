@@ -42,6 +42,7 @@ export const routes = {
   "/messages/*": "conversation",
   "/privacy": "privacy-document",
   "/security": "security-redirect",
+  "/search": "member-search",
   "/settings": "settings",
   "/settings/agreements": "settings-agreements",
   "/settings/ai": "settings-ai",

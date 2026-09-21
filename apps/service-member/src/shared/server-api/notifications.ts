@@ -1,5 +1,5 @@
 import { sendNotificationEmail } from "@repo/auth";
-import { NOTIFICATION_KIND, query, schema } from "@repo/db";
+import { isPaidMember, NOTIFICATION_KIND, query, schema } from "@repo/db";
 import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -35,6 +35,7 @@ type NotificationPreferences = Readonly<{
 
 type NavBadges = Readonly<{
   notifications: number;
+  paid: boolean;
 }>;
 
 function presentation(
@@ -171,7 +172,10 @@ const unreadNotificationCount = Effect.fn("unreadNotificationCount")(function* u
 });
 
 const navBadges = Effect.fn("navBadges")(function* badges(memberId: string) {
-  return { notifications: yield* unreadNotificationCount(memberId) } satisfies NavBadges;
+  return {
+    notifications: yield* unreadNotificationCount(memberId),
+    paid: yield* isPaidMember(memberId),
+  } satisfies NavBadges;
 });
 
 const markNotificationRead = Effect.fn("markNotificationRead")(function* markRead(

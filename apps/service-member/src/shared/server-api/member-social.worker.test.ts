@@ -86,20 +86,6 @@ it.effect("the home feed drops followees who closed their profile", () =>
   }).pipe(Effect.provide(testLayer)),
 );
 
-it.effect("the home feed drops followees who closed their profile", () =>
-  Effect.gen(function* program() {
-    yield* addUser({ userId: "viewer" });
-    yield* addUser({ userId: "hidden", visibility: PROFILE_VISIBILITY.self });
-    yield* addUser({ userId: "open" });
-    yield* followMember("viewer", "hidden");
-    yield* followMember("viewer", "open");
-    assert.deepStrictEqual(
-      (yield* homeFeed("viewer")).map((item) => item.actorId),
-      ["open"],
-    );
-  }).pipe(Effect.provide(TestDatabase)),
-);
-
 it.effect("treats missing onboarding rows as the agreement step", () =>
   Effect.gen(function* program() {
     yield* addUser({ userId: "newcomer" });

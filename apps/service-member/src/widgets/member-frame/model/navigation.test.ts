@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { memberHasPaidPlan, memberNavItems, titleForPath } from "./navigation.ts";
+import { memberNavItems, titleForPath } from "./navigation.ts";
 
 describe("memberNavItems", () => {
   it("sends free members from 探す to upgrade", () => {
     expect.hasAssertions();
-    expect(memberHasPaidPlan).toBe(false);
     const search = memberNavItems(false, true).find((item) => item.id === "search");
     expect(search?.to).toBe("/upgrade");
     expect(search?.paid).toBe(true);

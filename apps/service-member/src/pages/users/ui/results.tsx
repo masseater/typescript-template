@@ -17,7 +17,7 @@ function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch
   if (list.total === 0) {
     return (
       <p className="text-base leading-normal">
-        条件に一致するユーザーはいません。<TextLink to="/users">条件を外す</TextLink>
+        条件に一致するユーザーはいません。<TextLink to="/search">条件を外す</TextLink>
       </p>
     );
   }
@@ -26,7 +26,7 @@ function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch
       <p className="text-base leading-normal">
         このページに該当するユーザーはいません。
         <TextLink
-          to="/users"
+          to="/search"
           search={search.keyword === undefined ? {} : { keyword: search.keyword }}
         >
           1 ページ目へ
