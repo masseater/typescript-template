@@ -299,9 +299,9 @@ function apiRoutes<Requirements>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed> {
+  ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed> {
     const open = openStream(event, handler, failures);
-    return async (context): Promise<EventStream<Encoded> | Failed> => {
+    return async (context): Promise<EventStream<Encoded | FailedEvent> | Failed> => {
       const opened = await settle(context, open, (cause) => unavailableStatus(cause, reporting));
       if (opened instanceof EventFeed) {
         Object.assign(context.set.headers, streamHeaders);
