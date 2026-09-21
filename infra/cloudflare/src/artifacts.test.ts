@@ -59,6 +59,7 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
   await writeFiles(client, {
     "app.js": "export const publicValue = 1;",
     "app.js.map": "private source map",
+    "face.woff2": "font",
     "styles.css": "body{color:red}",
   });
   await writeFiles(sourceMapDirectories(root, "service-member").client, {
@@ -70,6 +71,7 @@ async function writeUserBuild(root: string): Promise<UserBuild> {
     ".env.production": "AUTH_SECRET=private",
     ".vite/manifest.json": "{}",
     "chunks/handler.js": "export default {};",
+    "face.woff2": "font",
     "index.js": 'export { default } from "./chunks/handler.js";',
     "styles.css": "body{color:red}",
   });
@@ -112,8 +114,12 @@ it.effect(
       assert.match(artifacts.release, /^[0-9a-f]{16}$/u);
       assert.deepStrictEqual(yield* run(async () => readdir(artifacts.clientDirectory)), [
         "app.js",
+        "face.woff2",
         "styles.css",
       ]);
+      assert.ok(
+        artifacts.modules.every((module) => path.extname(module.name) !== ".woff2"),
+      );
       assert.strictEqual(
         yield* run(async () => readFile(path.join(client, "app.js.map"), "utf-8")),
         "private source map",
@@ -246,6 +252,17 @@ it.effect("refuses server CSS that differs from its public asset", () =>
   Effect.gen(function* program() {
     const { root, server } = yield* userBuild;
     yield* run(async () => writeFile(path.join(server, "styles.css"), "body{color:blue}"));
+    assert.strictEqual(
+      yield* failureCode(root, "service-member"),
+      "server_css_without_public_asset",
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses server fonts that are missing from the public client assets", () =>
+  Effect.gen(function* program() {
+    const { client, root } = yield* userBuild;
+    yield* run(async () => unlink(path.join(client, "face.woff2")));
     assert.strictEqual(
       yield* failureCode(root, "service-member"),
       "server_css_without_public_asset",
