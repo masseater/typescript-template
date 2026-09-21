@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
@@ -16,8 +16,6 @@ import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure>;
-
-const firstUserArgumentIndex = 2;
 
 const operator = Effect.fn("operator")(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
@@ -64,8 +62,11 @@ function selectCommand(action: string, args: readonly string[]): Command {
 const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 
 runCli(selectCommand(action, args).pipe(Effect.flatMap(writeReport)), (cause) =>
-  causeRecord("local.application_command_failed", cause, {
-    remediation:
-      "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+  causeRecord("local.application_command_failed", {
+    cause,
+    fields: {
+      remediation:
+        "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+    },
   }),
 );

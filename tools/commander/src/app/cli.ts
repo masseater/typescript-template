@@ -54,8 +54,11 @@ const start = Effect.fn("start")(function* start() {
 });
 
 function startFailed(cause: Cause.Cause<unknown>): Readonly<Record<string, unknown>> {
-  return causeRecord("commander.start_failed", cause, {
-    remediation: `Check that ${origin} is free, that bd and claude are installed, and that the workspace was built (vp run @repo/commander#start builds first).`,
+  return causeRecord("commander.start_failed", {
+    cause,
+    fields: {
+      remediation: `Check that ${origin} is free, that bd and claude are installed, and that the workspace was built (vp run @repo/commander#start builds first).`,
+    },
   });
 }
 

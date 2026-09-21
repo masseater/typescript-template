@@ -86,5 +86,5 @@ runCli(
       }),
     );
   }),
-  (cause) => causeRecord("local.browser_cli_prepare_failed", cause),
+  (cause) => causeRecord("local.browser_cli_prepare_failed", { cause }),
 );
