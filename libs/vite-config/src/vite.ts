@@ -313,6 +313,7 @@ export {
   toolTest,
   withoutEnvFileLoader,
 };
+export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
 export { devBoundary };

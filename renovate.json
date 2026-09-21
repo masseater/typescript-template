@@ -18,6 +18,10 @@
       "matchPackageNames": ["wrangler", "miniflare", "workerd", "@cloudflare/**"]
     },
     {
+      "groupName": "effect",
+      "matchPackageNames": ["effect", "@effect/**", "!@effect/tsgo"]
+    },
+    {
       "groupName": "tanstack",
       "matchPackageNames": ["@tanstack/**"]
     },
@@ -29,7 +33,8 @@
         "@types/react",
         "@types/react-dom",
         "@vitejs/plugin-react",
-        "oxc-transform-react"
+        "oxc-transform-react",
+        "scheduler"
       ]
     },
     {

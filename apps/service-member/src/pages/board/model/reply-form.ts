@@ -1,5 +1,4 @@
-import { useAction } from "@repo/ui";
-import { useState } from "react";
+import { useAction, localState } from "@repo/ui";
 
 import { replyToThread } from "#pages/board/api/board.ts";
 
@@ -14,8 +13,10 @@ interface ReplyForm {
   readonly pending: boolean;
 }
 
+const useBody = localState("");
+
 function useReplyForm(threadId: string, onPosted: () => Promise<void>): ReplyForm {
-  const [body, setBody] = useState("");
+  const [body, setBody] = useBody();
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();

@@ -1,6 +1,8 @@
-import { Effect, Ref } from "effect";
-import { noop } from "es-toolkit";
-import { useState, useSyncExternalStore } from "react";
+import { useAtom, useAtomValue } from "@effect/atom-react";
+import { Atom } from "effect/unstable/reactivity";
+import { useId } from "react";
+
+import { request, resultError } from "./request";
 
 type Task = () => Promise<void>;
 
@@ -11,55 +13,24 @@ type ActionState = {
   readonly run: (task: Task) => void;
 };
 
-const subscribeNothing = (): (() => void) => {
-  return noop;
-};
+const hydratedAtom = Atom.make(true).pipe(Atom.withServerValue(() => false));
 
-const clientSnapshot = (): boolean => {
-  return true;
-};
-
-const serverSnapshot = (): boolean => {
-  return false;
-};
-
-const failureOf = async (task: Task): Promise<string | undefined> => {
-  try {
-    await task();
-  } catch (failure) {
-    return failure instanceof Error
-      ? failure.message
-      : "操作に失敗しました。もう一度お試しください。";
-  }
-  return undefined;
-};
+const actionAtom = Atom.family((slotId: string) => {
+  void slotId;
+  return Atom.fn(({ task }: Readonly<{ task: Task }>) => request(task));
+});
 
 const useAction = (): ActionState => {
-  const [pending, setPending] = useState(false);
-  const [failure, setFailure] = useState<string>();
-  const hydrated = useSyncExternalStore(subscribeNothing, clientSnapshot, serverSnapshot);
-  const [running, setRunning] = useState(() => Effect.runSync(Ref.make(false)));
+  const [asyncState, perform] = useAtom(actionAtom(useId()));
+  const hydrated = useAtomValue(hydratedAtom);
+  const pending = asyncState.waiting;
+  const blocked = pending || !hydrated;
   const run = (task: Task): void => {
-    void setRunning;
-    if (Effect.runSync(Ref.getAndSet(running, true))) {
-      return;
+    if (!blocked) {
+      perform({ task });
     }
-    setPending(true);
-    setFailure(undefined);
-    Effect.runFork(
-      Effect.map(
-        Effect.promise(async () => failureOf(task)),
-        (taskFailure) => {
-          if (taskFailure !== undefined) {
-            setFailure(taskFailure);
-          }
-          Effect.runSync(Ref.set(running, false));
-          setPending(false);
-        },
-      ),
-    );
   };
-  return { blocked: pending || !hydrated, error: failure, pending, run };
+  return { blocked, error: resultError(asyncState), pending, run };
 };
 
 export { useAction };
