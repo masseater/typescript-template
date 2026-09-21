@@ -1,0 +1,18 @@
+/* eslint-disable */
+/** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+export * from './contact_link.js'
+export * from './hero_body.js'
+export * from './hero_title.js'
+export * from './locale_en.js'
+export * from './locale_ja.js'
+export * from './locale_label.js'
+export * from './login_link.js'
+export * from './login_title.js'
+export * from './login_to_signup.js'
+export * from './signup_link.js'
+export * from './signup_pending.js'
+export * from './signup_sent_body.js'
+export * from './signup_sent_login.js'
+export * from './signup_sent_title.js'
+export * from './signup_title.js'
+export * from './signup_to_login.js'
