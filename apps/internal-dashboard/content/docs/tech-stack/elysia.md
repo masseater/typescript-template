@@ -1,9 +1,9 @@
 ---
 title: Elysia
-description: ブラウザ以外からも呼ぶ HTTP API を、型付きのクライアントと対にして置くルーター
+description: URL を持つ HTTP API のルーター。ハンドラは Effect で、呼び出し側の型は Eden Treaty が出す
 ---
 
-Elysia は、ブラウザ以外からも呼ぶ HTTP API のルーターである。[TanStack Start](/tech-stack/tanstack-start) の `createServerFn` は URL にならない。外向けの入口は Elysia で、`/api/$` のサーバールートが受け取った `Request` を `app.fetch` に渡す。
+Elysia は HTTP のルーターである。経路とメソッドをインスタンスに登録し、来た `Request` は `app.fetch` が受ける。[TanStack Start](/tech-stack/tanstack-start) の `createServerFn` は URL を持たない。URL として置く API は Elysia に置き、Workers の fetch 自体は Start が持つ。`/api/$` のサーバールートが、受け取った `Request` を渡す。
 
 ```ts
 const Route = createFileRoute("/api/$")({
@@ -11,15 +11,53 @@ const Route = createFileRoute("/api/$")({
 });
 ```
 
-インスタンスは `createApi` が作る。Workers では `CloudflareAdapter` を付け、プレフィックスは `/api` である。ルートの処理は Elysia のハンドラへ async で書かず、[Effect](/tech-stack/effect) を渡す。応答のスキーマと、失敗のタグに対応するステータスは、そのルートに付ける。
+`ANY` は `app.fetch` を呼ぶ。`HEAD` は、応答が `text/event-stream` のとき本体を読まず、それ以外では `content-length` を付けてヘッダだけ返す。
+
+インスタンスは `createApi(prefix)` が作る。Workers 向けに `CloudflareAdapter` を付ける。ボディは Elysia に読ませず未読のまま残し、ハンドラが `readJsonBody` で Origin を確認してから [Effect](/tech-stack/effect) の Schema でデコードする。一致する経路が無いときは 404 で、本体は `{ error }` である。
+
+処理は Effect として `routes.route` に渡す。`routes` は実行時に Effect を走らせる登録口で、成功の値を第一引数のスキーマで符号化し、タグ付きの失敗を第三引数の表にあるステータスにする。JSON がスキーマを満たさないときの `InputInvalid` や、セッション不足のような共通の失敗は、この表には書かない。
 
 ```ts
-createApi("/api").post("/contact", api.route(ContactAccepted, submitContact, failures));
+import { Effect, Schema } from "effect";
+
+const ContactSubmission = Schema.Struct({
+  email: Schema.String,
+  message: Schema.String,
+});
+const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
+class MessageTooLong extends Schema.TaggedError<MessageTooLong>()("MessageTooLong", {}) {}
+
+const failures = {
+  MessageTooLong: { message: "本文が長すぎます。", status: 400 },
+};
+
+const submitContact = Effect.fn("contact.submit")(function* (request: Request) {
+  const submission = yield* readJsonBody(ContactSubmission, request);
+  if (submission.message.length > 2000) {
+    return yield* new MessageTooLong();
+  }
+  return { ok: true as const };
+});
+
+const app = createApi("/api").post(
+  "/contact",
+  routes.route(ContactAccepted, submitContact, failures),
+);
 ```
 
-`submitContact` は `Request` を受けて Effect を返す。JSON の検証は [Effect](/tech-stack/effect) の Schema で、ハンドラの中で行う。分割したアプリは `createApi("")` で作り、プレフィックスを持つ親が `.use` する。
+`submitContact(request)` は Effect を返すだけで、この時点では `readJsonBody` は走らない。`POST /api/contact` を受けた `routes.route` がそれを実行する。スキーマを満たさない JSON は `InputInvalid` になり、2000 字を超える本文は表の `MessageTooLong` として 400 になる。通った `{ ok: true }` は `ContactAccepted` で符号化してから返す。
 
-呼び出す側の型は、このアプリの型から Eden Treaty が出す。サーバーでは `treaty(app)` とし、HTTP を介さずそのインスタンスを呼ぶ。ブラウザでは `treaty<App>(origin)` とし、同じ経路を HTTP で呼ぶ。経路の型を別の仕様として書かない。
+経路をファイルで分けるときは、子を `createApi("")` で作り、プレフィックス `/api` の親が `.use` する。子には `/api` を書かない。`createApi("").post("/contact", ...)` を親が `.use` した URL は、上と同じ `POST /api/contact` になる。
+
+クライアントの型は、登録した `app` から Eden Treaty が作る。サーバーの `apiServerClient` は `treaty(app)` で、HTTP を出さずにそのインスタンスを呼ぶ。ブラウザの `apiClient` は `treaty<App>(location.origin)` で、同じ経路を HTTP で呼ぶ。どちらも `parseDate: false` で、日付の文字列を `Date` にしない。ブラウザの fetch は `credentials: "same-origin"`、`cache: "no-store"` である。
+
+```ts
+const { api } = apiServerClient(app, {});
+const reply = await api.contact.post({ email: "a@b.test", message: "hello" });
+```
+
+`api` はプレフィックス `/api`、`contact` は経路 `/contact` である。`post` の引数が JSON になる。成功は `reply.data`、失敗は `reply.error` に入り、本体を Schema で読むときは `apiData` に渡す。ブラウザから同じ呼び出しをするときは `apiClient<typeof app>()` の戻り値を使う。画面のコードをサーバーとブラウザで一つの関数にするときは `createIsomorphicFn` で分け、server 側は受信した cookie を `apiServerClient` に渡し、client 側は `apiClient` を返す。
 
 ## 参考文献
 
