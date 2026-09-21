@@ -1,4 +1,4 @@
-import { Effect, Ref, Result } from "effect";
+import { Effect, HashSet, Ref, Result } from "effect";
 
 import { errorFingerprint } from "./errors.ts";
 import { parseBrowserEvents, type BrowserEvent } from "./events.ts";
@@ -19,12 +19,16 @@ const noStore = { "cache-control": "no-store" };
 const ingressWindows = Ref.makeUnsafe<
   ReadonlyMap<
     ServiceName,
-    { readonly start: number; readonly admitted: number; readonly recorded: ReadonlySet<string> }
+    {
+      readonly start: number;
+      readonly admitted: number;
+      readonly recorded: HashSet.HashSet<string>;
+    }
   >
 >(new Map());
 
 const unrecorded = (
-  recorded: ReadonlySet<string>,
+  recorded: HashSet.HashSet<string>,
   browserEvents: readonly BrowserEvent[],
 ): readonly BrowserEvent[] => {
   const firstAt = new Map(
@@ -34,7 +38,7 @@ const unrecorded = (
   );
   return browserEvents.filter(
     (browserEvent, position) =>
-      !recorded.has(browserEvent.spanId) && firstAt.get(browserEvent.spanId) === position,
+      !HashSet.has(recorded, browserEvent.spanId) && firstAt.get(browserEvent.spanId) === position,
   );
 };
 
@@ -47,7 +51,7 @@ const admitUnrecorded = (batch: {
     const stored = windows.get(batch.serviceName);
     const activeWindow =
       stored === undefined || arrivedAt - stored.start > rateWindowMilliseconds
-        ? { admitted: 0, recorded: new Set<string>(), start: arrivedAt }
+        ? { admitted: 0, recorded: HashSet.empty<string>(), start: arrivedAt }
         : stored;
     const fresh = unrecorded(activeWindow.recorded, batch.browserEvents);
     const overflowed = activeWindow.admitted + fresh.length > maximumEventsPerWindow;
@@ -56,10 +60,10 @@ const admitUnrecorded = (batch: {
       : {
           ...activeWindow,
           admitted: activeWindow.admitted + fresh.length,
-          recorded: new Set([
-            ...activeWindow.recorded,
-            ...fresh.map((browserEvent) => browserEvent.spanId),
-          ]),
+          recorded: fresh.reduce(
+            (recorded, browserEvent) => HashSet.add(recorded, browserEvent.spanId),
+            activeWindow.recorded,
+          ),
         };
     const admitted: readonly BrowserEvent[] | undefined = overflowed ? undefined : fresh;
     return [admitted, new Map([...windows, [batch.serviceName, nextWindow]])];
