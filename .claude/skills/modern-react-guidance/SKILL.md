@@ -11,7 +11,7 @@ metadata:
 
 # Modern React Guidance
 
-出典は [adhhamdev/modern-react-guidance](https://github.com/adhhamdev/modern-react-guidance)（MIT、`LICENSE`）。React 19.3 と React Compiler が有効なこのリポジトリ向けに、既にある lint と衝突する手順は下の拘束に置き換えてある。拘束と出典が食い違うときは拘束を採る。
+大本は https://github.com/adhhamdev/modern-react-guidance （MIT、`LICENSE`）。元になった async-react の議論は https://github.com/reactwg/async-react/discussions/12 。React 19.3 と React Compiler が有効なこのリポジトリ向けに、既にある lint と衝突する手順は下の拘束に置き換えてある。拘束と出典が食い違うときは拘束を採る。
 
 非同期の待ち方（独立した処理を直列に待たない、安い条件を先に見る、Suspense で殻だけ先に出す）は `.claude/skills/react-best-practices/SKILL.md` が正本である。
 
@@ -51,11 +51,11 @@ metadata:
 
 ## 参照
 
-- `references/actions-and-forms.md`
-- `references/compiler-and-memo.md`
-- `references/concurrent-ux.md`
-- `references/effects-and-data.md`
-- `references/migration-codemods.md`
-- `references/api-cheatsheet.md`
+- `references/actions-and-forms.md` — https://github.com/adhhamdev/modern-react-guidance/blob/main/references/actions-and-forms.md
+- `references/compiler-and-memo.md` — https://github.com/adhhamdev/modern-react-guidance/blob/main/references/compiler-and-memo.md
+- `references/concurrent-ux.md` — https://github.com/adhhamdev/modern-react-guidance/blob/main/references/concurrent-ux.md
+- `references/effects-and-data.md` — https://github.com/adhhamdev/modern-react-guidance/blob/main/references/effects-and-data.md
+- `references/migration-codemods.md` — https://github.com/adhhamdev/modern-react-guidance/blob/main/references/migration-codemods.md
+- `references/api-cheatsheet.md` — https://github.com/adhhamdev/modern-react-guidance/blob/main/references/api-cheatsheet.md
 
 不確かな API の形は react.dev の該当リファレンスを見る。出典の例を、上の表が禁じているフックのまま写さない。

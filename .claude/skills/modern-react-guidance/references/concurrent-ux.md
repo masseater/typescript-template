@@ -1,5 +1,7 @@
 # 並行 UI
 
+大本: https://github.com/adhhamdev/modern-react-guidance/blob/main/references/concurrent-ux.md
+
 ## ViewTransition
 
 遷移、Suspense の表示、deferred 更新に乗る出入りは `<ViewTransition>`。`startTransition` の中で状態を変える。状態の入れ物は Effect Atom で、`useState` は使わない。

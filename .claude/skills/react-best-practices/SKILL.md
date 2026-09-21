@@ -11,7 +11,7 @@ metadata:
 
 # React best practices
 
-出典は [vercel-labs/agent-skills の react-best-practices](https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices)（skill の宣言は MIT）。優先度がいちばん高いのは瀑布を消す `async-` 規則で、ここがその正本である。React 19 の API の選び方は `.claude/skills/modern-react-guidance/SKILL.md` に従う。
+大本は https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices （skill の宣言は MIT。本文は https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/SKILL.md ）。優先度がいちばん高いのは瀑布を消す `async-` 規則で、ここがその正本である。React 19 の API の選び方は `.claude/skills/modern-react-guidance/SKILL.md` に従う。
 
 出典が Next.js、SWR、`useState`、`useMemo`、`useRef`、`better-all`、リクエストをまたぐ LRU を例にしている箇所は、このリポジトリでは採らない。
 
@@ -56,11 +56,11 @@ API とサーバー処理では、認証結果に依存しない読み取りを�
 
 ## 規則
 
-- `rules/async-parallel.md`
-- `rules/async-defer-await.md`
-- `rules/async-cheap-condition-before-await.md`
-- `rules/async-dependencies.md`
-- `rules/async-api-routes.md`
-- `rules/async-suspense-boundaries.md`
-- `rules/advanced-effect-event-deps.md`
-- `rules/rendering-activity.md`
+- `rules/async-parallel.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-parallel.md
+- `rules/async-defer-await.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-defer-await.md
+- `rules/async-cheap-condition-before-await.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-cheap-condition-before-await.md
+- `rules/async-dependencies.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-dependencies.md
+- `rules/async-api-routes.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-api-routes.md
+- `rules/async-suspense-boundaries.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-suspense-boundaries.md
+- `rules/advanced-effect-event-deps.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/advanced-effect-event-deps.md
+- `rules/rendering-activity.md` — https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/rendering-activity.md

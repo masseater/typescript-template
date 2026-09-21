@@ -1,5 +1,7 @@
 # API
 
+大本: https://github.com/adhhamdev/modern-react-guidance/blob/main/references/api-cheatsheet.md
+
 | API | このリポジトリ |
 | --- | --- |
 | `use(context)` | Context を読む。サーバーデータの取得には使わない |

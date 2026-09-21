@@ -1,5 +1,7 @@
 # 移し方
 
+大本: https://github.com/adhhamdev/modern-react-guidance/blob/main/references/migration-codemods.md
+
 React は 19.3 である。新規のコードに次を書かない。`project/react-legacy` と `project/atom-state` が止める。
 
 - `forwardRef` は ref を props にする

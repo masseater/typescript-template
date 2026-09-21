@@ -1,5 +1,7 @@
 # Compiler とメモ化
 
+大本: https://github.com/adhhamdev/modern-react-guidance/blob/main/references/compiler-and-memo.md
+
 React Compiler は `@repo/vite-config` の `react({ compiler: { logDiagnostics: true } })` で有効である。
 
 `useMemo`、`useCallback`、`React.memo` は別名や分割代入も含めて `project/no-manual-memoization` が拒否する。残している手書きメモ化を広げない。新しいものも足さない。

@@ -1,5 +1,7 @@
 # フォームとミューテーション
 
+大本: https://github.com/adhhamdev/modern-react-guidance/blob/main/references/actions-and-forms.md
+
 出典の `useActionState` / `useFormStatus` / `useFormState` はこのリポジトリでは `project/atom-state` が拒否する。
 
 - フォームの値は TanStack Form。

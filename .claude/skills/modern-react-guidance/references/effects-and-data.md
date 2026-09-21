@@ -1,5 +1,7 @@
 # Effect とデータ
 
+大本: https://github.com/adhhamdev/modern-react-guidance/blob/main/references/effects-and-data.md
+
 Effect に書いてよいのは、React が知らない外部（DOM、計測、ウィジェット、データではない購読）との同期だけである。後始末を返す。
 
 | やりたいこと | 書き方 |
