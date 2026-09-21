@@ -1,5 +1,7 @@
 import type { ReactNode, ReactPortal } from "react";
 
-type Children = Readonly<{ children: Readonly<Exclude<ReactNode, ReactPortal>> }>;
+type UiNode = Readonly<Exclude<ReactNode, ReactPortal>>;
 
-export type { Children };
+type Children = Readonly<{ children: UiNode }>;
+
+export type { Children, UiNode };
