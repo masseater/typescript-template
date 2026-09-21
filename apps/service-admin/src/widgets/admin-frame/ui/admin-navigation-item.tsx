@@ -13,7 +13,7 @@ function AdminNavigationItem({
   label,
   to,
 }: Readonly<{
-  badge?: number;
+  badge?: number | undefined;
   collapsed: boolean;
   icon: LucideIcon;
   label: string;
