@@ -7,7 +7,7 @@ import type { NavBadges } from "../model/navigation.ts";
 function MemberTabs({
   memberBoard,
   navBadges,
-}: Readonly<{ memberBoard: boolean; navBadges: NavBadges }>): ReactElement {
+}: Readonly<{ memberBoard: boolean; navBadges?: NavBadges }>): ReactElement {
   const items = memberNavItems(memberHasPaidPlan, memberBoard, navBadges);
   return (
     <nav
