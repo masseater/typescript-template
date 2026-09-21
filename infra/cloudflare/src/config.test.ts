@@ -16,6 +16,7 @@ import type {
   SendEmail,
   Service,
 } from "@cloudflare/workers-types";
+import type { Flagship } from "alchemy/Cloudflare";
 import type { AppBindings } from "./bindings.ts";
 
 const release = "0".repeat(16);
@@ -38,6 +39,8 @@ const sharedBindings = {
   }),
   EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
   EMAIL_FROM: settings.mailFrom,
+  FLAGSHIP_ACCOUNT_ID: settings.accountId,
+  FLAGS: binding<Flagship.App>({ appId: "flagship-app-id" }),
   OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 

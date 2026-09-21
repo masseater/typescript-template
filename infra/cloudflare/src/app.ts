@@ -12,27 +12,28 @@ import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
-import type { KV, R2 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-const appEnv = Effect.fn("appEnv")(function* appEnv(
+function appEnv(
   target: Application,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shared: SharedEnv,
-) {
-  const ai = grants(target, "ai") ? { AI: Workers.AI("AI") } : {};
-  const storage: Partial<
-    Record<typeof fileBucketBinding, R2.Bucket> & Record<typeof cacheNamespaceBinding, KV.Namespace>
-  > = grants(target, "storage")
-    ? {
-        [cacheNamespaceBinding]: yield* cacheNamespaceRef(),
-        [fileBucketBinding]: yield* fileBucketRef(),
-      }
-    : {};
-  return { ...shared, ...ai, ...storage } satisfies DeclaredEnv;
-});
+): Effect.Effect<DeclaredEnv> {
+  const withAi: DeclaredEnv = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  if (!grants(target, "storage")) {
+    return Effect.succeed(withAi);
+  }
+  return Effect.gen(function* withStorageBindings() {
+    const withStorage: DeclaredEnv = {
+      ...withAi,
+      [cacheNamespaceBinding]: yield* cacheNamespaceRef(),
+      [fileBucketBinding]: yield* fileBucketRef(),
+    };
+    return withStorage;
+  });
+}
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
@@ -45,7 +46,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const shared = yield* appEnv(target, {
+  const shared: DeclaredEnv = yield* appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     AUTH_SECRET: secret,

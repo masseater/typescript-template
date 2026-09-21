@@ -196,7 +196,9 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
   return declaredStack(app, { Worker: applicationResource(app, artifacts.release) });
 });
 
-const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInventory>> = {
+const staticExpected: Readonly<
+  Record<Exclude<StackName, Application | "flagship">, StackInventory>
+> = {
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
