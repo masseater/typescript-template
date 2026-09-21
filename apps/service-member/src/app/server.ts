@@ -17,7 +17,7 @@ const startHandler = {
 export { Process, UserInbox };
 
 export default withQueue(
-  appServerEntry(runtime, startHandler, reporting),
+  appServerEntry({ runtime, routeHandler: startHandler, reporting }),
   async (batch, environment) =>
     consumeJobs(batch, await Effect.runPromise(Effect.orDie(readJobs(environment)))),
 );

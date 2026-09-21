@@ -23,11 +23,11 @@ async function servedUnavailable(
   readonly body: unknown;
   readonly status: number;
 }> {
-  const worker = serveApp(
-    workerRuntime(layer),
-    () => Effect.succeed(new Response("reached the route")),
+  const worker = serveApp({
+    runtime: workerRuntime(layer),
+    route: () => Effect.succeed(new Response("reached the route")),
     reporting,
-  );
+  });
   const context = createExecutionContext();
   const response = await worker.fetch(new Request("http://localhost:3001/"), {}, context);
   await waitOnExecutionContext(context);

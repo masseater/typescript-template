@@ -1,9 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
 import { redactSecrets, redactedField } from "./redact.ts";
-
 const secret = "worker-test-secret-at-least-32-characters";
-
 describe.for([
   [
     "a secret name in JSON",
@@ -131,12 +129,10 @@ describe.for([
   ],
 ] as const)("%s", ([, written, expectedLine]) => {
   const it = test.extend("redactedLine", () => redactSecrets(written));
-
   it("leaves the line readable with the secret hidden", ({ redactedLine }) => {
     expect(redactedLine).toBe(expectedLine);
   });
 });
-
 describe.for([
   ["an environment secret", "AUTH_SECRET", "[redacted]"],
   ["a camel-cased secret", "clientSecret", "[redacted]"],
@@ -145,16 +141,13 @@ describe.for([
   ["a query", "query", { nested: secret }],
 ] as const)("a field named after %s", ([, fieldName, expectedValue]) => {
   const it = test.extend("redactedValue", () => redactedField(fieldName, { nested: secret }));
-
   it("is settled by the name alone", ({ redactedValue }) => {
     expect(redactedValue).toStrictEqual(expectedValue);
   });
 });
-
 describe("an error a field holds", () => {
   const it = test.extend("encodedError", () =>
     JSON.stringify({ cause: new Error(`AUTH_SECRET="${secret}" is rejected`) }, redactedField));
-
   it("keeps the name and the message, minus the secret", ({ encodedError }) => {
     expect(encodedError).toBe(
       String.raw`{"cause":{"message":"AUTH_SECRET=\"[redacted]\" is rejected","name":"Error"}}`,

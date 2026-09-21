@@ -53,8 +53,8 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
   return createApi(apiRoot)
-    .get("/flags", api.route(FlagList, listFlags, {}))
-    .patch("/flags", api.route(FlagToggled, patchFlag, { ...failures, FlagEditorRequired }));
+    .get("/flags", api.route(FlagList)(listFlags, {}))
+    .patch("/flags", api.route(FlagToggled)(patchFlag, { ...failures, FlagEditorRequired }));
 }
 
 export { flagsApi };

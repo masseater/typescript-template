@@ -1,14 +1,11 @@
 import { Chunk, Effect, Option, Schema, Stream } from "effect";
 
 import { httpStatus } from "./http-status.ts";
-
 export type JsonRequest = {
   readonly body: Readonly<AsyncIterable<Uint8Array>> | null;
   readonly headers: Readonly<Pick<Headers, "get">>;
 };
-
-const defaultBodyLimit = 16_384;
-
+const defaultBodyLimit = 16384;
 export class RequestRejected extends Schema.TaggedError<RequestRejected>()("RequestRejected", {
   reason: Schema.Literals([
     "origin_denied",
@@ -18,7 +15,6 @@ export class RequestRejected extends Schema.TaggedError<RequestRejected>()("Requ
     "invalid_json",
   ]),
 }) {}
-
 export const rejectionStatus = {
   body_required: httpStatus.badRequest,
   body_too_large: httpStatus.payloadTooLarge,
@@ -26,7 +22,6 @@ export const rejectionStatus = {
   json_required: httpStatus.unsupportedMediaType,
   origin_denied: httpStatus.forbidden,
 } as const satisfies Readonly<Record<RequestRejected["reason"], number>>;
-
 const headerRejection = (received: {
   readonly incoming: JsonRequest;
   readonly expectedOrigin: string;
@@ -46,23 +41,23 @@ const headerRejection = (received: {
     ? Option.some("body_too_large")
     : Option.none();
 };
-
 const parseJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
-
-const decodeChunks = (chunks: Chunk.Chunk<Uint8Array>): string => {
+const decodeChunks = (bodyChunks: Chunk.Chunk<Uint8Array>): string => {
   const decoder = new TextDecoder();
-  return `${Chunk.toReadonlyArray(chunks)
+  return `${Chunk.toReadonlyArray(bodyChunks)
     .map((bodyChunk) => decoder.decode(bodyChunk, { stream: true }))
     .join("")}${decoder.decode()}`;
 };
-
 const readBody = (bounded: {
   readonly body: Readonly<AsyncIterable<Uint8Array>>;
   readonly limit: number;
 }): Effect.Effect<unknown, RequestRejected> =>
   Stream.fromAsyncIterable(bounded.body, (cause) => cause).pipe(
     Stream.runFoldEffect(
-      (): { readonly byteLength: number; readonly chunks: Chunk.Chunk<Uint8Array> } => ({
+      (): {
+        readonly byteLength: number;
+        readonly chunks: Chunk.Chunk<Uint8Array>;
+      } => ({
         byteLength: 0,
         chunks: Chunk.empty(),
       }),
@@ -79,11 +74,10 @@ const readBody = (bounded: {
         Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
       ),
     ),
-    Effect.catch((cause) =>
+    Effect.catchAll((cause) =>
       cause instanceof RequestRejected ? Effect.fail(cause) : Effect.die(cause),
     ),
   );
-
 export const readJson = (received: {
   readonly incoming: JsonRequest;
   readonly expectedOrigin: string;

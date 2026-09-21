@@ -39,7 +39,7 @@ function wikiLayer(
         });
         return Layer.mergeAll(
           Layer.succeed(Embedder, embedder),
-          configuredAppLayer(config, wikiService, routes),
+          configuredAppLayer({ appConfig: config, audience: wikiService, routes }),
           featureFlagsLayer(config),
           allowAllEditors,
         );

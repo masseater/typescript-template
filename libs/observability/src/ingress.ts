@@ -9,13 +9,11 @@ import { logAt, statusSeverity, type Severity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 
 import type { ServiceName } from "./service-name.ts";
-
-const maximumBodyBytes = 32_768;
+const maximumBodyBytes = 32768;
 const retryAfterSeconds = "60";
-const rateWindowMilliseconds = 60_000;
+const rateWindowMilliseconds = 60000;
 const maximumEventsPerWindow = 1200;
 const noStore = { "cache-control": "no-store" };
-
 const ingressWindows = Ref.makeUnsafe<
   ReadonlyMap<
     ServiceName,
@@ -26,7 +24,6 @@ const ingressWindows = Ref.makeUnsafe<
     }
   >
 >(new Map());
-
 const unrecorded = (
   recorded: HashSet.HashSet<string>,
   browserEvents: readonly BrowserEvent[],
@@ -41,7 +38,6 @@ const unrecorded = (
       !HashSet.has(recorded, browserEvent.spanId) && firstAt.get(browserEvent.spanId) === position,
   );
 };
-
 const admitUnrecorded = (batch: {
   readonly serviceName: ServiceName;
   readonly browserEvents: readonly BrowserEvent[];
@@ -68,7 +64,6 @@ const admitUnrecorded = (batch: {
     const admitted: readonly BrowserEvent[] | undefined = overflowed ? undefined : fresh;
     return [admitted, new Map([...windows, [batch.serviceName, nextWindow]])];
   });
-
 const kindFields = (
   browserEvent: BrowserEvent,
 ): Readonly<Record<string, string | number | boolean>> => {
@@ -87,14 +82,12 @@ const kindFields = (
   }
   return {};
 };
-
 const eventSeverity = (browserEvent: BrowserEvent): Severity => {
   if (browserEvent.kind === "exception") {
     return "Error";
   }
   return browserEvent.kind === "http" ? statusSeverity(browserEvent.status) : "Info";
 };
-
 const recordBrowserEvent = (recorded: {
   readonly serviceName: ServiceName;
   readonly browserEvent: BrowserEvent;
@@ -114,7 +107,6 @@ const recordBrowserEvent = (recorded: {
   };
   return logAt(eventSeverity(browserEvent), { attributes, eventName: browserEvent.name });
 };
-
 const emptyResponse = (emptyAnswer: {
   readonly status: number;
   readonly headers?: Readonly<Record<string, string>>;
@@ -124,9 +116,7 @@ const emptyResponse = (emptyAnswer: {
     status: emptyAnswer.status,
   });
 };
-
 type IngressRequest = Readonly<Pick<Request, "method" | "url">> & JsonRequest;
-
 const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: IngressRequest) {
   const telemetry = yield* Telemetry;
   const entropy = yield* RequestEntropy;
@@ -152,7 +142,6 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: Ingres
   }
   return browserEvents.success;
 });
-
 const recordAdmitted = (batch: {
   readonly serviceName: ServiceName;
   readonly browserEvents: readonly BrowserEvent[];
@@ -172,7 +161,6 @@ const recordAdmitted = (batch: {
     );
     return emptyResponse({ status: httpStatus.accepted });
   });
-
 export const ingestBrowser = Effect.fn("ingestBrowser")(function* ingestBrowser(
   incoming: IngressRequest,
 ) {

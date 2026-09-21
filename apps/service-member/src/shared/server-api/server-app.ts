@@ -40,8 +40,7 @@ const userApi = createApi(apiRoot)
   .use(socialApi(api))
   .get(
     "/profile",
-    api.route(
-      ProfileView,
+    api.route(ProfileView)(
       (request) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
@@ -56,8 +55,7 @@ const userApi = createApi(apiRoot)
   )
   .get(
     "/member",
-    api.route(
-      MemberView,
+    api.route(MemberView)(
       (request) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
@@ -69,8 +67,7 @@ const userApi = createApi(apiRoot)
   )
   .get(
     "/members",
-    api.route(
-      MemberList,
+    api.route(MemberList)(
       (request) =>
         Effect.gen(function* handleRequest() {
           yield* verifySession(request.headers);
@@ -84,8 +81,7 @@ const userApi = createApi(apiRoot)
   )
   .patch(
     "/profile",
-    api.route(
-      ProfileView,
+    api.route(ProfileView)(
       (request) =>
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);

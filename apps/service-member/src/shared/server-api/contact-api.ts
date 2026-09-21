@@ -41,7 +41,7 @@ const submitContact = Effect.fn("contact.submit")(function* submitContact(reques
 });
 
 function contactApi(api: ApiRoutes<AppServices | OpsMail>) {
-  return createApi("").post("/contact", api.route(ContactAccepted, submitContact, failures));
+  return createApi("").post("/contact", api.route(ContactAccepted)(submitContact, failures));
 }
 
 export { contactApi };

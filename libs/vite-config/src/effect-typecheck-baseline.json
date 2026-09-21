@@ -605,14 +605,6 @@
         "count": 1
       }
     ],
-    "libs/observability": [
-      {
-        "file": "src/server.worker.test.ts",
-        "code": "TS2339",
-        "message": "Property 'toHaveParsedFields' does not exist on type 'Assertion<Response>'.",
-        "count": 4
-      }
-    ],
     "libs/runtime": [
       {
         "file": "../auth/src/auth-request.ts",
@@ -655,12 +647,6 @@
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
         "count": 2
-      },
-      {
-        "file": "src/http-events.test.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
-        "count": 1
       },
       {
         "file": "src/http.ts",

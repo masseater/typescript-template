@@ -30,8 +30,7 @@ function jobsApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .post(
       "/jobs",
-      api.route(
-        JobAccepted,
+      api.route(JobAccepted)(
         () =>
           Effect.gen(function* handleRequest() {
             const jobs = yield* readJobs(env);
@@ -43,8 +42,7 @@ function jobsApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/jobs/:id",
-      api.route(
-        JobStatusView,
+      api.route(JobStatusView)(
         (request) =>
           Effect.gen(function* handleRequest() {
             const id = new URL(request.url).pathname.split("/").at(-1) ?? "";

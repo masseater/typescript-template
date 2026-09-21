@@ -34,8 +34,7 @@ const adminApi = createApi(apiRoot)
   .use(accountApi(api))
   .get(
     "/users",
-    api.route(
-      UserList,
+    api.route(UserList)(
       (request) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
@@ -47,8 +46,7 @@ const adminApi = createApi(apiRoot)
   )
   .patch(
     "/users",
-    api.route(
-      RoleChanged,
+    api.route(RoleChanged)(
       (request) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
@@ -60,8 +58,7 @@ const adminApi = createApi(apiRoot)
   )
   .delete(
     "/users",
-    api.route(
-      UserDeleted,
+    api.route(UserDeleted)(
       (request) =>
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);

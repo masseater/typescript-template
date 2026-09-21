@@ -3,7 +3,6 @@ import { Effect, Ref } from "effect";
 import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
 
 import type { BrowserEvent } from "./events.ts";
-
 export const recordedDeliveries = async (delivery: {
   readonly refuse?: boolean;
   readonly exercise: (driver: {
@@ -19,8 +18,7 @@ export const recordedDeliveries = async (delivery: {
       : Promise.resolve();
   });
   await delivery.exercise({
-    flush: async () =>
-      Effect.runPromise(Effect.ignore(Effect.tryPromise(async () => queue.flush()))),
+    flush: () => Effect.runPromise(Effect.ignore(Effect.tryPromise(async () => queue.flush()))),
     queue,
   });
   return Ref.getUnsafe(batches);

@@ -40,7 +40,7 @@ function contactApp() {
   const environment = appEnvironment({ OPS_EMAIL: opsEmail });
   const runtime = workerRuntime(() =>
     Layer.merge(
-      Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
+      Layer.orDie(appLayer({ env: environment, audience: APPLICATION.user, routes: routes })),
       Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
     ),
   );

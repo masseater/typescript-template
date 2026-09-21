@@ -1,23 +1,19 @@
 import { Array as Arr, Console, Effect, Queue, Ref, Schema, Semaphore, type Cause } from "effect";
 
 import { maximumBatchSize, type BrowserEvent } from "./events.ts";
-
 class DeliveryRefused extends Schema.TaggedError<DeliveryRefused>()("DeliveryRefused", {
   cause: Schema.Defect(),
 }) {}
-
 const maximumPendingEvents = 128;
 const maximumDeliveryAttempts = 3;
 const retryBackoffMilliseconds = 1000;
-const maximumRetryBackoffMilliseconds = 60_000;
+const maximumRetryBackoffMilliseconds = 60000;
 const backoffFactor = 2;
-
 const backoffAfter = (refusals: number): number =>
   Math.min(
     retryBackoffMilliseconds * backoffFactor ** (refusals - 1),
     maximumRetryBackoffMilliseconds,
   );
-
 export type EventQueue = {
   readonly enqueue: (browserEvent: BrowserEvent) => void;
   readonly flush: () => Promise<void>;
@@ -25,15 +21,12 @@ export type EventQueue = {
   readonly flushBeforeUnload: () => void;
   readonly close: () => void;
 };
-
 const reportExportFailure = Console.error(
   JSON.stringify({ event: "browser.telemetry_export_failed" }),
 );
-
 const reportBatchDropped = Console.error(
   JSON.stringify({ event: "browser.telemetry_batch_dropped" }),
 );
-
 const settled = (
   delivery: Effect.Effect<void, DeliveryRefused | Cause.Done>,
 ): Effect.Effect<void> =>
@@ -41,7 +34,6 @@ const settled = (
     Effect.tapError(() => reportExportFailure),
     Effect.ignore,
   );
-
 export const makeEventQueue = (
   deliver: (batch: readonly BrowserEvent[]) => Promise<void>,
 ): EventQueue => {
@@ -92,7 +84,7 @@ export const makeEventQueue = (
         Effect.runSync(Console.error(JSON.stringify({ event: "browser.telemetry_queue_full" })));
       }
     },
-    flush: async () => Effect.runPromise(drainOnce),
+    flush: () => Effect.runPromise(drainOnce),
     flushBeforeUnload: () => {
       const unsent = [
         ...Effect.runSync(Ref.getAndSet(retrying, [])),

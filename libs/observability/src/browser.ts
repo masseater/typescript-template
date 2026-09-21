@@ -16,24 +16,24 @@ import {
   type Correlation,
 } from "./protocol.ts";
 import { stoppableVitals, type VitalMetric } from "./vital-reporting.ts";
-
 const flushIntervalMilliseconds = 3000;
 const exportTimeoutMilliseconds = 5000;
-
 const elapsedSince = (startedAt: number): number =>
   Math.min(performance.now() - startedAt, maximumMeasurement);
-
 type FetchInstrumentation = {
   readonly endpoint: string;
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
   readonly send: typeof fetch;
 };
-
 const outgoingSpan = (
   outgoing: Request,
 ): {
-  readonly span: { readonly spanId: string; readonly start: number; readonly traceId: string };
+  readonly span: {
+    readonly spanId: string;
+    readonly start: number;
+    readonly traceId: string;
+  };
   readonly traced: Request;
 } => {
   const span = {
@@ -46,7 +46,6 @@ const outgoingSpan = (
   });
   return { span, traced };
 };
-
 const tracedFetch = async (
   instrumentation: FetchInstrumentation,
   outgoing: Request,
@@ -81,7 +80,6 @@ const tracedFetch = async (
     throw unsent;
   }
 };
-
 const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
   const originalFetch = globalThis.fetch;
   const instrumentedFetch = async (
@@ -104,16 +102,22 @@ const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
     }
   };
 };
-
 type Recorder = {
   readonly documentContext: Correlation;
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
 };
-
 const documentFields = (
   recorder: Recorder,
-): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> => {
+): Omit<
+  Extract<
+    BrowserEvent,
+    {
+      kind: "vital";
+    }
+  >,
+  "kind" | "name" | "value"
+> => {
   return {
     ...recorder.documentContext,
     duration: 0,
@@ -124,7 +128,6 @@ const documentFields = (
     status: 0,
   };
 };
-
 const recordException = (
   recorder: Recorder,
   exception: {
@@ -143,7 +146,6 @@ const recordException = (
   });
   recorder.queue.flushInBackground();
 };
-
 const listen = (recorder: Recorder): (() => void) => {
   const { queue } = recorder;
   const rejectionListener = (rejection: Readonly<Pick<PromiseRejectionEvent, "reason">>): void => {
@@ -171,7 +173,6 @@ const listen = (recorder: Recorder): (() => void) => {
     document.removeEventListener("visibilitychange", visibilityListener);
   };
 };
-
 const observeVitals = (recorder: Recorder): (() => void) => {
   const vitals = stoppableVitals((metric: VitalMetric): void => {
     recorder.queue.enqueue({
@@ -189,7 +190,6 @@ const observeVitals = (recorder: Recorder): (() => void) => {
   onTTFB(vitals.report);
   return vitals.stop;
 };
-
 const batchSender =
   (exporter: { readonly endpoint: string; readonly send: typeof fetch }) =>
   async (batch: readonly BrowserEvent[]): Promise<void> => {
@@ -207,14 +207,15 @@ const batchSender =
       throw new Error(`Browser telemetry rejected (${String(delivery.status)})`);
     }
   };
-
 export const initBrowserTelemetry = ({
   endpoint,
   routes,
 }: {
   readonly endpoint: "/api/telemetry";
   readonly routes: Readonly<Record<string, string>>;
-}): { readonly dispose: () => void } => {
+}): {
+  readonly dispose: () => void;
+} => {
   if (!isRoutes(routes)) {
     throw new Error(routeMessage);
   }

@@ -24,8 +24,6 @@ const awaitingPresetPackages = [
   "apps/internal-dashboard/**",
   "infra/cloudflare/**",
   "libs/auth/**",
-  "libs/observability/**",
-  "libs/runtime/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -219,6 +217,52 @@ const lintOptions = {
         ],
         "unicorn/text-encoding-identifier-case": [LINT_SEVERITY.ERROR, { withDash: true }],
         "vite-plus/prefer-vite-plus-imports": LINT_SEVERITY.ERROR,
+      },
+    },
+    {
+      files: ["libs/runtime/src/worker.ts"],
+      rules: {
+        "eslint/max-params": LINT_SEVERITY.OFF,
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/runtime/src/http.ts"],
+      rules: {
+        "dont-review-it/no-detached-declaration--declare-it-next-to-its-use": LINT_SEVERITY.OFF,
+        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/runtime/src/responses.ts"],
+      rules: {
+        "dont-review-it/no-receiver-mutation--derive-new-value": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/observability/src/redact.ts"],
+      rules: {
+        "dont-review-it/no-receiver-mutation--derive-new-value": LINT_SEVERITY.OFF,
+        "eslint/max-statements": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/runtime/src/database-health.ts", "libs/runtime/src/worker-runtime.ts"],
+      rules: {
+        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/runtime/src/bindings.ts"],
+      rules: {
+        "eslint/max-classes-per-file": LINT_SEVERITY.OFF,
+        "new-cap": [
+          LINT_SEVERITY.ERROR,
+          {
+            capIsNewExceptionPattern: "^(?:Schema|Context|Data|Binding|D1|Email|WorkersAi)\\.",
+          },
+        ],
+        "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
       },
     },
     {

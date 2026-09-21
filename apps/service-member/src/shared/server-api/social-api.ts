@@ -15,8 +15,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/onboarding",
-      api.route(
-        OnboardingView,
+      api.route(OnboardingView)(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -27,8 +26,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/onboarding",
-      api.route(
-        OnboardingView,
+      api.route(OnboardingView)(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -41,8 +39,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/home/feed",
-      api.route(
-        HomeFeed,
+      api.route(HomeFeed)(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
