@@ -29,7 +29,6 @@ const awaitingPresetPackages = [
   "infra/health-monitor/**",
   "infra/local/**",
   "libs/auth/**",
-  "libs/config/**",
   "libs/db/**",
   "libs/monitor/**",
   "libs/observability/**",
