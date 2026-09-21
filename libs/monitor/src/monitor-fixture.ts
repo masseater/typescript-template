@@ -1,22 +1,22 @@
 import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
-import { monitorWorker } from "./index.ts";
+import { monitorWorker, type MonitorBindings } from "./index.ts";
+import { type SentMail } from "./mail-recorder.ts";
 
-import type { MonitorBindings } from "./index.ts";
-import type { SentMail } from "./mail-recorder.ts";
+/** @canonical-values monitor.probe-outcome */
+const probeOutcomes = ["die", "fail", "notify", "succeed"] as const;
 
-type Outcome = "die" | "fail" | "notify" | "succeed";
+type Outcome = (typeof probeOutcomes)[number];
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace -- Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding
   namespace Cloudflare {
     interface Env {
       readonly ALERT_FROM: string;
       readonly ALERT_TO: string;
       readonly EMAIL: {
-        readonly send: (message: SentMail) => void;
-        readonly taken: () => Promise<SentMail[]>;
+        readonly send: (sentMail: SentMail) => void;
+        readonly taken: () => readonly SentMail[];
       };
       readonly MONITOR: DurableObjectNamespace;
     }
@@ -30,28 +30,28 @@ const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 const probeMonitor = monitorWorker<MonitorBindings>({
   check({ ctx }, notify) {
     return Effect.gen(function* probe() {
-      const outcome = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
-      if (outcome === "fail") {
+      const recordedProbe = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
+      if (recordedProbe === "fail") {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
       }
-      if (outcome === "die") {
+      if (recordedProbe === "die") {
         return yield* Effect.die("the probe was asked to defect");
       }
-      if (outcome === "notify") {
+      if (recordedProbe === "notify") {
         yield* notify(probeAlert);
       }
-      return { outcome: outcome ?? "succeed" };
+      return { outcome: recordedProbe ?? "succeed" };
     });
   },
-  className: "ProbeMonitor",
   event: probeEvent,
   failure: probeFailure,
 });
 
-const ProbeMonitor = probeMonitor.Worker;
-
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
+
+class ProbeMonitor extends probeMonitor.Worker {}
+
 export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
 export default probeMonitor.handler;

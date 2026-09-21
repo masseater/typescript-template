@@ -35,7 +35,6 @@ const errorMonitor = monitorWorker<Bindings>({
       return { dropped, groups: groups.length, notified: decision.notifications.length };
     }).pipe(Effect.withSpan("ErrorMonitor.check"));
   },
-  className: errorMonitorWorker.className,
   event: errorMonitorWorker.event,
   failure: {
     subject: "Cloudflare Workers error monitoring failed",
@@ -43,7 +42,7 @@ const errorMonitor = monitorWorker<Bindings>({
   },
 });
 
-const ErrorMonitor = errorMonitor.Worker;
+class ErrorMonitor extends errorMonitor.Worker {}
 
 export { ErrorMonitor };
 export default errorMonitor.handler;

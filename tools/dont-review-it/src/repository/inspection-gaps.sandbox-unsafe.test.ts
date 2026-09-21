@@ -152,7 +152,6 @@ describe("inspection coverage", () => {
       "infra/local/**",
       "libs/auth/**",
       "libs/db/**",
-      "libs/monitor/**",
       "libs/observability/**",
       "libs/runtime/**",
       "tools/dev/**",

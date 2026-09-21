@@ -45,7 +45,6 @@ const health = monitorWorker<Bindings>({
       };
     }).pipe(Effect.withSpan("HealthMonitor.check"));
   },
-  className: healthMonitorWorker.className,
   event: healthMonitorWorker.event,
   failure: {
     subject: "Cloudflare Workers health monitoring failed",
@@ -53,7 +52,7 @@ const health = monitorWorker<Bindings>({
   },
 });
 
-const HealthMonitor = health.Worker;
+class HealthMonitor extends health.Worker {}
 
 export { HealthMonitor };
 export default health.handler;
