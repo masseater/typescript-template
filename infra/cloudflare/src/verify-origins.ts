@@ -1,6 +1,9 @@
 #!/usr/bin/env node
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { resolve4, resolve6 } from "node:dns/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { request } from "node:https";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { URL } from "node:url";
 
 import { runCli } from "@repo/cli";
