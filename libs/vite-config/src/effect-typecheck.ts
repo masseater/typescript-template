@@ -619,7 +619,6 @@ export {
   isInvokedAsCli,
   locateCompiler,
   ownedDiagnostics,
-  diagnosticBelongsToWorkspace,
   exitAfterFlush,
   exitInvokedCli,
   maybeStart,
@@ -632,15 +631,4 @@ export {
   serializeBaseline,
   startEffectTypecheckCli,
   workspaceOf,
-  writeFlag,
-};
-export type {
-  BaselineEntry,
-  CompilerResult,
-  CountedDiagnostic,
-  Diagnostic,
-  MissingExportCode,
-  TypecheckBaseline,
-  TypecheckIo,
-  TypecheckVerdict,
 };
