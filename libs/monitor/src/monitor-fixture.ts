@@ -1,5 +1,5 @@
-import { Effect } from "effect";
 import { Process, consumeJobs } from "@repo/runtime/jobs";
+import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 import { monitorWorker } from "./index.ts";

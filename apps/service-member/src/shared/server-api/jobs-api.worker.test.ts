@@ -32,9 +32,7 @@ const reporting = { log: recordingSink().sink, service: APPLICATION.user } as co
 
 function jobsApp() {
   const environment = appEnvironment();
-  const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-  );
+  const runtime = workerRuntime(() => Layer.orDie(appLayer(environment, APPLICATION.user, routes)));
   return createApi(apiRoot).use(jobsApi(apiRoutes(runtime, reporting)));
 }
 

@@ -45,10 +45,7 @@ const enqueueJob = Effect.fn("jobs.enqueue")(function* enqueueJob(env: JobsBindi
   return payload;
 });
 
-const jobStatus = Effect.fn("jobs.status")(function* jobStatus(
-  env: JobsBindings,
-  jobId: string,
-) {
+const jobStatus = Effect.fn("jobs.status")(function* jobStatus(env: JobsBindings, jobId: string) {
   const instance = yield* Effect.promise(async () => env[jobsWorkflowBinding].get(jobId));
   return yield* Effect.promise(async () => instance.status());
 });
