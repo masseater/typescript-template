@@ -1603,9 +1603,6 @@ importers:
 
   tools/dev:
     dependencies:
-      '@cloudflare/workers-types':
-        specifier: 'catalog:'
-        version: 5.20260916.1
       '@effect/platform-node':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
@@ -1655,6 +1652,9 @@ importers:
         specifier: 'catalog:'
         version: 4.134.0(@cloudflare/workers-types@5.20260916.1)(@types/node@26.6.1)
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 'catalog:'
+        version: 5.20260916.1
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)

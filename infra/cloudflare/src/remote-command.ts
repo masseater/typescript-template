@@ -44,7 +44,7 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   }
   const { apply, database } = remoteDatabase({ ...target, apiToken: target.apiToken });
   if (operation === "migrate") {
-    const applied = yield* migrateDatabase(database, apply);
+    const applied = yield* migrateDatabase({ apply, database });
     return {
       applied,
       databaseId: target.databaseId,

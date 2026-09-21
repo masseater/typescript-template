@@ -198,5 +198,4 @@ const scriptedTypecheck = (
     writeText: () => undefined,
   });
 
-export { baselinePath, runEffectTypecheck, runTypecheckGate, scriptedTypecheck, snapshotArgument };
-export type { GateIo, GateRun };
+export { runTypecheckGate, scriptedTypecheck };
