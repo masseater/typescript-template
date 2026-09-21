@@ -117,9 +117,7 @@ it.effect(
         "face.woff2",
         "styles.css",
       ]);
-      assert.ok(
-        artifacts.modules.every((module) => path.extname(module.name) !== ".woff2"),
-      );
+      assert.ok(artifacts.modules.every((module) => path.extname(module.name) !== ".woff2"));
       assert.strictEqual(
         yield* run(async () => readFile(path.join(client, "app.js.map"), "utf-8")),
         "private source map",
