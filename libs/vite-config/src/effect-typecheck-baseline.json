@@ -519,14 +519,6 @@
         "count": 1
       }
     ],
-    "infra/budget-monitor": [
-      {
-        "file": "vite.config.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
-        "count": 1
-      }
-    ],
     "infra/cloudflare": [
       {
         "file": "../../libs/monitor/src/index.ts",
@@ -610,22 +602,6 @@
         "file": "src/verification-fixture.ts",
         "code": "TS6133",
         "message": "'APPLICATION' is declared but its value is never read.",
-        "count": 1
-      }
-    ],
-    "infra/error-monitor": [
-      {
-        "file": "vite.config.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
-        "count": 1
-      }
-    ],
-    "infra/health-monitor": [
-      {
-        "file": "vite.config.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
         "count": 1
       }
     ],
