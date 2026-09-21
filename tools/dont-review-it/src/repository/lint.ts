@@ -272,25 +272,6 @@ const lintOptions = {
       },
     },
     {
-      files: [
-        "infra/budget-monitor/**",
-        "infra/cloudflare/**",
-        "infra/local/**",
-        "libs/config/**",
-        "libs/db/src/local.ts",
-        "libs/db/src/missing-record-return.test.ts",
-        "libs/vite-config/**",
-        "tools/dev/**",
-        "tools/dont-review-it/src/configs/oxlint.ts",
-        "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
-        "tools/dont-review-it/src/repository/**",
-      ],
-      rules: {
-        "import/no-nodejs-modules": LINT_SEVERITY.OFF,
-        "node/no-process-env": LINT_SEVERITY.OFF,
-      },
-    },
-    {
       files: ["libs/db/src/testing.ts", "libs/monitor/src/monitor-fixture.ts"],
       rules: {
         "typescript/no-namespace": LINT_SEVERITY.OFF,

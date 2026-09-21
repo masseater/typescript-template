@@ -1,4 +1,6 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { chmod, mkdir, realpath, rename, rm, writeFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
