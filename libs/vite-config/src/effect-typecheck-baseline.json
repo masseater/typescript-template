@@ -65,12 +65,6 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "../../libs/auth/src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -283,12 +277,6 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "../../libs/auth/src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -414,12 +402,6 @@
         "file": "../../libs/auth/src/mail-fixture.ts",
         "code": "TS2345",
         "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -1155,12 +1137,6 @@
         "count": 1
       },
       {
-        "file": "src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -1282,12 +1258,6 @@
         "file": "../auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -1447,12 +1417,6 @@
         "count": 1
       },
       {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "../auth/src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -1554,12 +1518,6 @@
         "file": "../../libs/auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
