@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./bindings": "./src/bindings.ts",
     "./http": "./src/http.ts",
     "./worker": "./src/worker.ts",
     "./client": "./src/client.ts",

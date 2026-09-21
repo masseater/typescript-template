@@ -3,7 +3,7 @@ import { APPLICATION } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer, readWorkerConfig } from "@repo/runtime";
+import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";

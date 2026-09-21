@@ -10,8 +10,12 @@ import {
   type WorkerEnv,
 } from "effect-cf";
 
+import { configuredAppLayer, type AppServices } from "./index.ts";
+
 import type { D1Database, Flagship, SendEmail } from "@cloudflare/workers-types";
-import type { AppConfig, AssetFetcher } from "@repo/config";
+import type { AuthFailure } from "@repo/auth";
+import type { AppConfig, Application, AssetFetcher } from "@repo/config";
+import type { TelemetryInvalid } from "@repo/observability";
 
 const isFetcher = (value: unknown): value is AssetFetcher =>
   typeof value === "object" && value !== null && typeof Reflect.get(value, "fetch") === "function";
@@ -126,5 +130,17 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
   return config;
 });
 
-export { readWorkerConfig };
+function appLayer(
+  env: unknown,
+  audience: Exclude<Application, "internal-dashboard">,
+  routes: Readonly<Record<string, string>>,
+): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
+  return Layer.unwrap(
+    readWorkerConfig(env).pipe(
+      Effect.map((config) => configuredAppLayer(config, audience, routes)),
+    ),
+  );
+}
+
+export { appLayer, readWorkerConfig };
 export type { WorkerModel };

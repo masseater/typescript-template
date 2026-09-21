@@ -2,7 +2,9 @@ import { Context, Effect, Schema } from "effect";
 
 import { EmbeddingFailed } from "./embedding-failed.ts";
 
-import type { WorkerModel } from "@repo/runtime";
+type WorkerModel = {
+  readonly run: (model: string, input: { readonly text: string[] }) => Promise<unknown>;
+};
 
 interface EmbedderShape {
   readonly available: boolean;

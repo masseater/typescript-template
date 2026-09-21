@@ -4,7 +4,8 @@ import {
   flagshipFeatureFlagsLayer,
   memoryFeatureFlagsLayer,
 } from "@repo/feature-flags";
-import { configuredAppLayer, readWorkerConfig } from "@repo/runtime";
+import { configuredAppLayer } from "@repo/runtime";
+import { readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
 import { Embedder, embedWith } from "./embedder.ts";

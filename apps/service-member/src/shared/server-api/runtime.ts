@@ -1,6 +1,6 @@
 import { APPLICATION } from "@repo/config";
 import { flagshipFeatureFlagsLayer, memoryFeatureFlagsLayer } from "@repo/feature-flags";
-import { appLayer, readWorkerConfig } from "@repo/runtime";
+import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";

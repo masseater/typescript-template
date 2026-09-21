@@ -1,6 +1,6 @@
 import { createWorkersAiChat } from "@cloudflare/tanstack-ai/adapters/workers-ai";
 import { withSpan } from "@repo/observability";
-import { readWorkerConfig } from "@repo/runtime";
+import { readWorkerConfig } from "@repo/runtime/bindings";
 import { chat } from "@tanstack/ai";
 import { Context, Effect, Layer, Schema } from "effect";
 
