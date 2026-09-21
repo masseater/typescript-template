@@ -7,6 +7,7 @@ import { request } from "node:https";
 import { URL } from "node:url";
 
 import { runCli } from "@repo/cli";
+import { applications } from "@repo/config";
 import { HealthView } from "@repo/runtime/contracts";
 import { Console, Effect, Schema } from "effect";
 
