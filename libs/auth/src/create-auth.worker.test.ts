@@ -20,11 +20,11 @@ import {
   signIn,
   spendSignInWindow,
   verifyEmail,
-} from "./testing.ts";
+} from "@repo/auth/testing";
 
 describe("createAuth", () => {
   describe("a registered user whose email is not verified yet", () => {
-    const it = authTest()
+    const it = authTest
       .extend("unverified", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInUnverified() {
@@ -52,7 +52,7 @@ describe("createAuth", () => {
   });
 
   describe("the admin app", () => {
-    const it = authTest().extend("signUp", async ({ auth }) =>
+    const it = authTest.extend("signUp", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* signUpToAdmin() {
           const client = yield* clientOf(APPLICATION.admin);
@@ -71,7 +71,7 @@ describe("createAuth", () => {
   });
 
   describe("the user app", () => {
-    const it = authTest()
+    const it = authTest
       .extend("userList", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* listUsers() {
@@ -100,7 +100,7 @@ describe("createAuth", () => {
   });
 
   describe("an unverified user signing in", () => {
-    const it = authTest()
+    const it = authTest
       .extend("wikiRecipients", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInToWiki() {
@@ -130,7 +130,7 @@ describe("createAuth", () => {
   });
 
   describe.for([APPLICATION.user, APPLICATION.wiki] as const)("the %s app", (audience) => {
-    const it = authTest()
+    const it = authTest
       .extend("missingFields", async ({ auth }) =>
         runWith(auth, () => missingSchemaFields(audience)),
       )
@@ -147,7 +147,7 @@ describe("createAuth", () => {
 
   describe("sign-in attempts from one address", () => {
     const spender = { "cf-connecting-ip": "203.0.113.10" };
-    const it = authTest()
+    const it = authTest
       .extend("burst", async ({ auth }) =>
         runWith(auth, () => spendSignInWindow({ email: "spender@example.com", network: spender })),
       )
@@ -189,7 +189,7 @@ describe("createAuth", () => {
   });
 
   describe("a member on the wiki", () => {
-    const it = authTest()
+    const it = authTest
       .extend("signInStatus", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInMember() {
@@ -220,7 +220,7 @@ describe("createAuth", () => {
   });
 
   describe("someone signing up with a registered address", () => {
-    const it = authTest()
+    const it = authTest
       .extend("verifiedNotice", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* noticeVerifiedOwner() {

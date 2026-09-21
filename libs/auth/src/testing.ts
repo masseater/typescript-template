@@ -22,9 +22,9 @@ export {
   spendSignInWindow,
   verifyEmail,
   withAuth,
-} from "./auth-test-fixture.ts";
+} from "./auth-suite.ts";
 export { BrowserClient, origins } from "./browser-client.ts";
 export { mailSubjects } from "./email.ts";
-export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixture.ts";
+export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-box.ts";
 export { UnexpectedStatus } from "./unexpected-status.ts";
-export { startAuthorization, wikiAdministrator, wikiOrigin } from "./wiki-oauth-fixture.ts";
+export { startAuthorization, wikiAdministrator, wikiOrigin } from "./wiki-oauth.ts";

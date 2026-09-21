@@ -7,36 +7,32 @@ import { EmailVerificationFailed } from "./email-verification-failed.ts";
 
 import type { BetterAuthInstance } from "./create-auth.ts";
 
-function authPromise<Value>(
-  run: (instance: BetterAuthInstance) => Promise<Value>,
-): Effect.Effect<Value, AuthFailure, Auth> {
-  return Effect.gen(function* authPromiseProgram() {
-    const { instance } = yield* Auth;
+const authPromise = <Value>(
+  run: (authInstance: BetterAuthInstance) => Promise<Value>,
+): Effect.Effect<Value, AuthFailure, Auth> =>
+  Effect.gen(function* authPromiseProgram() {
+    const { instance: authInstance } = yield* Auth;
     return yield* Effect.tryPromise({
       catch: (cause) => new AuthFailure({ cause }),
-      try: async () => run(instance),
+      try: async () => run(authInstance),
     });
   });
-}
 
-const handleAuthRequest = function handleAuthRequest(
-  request: Request,
-): Effect.Effect<Response, AuthFailure, Auth> {
-  return authPromise(async (instance) => instance.handler(request));
-};
+const handleAuthRequest = (authRequest: Request): Effect.Effect<Response, AuthFailure, Auth> =>
+  authPromise(async (authInstance) => authInstance.handler(authRequest));
 
 const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToken(
   token: string,
   headers: Headers,
 ) {
-  const { instance } = yield* Auth;
-  const verification = new URL("/api/auth/verify-email", instance.options.baseURL);
+  const { instance: authInstance } = yield* Auth;
+  const verification = new URL("/api/auth/verify-email", authInstance.options.baseURL);
   verification.searchParams.set("token", token);
-  const response = yield* handleAuthRequest(new Request(verification, { headers, method: "GET" }));
-  yield* Effect.promise(async () => response.body?.cancel());
-  if (!response.ok) {
+  const authResponse = yield* handleAuthRequest(new Request(verification, { headers, method: "GET" }));
+  yield* Effect.promise(async () => authResponse.body?.cancel());
+  if (!authResponse.ok) {
     return yield* new EmailVerificationFailed({
-      rateLimited: response.status === httpStatus.tooManyRequests,
+      rateLimited: authResponse.status === httpStatus.tooManyRequests,
     });
   }
   return { verified: true } as const;

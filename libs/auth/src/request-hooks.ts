@@ -15,6 +15,7 @@ import {
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { Predicate } from "effect";
 
+import { emailChangePath } from "./email-change.ts";
 import {
   deny,
   enrollmentPaths,
@@ -30,7 +31,6 @@ import type { Run } from "./runner.ts";
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 type SessionRecord = NonNullable<Awaited<ReturnType<typeof runSessionLookup>>>;
 
-const emailChangePath = "/change-email";
 const emailVerificationPath = "/verify-email";
 const sessionRevokingPaths = new Set([
   "/change-password",
@@ -252,7 +252,7 @@ const confirmsEmailChange = function confirmsEmailChange(
   ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
   const query: unknown = ctx.query;
-  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
+  const token = Predicate.isObject(query) && "token" in query ? query['token'] : undefined;
   return (
     ctx.path === emailVerificationPath &&
     typeof token === "string" &&

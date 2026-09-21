@@ -10,7 +10,7 @@ import {
   enableTotp,
   requireStatus,
   signInAs,
-} from "./auth-test-fixture.ts";
+} from "./auth-suite.ts";
 import { origins, type BrowserClient } from "./browser-client.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 

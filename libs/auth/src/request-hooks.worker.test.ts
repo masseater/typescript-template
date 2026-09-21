@@ -17,13 +17,13 @@ import {
   signInAgainAfterTotp,
   signInAs,
   startAuthorization,
-} from "./testing.ts";
+} from "@repo/auth/testing";
 
 describe("request hooks", () => {
   describe.for([APPLICATION.user, APPLICATION.admin] as const)(
     "an administrator session on %s opened before TOTP enrollment",
     (audience) => {
-      const it = authTest()
+      const it = authTest
         .extend("scenario", async ({ auth }) =>
           runWith(auth, () =>
             Effect.gen(function* openWeakSession() {
@@ -73,7 +73,7 @@ describe("request hooks", () => {
   describe.for([APPLICATION.user, APPLICATION.admin] as const)(
     "an administrator signed in to %s with a recovery code",
     (audience) => {
-      const it = authTest().extend("denied", async ({ auth }) =>
+      const it = authTest.extend("denied", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* recover() {
             yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -101,7 +101,7 @@ describe("request hooks", () => {
   );
 
   describe("a member with TOTP enrolled on another session", () => {
-    const it = authTest()
+    const it = authTest
       .extend("scenario", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* openOldSession() {
@@ -127,7 +127,7 @@ describe("request hooks", () => {
   });
 
   describe("an administrator session left weak after TOTP enrollment elsewhere", () => {
-    const it = authTest()
+    const it = authTest
       .extend("old", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* enrollBeside() {
@@ -161,7 +161,7 @@ describe("request hooks", () => {
   });
 
   describe("a pending TOTP challenge replayed against the admin app", () => {
-    const it = authTest().extend("transferred", async ({ auth }) =>
+    const it = authTest.extend("transferred", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* transfer() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -186,7 +186,7 @@ describe("request hooks", () => {
   });
 
   describe("a weak wiki administrator session continuing an OAuth authorization", () => {
-    const it = authTest().extend("continued", async ({ auth }) =>
+    const it = authTest.extend("continued", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* continueWeakly() {
           const flow = yield* startAuthorization();
@@ -209,7 +209,7 @@ describe("request hooks", () => {
   });
 
   describe("an OAuth query smuggled into a wiki sign-in", () => {
-    const it = authTest().extend("smuggled", async ({ auth }) =>
+    const it = authTest.extend("smuggled", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* smuggle() {
           const flow = yield* startAuthorization();

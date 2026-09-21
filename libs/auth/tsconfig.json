@@ -1,8 +1,12 @@
 {
-  "extends": "@repo/dont-review-it/tsconfig/app.json",
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
   "compilerOptions": {
-    "lib": ["esnext", "dom"],
-    "types": ["node"],
+    "types": [
+      "vite-plus/client",
+      "node",
+      "@cloudflare/workers-types",
+      "@cloudflare/vitest-plugin/types"
+    ],
     "plugins": [
       {
         "name": "@effect/language-service"
