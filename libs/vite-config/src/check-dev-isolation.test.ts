@@ -51,5 +51,8 @@ describe("check:dev local D1", () => {
     expect(viteSource).toMatch(/binding: "CORE"/u);
     expect(viteSource).toMatch(/d1_databases: \[localDatabase\]/u);
     expect(viteSource).toMatch(/elysiaAot\(appRoot\)/u);
+    expect(readFileSync(new URL("./elysia-aot.ts", import.meta.url), "utf8")).toMatch(
+      /environment\.name === "ssr"/u,
+    );
   });
 });

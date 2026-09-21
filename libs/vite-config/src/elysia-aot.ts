@@ -22,7 +22,10 @@ function elysiaAot(appRoot: string): Plugin {
     target: "workerd",
   });
   void apply;
-  return plugin;
+  return {
+    ...plugin,
+    applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
+  };
 }
 
 export { elysiaAot };
