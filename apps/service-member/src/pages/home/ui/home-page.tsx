@@ -1,83 +1,59 @@
 import { useAtomValue } from "@effect/atom-react";
-import {
-  Heading,
-  NavigationLink,
-  STATUS_VARIANT,
-  StatusMessage,
-  requestAtom,
-  resultError,
-} from "@repo/ui";
+import { requestAtom, resultError } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { loadHomeFeed } from "#pages/home/api/feed.ts";
+import { getLocale, m } from "#shared/i18n/index.ts";
+import { HomeFeed } from "./home-feed.tsx";
 
-import type { FeedItem } from "#shared/contracts/index.ts";
+import type { HomeEntry, HomeFeedState } from "./home-feed.tsx";
 import type { ReactElement } from "react";
 
-const updatedAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
+const feedAtom = requestAtom(async (): Promise<readonly HomeEntry[]> => {
+  const updatedAtLabel = new Intl.DateTimeFormat(getLocale(), {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "UTC",
+  });
+  return presentFeed(await loadHomeFeed(), (updatedAt) =>
+    updatedAtLabel.format(new Date(updatedAt)),
+  );
 });
 
-type HomeFeed = {
-  readonly items: readonly FeedItem[];
-  readonly labels: Readonly<Record<string, string>>;
-};
+function presentFeed(
+  items: readonly { actorId: string; actorName: string; profile: string; updatedAt: number }[],
+  label: (updatedAt: number) => string,
+): readonly HomeEntry[] {
+  return items.map((item) => ({
+    actorId: item.actorId,
+    actorName: item.actorName,
+    change: item.profile === "" ? m.home_profile_empty() : item.profile,
+    key: `${item.actorId}-${item.updatedAt}`,
+    updatedAtLabel: label(item.updatedAt),
+  }));
+}
 
-const feedAtom = requestAtom(async (): Promise<HomeFeed> => {
-  const feed = await loadHomeFeed();
-  return {
-    items: feed,
-    labels: Object.fromEntries(
-      feed.map((item) => [
-        `${item.actorId}-${item.updatedAt}`,
-        updatedAtLabel.format(new Date(item.updatedAt)),
-      ]),
-    ),
-  };
-});
+function homeState(
+  failure: string | undefined,
+  entries: readonly HomeEntry[] | undefined,
+): HomeFeedState {
+  if (failure !== undefined) {
+    return { message: failure, status: "failure" };
+  }
+  if (entries === undefined) {
+    return { status: "pending" };
+  }
+  if (entries.length === 0) {
+    return { status: "empty" };
+  }
+  return { entries, status: "ready" };
+}
 
 function HomePage(): ReactElement {
   const feedState = useAtomValue(feedAtom);
   const failure = resultError(feedState);
-  const feed = AsyncResult.isSuccess(feedState) ? feedState.value : undefined;
-  return (
-    <main className="flex flex-col gap-4 p-4">
-      <Heading as="h1" size="page">
-        ホーム
-      </Heading>
-      {failure !== undefined && <p className="text-sm text-destructive">{failure}</p>}
-      {feed === undefined && failure === undefined && (
-        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-      )}
-      {feed !== undefined && feed.items.length === 0 && (
-        <StatusMessage variant={STATUS_VARIANT.empty}>
-          フォローしている利用者の動きはまだありません。
-        </StatusMessage>
-      )}
-      {feed !== undefined && feed.items.length > 0 && (
-        <ul className="flex flex-col gap-3">
-          {feed.items.map((item) => {
-            const key = `${item.actorId}-${item.updatedAt}`;
-            return (
-              <li key={key} className="rounded-lg border border-border p-3">
-                <NavigationLink to="/users/$id" params={{ id: item.actorId }} variant="item">
-                  {item.actorName}
-                </NavigationLink>
-                <p className="text-sm leading-normal text-muted-foreground">
-                  プロフィールを更新しました
-                </p>
-                <p className="text-xs leading-normal text-muted-foreground">
-                  {feed.labels[key] ?? ""}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </main>
-  );
+  const entries = AsyncResult.isSuccess(feedState) ? feedState.value : undefined;
+  return <HomeFeed state={homeState(failure, entries)} />;
 }
 
-export { HomePage };
+export { HomePage, presentFeed };
