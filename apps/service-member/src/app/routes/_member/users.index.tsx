@@ -32,7 +32,7 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   }
 }
 
-async function loadMembersOrUpgrade(queries: QueryClient, search: UsersSearch): Promise<unknown> {
+async function loadMembersOrUpgrade(queries: QueryClient, search: UsersSearch) {
   try {
     return await queries.ensureInfiniteQueryData(membersOptions(search));
   } catch (error) {
