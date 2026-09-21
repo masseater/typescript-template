@@ -1230,6 +1230,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
+      '@repo/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

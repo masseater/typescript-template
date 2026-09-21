@@ -9,6 +9,7 @@ import {
   maximumAdminPageSize,
   readAi,
   readConfig,
+  readJobs,
   usageAllowanceRemains,
 } from "./index.ts";
 
@@ -100,6 +101,32 @@ describe("an AI binding with no run", () => {
 
   it("names the AI binding", ({ refusal }) => {
     expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: 'Expected Ai\n  at ["AI"]' }));
+  });
+});
+
+describe("readJobs", () => {
+  const jobs = {
+    JOBS: { send: queueMicrotask },
+    PROCESS: { create: queueMicrotask, get: structuredClone },
+  };
+  const it = test.extend("jobsBindings", () =>
+    Effect.runPromise(readJobs({ ...local, ...jobs })));
+
+  it("returns the jobs queue binding", ({ jobsBindings }) => {
+    expect(jobsBindings.JOBS).toStrictEqual(jobs.JOBS);
+  });
+});
+
+describe("jobs without a queue", () => {
+  const it = test.extend("refusal", () =>
+    Effect.runPromise(
+      readJobs({ ...local, PROCESS: { create: queueMicrotask, get: structuredClone } }).pipe(
+        Effect.flip,
+      ),
+    ));
+
+  it("names the jobs queue", ({ refusal }) => {
+    expect(refusal._tag).toBe("ConfigurationInvalid");
   });
 });
 

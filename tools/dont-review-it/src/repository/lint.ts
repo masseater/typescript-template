@@ -272,10 +272,13 @@ const lintOptions = {
     },
     {
       files: [
+        "infra/budget-monitor/**",
         "infra/cloudflare/**",
+        "infra/local/**",
         "libs/config/**",
         "libs/db/src/local.ts",
-        "libs/vite-config/**/*.test.ts",
+        "libs/db/src/missing-record-return.test.ts",
+        "libs/vite-config/**",
         "tools/dev/**",
         "tools/dont-review-it/src/configs/oxlint.ts",
         "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
@@ -325,6 +328,7 @@ const lintOptions = {
           "vitest.config.ts",
           "vitest.mutation.config.ts",
           "vitest.workers.config.ts",
+          "vitest.workers.main.ts",
           "worker.ts",
         ],
       },
