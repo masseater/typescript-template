@@ -23,11 +23,13 @@ const workspace = (file: string): string => {
   return path.relative(repositoryRoot, path.dirname(absolute)).split(path.sep).join("/");
 };
 
-const diagnosticsTask = (config: unknown): unknown => {
+const namedTask = (config: unknown, name: string): unknown => {
   const resolved: unknown =
     typeof config === "function" ? Reflect.apply(config, undefined, [environment]) : config;
-  return field(field(field(resolved, "run"), "tasks"), "check:effect");
+  return field(field(field(resolved, "run"), "tasks"), name);
 };
+
+const diagnosticsTask = (config: unknown): unknown => namedTask(config, "check:effect");
 
 const diagnosed = Object.entries(configs)
   .filter(([, config]: readonly [string, unknown]) => diagnosticsTask(config) !== undefined)
@@ -53,10 +55,19 @@ describe("effect diagnostics coverage", () => {
     );
   });
 
-  it("fails the gate on a missing named export before the bundle", () => {
-    expect.assertions(2);
-    expect(effectDiagnostics["check:effect"].command).toBe(
-      "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+  it("fails the gate before effect diagnostics and before the bundle", () => {
+    expect.assertions(4);
+    const gates = Object.values(configs)
+      .map((config) => namedTask(config, "check:effect:gate"))
+      .filter((task) => task !== undefined);
+    expect(gates).toStrictEqual(gates.map(() => effectDiagnostics["check:effect:gate"]));
+    expect(gates).toHaveLength(declarations.length);
+    expect(effectDiagnostics["check:effect"]).toEqual(
+      expect.objectContaining({
+        command:
+          "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+        dependsOn: ["check:effect:gate"],
+      }),
     );
     expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
   });
