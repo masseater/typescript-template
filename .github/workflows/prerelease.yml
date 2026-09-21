@@ -26,11 +26,6 @@ jobs:
         with:
           node-version-file: package.json
           cache: ${{ vars.CI_RUNNER == '' }}
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        env:
-          MISE_CEILING_PATHS: ${{ runner.workspace }}
-        with:
-          cache: ${{ vars.CI_RUNNER == '' }}
       - run: vp run -r prerelease
 
   load:
