@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { effectDiagnostics } from "@repo/vite-config";
+import { appRun, effectDiagnostics } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
@@ -51,5 +51,13 @@ describe("effect diagnostics coverage", () => {
     expect(declarations).toStrictEqual(
       declarations.map(() => effectDiagnostics["check:effect"] as unknown),
     );
+  });
+
+  it("fails the gate on a missing named export before the bundle", () => {
+    expect.assertions(2);
+    expect(effectDiagnostics["check:effect"].command).toBe(
+      "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+    );
+    expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
   });
 });
