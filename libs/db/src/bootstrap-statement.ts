@@ -24,6 +24,17 @@ const BootstrappedAdmin = Schema.Struct({
   role: Schema.Literals([ROLE.administrator, ROLE.staff]),
 });
 
+const bootstrappedColumns = ["id", "email", "role", "permission"] as const;
+const returningBootstrapped = sql.raw(bootstrappedColumns.join(", "));
+
+const readBootstrappedAdmin = (row: readonly unknown[]) => {
+  return Schema.decodeUnknownEffect(BootstrappedAdmin)(
+    row.length === bootstrappedColumns.length
+      ? Object.fromEntries(bootstrappedColumns.map((column, index) => [column, row[index]]))
+      : row,
+  );
+};
+
 const bootstrapStatement = (
   email: typeof Email.Type,
   kind: BootstrapKind = BOOTSTRAP_KIND.admin,
@@ -35,7 +46,7 @@ const bootstrapStatement = (
       AND ${user.emailVerified} = ${1}
       AND ${user.role} = ${ROLE.member}
       AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${role})
-    RETURNING id, email, role, permission`;
+    RETURNING ${returningBootstrapped}`;
 };
 
 const ensureRoleStatement = (email: typeof Email.Type, kind: BootstrapKind): SQL => {
@@ -44,7 +55,7 @@ const ensureRoleStatement = (email: typeof Email.Type, kind: BootstrapKind): SQL
     SET role = ${role}, permission = ${permission}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
-    RETURNING id, email, role, permission`;
+    RETURNING ${returningBootstrapped}`;
 };
 
 class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
@@ -90,4 +101,5 @@ export {
   bootstrapAdmin,
   bootstrapStatement,
   ensureAdminRole,
+  readBootstrappedAdmin,
 };
