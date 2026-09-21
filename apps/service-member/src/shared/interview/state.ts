@@ -44,5 +44,5 @@ const Utterance = Schema.Union([
 type InterviewState = typeof State.Type;
 type MemberUtterance = typeof Utterance.Type;
 
-export { State, Utterance, roles, settledPhases };
+export { State, Utterance, maximumUtterance, roles, settledPhases };
 export type { InterviewState, MemberUtterance };

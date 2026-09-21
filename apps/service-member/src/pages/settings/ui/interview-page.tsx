@@ -1,31 +1,13 @@
-import { Page, StatusMessage } from "@repo/ui";
-import { useRouter } from "@tanstack/react-router";
+import { Page } from "@repo/ui";
 
-import { HistoryConsentPanel } from "./history-consent-panel.tsx";
+import { InterviewRoom } from "#widgets/interview-room/index.ts";
 
-import type { InterviewView } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
-function InterviewSettingsPage({
-  interview,
-}: Readonly<{ interview: typeof InterviewView.Type }>): ReactElement {
-  const router = useRouter();
-
-  if (interview.phase === "history_consent") {
-    return (
-      <Page title="AI インタビュー">
-        <HistoryConsentPanel
-          onResponded={async () => {
-            await router.invalidate();
-          }}
-        />
-      </Page>
-    );
-  }
-
+function InterviewSettingsPage(): ReactElement {
   return (
     <Page title="AI インタビュー">
-      <StatusMessage>設定からの AI インタビューはまだありません。</StatusMessage>
+      <InterviewRoom />
     </Page>
   );
 }

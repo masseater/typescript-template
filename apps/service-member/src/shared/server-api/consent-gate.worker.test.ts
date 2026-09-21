@@ -12,7 +12,8 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Layer, Schema } from "effect";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
-import { Interviewer } from "#shared/interview/index.ts";
+import { Interviewer } from "#shared/interview/server.ts";
+import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import { memberApi } from "./member-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
@@ -34,6 +35,7 @@ function memberApp() {
       Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
       Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
       Interviewer.layer(undefined),
+      ProfileLayoutAssembler.layer(),
     ),
   );
   return { app: memberApi(apiRoutes(runtime, reporting)), runtime };

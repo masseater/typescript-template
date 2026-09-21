@@ -1,24 +1,16 @@
-import { apiData } from "@repo/runtime/client";
-import { Button, useAction } from "@repo/ui";
-
-import { userClient } from "#shared/api/index.ts";
-import { InterviewView } from "#shared/contracts/index.ts";
+import { Button } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
 function HistoryConsentPanel({
-  onResponded,
-}: Readonly<{ onResponded: () => Promise<void> }>): ReactElement {
-  const action = useAction();
-
-  const respond = (accept: boolean): void => {
-    action.run(async () => {
-      const { api } = await userClient();
-      await apiData(InterviewView, await api.interview["history-consent"].post({ accept }));
-      await onResponded();
-    });
-  };
-
+  blocked,
+  error,
+  onRespond,
+}: Readonly<{
+  blocked: boolean;
+  error: string | undefined;
+  onRespond: (accept: boolean) => void;
+}>): ReactElement {
   return (
     <section aria-label="インタビュー履歴の同意" className="flex flex-col gap-3">
       <p className="text-base leading-normal text-foreground">
@@ -27,9 +19,9 @@ function HistoryConsentPanel({
       <div className="flex flex-wrap gap-2">
         <Button
           aria-label="履歴を残してレコメンドに使う"
-          disabled={action.blocked}
+          disabled={blocked}
           onClick={() => {
-            respond(true);
+            onRespond(true);
           }}
           type="button"
           variant="primary"
@@ -38,9 +30,9 @@ function HistoryConsentPanel({
         </Button>
         <Button
           aria-label="履歴を残さない"
-          disabled={action.blocked}
+          disabled={blocked}
           onClick={() => {
-            respond(false);
+            onRespond(false);
           }}
           type="button"
           variant="secondary"
@@ -48,7 +40,7 @@ function HistoryConsentPanel({
           残さない
         </Button>
       </div>
-      {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
+      {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
     </section>
   );
 }

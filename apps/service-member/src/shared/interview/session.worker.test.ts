@@ -1,9 +1,13 @@
 import { assert, it } from "@effect/vitest";
+import { setupNetwork } from "@msw/cloudflare";
 import { findInterview } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
+import { HttpResponse, http } from "msw";
 
+import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
+import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { Interviewer } from "./interviewer.ts";
 import { openInterview, restartInterview, saveInterview, takeTurn } from "./session.ts";
 import { UnderstandingFailed } from "./understanding-failed.ts";
@@ -13,6 +17,25 @@ type Understand = Parameters<typeof Interviewer.of>[0]["understand"];
 const DAILY_TURNS = 60;
 const NICKNAME_LIMIT = 30;
 const greeting = { role: "interviewer", text: "はじめまして。なんて呼べばいいですか？" } as const;
+const layoutEndpoint =
+  "https://api.cloudflare.com/client/v4/accounts/account/ai/v1/chat/completions";
+const layoutAccess = { accountId: "account", apiKey: "test-token" } as const;
+
+function layoutCompletion(content: unknown): Response {
+  return HttpResponse.json({
+    choices: [
+      {
+        finish_reason: "stop",
+        index: 0,
+        message: { content: JSON.stringify(content), role: "assistant" },
+      },
+    ],
+    created: 0,
+    id: "completion",
+    model: "@cf/google/gemma-4-26b-a4b-it",
+    object: "chat.completion",
+  });
+}
 
 function addMember(id: string): Effect.Effect<unknown, unknown> {
   return runStatement(
@@ -25,11 +48,22 @@ function addMember(id: string): Effect.Effect<unknown, unknown> {
 
 function services(
   understand: Understand,
-): Layer.Layer<Layer.Success<typeof TestDatabase> | Interviewer, Layer.Error<typeof TestDatabase>> {
-  return Layer.merge(TestDatabase, Layer.succeed(Interviewer, Interviewer.of({ understand })));
+): Layer.Layer<
+  Layer.Success<typeof TestDatabase> | Interviewer | ProfileLayoutAssembler,
+  Layer.Error<typeof TestDatabase>
+> {
+  return Layer.mergeAll(
+    TestDatabase,
+    Layer.succeed(Interviewer, Interviewer.of({ understand })),
+    ProfileLayoutAssembler.layer(),
+  );
 }
 
-const withoutModel = Layer.merge(TestDatabase, Interviewer.layer());
+const withoutModel = Layer.mergeAll(
+  TestDatabase,
+  Interviewer.layer(),
+  ProfileLayoutAssembler.layer(),
+);
 
 it.effect("an interview that was left midway resumes with the same conversation", () =>
   Effect.gen(function* program() {
@@ -99,7 +133,9 @@ it.effect("saving keeps the sheet and is refused while questions remain", () =>
     yield* takeTurn("member", { kind: "finish" });
     const saved = yield* saveInterview("member");
     assert.strictEqual(saved.phase, "history_consent");
-    assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "たろう" });
+    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
+      nickname: "たろう",
+    });
   }).pipe(Effect.provide(withoutModel)),
 );
 
@@ -124,9 +160,13 @@ it.effect("a correction after saving keeps the saved sheet until it is saved aga
     yield* saveInterview("member");
     const corrected = yield* takeTurn("member", { kind: "text", text: "呼び名はジロウ" });
     assert.strictEqual(corrected.phase, "summary");
-    assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "たろう" });
+    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
+      nickname: "たろう",
+    });
     yield* saveInterview("member");
-    assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "ジロウ" });
+    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
+      nickname: "ジロウ",
+    });
   }).pipe(Effect.provide(withoutModel)),
 );
 
@@ -140,8 +180,47 @@ it.effect("a stored conversation that no longer matches the schema starts over",
     yield* runStatement("UPDATE interview SET state = ? WHERE user_id = ?", outdated, "member");
     const opened = yield* openInterview("member");
     assert.deepStrictEqual(opened.messages, [greeting]);
-    assert.deepStrictEqual((yield* findInterview("member"))?.savedSheet, { nickname: "たろう" });
+    assert.deepStrictEqual(readSavedSheet((yield* findInterview("member"))?.savedSheet).sheet, {
+      nickname: "たろう",
+    });
   }).pipe(Effect.provide(withoutModel)),
+);
+
+it.effect("saving stores a model-assembled layout with the sheet", () =>
+  Effect.gen(function* program() {
+    yield* Effect.acquireRelease(
+      Effect.sync(() => {
+        const network = setupNetwork();
+        network.configure({ onUnhandledFrame: "error" });
+        network.use(
+          http.post(layoutEndpoint, () =>
+            layoutCompletion({
+              blocks: [{ kind: "identity" }, { kind: "sheet-nickname" }, { kind: "actions" }],
+            }),
+          ),
+        );
+        network.enable();
+        return network;
+      }),
+      (network) =>
+        Effect.sync(() => {
+          network.disable();
+        }),
+    );
+    yield* addMember("member");
+    yield* takeTurn("member", { kind: "text", text: "たろう" });
+    yield* takeTurn("member", { kind: "finish" });
+    yield* saveInterview("member");
+    const saved = readSavedSheet((yield* findInterview("member"))?.savedSheet);
+    assert.deepStrictEqual(
+      saved.layout?.blocks.map((block) => block.kind),
+      ["identity", "sheet-nickname", "actions"],
+    );
+  }).pipe(
+    Effect.provide(
+      Layer.mergeAll(TestDatabase, Interviewer.layer(), ProfileLayoutAssembler.layer(layoutAccess)),
+    ),
+  ),
 );
 
 it.effect("only utterances that need the model count toward the daily limit", () =>

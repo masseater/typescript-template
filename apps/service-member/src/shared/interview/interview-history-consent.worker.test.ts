@@ -9,6 +9,8 @@ import {
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { Effect, Layer, Schema } from "effect";
 
+import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
+import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { Interviewer } from "./interviewer.ts";
 import {
   openInterview,
@@ -19,7 +21,11 @@ import {
 } from "./session.ts";
 import { State } from "./state.ts";
 
-const withoutModel = Layer.merge(TestDatabase, Interviewer.layer());
+const withoutModel = Layer.mergeAll(
+  TestDatabase,
+  Interviewer.layer(),
+  ProfileLayoutAssembler.layer(),
+);
 
 function addMember(id: string): Effect.Effect<unknown, unknown> {
   return runStatement(
@@ -51,7 +57,7 @@ it.effect("declining history consent removes conversation while keeping the save
     const declined = yield* respondHistoryConsent("member", false);
     assert.strictEqual(declined.phase, "saved");
     const stored = yield* findInterview("member");
-    assert.deepStrictEqual(stored?.savedSheet, { nickname: "たろう" });
+    assert.deepStrictEqual(readSavedSheet(stored?.savedSheet).sheet, { nickname: "たろう" });
     assert.strictEqual(messageCount(stored?.state), 1);
     assert.isFalse(yield* hasAcceptedLatestAgreement("member", AGREEMENT_KIND.interview_history));
   }).pipe(Effect.provide(withoutModel)),
@@ -69,7 +75,7 @@ it.effect("accepting history consent keeps conversation and records agreement ac
     assert.isAbove(accepted.messages.length, 1);
     const stored = yield* findInterview("member");
     assert.strictEqual(messageCount(stored?.state), messagesBefore + 1);
-    assert.deepStrictEqual(stored?.savedSheet, { nickname: "たろう" });
+    assert.deepStrictEqual(readSavedSheet(stored?.savedSheet).sheet, { nickname: "たろう" });
     assert.isTrue(yield* hasAcceptedLatestAgreement("member", AGREEMENT_KIND.interview_history));
     const history = yield* acceptedAgreements("member");
     assert.deepStrictEqual(
@@ -93,7 +99,7 @@ it.effect("withdrawing consent deletes stored conversation history", () =>
     yield* withdrawInterviewHistoryConsent("member");
     const stored = yield* findInterview("member");
     assert.strictEqual(messageCount(stored?.state), 1);
-    assert.deepStrictEqual(stored?.savedSheet, { nickname: "たろう" });
+    assert.deepStrictEqual(readSavedSheet(stored?.savedSheet).sheet, { nickname: "たろう" });
     assert.isFalse(yield* hasAcceptedLatestAgreement("member", AGREEMENT_KIND.interview_history));
   }).pipe(Effect.provide(withoutModel)),
 );
