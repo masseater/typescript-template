@@ -2,8 +2,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { fileURLToPath } from "node:url";
 
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
@@ -11,7 +9,7 @@ import { Effect } from "effect";
 import { applications } from "./applications.ts";
 import { roles } from "./identity.ts";
 
-const repositoryRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
+const repositoryRoot = path.resolve(import.meta.dirname, "../../..");
 
 const skipDirectories = new Set([
   ".git",
