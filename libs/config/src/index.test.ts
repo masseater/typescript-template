@@ -62,8 +62,7 @@ const brokenBindings = [
 
 describe("readConfig", () => {
   const it = test.extend("workerConfig", () =>
-    Effect.runPromise(readConfig({ ...local, ...workerBindings })),
-  );
+    Effect.runPromise(readConfig({ ...local, ...workerBindings })));
 
   it("accepts the bindings the worker declares", ({ workerConfig }) => {
     expect(workerConfig).toStrictEqual({
@@ -77,7 +76,8 @@ describe("readConfig", () => {
 });
 
 describe("readAi", () => {
-  const it = test.extend("runner", () => Effect.runPromise(readAi({ ...local, ...workerBindings })));
+  const it = test.extend("runner", () =>
+    Effect.runPromise(readAi({ ...local, ...workerBindings })));
 
   it("returns the AI binding", ({ runner }) => {
     expect(runner).toStrictEqual(workerBindings.AI);
@@ -94,8 +94,7 @@ describe("a worker without an AI binding", () => {
 
 describe("an AI binding with no run", () => {
   const it = test.extend("refusal", () =>
-    Effect.runPromise(readAi({ ...local, AI: {} }).pipe(Effect.flip)),
-  );
+    Effect.runPromise(readAi({ ...local, AI: {} }).pipe(Effect.flip)));
 
   it("names the AI binding", ({ refusal }) => {
     expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: 'Expected Ai\n  at ["AI"]' }));
@@ -104,8 +103,7 @@ describe("an AI binding with no run", () => {
 
 describe.for(brokenBindings)("%s", ([, broken, reasonText]) => {
   const it = test.extend("refusal", () =>
-    Effect.runPromise(readConfig({ ...local, ...workerBindings, ...broken }).pipe(Effect.flip)),
-  );
+    Effect.runPromise(readConfig({ ...local, ...workerBindings, ...broken }).pipe(Effect.flip)));
 
   it("names the binding it rejects", ({ refusal }) => {
     expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: reasonText }));
@@ -114,8 +112,7 @@ describe.for(brokenBindings)("%s", ([, broken, reasonText]) => {
 
 describe("HttpsOrigin", () => {
   const it = test.extend("decodedOrigin", () =>
-    Effect.runPromise(Schema.decodeUnknownEffect(HttpsOrigin)("https://app.example.test")),
-  );
+    Effect.runPromise(Schema.decodeUnknownEffect(HttpsOrigin)("https://app.example.test")));
 
   it("accepts an https origin", ({ decodedOrigin }) => {
     expect(decodedOrigin).toBe("https://app.example.test");
@@ -129,8 +126,7 @@ describe("an origin that is not https", () => {
         Effect.flip,
         Effect.map((schemaError) => schemaError.message),
       ),
-    ),
-  );
+    ));
 
   it("requires https", ({ schemaMessage }) => {
     expect(schemaMessage).toBe("HTTPS is required");
@@ -158,8 +154,7 @@ describe("a budget that still covers fixed cost and reserve", () => {
 
 describe("a reserve that consumes the budget", () => {
   const it = test.extend("allowanceRemains", () =>
-    usageAllowanceRemains({ ...budgetWithinReserve, reserveUsd: 10 }),
-  );
+    usageAllowanceRemains({ ...budgetWithinReserve, reserveUsd: 10 }));
 
   it("keeps no usage allowance", ({ allowanceRemains }) => {
     expect(allowanceRemains).toBe(false);
@@ -192,8 +187,7 @@ describe("mail delivery", () => {
         ...withoutEmail,
         APP_ORIGIN: "https://app.example.test",
       }).pipe(Effect.flip),
-    ),
-  );
+    ));
 
   it("requires a way to deliver mail", ({ refusal }) => {
     expect(refusal).toStrictEqual(

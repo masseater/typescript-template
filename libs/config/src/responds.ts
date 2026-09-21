@@ -6,20 +6,18 @@ const firstRedirect = 300;
 const respondedSuccessfully = (httpStatus: number): boolean =>
   httpStatus >= firstSuccess && httpStatus < firstRedirect;
 
-const waitUntilResponds = <Failure>(
-  probe: {
-    readonly accept: (httpStatus: number) => boolean;
-    readonly method: "GET" | "POST";
-    readonly onStatus: (httpStatus: number) => Failure;
-    readonly onUnreachable: (unreachableFailure: unknown) => Failure;
-    readonly retry?: {
-      readonly interval: `${number} ${Duration.Unit}`;
-      readonly times: number;
-    };
-    readonly timeoutMilliseconds?: number;
-    readonly url: string;
-  },
-): Effect.Effect<number, Failure> => {
+const waitUntilResponds = <Failure>(probe: {
+  readonly accept: (httpStatus: number) => boolean;
+  readonly method: "GET" | "POST";
+  readonly onStatus: (httpStatus: number) => Failure;
+  readonly onUnreachable: (unreachableFailure: unknown) => Failure;
+  readonly retry?: {
+    readonly interval: `${number} ${Duration.Unit}`;
+    readonly times: number;
+  };
+  readonly timeoutMilliseconds?: number;
+  readonly url: string;
+}): Effect.Effect<number, Failure> => {
   const attempt = Effect.tryPromise({
     catch: (unreachableFailure) => probe.onUnreachable(unreachableFailure),
     try: async () => {

@@ -18,7 +18,14 @@ const unavailableStatus = 503;
 const probeCases = [
   ["a successful GET", "GET", 200, undefined, undefined, 200],
   ["an empty successful POST", "POST", 204, undefined, undefined, 204],
-  ["a status that is not acceptable", "GET", unavailableStatus, undefined, undefined, unavailableStatus],
+  [
+    "a status that is not acceptable",
+    "GET",
+    unavailableStatus,
+    undefined,
+    undefined,
+    unavailableStatus,
+  ],
   ["a response that exceeds the timeout", "GET", "silent", 50, undefined, timedOut],
   ["retries until the target responds", "GET", "retry-until-ok", undefined, 2, "200:3"],
   ["retries that are exhausted", "GET", "retry-exhausted", undefined, 1, "503:2"],
@@ -78,7 +85,9 @@ describe.for(probeCases)(
         onStatus: (rejectedStatus) => rejectedStatus,
         onUnreachable: () => timedOut,
         ...(timeoutMilliseconds === undefined ? {} : { timeoutMilliseconds }),
-        ...(retryTimes === undefined ? {} : { retry: { interval: "10 millis", times: retryTimes } }),
+        ...(retryTimes === undefined
+          ? {}
+          : { retry: { interval: "10 millis", times: retryTimes } }),
         url,
       });
       if (

@@ -9,8 +9,7 @@ describe("repositoryRoot", () => {
   const it = test.extend("opensWithWorkspaceKey", async () =>
     (await readFile(path.join(repositoryRoot, "pnpm-workspace.yaml"), "utf-8")).startsWith(
       "packages:\n",
-    ),
-  );
+    ));
 
   it("is the directory that holds the workspace manifest", ({ opensWithWorkspaceKey }) => {
     expect(opensWithWorkspaceKey).toBe(true);

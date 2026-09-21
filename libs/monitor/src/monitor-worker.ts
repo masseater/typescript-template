@@ -35,7 +35,10 @@ const monitorWorker = <Bindings extends MonitorBindings>(definition: {
   readonly event: string;
   readonly failure: Alert;
 }): {
-  readonly Worker: new (durableState: DurableObjectState, env: Bindings) => {
+  readonly Worker: new (
+    durableState: DurableObjectState,
+    env: Bindings,
+  ) => {
     fetch(): Promise<Response>;
   };
   readonly handler: ReturnType<typeof monitorHandler>;

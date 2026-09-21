@@ -2,7 +2,11 @@ import path from "node:path";
 
 import { describe, expect, test } from "vite-plus/test";
 
-import { localDatabase, localDatabaseDirectory, localDatabaseVariable } from "./local-database-path.ts";
+import {
+  localDatabase,
+  localDatabaseDirectory,
+  localDatabaseVariable,
+} from "./local-database-path.ts";
 
 const overriddenDirectory = path.resolve("/tmp/template-db");
 const blankEnvironment = { [localDatabaseVariable]: "" };
