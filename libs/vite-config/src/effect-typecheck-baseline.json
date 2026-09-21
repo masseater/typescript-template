@@ -65,6 +65,12 @@
         "count": 1
       },
       {
+        "file": "../../libs/auth/src/policy.ts",
+        "code": "TS18048",
+        "message": "'eligibleUser' is possibly 'undefined'.",
+        "count": 1
+      },
+      {
         "file": "../../libs/auth/src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -119,6 +125,12 @@
         "count": 1
       },
       {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "count": 1
+      },
+      {
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
@@ -131,16 +143,16 @@
         "count": 1
       },
       {
-        "file": "src/app/routes/-dashboard-layout.tsx",
-        "code": "TS2739",
-        "message": "Type '{ children: Element; }' is missing the following properties from type 'Readonly<{ children: Readonly<string | number | bigint | boolean | Iterable<ReactNode> | Promise<AwaitedReactNode> | ReactElement<unknown, string | JSXElementConstructor<any>> | null | undefined>; defaultCollapsed?: boolean; email: string; name: string; }>': email, name",
-        "count": 1
-      },
-      {
         "file": "src/pages/docs/ui/docs-page.tsx",
         "code": "TS2322",
         "message": "Type 'unknown' is not assignable to type 'Root'.",
         "count": 1
+      },
+      {
+        "file": "src/pages/flags/model/flag-list.ts",
+        "code": "TS2339",
+        "message": "Property 'flags' does not exist on type 'Promise<{ api: { api: { flags: { get: ((options?: { fetch?: RequestInit<CfProperties<unknown>>; throwHttpError?: ThrowHttpError; headers?: Record<string, unknown>; query?: Record<...>; } | undefined) => Promise<...>) & { ...; }; patch: ((body?: unknown, options?: { ...; } | undefined) => Promise<...>) & { ...; }; } ...'.",
+        "count": 2
       },
       {
         "file": "src/pages/flags/model/flag-list.ts",
@@ -162,6 +174,12 @@
       },
       {
         "file": "src/pages/flags/ui/flag-row.tsx",
+        "code": "TS2339",
+        "message": "Property 'error' does not exist on type '{ readonly empty: \"empty\"; readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/flags/ui/flag-row.tsx",
         "code": "TS2749",
         "message": "'FlagEntry' refers to a value, but is being used as a type here. Did you mean 'typeof FlagEntry'?",
         "count": 2
@@ -170,6 +188,24 @@
         "file": "src/pages/flags/ui/flag-row.tsx",
         "code": "TS6196",
         "message": "'FlagEntry' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/flags/ui/flags-page.tsx",
+        "code": "TS2339",
+        "message": "Property 'error' does not exist on type '{ readonly empty: \"empty\"; readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS2345",
+        "message": "Argument of type '(request: Request<unknown, CfProperties<unknown>>) => Effect<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | ... 8 more ... | SessionRequired, AppOrigin | ... 3 more ... | FlagEditorAccess>' is not assignable to parameter of type 'Handler<Readonly<{ description: string; enabled: boolean; key: \"member-board\"; }>, AdminMfaRequired | AdminRequired | ConfigurationInvalid | ... 6 more ... | SessionRequired, Requirements | WikiServices>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS2741",
+        "message": "Property 'DatabaseFailure' is missing in type '{}' but required in type 'FailureTable<DatabaseFailure>'.",
         "count": 1
       },
       {
@@ -217,27 +253,9 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/auth-test-fixture.ts",
-        "code": "TS18046",
-        "message": "'member.instance.api' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-test-fixture.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/auth/src/browser-client.ts",
-        "code": "TS2571",
-        "message": "Object is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/mail-fixture.ts",
-        "code": "TS2345",
-        "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
+        "file": "../../libs/auth/src/policy.ts",
+        "code": "TS18048",
+        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -265,33 +283,21 @@
         "count": 2
       },
       {
-        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'AuthApps' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'decodeRedirect' is declared but its value is never read.",
-        "count": 1
-      },
-      {
         "file": "../../libs/db/src/index.ts",
         "code": "TS6133",
         "message": "'eq' is declared but its value is never read.",
         "count": 1
       },
       {
-        "file": "../../libs/db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 2
-      },
-      {
         "file": "../../libs/observability/src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       },
       {
@@ -307,9 +313,9 @@
         "count": 1
       },
       {
-        "file": "src/app/routes/-admin-layout.tsx",
-        "code": "TS2739",
-        "message": "Type '{ children: Element; }' is missing the following properties from type 'Readonly<{ children: Readonly<string | number | bigint | boolean | Iterable<ReactNode> | Promise<AwaitedReactNode> | ReactElement<unknown, string | JSXElementConstructor<any>> | null | undefined>; defaultCollapsed?: boolean; email: string; name: string; }>': email, name",
+        "file": "src/shared/server-api/server-app.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 3.",
         "count": 1
       }
     ],
@@ -327,27 +333,9 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/auth-test-fixture.ts",
-        "code": "TS18046",
-        "message": "'member.instance.api' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-test-fixture.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/auth/src/browser-client.ts",
-        "code": "TS2571",
-        "message": "Object is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/mail-fixture.ts",
-        "code": "TS2345",
-        "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
+        "file": "../../libs/auth/src/policy.ts",
+        "code": "TS18048",
+        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -375,18 +363,6 @@
         "count": 2
       },
       {
-        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'AuthApps' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'decodeRedirect' is declared but its value is never read.",
-        "count": 1
-      },
-      {
         "file": "../../libs/db/src/index.ts",
         "code": "TS6133",
         "message": "'eq' is declared but its value is never read.",
@@ -405,6 +381,12 @@
         "count": 1
       },
       {
+        "file": "../../libs/runtime/src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "count": 1
+      },
+      {
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
@@ -414,6 +396,48 @@
         "file": "../../libs/vite-config/src/request-guard.ts",
         "code": "TS4111",
         "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
+        "file": "src/app/entry-conditions.ts",
+        "code": "TS2749",
+        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
+        "count": 2
+      },
+      {
+        "file": "src/app/entry-conditions.ts",
+        "code": "TS6196",
+        "message": "'OnboardingStep' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/app/entry-conditions.ts",
+        "code": "TS7053",
+        "message": "Element implicitly has an 'any' type because expression of type 'OnboardingStep' can't be used to index type '{ readonly agreement: \"/welcome/agreement\"; readonly choose: \"/welcome/choose\"; readonly interview: \"/welcome/interview\"; readonly profile: \"/welcome/profile\"; }'.",
+        "count": 1
+      },
+      {
+        "file": "src/app/routes/_welcome.tsx",
+        "code": "TS2322",
+        "message": "Type 'string | undefined' is not assignable to type 'string'.",
+        "count": 1
+      },
+      {
+        "file": "src/app/routes/_welcome.tsx",
+        "code": "TS2749",
+        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
+        "count": 1
+      },
+      {
+        "file": "src/app/routes/_welcome.tsx",
+        "code": "TS6196",
+        "message": "'OnboardingStep' is declared but never used.",
+        "count": 1
+      },
+      {
+        "file": "src/app/routes/_welcome/welcome.index.tsx",
+        "code": "TS7053",
+        "message": "Element implicitly has an 'any' type because expression of type 'OnboardingStep' can't be used to index type '{ readonly agreement: \"/welcome/agreement\"; readonly choose: \"/welcome/choose\"; readonly interview: \"/welcome/interview\"; readonly profile: \"/welcome/profile\"; }'.",
         "count": 1
       },
       {
@@ -429,69 +453,15 @@
         "count": 1
       },
       {
-        "file": "src/pages/notifications/api/notifications.ts",
+        "file": "src/pages/welcome/api/onboarding.ts",
         "code": "TS2749",
-        "message": "'NotificationItem' refers to a value, but is being used as a type here. Did you mean 'typeof NotificationItem'?",
-        "count": 1
-      },
-      {
-        "file": "src/pages/notifications/api/notifications.ts",
-        "code": "TS6196",
-        "message": "'NotificationItem' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/notifications/ui/notifications-page.tsx",
-        "code": "TS2749",
-        "message": "'NotificationItem' refers to a value, but is being used as a type here. Did you mean 'typeof NotificationItem'?",
-        "count": 2
-      },
-      {
-        "file": "src/pages/notifications/ui/notifications-page.tsx",
-        "code": "TS6196",
-        "message": "'NotificationItem' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/settings/api/api-keys.ts",
-        "code": "TS2322",
-        "message": "Type '{ members: readonly [\"read\"]; messages?: string[]; profile: string[]; }' is not assignable to type 'Record<string, string[]>'.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/settings/api/notification-preferences.ts",
-        "code": "TS2749",
-        "message": "'Preferences' refers to a value, but is being used as a type here. Did you mean 'typeof Preferences'?",
+        "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
         "count": 3
       },
       {
-        "file": "src/pages/settings/api/notification-preferences.ts",
+        "file": "src/pages/welcome/api/onboarding.ts",
         "code": "TS6196",
-        "message": "'Preferences' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/settings/ui/ai-page.tsx",
-        "code": "TS6133",
-        "message": "'useAction' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/settings/ui/notifications-page.tsx",
-        "code": "TS2749",
-        "message": "'NotificationPreferences' refers to a value, but is being used as a type here. Did you mean 'typeof NotificationPreferences'?",
-        "count": 2
-      },
-      {
-        "file": "src/pages/settings/ui/notifications-page.tsx",
-        "code": "TS6196",
-        "message": "'NotificationPreferences' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/billing/stripe.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
+        "message": "'OnboardingStep' is declared but never used.",
         "count": 1
       },
       {
@@ -501,9 +471,9 @@
         "count": 1
       },
       {
-        "file": "src/shared/members/profile.worker.test.ts",
+        "file": "src/shared/server-api/board-api.worker.test.ts",
         "code": "TS2339",
-        "message": "Property 'blocked' does not exist on type 'Readonly<{ id: string; joined: string; name: string; photos: Readonly<{ company: string | null; face: string | null; }>; profile: string; profileLayout: { readonly blocks: readonly { readonly kind: \"actions\" | \"biography\" | ... 7 more ... | \"social-links\"; }[]; }; sheet: { ...; }; socialLinks: readonly string[]; }> ...'.",
+        "message": "Property 'EMAIL' does not exist on type 'Env'.",
         "count": 1
       },
       {
@@ -513,9 +483,33 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/board.worker.test.ts",
+        "file": "src/shared/server-api/board-api.worker.test.ts",
+        "code": "TS7006",
+        "message": "Parameter 'line' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/board-api.worker.test.ts",
+        "code": "TS7006",
+        "message": "Parameter 'sent' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/contact-api.worker.test.ts",
         "code": "TS2339",
-        "message": "Property 'id' does not exist on type 'BoardAuthor | WithdrawnAuthor'.",
+        "message": "Property 'EMAIL' does not exist on type 'Env'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS2345",
+        "message": "Argument of type '() => Effect<{ memberBoard: boolean; }, never, FeatureFlags>' is not assignable to parameter of type 'Handler<{ readonly memberBoard: boolean; }, never, Requirements | AppServices>'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `FeatureFlags`. effect(missingEffectContext)",
         "count": 1
       },
       {
@@ -525,15 +519,9 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/member-social.worker.test.ts",
-        "code": "TS2339",
-        "message": "Property 'EMAIL' does not exist on type 'Env'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/notifications.worker.test.ts",
-        "code": "TS2339",
-        "message": "Property 'EMAIL' does not exist on type 'Env'.",
+        "file": "src/shared/server-api/ops-mail.ts",
+        "code": "TS2353",
+        "message": "Object literal may only specify known properties, and 'MAILPIT_URL' does not exist in type 'OpsMailShape'.",
         "count": 1
       },
       {
@@ -753,6 +741,12 @@
         "count": 1
       },
       {
+        "file": "src/policy.ts",
+        "code": "TS18048",
+        "message": "'eligibleUser' is possibly 'undefined'.",
+        "count": 1
+      },
+      {
         "file": "src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -855,12 +849,6 @@
         "code": "TS6133",
         "message": "'eq' is declared but its value is never read.",
         "count": 1
-      },
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
       }
     ],
     "libs/feature-flags": [
@@ -874,6 +862,12 @@
         "file": "../auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../auth/src/policy.ts",
+        "code": "TS18048",
+        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -930,6 +924,12 @@
         "file": "../vite-config/src/request-guard.ts",
         "code": "TS4111",
         "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4023",
+        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
         "count": 1
       },
       {
@@ -1021,6 +1021,12 @@
         "count": 1
       },
       {
+        "file": "../auth/src/policy.ts",
+        "code": "TS18048",
+        "message": "'eligibleUser' is possibly 'undefined'.",
+        "count": 1
+      },
+      {
         "file": "../auth/src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -1065,7 +1071,13 @@
       {
         "file": "src/http-events.test.ts",
         "code": "TS2345",
-        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly [x: string]: unknown; readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
+        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
+        "count": 1
+      },
+      {
+        "file": "src/http.ts",
+        "code": "TS2322",
+        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
         "count": 1
       }
     ],
@@ -1104,6 +1116,12 @@
         "file": "../../libs/auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/auth/src/policy.ts",
+        "code": "TS18048",
+        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {

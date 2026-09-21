@@ -14,18 +14,16 @@ import {
   type Application,
 } from "@repo/config";
 import { Database } from "@repo/db";
+import { localDatabasePlatform } from "@repo/db-local/platform";
 import { ensureAdminRole, type BootstrapKind } from "@repo/db/bootstrap";
-import { localDatabaseStore, writeLocalDatabaseConfig } from "@repo/db/local";
 import { createEmailVerificationToken } from "better-auth/api";
 import { Effect, Layer, Schema } from "effect";
 import { URI } from "otpauth";
-import { getPlatformProxy } from "wrangler";
 
 import { failure, fileIo } from "./failure.ts";
 import { local, readCredentials } from "./local-environment.ts";
 import { assertOwnerOnly, isErrorCode, replacePrivateFile } from "./private-files.ts";
 
-import type { D1Database } from "@cloudflare/workers-types";
 import type { LocalCommandFailure } from "./failure.ts";
 
 const PASSWORD_BYTES = 24;
@@ -68,18 +66,6 @@ const TotpEnrollment = Schema.Struct({
 });
 
 type AuthService = Auth["Service"];
-
-const platform = Effect.acquireRelease(
-  Effect.promise(async () =>
-    getPlatformProxy<{ DB: D1Database }>({
-      configPath: await writeLocalDatabaseConfig(),
-      envFiles: [],
-      persist: { path: localDatabaseStore() },
-      remoteBindings: false,
-    }),
-  ),
-  (proxy) => Effect.promise(async () => proxy.dispose()),
-);
 
 const mailSink = Effect.acquireRelease(
   Effect.promise(async () => {
@@ -280,7 +266,7 @@ const ensureOperators = Effect.fn("ensureOperators")(function* ensureOperators()
   return yield* Effect.scoped(
     Effect.gen(function* provision() {
       const sink = yield* mailSink;
-      const { env } = yield* platform;
+      const { env } = yield* localDatabasePlatform;
       const authLayer = Auth.layer({
         audience: APPLICATION.user,
         baseURL: origin,
