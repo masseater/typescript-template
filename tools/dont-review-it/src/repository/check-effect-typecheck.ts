@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { runTypecheckGate } from "@repo/vite-config/effect-typecheck";
+import { runTypecheckGate } from "@repo/vite-config";
 import { Console, Effect } from "effect";
 
 const gate = runTypecheckGate({
