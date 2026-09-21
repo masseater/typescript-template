@@ -30,10 +30,7 @@ const AccountSecurity = ({
       <Heading>認証アプリとパスキー</Heading>
       <TotpSettings context={context} />
       <Heading>パスキー</Heading>
-      <PasskeyRegisterForm
-        context={context}
-        onRegistered={() => Promise.resolve()}
-      />
+      <PasskeyRegisterForm context={context} onRegistered={() => Promise.resolve()} />
       <PasskeyList action={action} listError={undefined} passkeys={passkeys} />
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
     </div>

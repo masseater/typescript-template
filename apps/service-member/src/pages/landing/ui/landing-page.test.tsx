@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { FieldValidationMessageProvider } from "@repo/ui";
 import {
   RouterContextProvider,
   createMemoryHistory,
@@ -12,7 +13,6 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
 
-import { FieldValidationMessageProvider } from "@repo/ui";
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
 import { fieldValidationMessages } from "#shared/i18n/index.ts";
 import { Consequences } from "./consequences.tsx";
@@ -83,7 +83,8 @@ const rendered = (locale: Locale, view: ReactElement): string => {
 
 const englishCopy = {
   closing_title: "Let's get started",
-  consequences_body: "Finding people and making login stronger both follow from having your own page.",
+  consequences_body:
+    "Finding people and making login stronger both follow from having your own page.",
   consequences_title: "Once you have a page",
   feature_profile_body: "Write your name and an introduction, and have your own page.",
   feature_profile_title: "Create a profile",
@@ -96,7 +97,8 @@ const englishCopy = {
 
 const japaneseCopy = {
   closing_title: "さっそく始めましょう",
-  consequences_body: "気になる人を探すことも、ログインを強くすることも、自分のページがあってからのことです。",
+  consequences_body:
+    "気になる人を探すことも、ログインを強くすることも、自分のページがあってからのことです。",
   consequences_title: "ページを持つと",
   feature_profile_body: "名前と自己紹介を書いて、自分のページを持てます。",
   feature_profile_title: "プロフィールを作る",

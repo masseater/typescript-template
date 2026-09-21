@@ -17,7 +17,9 @@ function Hero(): ReactElement {
           <Heading as="h2" size="block">
             {m.feature_profile_title()}
           </Heading>
-          <p className="text-base leading-normal text-muted-foreground">{m.feature_profile_body()}</p>
+          <p className="text-base leading-normal text-muted-foreground">
+            {m.feature_profile_body()}
+          </p>
         </div>
         <ProfilePreview />
       </div>
