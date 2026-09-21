@@ -1762,9 +1762,6 @@ importers:
       otpauth:
         specifier: 9.5.2
         version: 9.5.2
-      playwright:
-        specifier: 'catalog:'
-        version: 1.63.0
       portless:
         specifier: 0.15.6
         version: 0.15.6
@@ -1899,6 +1896,9 @@ importers:
 
   tools/e2e:
     devDependencies:
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
