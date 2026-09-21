@@ -671,16 +671,12 @@ describe("environmentCarryingContext", () => {
           });
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
-          vi.stubGlobal(
-            "process",
-            Object.create(process, {
-              env: {
-                value: { MST_TELEMETRY_KEPT: "kept", MST_TELEMETRY_UNSET: undefined },
-                enumerable: true,
-              },
-            }),
-          );
-          return telemetry.environmentCarryingContext();
+          vi.stubEnv("MST_TELEMETRY_KEPT", "kept");
+          vi.stubEnv("MST_TELEMETRY_UNSET", undefined);
+          return pick(telemetry.environmentCarryingContext(), [
+            "MST_TELEMETRY_KEPT",
+            "MST_TELEMETRY_UNSET",
+          ]);
         }),
       ));
 
@@ -710,6 +706,7 @@ describe("the package surface", () => {
       sideEffects: false,
       exports: {
         ".": "./src/telemetry/telemetry.ts",
+        "./optional-setting": "./src/telemetry/optional-setting.ts",
         "./vitest-sdk": "./src/telemetry/vitest-sdk.ts",
         "./package.json": "./package.json",
       },
@@ -718,6 +715,10 @@ describe("the package surface", () => {
           ".": {
             types: "./dist/telemetry/telemetry.d.mts",
             default: "./dist/telemetry/telemetry.mjs",
+          },
+          "./optional-setting": {
+            types: "./dist/telemetry/optional-setting.d.mts",
+            default: "./dist/telemetry/optional-setting.mjs",
           },
           "./vitest-sdk": {
             types: "./dist/telemetry/vitest-sdk.d.mts",
@@ -741,6 +742,7 @@ describe("the package surface", () => {
         "@opentelemetry/sdk-metrics": "catalog:",
         "@opentelemetry/sdk-trace": "2.10.0",
         "@opentelemetry/semantic-conventions": "1.43.0",
+        effect: "catalog:",
         "es-toolkit": "catalog:",
       },
       devDependencies: {
