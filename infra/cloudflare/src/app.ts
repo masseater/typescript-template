@@ -72,6 +72,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     bundle: false,
     compatibility: workerCompatibilityOptions,
     ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
+    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env,
     main: artifacts.mainModule,

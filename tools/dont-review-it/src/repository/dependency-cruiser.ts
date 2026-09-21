@@ -144,13 +144,6 @@ const configuration: IConfiguration = {
       to: { path: testPattern },
     },
     {
-      comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
-      from: { path: "^apps/internal-dashboard/" },
-      name: "no-wiki-to-database",
-      severity: "error",
-      to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/local\.ts$` },
-    },
-    {
       comment:
         "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@repo/runtime/client など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
       from: { path: "^libs/(?:ui|auth-ui)/src/", pathNot: testModule },

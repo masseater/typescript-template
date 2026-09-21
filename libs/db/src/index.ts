@@ -12,8 +12,8 @@ export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
+export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
 export {
-  AUDIT_ACTION,
   NOTIFICATION_KIND,
   auditEvent,
   notificationKinds,
@@ -78,3 +78,16 @@ export {
   purgeExpiredWithdrawnMembers,
   withdrawMember,
 } from "./member-leave.ts";
+export {
+  AuditPage,
+  TrendQuery,
+  dashboardStaff,
+  refreshMetricSnapshots,
+} from "./dashboard-staff.ts";
+export type {
+  AuditEventView,
+  MetricTrendPoint,
+  OverviewCard,
+  OverviewMetrics,
+  ReadOnlyDashboardStaff,
+} from "./dashboard-staff.ts";

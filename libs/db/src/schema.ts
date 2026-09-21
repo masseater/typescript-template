@@ -4,6 +4,7 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { apikey } from "./api-key-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
+import { auditActions, clientKinds, metricKeys, metricPeriods } from "./dashboard-literals.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
@@ -112,20 +113,32 @@ const rateLimit = sqliteTable(
   (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
 );
 
-/** @canonical-values db.audit-action */
-export const auditActions = [
-  "flag_toggled",
-  "role_changed",
-  "user_deleted",
-  "agreement_published",
-] as const;
 export type AuditAction = (typeof auditActions)[number];
-export const AUDIT_ACTION = {
-  flagToggled: auditActions[0],
-  roleChanged: auditActions[1],
-  userDeleted: auditActions[2],
-  agreementPublished: auditActions[3],
-} as const;
+export type MetricKey = (typeof metricKeys)[number];
+export type MetricPeriod = (typeof metricPeriods)[number];
+
+const metricSnapshot = sqliteTable(
+  "metric_snapshot",
+  {
+    bucket: text("bucket").notNull(),
+    clientKind: text("client_kind", { enum: clientKinds }).notNull(),
+    computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey().notNull(),
+    metric: text("metric", { enum: metricKeys }).notNull(),
+    period: text("period", { enum: metricPeriods }).notNull(),
+    value: integer("value").notNull(),
+  },
+
+  (table) => [
+    index("metric_snapshot_metric_period_bucket_idx").on(table.metric, table.period, table.bucket),
+    uniqueIndex("metric_snapshot_unique").on(
+      table.metric,
+      table.period,
+      table.bucket,
+      table.clientKind,
+    ),
+  ],
+);
 
 const auditEvent = sqliteTable(
   "audit_event",
@@ -148,6 +161,7 @@ const schema = {
   auditEvent,
   boardPost,
   boardThread,
+  metricSnapshot,
   follow,
   interview,
   leaveRequest,
@@ -171,7 +185,17 @@ const schema = {
   verification,
 };
 
-export { account, apikey, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
+export {
+  account,
+  apikey,
+  auditEvent,
+  metricSnapshot,
+  passkey,
+  rateLimit,
+  schema,
+  twoFactor,
+  verification,
+};
 export { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 export {
   jwks,

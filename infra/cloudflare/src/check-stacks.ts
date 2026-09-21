@@ -125,6 +125,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,
       rules: [{ globs: ["**/*.js", "**/*.mjs", "**/*.txt", "**/*.wasm", "**/*.map"] }],
+      ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
     },
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
