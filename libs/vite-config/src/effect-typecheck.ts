@@ -68,6 +68,9 @@ const locatedDiagnosticLine = /^(.+)\((\d+),(\d+)\): error (TS\d+): (.*)$/u;
 const prettyDiagnosticLine = /^(.+):(\d+):(\d+) - error (TS\d+): (.*)$/u;
 const looseDiagnosticLine = /^error (TS\d+): (.*)$/u;
 
+const portableMessage = (message: string): string =>
+  message.replace(/(?:\/[^/\s"']+)+\/(?=(?:node_modules|libs|apps|tools|infra)\/)/gu, "");
+
 const fingerprintOf = (entry: Diagnostic): string =>
   JSON.stringify([entry.file, entry.code, entry.message]);
 
@@ -90,7 +93,7 @@ const diagnosticOf = (
 ): readonly Diagnostic[] =>
   file === undefined || code === undefined || message === undefined
     ? []
-    : [{ file, code, message }];
+    : [{ file, code, message: portableMessage(message) }];
 
 const parseTscOutput = (output: string): readonly Diagnostic[] =>
   output.split(/\r?\n/u).flatMap((line) => {
@@ -159,7 +162,11 @@ const alwaysFailing = (diagnostics: readonly Diagnostic[]): readonly Diagnostic[
 const baselinedEntries = (
   baseline: TypecheckBaseline,
   workspace: string,
-): readonly CountedDiagnostic[] => baseline.workspaces[workspace] ?? [];
+): readonly CountedDiagnostic[] =>
+  (baseline.workspaces[workspace] ?? []).map((entry) => ({
+    ...entry,
+    message: portableMessage(entry.message),
+  }));
 
 const difference = (
   actual: readonly CountedDiagnostic[],
@@ -182,7 +189,9 @@ const evaluateTypecheck = (
 ): TypecheckVerdict => {
   const alwaysFail = alwaysFailing(diagnostics);
   const countable = countDiagnostics(
-    diagnostics.filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code)),
+    diagnostics
+      .filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code))
+      .map((diagnostic) => ({ ...diagnostic, message: portableMessage(diagnostic.message) })),
   );
   const expected = countDiagnostics(
     baselinedEntries(baseline, workspace).flatMap((entry) =>

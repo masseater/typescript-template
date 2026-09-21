@@ -107,6 +107,39 @@ describe("effect typecheck gate", () => {
     }
   });
 
+  it("treats a checkout path inside a diagnostic as the same error", () => {
+    expect.hasAssertions();
+    const message = (root: string): string =>
+      `Argument of type 'import("${root}/node_modules/.pnpm/drizzle-orm/sql").SQL<unknown>' is not assignable to parameter of type 'import("${root}/libs/db/src/index").SQL<unknown>'.`;
+    const baseline = serializeBaseline({
+      version: 1,
+      workspaces: {
+        "apps/service-member": [
+          {
+            file: "src/shared/members/members.ts",
+            code: "TS2345",
+            message: message("/Users/dev/checkout"),
+            count: 1,
+          },
+        ],
+      },
+    });
+    const verdict = evaluateTypecheck(
+      "apps/service-member",
+      [
+        {
+          file: "src/shared/members/members.ts",
+          code: "TS2345",
+          message: message("/home/runner/work/repo/repo"),
+        },
+      ],
+      parseBaseline(baseline),
+    );
+    expect(verdict.ok).toBe(true);
+    expect(verdict.unexpected).toStrictEqual([]);
+    expect(verdict.leftover).toStrictEqual([]);
+  });
+
   it("keeps a snapshotted assignability error from failing the gate", () => {
     expect.hasAssertions();
     const cwd = createFixture({ "value.ts": 'export const value: number = "new";\n' });
