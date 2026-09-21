@@ -3,10 +3,10 @@ import { logAt } from "@repo/observability";
 import { Effect, Option, Schema } from "effect";
 
 import { viewOf } from "./contracts.ts";
-import { accepts, advance, begin, needsModel, save, spoken } from "./engine.ts";
+import { accepts, advance, begin, needsModel, save } from "./engine.ts";
 import { Interviewer } from "./interviewer.ts";
 import { fieldKeys } from "./sheet.ts";
-import { State } from "./state.ts";
+import { State, spoken } from "./state.ts";
 import { TurnRejected } from "./turn-rejected.ts";
 
 import type { InterviewState, MemberUtterance } from "./state.ts";

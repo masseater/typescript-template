@@ -1,4 +1,5 @@
 import { fieldDefinitions, fieldKeys, maximumInterests, readValue } from "./sheet.ts";
+import { spoken } from "./state.ts";
 import { understandByRules } from "./understanding.ts";
 
 import type { FieldName, ReplyForm, SheetData } from "./sheet.ts";
@@ -59,16 +60,6 @@ function summarizing(progress: Progress, opening: string): Settled {
 function begin(): Asking {
   const progress = { messages: [], sheet: {}, skipped: [] };
   return asking(progress, "nickname", cannedQuestion("nickname", "はじめまして。"));
-}
-
-function spoken(utterance: MemberUtterance): string {
-  if (utterance.kind === "text") {
-    return utterance.text;
-  }
-  if (utterance.kind === "choice") {
-    return utterance.values.join("、");
-  }
-  return utterance.kind === "skip" ? "スキップ" : "ここで終える";
 }
 
 function offered(reply: ReplyForm | undefined, values: readonly string[]): boolean {
@@ -186,4 +177,4 @@ function save(state: Settled): Settled {
   return { ...state, messages: says(state, { role: "interviewer", text }), phase: "saved" };
 }
 
-export { accepts, advance, begin, needsModel, save, spoken };
+export { accepts, advance, begin, needsModel, save };

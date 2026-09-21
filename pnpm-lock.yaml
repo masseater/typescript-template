@@ -227,6 +227,9 @@ catalogs:
     '@tanstack/intent':
       specifier: 0.3.6
       version: 0.3.6
+    '@tanstack/react-query':
+      specifier: 5.103.1
+      version: 5.103.1
     '@tanstack/react-router':
       specifier: 1.170.36
       version: 1.170.36
@@ -685,6 +688,9 @@ importers:
       '@tanstack/ai':
         specifier: 0.54.0
         version: 0.54.0(@opentelemetry/api@1.9.1)(zod@4.6.5)
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.103.1(react@19.3.0)
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.36(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1636,7 +1642,7 @@ importers:
         specifier: workspace:*
         version: link:../../libs/ui
       '@tanstack/react-query':
-        specifier: 5.103.1
+        specifier: 'catalog:'
         version: 5.103.1(react@19.3.0)
       '@tanstack/react-router':
         specifier: 'catalog:'

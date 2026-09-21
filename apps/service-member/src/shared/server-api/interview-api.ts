@@ -10,9 +10,9 @@ import {
   restartInterview,
   saveInterview,
   takeTurn,
-} from "#shared/interview/index.ts";
+} from "#shared/interview/runtime.ts";
 
-import type { Interviewer } from "#shared/interview/index.ts";
+import type { Interviewer } from "#shared/interview/runtime.ts";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 

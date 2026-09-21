@@ -41,5 +41,15 @@ const Utterance = Schema.Union([
 type InterviewState = typeof State.Type;
 type MemberUtterance = typeof Utterance.Type;
 
-export { State, Utterance, roles, settledPhases };
+function spoken(utterance: MemberUtterance): string {
+  if (utterance.kind === "text") {
+    return utterance.text;
+  }
+  if (utterance.kind === "choice") {
+    return utterance.values.join("、");
+  }
+  return utterance.kind === "skip" ? "スキップ" : "ここで終える";
+}
+
+export { State, Utterance, maximumUtterance, roles, settledPhases, spoken };
 export type { InterviewState, MemberUtterance };

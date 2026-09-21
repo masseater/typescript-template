@@ -7,6 +7,7 @@ import type { Children } from "./types";
 
 const Button = ({
   "aria-label": ariaLabel,
+  "aria-pressed": ariaPressed,
   children,
   disabled,
   onClick,
@@ -16,6 +17,7 @@ const Button = ({
 }: Children &
   Readonly<{
     "aria-label"?: string;
+    "aria-pressed"?: boolean;
     disabled?: boolean;
     onClick?: MouseEventHandler;
     size?: "medium" | "small";
@@ -27,6 +29,7 @@ const Button = ({
       data-slot="button"
       type={type}
       aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
       disabled={disabled}
       onClick={onClick}
       className={buttonVariants({ size, variant })}

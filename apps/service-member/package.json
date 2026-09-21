@@ -24,6 +24,7 @@
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tanstack/ai": "0.54.0",
+    "@tanstack/react-query": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "drizzle-orm": "catalog:",
