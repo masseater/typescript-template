@@ -11,7 +11,7 @@ import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Layer } from "effect";
 
-import { createUserApi } from "./create-user-api.ts";
+import { memberApi } from "./member-api.ts";
 
 const { user } = schema;
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
@@ -36,7 +36,7 @@ const addMember = (memberId: string, emailVerified = true) =>
   });
 
 async function request(
-  app: ReturnType<typeof createUserApi>,
+  app: ReturnType<typeof memberApi>,
   path: string,
   init: Readonly<{
     body?: unknown;
@@ -61,7 +61,7 @@ async function request(
 it.effect("lets API keys read allowed resources and rejects writes", () => {
   const environment = appEnvironment();
   const services = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
-  const app = createUserApi(
+  const app = memberApi(
     apiRoutes(
       workerRuntime(() => services),
       reporting,

@@ -7,12 +7,15 @@ describe("settings items", () => {
     expect.hasAssertions();
     expect(settingsItems.map((listedSetting) => listedSetting.to)).toStrictEqual([
       "/settings/profile",
+      "/settings/visibility",
       "/settings/email",
       "/settings/notifications",
       "/settings/security",
       "/settings/interview",
       "/settings/ai",
       "/settings/plan",
+      "/settings/agreements",
+      "/settings/recovery",
       "/settings/leave",
     ]);
   });

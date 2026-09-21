@@ -1,7 +1,6 @@
 import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
 import { UserNotFound } from "@repo/db";
-import { httpStatus } from "@repo/observability";
-import { accountApi, unavailable } from "@repo/runtime/account";
+import { accountApi } from "@repo/runtime/account";
 import { apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -15,28 +14,38 @@ import {
   memberPageSize,
 } from "#shared/contracts/index.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { agreementApi, consentGate } from "./agreement-api.ts";
 import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
-import { socialApi } from "./social-api.ts";
+import { leaveApi } from "./leave-api.ts";
+import { memberFailures } from "./member-failures.ts";
+import { photoApi } from "./photo-api.ts";
+import { onboardingStepApi, socialApi } from "./social-api.ts";
+import { visibilityApi } from "./visibility-api.ts";
 
+import type { Interviewer } from "#shared/interview/index.ts";
+import type { PhotoStore } from "#shared/photo/index.ts";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
+import type { OpsMail } from "./ops-mail.ts";
 
-const failures = {
-  ...unavailable,
-  ...apiKeyWriteFailure,
-  UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
-};
+const failures = { ...memberFailures, ...apiKeyWriteFailure };
 
-function createUserApi<Requirements>(api: ApiRoutes<AppServices | Requirements>) {
+function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoStore>) {
   return createApi(apiRoot)
     .use(accountApi(api))
     .use(contactApi(api))
     .use(flagsApi(api))
+    .use(agreementApi(api))
+    .use(onboardingStepApi(api))
+    .use(leaveApi(api))
+    .onBeforeHandle(consentGate(api))
     .use(interviewApi(api))
+    .use(photoApi(api))
     .use(socialApi(api))
+    .use(visibilityApi(api))
     .get(
       "/profile",
       api.route(
@@ -97,4 +106,4 @@ function createUserApi<Requirements>(api: ApiRoutes<AppServices | Requirements>)
     .use(boardApi(api));
 }
 
-export { createUserApi };
+export { memberApi };

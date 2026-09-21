@@ -25,9 +25,11 @@ const settledStatuses: ReadonlySet<HttpStatus> = new Set([
 const failureStatuses = Object.values(httpStatus).filter(
   (code): code is FailureStatus => !settledStatuses.has(code),
 );
+type FailureDetails = Readonly<Record<string, unknown>>;
 interface Failure {
   readonly status: FailureStatus;
   readonly message: string;
+  readonly details?: FailureDetails;
 }
 type FailureTable<Failures extends Tagged> = {
   readonly [Tag in Failures["_tag"]]:
@@ -47,6 +49,7 @@ const invalidInput = "入力内容を確認してください。";
 const forbidden = "この操作は許可されていません。";
 const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 const FailureShape = Schema.Struct({
+  details: Schema.optionalKey(Schema.Record(Schema.String, Schema.Unknown)),
   message: Schema.String,
   status: Schema.Literals(failureStatuses),
 });
@@ -91,12 +94,18 @@ function reportedFailure(
   return reportFailure(cause).pipe(Effect.as(unexpected));
 }
 
+type FailureBody = FailureDetails & { readonly error: string };
+
+function failureBody(failure: Failure): FailureBody {
+  return { ...failure.details, error: failure.message };
+}
+
 function failureResponse(
   table: object,
   cause: Readonly<Cause.Cause<unknown>>,
 ): Effect.Effect<Response> {
   return reportedFailure(table, cause).pipe(
-    Effect.map((failure) => jsonResponse({ error: failure.message }, failure.status)),
+    Effect.map((failure) => jsonResponse(failureBody(failure), failure.status)),
   );
 }
 
@@ -109,5 +118,5 @@ function runtimeUnavailable(
   );
 }
 
-export { failureResponse, reportedFailure, runtimeUnavailable };
-export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };
+export { failureBody, failureResponse, reportedFailure, runtimeUnavailable };
+export type { CommonFailure, Failure, FailureBody, FailureStatus, FailureTable, Tagged };

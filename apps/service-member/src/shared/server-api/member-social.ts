@@ -1,5 +1,4 @@
-import { ROLE } from "@repo/config";
-import { onboardingSteps, query, schema } from "@repo/db";
+import { onboardingSteps, profileVisibleTo, query, schema } from "@repo/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -60,7 +59,7 @@ const homeFeed = Effect.fn("homeFeed")(function* homeFeed(viewerId: string) {
         updatedAt: user.updatedAt,
       })
       .from(user)
-      .where(and(inArray(user.id, ids), eq(user.role, ROLE.member), eq(user.emailVerified, true)))
+      .where(and(inArray(user.id, ids), profileVisibleTo(viewerId)))
       .orderBy(desc(user.updatedAt))
       .limit(50),
   );
