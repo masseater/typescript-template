@@ -6,7 +6,6 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -45,15 +44,11 @@ describe("member navigation", () => {
         routeTree,
       });
       return renderToStaticMarkup(
-        createElement(
-          RouterContextProvider,
-          { router },
-          createElement(
-            ToastProvider,
-            null,
-            createElement(MemberRail, { memberBoard: true, user: member }),
-          ),
-        ),
+        <RouterContextProvider router={router}>
+          <ToastProvider>
+            <MemberRail memberBoard user={member} />
+          </ToastProvider>
+        </RouterContextProvider>,
       );
     })
     .extend("theTabs", () => {
@@ -71,11 +66,9 @@ describe("member navigation", () => {
         routeTree,
       });
       return renderToStaticMarkup(
-        createElement(
-          RouterContextProvider,
-          { router },
-          createElement(MemberTabs, { memberBoard: true }),
-        ),
+        <RouterContextProvider router={router}>
+          <MemberTabs memberBoard />
+        </RouterContextProvider>,
       );
     })
     .extend("thePhoneHeader", () => {
@@ -91,11 +84,11 @@ describe("member navigation", () => {
         routeTree,
       });
       return renderToStaticMarkup(
-        createElement(
-          RouterContextProvider,
-          { router },
-          createElement(ToastProvider, null, createElement(MemberTopBar, { user: member })),
-        ),
+        <RouterContextProvider router={router}>
+          <ToastProvider>
+            <MemberTopBar user={member} />
+          </ToastProvider>
+        </RouterContextProvider>,
       );
     });
 
