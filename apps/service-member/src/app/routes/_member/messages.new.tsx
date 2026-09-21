@@ -22,6 +22,8 @@ function requireComposeSearch(raw: unknown): ComposeSearch {
 
 const Route = createFileRoute("/_member/messages/new")({
   component: ComposeRoute,
+  validateSearch: requireComposeSearch,
+  loaderDeps: ({ search }: Readonly<{ search: ComposeSearch }>) => search,
   loader: async ({ deps }: Readonly<{ deps: ComposeSearch }>) => {
     const existing = await lookupConversation(deps.peer);
     if (existing !== null) {
@@ -29,8 +31,6 @@ const Route = createFileRoute("/_member/messages/new")({
     }
     return loadMember(deps.peer);
   },
-  loaderDeps: ({ search }: Readonly<{ search: ComposeSearch }>) => search,
-  validateSearch: requireComposeSearch,
 });
 
 function ComposeRoute(): ReactElement {

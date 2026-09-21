@@ -1,7 +1,7 @@
 import { InterviewBubble } from "./bubble.tsx";
 
+import type { InterviewViewData } from "#shared/interview/index.ts";
 import type { ReactElement } from "react";
-import type { InterviewViewData } from "../api/interview.ts";
 
 function messageKey(
   seen: Map<string, number>,

@@ -10,6 +10,7 @@ import {
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useAuditList } from "#pages/audit/model/audit-list.ts";
+import { DataTable } from "#shared/ui/data-table.tsx";
 
 import type { ReactElement } from "react";
 
@@ -69,26 +70,18 @@ function AuditPage(): ReactElement {
             一覧
           </Heading>
           <p className="text-sm text-muted-foreground">全 {page.total} 件</p>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="p-2">日時</th>
-                <th className="p-2">操作</th>
-                <th className="p-2">操作者 ID</th>
-                <th className="p-2">対象 ID</th>
+          <DataTable
+            columns={["日時", "操作", "操作者 ID", "対象 ID"]}
+            label="監査ログ一覧"
+            rows={page.events.map((event) => (
+              <tr key={event.id} className="border-b border-border">
+                <td className="p-2">{createdAtLabel.format(event.createdAt)}</td>
+                <td className="p-2">{event.action}</td>
+                <td className="p-2">{event.actorId}</td>
+                <td className="p-2">{event.targetId}</td>
               </tr>
-            </thead>
-            <tbody>
-              {page.events.map((event) => (
-                <tr key={event.id} className="border-b border-border">
-                  <td className="p-2">{createdAtLabel.format(event.createdAt)}</td>
-                  <td className="p-2">{event.action}</td>
-                  <td className="p-2">{event.actorId}</td>
-                  <td className="p-2">{event.targetId}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          />
         </section>
       )}
     </main>

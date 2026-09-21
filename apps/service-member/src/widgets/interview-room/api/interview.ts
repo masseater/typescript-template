@@ -1,10 +1,9 @@
 import { apiData } from "@repo/runtime/client";
 
-import { userClient } from "#shared/api/index.ts";
-import { InterviewView, Utterance } from "#shared/interview/index.ts";
+import { userClient } from "#shared/api/client.ts";
+import { InterviewView } from "#shared/interview/index.ts";
 
-type InterviewViewData = typeof InterviewView.Type;
-type MemberUtterance = typeof Utterance.Type;
+import type { InterviewViewData, MemberUtterance } from "#shared/interview/index.ts";
 
 async function loadInterview(): Promise<InterviewViewData> {
   const { api } = await userClient();

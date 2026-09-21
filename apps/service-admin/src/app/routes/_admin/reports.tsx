@@ -26,16 +26,16 @@ type ReportsDeps = Readonly<{
 
 const Route = createFileRoute("/_admin/reports")({
   component: ReportsRoute,
+  validateSearch: searchSchema,
+  loaderDeps: ({ search }: Readonly<{ search: ReportsSearch }>): ReportsDeps => ({
+    page: search.page ?? 1,
+    ...(search.status === undefined ? {} : { status: search.status }),
+  }),
   loader: async ({ deps }: Readonly<{ deps: ReportsDeps }>) =>
     loadReports({
       page: deps.page,
       ...(deps.status === undefined ? {} : { status: deps.status }),
     }),
-  loaderDeps: ({ search }: Readonly<{ search: ReportsSearch }>): ReportsDeps => ({
-    page: search.page ?? 1,
-    ...(search.status === undefined ? {} : { status: search.status }),
-  }),
-  validateSearch: searchSchema,
 });
 
 function ReportsRoute(): ReactElement {

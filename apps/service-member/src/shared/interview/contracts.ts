@@ -64,3 +64,4 @@ function viewOf(state: InterviewState): InterviewViewData {
 
 export { InterviewView, viewOf };
 export { Utterance } from "./state.ts";
+export type { InterviewViewData };

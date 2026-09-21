@@ -4,8 +4,8 @@ import { InterviewComposer } from "./composer.tsx";
 import { HistoryConsentPanel } from "./history-consent.tsx";
 import { InterviewReply } from "./reply.tsx";
 
+import type { InterviewViewData, MemberUtterance } from "#shared/interview/index.ts";
 import type { ReactElement } from "react";
-import type { InterviewViewData, MemberUtterance } from "../api/interview.ts";
 
 const useRestartConfirm = localState(false);
 

@@ -16,12 +16,12 @@ type ConsentSearch = Readonly<{ client_id?: string | undefined; scope?: string |
 
 const Route = createFileRoute("/consent")({
   component: ConsentRoute,
-  loader: async ({ deps }: Readonly<{ deps: Readonly<{ clientId: string | undefined }> }>) =>
-    deps.clientId === undefined ? undefined : loadClientName(deps.clientId),
+  validateSearch: searchSchema,
   loaderDeps: ({ search }: Readonly<{ search: ConsentSearch }>) => ({
     clientId: search.client_id,
   }),
-  validateSearch: searchSchema,
+  loader: async ({ deps }: Readonly<{ deps: Readonly<{ clientId: string | undefined }> }>) =>
+    deps.clientId === undefined ? undefined : loadClientName(deps.clientId),
 });
 
 function ConsentRoute(): ReactElement {

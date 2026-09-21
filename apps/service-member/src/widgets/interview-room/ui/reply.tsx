@@ -4,8 +4,8 @@ import { Atom } from "effect/unstable/reactivity";
 
 import { maximumInterests } from "#shared/interview/index.ts";
 
+import type { InterviewViewData, MemberUtterance } from "#shared/interview/index.ts";
 import type { ReactElement } from "react";
-import type { InterviewViewData, MemberUtterance } from "../api/interview.ts";
 
 const chosenAtom = Atom.family((questionKey: string) => {
   void questionKey;
@@ -35,13 +35,13 @@ function InterviewOption({
   label: string;
   onChoose: (label: string) => void;
 }>): ReactElement {
-  const handleClick = (): void => {
+  const chooseOption = (): void => {
     onChoose(label);
   };
   return (
     <Button
       disabled={disabled}
-      onClick={handleClick}
+      onClick={chooseOption}
       size="small"
       type="button"
       variant="secondary"
@@ -100,17 +100,18 @@ function InterviewMultipleChoice({
   questionKey: string;
 }>): ReactElement {
   const [chosen, setChosen] = useAtom(chosenAtom(questionKey));
+  const selected = new Set(chosen);
   const handleToggle = (label: string, checked: boolean): void => {
     setChosen((current) => nextChosen(current, label, checked));
   };
   const handleSend = (): void => {
-    onSay({ kind: "choice", values: options.filter((option) => chosen.includes(option)) });
+    onSay({ kind: "choice", values: options.filter((option) => selected.has(option)) });
   };
   return (
     <>
       {options.map((option) => (
         <InterviewInterest
-          checked={chosen.includes(option)}
+          checked={selected.has(option)}
           disabled={disabled}
           key={option}
           label={option}

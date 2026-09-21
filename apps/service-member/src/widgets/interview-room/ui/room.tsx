@@ -29,16 +29,18 @@ function InterviewLoading({
 
 function InterviewRoom({ onSaved }: Readonly<{ onSaved?: () => Promise<void> }>): ReactElement {
   const session = useInterview(onSaved);
-  const finish = (): void => {
+  const onFinish = (): void => {
     session.say({ kind: "finish" });
   };
+  const onReload = session.reload;
+  const onConsent = session.consent;
+  const onRestart = session.restart;
+  const onRetry = session.retry;
+  const onSave = session.save;
+  const onSay = session.say;
   if (session.view === undefined) {
     return (
-      <InterviewLoading
-        error={session.loadError}
-        onReload={session.reload}
-        pending={session.pending}
-      />
+      <InterviewLoading error={session.loadError} onReload={onReload} pending={session.pending} />
     );
   }
   return (
@@ -46,12 +48,12 @@ function InterviewRoom({ onSaved }: Readonly<{ onSaved?: () => Promise<void> }>)
       busy={session.busy}
       failure={session.failure}
       heard={session.heard}
-      onConsent={session.consent}
-      onFinish={finish}
-      onRestart={session.restart}
-      onRetry={session.retry}
-      onSave={session.save}
-      onSay={session.say}
+      onConsent={onConsent}
+      onFinish={onFinish}
+      onRestart={onRestart}
+      onRetry={onRetry}
+      onSave={onSave}
+      onSay={onSay}
       turnFailed={session.turnFailed}
       typing={session.typing}
       view={session.view}

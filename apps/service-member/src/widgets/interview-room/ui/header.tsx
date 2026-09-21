@@ -2,8 +2,8 @@ import { Button, Heading } from "@repo/ui";
 
 import { InterviewProgress } from "./progress.tsx";
 
+import type { InterviewViewData } from "#shared/interview/index.ts";
 import type { ReactElement } from "react";
-import type { InterviewViewData } from "../api/interview.ts";
 
 function InterviewHeader({
   busy,

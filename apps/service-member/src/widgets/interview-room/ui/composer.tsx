@@ -2,8 +2,8 @@ import { Button, Field, localState } from "@repo/ui";
 
 import { maximumUtterance } from "#shared/interview/index.ts";
 
+import type { MemberUtterance } from "#shared/interview/index.ts";
 import type { ReactElement } from "react";
-import type { MemberUtterance } from "../api/interview.ts";
 
 const useDraft = localState("");
 

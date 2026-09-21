@@ -1,5 +1,5 @@
+import type { InterviewViewData } from "#shared/interview/index.ts";
 import type { ReactElement } from "react";
-import type { InterviewViewData } from "../api/interview.ts";
 
 type FieldView = InterviewViewData["fields"][number];
 

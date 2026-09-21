@@ -3,6 +3,7 @@ import { AsyncResult } from "effect/unstable/reactivity";
 
 import { metricLabel } from "#pages/overview/model/metric-label.ts";
 import { useOverview } from "#pages/overview/model/overview.ts";
+import { DataTable } from "#shared/ui/data-table.tsx";
 
 import type { ReactElement } from "react";
 
@@ -39,22 +40,16 @@ function OverviewPage(): ReactElement {
           <Heading as="h2" size="section">
             会員数の直近推移
           </Heading>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="p-2">日付</th>
-                <th className="p-2">会員数</th>
+          <DataTable
+            columns={["日付", "会員数"]}
+            label="会員数の直近推移"
+            rows={overview.trend.map((row) => (
+              <tr key={row.bucket} className="border-b border-border">
+                <td className="p-2">{row.bucket}</td>
+                <td className="p-2">{row.value}</td>
               </tr>
-            </thead>
-            <tbody>
-              {overview.trend.map((row) => (
-                <tr key={row.bucket} className="border-b border-border">
-                  <td className="p-2">{row.bucket}</td>
-                  <td className="p-2">{row.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          />
         </section>
       )}
       <a

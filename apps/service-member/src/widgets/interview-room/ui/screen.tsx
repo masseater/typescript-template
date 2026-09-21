@@ -5,8 +5,8 @@ import { InterviewHeader } from "./header.tsx";
 import { InterviewMessages } from "./messages.tsx";
 import { InterviewSheet } from "./sheet.tsx";
 
+import type { InterviewViewData, MemberUtterance } from "#shared/interview/index.ts";
 import type { ReactElement } from "react";
-import type { InterviewViewData, MemberUtterance } from "../api/interview.ts";
 
 function InterviewFailure({
   failure,

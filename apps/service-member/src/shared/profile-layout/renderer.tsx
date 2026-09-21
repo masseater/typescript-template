@@ -1,7 +1,7 @@
 import { PHOTO_SLOT } from "@repo/config";
 import { Avatar, Heading, TextLink, formatWarekiMonth } from "@repo/ui";
 
-import { memberPhotoUrl } from "#shared/api/index.ts";
+import { memberPhotoUrl } from "#shared/api/photo-url.ts";
 import { displayValue, fieldDefinitions } from "#shared/interview/sheet.ts";
 import { SocialLinks } from "#shared/social-link/index.ts";
 import { profileBlock } from "./schema.ts";
