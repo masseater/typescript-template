@@ -1,54 +1,32 @@
-import { useAction, localState } from "@repo/ui";
+import { useAction } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
+import { Schema } from "effect";
 
 import { submitContact } from "#pages/contact/api/submit-contact.ts";
+import { ContactSubmission } from "#shared/contracts/index.ts";
 
-import type { SubmitEventHandler } from "react";
+const contactSchema = Schema.toStandardSchemaV1(ContactSubmission);
 
-interface ContactFields {
-  readonly email: string;
-  readonly message: string;
-  readonly name: string;
-}
+type ContactValues = typeof ContactSubmission.Type;
 
-interface ContactFormState extends ContactFields {
-  readonly blocked: boolean;
-  readonly error: string;
-  readonly handleEmailChange: (value: string) => void;
-  readonly handleMessageChange: (value: string) => void;
-  readonly handleNameChange: (value: string) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly pending: boolean;
-}
-
-const useFields = localState<ContactFields>({ email: "", message: "", name: "" });
-
-function useContactForm(onSent: () => void): ContactFormState {
-  const [fields, setFields] = useFields();
+function useContactForm(onSent: () => void) {
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(async () => {
-      await submitContact(fields);
-      onSent();
-    });
-  }
+  const form = useForm({
+    defaultValues: { email: "", message: "", name: "" } satisfies ContactValues,
+    onSubmit: ({ value }) => {
+      action.run(async () => {
+        await submitContact(value);
+        onSent();
+      });
+    },
+    validators: { onSubmit: contactSchema },
+  });
   return {
-    ...fields,
     blocked: action.blocked,
     error: action.error ?? "",
-    handleEmailChange: (email) => {
-      setFields((current) => ({ ...current, email }));
-    },
-    handleMessageChange: (message) => {
-      setFields((current) => ({ ...current, message }));
-    },
-    handleNameChange: (name) => {
-      setFields((current) => ({ ...current, name }));
-    },
-    handleSubmit,
+    form,
     pending: action.pending,
   };
 }
 
 export { useContactForm };
-export type { ContactFormState };

@@ -31,6 +31,17 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
 
+const devtoolsProbe: readonly string[] = [
+  "@tanstack/react-devtools",
+  "@tanstack/react-query-devtools",
+];
+
+const devtoolsMarkers: readonly string[] = [
+  "@tanstack/react-devtools",
+  "ReactQueryDevtoolsPanel",
+  "TanStackDevtools",
+];
+
 function denialReason(error: unknown): string {
   const text = String(error);
   return (
@@ -71,14 +82,23 @@ async function clientBuild(specifiers: readonly string[], outDirectory: string):
   }
 }
 
-async function bundledMarkers(outDirectory: string): Promise<readonly string[]> {
+async function bundledSources(outDirectory: string): Promise<readonly string[]> {
   const entries = await readdir(outDirectory, { recursive: true });
-  const sources = await Promise.all(
+  return Promise.all(
     entries
       .filter((entry) => entry.endsWith(".js"))
       .map(async (entry) => readFile(path.join(outDirectory, entry), "utf-8")),
   );
+}
+
+async function bundledMarkers(outDirectory: string): Promise<readonly string[]> {
+  const sources = await bundledSources(outDirectory);
   return serverOnlyMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
+}
+
+async function devtoolsLeaks(outDirectory: string): Promise<readonly string[]> {
+  const sources = await bundledSources(outDirectory);
+  return devtoolsMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
 }
 
 const temporaryOutput = Effect.acquireRelease(
@@ -110,12 +130,23 @@ const inspect = Effect.gen(function* inspect() {
   );
   const markers = yield* Effect.promise(async () => bundledMarkers(reachableDirectory));
   const denials = yield* Effect.forEach(serverOnly, serverOnlyProblems);
+  const devtoolsDirectory = yield* temporaryOutput;
+  const devtoolsDenial = yield* Effect.promise(async () =>
+    clientBuild(devtoolsProbe, devtoolsDirectory),
+  );
+  const devtoolsProblems =
+    devtoolsDenial === ""
+      ? (yield* Effect.promise(async () => devtoolsLeaks(devtoolsDirectory))).map(
+          (marker) => `${marker} reached the production client bundle`,
+        )
+      : [`${devtoolsProbe.join(" ")} denied by ${devtoolsDenial}`];
   return [
     ...(reachableDenial === ""
       ? []
       : [`${clientReachable.join(" ")} denied by ${reachableDenial}`]),
     ...markers.map((marker) => `${marker} reached the client bundle`),
     ...denials.flat(),
+    ...devtoolsProblems,
   ];
 }).pipe(Effect.scoped);
 
@@ -125,7 +156,7 @@ runCli(
       Console.log(
         JSON.stringify({
           event: "quality.client_bundle",
-          inputs: clientReachable.length + serverOnly.length,
+          inputs: clientReachable.length + serverOnly.length + devtoolsProbe.length,
           ok: unexpected.length === 0,
           unexpected,
         }),
