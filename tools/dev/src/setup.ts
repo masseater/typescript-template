@@ -101,6 +101,7 @@ const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
   );
   yield* refreshBrowserConfig();
   const credentials =
+    // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
     "CI" in process.env ? sharedRunnerCredentials() : yield* rememberOrigins(args);
   yield* Effect.forEach(applications, (app) =>
     writeAppVariables(app, credentials, credentials.origins),
