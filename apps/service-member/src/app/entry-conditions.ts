@@ -3,8 +3,8 @@ import { redirect } from "@tanstack/react-router";
 
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
 import { loadSession } from "#entities/session/index.ts";
+import { loadOnboardingStep } from "#pages/account/welcome/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
-import { loadOnboardingStep } from "#pages/welcome/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { Session } from "#entities/session/index.ts";

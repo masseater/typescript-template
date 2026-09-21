@@ -1,7 +1,7 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 
 import { loadAgreements } from "#entities/agreement/index.ts";
-import { AgreementPage } from "#pages/welcome/index.ts";
+import { AgreementPage } from "#pages/account/welcome/index.ts";
 
 import type { ReactElement } from "react";
 

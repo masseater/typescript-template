@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { VerifyEmailChangePage } from "#pages/verify-email-change/index.ts";
+import { VerifyEmailChangePage } from "#pages/account/verify-email-change/index.ts";
 
 const Route = createFileRoute("/_public/verify-email-change")({
   component: VerifyEmailChangePage,
