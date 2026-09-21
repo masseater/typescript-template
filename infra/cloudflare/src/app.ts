@@ -57,6 +57,9 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       FLAGSHIP_ACCOUNT_ID: config.accountId,
       FLAGS: flags,
       OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
+      ...(target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+        ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
+        : {}),
       ...(config.otlp === undefined
         ? {}
         : {

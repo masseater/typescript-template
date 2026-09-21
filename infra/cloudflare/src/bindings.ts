@@ -12,6 +12,7 @@ type SharedEnv = Readonly<{
   EMAIL_FROM: string;
   FLAGSHIP_ACCOUNT_ID: string;
   FLAGS: Flagship.App;
+  GOOGLE_ANALYTICS_MEASUREMENT_ID?: string;
   OPS_EMAIL: string;
   OTLP_AUTHORIZATION?: Redacted.Redacted;
   OTLP_ENABLED?: string;

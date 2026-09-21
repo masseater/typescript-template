@@ -15,6 +15,7 @@ const verificationSettings = {
   },
   mailFrom: "mail@template-verify.example.com",
   observabilitySampling: 0.5,
+  googleAnalyticsMeasurementId: "G-VERIFYMEASUREMENT",
   origins: {
     "internal-dashboard": "https://template-verify-dashboard.example.com",
     "service-admin": "https://template-verify-admin.example.com",
@@ -40,6 +41,7 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.appDomain]: "example.com",
   [deploymentKey.authSecret]: verificationAuthSecret,
   [deploymentKey.fixedCostUsd]: String(verificationSettings.budget.fixedCostUsd),
+  [deploymentKey.googleAnalyticsMeasurementId]: verificationSettings.googleAnalyticsMeasurementId,
   [deploymentKey.jpyPerUsd]: String(verificationSettings.budget.jpyPerUsd),
   [deploymentKey.mailFrom]: verificationSettings.mailFrom,
   [deploymentKey.observabilitySampling]: String(verificationSettings.observabilitySampling),

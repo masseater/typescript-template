@@ -69,6 +69,16 @@ export {
 } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
 export {
+  GoogleAnalyticsMeasurementId,
+  activeGoogleAnalyticsMeasurementId,
+} from "./google-analytics-measurement-id.ts";
+export type { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
+export {
+  googleAnalyticsConnectSrc,
+  googleAnalyticsImgSrc,
+  googleAnalyticsScriptSrc,
+} from "./google-analytics-policy.ts";
+export {
   PHOTO_CONTENT_TYPE,
   PHOTO_SLOT,
   PROFILE_VISIBILITY,

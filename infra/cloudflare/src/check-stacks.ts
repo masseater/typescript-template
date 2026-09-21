@@ -38,8 +38,16 @@ import type { StackName } from "./stacks.ts";
 
 type ResourceInventory = StackInventory["resources"][string];
 
-const { accountId, budget, mailFrom, origins, otlp, otlpAuthorization, prefix } =
-  verificationSettings;
+const {
+  accountId,
+  budget,
+  googleAnalyticsMeasurementId,
+  mailFrom,
+  origins,
+  otlp,
+  otlpAuthorization,
+  prefix,
+} = verificationSettings;
 
 const sampling = { enabled: true, headSamplingRate: 0.5 };
 
@@ -106,6 +114,9 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
+      ...(app === APPLICATION.user && googleAnalyticsMeasurementId !== undefined
+        ? [plainText(appEnvKey.googleAnalyticsMeasurementId, googleAnalyticsMeasurementId)]
+        : []),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
       ...(grants(app, "billing")
         ? [

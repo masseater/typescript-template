@@ -2,6 +2,7 @@ import { Effect, Predicate, Schema } from "effect";
 
 import { loopbackHosts } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
+import { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
 
 import type { Ai, D1Database, Flagship, SendEmail } from "@cloudflare/workers-types";
 
@@ -39,6 +40,7 @@ const appEnvKey = {
   flagshipAccountId: "FLAGSHIP_ACCOUNT_ID",
   flagshipApiToken: "FLAGSHIP_API_TOKEN",
   flagshipAppId: "FLAGSHIP_APP_ID",
+  googleAnalyticsMeasurementId: "GOOGLE_ANALYTICS_MEASUREMENT_ID",
   mailpitUrl: "MAILPIT_URL",
   opsEmail: "OPS_EMAIL",
   otlpAuthorization: "OTLP_AUTHORIZATION",
@@ -68,6 +70,7 @@ const Scalars = Schema.Struct({
   [appEnvKey.flagshipAccountId]: Schema.optionalKey(NonEmpty),
   [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmpty),
   [appEnvKey.flagshipAppId]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.googleAnalyticsMeasurementId]: Schema.optionalKey(GoogleAnalyticsMeasurementId),
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
   [appEnvKey.opsEmail]: Email,
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
