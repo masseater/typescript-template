@@ -73,12 +73,7 @@ const retiredDependencyViolations = (workspaces: readonly WorkspaceManifest[]): 
 
 const rootOnlyPackages: Readonly<
   Record<string, { readonly owners: readonly string[]; readonly runner: string }>
-> = {
-  "react-doctor": {
-    owners: ["tools/dont-review-it/package.json"],
-    runner: "ルートの vp run check:react",
-  },
-};
+> = {};
 
 const developmentOnlyPackages: Readonly<Record<string, string>> = {
   miniflare: "ローカル DB / Worker テストの実行環境",

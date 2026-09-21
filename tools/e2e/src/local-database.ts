@@ -23,7 +23,8 @@ type IsolatedDatabase = {
 
 const startIsolatedDatabase = async (): Promise<IsolatedDatabase> => {
   const directory = await mkdtemp(path.join(tmpdir(), prefix));
-  const environment = { ...process.env, [localDatabaseVariable]: directory };
+  const { VITEST: _vitest, VITEST_WORKER_ID: _worker, ...processEnvironment } = process.env;
+  const environment = { ...processEnvironment, [localDatabaseVariable]: directory };
   await runVitePlus(vitePlus, ["run", "--filter", databasePackage, "db:migrate:local"], {
     cwd: repositoryRoot,
     env: environment,
