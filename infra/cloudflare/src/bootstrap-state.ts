@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { cliStderr, cliStdout, runCli } from "@repo/cli";
+import { runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 
 import { secretsStoreCount, workerNames } from "./account-lookup.ts";
@@ -45,12 +45,7 @@ runCli(
         "--env-file",
         secrets.filename,
       ];
-      if (
-        (yield* runAlchemy(args, confidential, {
-          stderr: cliStderr,
-          stdout: cliStdout,
-        })) !== OK_EXIT_CODE
-      ) {
+      if ((yield* runAlchemy(args, confidential)) !== OK_EXIT_CODE) {
         return yield* Effect.fail(new AlchemyFailure({ code: "alchemy_command_failed" }));
       }
       yield* Console.info(
