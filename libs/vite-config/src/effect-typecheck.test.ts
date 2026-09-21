@@ -10,7 +10,7 @@ import { parseBaseline, serializeBaseline } from "./effect-typecheck-baseline.ts
 import { compileWorkspace } from "./effect-typecheck-compiler.ts";
 import { parseTscOutput } from "./effect-typecheck-diagnostics.ts";
 import { workspaceOf } from "./effect-typecheck-path.ts";
-import { scriptedTypecheck } from "./effect-typecheck.ts";
+import { runTypecheckGate } from "./effect-typecheck.ts";
 
 const assignabilityDiagnostic =
   "value.ts(1,14): error TS2322: Type 'string' is not assignable to type 'number'.\n";
@@ -26,9 +26,9 @@ const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as
 describe("effect typecheck gate", () => {
   const it = test
     .extend("newDiagnostic", () =>
-      scriptedTypecheck({ compilerTranscript: assignabilityDiagnostic, status: 1 }))
+      runTypecheckGate({ compilerTranscript: assignabilityDiagnostic, status: 1 }))
     .extend("snapshottedDiagnostic", () =>
-      scriptedTypecheck({
+      runTypecheckGate({
         baselineText: assignabilityBaseline,
         compilerTranscript: assignabilityDiagnostic,
         status: 1,
@@ -79,15 +79,15 @@ describe("effect typecheck gate", () => {
       }),
     )
     .extend("unknownFlag", () =>
-      scriptedTypecheck({ gateArguments: ["--rewrite"], compilerTranscript: "", status: 0 }),
+      runTypecheckGate({ gateArguments: ["--rewrite"], compilerTranscript: "", status: 0 }),
     )
     .extend("silentCompiler", () =>
-      scriptedTypecheck({ compilerTranscript: "effect-tsgo: not found", status: 1 }),
+      runTypecheckGate({ compilerTranscript: "effect-tsgo: not found", status: 1 }),
     )
     .extend("portableDiagnostic", () => {
       const checkout = "/checkout";
       const compilerTranscript = `src/monitor-fixture.ts(48,7): error TS4023: Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "${checkout}/libs/monitor/src/index" but cannot be named.\n`;
-      return scriptedTypecheck({
+      return runTypecheckGate({
         cwd: checkout,
         repositoryRootPath: checkout,
         compilerTranscript,
@@ -108,7 +108,7 @@ describe("effect typecheck gate", () => {
       });
     })
     .extend("disappearedDiagnostic", () =>
-      scriptedTypecheck({ compilerTranscript: "", status: 0, baselineText: assignabilityBaseline }),
+      runTypecheckGate({ compilerTranscript: "", status: 0, baselineText: assignabilityBaseline }),
     )
     .extend("snapshottedExportCodes", () =>
       Object.values(
@@ -126,7 +126,7 @@ describe("effect typecheck gate", () => {
     .extend("missingExportDiagnostic", () => {
       const compilerTranscript =
         "src/index.ts(1,10): error TS2305: Module '\"./missing\"' has no exported member 'Gone'.\n";
-      return scriptedTypecheck({
+      return runTypecheckGate({
         compilerTranscript,
         baselineText: serializeBaseline({
           version: 1,

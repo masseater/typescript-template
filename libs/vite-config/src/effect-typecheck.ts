@@ -171,31 +171,40 @@ const defaultGate = (
 });
 
 const runTypecheckGate = (
-  asked: Readonly<{ cwd: string; gateArguments: readonly string[] }>,
-): GateRun => runEffectTypecheck(defaultGate(asked));
-
-const scriptedTypecheck = (
   asked: Readonly<{
+    cwd?: string;
     gateArguments?: readonly string[];
+    repositoryRootPath?: string;
+    baselinePath?: string;
     baselineText?: string;
     compilerTranscript?: string;
     status?: number;
-    cwd?: string;
-    repositoryRootPath?: string;
   }>,
-): GateRun =>
-  runEffectTypecheck({
-    cwd: asked.cwd ?? "/repo",
-    repositoryRoot: asked.repositoryRootPath ?? "/repo",
-    gateArguments: asked.gateArguments ?? [],
-    baselinePath: "baseline.json",
-    compile: () => ({
-      output: asked.compilerTranscript ?? "",
-      status: asked.status ?? 0,
-    }),
-    readText: () =>
-      asked.baselineText ?? `${JSON.stringify({ version: 1, workspaces: {} }, null, 2)}\n`,
-    writeText: () => undefined,
-  });
+): GateRun => {
+  const cwd = asked.cwd ?? "/repo";
+  const gateArguments = asked.gateArguments ?? [];
+  if (
+    asked.baselineText !== undefined ||
+    asked.compilerTranscript !== undefined ||
+    asked.status !== undefined ||
+    asked.baselinePath !== undefined ||
+    asked.repositoryRootPath !== undefined
+  ) {
+    return runEffectTypecheck({
+      cwd,
+      repositoryRoot: asked.repositoryRootPath ?? "/repo",
+      gateArguments,
+      baselinePath: asked.baselinePath ?? "baseline.json",
+      compile: () => ({
+        output: asked.compilerTranscript ?? "",
+        status: asked.status ?? 0,
+      }),
+      readText: () =>
+        asked.baselineText ?? `${JSON.stringify({ version: 1, workspaces: {} }, null, 2)}\n`,
+      writeText: () => undefined,
+    });
+  }
+  return runEffectTypecheck(defaultGate({ cwd, gateArguments }));
+};
 
-export { runTypecheckGate, scriptedTypecheck };
+export { runTypecheckGate };
