@@ -63,7 +63,7 @@ globalThis.fetch = async (input, init) => {
 };
 ```
 
-`fetch("/users/123")` は `traced` を送る。`hex(16)` が trace id、`hex(8)` が span id で、呼び出しごとに変わる。`fetch("https://other.example/")` と `fetch("/api/telemetry")` は `originalFetch` のままである。
+`fetch("/users/123")` は `traced` を送る。`hex(16)` が trace id、`hex(8)` が span id で、呼び出しごとに変わる。`fetch("https://other.example/")` と `fetch("/api/telemetry")` は `originalFetch` のままである。ブラウザから SLI までの層は [Observability](/observability) が持つ。
 
 ## 参考文献
 

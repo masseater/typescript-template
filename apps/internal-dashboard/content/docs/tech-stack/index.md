@@ -3,7 +3,7 @@ title: 技術スタック
 description: 主要技術の働きと、公式ドキュメント・サンプル・解説記事への参照
 ---
 
-この節が持つのは、各技術の働きと、公式ドキュメント・サンプル・記事へのリンクである。版は `pnpm-workspace.yaml` の catalog が持つので、ここには書かない。部品をどこに置くかは [フロントエンド](/guidelines/frontend)、資源をどう宣言するかは [インフラ](/guidelines/infrastructure) が持つ。どの領域に何を置くかは [このテンプレートは何か](/getting-started/what-is-this) の表にある。
+この節が持つのは、各技術の働きと、公式ドキュメント・サンプル・記事へのリンクである。版は `pnpm-workspace.yaml` の catalog が持つので、ここには書かない。部品をどこに置くかは [フロントエンド](/guidelines/frontend)、資源をどう宣言するかは [インフラ](/guidelines/infrastructure) が持つ。どの領域に何を置くかは [このテンプレートは何か](/getting-started/what-is-this) の表にある。ブラウザから SLI までの層は [Observability](/observability) が持つ。
 
 ## ページ
 
