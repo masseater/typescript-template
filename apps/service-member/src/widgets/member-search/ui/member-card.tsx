@@ -2,10 +2,11 @@ import { Avatar, CardLink } from "@repo/ui";
 
 import { MemberSummary } from "./member-summary.tsx";
 
-import type { Members } from "#pages/users/api/load-members.ts";
 import type { ReactElement } from "react";
 
-function MemberCard({ member }: Readonly<{ member: Members["members"][number] }>): ReactElement {
+function MemberCard({
+  member,
+}: Readonly<{ member: { readonly id: string; readonly name: string; readonly profile: string } }>): ReactElement {
   return (
     <li>
       <CardLink to="/users/$id" params={{ id: member.id }}>

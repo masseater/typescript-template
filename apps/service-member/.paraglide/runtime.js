@@ -1,6 +1,7 @@
 /* eslint-disable */
 
-import "@inlang/paraglide-js/urlpattern-polyfill";
+/** @type {any} */
+const URLPattern = {}
 
 /**
  * The project's base locale.
@@ -32,9 +33,8 @@ export const localStorageKey = "PARAGLIDE_LOCALE";
  * @type {Array<"cookie" | "baseLocale" | "globalVariable" | "url" | "preferredLanguage" | "localStorage" | `custom-${string}`>}
  */
 export const strategy = [
-  "url",
   "cookie",
-  "preferredLanguage",
+  "globalVariable",
   "baseLocale"
 ];
 /**
@@ -56,15 +56,15 @@ export const routeStrategies = [];
  */
 export const urlPatterns = [
   {
-    "pattern": "/:path(.*)?",
+    "pattern": ":protocol://:domain(.*)::port?/:path(.*)?",
     "localized": [
       [
         "en",
-        "/en/:path(.*)?"
+        ":protocol://:domain(.*)::port?/en/:path(.*)?"
       ],
       [
         "ja",
-        "/:path(.*)?"
+        ":protocol://:domain(.*)::port?/:path(.*)?"
       ]
     ]
   }
@@ -125,10 +125,10 @@ export function overwriteServerAsyncLocalStorage(value) {
     serverAsyncLocalStorage = value;
 }
 const TREE_SHAKE_COOKIE_STRATEGY_USED = true;
-const TREE_SHAKE_URL_STRATEGY_USED = true;
-const TREE_SHAKE_GLOBAL_VARIABLE_STRATEGY_USED = false;
-const TREE_SHAKE_PREFERRED_LANGUAGE_STRATEGY_USED = true;
-const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = false;
+const TREE_SHAKE_URL_STRATEGY_USED = false;
+const TREE_SHAKE_GLOBAL_VARIABLE_STRATEGY_USED = true;
+const TREE_SHAKE_PREFERRED_LANGUAGE_STRATEGY_USED = false;
+const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = true;
 const TREE_SHAKE_LOCAL_STORAGE_STRATEGY_USED = false;
 
 /** @type {any} */ (globalThis).__paraglide =
