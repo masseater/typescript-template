@@ -271,10 +271,13 @@ const lintOptions = {
     },
     {
       files: [
+        "infra/budget-monitor/**",
         "infra/cloudflare/**",
+        "infra/local/**",
         "libs/config/**",
         "libs/db/src/local.ts",
-        "libs/vite-config/**/*.test.ts",
+        "libs/db/src/missing-record-return.test.ts",
+        "libs/vite-config/**",
         "tools/dev/**",
         "tools/dont-review-it/src/configs/oxlint.ts",
         "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
