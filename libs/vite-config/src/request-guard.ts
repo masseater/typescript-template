@@ -2,7 +2,6 @@ import { realpath } from "node:fs/promises";
 import path from "node:path";
 
 import { httpStatus, type Application } from "@repo/config";
-import { Predicate } from "effect";
 
 import { privatePath } from "./private-path.ts";
 
@@ -28,7 +27,7 @@ const decodedPathname = (encodedPathname: string, remainingDepth: number): strin
 };
 
 const isMissingPath = (cause: unknown): boolean =>
-  Predicate.isObject(cause) && "code" in cause && cause.code === "ENOENT";
+  typeof cause === "object" && cause !== null && "code" in cause && cause.code === "ENOENT";
 
 const resolvePath = async (
   file: string,

@@ -4,8 +4,8 @@ import type { PluginOption } from "vite-plus";
 
 const paraglideStrategy = ["url", "cookie", "preferredLanguage", "baseLocale"] as const;
 
-function paraglideAppPlugin(): PluginOption {
-  return paraglideVitePlugin({
+const paraglideAppPlugin = (): PluginOption =>
+  paraglideVitePlugin({
     cookieName: "PARAGLIDE_LOCALE",
     emitGitIgnore: false,
     emitPrettierIgnore: false,
@@ -25,6 +25,5 @@ function paraglideAppPlugin(): PluginOption {
       },
     ],
   });
-}
 
 export { paraglideAppPlugin, paraglideStrategy };

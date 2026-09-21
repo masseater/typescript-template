@@ -1,20 +1,22 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
-import { spawnSync } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createRequire } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
+import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { runTypecheckGate } from "@repo/vite-config/effect-typecheck";
+import { Console, Effect } from "effect";
 
-const entry = createRequire(import.meta.url).resolve("@repo/vite-config");
-const script = path.join(path.dirname(entry), "effect-typecheck.ts");
-const result = spawnSync(process.execPath, [script, ...process.argv.slice(2)], {
-  stdio: "inherit",
+const gate = runTypecheckGate({
+  cwd: process.cwd(),
+  gateArguments: process.argv.slice(2),
 });
+const transcript = gate.transcript.endsWith("\n") ? gate.transcript.slice(0, -1) : gate.transcript;
 
-if (result.error !== undefined) {
-  process.stderr.write(`${result.error.message}\n`);
-  process.exit(1);
-}
-
-process.exit(result.status ?? 1);
+runCli(
+  Effect.gen(function* reportGate() {
+    if (transcript !== "") {
+      yield* Console.log(transcript);
+    }
+    if (gate.exitStatus !== 0) {
+      yield* markFailed;
+    }
+  }),
+  (cause) => causeRecord("typecheck.gate_failed", { cause }),
+);
