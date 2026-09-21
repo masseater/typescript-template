@@ -20,6 +20,28 @@ jobs:
     steps:
       - &checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - &changed-base
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            git update-ref refs/remotes/origin/main HEAD
+            exit 0
+          fi
+          mapfile -t parents < <(git cat-file -p HEAD | awk '/^parent /{print $2}')
+          if [ "${#parents[@]}" -lt 2 ]; then
+            echo "pull request checkout is not the merge commit" >&2
+            exit 1
+          fi
+          git fetch --no-tags --depth=1 origin "${parents[0]}"
+          git fetch --no-tags --depth=1 origin "${parents[1]}"
+          head="$(git rev-parse HEAD)"
+          grep -vx "$head" .git/shallow > .git/shallow.next
+          if [ -s .git/shallow.next ]; then
+            mv .git/shallow.next .git/shallow
+          else
+            rm -f .git/shallow .git/shallow.next
+          fi
+          git update-ref refs/remotes/origin/main "${parents[0]}"
       - &browser-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -80,6 +102,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - *checkout
+      - *changed-base
       - *browser-cache
       - *setup
       - run: vp check

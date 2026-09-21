@@ -6,7 +6,7 @@ import {
   lintOptions,
   workerTests,
 } from "@repo/dont-review-it";
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle, taskInput, testTasks } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -63,17 +63,7 @@ export default defineConfig({
         cache: false,
         command: "stryker run tools/dont-review-it/src/repository/stryker.ts",
       },
-      test: {
-        command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
-        input: [
-          ...taskInput,
-          "!coverage/**",
-          { base: "workspace", pattern: "!**/coverage/**" },
-          { base: "workspace", pattern: "pnpm-lock.yaml" },
-          { base: "workspace", pattern: "pnpm-workspace.yaml" },
-        ],
-        output: [],
-      },
+      ...testTasks(`vp test run --project '!@repo/*' --exclude '${devServerTests}'`),
       "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
       ...lifecycle({
         prepush: [
@@ -86,7 +76,7 @@ export default defineConfig({
           "check:canonical-literal-types",
         ],
         prepr: ["check:imports", "test"],
-        premerge: ["test:dev-server"],
+        premerge: ["test:all", "test:dev-server"],
         prerelease: ["mutation"],
       }),
       "check:repository": rootOnDemandChecks["check:repository"],
@@ -97,19 +87,6 @@ export default defineConfig({
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
     },
-    forceRerunTriggers: [
-      "**/package.json",
-      "**/tsconfig*.json",
-      "pnpm-lock.yaml",
-      "vite.config.ts",
-      "tools/*/vite.config.ts",
-      "**/vitest.config.*",
-      "**/vitest.*.config.*",
-      "libs/ui/storybook/**",
-      "libs/db/migrations/**",
-      "libs/config/src/worker.ts",
-      "tools/dont-review-it/src/repository/test-runtime.ts",
-    ].map((pattern) => `${import.meta.dirname}/${pattern}`),
     projects: [
       {
         extends: true,

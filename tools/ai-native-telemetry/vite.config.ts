@@ -12,6 +12,7 @@ export default defineConfig({
       ...lifecycle({
         prepush: ["check:effect", "check"],
         prepr: ["test"],
+        premerge: ["test:all"],
       }),
     },
   },

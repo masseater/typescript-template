@@ -214,19 +214,30 @@ function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>
   };
 }
 
-const testRun = {
-  test: {
-    command: "vp test run",
-    input: [
-      ...taskInput,
-      "!coverage/**",
-      { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
-    ],
-    output: [],
-  },
-} satisfies Tasks;
+const testTaskInput = [
+  ...taskInput,
+  "!coverage/**",
+  { base: "workspace", pattern: "!**/coverage/**" },
+  { base: "workspace", pattern: "pnpm-lock.yaml" },
+  { base: "workspace", pattern: "pnpm-workspace.yaml" },
+] as const;
+
+function testTasks(command: string): Tasks {
+  return {
+    test: {
+      command: `${command} --changed origin/main --passWithNoTests`,
+      input: [...testTaskInput],
+      output: [],
+    },
+    "test:all": {
+      command,
+      input: [...testTaskInput],
+      output: [],
+    },
+  };
+}
+
+const testRun = testTasks("vp test run");
 
 const sliceBoundaries = {
   check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
@@ -341,6 +352,7 @@ export {
   startOptions,
   taskInput,
   testRun,
+  testTasks,
   toolTest,
   withoutEnvFileLoader,
 };

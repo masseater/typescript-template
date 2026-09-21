@@ -373,6 +373,9 @@ describe("test ownership", () => {
   it("leaves the workspace projects out of the root test task", () => {
     expect.hasAssertions();
     expect(commands(".", "test")).toStrictEqual([
+      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts' --changed origin/main --passWithNoTests",
+    ]);
+    expect(commands(".", "test:all")).toStrictEqual([
       "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
     ]);
     expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);

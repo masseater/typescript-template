@@ -18,6 +18,7 @@ export default defineConfig({
         precommit: ["check:staged"],
         prepush: ["check:effect", "check"],
         prepr: ["test"],
+        premerge: ["test:all"],
       }),
     },
   },
