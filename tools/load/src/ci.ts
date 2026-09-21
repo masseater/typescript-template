@@ -117,5 +117,5 @@ runCli(
       LoadCiFailure: announceFailure,
     }),
   ),
-  (cause) => causeRecord("load.ci_failed", cause, { reason: "unexpected" }),
+  (cause) => causeRecord("load.ci_failed", { cause, fields: { reason: "unexpected" } }),
 );

@@ -42,5 +42,10 @@
   "home_profile_empty": "No introduction yet.",
   "locale_ja": "日本語",
   "locale_en": "English",
-  "locale_label": "Language"
+  "locale_label": "Language",
+  "field_value_missing": "Enter a value.",
+  "field_type_mismatch": "Enter a valid format.",
+  "field_pattern_mismatch": "Follow the requested format.",
+  "field_too_short": "Not enough characters.",
+  "field_too_long": "Too many characters."
 }
