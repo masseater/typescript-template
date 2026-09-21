@@ -1,59 +1,57 @@
 import type { ErrorGroup } from "./telemetry.ts";
 
 type SeenFingerprints = Readonly<Record<string, number>>;
-interface Notification extends ErrorGroup {
+type Notification = ErrorGroup & {
   readonly reason: "new" | "regressed";
-}
-interface NotificationDecision {
-  readonly notifications: Notification[];
-  readonly seen: Record<string, number>;
-}
+};
 
 const MILLISECONDS_PER_DAY = 86_400_000;
 const FORGET_AFTER_DAYS = 7;
 const quietPeriod = MILLISECONDS_PER_DAY;
 const forgetAfter = FORGET_AFTER_DAYS * MILLISECONDS_PER_DAY;
 
-function decideNotifications(
-  groups: readonly ErrorGroup[],
-  seen: SeenFingerprints,
-  now: number,
-): NotificationDecision {
-  const notifications = groups.flatMap((group): Notification[] => {
-    const lastSeen = seen[group.fingerprint];
+const decideNotifications = (asked: {
+  readonly errorGroups: readonly ErrorGroup[];
+  readonly seenFingerprints: SeenFingerprints;
+  readonly observedAtMs: number;
+}): {
+  readonly notifications: Notification[];
+  readonly seen: Record<string, number>;
+} => {
+  const notifications = asked.errorGroups.flatMap((errorGroup): Notification[] => {
+    const lastSeen = asked.seenFingerprints[errorGroup.fingerprint];
     if (lastSeen === undefined) {
-      return [{ ...group, reason: "new" }];
+      return [{ ...errorGroup, reason: "new" }];
     }
-    if (now - lastSeen >= quietPeriod) {
-      return [{ ...group, reason: "regressed" }];
+    if (asked.observedAtMs - lastSeen >= quietPeriod) {
+      return [{ ...errorGroup, reason: "regressed" }];
     }
     return [];
   });
-  const next = Object.fromEntries([
-    ...Object.entries(seen).filter(
-      ([, lastSeen]: readonly [string, number]) => now - lastSeen < forgetAfter,
+  const retainedSeen = Object.fromEntries([
+    ...Object.entries(asked.seenFingerprints).filter(
+      ([, lastSeen]: readonly [string, number]) => asked.observedAtMs - lastSeen < forgetAfter,
     ),
-    ...groups.map((group) => [group.fingerprint, now] as const),
+    ...asked.errorGroups.map(
+      (errorGroup) => [errorGroup.fingerprint, asked.observedAtMs] as const,
+    ),
   ]);
-  return { notifications, seen: next };
-}
+  return { notifications, seen: retainedSeen };
+};
 
 const MISSING_VALUE = "(値なし)";
 
-function reported(value: string | undefined): string {
-  return value ?? MISSING_VALUE;
-}
+const reported = (fieldValue: string | undefined): string => fieldValue ?? MISSING_VALUE;
 
-function formatMessage(notifications: readonly Notification[]): string {
-  return [
+const formatMessage = (notifications: readonly Notification[]): string =>
+  [
     `Cloudflare Workers で ${notifications.length} 件のエラーを検出しました。`,
     ...notifications.map(
-      (item) =>
-        `- [${item.reason === "new" ? "新規" : "再発"}] ${reported(item.service)} ${reported(item.event)} ${reported(item.tag)} ${reported(item.type)} (fingerprint ${item.fingerprint}, ${item.count} 件)`,
+      (notification) =>
+        `- [${notification.reason === "new" ? "新規" : "再発"}] ${reported(notification.service)} ${reported(notification.event)} ${reported(notification.tag)} ${reported(notification.type)} (fingerprint ${notification.fingerprint}, ${notification.count} 件)`,
     ),
     "Workers Observability で error.fingerprint を指定して検索してください。",
   ].join("\n");
-}
 
 export { decideNotifications, formatMessage };
 export type { SeenFingerprints };

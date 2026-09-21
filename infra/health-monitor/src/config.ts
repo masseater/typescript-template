@@ -37,32 +37,40 @@ type HealthMonitorEnv = typeof HealthMonitorEnvironment.Encoded;
 
 const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
   function* parseHealthMonitorConfig(input: unknown) {
-    const config = yield* Schema.decodeUnknownEffect(HealthMonitorEnvironment)(input).pipe(
+    const acceptedConfig = yield* Schema.decodeUnknownEffect(HealthMonitorEnvironment)(input).pipe(
       Effect.mapError(() => new HealthMonitorFailure({ code: "health_monitor_config_invalid" })),
     );
-    const origins = applications.map((service) => config[healthOriginKey[service]]);
+    const origins = applications.map((serviceName) => acceptedConfig[healthOriginKey[serviceName]]);
     if (!distinctOrigins(origins)) {
       return yield* new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" });
     }
-    return config;
+    return acceptedConfig;
   },
 );
 
+const healthEndpointFor = (origin: string): string => `${origin}/api/health`;
+
 const healthTargets = (
-  config: typeof HealthMonitorEnvironment.Type,
+  acceptedConfig: typeof HealthMonitorEnvironment.Type,
 ): readonly {
   readonly healthEndpoint: string;
   readonly origin: string;
   readonly service: Application;
 }[] =>
-  applications.map((service) => {
-    const origin = config[healthOriginKey[service]];
+  applications.map((serviceName) => {
+    const origin = acceptedConfig[healthOriginKey[serviceName]];
     return {
-      healthEndpoint: `${origin}/api/health`,
+      healthEndpoint: healthEndpointFor(origin),
       origin,
-      service,
+      service: serviceName,
     };
   });
 
-export { HealthMonitorFailure, healthMonitorWorker, healthOriginKey, healthTargets, parseHealthMonitorConfig };
+export {
+  healthEndpointFor,
+  healthMonitorWorker,
+  healthOriginKey,
+  healthTargets,
+  parseHealthMonitorConfig,
+};
 export type { HealthMonitorEnv };

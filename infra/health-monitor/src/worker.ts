@@ -14,35 +14,33 @@ import { probeService } from "./probe.ts";
 const health = monitorWorker<MonitorBindings & HealthMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
-      const config = yield* parseHealthMonitorConfig(env);
-      const checkedHealths = yield* Effect.all(
-        healthTargets(config).map((healthTarget) => probeService(healthTarget)),
+      const acceptedConfig = yield* parseHealthMonitorConfig(env);
+      const probeResults = yield* Effect.all(
+        healthTargets(acceptedConfig).map((healthTarget) => probeService(healthTarget)),
         {
           concurrency: "unbounded",
         },
       );
-      const previousHealth = yield* Effect.promise(async () =>
-        ctx.storage.get<HealthState>("state"),
-      );
-      const decision = decideHealthAlerts(checkedHealths, previousHealth ?? {});
-      const downServices = checkedHealths
-        .filter((checkedHealth) => !checkedHealth.healthy)
-        .map((checkedHealth) => checkedHealth.service);
+      const priorState = yield* Effect.promise(async () => ctx.storage.get<HealthState>("state"));
+      const decision = decideHealthAlerts(probeResults, priorState ?? {});
+      const down = probeResults
+        .filter((probeResult) => !probeResult.healthy)
+        .map((probeResult) => probeResult.service);
       if (decision.notifications.length > 0) {
         yield* notify({
           subject:
-            downServices.length > 0
-              ? `Cloudflare Workers: ${downServices.join(", ")} が応答しません`
+            down.length > 0
+              ? `Cloudflare Workers: ${down.join(", ")} が応答しません`
               : "Cloudflare Workers: すべてのアプリが復旧しました",
           text: formatHealthMessage(decision.notifications),
         });
       }
-      yield* Effect.promise(async () => ctx.storage.put("state", decision.healthByService));
+      yield* Effect.promise(async () => ctx.storage.put("state", decision.state));
       return {
-        down: downServices,
+        down,
         notified: decision.notifications.length,
         services: Object.fromEntries(
-          checkedHealths.map((checkedHealth) => [checkedHealth.service, checkedHealth.detail]),
+          probeResults.map((probeResult) => [probeResult.service, probeResult.detail]),
         ),
       };
     }).pipe(withSpan("HealthMonitor.check"));

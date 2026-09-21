@@ -4,9 +4,10 @@ import { bindingWith, decode } from "./environment.ts";
 
 import type { DurableObjectNamespace } from "@cloudflare/workers-types";
 
-const realtimePath = "/api/realtime";
 const userInboxBinding = "USER_INBOX";
 const userInboxClassName = "UserInbox";
+const realtimePath = "/api/realtime";
+
 const localUserInbox = {
   class_name: userInboxClassName,
   name: userInboxBinding,
@@ -23,11 +24,11 @@ const readRealtime = Effect.fn("readRealtime")(function* readRealtime(input: unk
   return { inbox: bindings[userInboxBinding] };
 });
 
-const realtimeSocketUrl = (origin: string): string => {
-  const originUrl = new URL(origin);
-  const protocol = originUrl.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${originUrl.host}${realtimePath}`;
-};
+function realtimeSocketUrl(origin: string): string {
+  const parsed = new URL(origin);
+  const protocol = parsed.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${parsed.host}${realtimePath}`;
+}
 
 export {
   localUserInbox,

@@ -13,11 +13,11 @@ const errorTypes = [
 ] as const;
 
 type ErrorType = (typeof errorTypes)[number];
-interface ErrorAttributes {
+type ErrorAttributes = {
   readonly "error.fingerprint": string;
   readonly "error.locations": string;
   readonly "error.type"?: string;
-}
+};
 
 const maximumLocations = 20;
 const maximumLocationsLength = 2048;

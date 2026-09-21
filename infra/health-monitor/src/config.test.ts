@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { HealthMonitorFailure, healthTargets, parseHealthMonitorConfig } from "./config.ts";
+import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
   INTERNAL_DASHBOARD_ORIGIN: "https://wiki.example.com",
@@ -40,31 +40,31 @@ describe.for([
   [{ SERVICE_MEMBER_ORIGIN: "http://app.example.com" }],
   [{ INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com/docs" }],
 ] as const)("invalid settings %s", ([override]) => {
-  const it = test.extend("configFailure", async () =>
-    Effect.runPromise(Effect.flip(parseHealthMonitorConfig({ ...valid, ...override }))),
-  );
-
-  it("refuses the configuration", ({ configFailure }) => {
-    expect(configFailure).toStrictEqual(
-      new HealthMonitorFailure({ code: "health_monitor_config_invalid" }),
+  const it = test.extend("failureCode", async () => {
+    const configFailure = await Effect.runPromise(
+      Effect.flip(parseHealthMonitorConfig({ ...valid, ...override })),
     );
+    return configFailure.code;
+  });
+
+  it("refuses the configuration", ({ failureCode }) => {
+    expect(failureCode).toBe("health_monitor_config_invalid");
   });
 });
 
 describe("shared origins", () => {
-  const it = test.extend("configFailure", async () =>
-    Effect.runPromise(
+  const it = test.extend("failureCode", async () => {
+    const configFailure = await Effect.runPromise(
       Effect.flip(
         parseHealthMonitorConfig({ ...valid, INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com" }),
       ),
-    ),
-  );
+    );
+    return configFailure.code;
+  });
 
   it("refuses a configuration that points two applications at the same origin", ({
-    configFailure,
+    failureCode,
   }) => {
-    expect(configFailure).toStrictEqual(
-      new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" }),
-    );
+    expect(failureCode).toBe("health_monitor_origins_must_differ");
   });
 });

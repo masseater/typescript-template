@@ -1,13 +1,12 @@
 import { Cause, Clock, Context, Effect, Fiber, Predicate, Tracer } from "effect";
 
-import { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
+import { annotateLogs, annotateSpan, withSpan, type Attributes } from "./annotations.ts";
 import { CurrentRequest, type RequestContext } from "./current-request.ts";
 import {
   errorAttributes,
   errorFingerprint,
   fingerprintIdentity,
   identifierPattern,
-  type ErrorAttributes,
 } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { httpMethod, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
@@ -83,19 +82,26 @@ const correlatedResponse = (correlated: {
   });
 };
 
-export const failureAttributesOf = (
-  failed: unknown,
-): ErrorAttributes & { readonly "error.tag"?: string } => {
+export const failureAttributesOf = (failed: unknown): Attributes => {
   const attributes = errorAttributes(failed);
   const failureTag = Predicate.isObject(failed) ? failed["_tag"] : undefined;
   if (typeof failureTag !== "string" || !identifierPattern.test(failureTag)) {
-    return attributes;
+    return {
+      "error.fingerprint": attributes["error.fingerprint"],
+      "error.locations": attributes["error.locations"],
+      ...(attributes["error.type"] === undefined ? {} : { "error.type": attributes["error.type"] }),
+    };
   }
   const fingerprint = errorFingerprint(
     fingerprintIdentity(failed),
     `${failureTag}\n${attributes["error.locations"]}`,
   );
-  return { ...attributes, "error.fingerprint": fingerprint, "error.tag": failureTag };
+  return {
+    "error.fingerprint": fingerprint,
+    "error.locations": attributes["error.locations"],
+    "error.tag": failureTag,
+    ...(attributes["error.type"] === undefined ? {} : { "error.type": attributes["error.type"] }),
+  };
 };
 
 export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> =>

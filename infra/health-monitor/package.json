@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/worker.ts",
-    "./config": "./src/config.ts"
+    "./config": "./src/config.ts",
+    "./worker": "./src/worker.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
@@ -15,6 +15,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@types/node": "catalog:",
+    "msw": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

@@ -1,1 +1,3 @@
-export { userInboxBinding, userInboxClassName } from "@repo/config";
+export const userInboxBinding = "USER_INBOX";
+
+export const userInboxClassName = "UserInbox";

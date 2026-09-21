@@ -16,12 +16,22 @@ type ProbeResult = {
 
 type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
 
-const requestTimeoutMs = 10_000;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 const HealthPayload = Schema.Struct({
   ok: Schema.Literal(true),
   release: Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u)),
   service: Schema.String,
+});
+
+const observedProbe = (asked: {
+  readonly healthTarget: HealthTarget;
+  readonly healthy: boolean;
+  readonly detail: string;
+}): ProbeResult => ({
+  detail: asked.detail,
+  healthy: asked.healthy,
+  service: asked.healthTarget.service,
 });
 
 const requestHealth = (
@@ -31,60 +41,46 @@ const requestHealth = (
     fetch(healthTarget.healthEndpoint, {
       headers: { accept: "application/json" },
       redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(requestTimeoutMs)]),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
     }),
   ).pipe(Effect.option);
 
-const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHealthPayload(
+const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   healthTarget: HealthTarget,
   healthResponse: ProbeResponse,
 ) {
-  const outcomeOf = (asked: {
-    readonly healthy: boolean;
-    readonly detail: string;
-  }): ProbeResult => ({
-    detail: asked.detail,
-    healthy: asked.healthy,
-    service: healthTarget.service,
-  });
   const responseBody = yield* Effect.tryPromise(async (): Promise<unknown> =>
     healthResponse.json(),
   ).pipe(Effect.option);
   if (Option.isNone(responseBody)) {
-    return outcomeOf({ detail: "body_unreadable", healthy: false });
+    return observedProbe({ detail: "body_unreadable", healthTarget, healthy: false });
   }
-  const healthPayload = yield* Schema.decodeUnknownEffect(HealthPayload)(responseBody.value).pipe(
+  const decodedPayload = yield* Schema.decodeUnknownEffect(HealthPayload)(responseBody.value).pipe(
     Effect.option,
   );
-  if (Option.isNone(healthPayload) || healthPayload.value.service !== healthTarget.service) {
-    return outcomeOf({ detail: "payload_invalid", healthy: false });
+  if (Option.isNone(decodedPayload) || decodedPayload.value.service !== healthTarget.service) {
+    return observedProbe({ detail: "payload_invalid", healthTarget, healthy: false });
   }
-  return outcomeOf({
-    detail: `release_${healthPayload.value.release}`,
+  return observedProbe({
+    detail: `release_${decodedPayload.value.release}`,
+    healthTarget,
     healthy: true,
   });
 });
 
 const probeService = Effect.fn("probeService")(function* probeService(healthTarget: HealthTarget) {
-  const outcomeOf = (asked: {
-    readonly healthy: boolean;
-    readonly detail: string;
-  }): ProbeResult => ({
-    detail: asked.detail,
-    healthy: asked.healthy,
-    service: healthTarget.service,
-  });
   const healthResponse = yield* requestHealth(healthTarget);
   if (Option.isNone(healthResponse)) {
-    return outcomeOf({ detail: "unreachable", healthy: false });
+    return observedProbe({ detail: "unreachable", healthTarget, healthy: false });
   }
   if (!healthResponse.value.ok) {
-    return outcomeOf({
+    return observedProbe({
       detail: `status_${healthResponse.value.status}`,
+      healthTarget,
       healthy: false,
     });
   }
-  return yield* decodeHealthPayload(healthTarget, healthResponse.value);
+  return yield* payloadResult(healthTarget, healthResponse.value);
 });
 
 export { probeService };

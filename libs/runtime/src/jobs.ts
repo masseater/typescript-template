@@ -30,15 +30,7 @@ class Process extends WorkflowEntrypoint<JobsBindings, JobPayload> {
   }
 }
 
-async function consumeJobs(
-  batch: {
-    readonly messages: readonly {
-      readonly body: unknown;
-      readonly ack: () => void;
-    }[];
-  },
-  env: JobsBindings,
-): Promise<void> {
+async function consumeJobs(batch: MessageBatch<unknown>, env: JobsBindings): Promise<void> {
   for (const message of batch.messages) {
     const payload = Schema.decodeUnknownSync(JobPayload)(message.body);
     await env[jobsWorkflowBinding].create({ id: payload.jobId, params: payload });
