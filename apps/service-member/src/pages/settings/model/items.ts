@@ -1,6 +1,7 @@
 type ListedSetting = {
   readonly label: string;
   readonly to:
+    | "/settings/agreements"
     | "/settings/ai"
     | "/settings/email"
     | "/settings/interview"
@@ -21,6 +22,7 @@ const settingsItems = [
   { label: "AI インタビュー", to: "/settings/interview" },
   { label: "AI と API", to: "/settings/ai" },
   { label: "プランと解約", to: "/settings/plan" },
+  { label: "規約への同意", to: "/settings/agreements" },
   { label: "退会", to: "/settings/leave" },
 ] as const satisfies readonly ListedSetting[];
 

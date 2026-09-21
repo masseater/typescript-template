@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MemberRouteImport } from './routes/_member'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as WelcomeRouteImport } from './routes/_welcome'
+import { Route as MemberAgreementRouteImport } from './routes/_member/agreement'
 import { Route as MemberHomeRouteImport } from './routes/_member/home'
 import { Route as MemberMessagesRouteImport } from './routes/_member/messages'
 import { Route as MemberNotificationsRouteImport } from './routes/_member/notifications'
@@ -22,13 +23,16 @@ import { Route as MemberUpgradeRouteImport } from './routes/_member/upgrade'
 import { Route as PublicIndexRouteImport } from './routes/_public/index'
 import { Route as PublicContactRouteImport } from './routes/_public/contact'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
+import { Route as PublicPrivacyRouteImport } from './routes/_public/privacy'
 import { Route as PublicSignupRouteImport } from './routes/_public/signup'
+import { Route as PublicTermsRouteImport } from './routes/_public/terms'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as PublicVerifyEmailChangeRouteImport } from './routes/_public/verify-email-change'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as MemberBoardIndexRouteImport } from './routes/_member/board.index'
 import { Route as MemberBoardIdRouteImport } from './routes/_member/board.$id'
 import { Route as MemberSettingsIndexRouteImport } from './routes/_member/settings.index'
+import { Route as MemberSettingsAgreementsRouteImport } from './routes/_member/settings.agreements'
 import { Route as MemberSettingsAiRouteImport } from './routes/_member/settings.ai'
 import { Route as MemberSettingsEmailRouteImport } from './routes/_member/settings.email'
 import { Route as MemberSettingsInterviewRouteImport } from './routes/_member/settings.interview'
@@ -57,6 +61,11 @@ const PublicRoute = PublicRouteImport.update({
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/_welcome',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MemberAgreementRoute = MemberAgreementRouteImport.update({
+  id: '/agreement',
+  path: '/agreement',
+  getParentRoute: () => MemberRoute,
 } as any)
 const MemberHomeRoute = MemberHomeRouteImport.update({
   id: '/home',
@@ -108,9 +117,19 @@ const PublicLoginRoute = PublicLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicPrivacyRoute = PublicPrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicSignupRoute = PublicSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicTermsRoute = PublicTermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicVerifyEmailRoute = PublicVerifyEmailRouteImport.update({
@@ -143,6 +162,12 @@ const MemberSettingsIndexRoute = MemberSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberSettingsAgreementsRoute =
+  MemberSettingsAgreementsRouteImport.update({
+    id: '/settings/agreements',
+    path: '/settings/agreements',
+    getParentRoute: () => MemberRoute,
+  } as any)
 const MemberSettingsAiRoute = MemberSettingsAiRouteImport.update({
   id: '/settings/ai',
   path: '/settings/ai',
@@ -228,6 +253,7 @@ const WelcomeWelcomeProfileRoute = WelcomeWelcomeProfileRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/agreement': typeof MemberAgreementRoute
   '/home': typeof MemberHomeRoute
   '/messages': typeof MemberMessagesRoute
   '/notifications': typeof MemberNotificationsRoute
@@ -237,11 +263,14 @@ export interface FileRoutesByFullPath {
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
+  '/privacy': typeof PublicPrivacyRoute
   '/signup': typeof PublicSignupRoute
+  '/terms': typeof PublicTermsRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/board/$id': typeof MemberBoardIdRoute
+  '/settings/agreements': typeof MemberSettingsAgreementsRoute
   '/settings/ai': typeof MemberSettingsAiRoute
   '/settings/email': typeof MemberSettingsEmailRoute
   '/settings/interview': typeof MemberSettingsInterviewRoute
@@ -263,6 +292,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof PublicIndexRoute
+  '/agreement': typeof MemberAgreementRoute
   '/home': typeof MemberHomeRoute
   '/messages': typeof MemberMessagesRoute
   '/notifications': typeof MemberNotificationsRoute
@@ -272,11 +302,14 @@ export interface FileRoutesByTo {
   '/upgrade': typeof MemberUpgradeRoute
   '/contact': typeof PublicContactRoute
   '/login': typeof PublicLoginRoute
+  '/privacy': typeof PublicPrivacyRoute
   '/signup': typeof PublicSignupRoute
+  '/terms': typeof PublicTermsRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/board/$id': typeof MemberBoardIdRoute
+  '/settings/agreements': typeof MemberSettingsAgreementsRoute
   '/settings/ai': typeof MemberSettingsAiRoute
   '/settings/email': typeof MemberSettingsEmailRoute
   '/settings/interview': typeof MemberSettingsInterviewRoute
@@ -301,6 +334,7 @@ export interface FileRoutesById {
   '/_member': typeof MemberRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_welcome': typeof WelcomeRouteWithChildren
+  '/_member/agreement': typeof MemberAgreementRoute
   '/_member/home': typeof MemberHomeRoute
   '/_member/messages': typeof MemberMessagesRoute
   '/_member/notifications': typeof MemberNotificationsRoute
@@ -310,12 +344,15 @@ export interface FileRoutesById {
   '/_member/upgrade': typeof MemberUpgradeRoute
   '/_public/contact': typeof PublicContactRoute
   '/_public/login': typeof PublicLoginRoute
+  '/_public/privacy': typeof PublicPrivacyRoute
   '/_public/signup': typeof PublicSignupRoute
+  '/_public/terms': typeof PublicTermsRoute
   '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/_public/verify-email-change': typeof PublicVerifyEmailChangeRoute
   '/api/$': typeof ApiSplatRoute
   '/_public/': typeof PublicIndexRoute
   '/_member/board/$id': typeof MemberBoardIdRoute
+  '/_member/settings/agreements': typeof MemberSettingsAgreementsRoute
   '/_member/settings/ai': typeof MemberSettingsAiRoute
   '/_member/settings/email': typeof MemberSettingsEmailRoute
   '/_member/settings/interview': typeof MemberSettingsInterviewRoute
@@ -339,6 +376,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/agreement'
     | '/home'
     | '/messages'
     | '/notifications'
@@ -348,11 +386,14 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/contact'
     | '/login'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/verify-email-change'
     | '/api/$'
     | '/board/$id'
+    | '/settings/agreements'
     | '/settings/ai'
     | '/settings/email'
     | '/settings/interview'
@@ -374,6 +415,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/agreement'
     | '/home'
     | '/messages'
     | '/notifications'
@@ -383,11 +425,14 @@ export interface FileRouteTypes {
     | '/upgrade'
     | '/contact'
     | '/login'
+    | '/privacy'
     | '/signup'
+    | '/terms'
     | '/verify-email'
     | '/verify-email-change'
     | '/api/$'
     | '/board/$id'
+    | '/settings/agreements'
     | '/settings/ai'
     | '/settings/email'
     | '/settings/interview'
@@ -411,6 +456,7 @@ export interface FileRouteTypes {
     | '/_member'
     | '/_public'
     | '/_welcome'
+    | '/_member/agreement'
     | '/_member/home'
     | '/_member/messages'
     | '/_member/notifications'
@@ -420,12 +466,15 @@ export interface FileRouteTypes {
     | '/_member/upgrade'
     | '/_public/contact'
     | '/_public/login'
+    | '/_public/privacy'
     | '/_public/signup'
+    | '/_public/terms'
     | '/_public/verify-email'
     | '/_public/verify-email-change'
     | '/api/$'
     | '/_public/'
     | '/_member/board/$id'
+    | '/_member/settings/agreements'
     | '/_member/settings/ai'
     | '/_member/settings/email'
     | '/_member/settings/interview'
@@ -475,6 +524,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_member/agreement': {
+      id: '/_member/agreement'
+      path: '/agreement'
+      fullPath: '/agreement'
+      preLoaderRoute: typeof MemberAgreementRouteImport
+      parentRoute: typeof MemberRoute
     }
     '/_member/home': {
       id: '/_member/home'
@@ -546,11 +602,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLoginRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/privacy': {
+      id: '/_public/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PublicPrivacyRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/signup': {
       id: '/_public/signup'
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof PublicSignupRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/terms': {
+      id: '/_public/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof PublicTermsRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/verify-email': {
@@ -593,6 +663,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof MemberSettingsIndexRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/agreements': {
+      id: '/_member/settings/agreements'
+      path: '/settings/agreements'
+      fullPath: '/settings/agreements'
+      preLoaderRoute: typeof MemberSettingsAgreementsRouteImport
       parentRoute: typeof MemberRoute
     }
     '/_member/settings/ai': {
@@ -711,6 +788,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface MemberRouteChildren {
+  MemberAgreementRoute: typeof MemberAgreementRoute
   MemberHomeRoute: typeof MemberHomeRoute
   MemberMessagesRoute: typeof MemberMessagesRoute
   MemberNotificationsRoute: typeof MemberNotificationsRoute
@@ -719,6 +797,7 @@ interface MemberRouteChildren {
   MemberSupportRoute: typeof MemberSupportRoute
   MemberUpgradeRoute: typeof MemberUpgradeRoute
   MemberBoardIdRoute: typeof MemberBoardIdRoute
+  MemberSettingsAgreementsRoute: typeof MemberSettingsAgreementsRoute
   MemberSettingsAiRoute: typeof MemberSettingsAiRoute
   MemberSettingsEmailRoute: typeof MemberSettingsEmailRoute
   MemberSettingsInterviewRoute: typeof MemberSettingsInterviewRoute
@@ -735,6 +814,7 @@ interface MemberRouteChildren {
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
+  MemberAgreementRoute: MemberAgreementRoute,
   MemberHomeRoute: MemberHomeRoute,
   MemberMessagesRoute: MemberMessagesRoute,
   MemberNotificationsRoute: MemberNotificationsRoute,
@@ -743,6 +823,7 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberSupportRoute: MemberSupportRoute,
   MemberUpgradeRoute: MemberUpgradeRoute,
   MemberBoardIdRoute: MemberBoardIdRoute,
+  MemberSettingsAgreementsRoute: MemberSettingsAgreementsRoute,
   MemberSettingsAiRoute: MemberSettingsAiRoute,
   MemberSettingsEmailRoute: MemberSettingsEmailRoute,
   MemberSettingsInterviewRoute: MemberSettingsInterviewRoute,
@@ -764,7 +845,9 @@ const MemberRouteWithChildren =
 interface PublicRouteChildren {
   PublicContactRoute: typeof PublicContactRoute
   PublicLoginRoute: typeof PublicLoginRoute
+  PublicPrivacyRoute: typeof PublicPrivacyRoute
   PublicSignupRoute: typeof PublicSignupRoute
+  PublicTermsRoute: typeof PublicTermsRoute
   PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
   PublicVerifyEmailChangeRoute: typeof PublicVerifyEmailChangeRoute
   PublicIndexRoute: typeof PublicIndexRoute
@@ -773,7 +856,9 @@ interface PublicRouteChildren {
 const PublicRouteChildren: PublicRouteChildren = {
   PublicContactRoute: PublicContactRoute,
   PublicLoginRoute: PublicLoginRoute,
+  PublicPrivacyRoute: PublicPrivacyRoute,
   PublicSignupRoute: PublicSignupRoute,
+  PublicTermsRoute: PublicTermsRoute,
   PublicVerifyEmailRoute: PublicVerifyEmailRoute,
   PublicVerifyEmailChangeRoute: PublicVerifyEmailChangeRoute,
   PublicIndexRoute: PublicIndexRoute,

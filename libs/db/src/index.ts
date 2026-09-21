@@ -41,6 +41,18 @@ export {
 } from "./member-profile.ts";
 export type { PhotoKeys, VisibilitySettings } from "./member-profile.ts";
 export {
+  AgreementRequired,
+  AgreementVersionUnavailable,
+  acceptAgreementVersions,
+  acceptedAgreements,
+  pendingAgreementKinds,
+  pendingAgreements,
+  publishedAgreement,
+  requireCurrentAgreements,
+  requireSignupAgreements,
+} from "./agreement.ts";
+export type { AcceptedAgreement, PublishedAgreement } from "./agreement.ts";
+export {
   InterviewConflict,
   InterviewLimitReached,
   countInterviewTurn,

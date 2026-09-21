@@ -1,3 +1,5 @@
+export { AGREEMENT_KIND, agreementKinds, agreementPolicies } from "./agreements.ts";
+export type { AgreementKind, AgreementPolicy } from "./agreements.ts";
 export {
   APPLICATION,
   ApplicationName,
