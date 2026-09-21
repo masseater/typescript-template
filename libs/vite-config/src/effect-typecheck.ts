@@ -188,11 +188,14 @@ const evaluateTypecheck = (
   baseline: TypecheckBaseline,
 ): TypecheckVerdict => {
   const alwaysFail = alwaysFailing(diagnostics);
-  const countable = countDiagnostics(
-    diagnostics
-      .filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code))
-      .map((diagnostic) => ({ ...diagnostic, message: portableMessage(diagnostic.message) })),
-  );
+  const countableDiagnostics: Diagnostic[] = [];
+  for (const diagnostic of diagnostics) {
+    if (missingExportCodeSet.has(diagnostic.code)) {
+      continue;
+    }
+    countableDiagnostics.push({ ...diagnostic, message: portableMessage(diagnostic.message) });
+  }
+  const countable = countDiagnostics(countableDiagnostics);
   const expected = countDiagnostics(
     baselinedEntries(baseline, workspace).flatMap((entry) =>
       Array.from({ length: entry.count }, () => ({
