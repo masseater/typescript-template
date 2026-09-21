@@ -27,7 +27,7 @@ function MemberFrame({
           <MemberTopBar user={user} />
           <div className="min-h-0 flex-1 overflow-auto">{children}</div>
         </div>
-        <MemberTabs memberBoard={memberBoard} navBadges={navBadges} />
+        <MemberTabs memberBoard={memberBoard} navBadges={navBadges} profileId={user.id} />
       </div>
     </ToastProvider>
   );

@@ -17,6 +17,7 @@ const FeedItem = Schema.Struct({
   actorId: Schema.String,
   actorName: Schema.String,
   kind: Schema.Literal("profile"),
+  profile: Schema.String,
   updatedAt: Schema.Number,
 });
 

@@ -5,6 +5,7 @@ import { memberHasPaidPlan, memberNavItems } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
+import type { SessionView } from "@repo/auth-ui";
 import type { ReactElement } from "react";
 import type { NavBadges } from "../model/navigation.ts";
 
@@ -15,9 +16,9 @@ function MemberRail({
 }: Readonly<{
   memberBoard: boolean;
   navBadges?: NavBadges;
-  user: Readonly<{ id: string; name: string }>;
+  user: SessionView["user"];
 }>): ReactElement {
-  const items = memberNavItems(memberHasPaidPlan, memberBoard, navBadges);
+  const items = memberNavItems(memberHasPaidPlan, memberBoard, user.id, navBadges);
   return (
     <aside className="hidden w-32 shrink-0 flex-col border-r border-border bg-card md:flex">
       <div className="border-b border-border px-2 py-3 text-center">

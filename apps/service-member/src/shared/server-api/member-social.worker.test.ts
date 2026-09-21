@@ -28,6 +28,7 @@ const testLayer = Layer.merge(
 const addUser = (added: {
   readonly userId: string;
   readonly emailVerified?: boolean;
+  readonly profile?: string;
   readonly visibility?: ProfileVisibility;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
   query(async (database): Promise<void> => {
@@ -37,6 +38,7 @@ const addUser = (added: {
       emailVerified: added.emailVerified ?? true,
       id: added.userId,
       name: added.userId,
+      profile: added.profile ?? "",
       role: ROLE.member,
       updatedAt: recordedAt,
       visibility: added.visibility ?? PROFILE_VISIBILITY.allMembers,
@@ -46,14 +48,19 @@ const addUser = (added: {
 it.effect("omits members the viewer does not follow", () =>
   Effect.gen(function* program() {
     yield* addUser({ userId: "viewer" });
-    yield* addUser({ userId: "followed" });
+    yield* addUser({ profile: "近況です。", userId: "followed" });
     yield* addUser({ userId: "stranger" });
     yield* followMember("viewer", "followed");
     const feed = yield* homeFeed("viewer");
-    assert.deepStrictEqual(
-      feed.map((item) => item.actorId),
-      ["followed"],
-    );
+    assert.deepStrictEqual(feed, [
+      {
+        actorId: "followed",
+        actorName: "followed",
+        kind: "profile",
+        profile: "近況です。",
+        updatedAt: recordedAt.getTime(),
+      },
+    ]);
   }).pipe(Effect.provide(testLayer)),
 );
 
