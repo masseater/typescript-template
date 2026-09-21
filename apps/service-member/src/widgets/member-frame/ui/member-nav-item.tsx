@@ -14,18 +14,18 @@ function MemberNavItemLink({
     item.id === "home"
       ? ({ exact: true, includeSearch: false } as const)
       : ({ includeSearch: false } as const);
+  const name = item.paid === true ? `${item.label}（有料）` : item.label;
   return (
-    <div className={layout === "tab" ? "min-w-0 flex-1" : undefined}>
+    <div className={layout === "tab" ? "flex-1" : undefined}>
       <NavigationLink
         to={item.to}
         variant="side"
         activeOptions={activeOptions}
-        title={item.label}
-        aria-label={item.label}
+        title={name}
+        aria-label={name}
+        className={layout === "tab" ? "px-1 py-2 text-center" : "px-3 py-2"}
       >
-        <span
-          className={`flex items-center gap-1 ${layout === "tab" ? "flex-col justify-center" : "flex-col"}`}
-        >
+        <span className="flex flex-col items-center gap-1">
           <span className="relative">
             <Icon icon={item.icon} />
             {item.badge === undefined || item.badge === 0 ? null : (
@@ -34,12 +34,16 @@ function MemberNavItemLink({
               </span>
             )}
           </span>
-          <span className="flex max-w-full items-center justify-center gap-1 truncate text-sm leading-none">
-            <span className="truncate">{item.label}</span>
-            {item.paid === true ? (
-              <span className="shrink-0 font-bold text-muted-foreground">有料</span>
-            ) : null}
-          </span>
+          {layout === "rail" ? (
+            <span className="flex items-center justify-center gap-1 text-sm leading-none">
+              <span>{item.label}</span>
+              {item.paid === true ? (
+                <span className="font-bold text-muted-foreground">有料</span>
+              ) : null}
+            </span>
+          ) : item.paid === true ? (
+            <span className="text-sm leading-none font-bold text-muted-foreground">有料</span>
+          ) : null}
         </span>
       </NavigationLink>
     </div>
