@@ -27,7 +27,6 @@ const awaitingPresetPackages = [
   "infra/cloudflare/**",
   "infra/error-monitor/**",
   "infra/health-monitor/**",
-  "infra/local/**",
   "libs/auth/**",
   "libs/db/**",
   "libs/observability/**",
@@ -274,8 +273,7 @@ const lintOptions = {
       files: [
         "infra/budget-monitor/**",
         "infra/cloudflare/**",
-        "infra/local/**",
-        "libs/config/**",
+              "libs/config/**",
         "libs/vite-config/**",
         "tools/dev/**",
         "tools/dont-review-it/src/repository/client-bundle.ts",
