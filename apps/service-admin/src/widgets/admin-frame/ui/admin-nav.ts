@@ -48,4 +48,3 @@ const adminProductName = "管理画面";
 const collapsedAdminMark = "管理";
 
 export { adminNavGroups, adminPageTitles, adminProductName, collapsedAdminMark };
-export type { AdminNavPath };

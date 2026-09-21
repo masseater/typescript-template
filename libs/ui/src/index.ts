@@ -15,6 +15,7 @@ export { DropdownMenuTrigger } from "./shared/ui/dropdown-menu-trigger";
 export { Field } from "./shared/ui/field";
 export { FieldValidationMessageProvider } from "./shared/ui/field-validation-message-provider";
 export type { FieldValidationMessages } from "./shared/ui/field-validation-messages";
+export type { UiNode } from "./shared/ui/types";
 export { FormColumn } from "./shared/ui/form-column";
 export { Heading } from "./shared/ui/heading";
 export { Icon } from "./shared/ui/icon";

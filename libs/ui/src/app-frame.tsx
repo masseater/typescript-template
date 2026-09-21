@@ -2,13 +2,13 @@ import { useAtom } from "@effect/atom-react";
 import { useLocation } from "@tanstack/react-router";
 import { Atom } from "effect/unstable/reactivity";
 import { MenuIcon, PanelLeftIcon } from "lucide-react";
-import { useId, type ReactElement, type ReactNode, type ReactPortal } from "react";
+import { useId, type ReactElement } from "react";
 
 import { localState } from "./local-state.ts";
 import { Icon } from "./shared/ui/icon.tsx";
 import { NavigationLink } from "./shared/ui/navigation-link.tsx";
 
-type FrameNode = Readonly<Exclude<ReactNode, ReactPortal>>;
+import type { UiNode } from "./shared/ui/types.ts";
 
 type AppFrameDestination = Readonly<{
   badge?: number;
@@ -336,8 +336,8 @@ const FrameHeader = ({
 }: Readonly<{
   collapsed: boolean;
   compact: boolean;
-  headerActions: FrameNode;
-  headerLeading: FrameNode;
+  headerActions: UiNode;
+  headerLeading: UiNode;
   navigationId: string;
   navigationOpen: boolean;
   onToggleCollapsed: () => void;
@@ -413,13 +413,13 @@ const AppFrame = ({
   title,
 }: Readonly<{
   bottomTabs?: boolean;
-  children: FrameNode;
+  children: UiNode;
   collapsedMark: string;
   defaultCollapsed?: boolean;
   density?: "compact" | "regular";
   footer: (frame: Readonly<{ collapsed: boolean }>) => ReactElement;
-  headerActions?: FrameNode;
-  headerLeading?: FrameNode;
+  headerActions?: UiNode;
+  headerLeading?: UiNode;
   homeTo?: string;
   navigationId: string;
   productName: string;
@@ -492,4 +492,3 @@ const AppFrame = ({
 };
 
 export { AppFrame };
-export type { AppFrameDestination, AppFrameSection };

@@ -10,9 +10,7 @@ import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 const collapsedMemberMark = "ユーザー";
 
-function memberDestinationTo(
-  item: ReturnType<typeof memberNavItems>[number],
-): string {
+function memberDestinationTo(item: ReturnType<typeof memberNavItems>[number]): string {
   if (item.id === "profile") {
     return `/users/${item.params.id}`;
   }

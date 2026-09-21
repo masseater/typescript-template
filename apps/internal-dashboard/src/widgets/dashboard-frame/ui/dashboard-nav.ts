@@ -53,4 +53,3 @@ const dashboardProductName = "社内ダッシュボード";
 const collapsedDashboardMark = "社内";
 
 export { collapsedDashboardMark, dashboardNavGroups, dashboardPageTitles, dashboardProductName };
-export type { DashboardNavPath };

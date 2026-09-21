@@ -1,10 +1,8 @@
-import { Avatar } from "@repo/ui";
+import { Avatar, type UiNode } from "@repo/ui";
 
 import { SocialLinks } from "#shared/social-link";
 
-import type { ReactElement, ReactNode, ReactPortal } from "react";
-
-type MemberPageContent = Readonly<Exclude<ReactNode, ReactPortal>>;
+import type { ReactElement } from "react";
 
 function MemberPage({
   actions,
@@ -16,8 +14,8 @@ function MemberPage({
   place,
   socialLinks,
 }: Readonly<{
-  actions?: MemberPageContent;
-  biography: MemberPageContent;
+  actions?: UiNode;
+  biography: UiNode;
   framed?: boolean;
   joinedLabel?: string;
   name: string;
