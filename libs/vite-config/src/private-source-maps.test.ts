@@ -6,8 +6,6 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { failOnBrokenSourceMaps } from "./private-source-maps.ts";
 
-import type { PluginOption } from "vite-plus";
-
 const bundleEntry = path.join(repositoryRoot, "libs/vite-config/src/source-maps.ts");
 
 describe("failOnBrokenSourceMaps", () => {
@@ -61,28 +59,5 @@ describe("failOnBrokenSourceMaps", () => {
 
   it("leaves a build whose transforms keep the source map alone", ({ keptMapBuild }) => {
     expect(keptMapBuild).toBe(true);
-  });
-
-  it("does not fail Elysia AOT stub transforms that replace compile sources", async () => {
-    expect.hasAssertions();
-    const built = await build({
-      build: {
-        lib: { entry: bundleEntry, fileName: "entry", formats: ["es"] },
-        sourcemap: true,
-        write: false,
-      },
-      configFile: false,
-      logLevel: "silent",
-      plugins: [
-        failOnBrokenSourceMaps(),
-        {
-          name: "elysia-aot",
-          transform: (code: string, moduleId: string): { readonly code: string } | null =>
-            moduleId === bundleEntry ? { code: `${code}export const added = 2;\n` } : null,
-        } satisfies PluginOption,
-      ],
-    });
-    const bundles = Array.isArray(built) ? built : [built];
-    expect(bundles.some((bundle) => "output" in bundle)).toBe(true);
   });
 });

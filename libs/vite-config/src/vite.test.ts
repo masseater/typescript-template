@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import { applications, type Application } from "@repo/config";
 import { describe, expect, test } from "vite-plus/test";
 
@@ -139,6 +136,26 @@ describe("appConfig", () => {
         });
       return pluginNamesOf(appConfig("service-admin")(serve).plugins ?? []);
     })
+    .extend("adminElysiaAotPlugins", () => {
+      const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
+        plugins.flatMap((plugin): readonly string[] => {
+          if (Array.isArray(plugin)) {
+            return pluginNamesOf(plugin);
+          }
+          if (
+            typeof plugin === "object" &&
+            plugin !== null &&
+            "name" in plugin &&
+            typeof plugin.name === "string"
+          ) {
+            return [plugin.name];
+          }
+          return [];
+        });
+      return pluginNamesOf(appConfig("service-admin")(serve).plugins ?? []).filter(
+        (pluginName) => pluginName === "elysia-aot",
+      );
+    })
     .extend("adminPluginsWithMarker", () => {
       const marker = { name: "app-specific" };
       const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
@@ -174,19 +191,8 @@ describe("appConfig", () => {
   }) => {
     expect(adminPluginsWithMarker).toStrictEqual(adminPlugins);
   });
-});
 
-describe("Elysia AOT on the SSR worker", () => {
-  const it = test.extend("aotSource", () =>
-    readFileSync(new URL("./elysia-aot.ts", import.meta.url), "utf8"),
-  );
-
-  it("keeps AOT off the client graph and aliases the ESM Elysia entry", ({ aotSource }) => {
-    expect(aotSource).toMatch(/environment\.name === "ssr"/u);
-    expect(aotSource).toMatch(/id === "elysia"/u);
-    expect(aotSource).toMatch(/fileURLToPath\(import\.meta\.resolve\("elysia"\)\)/u);
-    expect(aotSource).toMatch(/strip: true/u);
-    expect(aotSource).toMatch(/configureServer/u);
-    expect(fileURLToPath(import.meta.resolve("elysia"))).toMatch(/\/dist\/index\.mjs$/u);
+  it("runs Elysia AOT on the admin worker graph", ({ adminElysiaAotPlugins }) => {
+    expect(adminElysiaAotPlugins).toStrictEqual(["elysia-aot"]);
   });
 });

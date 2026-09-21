@@ -8,9 +8,9 @@ export default defineConfig({
       onlyBundle: ["@better-auth/core", "better-call", "drizzle-orm", "effect", "msgpackr"],
     },
     entry: { index: "src/worker.ts" },
-    format: "esm",
+    format: "esm" as const,
     outExtensions: () => ({ js: ".js" }),
-    platform: "browser",
+    platform: "browser" as const,
     target: "es2023",
   },
   run: {

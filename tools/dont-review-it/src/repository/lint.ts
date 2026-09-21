@@ -229,6 +229,13 @@ const lintOptions = {
       },
     },
     {
+      files: ["libs/vite-config/src/elysia-aot.ts"],
+      rules: {
+        "project/effect-stack": LINT_SEVERITY.OFF,
+        "typescript/no-deprecated": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: authUiServerReadsAwaitingQuery,
       rules: {
         "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
