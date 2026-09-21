@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { appRun, effectRun, lifecycle } from "./vite.ts";
+import { appRun, coveredTestableLibraryRun, effectRun, lifecycle } from "./vite.ts";
 
 describe("lifecycle", () => {
   it("fills omitted stages with inherited gates only", () => {
@@ -27,17 +27,30 @@ describe("lifecycle", () => {
     });
   });
 
-  it("keeps the effect workspace on typecheck before push", () => {
+  it("keeps the effect workspace on typecheck and import checks before push", () => {
     expect.hasAssertions();
-    expect(effectRun.tasks.prepush).toStrictEqual({
+    expect(effectRun.tasks!["prepush"]).toStrictEqual({
       command: [],
-      dependsOn: ["precommit", "check:effect"],
+      dependsOn: ["precommit", "check:effect", "check:imports"],
     });
   });
 
   it("starts and previews an app without a package script", () => {
     expect.hasAssertions();
-    expect(appRun.tasks.dev).toStrictEqual({ cache: false, command: "vp dev" });
-    expect(appRun.tasks.preview).toStrictEqual({ cache: false, command: "vp preview" });
+    expect(appRun("service-member").tasks!["dev"]).toStrictEqual({
+      cache: false,
+      command: "vp dev",
+    });
+    expect(appRun("service-member").tasks!["preview"]).toStrictEqual({
+      cache: false,
+      command: "vp preview",
+    });
+  });
+
+  it("keeps Cloudflare worker tests off the coverage gate", () => {
+    expect.hasAssertions();
+    expect(coveredTestableLibraryRun.tasks!["test"]?.command).toContain(
+      "--exclude '**/*.worker.test.ts'",
+    );
   });
 });

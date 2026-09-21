@@ -69,6 +69,10 @@ describe("effect diagnostics coverage", () => {
         dependsOn: ["check:effect:gate"],
       }),
     );
-    expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
+    expect(appRun("service-member").tasks!["build"]).toEqual(
+      expect.objectContaining({
+        dependsOn: expect.arrayContaining(["check:effect"]),
+      }),
+    );
   });
 });

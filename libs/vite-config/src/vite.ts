@@ -32,7 +32,7 @@ async function readDevVars(appRoot: string): Promise<string | undefined> {
   try {
     return await readFile(path.join(appRoot, ".dev.vars"), "utf-8");
   } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+    if (error instanceof Error && "code" in error && error["code"] === "ENOENT") {
       return undefined;
     }
     throw error;
@@ -226,17 +226,41 @@ function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>
   };
 }
 
+const testTaskInput = [
+  ...taskInput,
+  "!coverage/**",
+  { base: "workspace", pattern: "!**/coverage/**" },
+  { base: "workspace", pattern: "pnpm-lock.yaml" },
+  { base: "workspace", pattern: "pnpm-workspace.yaml" },
+] as const;
+
 const testRun = {
   test: {
-    command: "vp test run",
-    input: [
-      ...taskInput,
-      "!coverage/**",
-      { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
-    ],
+    command: "vp test run --exclude '**/*.worker.test.ts'",
+    input: [...testTaskInput],
     output: [],
+  },
+} satisfies Tasks;
+
+const testCoverageRun = {
+  test: {
+    command: "vp test run --coverage --exclude '**/*.worker.test.ts'",
+    input: [...testTaskInput],
+    output: [{ base: "workspace", pattern: "coverage/**" }],
+  },
+} satisfies Tasks;
+
+const checkCode = {
+  "check:code": {
+    command: "vp check --no-error-on-unmatched-pattern",
+    input: [...taskInput],
+  },
+} satisfies Tasks;
+
+const workspaceCheckImports = {
+  "check:imports": {
+    command: "../../tools/dont-review-it/src/repository/workspace-imports.ts",
+    input: [...taskInput],
   },
 } satisfies Tasks;
 
@@ -248,37 +272,90 @@ const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
 
-const effectRun = {
+const inspectedLibraryRun = {
   tasks: {
     ...effectDiagnostics,
-    ...lifecycle({ prepush: ["check:effect"] }),
-  },
-} satisfies RunConfig;
-
-const appRun = {
-  tasks: {
-    ...effectDiagnostics,
-    check: sliceBoundaries.check,
-    build: {
-      command: "vp build",
-      dependsOn: ["@repo/dev#setup", "check:effect"],
-      input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
-      output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-    },
-    "check:dev": {
-      cache: false,
-      command: "../../tools/dev/src/dev-start.ts",
-      dependsOn: ["@repo/dev#setup"],
-    },
-    dev: { cache: false, command: "vp dev" },
-    preview: { cache: false, command: "vp preview" },
+    ...checkCode,
+    ...workspaceCheckImports,
     ...lifecycle({
-      prepush: ["check:effect", "check"],
-      prepr: ["build"],
-      premerge: ["build", "check:dev"],
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check:imports"],
     }),
   },
 } satisfies RunConfig;
+
+const testableLibraryRun = {
+  tasks: {
+    ...inspectedLibraryRun.tasks,
+    ...testRun,
+    ...lifecycle({
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check:imports"],
+      premerge: ["test"],
+    }),
+  },
+} satisfies RunConfig;
+
+const coveredTestableLibraryRun = {
+  tasks: {
+    ...inspectedLibraryRun.tasks,
+    ...testCoverageRun,
+    ...lifecycle({
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check:imports"],
+      premerge: ["test"],
+    }),
+  },
+} satisfies RunConfig;
+
+const effectRun = inspectedLibraryRun;
+
+function appRun(app: Application): RunConfig {
+  return {
+    tasks: {
+      ...effectDiagnostics,
+      ...sliceBoundaries,
+      ...checkCode,
+      ...workspaceCheckImports,
+      ...testRun,
+      "check:client": {
+        command: `quality-check-client --application ${app}`,
+        input: [
+          ...taskInput,
+          "!**/dist/**",
+          "!**/node_modules/.cache/**",
+          { base: "workspace", pattern: "!.local" },
+          { base: "workspace", pattern: "!.local/**" },
+        ],
+        output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+      },
+      "check:react": {
+        command: `quality-check-react --application ${app}`,
+        input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+        output: [{ auto: true }, "!**/node_modules/.cache/**"],
+      },
+      build: {
+        command: "vp build",
+        dependsOn: ["@repo/dev#setup", "check:effect"],
+        input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
+        output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+      },
+      "check:dev": {
+        cache: false,
+        command: "../../tools/dev/src/dev-start.ts",
+        dependsOn: ["@repo/dev#setup"],
+      },
+      dev: { cache: false, command: "vp dev" },
+      preview: { cache: false, command: "vp preview" },
+      ...lifecycle({
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check", "check:imports", "check:react", "check:client"],
+        prepr: ["build"],
+        premerge: ["test", "check:dev"],
+      }),
+    },
+  };
+}
 
 const toolTest: NonNullable<UserConfig["test"]> = {
   mockReset: true,
@@ -287,6 +364,7 @@ const toolTest: NonNullable<UserConfig["test"]> = {
     exclude: ["specs/**"],
     thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
   },
+  testTimeout: 30_000,
   unstubEnvs: true,
   unstubGlobals: true,
 };
@@ -306,56 +384,61 @@ function appConfig(
       previewDevVars(appRoot),
       privateSourceMaps(app),
       devBoundary(app),
-      cloudflare({
-        config: {
-          assets: {
-            binding: "ASSETS",
-            run_worker_first: command !== "serve" || isPreview === true,
-          },
-          compatibility_date: workerCompatibility.date,
-          compatibility_flags: [...workerCompatibility.flags],
-          d1_databases: [localDatabase],
-          ...(realtime
-            ? {
-                durable_objects: {
-                  bindings: [localUserInbox],
+      ...(process.env["VITEST"] === undefined
+        ? [
+            cloudflare({
+              config: {
+                assets: {
+                  binding: "ASSETS",
+                  run_worker_first: command !== "serve" || isPreview === true,
                 },
-                migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
-              }
-            : {}),
-          main: "./src/app/server.ts",
-          name: `template-${app}`,
-          ...(grants(app, "jobs")
-            ? {
-                queues: {
-                  consumers: [{ queue: jobsQueueName }],
-                  producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
-                },
-                workflows: [
-                  {
-                    binding: jobsWorkflowBinding,
-                    class_name: jobsWorkflowClass,
-                    name: jobsWorkflowName,
-                  },
-                ],
-              }
-            : {}),
-          ...(grants(app, "storage")
-            ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
-            : {}),
-        },
-        inspectorPort: false,
-        persistState: { path: localDatabaseDirectory() },
-        viteEnvironment: { name: "ssr" },
-      }),
+                compatibility_date: workerCompatibility.date,
+                compatibility_flags: [...workerCompatibility.flags],
+                d1_databases: [localDatabase],
+                ...(realtime
+                  ? {
+                      durable_objects: {
+                        bindings: [localUserInbox],
+                      },
+                      migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
+                    }
+                  : {}),
+                main: "./src/app/server.ts",
+                name: `template-${app}`,
+                ...(grants(app, "jobs")
+                  ? {
+                      queues: {
+                        consumers: [{ queue: jobsQueueName }],
+                        producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
+                      },
+                      workflows: [
+                        {
+                          binding: jobsWorkflowBinding,
+                          class_name: jobsWorkflowClass,
+                          name: jobsWorkflowName,
+                        },
+                      ],
+                    }
+                  : {}),
+                ...(grants(app, "storage")
+                  ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
+                  : {}),
+              },
+              inspectorPort: false,
+              persistState: { path: localDatabaseDirectory() },
+              viteEnvironment: { name: "ssr" },
+            }),
+          ]
+        : []),
       ...plugins,
       tailwindcss(),
       ...withoutEnvFileLoader(tanstackStart(startOptions)),
       reactCompiler(),
     ],
     preview: appServer(app),
-    run: appRun,
+    run: appRun(app),
     server: appServer(app),
+    test: { testTimeout: 30_000 },
   });
 }
 
@@ -363,10 +446,13 @@ export {
   appConfig,
   appRun,
   appServer,
+  checkCode,
   clientReachableModules,
+  coveredTestableLibraryRun,
   defineConfig,
   effectDiagnostics,
   effectRun,
+  inspectedLibraryRun,
   intentValidation,
   lifecycle,
   lifecycleInherits,
@@ -379,8 +465,11 @@ export {
   sliceBoundaries,
   startOptions,
   taskInput,
+  testCoverageRun,
+  testableLibraryRun,
   testRun,
   toolTest,
+  workspaceCheckImports,
   withoutEnvFileLoader,
 };
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
