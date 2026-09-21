@@ -170,11 +170,10 @@ describe("a worker serving a rendered document", () => {
         { service: "service-member" },
       );
       const context = createExecutionContext();
-      const response = yield* Effect.promise(async () => {
-        const served = await worker.fetch(new Request(`${fixtureOrigin}/`), {}, context);
-        await waitOnExecutionContext(context);
-        return served;
-      });
+      const response = yield* Effect.promise(() =>
+        worker.fetch(new Request(`${fixtureOrigin}/`), {}, context),
+      );
+      yield* Effect.promise(() => waitOnExecutionContext(context));
       const policy = response.headers.get("content-security-policy") ?? "";
       assert.include(policy, "https://www.googletagmanager.com");
       assert.include(policy, "https://www.google-analytics.com");

@@ -106,11 +106,16 @@ function startRoute(
 ): (request: Request) => Effect.Effect<Response> {
   const googleAnalytics = options.googleAnalytics === true;
   return (request) =>
-    Effect.promise(async () => {
+    Effect.gen(function* startRouteProgram() {
       const nonce = createNonce();
       const rendered = new Request(request);
       rendered.headers.set(cspNonceHeader, nonce);
-      return secureResponse(request, await handler.fetch(rendered), nonce, googleAnalytics);
+      return secureResponse(
+        request,
+        yield* Effect.promise(() => Promise.resolve(handler.fetch(rendered))),
+        nonce,
+        googleAnalytics,
+      );
     });
 }
 

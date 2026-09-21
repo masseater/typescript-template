@@ -39,9 +39,9 @@ it.effect("stores a hash and returns plaintext once", () =>
       yield* signInAs(APPLICATION.user, "owner@example.com");
       const ownerId = yield* ownerOf("owner@example.com");
       const authService = (yield* AuthApps)[APPLICATION.user];
-      const created = yield* Effect.promise(async () =>
+      const created = yield* Effect.promise(() =>
         (
-          authService.instance.api as {
+          authService.instance.api as unknown as {
             createApiKey: (input: unknown) => Promise<{ id: string; key: string }>;
           }
         ).createApiKey({
@@ -65,27 +65,27 @@ it.effect("rejects revoked keys on verification", () =>
       yield* signInAs(APPLICATION.user, "reader@example.com");
       const ownerId = yield* ownerOf("reader@example.com");
       const authService = (yield* AuthApps)[APPLICATION.user];
-      const api = authService.instance.api as {
+      const api = authService.instance.api as unknown as {
         createApiKey: (input: unknown) => Promise<{ id: string; key: string }>;
         updateApiKey: (input: unknown) => Promise<{ id: string }>;
         verifyApiKey: (input: unknown) => Promise<{ valid: boolean }>;
       };
-      const created = yield* Effect.promise(async () =>
+      const created = yield* Effect.promise(() =>
         api.createApiKey({
           body: { name: "read-only", userId: ownerId },
         }),
       );
-      const verified = yield* Effect.promise(async () =>
+      const verified = yield* Effect.promise(() =>
         api.verifyApiKey({
           body: { key: created.key, permissions: memberApiKeyReadPermissions },
         }),
       );
-      yield* Effect.promise(async () =>
+      yield* Effect.promise(() =>
         api.updateApiKey({
           body: { enabled: false, keyId: created.id, userId: ownerId },
         }),
       );
-      const revoked = yield* Effect.promise(async () =>
+      const revoked = yield* Effect.promise(() =>
         api.verifyApiKey({
           body: { key: created.key, permissions: memberApiKeyReadPermissions },
         }),

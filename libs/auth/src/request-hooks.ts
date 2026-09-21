@@ -260,7 +260,7 @@ const queryToken = function queryToken(
   ctx: Readonly<Pick<HookContext, "query">>,
 ): string | undefined {
   const query: unknown = ctx.query;
-  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
+  const token = Predicate.isObject(query) && "token" in query ? query["token"] : undefined;
   return typeof token === "string" ? token : undefined;
 };
 

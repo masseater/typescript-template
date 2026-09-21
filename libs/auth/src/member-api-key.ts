@@ -52,9 +52,11 @@ const verifyMemberApiKey = Effect.fn("verifyMemberApiKey")(function* verifyMembe
   const { audience, instance } = yield* Auth;
   const verified = yield* Effect.tryPromise({
     catch: () => new SessionRequired(),
-    try: async () =>
+    try: () =>
       (
-        instance.api as { verifyApiKey: (input: unknown) => Promise<VerifyApiKeyResult> }
+        instance.api as unknown as {
+          verifyApiKey: (input: unknown) => Promise<VerifyApiKeyResult>;
+        }
       ).verifyApiKey({
         body: { key: presented, permissions: memberApiKeyReadPermissions },
       }),

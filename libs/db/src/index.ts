@@ -32,7 +32,6 @@ export type { NotificationKind } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
-export { and, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 export { checkDatabase };
 export { InviteRejected } from "./invite-rejected.ts";
 export { acceptInvite, previewInvite } from "./invite.ts";

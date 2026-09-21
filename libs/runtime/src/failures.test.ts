@@ -107,7 +107,7 @@ describe("failure responses", () => {
           Cause.fail({ _tag: "Pending", kinds: ["terms"] }),
         );
         assert.strictEqual(response.status, httpStatus.preconditionRequired);
-        assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), {
+        assert.deepStrictEqual(yield* Effect.promise(() => response.json()), {
           error: "同意が必要です。",
           kinds: ["terms"],
         });

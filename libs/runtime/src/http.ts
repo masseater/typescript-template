@@ -302,7 +302,7 @@ function apiRoutes<Requirements>(
     handler: Handler<void, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
   ): (context: ElysiaContext) => Promise<Failed | undefined> {
-    return async (context): Promise<Failed | undefined> =>
+    return (context): Promise<Failed | undefined> =>
       settle(context, respondGuard(handler, failures), (cause) =>
         unavailableStatus(cause, reporting),
       );
