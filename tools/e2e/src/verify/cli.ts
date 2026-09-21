@@ -30,8 +30,11 @@ const program = Effect.gen(function* routeVerify() {
 });
 
 runCli(program.pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), (cause) =>
-  causeRecord("verify.failed", cause, {
-    remediation:
-      "Run member verification with `vp run --filter @repo/e2e verify member --environment local` after `vp run --filter @repo/dev setup` and starting apps.",
+  causeRecord("verify.failed", {
+    cause,
+    fields: {
+      remediation:
+        "Run member verification with `vp run --filter @repo/e2e verify member --environment local` after `vp run --filter @repo/dev setup` and starting apps.",
+    },
   }),
 );
