@@ -38,7 +38,6 @@ const budget = monitorWorker<Bindings>({
       return decision;
     }).pipe(Effect.withSpan("BudgetMonitor.check"));
   },
-  className: budgetMonitorWorker.className,
   event: budgetMonitorWorker.event,
   failure: {
     subject: "Cloudflare budget monitoring failed",
@@ -46,7 +45,7 @@ const budget = monitorWorker<Bindings>({
   },
 });
 
-const BudgetMonitor = budget.Worker;
+class BudgetMonitor extends budget.Worker {}
 
 export { BudgetMonitor };
 export default budget.handler;

@@ -1,23 +1,23 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 
-interface SentMail {
+type SentMail = {
   readonly from: string;
   readonly subject: string;
   readonly text: string;
   readonly to: readonly string[];
-}
-
-const sent: SentMail[] = [];
+};
 
 class MailRecorder extends WorkerEntrypoint {
-  // oxlint-disable-next-line eslint/class-methods-use-this
-  public send(message: SentMail): void {
-    sent.push(message);
+  #delivered: SentMail[] = [];
+
+  public send(sentMail: SentMail): void {
+    this.#delivered = [...this.#delivered, sentMail];
   }
 
-  // oxlint-disable-next-line eslint/class-methods-use-this
-  public taken(): SentMail[] {
-    return sent.splice(0);
+  public taken(): readonly SentMail[] {
+    const delivered = this.#delivered;
+    this.#delivered = [];
+    return delivered;
   }
 }
 
