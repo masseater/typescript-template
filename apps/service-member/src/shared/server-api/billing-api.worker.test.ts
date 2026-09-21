@@ -14,11 +14,12 @@ import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect } from "vite-plus/test";
 
 import { Stripe } from "#shared/billing/index.ts";
+import { AgreementsView } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
 
 import type { BrowserClient } from "@repo/auth/testing";
@@ -195,11 +196,23 @@ const stripeHandlers = [
   ),
 ];
 
-const member = Effect.fn("member")(function* member() {
+const acceptEverythingPending = Effect.fn("acceptEverythingPending")(
+  function* acceptEverythingPending(app: App, client: BrowserClient) {
+    const view = yield* Schema.decodeUnknownEffect(AgreementsView)(
+      yield* json(yield* call(app, client, "/agreements")),
+    );
+    return yield* call(app, client, "/agreements/accept", {
+      versionIds: view.pending.map((agreement) => agreement.id),
+    });
+  },
+);
+
+const member = Effect.fn("member")(function* member(app: App) {
   const email = "member@example.com";
   yield* registerVerified(email);
   const client = yield* signInAs(APPLICATION.user, email);
   const session = yield* client.verify();
+  yield* acceptEverythingPending(app, client);
   return { client, id: session.user.id };
 });
 
@@ -213,7 +226,7 @@ describe("billing api", () => {
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
-        const { client, id } = yield* member();
+        const { client, id } = yield* member(app);
         const refused = yield* call(app, client, "/members?page=1");
         const freePlan = yield* json(yield* call(app, client, "/billing/plan"));
         const started = yield* call(app, client, "/billing/checkout", {});
@@ -256,7 +269,7 @@ describe("billing api", () => {
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
-        const { client, id } = yield* member();
+        const { client, id } = yield* member(app);
         yield* deliver(app, checkoutCompleted(id));
         const replayed = yield* json(yield* deliver(app, checkoutCompleted(id)));
         const stillPaid = yield* call(app, client, "/members?page=1");
@@ -297,7 +310,7 @@ describe("billing api", () => {
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
-        const { client, id } = yield* member();
+        const { client, id } = yield* member(app);
         const forged = yield* deliver(app, checkoutCompleted(id), { secret: "whsec_forged" });
         const stale = yield* deliver(app, checkoutCompleted(id), {
           timestamp: nowSeconds() - 2 * 60 * 60,
@@ -333,7 +346,7 @@ describe("billing api", () => {
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
-        const { client } = yield* member();
+        const { client } = yield* member(app);
         const portal = yield* call(app, client, "/billing/portal", {});
         const offer = yield* json(yield* call(app, client, "/billing/offer"));
         const visitor = yield* Effect.promise(async () =>
