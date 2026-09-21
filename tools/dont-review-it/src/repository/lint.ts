@@ -298,6 +298,7 @@ const lintOptions = {
           "vitest.config.ts",
           "vitest.mutation.config.ts",
           "vitest.workers.config.ts",
+          "vitest.workers.main.ts",
           "worker.ts",
         ],
       },

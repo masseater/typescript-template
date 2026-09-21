@@ -46,9 +46,10 @@ const probeMonitor = monitorWorker<MonitorBindings>({
 });
 
 const ProbeMonitor = probeMonitor.Worker;
+const probeHandler = probeMonitor.handler;
 
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
-export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
+export { ProbeMonitor, probeAlert, probeEvent, probeFailure, probeHandler };
 export type { Outcome };
-export default probeMonitor.handler;
+export default probeHandler;
