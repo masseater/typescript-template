@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
 import { APPLICATION, appEnvKey, applications, grants } from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
 import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
@@ -27,6 +28,7 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
+import { cacheNamespaceTitle, fileBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Application } from "@repo/config";
@@ -104,6 +106,12 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
+      ...(grants(app, "storage")
+        ? [
+            `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
+            `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
+          ]
+        : []),
     ].toSorted(),
     declared: {
       ...sharedWorker,
@@ -188,7 +196,9 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
   return declaredStack(app, { Worker: applicationResource(app, artifacts.release) });
 });
 
-const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInventory>> = {
+const staticExpected: Readonly<
+  Record<Exclude<StackName, Application | "flagship">, StackInventory>
+> = {
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
@@ -261,6 +271,22 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       },
       removalPolicy: "destroy",
       type: "Cloudflare.Workers.ObservabilityDestination",
+    },
+  }),
+  storage: declaredStack("storage", {
+    Cache: {
+      adopt: false,
+      bindings: [],
+      declared: { title: cacheNamespaceTitle(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.KV.Namespace",
+    },
+    Files: {
+      adopt: false,
+      bindings: [],
+      declared: { name: fileBucketName(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.R2.Bucket",
     },
   }),
   tokens: declaredStack("tokens", {

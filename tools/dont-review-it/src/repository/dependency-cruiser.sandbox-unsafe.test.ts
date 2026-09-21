@@ -98,6 +98,14 @@ const detected: readonly Case[] = [
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
+    "no-object-storage-outside-runtime",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
+    "no-object-storage-outside-runtime",
+    { "libs/auth/src/index.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
     "no-testing-entry-outside-tests",
     { "libs/auth/src/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
@@ -216,6 +224,18 @@ const accepted: readonly Case[] = [
   [
     "no-database-operations-outside-tooling",
     { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' },
+  ],
+  [
+    "no-object-storage-outside-runtime",
+    { "libs/runtime/src/file-store.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
+    "no-object-storage-outside-runtime",
+    { "libs/vite-config/src/vite.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
+    "no-object-storage-outside-runtime",
+    { "infra/cloudflare/src/app.ts": 'export * from "@repo/config/storage";\n' },
   ],
   [
     "no-testing-entry-outside-tests",
