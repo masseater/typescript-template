@@ -83,7 +83,7 @@ it.effect("the home feed drops followees who closed their profile", () =>
       (yield* homeFeed("viewer")).map((item) => item.actorId),
       ["open"],
     );
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );
 
 it.effect("treats missing onboarding rows as the agreement step", () =>
