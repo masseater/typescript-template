@@ -17,11 +17,14 @@ const anyOf = (values: readonly string[]): string => {
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const databaseAdmin = String.raw`^libs/db/src/admin\.ts$`;
+const databaseStaff = String.raw`^libs/db/src/staff\.ts$`;
 const databaseOperations = String.raw`^libs/db(?:-local)?/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
 const databaseInternal = String.raw`^libs/db(?:-local)?/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
 const testingEntry = String.raw`^libs/[^/]+/src/testing[^/]*\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
 const deploymentConfig = String.raw`^infra/cloudflare/src/deployment\.ts$`;
+const photoStorage = String.raw`^libs/config/src/storage\.ts$`;
+const photoStorageOwner = String.raw`^apps/service-member/src/shared/photo/|^libs/(?:config|vite-config)/src/`;
 const serverOnlyModule = String.raw`^libs/(?:${serverOnlyPackages.join("|")})/src/`;
 const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`;
 const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
@@ -95,6 +98,25 @@ const configuration: IConfiguration = {
     },
     {
       comment:
+        "社内の利用者を管理する処理です。apps/internal-dashboard と libs/db の中だけで使い、他のアプリへ持ち込まないでください。",
+      from: {
+        path: "^(?:apps|libs)/",
+        pathNot: `^apps/internal-dashboard/|^libs/db/src/(?!index\\.ts$)|${testModule}`,
+      },
+      name: "no-database-staff-outside-wiki",
+      severity: "error",
+      to: { path: databaseStaff },
+    },
+    {
+      comment:
+        "写真の R2 バケットは apps/service-member/src/shared/photo だけが掴みます。写真の保存・取得・削除はそのモジュールが公開する関数を呼び、バインディングを直接読まないでください。",
+      from: { path: "^(?:apps|libs)/", pathNot: photoStorageOwner },
+      name: "no-photo-storage-outside-photo-module",
+      severity: "error",
+      to: { path: photoStorage },
+    },
+    {
+      comment:
         "本番 D1 への直接操作とローカル DB の構築です。infra/ と tools/ の運用コマンドからだけ呼んでください。",
       from: { path: "^(?:apps|libs)/", pathNot: databaseInternal },
       name: "no-database-operations-outside-tooling",
@@ -132,16 +154,6 @@ const configuration: IConfiguration = {
       name: "no-production-to-test",
       severity: "error",
       to: { path: testPattern },
-    },
-    {
-      comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
-      from: { path: "^apps/internal-dashboard/" },
-      name: "no-wiki-to-database",
-      severity: "error",
-      to: {
-        path: "^libs/db/",
-        pathNot: String.raw`^libs/db/src/(?:local|inquiry-staff)\.ts$`,
-      },
     },
     {
       comment:

@@ -4,6 +4,8 @@ import { APPLICATION, type Application } from "@repo/config";
 import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 
+import { adminScopes } from "./admin-scopes.ts";
+import { memberApiKeyPlugin } from "./member-api-key-options.ts";
 import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
@@ -72,6 +74,22 @@ const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
   ];
 };
 
+const adminAuthorizationServer = (origin: string): AuthPlugin[] => {
+  return [
+    jwt({ disableSettingJwtHeader: true }),
+    mcp({
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      clientRegistrationAllowedScopes: [...adminScopes],
+      clientRegistrationDefaultScopes: [...adminScopes],
+      consentPage: "/consent",
+      loginPage: "/login",
+      resource: `${origin}/mcp`,
+      scopes: [...adminScopes],
+    }),
+  ];
+};
+
 const authPlugins = ({
   audience,
   origin,
@@ -81,7 +99,9 @@ const authPlugins = ({
     verificationAudiencePlugin(audience),
     twoFactor({ issuer: "TypeScript Template", skipVerificationOnEnable: false }),
     passkeyPlugin({ audience, origin, run }),
+    ...(audience === APPLICATION.user ? [memberApiKeyPlugin()] : []),
     ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
+    ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
   ];
 };
 

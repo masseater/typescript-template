@@ -3,7 +3,7 @@ import { inquiryStatuses } from "@repo/db/inquiry-status";
 import { Effect, Schema } from "effect";
 
 const maximumIdentifierLength = 256;
-const maximumBodyLength = 4000;
+const maximumReplyLength = 4000;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
 
@@ -67,7 +67,7 @@ const InquiryMemberSummary = Schema.Struct({
 });
 
 const InquiryReply = Schema.Struct({
-  body: Schema.Trim.check(Schema.isLengthBetween(1, maximumBodyLength)),
+  body: Schema.Trim.check(Schema.isLengthBetween(1, maximumReplyLength)),
   id: Identifier,
 });
 
@@ -85,5 +85,5 @@ export {
   InquiryReply,
   MemberQuery,
   PendingCount,
-  maximumBodyLength,
+  maximumReplyLength,
 };

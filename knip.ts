@@ -32,7 +32,6 @@ const workspaces = {
       "src/auth-test-fixture.ts",
       "src/browser-client.ts",
       "src/mail-fixture.ts",
-      "src/testing.ts",
       "src/unexpected-status.ts",
       "src/wiki-oauth-fixture.ts",
     ],
@@ -108,6 +107,7 @@ const cloudflareStacks = [
   "src/service-member.ts!",
   "src/service-admin.ts!",
   "src/internal-dashboard.ts!",
+  "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
 ];
@@ -186,9 +186,15 @@ const config = ({
       "apps/service-admin": {
         ...app,
         ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+        project: [
+          "src/**/*.{ts,tsx}!",
+          "src/**/*.css",
+          "!src/shared/admin/admin-oauth-fixture.ts!",
+        ],
       },
       "apps/service-member": {
         ...app,
+        entry: [...app.entry, "src/shared/photo/image-fixture.ts"],
         ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
       },
       "infra/budget-monitor": {

@@ -23,6 +23,11 @@ const verificationSettings = {
   otlp: { enabled: true, endpoint: "https://otlp.example.com" },
   otlpAuthorization: "Bearer stack-verification-not-a-real-token",
   prefix: "template-verify",
+  stripe: {
+    priceId: "price_stackVerificationNotReal",
+    secretKey: "sk_test_stackVerificationNotAReal",
+    webhookSecret: "whsec_stackVerificationNotReal",
+  },
   zoneId: "b".repeat(HEX_ID_LENGTH),
 };
 
@@ -43,6 +48,9 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.otlpEndpoint]: verificationSettings.otlp.endpoint,
   [deploymentKey.prefix]: verificationSettings.prefix,
   [deploymentKey.reserveUsd]: String(verificationSettings.budget.reserveUsd),
+  [deploymentKey.stripePriceId]: verificationSettings.stripe.priceId,
+  [deploymentKey.stripeSecretKey]: verificationSettings.stripe.secretKey,
+  [deploymentKey.stripeWebhookSecret]: verificationSettings.stripe.webhookSecret,
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };

@@ -10,6 +10,7 @@
     "@effect/atom-react": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",
+    "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "better-auth": "catalog:",
     "effect": "catalog:",

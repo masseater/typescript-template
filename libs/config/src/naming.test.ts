@@ -84,7 +84,7 @@ it.effect("application and role names use the service and member vocabulary", ()
       [...applications],
       ["service-member", "service-admin", "internal-dashboard"],
     );
-    assert.deepStrictEqual([...roles], ["member", "admin"]);
+    assert.deepStrictEqual([...roles], ["member", "admin", "staff"]);
   }),
 );
 

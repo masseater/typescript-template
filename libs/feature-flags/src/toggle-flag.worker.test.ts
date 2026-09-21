@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { AUDIT_ACTION, auditEvent, query } from "@repo/db";
+import { auditActions } from "@repo/db/dashboard-literals";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, Layer } from "effect";
 
@@ -56,7 +57,9 @@ describe("toggleFlag", () => {
         database.select().from(auditEvent).orderBy(auditEvent.createdAt),
       );
       const flagToggleAuditRows = auditRows.filter(
-        (auditEventRecord) => auditEventRecord.action === AUDIT_ACTION.flagToggled,
+        (auditEventRecord) =>
+          auditEventRecord.action === AUDIT_ACTION.flagToggled &&
+          auditActions.includes(auditEventRecord.action),
       );
       assert.strictEqual(flagToggleAuditRows.length, 2);
       assert.strictEqual(flagToggleAuditRows[0]?.actorId, "staff-actor");

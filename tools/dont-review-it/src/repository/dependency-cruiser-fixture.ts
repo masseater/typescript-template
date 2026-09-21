@@ -9,7 +9,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "apps/service-member": { ".": "./src/index.ts" },
   "apps/internal-dashboard": { ".": "./src/index.ts" },
   "libs/auth": { ".": "./src/index.ts" },
-  "libs/config": { ".": "./src/index.ts" },
+  "libs/config": { ".": "./src/index.ts", "./storage": "./src/storage.ts" },
   "libs/db": {
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
@@ -18,6 +18,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     "./inquiry-status": "./src/inquiry-status.ts",
     "./local": "./src/local.ts",
     "./remote": "./src/remote-command.ts",
+    "./staff": "./src/staff.ts",
     "./testing": "./src/testing.ts",
   },
   "libs/observability": { ".": "./src/index.ts", "./testing": "./src/testing.ts" },

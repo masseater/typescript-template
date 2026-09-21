@@ -1,7 +1,7 @@
 import { Button, Field, FormColumn } from "@repo/ui";
 
 import { useReplyForm } from "#pages/inquiries/model/reply-form.ts";
-import { maximumBodyLength } from "#shared/contracts/index.ts";
+import { maximumReplyLength } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -15,7 +15,7 @@ function InquiryReplyForm({
       <FormColumn>
         <Field
           label="返信"
-          maxLength={maximumBodyLength}
+          maxLength={maximumReplyLength}
           multiline
           name="body"
           onValueChange={form.handleBodyChange}

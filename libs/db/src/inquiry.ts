@@ -1,12 +1,13 @@
+import { ADMIN_PERMISSION } from "@repo/config";
 import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
-import { liveAdmin, requireAdmin } from "./admin-session.ts";
+import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
 import { InquiryForbidden } from "./inquiry-forbidden.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
+import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import {
-  AUDIT_ACTION,
   auditEvent,
   INQUIRY_AUTHOR_KIND,
   INQUIRY_STATUS,
@@ -61,7 +62,8 @@ interface MemberSummary {
   readonly name: string;
 }
 
-const requireInquiryResponder = requireAdmin;
+const requireInquiryResponder = (sessionId: string): ReturnType<typeof requireAdmin> =>
+  requireAdmin(sessionId, ADMIN_PERMISSION.operator);
 
 const auditInquiryReply = (
   database: DrizzleDatabase,
@@ -92,7 +94,7 @@ const auditInquiryReply = (
     auditColumns.map(([, columnValue]) => sql`${columnValue}`),
     sql`, `,
   );
-  const targeted = sql`SELECT 1 FROM ${inquiry} WHERE ${inquiry.id} = ${inquiryId} AND ${liveAdmin(database, sessionId)}`;
+  const targeted = sql`SELECT 1 FROM ${inquiry} WHERE ${inquiry.id} = ${inquiryId} AND ${liveAdmin(database, sessionId, ADMIN_PERMISSION.operator)}`;
   return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE EXISTS (${targeted})`;
 };
 

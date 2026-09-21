@@ -6,11 +6,13 @@
     ".": "./src/index.ts",
     "./admin": "./src/admin.ts",
     "./bootstrap": "./src/bootstrap-statement.ts",
+    "./staff": "./src/staff.ts",
     "./testing": "./src/testing.ts",
     "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts",
     "./inquiry-staff": "./src/inquiry-staff.ts",
-    "./inquiry-status": "./src/inquiry-status.ts"
+    "./inquiry-status": "./src/inquiry-status.ts",
+    "./dashboard-literals": "./src/dashboard-literals.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate"
