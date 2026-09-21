@@ -22,10 +22,13 @@ import {
   callTool,
   exchangeCode,
   grantAuthorization,
+  mcpChallenge,
   mcpRequest,
   responseStatus,
 } from "./admin-oauth-fixture.ts";
 import { serveMcp } from "./mcp.ts";
+
+import type { FetchMcp } from "./admin-oauth-fixture.ts";
 
 const adminOrigin = "http://127.0.0.1:3002";
 const authSecret = "integration-test-secret-at-least-32-characters-long";
@@ -40,7 +43,10 @@ const discovery = Effect.fn("discovery")(function* discovery(path: string) {
   return { body, status: response.status };
 });
 
-function adminMcpApp(auth: Parameters<typeof runWith>[0]) {
+function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
+  fetchMcp: FetchMcp;
+  stop: Effect.Effect<void>;
+} {
   const adminAuth = Context.get(auth, AuthApps)[APPLICATION.admin];
   const runtime = workerRuntime(() =>
     Layer.orDie(
@@ -56,7 +62,7 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]) {
   );
   const api = apiRoutes(runtime, reporting);
   const app = createApi("").all("/mcp", api.raw(serveMcp, unavailable));
-  const fetchMcp = (request: Request): Effect.Effect<Response> =>
+  const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
     Effect.promise(async () => app.fetch(request));
   return { fetchMcp, stop: Effect.promise(async () => runtime.dispose()) };
 }
@@ -79,7 +85,7 @@ describe("admin MCP authorization", () => {
         const app = adminMcpApp(auth);
         const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
         const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
-        const challenge = yield* mcpRequest(app.fetchMcp);
+        const challenge = yield* mcpChallenge();
         const header =
           challenge instanceof Response ? challenge.headers.get("www-authenticate") : "";
         yield* app.stop;

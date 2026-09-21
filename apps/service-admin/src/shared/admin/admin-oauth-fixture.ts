@@ -1,7 +1,12 @@
 import { Auth } from "@repo/auth";
-import { AuthApps, adminOrigin, startAdminAuthorization } from "@repo/auth/testing";
+import {
+  AuthApps,
+  adminOrigin,
+  startAdminAuthorization,
+  type BrowserClient,
+} from "@repo/auth/testing";
 import { APPLICATION } from "@repo/config";
-import { Effect, Schema } from "effect";
+import { Data, Effect, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
@@ -10,6 +15,10 @@ type AuthorizationFlow = {
   readonly oauthQuery: string;
   readonly verifier: string;
 };
+
+type FetchMcp = (request: Request) => Effect.Effect<Response, never, never>;
+
+class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData")<{}> {}
 
 const redirectUri = "http://127.0.0.1:43124/callback";
 const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
@@ -20,7 +29,7 @@ function responseStatus(value: unknown): number | undefined {
 }
 
 const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthorization(
-  admin: Awaited<ReturnType<typeof import("@repo/auth/testing").clientOf>>,
+  admin: BrowserClient,
   oauthQuery: string,
 ) {
   const continued = yield* admin.json("/oauth2/continue", {
@@ -58,9 +67,18 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
   return yield* Schema.decodeUnknownEffect(Tokens)(tokens);
 });
 
+const mcpChallenge = Effect.fn("mcpChallenge")(function* mcpChallenge() {
+  const admin = (yield* AuthApps)[APPLICATION.admin];
+  const incoming = new Request(`${adminOrigin}/mcp`, {
+    headers: { accept: "application/json, text/event-stream" },
+    method: "POST",
+  });
+  return yield* authorizeMcpRequest(incoming, adminOrigin).pipe(Effect.provideService(Auth, admin));
+});
+
 const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(
-  fetchMcp: (request: Request) => Effect.Effect<Response>,
-  token?: string,
+  fetchMcp: FetchMcp,
+  token: string,
   body?: unknown,
 ) {
   const incoming = new Request(`${adminOrigin}/mcp`, {
@@ -68,16 +86,10 @@ const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(
     headers: {
       accept: "application/json, text/event-stream",
       ...(body === undefined ? {} : { "content-type": "application/json" }),
-      ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
+      authorization: `Bearer ${token}`,
     },
     method: "POST",
   });
-  if (token === undefined) {
-    const admin = (yield* AuthApps)[APPLICATION.admin];
-    return yield* authorizeMcpRequest(incoming, adminOrigin).pipe(
-      Effect.provideService(Auth, admin),
-    );
-  }
   return yield* fetchMcp(incoming);
 });
 
@@ -89,13 +101,13 @@ const parseMcpBody = Effect.fn("parseMcpBody")(function* parseMcpBody(response: 
   const text = yield* Effect.promise(async () => response.text());
   const dataLine = text.split("\n").find((line) => line.startsWith("data: "));
   if (dataLine === undefined) {
-    return yield* Effect.fail(new Error("MCP response missing data"));
+    return yield* new McpResponseMissingData();
   }
   return JSON.parse(dataLine.slice("data: ".length)) as unknown;
 });
 
 const callTool = Effect.fn("callTool")(function* callTool(
-  fetchMcp: (request: Request) => Effect.Effect<Response>,
+  fetchMcp: FetchMcp,
   token: string,
   name: string,
   args: Readonly<Record<string, unknown>> = {},
@@ -106,16 +118,15 @@ const callTool = Effect.fn("callTool")(function* callTool(
     method: "tools/call",
     params: { arguments: args, name },
   });
-  if (!(response instanceof Response)) {
-    return response;
-  }
   return yield* parseMcpBody(response);
 });
 
+export type { FetchMcp };
 export {
   callTool,
   exchangeCode,
   grantAuthorization,
+  mcpChallenge,
   mcpRequest,
   responseStatus,
   startAdminAuthorization,
