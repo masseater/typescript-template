@@ -11,10 +11,15 @@ pull_request_rules:
 queue_rules:
   - name: default
     batch_size: 5
+    batch_max_wait_time: 5 min
     merge_method: merge
     queue_conditions:
-      - base = main
+      - or:
+          - base = main
+          - "#depends-on > 0"
       - check-success = check
     merge_conditions:
       - check-success = merge-queue
       - check-success = e2e
+merge_queue:
+  mode: isolated

@@ -7,10 +7,6 @@
     "#paraglide/*": "./.paraglide/*",
     "#*": "./src/*"
   },
-  "scripts": {
-    "dev": "vp dev",
-    "preview": "vp preview"
-  },
   "dependencies": {
     "@effect/atom-react": "catalog:",
     "@inlang/paraglide-js": "catalog:",
