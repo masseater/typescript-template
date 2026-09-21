@@ -14,9 +14,9 @@ function isErrorCode(error: unknown, code: string): boolean {
   return Predicate.isObject(error) && "code" in error && error.code === code;
 }
 
-function withFileSystemError<A>(
-  operation: (fs: FileSystem.FileSystem) => Effect.Effect<A, PlatformError.PlatformError>,
-): Effect.Effect<A, PlatformError.PlatformError, FileSystem.FileSystem> {
+function withFileSystemError<A, R = never>(
+  operation: (fs: FileSystem.FileSystem) => Effect.Effect<A, PlatformError.PlatformError, R>,
+): Effect.Effect<A, PlatformError.PlatformError, FileSystem.FileSystem | R> {
   return FileSystem.FileSystem.pipe(Effect.flatMap(operation));
 }
 

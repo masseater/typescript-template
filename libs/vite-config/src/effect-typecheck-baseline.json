@@ -1445,12 +1445,6 @@
         "count": 1
       },
       {
-        "file": "src/ci-runner.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
         "file": "src/operator-account.ts",
         "code": "TS18046",
         "message": "'auth.instance.api' is of type 'unknown'.",
@@ -1461,12 +1455,6 @@
         "code": "TS18046",
         "message": "'auth.instance.handler' is of type 'unknown'.",
         "count": 1
-      },
-      {
-        "file": "src/private-files.test.ts",
-        "code": "TS2551",
-        "message": "Property 'mtimeNs' does not exist on type 'Stats'. Did you mean 'mtimeMs'?",
-        "count": 2
       },
       {
         "file": "src/private-files.ts",

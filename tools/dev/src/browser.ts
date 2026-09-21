@@ -87,10 +87,10 @@ function runBrowser(
       )
       .pipe(Effect.catch(() => Effect.succeed(undefined)));
     if (handle === undefined) {
-      return { started: false };
+      return { started: false as const };
     }
     const exitCode = yield* handle.exitCode.pipe(Effect.catch(() => Effect.succeed(null)));
-    return { code: exitCode === null ? null : Number(exitCode), started: true };
+    return { code: exitCode === null ? null : Number(exitCode), started: true as const };
   }).pipe(Effect.scoped);
 }
 

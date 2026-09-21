@@ -1,7 +1,7 @@
 import { NodeSocket, NodeSocketServer } from "@effect/platform-node";
 import { causeRecord, runCli } from "@repo/cli";
 import { loopbackAddress } from "@repo/config";
-import { Console, Effect, Layer, Schema } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { SocketServer } from "effect/unstable/socket/SocketServer";
 
 import type { Scope } from "effect";
@@ -17,15 +17,15 @@ const ProxyPort = Schema.Number.check(
   Schema.isGreaterThan(HIGHEST_PRIVILEGED_PORT),
 );
 
-function openUpstream(target: number): Effect.Effect<Socket.Socket, SocketError, Scope.Scope> {
+function openUpstream(target: number): Effect.Effect<Socket, SocketError, Scope.Scope> {
   return NodeSocket.makeNet({ host: loopbackAddress, port: target }) as Effect.Effect<
-    Socket.Socket,
+    Socket,
     SocketError,
     Scope.Scope
   >;
 }
 
-function proxyConnection(target: number, client: Socket.Socket): Effect.Effect<void, never, never> {
+function proxyConnection(target: number, client: Socket): Effect.Effect<void, never, never> {
   return Effect.scoped(
     openUpstream(target).pipe(
       Effect.catch(() => Effect.succeed(undefined)),
@@ -55,20 +55,17 @@ const program = Effect.gen(function* gateway() {
   const target = yield* Schema.decodeUnknownEffect(ProxyPort)(Number(process.argv[2])).pipe(
     Effect.mapError(() => new GatewayFailure({ reason: "proxy_port_invalid" })),
   );
-  const server = yield* SocketServer.SocketServer;
+  const server = yield* SocketServer;
   yield* Console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
-  yield* server.run(
-    Effect.fnUntraced(function* handleClient(client: Socket.Socket) {
+  return yield* server.run(
+    Effect.fnUntraced(function* handleClient(client: Socket) {
       yield* proxyConnection(target, client);
     }, Effect.orDie),
   );
 }).pipe(
   Effect.scoped,
-  Effect.provide(
-    NodeSocketServer.layer({ host: "::", port: 443 }).pipe(
-      Layer.mapError(() => new GatewayFailure({ reason: "listen_failed" })),
-    ),
-  ),
+  Effect.provide(NodeSocketServer.layer({ host: "::", port: 443 })),
+  Effect.mapError(() => new GatewayFailure({ reason: "listen_failed" })),
 ) as Effect.Effect<void, GatewayFailure, never>;
 
 runCli(program, (cause) => causeRecord("local.gateway_failed", cause));

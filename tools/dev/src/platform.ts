@@ -28,9 +28,9 @@ function mapFileError(): LocalCommandFailure {
   return failure("file_io_failed");
 }
 
-function withFileSystem<A>(
-  operation: (fs: FileSystem.FileSystem) => Effect.Effect<A, PlatformError.PlatformError>,
-): Effect.Effect<A, LocalCommandFailure, FileSystem.FileSystem> {
+function withFileSystem<A, R = never>(
+  operation: (fs: FileSystem.FileSystem) => Effect.Effect<A, PlatformError.PlatformError, R>,
+): Effect.Effect<A, LocalCommandFailure, FileSystem.FileSystem | R> {
   return FileSystem.FileSystem.pipe(Effect.flatMap(operation), Effect.mapError(mapFileError));
 }
 
