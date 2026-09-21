@@ -9,7 +9,13 @@ describe("sanitizeAnalyticsPath", () => {
     ["/board/456", "/board/_"],
     ["/groups/group-789", "/groups/_"],
     ["/support/42", "/support/_"],
+    ["/en/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890", "/en/users/_"],
+    ["/en/messages/thread-123", "/en/messages/_"],
+    ["/ja/board/456", "/ja/board/_"],
+    ["/en/users/a1b2c3d4/photos", "/en/users/_/photos"],
     ["/home", "/home"],
+    ["/en/home", "/en/home"],
+    ["/en", "/en"],
     ["/settings/profile", "/settings/profile"],
   ] as const)("%s", ([input, expected]) => {
     test(`becomes ${expected}`, () => {
