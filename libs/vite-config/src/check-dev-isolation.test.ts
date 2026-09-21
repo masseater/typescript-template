@@ -1,6 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { readFileSync } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { repositoryRoot } from "@repo/config/repository-root";
@@ -41,7 +41,7 @@ describe("check:dev local D1", () => {
   it("isolates each start behind a temporary local database", () => {
     expect.hasAssertions();
     expect(devStartSource).toMatch(/localDatabaseVariable/u);
-    expect(devStartSource).toMatch(/mkdtemp/u);
+    expect(devStartSource).toMatch(/makeTempDirectory/u);
     expect(devStartSource).toMatch(/db:migrate:local/u);
     expect(viteSource).toMatch(/persistState: \{ path: localDatabaseDirectory\(\) \}/u);
   });

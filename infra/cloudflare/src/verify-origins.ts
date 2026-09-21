@@ -1,9 +1,6 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { resolve4, resolve6 } from "node:dns/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { request } from "node:https";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { URL } from "node:url";
 
 import { runCli } from "@repo/cli";

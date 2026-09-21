@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { parseArgs } from "node:util";
 
 import { causeRecord, runCli } from "@repo/cli";
@@ -142,7 +141,10 @@ const verify = Effect.fn("verify")(function* verify() {
 });
 
 runCli(verify().pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), (cause) =>
-  causeRecord("observability.verification_failed", cause, {
-    remediation: `Specify --app with a running local app origin such as ${applicationOrigins[APPLICATION.user]}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
+  causeRecord("observability.verification_failed", {
+    cause,
+    fields: {
+      remediation: `Specify --app with a running local app origin such as ${applicationOrigins[APPLICATION.user]}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
+    },
   }),
 );

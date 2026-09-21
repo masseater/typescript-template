@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { appendFile } from "node:fs/promises";
 
 import { runCli } from "@repo/cli";
@@ -27,7 +26,6 @@ function writeOutput(
 
 runCli(
   Effect.gen(function* program() {
-    // oxlint-disable-next-line node/no-process-env
     const environment = process.env;
     const preparation = yield* writeCiSecretsFile(environment);
     if (preparation.status === "unconfigured") {

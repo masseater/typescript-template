@@ -22,6 +22,8 @@ const databaseInternal = String.raw`^libs/db(?:-local)?/src/(?:(?:remote|bootstr
 const testingEntry = String.raw`^libs/[^/]+/src/testing[^/]*\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
 const deploymentConfig = String.raw`^infra/cloudflare/src/deployment\.ts$`;
+const objectStorage = String.raw`^libs/config/src/storage\.ts$`;
+const objectStorageOwner = String.raw`^libs/(?:config|runtime|vite-config)/src/|^infra/cloudflare/src/`;
 const serverOnlyModule = String.raw`^libs/(?:${serverOnlyPackages.join("|")})/src/`;
 const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`;
 const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
@@ -79,7 +81,7 @@ const configuration: IConfiguration = {
       severity: "error",
       to: {
         dependencyTypes: ["local"],
-        pathNot: String.raw`^$1/$2/|^libs/auth/src/testing\.ts$|^libs/db/src/migrate-d1\.ts$|^libs/db/src/remote-input\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/repository/ui-lint-settings\.ts$|^infra/cloudflare/src/remote-command\.ts$`,
+        pathNot: String.raw`^$1/$2/|^libs/auth/src/testing\.ts$|^libs/db/src/migrate-d1\.ts$|^libs/db/src/remote-input\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/repository/ui-lint-settings\.ts$|^infra/cloudflare/src/remote-command\.ts$|^knip\.ts$`,
       },
     },
     {
@@ -100,6 +102,14 @@ const configuration: IConfiguration = {
       name: "no-database-operations-outside-tooling",
       severity: "error",
       to: { path: databaseOperations },
+    },
+    {
+      comment:
+        "R2 と KV のバインディングは libs/runtime の FileStore / ReadCache だけが掴みます。アプリは共有ヘルパーを呼び、バインディングを直接読まないでください。",
+      from: { path: "^(?:apps|libs|infra)/", pathNot: objectStorageOwner },
+      name: "no-object-storage-outside-runtime",
+      severity: "error",
+      to: { path: objectStorage },
     },
     {
       comment:

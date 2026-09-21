@@ -5,6 +5,7 @@ import {
   userInboxBinding,
   userInboxClassName,
 } from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { DurableObject, Email, Queues, Worker, Workers, Workflow } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
@@ -13,6 +14,7 @@ import { workerCompatibilityOptions, workerObservability, workerSubdomain } from
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
@@ -20,15 +22,29 @@ import type { Redacted } from "effect";
 import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
-  const withAi = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
-  return grants(target, "realtime")
+function appEnv(
+  target: Application,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shared: SharedEnv,
+): Effect.Effect<DeclaredEnv> {
+  const withAi: DeclaredEnv = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  const withRealtime: DeclaredEnv = grants(target, "realtime")
     ? {
         ...withAi,
         [userInboxBinding]: DurableObject(userInboxBinding, { className: userInboxClassName }),
       }
     : withAi;
+  if (!grants(target, "storage")) {
+    return Effect.succeed(withRealtime);
+  }
+  return Effect.gen(function* withStorageBindings() {
+    const withStorage: DeclaredEnv = {
+      ...withRealtime,
+      [cacheNamespaceBinding]: yield* cacheNamespaceRef(),
+      [fileBucketBinding]: yield* fileBucketRef(),
+    };
+    return withStorage;
+  });
 }
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
@@ -43,7 +59,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
   const jobsQueue = grants(target, "jobs") ? yield* Queues.Queue("Jobs", {}) : undefined;
-  const shared = appEnv(target, {
+  const shared: DeclaredEnv = yield* appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     AUTH_SECRET: secret,

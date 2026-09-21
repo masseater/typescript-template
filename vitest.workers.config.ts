@@ -9,6 +9,7 @@ import {
   jobsWorkflowName,
 } from "@repo/config";
 import { userInboxBinding, userInboxClassName } from "@repo/config/realtime";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
@@ -49,12 +50,14 @@ export default defineProject({
           [monitorBinding]: { className: probeMonitor, useSQLite: true },
           [userInboxBinding]: { className: userInboxClassName, useSQLite: true },
         },
+        kvNamespaces: { [localCacheNamespace.binding]: localCacheNamespace.id },
         outboundService: (outbound: { readonly url: string }) =>
           Response.json({ blocked: outbound.url }, { status: 403 }),
         queueConsumers: {
           [jobsQueueName]: { maxBatchSize: 10, maxRetries: 3 },
         },
         queueProducers: { [jobsQueueBinding]: jobsQueueName },
+        r2Buckets: { [localFileBucket.binding]: localFileBucket.bucket_name },
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
         workflows: {
           [jobsWorkflowBinding]: {

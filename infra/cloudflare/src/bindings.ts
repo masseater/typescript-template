@@ -1,4 +1,5 @@
 import type { Application, Capability, CapabilityOf } from "@repo/config";
+import type { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import type {
   AIBinding,
   Assets,
@@ -7,7 +8,9 @@ import type {
   Email,
   Flagship,
   InferEnv,
+  KV,
   Queues,
+  R2,
   WorkflowLike,
 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
@@ -40,6 +43,9 @@ interface CapabilityEnv {
     PROCESS: WorkflowLike<{ jobId: string }>;
   }>;
   readonly realtime: Readonly<{ USER_INBOX: DurableObjectLike }>;
+  readonly storage: Readonly<
+    Record<typeof fileBucketBinding, R2.Bucket> & Record<typeof cacheNamespaceBinding, KV.Namespace>
+  >;
 }
 
 type UnionToIntersection<Union> = (Union extends unknown ? (value: Union) => void : never) extends (

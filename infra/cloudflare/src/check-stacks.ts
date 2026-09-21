@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { isDeepStrictEqual } from "node:util";
 
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
@@ -15,6 +14,7 @@ import {
   userInboxBinding,
   userInboxClassName,
 } from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
 import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
@@ -37,6 +37,7 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
+import { cacheNamespaceTitle, fileBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Application } from "@repo/config";
@@ -122,6 +123,12 @@ function applicationResource(app: Application, release: string): ResourceInvento
         : []),
       ...(grants(app, "realtime")
         ? [`${userInboxBinding}:durable_object_namespace:className=${userInboxClassName}`]
+        : []),
+      ...(grants(app, "storage")
+        ? [
+            `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
+            `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
+          ]
         : []),
     ].toSorted(),
     declared: {
@@ -246,7 +253,9 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
   });
 });
 
-const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInventory>> = {
+const staticExpected: Readonly<
+  Record<Exclude<StackName, Application | "flagship">, StackInventory>
+> = {
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
@@ -319,6 +328,22 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       },
       removalPolicy: "destroy",
       type: "Cloudflare.Workers.ObservabilityDestination",
+    },
+  }),
+  storage: declaredStack("storage", {
+    Cache: {
+      adopt: false,
+      bindings: [],
+      declared: { title: cacheNamespaceTitle(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.KV.Namespace",
+    },
+    Files: {
+      adopt: false,
+      bindings: [],
+      declared: { name: fileBucketName(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.R2.Bucket",
     },
   }),
   tokens: declaredStack("tokens", {

@@ -11,12 +11,15 @@ import type { SentMail } from "./mail-recorder.ts";
 type Outcome = "die" | "fail" | "notify" | "succeed";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
+  // oxlint-disable-next-line typescript/no-namespace -- Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding
   namespace Cloudflare {
     interface Env {
       readonly ALERT_FROM: string;
       readonly ALERT_TO: string;
-      readonly EMAIL: { readonly taken: () => Promise<SentMail[]> };
+      readonly EMAIL: {
+        readonly send: (message: SentMail) => void;
+        readonly taken: () => Promise<SentMail[]>;
+      };
       readonly MONITOR: DurableObjectNamespace;
     }
   }

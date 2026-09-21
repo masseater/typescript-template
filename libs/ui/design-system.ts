@@ -4,56 +4,120 @@ import path from "node:path";
 import { project } from "@shadcn/lint";
 
 const designTokens: Readonly<Record<string, string>> = {
-  "--danger": "#e01e5a",
-  "--danger-darken": "#ca1b51",
-  "--font-sans": "system-ui, sans-serif",
-  "--green": "#0f7f85",
-  "--grey-100": "#23221e",
-  "--grey-20": "#d6d3d0",
-  "--grey-30": "#c1bdb7",
-  "--grey-5": "#f8f7f6",
-  "--grey-6": "#f5f4f3",
-  "--grey-65": "#706d65",
-  "--grey-7": "#f2f1f0",
-  "--grey-9": "#edebe8",
-  "--grey-9-darken": "#e2dfda",
+  "--danger": "#b01d3a",
+  "--danger-darken": "#931832",
+  "--font-display": '"Shippori Mincho", serif',
+  "--font-sans": '"Zen Kaku Gothic New", sans-serif',
+  "--green": "#1c6b40",
+  "--grey-100": "#1c1916",
+  "--grey-20": "#b3a794",
+  "--grey-30": "#8d8376",
+  "--grey-5": "#f6f1e8",
+  "--grey-6": "#efe9de",
+  "--grey-65": "#5e574e",
+  "--grey-7": "#e6dfd2",
+  "--grey-9": "#d9d0c1",
+  "--grey-9-darken": "#c9bfad",
   "--layer-0": "none",
-  "--layer-1": "0 1px 2px 0 var(--transparency-30)",
-  "--layer-2": "0 2px 4px 1px var(--transparency-30)",
-  "--layer-3": "0 4px 8px 2px var(--transparency-30)",
-  "--layer-4": "0 8px 16px 4px var(--transparency-30)",
+  "--layer-1": "0 1px 2px 0 var(--transparency-15)",
+  "--layer-2": "0 1px 2px 0 var(--transparency-15), 0 8px 16px -4px var(--transparency-30)",
+  "--layer-3": "0 2px 4px 0 var(--transparency-15), 0 16px 32px -8px var(--transparency-30)",
+  "--layer-4": "0 8px 12px -2px var(--transparency-15), 0 28px 48px -12px var(--transparency-50)",
   "--leading-normal": "1.5",
   "--leading-relaxed": "1.75",
   "--leading-tight": "1.25",
-  "--link": "#0071c1",
-  "--link-darken": "#005ea1",
-  "--main": "#0077c7",
-  "--main-darken": "#0068ae",
-  "--radius-lg": "8px",
-  "--radius-md": "6px",
+  "--link": "var(--grey-100)",
+  "--link-darken": "#000000",
+  "--main": "#9a3412",
+  "--main-darken": "#7c2a0e",
+  "--radius-lg": "16px",
+  "--radius-md": "8px",
   "--radius-sm": "4px",
-  "--ring": "var(--main)",
+  "--ring": "var(--grey-100)",
   "--text-2xl": "2rem",
-  "--text-2xs": "0.6666666666666666rem",
+  "--text-2xs": "0.6875rem",
+  "--text-3xl": "2.5rem",
+  "--text-4xl": "3.5rem",
+  "--text-5xl": "4.5rem",
   "--text-base": "1rem",
-  "--text-lg": "1.2rem",
-  "--text-sm": "0.8571428571428571rem",
-  "--text-xl": "1.5rem",
+  "--text-lg": "1.125rem",
+  "--text-sm": "0.875rem",
+  "--text-xl": "1.375rem",
   "--text-xs": "0.75rem",
-  "--transparency-15": "rgba(3, 3, 2, 0.15)",
-  "--transparency-30": "rgba(3, 3, 2, 0.3)",
-  "--transparency-50": "rgba(3, 3, 2, 0.5)",
-  "--warning-yellow": "#ffcc17",
-  "--warning-yellow-darken": "#fcc500",
-  "--white": "#fff",
-  "--white-darken": "#f2f2f2",
+  "--transparency-15": "rgba(28, 25, 22, 0.15)",
+  "--transparency-30": "rgba(28, 25, 22, 0.3)",
+  "--transparency-50": "rgba(28, 25, 22, 0.5)",
+  "--warning-yellow": "#e6b000",
+  "--warning-yellow-darken": "#c89600",
+  "--white": "#fffdf8",
+  "--white-darken": "#f3eee4",
 };
 
 const untouchedTokens = ["--spacing"] as const;
 
 const declarationPattern = /(?<name>--[\w-]+)\s*:\s*(?<value>[^;}]+)[;}]/gu;
+const colorSchemePattern = /color-scheme:\s*(?<scheme>[\w-]+)/u;
+const variablePattern = /^var\((?<name>--[\w-]+)\)$/u;
+const darkMediaQuery = "(prefers-color-scheme: dark)";
 
-const declarations = (css: string): Map<string, string> => {
+type ColorSchemeName = "dark" | "light";
+
+type ColorSchemeProbe = {
+  readonly background: string;
+  readonly card: string;
+  readonly colorScheme: string;
+  readonly foreground: string;
+};
+
+const blockEnd = (css: string, open: number): number => {
+  let depth = 0;
+  for (let index = open; index < css.length; index += 1) {
+    const char = css[index];
+    if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  throw new Error("unclosed CSS block");
+};
+
+const withoutMediaQueries = (css: string): string => {
+  const parts: string[] = [];
+  let cursor = 0;
+  while (cursor < css.length) {
+    const at = css.indexOf("@media", cursor);
+    if (at === -1) {
+      parts.push(css.slice(cursor));
+      break;
+    }
+    parts.push(css.slice(cursor, at));
+    const open = css.indexOf("{", at);
+    if (open === -1) {
+      throw new Error("media query missing a block");
+    }
+    cursor = blockEnd(css, open) + 1;
+  }
+  return parts.join("");
+};
+
+const mediaQueryBody = (css: string, query: string): string => {
+  const marker = `@media ${query}`;
+  const at = css.indexOf(marker);
+  if (at === -1) {
+    throw new Error(`missing @media ${query}`);
+  }
+  const open = css.indexOf("{", at + marker.length);
+  if (open === -1) {
+    throw new Error(`media query missing a block: ${query}`);
+  }
+  return css.slice(open + 1, blockEnd(css, open));
+};
+
+const declaredValues = (css: string): Map<string, string> => {
   const found = new Map<string, string>();
   for (const match of css.matchAll(declarationPattern)) {
     const { name, value } = match.groups ?? {};
@@ -62,6 +126,56 @@ const declarations = (css: string): Map<string, string> => {
     }
   }
   return found;
+};
+
+const declarations = (css: string): Map<string, string> => {
+  return declaredValues(withoutMediaQueries(css));
+};
+
+const schemeDeclarations = (css: string, scheme: ColorSchemeName): Map<string, string> => {
+  const light = declarations(css);
+  return scheme === "light"
+    ? light
+    : new Map([...light, ...declaredValues(mediaQueryBody(css, darkMediaQuery))]);
+};
+
+const resolvedDeclaration = (
+  declared: ReadonlyMap<string, string>,
+  name: string,
+  depth = 8,
+): string => {
+  const value = declared.get(name);
+  if (value === undefined) {
+    throw new Error(`${name} is not declared`);
+  }
+  const reference = variablePattern.exec(value)?.groups?.name;
+  if (reference === undefined) {
+    return value;
+  }
+  if (depth === 0) {
+    throw new Error(`${name} does not resolve to a value`);
+  }
+  return resolvedDeclaration(declared, reference, depth - 1);
+};
+
+const appliedColorScheme = (css: string, scheme: ColorSchemeName): string => {
+  const source =
+    scheme === "light" ? withoutMediaQueries(css) : mediaQueryBody(css, darkMediaQuery);
+  const found = colorSchemePattern.exec(source)?.groups?.scheme;
+  if (found === undefined) {
+    throw new Error(`${scheme} color-scheme is not declared`);
+  }
+  return found;
+};
+
+const colorSchemeProbe = (css: string, scheme: ColorSchemeName): ColorSchemeProbe => {
+  const declared = schemeDeclarations(css, scheme);
+  return {
+    background: resolvedDeclaration(declared, "--background"),
+    card: resolvedDeclaration(declared, "--card"),
+    colorScheme: appliedColorScheme(css, scheme),
+    foreground: resolvedDeclaration(declared, "--foreground"),
+  };
 };
 
 const read = (file: string): string => {
@@ -262,6 +376,7 @@ const tokenViolations = (css: string): string[] => {
 
 export {
   appStylesheetViolations,
+  colorSchemeProbe,
   indexedComponents,
   coverageViolations,
   designSystemComponents,

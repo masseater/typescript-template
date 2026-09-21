@@ -1,6 +1,10 @@
 import { AssertionError } from "node:assert";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 import { plugin } from "@shadcn/lint";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -10,7 +14,9 @@ import {
 } from "../../tools/dont-review-it/src/repository/ui-lint-settings.ts";
 import {
   appStylesheetViolations,
+  colorSchemeProbe,
   coverageViolations,
+  declarations,
   designSystemComponents,
   designSystemProbe,
   designTokens,
@@ -23,8 +29,9 @@ import {
   tokenViolations,
   untouchedTokens,
 } from "./design-system.ts";
-import { hoverViolations } from "./hover-colors.ts";
+import { hoverViolations, relativeLuminance } from "./hover-colors.ts";
 import { field } from "./record-field.ts";
+import { Heading } from "./src/shared/ui/heading.tsx";
 
 const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/package.json",
@@ -115,6 +122,33 @@ describe("design token table", () => {
     expect(tokenViolations(`@theme { ${token}: 8px; }`)).toContainEqual(
       expect.stringContaining(token),
     );
+  });
+});
+
+const tone = (color: string): number => {
+  const value = relativeLuminance(color);
+  if (value === undefined) {
+    throw new Error(`unresolved color ${color}`);
+  }
+  return value;
+};
+
+describe("dark color scheme", () => {
+  it("applies dark background, card, and text under prefers-color-scheme: dark", () => {
+    expect.hasAssertions();
+    const css = stylesheetSource();
+    const light = colorSchemeProbe(css, "light");
+    const dark = colorSchemeProbe(css, "dark");
+    expect(light.colorScheme).toBe("light");
+    expect(dark.colorScheme).toBe("dark");
+    expect(dark.background).not.toBe(light.background);
+    expect(dark.card).not.toBe(light.card);
+    expect(dark.foreground).not.toBe(light.foreground);
+    expect(tone(light.foreground)).toBeLessThan(tone(light.background));
+    expect(tone(dark.background)).toBeLessThan(tone(light.background));
+    expect(tone(dark.foreground)).toBeGreaterThan(tone(dark.background));
+    expect(tone(dark.card)).toBeGreaterThan(tone(dark.background));
+    expect(tone(dark.card)).toBeLessThan(tone(dark.foreground));
   });
 });
 
@@ -231,6 +265,182 @@ describe("design system lint", () => {
   it.for(restyled)("%s reports a screen that restyles a part", ([rule, className]) => {
     expect.hasAssertions();
     expect(reports(rule, className)).toBe(true);
+  });
+});
+
+const rootPx = 16;
+const retiredPagePx = 24;
+const landingPx = 48;
+
+const retiredBodyFont =
+  '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, "Helvetica Neue", Arial, sans-serif';
+
+const fontFacePattern = /@font-face\s*\{(?<body>[^}]*)\}/gu;
+const variablePattern = /^var\((?<name>--[\w-]+)\)$/u;
+const primaryRole = /^--(?:color-)?(?:primary|main)$/u;
+
+type LoadedFace = {
+  readonly family: string;
+  readonly file: string;
+  readonly weight: string;
+};
+
+const loadedFaces = (css: string): LoadedFace[] => {
+  const faces: LoadedFace[] = [];
+  for (const match of css.matchAll(fontFacePattern)) {
+    const body = match.groups?.body ?? "";
+    const family = /font-family:\s*"(?<family>[^"]+)"/u.exec(body)?.groups?.family;
+    const src = /url\("(?<src>[^"]+)"\)/u.exec(body)?.groups?.src;
+    const weight = /font-weight:\s*(?<weight>[^;]+)/u.exec(body)?.groups?.weight?.trim();
+    if (family === undefined || src === undefined || weight === undefined) {
+      continue;
+    }
+    faces.push({
+      family,
+      file: path.join(path.dirname(stylesheetPath()), src),
+      weight,
+    });
+  }
+  return faces;
+};
+
+const weightCovers = (declared: string, weight: number): boolean => {
+  const parts = declared.split(/\s+/u).map(Number);
+  const start = parts[0];
+  const end = parts[1];
+  if (start === undefined || Number.isNaN(start)) {
+    return false;
+  }
+  return end === undefined || Number.isNaN(end)
+    ? start === weight
+    : weight >= start && weight <= end;
+};
+
+const resolvedValue = (
+  declared: ReadonlyMap<string, string>,
+  name: string,
+  depth = 8,
+): string | undefined => {
+  const value = declared.get(name);
+  const reference = value === undefined ? undefined : variablePattern.exec(value)?.groups?.name;
+  return reference === undefined || depth === 0
+    ? value
+    : resolvedValue(declared, reference, depth - 1);
+};
+
+const firstFamily = (stack: string): string => {
+  return (
+    /^"(?<family>[^"]+)"/u.exec(stack.trim())?.groups?.family ?? stack.split(",")[0]?.trim() ?? ""
+  );
+};
+
+const ruleBody = (css: string, selector: string): string => {
+  return (
+    new RegExp(String.raw`${selector}\s*\{(?<body>[^}]*)\}`, "u").exec(css)?.groups?.body ?? ""
+  );
+};
+
+const declaredFont = (css: string, selector: string): string => {
+  return (
+    /font-family:\s*(?<value>[^;]+)/u.exec(ruleBody(css, selector))?.groups?.value?.trim() ?? ""
+  );
+};
+
+const remPx = (value: string | undefined): number => {
+  return Number.parseFloat(value ?? "") * rootPx;
+};
+
+const textSizeEntries = (declared: ReadonlyMap<string, string>): ReadonlyMap<string, string> => {
+  const sizes = new Map<string, string>();
+  for (const [name, value] of declared) {
+    if (name.startsWith("--text-") && !name.endsWith("--line-height")) {
+      sizes.set(name.slice("--text-".length), value);
+    }
+  }
+  return sizes;
+};
+
+const headingClassName = (size: "block" | "page" | "section"): string => {
+  const markup = renderToStaticMarkup(
+    createElement(Heading, { as: "h1", children: "見出し", size }),
+  );
+  return /class="(?<className>[^"]*)"/u.exec(markup)?.groups?.className ?? "";
+};
+
+const classWeight = (className: string): number => {
+  if (className.includes("font-medium")) {
+    return 500;
+  }
+  if (className.includes("font-bold")) {
+    return 700;
+  }
+  return 400;
+};
+
+describe("one type system", () => {
+  it("applies a loaded text face and a different loaded display face", () => {
+    expect.hasAssertions();
+    const css = stylesheetSource();
+    const declared = declarations(css);
+    const faces = loadedFaces(css);
+    expect(faces).toHaveLength(css.match(/@font-face/gu)?.length ?? 0);
+    const textStack = resolvedValue(declared, "--font-sans") ?? "";
+    const displayStack = resolvedValue(declared, "--font-display") ?? "";
+    const textFace = firstFamily(textStack);
+    const displayFace = firstFamily(displayStack);
+    expect(textStack).not.toBe("system-ui, sans-serif");
+    expect(textStack).not.toBe(retiredBodyFont);
+    expect(textStack).not.toContain("system-ui");
+    expect(textFace).not.toBe("Hiragino Sans");
+    expect(displayFace).not.toBe(textFace);
+    expect(declaredFont(css, "body")).toBe("var(--font-sans)");
+    expect(declaredFont(css, "html")).toBe("var(--font-sans)");
+    for (const family of [textFace, displayFace]) {
+      const familyFaces = faces.filter((face) => face.family === family);
+      expect(familyFaces.length).toBeGreaterThan(0);
+      for (const face of familyFaces) {
+        expect(readFileSync(face.file).subarray(0, 4).toString("ascii")).toBe("wOF2");
+      }
+    }
+    expect(faces.some((face) => face.family === textFace && weightCovers(face.weight, 400))).toBe(
+      true,
+    );
+    expect(faces.some((face) => face.family === textFace && weightCovers(face.weight, 700))).toBe(
+      true,
+    );
+    const pageClass = headingClassName("page");
+    expect(pageClass.split(/\s+/u)).toContain("font-display");
+    expect(
+      faces.some(
+        (face) => face.family === displayFace && weightCovers(face.weight, classWeight(pageClass)),
+      ),
+    ).toBe(true);
+    expect(headingClassName("section").split(/\s+/u)).toContain("font-sans");
+  });
+
+  it("keeps the accent on primary actions", () => {
+    expect.hasAssertions();
+    const declared = declarations(stylesheetSource());
+    const accent = resolvedValue(declared, "--main");
+    const holders = [...declared.keys()].filter((name) => resolvedValue(declared, name) === accent);
+    expect(accent).toMatch(/^#[\da-f]{6}$/u);
+    expect(holders).toStrictEqual(expect.arrayContaining(["--main", "--primary"]));
+    expect(holders.filter((name) => !primaryRole.test(name))).toStrictEqual([]);
+  });
+
+  it("carries a dense step, a page heading above 24px, and a landing headline", () => {
+    expect.hasAssertions();
+    const sizes = textSizeEntries(declarations(stylesheetSource()));
+    const pageClass = headingClassName("page");
+    const pageStep = [...sizes.keys()].find((step) =>
+      pageClass.split(/\s+/u).includes(`text-${step}`),
+    );
+    const pagePx = remPx(pageStep === undefined ? undefined : sizes.get(pageStep));
+    const steps = [...sizes.values()].map((value) => remPx(value));
+    expect(pagePx).toBeGreaterThan(retiredPagePx);
+    expect(Math.min(...steps)).toBeLessThan(rootPx);
+    expect(Math.max(...steps)).toBeGreaterThanOrEqual(landingPx);
+    expect(Math.max(...steps)).toBeGreaterThan(pagePx);
   });
 });
 

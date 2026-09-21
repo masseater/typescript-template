@@ -1,15 +1,11 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createHash, createPublicKey } from "node:crypto";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdir, readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { createPublicKey } from "node:crypto";
 
 import { loopbackAddress } from "@repo/config";
-import { Effect } from "effect";
+import { Crypto, Effect, FileSystem, Path } from "effect";
 
-import { failure, fileIo } from "./failure.ts";
+import { failure } from "./failure.ts";
 import { local, root, routeNames, routes, run, running, socket } from "./local-environment.ts";
+import { urlPath, withFileSystem } from "./platform.ts";
 import { privateDirectoryMode } from "./private-files.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
@@ -20,24 +16,21 @@ const aliasTimeoutMilliseconds = 30_000;
 const gatewaySession = "gateway";
 const portlessHome = new URL("portless/", local);
 const certificateAuthority = new URL("ca.pem", portlessHome);
-const portless = fileURLToPath(new URL("../node_modules/.bin/portless", import.meta.url));
-const portlessEnvironment = {
-  // oxlint-disable-next-line node/no-process-env
-  ...process.env,
-  PORTLESS_STATE_DIR: fileURLToPath(portlessHome),
-  PORTLESS_SYNC_HOSTS: "0",
-};
 
 const browserLaunchArguments = Effect.fn("browserLaunchArguments")(
   function* browserLaunchArguments() {
-    const certificate = yield* fileIo(async () => readFile(certificateAuthority, "utf-8"));
+    const certificatePath = yield* urlPath(certificateAuthority);
+    const certificate = yield* withFileSystem((fs) => fs.readFileString(certificatePath));
     const authority = yield* Effect.try({
       catch: () => failure("file_io_failed"),
       try: () => createPublicKey(certificate),
     });
-    const pin = createHash("sha256")
-      .update(authority.export({ format: "der", type: "spki" }))
-      .digest("base64");
+    const spki = new Uint8Array(authority.export({ format: "der", type: "spki" }));
+    const pin = yield* Crypto.Crypto.pipe(
+      Effect.flatMap((crypto) => crypto.digest("SHA-256", spki)),
+      Effect.map((hash) => Buffer.from(hash).toString("base64")),
+      Effect.mapError(() => failure("file_io_failed")),
+    );
     return [
       "--args",
       `--ignore-certificate-errors-spki-list=${pin},--host-resolver-rules=MAP template-*.local ${loopbackAddress}`,
@@ -45,19 +38,30 @@ const browserLaunchArguments = Effect.fn("browserLaunchArguments")(
   },
 );
 
-function launchGateway(): Effect.Effect<unknown, LocalCommandFailure> {
-  const log = fileURLToPath(new URL("logs/gateway.log", local));
-  const gateway = JSON.stringify(fileURLToPath(new URL("gateway.ts", import.meta.url)));
-  const command = `exec node ${gateway} ${proxyPort} >> ${JSON.stringify(log)} 2>&1`;
-  return run(
-    "tmux",
-    ["-L", socket, "new-session", "-d", "-s", gatewaySession, "-c", root, "fish", "-c", command],
-    { cwd: root },
-  );
+function launchGateway(): Effect.Effect<unknown, LocalCommandFailure, Path.Path> {
+  return Effect.gen(function* launch() {
+    const log = yield* urlPath(new URL("logs/gateway.log", local));
+    const gateway = JSON.stringify(yield* urlPath(new URL("gateway.ts", import.meta.url)));
+    const command = `exec node ${gateway} ${proxyPort} >> ${JSON.stringify(log)} 2>&1`;
+    return yield* run(
+      "tmux",
+      ["-L", socket, "new-session", "-d", "-s", gatewaySession, "-c", root, "fish", "-c", command],
+      { cwd: root },
+    );
+  });
 }
 
 const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
-  yield* fileIo(async () => mkdir(portlessHome, { mode: privateDirectoryMode, recursive: true }));
+  const portlessHomePath = yield* urlPath(portlessHome);
+  const portlessEnvironment = {
+    ...process.env,
+    PORTLESS_STATE_DIR: portlessHomePath,
+    PORTLESS_SYNC_HOSTS: "0",
+  };
+  yield* withFileSystem((fs) =>
+    fs.makeDirectory(portlessHomePath, { mode: privateDirectoryMode, recursive: true }),
+  );
+  const portless = yield* urlPath(new URL("../node_modules/.bin/portless", import.meta.url));
   yield* run(portless, ["proxy", "start", "--lan", "--port", String(proxyPort)], {
     cwd: root,
     env: portlessEnvironment,
@@ -75,9 +79,14 @@ const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
   }
 });
 
-function certificateAuthorityBase64(): Effect.Effect<string, LocalCommandFailure> {
-  return fileIo(async () => readFile(certificateAuthority)).pipe(
-    Effect.map((certificate) => certificate.toString("base64")),
+function certificateAuthorityBase64(): Effect.Effect<
+  string,
+  LocalCommandFailure,
+  FileSystem.FileSystem | Path.Path
+> {
+  return urlPath(certificateAuthority).pipe(
+    Effect.flatMap((path) => withFileSystem((fs) => fs.readFile(path))),
+    Effect.map((certificate) => Buffer.from(certificate).toString("base64")),
   );
 }
 

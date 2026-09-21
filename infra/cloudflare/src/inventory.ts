@@ -130,7 +130,6 @@ function declaredValue(value: unknown): unknown {
 
 function applyVerificationEnvironment(): void {
   for (const [name, value] of Object.entries(verificationEnvironment)) {
-    // oxlint-disable-next-line node/no-process-env
     process.env[name] = value;
   }
 }
