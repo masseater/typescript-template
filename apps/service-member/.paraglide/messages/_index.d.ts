@@ -1,6 +1,14 @@
 export type LocalizedString = import('../runtime.js').LocalizedString;
 /** @typedef {import('../runtime.js').LocalizedString} LocalizedString */
+export * from './closing_title.js';
 export * from './contact_link.js';
+export * from './feature_profile_body.js';
+export * from './feature_profile_title.js';
+export * from './feature_search_body.js';
+export * from './feature_search_title.js';
+export * from './feature_security_body.js';
+export * from './feature_security_title.js';
+export * from './features_title.js';
 export * from './hero_body.js';
 export * from './hero_title.js';
 export * from './locale_en.js';

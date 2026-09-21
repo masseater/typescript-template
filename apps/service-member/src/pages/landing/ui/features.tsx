@@ -1,44 +1,47 @@
 import { Heading } from "@repo/ui";
 
+import { m } from "#shared/i18n/index.ts";
 import { Feature } from "./feature.tsx";
 
 import type { ReactElement } from "react";
 import type { SketchKind } from "./feature-sketch.tsx";
 
 const features: ReadonlyArray<{
-  description: string;
-  reverse?: boolean;
+  description: () => string;
+  reverse: boolean;
   sketch: SketchKind;
-  title: string;
+  title: () => string;
 }> = [
   {
-    description: "名前と自己紹介を書いて、自分のページを持てます。",
+    description: m.feature_profile_body,
+    reverse: false,
     sketch: "profile",
-    title: "プロフィールを作る",
+    title: m.feature_profile_title,
   },
   {
-    description: "名前で検索して、気になる人のプロフィールを開けます。",
+    description: m.feature_search_body,
     reverse: true,
     sketch: "search",
-    title: "他の利用者を探す",
+    title: m.feature_search_title,
   },
   {
-    description: "パスキーと 2 段階認証で、ログインを強くできます。",
+    description: m.feature_security_body,
+    reverse: false,
     sketch: "security",
-    title: "アカウントを守る",
+    title: m.feature_security_title,
   },
 ];
 
 function Features(): ReactElement {
   return (
     <section className="mx-auto flex w-full max-w-wide flex-col gap-10 px-4 py-16">
-      <Heading as="h2">できること</Heading>
+      <Heading as="h2">{m.features_title()}</Heading>
       <ul className="flex flex-col gap-12">
         {features.map((feature) => (
           <Feature
-            key={feature.title}
-            title={feature.title}
-            description={feature.description}
+            key={feature.sketch}
+            title={feature.title()}
+            description={feature.description()}
             sketch={feature.sketch}
             reverse={feature.reverse}
           />
