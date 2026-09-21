@@ -6,10 +6,15 @@ import type { ReactElement, ReactNode } from "react";
 
 function MemberShell({
   children,
+  lang,
   routes,
-}: Readonly<{ children: ReactNode; routes: Readonly<Record<string, string>> }>): ReactElement {
+}: Readonly<{
+  children: ReactNode;
+  lang: string;
+  routes: Readonly<Record<string, string>>;
+}>): ReactElement {
   return (
-    <AppShell routes={routes}>
+    <AppShell lang={lang} routes={routes}>
       <MemberAnalyticsNavigation />
       {children}
     </AppShell>
