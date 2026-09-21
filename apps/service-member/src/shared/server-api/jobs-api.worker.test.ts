@@ -22,9 +22,9 @@ import {
 import { env } from "cloudflare:workers";
 import { Effect, Layer, Schema } from "effect";
 
-import type { JobsBindings } from "@repo/config";
-
 import { jobsApi } from "./jobs-api.ts";
+
+import type { JobsBindings } from "@repo/config";
 
 const routes = {
   "/api/jobs": "jobs-api",
