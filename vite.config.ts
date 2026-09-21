@@ -1,3 +1,4 @@
+import { MergifyReporter } from "@mergifyio/vitest";
 import {
   devServerTests,
   dontReviewItPreset,
@@ -136,6 +137,7 @@ export default defineConfig({
       ...dedicatedToolVitestProjects,
     ],
     mockReset: true,
+    reporters: ["default", new MergifyReporter()],
     restoreMocks: true,
     testTimeout: 30_000,
   },
