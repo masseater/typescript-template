@@ -1,55 +1,16 @@
-import { errorMessage } from "@repo/auth-ui";
-import { apiData } from "@repo/runtime/client";
-import { formatWarekiDate } from "@repo/ui";
 import { queryOptions } from "@tanstack/react-query";
-
-import { adminClient } from "#shared/api/index.ts";
-import { UserList } from "#shared/contracts/index.ts";
-
-interface ListedUser {
-  readonly email: string;
-  readonly emailVerified: boolean;
-  readonly id: string;
-  readonly name: string;
-  readonly registeredOn: string;
-  readonly role: (typeof UserList.Type)["users"][number]["role"];
-  readonly twoFactorEnabled: boolean;
-}
-
-interface ListedUsers {
-  readonly total: number;
-  readonly users: readonly ListedUser[];
-}
 
 const userListKey = ["admin-users"] as const;
 
-async function listUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers> {
-  try {
-    const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
-    const listed = users.map(
-      ({ createdAt, email, emailVerified, id, name, role, twoFactorEnabled }) => ({
-        email,
-        emailVerified,
-        id,
-        name,
-        registeredOn: formatWarekiDate(createdAt),
-        role,
-        twoFactorEnabled,
-      }),
-    );
-    return { total, users: listed };
-  } catch (failure) {
-    throw new Error(errorMessage(failure));
-  }
-}
-
-function userListOptions(query: Readonly<Record<string, string>>) {
+function userListOptions<Result>(
+  query: Readonly<Record<string, string>>,
+  queryFn: () => Promise<Result>,
+) {
   return queryOptions({
-    queryFn: () => listUsers(query),
+    queryFn,
     queryKey: [...userListKey, query] as const,
     retry: false,
   });
 }
 
 export { userListKey, userListOptions };
-export type { ListedUser, ListedUsers };

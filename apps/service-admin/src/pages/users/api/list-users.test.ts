@@ -7,8 +7,11 @@ describe("admin user list queries", () => {
   it("invalidates every search when a row changes the list", async () => {
     expect.hasAssertions();
     const client = new QueryClient();
-    const first = userListOptions({ offset: "0" });
-    const second = userListOptions({ keyword: "ada", offset: "0" });
+    const unread = (): Promise<never> => {
+      throw new Error("ユーザー一覧の取得はこのテストの対象外です。");
+    };
+    const first = userListOptions({ offset: "0" }, unread);
+    const second = userListOptions({ keyword: "ada", offset: "0" }, unread);
     const empty = { total: 0, users: [] };
     client.setQueryData(first.queryKey, empty);
     client.setQueryData(second.queryKey, empty);
