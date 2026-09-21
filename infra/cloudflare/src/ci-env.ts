@@ -95,4 +95,3 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
 });
 
 export { PrepareCiEnvFailure, writeCiSecretsFile };
-export type { CiEnvPreparation };

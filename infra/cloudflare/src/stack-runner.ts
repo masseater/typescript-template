@@ -140,4 +140,3 @@ const runDeployment = Effect.fn("runDeployment")(function* runDeployment(
 });
 
 export { runDeployment };
-export type { Deployment };

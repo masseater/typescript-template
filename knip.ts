@@ -46,6 +46,7 @@ const workspaces = {
   },
   "libs/monitor": {
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
+    ignoreDependencies: ["cloudflare"],
     project: ["src/**/*.ts!"],
   },
   "libs/observability": {
@@ -53,6 +54,7 @@ const workspaces = {
   },
   "libs/runtime": {
     entry: ["src/*-fixture.ts"],
+    ignoreDependencies: ["cloudflare"],
     project: ["src/**/*.ts!"],
   },
   "libs/auth-ui": {
@@ -119,7 +121,7 @@ const cloudflareStacks = [
 
 const application = {
   entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
-  ignoreDependencies: ["steiger"],
+  ignoreDependencies: ["cloudflare", "steiger"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
@@ -162,31 +164,13 @@ const config = ({
   return {
     ignoreDependencies: ["vite"],
     ignoreIssues: {
-      "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
-      "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
-      "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
-      "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
-      "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
-      "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
-      "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
-      "infra/cloudflare/src/account-inspection.ts": ["types"],
       "infra/cloudflare/src/account-lookup.ts": ["exports"],
       "infra/cloudflare/src/account-read.ts": ["exports"],
-      "infra/cloudflare/src/ci-env.ts": ["types"],
       "infra/cloudflare/src/config.ts": ["exports"],
       "infra/cloudflare/src/credentials.ts": ["exports"],
-      "infra/cloudflare/src/deploy-token.ts": ["exports", "types"],
-      "infra/cloudflare/src/plan-confirmation.ts": ["types"],
+      "infra/cloudflare/src/deploy-token.ts": ["exports"],
       "infra/cloudflare/src/secrets.ts": ["exports"],
-      "infra/cloudflare/src/stack-runner.ts": ["types"],
       "infra/cloudflare/src/verification-fixture.ts": ["exports"],
-      "libs/db/src/testing.ts": ["unlisted"],
-      "libs/monitor/src/mail-recorder.ts": ["unlisted"],
-      "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
-      "libs/runtime/src/app-fixture.ts": ["unlisted"],
-      "libs/runtime/src/bindings.worker.test.ts": ["unlisted"],
-      "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
-      "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
     },
     treatConfigHintsAsErrors: true,
@@ -229,6 +213,7 @@ const config = ({
       },
       "libs/db": {
         entry: ["src/records-fixture.ts"],
+        ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
       "libs/db-local": {

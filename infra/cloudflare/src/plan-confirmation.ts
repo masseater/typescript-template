@@ -245,4 +245,4 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
 });
 
 export { acceptPlan, planConfirmation, planReport, plannedStack };
-export type { PlanReport, PlannedStack };
+export type { PlannedStack };
