@@ -1,10 +1,13 @@
-import { memberHasPaidPlan, memberNavItems } from "../model/navigation.ts";
+import { memberNavItems } from "../model/navigation.ts";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
 import type { ReactElement } from "react";
 
-function MemberTabs({ memberBoard }: Readonly<{ memberBoard: boolean }>): ReactElement {
-  const items = memberNavItems(memberHasPaidPlan, memberBoard);
+function MemberTabs({
+  memberBoard,
+  profileId,
+}: Readonly<{ memberBoard: boolean; profileId: string }>): ReactElement {
+  const items = memberNavItems(memberBoard, profileId);
   return (
     <nav
       aria-label="メイン"

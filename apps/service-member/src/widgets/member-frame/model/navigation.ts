@@ -1,79 +1,86 @@
-import { BellIcon, HomeIcon, MessageCircleIcon, SearchIcon, SquareStackIcon } from "lucide-react";
+import { HomeIcon, SquareStackIcon, UserRoundIcon } from "lucide-react";
+
+import { m } from "#shared/i18n/index.ts";
 
 import type { LucideIcon } from "lucide-react";
 
-type MemberNavId = "board" | "home" | "messages" | "notifications" | "search";
+type MemberNavItem = Readonly<
+  | {
+      icon: LucideIcon;
+      id: "board";
+      label: string;
+      to: "/board";
+    }
+  | {
+      icon: LucideIcon;
+      id: "home";
+      label: string;
+      to: "/home";
+    }
+  | {
+      icon: LucideIcon;
+      id: "profile";
+      label: string;
+      params: { readonly id: string };
+      to: "/users/$id";
+    }
+>;
 
-type MemberNavPath = "/board" | "/home" | "/messages" | "/notifications" | "/search" | "/upgrade";
-
-type MemberNavItem = Readonly<{
-  badge?: number;
-  icon: LucideIcon;
-  id: MemberNavId;
-  label: string;
-  paid?: true;
-  to: MemberNavPath;
-}>;
-
-const memberHasPaidPlan = false;
-
-function memberNavItems(paid: boolean, memberBoard: boolean): readonly MemberNavItem[] {
+function memberNavItems(memberBoard: boolean, profileId: string): readonly MemberNavItem[] {
   return [
-    { icon: HomeIcon, id: "home", label: "ホーム", to: "/home" },
+    { icon: HomeIcon, id: "home", label: m.nav_home(), to: "/home" },
     {
-      icon: SearchIcon,
-      id: "search",
-      label: "探す",
-      paid: true,
-      to: paid ? "/search" : "/upgrade",
+      icon: UserRoundIcon,
+      id: "profile",
+      label: m.nav_profile(),
+      params: { id: profileId },
+      to: "/users/$id",
     },
     ...(memberBoard
       ? [
           {
             icon: SquareStackIcon,
             id: "board",
-            label: "掲示板",
+            label: m.nav_board(),
             to: "/board",
           } satisfies MemberNavItem,
         ]
       : []),
-    { badge: 0, icon: MessageCircleIcon, id: "messages", label: "メッセージ", to: "/messages" },
-    { badge: 0, icon: BellIcon, id: "notifications", label: "通知", to: "/notifications" },
   ];
 }
 
-const memberPageTitles: Readonly<Record<MemberNavPath | "/support" | "/users", string>> = {
-  "/board": "掲示板",
-  "/home": "ホーム",
-  "/messages": "メッセージ",
-  "/notifications": "通知",
-  "/search": "探す",
-  "/support": "お問い合わせ",
-  "/upgrade": "有料プラン",
-  "/users": "探す",
-};
+const memberPageTitles = {
+  "/board": m.nav_board,
+  "/home": m.nav_home,
+  "/messages": m.title_messages,
+  "/notifications": m.title_notifications,
+  "/search": m.title_search,
+  "/support": m.title_support,
+  "/upgrade": m.title_upgrade,
+  "/users": m.title_users,
+} as const;
 
 function titleForPath(pathname: string): string {
   if (pathname.startsWith("/users/")) {
-    return "プロフィール";
+    return m.nav_profile();
   }
   if (pathname.startsWith("/settings")) {
-    return "設定";
+    return m.title_settings();
   }
   if (pathname.startsWith("/board/")) {
-    return "スレッド";
+    return m.title_thread();
   }
   if (pathname.startsWith("/messages/")) {
-    return "会話";
+    return m.title_conversation();
   }
   if (pathname.startsWith("/support/")) {
-    return "お問い合わせ";
+    return m.title_support();
   }
   if (pathname in memberPageTitles) {
-    return memberPageTitles[pathname as keyof typeof memberPageTitles];
+    return memberPageTitles[pathname as keyof typeof memberPageTitles]();
   }
-  return "会員";
+  return m.title_member();
 }
 
-export { memberHasPaidPlan, memberNavItems, titleForPath };
+export { memberNavItems, titleForPath };
 export type { MemberNavItem };

@@ -10,7 +10,7 @@ function ShellPage({
   title: string;
 }>): ReactElement {
   return (
-    <main className="mx-auto flex w-full max-w-column flex-col gap-4 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-page flex-col gap-4 px-4 py-8">
       <Heading as="h1" size="page">
         {title}
       </Heading>
