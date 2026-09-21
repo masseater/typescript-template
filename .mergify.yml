@@ -12,6 +12,7 @@ merge_queue:
 queue_rules:
   - name: default
     batch_size: 5
+    batch_max_wait_time: 5 min
     checks_timeout: 45 min
     merge_method: merge
     queue_conditions:
