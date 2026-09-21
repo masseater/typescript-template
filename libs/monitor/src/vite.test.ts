@@ -36,7 +36,13 @@ describe("monitorWorkerVite", () => {
 });
 
 describe("the pack extension", () => {
-  const it = test.extend("packedExtension", () => monitorWorkerVite().pack.outExtensions());
+  const it = test.extend("packedExtension", () => {
+    const { outExtensions } = monitorWorkerVite().pack;
+    if (outExtensions === undefined) {
+      throw new Error("monitorWorkerVite pack must declare outExtensions");
+    }
+    return outExtensions();
+  });
 
   it("emits JavaScript", ({ packedExtension }) => {
     expect(packedExtension).toStrictEqual({ js: ".js" });
