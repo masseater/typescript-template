@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";

@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { homedir, userInfo } from "node:os";
 
 import { Effect, FileSystem, Path, PlatformError } from "effect";

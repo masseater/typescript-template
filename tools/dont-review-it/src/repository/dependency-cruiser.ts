@@ -79,7 +79,7 @@ const configuration: IConfiguration = {
       severity: "error",
       to: {
         dependencyTypes: ["local"],
-        pathNot: String.raw`^$1/$2/|^libs/auth/src/testing\.ts$|^libs/db/src/migrate-d1\.ts$|^libs/db/src/remote-input\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/repository/ui-lint-settings\.ts$|^infra/cloudflare/src/remote-command\.ts$`,
+        pathNot: String.raw`^$1/$2/|^libs/auth/src/testing\.ts$|^libs/db/src/migrate-d1\.ts$|^libs/db/src/remote-input\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/repository/ui-lint-settings\.ts$|^infra/cloudflare/src/remote-command\.ts$|^knip\.ts$`,
       },
     },
     {

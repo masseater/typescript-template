@@ -16,7 +16,7 @@ const destructiveCommands = [
 ];
 
 function untyped(command: readonly string[]): AlchemyCommand {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the assertion builds an alchemy command outside the allow list so the refusal under test can see it
   return command as unknown as AlchemyCommand;
 }
 
