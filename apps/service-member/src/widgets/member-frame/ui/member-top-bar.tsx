@@ -4,7 +4,7 @@ import { serviceName } from "#shared/config/index.ts";
 import { titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { Session } from "#entities/session/model/session.ts";
 import type { ReactElement } from "react";
 
 function MemberTopBar({ user }: Readonly<{ user: Session["user"] }>): ReactElement {

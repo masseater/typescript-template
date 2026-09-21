@@ -5,7 +5,7 @@ import { memberHasPaidPlan, memberNavItems } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 import { MemberNavItemLink } from "./member-nav-item.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { Session } from "#entities/session/model/session.ts";
 import type { ReactElement } from "react";
 
 function MemberRail({
