@@ -11,12 +11,12 @@ import { userListQuery } from "./users-search.ts";
 import type { UsersSearch } from "./users-search.ts";
 
 interface ListedUser {
+  readonly accountState: (typeof UserList.Type)["users"][number]["accountState"];
   readonly email: string;
   readonly emailVerified: boolean;
   readonly id: string;
   readonly name: string;
   readonly registeredOn: string;
-  readonly role: (typeof UserList.Type)["users"][number]["role"];
   readonly twoFactorEnabled: boolean;
 }
 
@@ -29,13 +29,13 @@ async function listUsers(query: Readonly<Record<string, string>>): Promise<Liste
   try {
     const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
     const listed = users.map(
-      ({ createdAt, email, emailVerified, id, name, role, twoFactorEnabled }) => ({
+      ({ accountState, createdAt, email, emailVerified, id, name, twoFactorEnabled }) => ({
+        accountState,
         email,
         emailVerified,
         id,
         name,
         registeredOn: formatWarekiDate(createdAt),
-        role,
         twoFactorEnabled,
       }),
     );

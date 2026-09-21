@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as ConsentRouteImport } from './routes/consent'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known.$'
 import { Route as AdminIndexRouteImport } from './routes/_admin/index'
 import { Route as AdminAdminsRouteImport } from './routes/_admin/admins'
 import { Route as AdminInquiriesRouteImport } from './routes/_admin/inquiries'
@@ -23,6 +26,7 @@ import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-e
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as AdminMembersIdRouteImport } from './routes/_admin/members.$id'
 import { Route as AdminTermsVersionRouteImport } from './routes/_admin/terms.$version'
+import { Route as PublicInviteTokenRouteImport } from './routes/_public/invite.$token'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/_admin',
@@ -30,6 +34,21 @@ const AdminRoute = AdminRouteImport.update({
 } as any)
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsentRoute = ConsentRouteImport.update({
+  id: '/consent',
+  path: '/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
+  id: '/.well-known/$',
+  path: '/.well-known/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -92,9 +111,17 @@ const AdminTermsVersionRoute = AdminTermsVersionRouteImport.update({
   path: '/$version',
   getParentRoute: () => AdminTermsRoute,
 } as any)
+const PublicInviteTokenRoute = PublicInviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => PublicRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AdminIndexRoute
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admins': typeof AdminAdminsRoute
   '/inquiries': typeof AdminInquiriesRoute
   '/members': typeof AdminMembersRouteWithChildren
@@ -106,9 +133,13 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/members/$id': typeof AdminMembersIdRoute
   '/terms/$version': typeof AdminTermsVersionRoute
+  '/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AdminIndexRoute
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admins': typeof AdminAdminsRoute
   '/inquiries': typeof AdminInquiriesRoute
   '/members': typeof AdminMembersRouteWithChildren
@@ -120,11 +151,15 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/members/$id': typeof AdminMembersIdRoute
   '/terms/$version': typeof AdminTermsVersionRoute
+  '/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_admin': typeof AdminRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
+  '/consent': typeof ConsentRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/_admin/admins': typeof AdminAdminsRoute
   '/_admin/inquiries': typeof AdminInquiriesRoute
   '/_admin/members': typeof AdminMembersRouteWithChildren
@@ -137,11 +172,15 @@ export interface FileRoutesById {
   '/_admin/': typeof AdminIndexRoute
   '/_admin/members/$id': typeof AdminMembersIdRoute
   '/_admin/terms/$version': typeof AdminTermsVersionRoute
+  '/_public/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
     | '/admins'
     | '/inquiries'
     | '/members'
@@ -153,9 +192,13 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/members/$id'
     | '/terms/$version'
+    | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
     | '/admins'
     | '/inquiries'
     | '/members'
@@ -167,10 +210,14 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/members/$id'
     | '/terms/$version'
+    | '/invite/$token'
   id:
     | '__root__'
     | '/_admin'
     | '/_public'
+    | '/consent'
+    | '/mcp'
+    | '/.well-known/$'
     | '/_admin/admins'
     | '/_admin/inquiries'
     | '/_admin/members'
@@ -183,11 +230,15 @@ export interface FileRouteTypes {
     | '/_admin/'
     | '/_admin/members/$id'
     | '/_admin/terms/$version'
+    | '/_public/invite/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
+  ConsentRoute: typeof ConsentRoute
+  McpRoute: typeof McpRoute
+  DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiSplatRoute: typeof ApiSplatRoute
 }
 
@@ -205,6 +256,27 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/consent': {
+      id: '/consent'
+      path: '/consent'
+      fullPath: '/consent'
+      preLoaderRoute: typeof ConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/$': {
+      id: '/.well-known/$'
+      path: '/.well-known/$'
+      fullPath: '/.well-known/$'
+      preLoaderRoute: typeof DotwellKnownSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_admin/': {
@@ -291,6 +363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTermsVersionRouteImport
       parentRoute: typeof AdminTermsRoute
     }
+    '/_public/invite/$token': {
+      id: '/_public/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof PublicInviteTokenRouteImport
+      parentRoute: typeof PublicRoute
+    }
   }
 }
 
@@ -343,11 +422,13 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface PublicRouteChildren {
   PublicLoginRoute: typeof PublicLoginRoute
   PublicVerifyEmailRoute: typeof PublicVerifyEmailRoute
+  PublicInviteTokenRoute: typeof PublicInviteTokenRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
   PublicLoginRoute: PublicLoginRoute,
   PublicVerifyEmailRoute: PublicVerifyEmailRoute,
+  PublicInviteTokenRoute: PublicInviteTokenRoute,
 }
 
 const PublicRouteWithChildren =
@@ -356,6 +437,9 @@ const PublicRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
+  ConsentRoute: ConsentRoute,
+  McpRoute: McpRoute,
+  DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiSplatRoute: ApiSplatRoute,
 }
 export const routeTree = rootRouteImport

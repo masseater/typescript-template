@@ -3,8 +3,9 @@ import { redirect } from "@tanstack/react-router";
 
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
 import { loadSession } from "#entities/session/index.ts";
+import { loadOnboardingStep } from "#pages/account/welcome/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
-import { loadOnboardingStep } from "#pages/welcome/index.ts";
+import { loadRecoveryOffer } from "#pages/recovery/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { Session } from "#entities/session/index.ts";
@@ -19,7 +20,8 @@ const welcomePath = {
   choose: "/welcome/choose",
   interview: "/welcome/interview",
   profile: "/welcome/profile",
-} as const satisfies Readonly<Record<Exclude<OnboardingStep, "done">, string>>;
+  recovery: "/welcome/recovery",
+} as const;
 
 async function enterPublicFrame(pathname: string): Promise<void> {
   if (!entrances.has(pathname)) {
@@ -41,7 +43,13 @@ async function enterMemberFrame(
   }
   const step = await loadOnboardingStep();
   if (step !== "done") {
-    throw redirect({ to: welcomePath[step] });
+    const offer = await loadRecoveryOffer();
+    if (offer.available && pathname !== welcomePath.recovery) {
+      throw redirect({ to: welcomePath.recovery });
+    }
+    if (pathname !== welcomePath.recovery) {
+      throw redirect({ to: welcomePath[step] });
+    }
   }
   if (pathname.startsWith("/welcome")) {
     throw redirect({ to: "/home" });
@@ -64,6 +72,14 @@ async function enterWelcomeFrame(
   const step = await loadOnboardingStep();
   if (step === "done") {
     throw redirect({ to: "/home" });
+  }
+  const pathname = new URL(href).pathname;
+  const offer = await loadRecoveryOffer();
+  if (offer.available && pathname !== welcomePath.recovery) {
+    throw redirect({ to: welcomePath.recovery });
+  }
+  if (!offer.available && pathname === welcomePath.recovery) {
+    throw redirect({ to: welcomePath[step] });
   }
   return { session, step };
 }

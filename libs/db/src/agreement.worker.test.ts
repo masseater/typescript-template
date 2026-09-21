@@ -15,9 +15,10 @@ import {
   requireSignupAgreements,
   withdrawAgreementKind,
 } from "./agreement.ts";
+import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { addSession, addUser } from "./records-fixture.ts";
-import { AUDIT_ACTION, auditEvent } from "./schema.ts";
+import { auditEvent } from "./schema.ts";
 import { TestDatabase } from "./testing.ts";
 
 const acceptedAt = new Date("2026-02-01T00:00:00.000Z");

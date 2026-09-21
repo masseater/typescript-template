@@ -8,7 +8,11 @@ import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
-import { ANALYSIS_TIMEOUT, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
+import {
+  ANALYSIS_TIMEOUT,
+  REACT_DOCTOR_SKIP_DETAIL,
+  skippedOnlyByTimeout,
+} from "./react-doctor-timeout.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 interface Scan {
@@ -79,7 +83,7 @@ const findingsOf = (entry: typeof Project.Type): string[] => {
 const skippedOf = (entry: typeof Project.Type): string[] => {
   const name = entry.project.projectName;
   return [
-    ...(entry.complete ? [] : [`${name} incomplete`]),
+    ...(entry.complete ? [] : [`${name} ${REACT_DOCTOR_SKIP_DETAIL.incomplete}`]),
     ...entry.skippedChecks.map((check) => `${name} ${check}`),
     ...Object.entries(entry.skippedCheckReasons ?? {}).map(
       ([check, reason]) => `${name} ${check} ${reason}`,
@@ -115,7 +119,11 @@ const scanProjects = Effect.fn("scanProjects")(function* scanProjects() {
   while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
     attempt += 1;
     yield* Console.error(
-      JSON.stringify({ attempt, event: "quality.react_doctor_retry", reason: ANALYSIS_TIMEOUT }),
+      JSON.stringify({
+        attempt,
+        event: "quality.react_doctor_retry",
+        reason: "transient-analysis-failure",
+      }),
     );
     scanned = yield* scan(["tools/dont-review-it", "--json"]);
     report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(

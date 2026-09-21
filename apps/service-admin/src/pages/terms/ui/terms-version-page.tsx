@@ -1,11 +1,20 @@
-import { Button, ButtonLink, STATUS_VARIANT, StatusMessage, formatWarekiDate } from "@repo/ui";
+import {
+  Button,
+  ButtonLink,
+  STATUS_VARIANT,
+  StatusMessage,
+  type RequestResult,
+  formatWarekiDate,
+  resultError,
+} from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
 import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
 import { useAgreementVersion } from "#pages/terms/model/agreement-versions.ts";
 import { OpsPage } from "#widgets/ops-page/index.ts";
 import { DraftEditor } from "./draft-editor.tsx";
 
-import type { Loaded, VersionDetail } from "#pages/terms/model/agreement-versions.ts";
+import type { VersionDetail } from "#pages/terms/model/agreement-versions.ts";
 import type { ReactElement } from "react";
 
 function PublishedBody({ version }: Readonly<{ version: VersionDetail }>): ReactElement {
@@ -28,21 +37,22 @@ function PublishedBody({ version }: Readonly<{ version: VersionDetail }>): React
 function VersionContent({
   onReload,
   state,
-}: Readonly<{ onReload: () => void; state: Loaded<VersionDetail> }>): ReactElement {
-  if (state.status === "loading") {
-    return <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>;
-  }
-  if (state.status === "failed") {
+}: Readonly<{ onReload: () => void; state: RequestResult<VersionDetail> }>): ReactElement {
+  const failure = resultError(state);
+  if (failure !== undefined) {
     return (
       <div className="flex flex-col items-start gap-2">
         <StatusMessage variant={STATUS_VARIANT.failure}>
-          版を取得できませんでした。{state.message}
+          版を取得できませんでした。{failure}
         </StatusMessage>
         <Button type="button" onClick={onReload}>
           再試行
         </Button>
       </div>
     );
+  }
+  if (!AsyncResult.isSuccess(state) || state.waiting) {
+    return <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>;
   }
   const version = state.value;
   return (

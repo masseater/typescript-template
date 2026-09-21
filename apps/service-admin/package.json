@@ -4,6 +4,7 @@
   "type": "module",
   "imports": {
     "#dev-*": "./dev-*.ts",
+    "#paraglide/*": "./.paraglide/*",
     "#*": "./src/*"
   },
   "scripts": {
@@ -11,7 +12,10 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@better-auth/oauth-provider": "1.7.5",
     "@effect/atom-react": "catalog:",
+    "@inlang/paraglide-js": "catalog:",
+    "@modelcontextprotocol/server": "2.0.0",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
@@ -22,6 +26,8 @@
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@tanstack/react-table": "9.2.4",
+    "better-auth": "catalog:",
+    "better-call": "1.4.0",
     "effect": "catalog:",
     "es-toolkit": "catalog:",
     "lucide-react": "catalog:",

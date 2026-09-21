@@ -4,9 +4,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./bindings": "./src/bindings.ts",
     "./http": "./src/http.ts",
     "./worker": "./src/worker.ts",
     "./client": "./src/client.ts",
+    "./contracts": "./src/contracts.ts",
     "./account": "./src/account.ts",
     "./testing": "./src/app-fixture.ts",
     "./security": "./src/security.ts"
@@ -14,12 +16,15 @@
   "scripts": {},
   "dependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/sql-d1": "4.0.0-rc.112",
+    "@effect/sql-sqlite-do": "4.0.0-rc.112",
     "@elysiajs/eden": "1.4.9",
     "@repo/auth": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
     "effect": "catalog:",
+    "effect-cf": "0.47.0",
     "elysia": "1.4.30"
   },
   "devDependencies": {

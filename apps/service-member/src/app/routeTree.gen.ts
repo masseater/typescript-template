@@ -40,7 +40,9 @@ import { Route as MemberSettingsLeaveRouteImport } from './routes/_member/settin
 import { Route as MemberSettingsNotificationsRouteImport } from './routes/_member/settings.notifications'
 import { Route as MemberSettingsPlanRouteImport } from './routes/_member/settings.plan'
 import { Route as MemberSettingsProfileRouteImport } from './routes/_member/settings.profile'
+import { Route as MemberSettingsRecoveryRouteImport } from './routes/_member/settings.recovery'
 import { Route as MemberSettingsSecurityRouteImport } from './routes/_member/settings.security'
+import { Route as MemberSettingsVisibilityRouteImport } from './routes/_member/settings.visibility'
 import { Route as MemberUsersIndexRouteImport } from './routes/_member/users.index'
 import { Route as MemberUsersIdRouteImport } from './routes/_member/users.$id'
 import { Route as WelcomeWelcomeIndexRouteImport } from './routes/_welcome/welcome.index'
@@ -48,6 +50,7 @@ import { Route as WelcomeWelcomeAgreementRouteImport } from './routes/_welcome/w
 import { Route as WelcomeWelcomeChooseRouteImport } from './routes/_welcome/welcome.choose'
 import { Route as WelcomeWelcomeInterviewRouteImport } from './routes/_welcome/welcome.interview'
 import { Route as WelcomeWelcomeProfileRouteImport } from './routes/_welcome/welcome.profile'
+import { Route as WelcomeWelcomeRecoveryRouteImport } from './routes/_welcome/welcome.recovery'
 
 const MemberRoute = MemberRouteImport.update({
   id: '/_member',
@@ -203,11 +206,22 @@ const MemberSettingsProfileRoute = MemberSettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberSettingsRecoveryRoute = MemberSettingsRecoveryRouteImport.update({
+  id: '/settings/recovery',
+  path: '/settings/recovery',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberSettingsSecurityRoute = MemberSettingsSecurityRouteImport.update({
   id: '/settings/security',
   path: '/settings/security',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberSettingsVisibilityRoute =
+  MemberSettingsVisibilityRouteImport.update({
+    id: '/settings/visibility',
+    path: '/settings/visibility',
+    getParentRoute: () => MemberRoute,
+  } as any)
 const MemberUsersIndexRoute = MemberUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -243,6 +257,11 @@ const WelcomeWelcomeProfileRoute = WelcomeWelcomeProfileRouteImport.update({
   path: '/welcome/profile',
   getParentRoute: () => WelcomeRoute,
 } as any)
+const WelcomeWelcomeRecoveryRoute = WelcomeWelcomeRecoveryRouteImport.update({
+  id: '/welcome/recovery',
+  path: '/welcome/recovery',
+  getParentRoute: () => WelcomeRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -271,12 +290,15 @@ export interface FileRoutesByFullPath {
   '/settings/notifications': typeof MemberSettingsNotificationsRoute
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
+  '/settings/recovery': typeof MemberSettingsRecoveryRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/settings/visibility': typeof MemberSettingsVisibilityRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/welcome/profile': typeof WelcomeWelcomeProfileRoute
+  '/welcome/recovery': typeof WelcomeWelcomeRecoveryRoute
   '/board/': typeof MemberBoardIndexRoute
   '/settings/': typeof MemberSettingsIndexRoute
   '/users/': typeof MemberUsersIndexRoute
@@ -309,12 +331,15 @@ export interface FileRoutesByTo {
   '/settings/notifications': typeof MemberSettingsNotificationsRoute
   '/settings/plan': typeof MemberSettingsPlanRoute
   '/settings/profile': typeof MemberSettingsProfileRoute
+  '/settings/recovery': typeof MemberSettingsRecoveryRoute
   '/settings/security': typeof MemberSettingsSecurityRoute
+  '/settings/visibility': typeof MemberSettingsVisibilityRoute
   '/users/$id': typeof MemberUsersIdRoute
   '/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/welcome/profile': typeof WelcomeWelcomeProfileRoute
+  '/welcome/recovery': typeof WelcomeWelcomeRecoveryRoute
   '/board': typeof MemberBoardIndexRoute
   '/settings': typeof MemberSettingsIndexRoute
   '/users': typeof MemberUsersIndexRoute
@@ -351,12 +376,15 @@ export interface FileRoutesById {
   '/_member/settings/notifications': typeof MemberSettingsNotificationsRoute
   '/_member/settings/plan': typeof MemberSettingsPlanRoute
   '/_member/settings/profile': typeof MemberSettingsProfileRoute
+  '/_member/settings/recovery': typeof MemberSettingsRecoveryRoute
   '/_member/settings/security': typeof MemberSettingsSecurityRoute
+  '/_member/settings/visibility': typeof MemberSettingsVisibilityRoute
   '/_member/users/$id': typeof MemberUsersIdRoute
   '/_welcome/welcome/agreement': typeof WelcomeWelcomeAgreementRoute
   '/_welcome/welcome/choose': typeof WelcomeWelcomeChooseRoute
   '/_welcome/welcome/interview': typeof WelcomeWelcomeInterviewRoute
   '/_welcome/welcome/profile': typeof WelcomeWelcomeProfileRoute
+  '/_welcome/welcome/recovery': typeof WelcomeWelcomeRecoveryRoute
   '/_member/board/': typeof MemberBoardIndexRoute
   '/_member/settings/': typeof MemberSettingsIndexRoute
   '/_member/users/': typeof MemberUsersIndexRoute
@@ -391,12 +419,15 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/plan'
     | '/settings/profile'
+    | '/settings/recovery'
     | '/settings/security'
+    | '/settings/visibility'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
     | '/welcome/interview'
     | '/welcome/profile'
+    | '/welcome/recovery'
     | '/board/'
     | '/settings/'
     | '/users/'
@@ -429,12 +460,15 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/plan'
     | '/settings/profile'
+    | '/settings/recovery'
     | '/settings/security'
+    | '/settings/visibility'
     | '/users/$id'
     | '/welcome/agreement'
     | '/welcome/choose'
     | '/welcome/interview'
     | '/welcome/profile'
+    | '/welcome/recovery'
     | '/board'
     | '/settings'
     | '/users'
@@ -470,12 +504,15 @@ export interface FileRouteTypes {
     | '/_member/settings/notifications'
     | '/_member/settings/plan'
     | '/_member/settings/profile'
+    | '/_member/settings/recovery'
     | '/_member/settings/security'
+    | '/_member/settings/visibility'
     | '/_member/users/$id'
     | '/_welcome/welcome/agreement'
     | '/_welcome/welcome/choose'
     | '/_welcome/welcome/interview'
     | '/_welcome/welcome/profile'
+    | '/_welcome/welcome/recovery'
     | '/_member/board/'
     | '/_member/settings/'
     | '/_member/users/'
@@ -708,11 +745,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberSettingsProfileRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/_member/settings/recovery': {
+      id: '/_member/settings/recovery'
+      path: '/settings/recovery'
+      fullPath: '/settings/recovery'
+      preLoaderRoute: typeof MemberSettingsRecoveryRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/_member/settings/security': {
       id: '/_member/settings/security'
       path: '/settings/security'
       fullPath: '/settings/security'
       preLoaderRoute: typeof MemberSettingsSecurityRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/_member/settings/visibility': {
+      id: '/_member/settings/visibility'
+      path: '/settings/visibility'
+      fullPath: '/settings/visibility'
+      preLoaderRoute: typeof MemberSettingsVisibilityRouteImport
       parentRoute: typeof MemberRoute
     }
     '/_member/users/': {
@@ -764,6 +815,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeWelcomeProfileRouteImport
       parentRoute: typeof WelcomeRoute
     }
+    '/_welcome/welcome/recovery': {
+      id: '/_welcome/welcome/recovery'
+      path: '/welcome/recovery'
+      fullPath: '/welcome/recovery'
+      preLoaderRoute: typeof WelcomeWelcomeRecoveryRouteImport
+      parentRoute: typeof WelcomeRoute
+    }
   }
 }
 
@@ -785,7 +843,9 @@ interface MemberRouteChildren {
   MemberSettingsNotificationsRoute: typeof MemberSettingsNotificationsRoute
   MemberSettingsPlanRoute: typeof MemberSettingsPlanRoute
   MemberSettingsProfileRoute: typeof MemberSettingsProfileRoute
+  MemberSettingsRecoveryRoute: typeof MemberSettingsRecoveryRoute
   MemberSettingsSecurityRoute: typeof MemberSettingsSecurityRoute
+  MemberSettingsVisibilityRoute: typeof MemberSettingsVisibilityRoute
   MemberUsersIdRoute: typeof MemberUsersIdRoute
   MemberBoardIndexRoute: typeof MemberBoardIndexRoute
   MemberSettingsIndexRoute: typeof MemberSettingsIndexRoute
@@ -810,7 +870,9 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberSettingsNotificationsRoute: MemberSettingsNotificationsRoute,
   MemberSettingsPlanRoute: MemberSettingsPlanRoute,
   MemberSettingsProfileRoute: MemberSettingsProfileRoute,
+  MemberSettingsRecoveryRoute: MemberSettingsRecoveryRoute,
   MemberSettingsSecurityRoute: MemberSettingsSecurityRoute,
+  MemberSettingsVisibilityRoute: MemberSettingsVisibilityRoute,
   MemberUsersIdRoute: MemberUsersIdRoute,
   MemberBoardIndexRoute: MemberBoardIndexRoute,
   MemberSettingsIndexRoute: MemberSettingsIndexRoute,
@@ -850,6 +912,7 @@ interface WelcomeRouteChildren {
   WelcomeWelcomeChooseRoute: typeof WelcomeWelcomeChooseRoute
   WelcomeWelcomeInterviewRoute: typeof WelcomeWelcomeInterviewRoute
   WelcomeWelcomeProfileRoute: typeof WelcomeWelcomeProfileRoute
+  WelcomeWelcomeRecoveryRoute: typeof WelcomeWelcomeRecoveryRoute
   WelcomeWelcomeIndexRoute: typeof WelcomeWelcomeIndexRoute
 }
 
@@ -858,6 +921,7 @@ const WelcomeRouteChildren: WelcomeRouteChildren = {
   WelcomeWelcomeChooseRoute: WelcomeWelcomeChooseRoute,
   WelcomeWelcomeInterviewRoute: WelcomeWelcomeInterviewRoute,
   WelcomeWelcomeProfileRoute: WelcomeWelcomeProfileRoute,
+  WelcomeWelcomeRecoveryRoute: WelcomeWelcomeRecoveryRoute,
   WelcomeWelcomeIndexRoute: WelcomeWelcomeIndexRoute,
 }
 

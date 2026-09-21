@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
-import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
+import { isLocalDevelopmentOrigin, readEnvironment, readStripeConfig } from "./index.ts";
 
 const localBindings = {
   APP_ORIGIN: "http://localhost:3001",
@@ -143,6 +143,85 @@ describe("an OTLP switch beside an endpoint", () => {
       OTLP_ENABLED: "true",
       OTLP_ENDPOINT: localBindings.MAILPIT_URL,
       local: true,
+    });
+  });
+});
+
+const stripeBindings = {
+  APP_ORIGIN: "http://localhost:3001",
+  STRIPE_PRICE_ID: "price_placeholderNotReal",
+  STRIPE_SECRET_KEY: "sk_test_placeholderNotAReal",
+  STRIPE_WEBHOOK_SECRET: "whsec_placeholderNotReal",
+};
+
+describe("readStripeConfig", () => {
+  describe("test-mode keys on a local origin", () => {
+    const it = test.extend("stripeConfig", async () =>
+      Effect.runPromise(readStripeConfig(stripeBindings)));
+
+    it("is read as a test-mode configuration", ({ stripeConfig }) => {
+      expect(stripeConfig).toStrictEqual({
+        mode: "test",
+        priceId: "price_placeholderNotReal",
+        secretKey: "sk_test_placeholderNotAReal",
+        webhookSecret: "whsec_placeholderNotReal",
+      });
+    });
+  });
+
+  describe("a live key on a deployed origin", () => {
+    const it = test.extend("stripeConfig", async () =>
+      Effect.runPromise(
+        readStripeConfig({
+          ...stripeBindings,
+          APP_ORIGIN: "https://member.example.test",
+          STRIPE_SECRET_KEY: "rk_live_placeholderNotAReal",
+        }),
+      ));
+
+    it("is read as a live-mode configuration", ({ stripeConfig }) => {
+      expect(stripeConfig.mode).toBe("live");
+    });
+  });
+
+  describe.for([
+    [
+      "a live key on a local origin",
+      { STRIPE_SECRET_KEY: "sk_live_placeholderNotAReal" },
+      "Stripe live keys are restricted to deployed origins",
+    ],
+    [
+      "a secret key without a mode",
+      { STRIPE_SECRET_KEY: "sk_placeholderNotAReal" },
+      'Expected a string matching the RegExp ^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$\n  at ["STRIPE_SECRET_KEY"]',
+    ],
+    [
+      "a webhook secret without the whsec prefix",
+      { STRIPE_WEBHOOK_SECRET: "placeholderNotReal" },
+      'Expected a string matching the RegExp ^whsec_[A-Za-z0-9]+$\n  at ["STRIPE_WEBHOOK_SECRET"]',
+    ],
+    [
+      "a price id without the price prefix",
+      { STRIPE_PRICE_ID: "prod_placeholderNotReal" },
+      'Expected a string matching the RegExp ^price_[A-Za-z0-9]+$\n  at ["STRIPE_PRICE_ID"]',
+    ],
+  ] as const)("%s", ([, overridden, expectedReason]) => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(Effect.flip(readStripeConfig({ ...stripeBindings, ...overridden }))));
+
+    it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
+      expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: expectedReason }));
+    });
+  });
+
+  describe("bindings that carry no Stripe keys at all", () => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(Effect.flip(readStripeConfig({ APP_ORIGIN: stripeBindings.APP_ORIGIN }))));
+
+    it("are refused instead of falling back to a free-for-all", ({ refusal }) => {
+      expect(refusal).toStrictEqual(
+        new ConfigurationInvalid({ reason: 'Missing key\n  at ["STRIPE_PRICE_ID"]' }),
+      );
     });
   });
 });

@@ -1,6 +1,5 @@
-import { Button, ConfirmDialog, Field, FormColumn, useToast } from "@repo/ui";
+import { Button, ConfirmDialog, Field, FormColumn, localState, useToast } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { publicationConsequence } from "#pages/terms/model/agreement-labels.ts";
 import { useDraftForm } from "#pages/terms/model/draft-form.ts";
@@ -9,13 +8,15 @@ import { maximumBodyLength, maximumSummaryLength } from "#shared/contracts/index
 import type { VersionDetail } from "#pages/terms/model/agreement-versions.ts";
 import type { ReactElement } from "react";
 
+const usePublishConfirming = localState(false);
+
 function DraftEditor({
   onSaved,
   version,
 }: Readonly<{ onSaved: () => void; version: VersionDetail }>): ReactElement {
   const navigate = useNavigate();
   const notify = useToast();
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = usePublishConfirming();
   const form = useDraftForm(version, {
     onPublished: async (published) => {
       notify("success", `${published} を公開しました。`);

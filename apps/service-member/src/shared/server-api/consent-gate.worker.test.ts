@@ -1,11 +1,11 @@
 import { assert, it } from "@effect/vitest";
-import { AGREEMENT_KIND, APPLICATION, ROLE, readConfig } from "@repo/config";
+import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, ROLE } from "@repo/config";
 import { AgreementRequired, pendingAgreementKinds, requireCurrentAgreements } from "@repo/db";
 import { createAgreementDraft, publishAgreementVersion } from "@repo/db/admin";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime";
+import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
@@ -32,7 +32,7 @@ function memberApp() {
   const runtime = workerRuntime(() =>
     Layer.mergeAll(
       Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.unwrap(readConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
+      Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
       Interviewer.layer(undefined),
     ),
   );
@@ -114,9 +114,10 @@ const strongAdminSession = Effect.fn("strongAdminSession")(function* strongAdmin
   const sessionId = crypto.randomUUID();
   const now = Date.now();
   yield* runStatement(
-    "INSERT INTO user (id, email, email_verified, name, role, created_at, updated_at) VALUES ('admin', ?, 1, 'admin', ?, ?, ?)",
+    "INSERT INTO user (id, email, email_verified, name, role, permission, created_at, updated_at) VALUES ('admin', ?, 1, 'admin', ?, ?, ?, ?)",
     adminEmail,
     ROLE.administrator,
+    ADMIN_PERMISSION.owner,
     now,
     now,
   );

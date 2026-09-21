@@ -7,7 +7,7 @@ import {
   reviseAgreementDraft,
 } from "@repo/db/admin";
 import { httpStatus } from "@repo/observability";
-import { unavailable } from "@repo/runtime/account";
+import { privileged } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -26,11 +26,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
-  AdminStrongSessionRequired: {
-    message: "この操作は許可されていません。",
-    status: httpStatus.forbidden,
-  },
+  ...privileged,
   AgreementVersionTaken: { message: "その版はすでにあります。", status: httpStatus.conflict },
   AgreementVersionUnavailable: {
     message: "版が見つからないか、すでに公開されています。",

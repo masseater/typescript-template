@@ -1,6 +1,17 @@
-import { sql, type SQL } from "drizzle-orm";
+import { exists, sql, type SQL } from "drizzle-orm";
 
-import { auditEvent, type AuditAction } from "./schema.ts";
+import { AUDIT_CHANNEL, auditEvent, user, type AuditAction, type AuditChannel } from "./schema.ts";
+
+import type { Role } from "@repo/config";
+import type { DrizzleDatabase } from "./database.ts";
+
+type AuditEntry = Readonly<{
+  action: AuditAction;
+  actorId: string;
+  actorKind: Role;
+  channel?: AuditChannel;
+  targetId: string;
+}>;
 
 interface AuditedChange {
   readonly action: AuditAction;
@@ -8,24 +19,61 @@ interface AuditedChange {
   readonly targetId: string;
 }
 
-const auditWhen = (change: AuditedChange, targeted: SQL): SQL => {
-  const auditColumns = [
-    [auditEvent.action, change.action],
-    [auditEvent.actorId, change.actorId],
-    [auditEvent.createdAt, Date.now()],
-    [auditEvent.id, crypto.randomUUID()],
-    [auditEvent.targetId, change.targetId],
-  ] as const;
+const auditRow = (entry: AuditEntry): typeof auditEvent.$inferInsert => ({
+  action: entry.action,
+  actorId: entry.actorId,
+  actorKind: entry.actorKind,
+  channel: entry.channel ?? AUDIT_CHANNEL.ui,
+  createdAt: new Date(),
+  id: crypto.randomUUID(),
+  targetId: entry.targetId,
+});
+
+const insertWhere = (
+  columns: ReadonlyArray<readonly [{ readonly name: string }, unknown]>,
+  condition: SQL,
+): SQL => {
   const columnNames = sql.join(
-    auditColumns.map(([column]) => sql.identifier(column.name)),
+    columns.map(([column]) => sql.identifier(column.name)),
     sql`, `,
   );
   const columnValues = sql.join(
-    auditColumns.map(([, columnValue]) => sql`${columnValue}`),
+    columns.map(([, columnValue]) => sql`${columnValue}`),
     sql`, `,
   );
-  return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE EXISTS (${targeted})`;
+  return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE ${condition}`;
 };
 
-export { auditWhen };
-export type { AuditedChange };
+const auditWhen = (change: AuditedChange, targeted: SQL): SQL =>
+  insertWhere(
+    [
+      [auditEvent.action, change.action],
+      [auditEvent.actorId, change.actorId],
+      [auditEvent.createdAt, Date.now()],
+      [auditEvent.id, crypto.randomUUID()],
+      [auditEvent.targetId, change.targetId],
+    ],
+    sql`EXISTS (${targeted})`,
+  );
+
+const auditWhenTargeted = (database: DrizzleDatabase, entry: AuditEntry, actorIsLive: SQL): SQL => {
+  const targeted = database
+    .select({ id: user.id })
+    .from(user)
+    .where(sql`${user.id} = ${entry.targetId} AND ${actorIsLive}`);
+  return insertWhere(
+    [
+      [auditEvent.action, entry.action],
+      [auditEvent.actorId, entry.actorId],
+      [auditEvent.actorKind, entry.actorKind],
+      [auditEvent.channel, entry.channel ?? AUDIT_CHANNEL.ui],
+      [auditEvent.createdAt, Date.now()],
+      [auditEvent.id, crypto.randomUUID()],
+      [auditEvent.targetId, entry.targetId],
+    ],
+    exists(targeted),
+  );
+};
+
+export { auditRow, auditWhen, auditWhenTargeted };
+export type { AuditEntry };

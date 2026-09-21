@@ -1,4 +1,14 @@
 export {
+  AdminInvitation,
+  AdminInvited,
+  AdminList,
+  AdminPermission,
+  AdminPermissionChange,
+  AdminPermissionChanged,
+  AdminStateChange,
+  AdminStateChanged,
+} from "./admins.ts";
+export {
   AgreementDraft,
   AgreementDraftRevision,
   AgreementPublication,
@@ -13,10 +23,10 @@ export {
   versionLabelPattern,
 } from "./agreements.ts";
 export {
+  AccountState,
   BooleanText,
-  Role,
-  RoleChange,
-  RoleChanged,
+  MemberStateChange,
+  MemberStateChanged,
   SearchKeyword,
   UserDeleted,
   UserDeletion,
