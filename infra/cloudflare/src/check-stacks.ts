@@ -30,6 +30,7 @@ import {
   compileStack,
   describeCause,
 } from "./inventory.ts";
+import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -111,10 +112,25 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText(appEnvKey.emailFrom, mailFrom),
       ...flagshipBindings,
+      ...(app === APPLICATION.user
+        ? [
+            plainText(
+              appEnvKey.googleAnalyticsMeasurementId,
+              verificationSettings.googleAnalyticsMeasurementId,
+            ),
+          ]
+        : []),
       plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
+      ...(grants(app, "billing")
+        ? [
+            `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
+            `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
+            `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
+          ]
+        : []),
       ...(grants(app, "workers-ai") ? ["AI:ai"] : []),
       ...(grants(app, "jobs")
         ? [
@@ -139,6 +155,8 @@ function applicationResource(app: Application, release: string): ResourceInvento
         runWorkerFirst: true,
       },
       bundle: false,
+      ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
+      ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
       domain: { name: new URL(origins[app]).hostname, zoneId: verificationSettings.zoneId },
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,
