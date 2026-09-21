@@ -1,5 +1,5 @@
 import type { Application, Capability, CapabilityOf } from "@repo/config";
-import type { AIBinding, Assets, D1, Email, InferEnv } from "alchemy/Cloudflare";
+import type { AIBinding, Assets, D1, Email, Flagship, InferEnv } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 
 type SharedEnv = Readonly<{
@@ -9,11 +9,19 @@ type SharedEnv = Readonly<{
   DB: D1.Database;
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;
+  FLAGSHIP_ACCOUNT_ID: string;
+  FLAGS: Flagship.App;
   OPS_EMAIL: string;
   OTLP_AUTHORIZATION?: Redacted.Redacted;
   OTLP_ENABLED?: string;
   OTLP_ENDPOINT?: string;
 }>;
+
+type WikiEnv = SharedEnv &
+  Readonly<{
+    FLAGSHIP_API_TOKEN: Redacted.Redacted;
+    FLAGSHIP_APP_ID: string;
+  }>;
 
 interface CapabilityEnv {
   readonly ai: Readonly<{ AI: AIBinding }>;
@@ -28,4 +36,4 @@ type DeclaredEnv = SharedEnv & Partial<CapabilityEnv[Capability]>;
 
 type AppBindings<App extends Application> = InferEnv<AppEnv<App> & Readonly<{ ASSETS: Assets }>>;
 
-export type { AppBindings, AppEnv, CapabilityEnv, DeclaredEnv, SharedEnv };
+export type { AppBindings, AppEnv, CapabilityEnv, DeclaredEnv, SharedEnv, WikiEnv };

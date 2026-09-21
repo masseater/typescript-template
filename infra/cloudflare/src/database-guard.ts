@@ -1,4 +1,5 @@
 import { readMigrationStatus } from "@repo/db/migrations";
+import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Effect } from "effect";
 
 import { isUnreadable, readVerdict, unreadableState } from "./account-read.ts";
@@ -11,7 +12,7 @@ import type { AccountAccess } from "./account-read.ts";
 import type { DeploymentTarget } from "./config.ts";
 
 function nameTaken(): CloudflareFailure {
-  return new CloudflareFailure({ code: "database_name_taken", keys: ["TEMPLATE_PREFIX"] });
+  return new CloudflareFailure({ code: "database_name_taken", keys: [deploymentKey.prefix] });
 }
 
 const databaseVerdict = Effect.fn("databaseVerdict")(function* databaseVerdict<

@@ -5,7 +5,7 @@ import { createServer } from "node:net";
 import { NodeServices } from "@effect/platform-node";
 import { reportFailed, runCli } from "@repo/cli";
 import { loopbackAddress } from "@repo/config";
-import { Cause, Console, Effect, FileSystem, Schema } from "effect";
+import { Cause, Console, Effect, FileSystem, Predicate, Schema } from "effect";
 import { chromium } from "playwright";
 
 import { serveCommander } from "./serve.ts";
@@ -33,7 +33,7 @@ const freePort = Effect.callback<number, StartCheckFailed>((resume) => {
     const address = probe.address();
     probe.close(() => {
       resume(
-        typeof address === "object" && address !== null
+        Predicate.isObject(address)
           ? Effect.succeed(address.port)
           : Effect.fail(new StartCheckFailed({ reason: "no free port" })),
       );

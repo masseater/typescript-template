@@ -9,20 +9,22 @@ import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 function MemberFrame({
   children,
+  memberBoard,
   user,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
+  memberBoard: boolean;
   user: Session["user"];
 }>): ReactElement {
   return (
     <ToastProvider>
       <div className="flex min-h-dvh bg-background">
-        <MemberRail user={user} />
+        <MemberRail memberBoard={memberBoard} user={user} />
         <div className="flex min-w-0 flex-1 flex-col pb-16 md:pb-0">
           <MemberTopBar user={user} />
           <div className="min-h-0 flex-1 overflow-auto">{children}</div>
         </div>
-        <MemberTabs />
+        <MemberTabs memberBoard={memberBoard} />
       </div>
     </ToastProvider>
   );

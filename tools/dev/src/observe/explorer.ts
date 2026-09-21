@@ -1,6 +1,6 @@
 import { loopbackHostSet } from "@repo/config";
 import { RequestId } from "@repo/observability";
-import { Effect, Result, Schema } from "effect";
+import { Effect, Predicate, Result, Schema } from "effect";
 
 type Row = Record<string, unknown>;
 type LogEvent = Row | "unparsable" | undefined;
@@ -93,7 +93,7 @@ function parseStructured(message: string): Row | undefined {
   const args: unknown = JSON.parse(message);
   const first: unknown = Array.isArray(args) ? args[0] : args;
   const parsed: unknown = typeof first === "string" ? JSON.parse(first) : undefined;
-  return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
+  return Predicate.isObject(parsed) && !Array.isArray(parsed)
     ? Object.fromEntries(Object.entries(parsed))
     : undefined;
 }

@@ -1,9 +1,9 @@
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 
 import { loopbackHosts } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
 
-import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
+import type { Ai, D1Database, Flagship, SendEmail } from "@cloudflare/workers-types";
 
 type AssetFetcher = {
   readonly fetch: (request: Request) => Promise<Response>;
@@ -20,12 +20,34 @@ const Origin = AbsoluteUrl.check(
       URL.parse(candidate)?.origin === candidate || "An origin without a path is required",
   ),
 );
+const HttpsOrigin = Origin.check(
+  Schema.makeFilter(
+    (candidate: string) => new URL(candidate).protocol === "https:" || "HTTPS is required",
+  ),
+);
 const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u));
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const localRelease = Effect.succeed("local");
 const withRelease = Release.pipe(Schema.withDecodingDefaultKey(localRelease));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 const NonEmpty = Schema.String.check(Schema.isMinLength(1));
+const appEnvKey = {
+  appOrigin: "APP_ORIGIN",
+  appRelease: "APP_RELEASE",
+  authSecret: "AUTH_SECRET",
+  emailFrom: "EMAIL_FROM",
+  flagshipAccountId: "FLAGSHIP_ACCOUNT_ID",
+  flagshipApiToken: "FLAGSHIP_API_TOKEN",
+  flagshipAppId: "FLAGSHIP_APP_ID",
+  mailpitUrl: "MAILPIT_URL",
+  opsEmail: "OPS_EMAIL",
+  otlpAuthorization: "OTLP_AUTHORIZATION",
+  otlpEnabled: "OTLP_ENABLED",
+  otlpEndpoint: "OTLP_ENDPOINT",
+} as const;
+
+const distinctOrigins = (origins: readonly string[]): boolean =>
+  new Set(origins).size === origins.length;
 
 const bindingWith = <Binding>(
   bindingName: string,
@@ -33,29 +55,39 @@ const bindingWith = <Binding>(
 ): Schema.declare<Binding, Binding> =>
   Schema.declare(
     (candidate: unknown): candidate is Binding =>
-      typeof candidate === "object" &&
-      candidate !== null &&
+      Predicate.isObject(candidate) &&
       methods.every((method) => typeof Reflect.get(candidate, method) === "function"),
     { expected: bindingName },
   );
 
 const Scalars = Schema.Struct({
-  APP_ORIGIN: Origin,
-  APP_RELEASE: withRelease,
-  AUTH_SECRET: AuthSecret,
-  EMAIL_FROM: Email,
-  MAILPIT_URL: Schema.optionalKey(Origin),
-  OPS_EMAIL: Email,
-  OTLP_AUTHORIZATION: Schema.optionalKey(NonEmpty),
-  OTLP_ENABLED: Schema.optionalKey(Schema.Literals(["false", "true"])),
-  OTLP_ENDPOINT: Schema.optionalKey(AbsoluteUrl),
+  [appEnvKey.appOrigin]: Origin,
+  [appEnvKey.appRelease]: withRelease,
+  [appEnvKey.authSecret]: AuthSecret,
+  [appEnvKey.emailFrom]: Email,
+  [appEnvKey.flagshipAccountId]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.flagshipAppId]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
+  [appEnvKey.opsEmail]: Email,
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
+  [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
 });
 
 const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);
+const FlagshipBinding = bindingWith<Flagship>("Flagship", [
+  "getBooleanValue",
+  "getStringValue",
+  "getNumberValue",
+  "getObjectValue",
+]);
+
 const Bindings = Schema.Struct({
   ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
   DB: bindingWith<D1Database>("D1Database", ["prepare", "batch"]),
   EMAIL: Schema.optionalKey(EmailBinding),
+  FLAGS: Schema.optionalKey(FlagshipBinding),
 });
 
 const AiBindings = Schema.Struct({
@@ -133,12 +165,16 @@ const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   return AI;
 });
 
-const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(input: unknown) {
-  const config = yield* readConfig(input);
-  return { ...config, AI: yield* readAi(input) };
-});
-
-type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
-
-export { Email, isLocalDevelopmentOrigin, readAi, readConfig, readEnvironment, readWikiConfig };
-export type { AppConfig, AssetFetcher, WikiConfig };
+export {
+  AuthSecret,
+  Email,
+  HttpsOrigin,
+  appEnvKey,
+  distinctOrigins,
+  isLocalDevelopmentOrigin,
+  minimumAuthSecretLength,
+  readAi,
+  readConfig,
+  readEnvironment,
+};
+export type { AppConfig, AssetFetcher };

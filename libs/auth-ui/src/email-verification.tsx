@@ -1,59 +1,26 @@
-import { StatusMessage, STATUS_VARIANT } from "@repo/ui";
-import { Effect, Fiber, Ref } from "effect";
-import { useEffect, useState, type ReactElement } from "react";
+import { useAtomValue } from "@effect/atom-react";
+import { STATUS_VARIANT, StatusMessage, requestAtom, resultError } from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-const verificationEndpoint = "/api/verify-email";
+import { verifyEmailToken } from "./verify-email-token.ts";
 
-const pendingVerification = Effect.runSync(
-  Ref.make<{ readonly result: Promise<boolean>; readonly token: string } | undefined>(undefined),
-);
+import type { ReactElement } from "react";
 
-const verifyEmailToken = async (endpoint: string): Promise<boolean> => {
-  const token = new URLSearchParams(globalThis.location.hash.slice(1)).get("token");
-  if (token === null || token === "") {
-    Effect.runSync(Ref.set(pendingVerification, undefined));
-    return false;
+const verificationAtom = requestAtom(async () => {
+  const accepted = await verifyEmailToken();
+  if (accepted) {
+    globalThis.location.replace("/login");
   }
-  const cached = Effect.runSync(Ref.get(pendingVerification));
-  if (cached?.token === token) {
-    return cached.result;
-  }
-  const accepted = (async (): Promise<boolean> => {
-    const [settled] = await Promise.allSettled([
-      fetch(endpoint, {
-        body: JSON.stringify({ token }),
-        credentials: "same-origin",
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }),
-    ]);
-    return settled.status === "fulfilled" && settled.value.ok;
-  })();
-  Effect.runSync(Ref.set(pendingVerification, { result: accepted, token }));
   return accepted;
-};
+});
 
 const EmailVerification = (): ReactElement => {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    const verifying = Effect.runFork(
-      Effect.map(
-        Effect.promise(() => verifyEmailToken(verificationEndpoint)),
-        (verified) => {
-          if (verified) {
-            globalThis.location.replace("/login");
-            return;
-          }
-          globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
-          setFailed(true);
-        },
-      ),
-    );
-    return (): void => {
-      Effect.runFork(Fiber.interrupt(verifying));
-    };
-  }, []);
-  return failed ? (
+  const verification = useAtomValue(verificationAtom);
+  const failure = resultError(verification);
+  if (failure !== undefined) {
+    return <StatusMessage variant={STATUS_VARIANT.failure}>{failure}</StatusMessage>;
+  }
+  return AsyncResult.isSuccess(verification) && !verification.value ? (
     <StatusMessage variant={STATUS_VARIANT.failure}>
       確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
     </StatusMessage>

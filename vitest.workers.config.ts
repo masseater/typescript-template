@@ -15,7 +15,10 @@ const mailRecorder = "MailRecorder";
 const probeMonitor = "ProbeMonitor";
 
 const loaded = await Effect.runPromise(Effect.orDie(loadRemoteMigrations()));
-const migrations = loaded.map((migration) => ({ ...migration, sql: [...migration.sql] }));
+const migrations = loaded.map((migration) => ({
+  name: migration.name,
+  queries: [...migration.sql],
+}));
 
 export default defineProject({
   plugins: [
