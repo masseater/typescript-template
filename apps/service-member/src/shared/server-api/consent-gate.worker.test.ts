@@ -5,17 +5,15 @@ import { createAgreementDraft, publishAgreementVersion } from "@repo/db/admin";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
+import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Layer, Schema } from "effect";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
-import { Interviewer } from "#shared/interview/server.ts";
-import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import { memberApi } from "./member-api.ts";
-import { opsMailLayer } from "./ops-mail.ts";
+import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 const routes = { "/api/profile": "profile" };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
@@ -33,9 +31,7 @@ function memberApp() {
   const runtime = workerRuntime(() =>
     Layer.mergeAll(
       Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
-      Interviewer.layer(undefined),
-      ProfileLayoutAssembler.layer(),
+      Layer.orDie(memberRequirementLayer(environment)),
     ),
   );
   return { app: memberApi(apiRoutes(runtime, reporting)), runtime };

@@ -18,9 +18,9 @@ import { Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect } from "vite-plus/test";
 
-import { Stripe } from "#shared/billing/index.ts";
 import { AgreementsView } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
+import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 import type { BrowserClient } from "@repo/auth/testing";
 
@@ -51,9 +51,9 @@ function billingApp() {
     STRIPE_WEBHOOK_SECRET: webhookSecret,
   });
   const runtime = workerRuntime(() =>
-    Layer.merge(
+    Layer.mergeAll(
       Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.orDie(Stripe.fromEnvironment(environment)),
+      Layer.orDie(memberRequirementLayer(environment)),
     ),
   );
   const api = apiRoutes(runtime, reporting);

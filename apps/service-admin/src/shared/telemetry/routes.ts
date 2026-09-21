@@ -20,7 +20,7 @@ export const routes = {
   "/api/inquiries/close": "inquiries-api",
   "/api/verify-email": "verify-email-api",
   "/inquiries": "inquiries",
-  "/invite/*": "invite",
+  "/invite/*": "invite-page",
   "/login": "login",
   "/members": "members",
   "/members/*": "member-detail",

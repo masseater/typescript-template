@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ACCOUNT_STATE, ROLE } from "@repo/config";
-import { and, eq, query, schema } from "@repo/db";
+import { eq, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect } from "effect";
 

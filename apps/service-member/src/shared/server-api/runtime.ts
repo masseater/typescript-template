@@ -1,41 +1,18 @@
 import { APPLICATION } from "@repo/config";
-import { flagshipFeatureFlagsLayer, memoryFeatureFlagsLayer } from "@repo/feature-flags";
-import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
+import { appLayer } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
+import { Layer } from "effect";
 
-import { Stripe } from "#shared/billing/index.ts";
-import { Interviewer } from "#shared/interview/server.ts";
-import { PhotoStore } from "#shared/photo/index.ts";
-import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import { routes } from "#shared/telemetry/index.ts";
-import { opsMailLayer } from "./ops-mail.ts";
+import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 import type { Reporting } from "@repo/observability";
 
 const service = APPLICATION.user;
 const reporting: Reporting = { service };
 const runtime = workerRuntime(() =>
-  Layer.mergeAll(
-    appLayer(env, service, routes),
-    Layer.unwrap(
-      readWorkerConfig(env).pipe(
-        Effect.map((config) =>
-          Layer.mergeAll(
-            opsMailLayer(config),
-            config.FLAGS === undefined
-              ? memoryFeatureFlagsLayer
-              : flagshipFeatureFlagsLayer(config.FLAGS),
-          ),
-        ),
-      ),
-    ),
-    Interviewer.fromEnvironment(env),
-    PhotoStore.fromEnvironment(env),
-    ProfileLayoutAssembler.fromEnvironment(env),
-    Stripe.fromEnvironment(env),
-  ),
+  Layer.mergeAll(appLayer(env, service, routes), memberRequirementLayer(env)),
 );
 
 export { reporting, runtime };

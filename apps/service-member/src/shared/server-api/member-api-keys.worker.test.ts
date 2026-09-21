@@ -12,6 +12,7 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Layer } from "effect";
 
 import { memberApi } from "./member-api.ts";
+import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 const { planSubscription, user } = schema;
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
@@ -72,7 +73,10 @@ async function request(
 
 it.effect("lets API keys read allowed resources and rejects writes", () => {
   const environment = appEnvironment();
-  const services = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
+  const services = Layer.mergeAll(
+    Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
+    Layer.orDie(memberRequirementLayer(environment)),
+  );
   const app = memberApi(
     apiRoutes(
       workerRuntime(() => services),

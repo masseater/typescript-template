@@ -20,7 +20,7 @@ import type { DevServices } from "./platform.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
-const operator = Effect.fn("operator")(function* operator(_args: readonly string[]) {
+const operator = Effect.fn(ADMIN_PERMISSION.operator)(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
     yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
   }

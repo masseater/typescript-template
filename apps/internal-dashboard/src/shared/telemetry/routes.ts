@@ -19,7 +19,7 @@ export const routes = {
   "/consent": "consent",
   "/flags": "flags",
   "/inquiries": "inquiries",
-  "/invite/*": "invite",
+  "/invite/*": "invite-page",
   "/login": "login",
   "/mcp": "mcp",
   "/security": "security",
