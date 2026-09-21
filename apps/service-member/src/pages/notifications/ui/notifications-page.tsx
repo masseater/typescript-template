@@ -2,7 +2,6 @@ import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
 import {
-  loadNotifications,
   markAllNotificationsRead,
   markNotificationRead,
 } from "#pages/notifications/api/notifications.ts";
@@ -86,8 +85,4 @@ function NotificationsPage({
   );
 }
 
-async function loadNotificationsPage(): Promise<readonly NotificationItem[]> {
-  return loadNotifications();
-}
-
-export { NotificationsPage, loadNotificationsPage };
+export { NotificationsPage };

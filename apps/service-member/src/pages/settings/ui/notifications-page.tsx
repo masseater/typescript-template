@@ -10,10 +10,7 @@ import {
   useToast,
 } from "@repo/ui";
 
-import {
-  loadNotificationPreferences,
-  saveNotificationPreferences,
-} from "#pages/settings/api/notification-preferences.ts";
+import { saveNotificationPreferences } from "#pages/settings/api/notification-preferences.ts";
 
 import type { NotificationPreferences } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
@@ -67,8 +64,4 @@ function NotificationsPage({
   );
 }
 
-async function loadSettingsNotificationsPage(): Promise<NotificationPreferences> {
-  return loadNotificationPreferences();
-}
-
-export { NotificationsPage, loadSettingsNotificationsPage };
+export { NotificationsPage };
