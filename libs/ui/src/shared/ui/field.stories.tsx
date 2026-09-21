@@ -3,6 +3,10 @@ import { expect, waitFor } from "storybook/test";
 
 import preview from "../../../storybook/preview";
 import { Field } from "./field";
+import { FieldValidationMessageProvider } from "./field-validation-message-provider";
+
+import type { ReactElement } from "react";
+import type { FieldValidationMessages } from "./field-validation-messages";
 
 const meta = preview.meta({ args: { onValueChange: noop, value: "" }, component: Field });
 
@@ -85,6 +89,138 @@ export const Missing = meta.story({
     await userEvent.tab();
     await waitFor(async () => {
       await expect(canvas.getByText("入力してください。")).toBeInTheDocument();
+    });
+  },
+});
+
+const englishFieldValidationMessages = {
+  patternMismatch: "Follow the requested format.",
+  tooLong: "Too many characters.",
+  tooShort: "Not enough characters.",
+  typeMismatch: "Enter a valid format.",
+  valueMissing: "Enter a value.",
+} as const satisfies FieldValidationMessages;
+
+const withEnglishFieldValidation = (Story: () => ReactElement): ReactElement => (
+  <FieldValidationMessageProvider messages={englishFieldValidationMessages}>
+    <Story />
+  </FieldValidationMessageProvider>
+);
+
+export const TypeMismatch = meta.story({
+  args: { label: "メールアドレス", name: "email", required: true, type: "email", value: undefined },
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("メールアドレス"), "not-an-email");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("正しい形式で入力してください。")).toBeInTheDocument();
+    });
+  },
+});
+
+export const PatternMismatch = meta.story({
+  args: { label: "確認コード", name: "code", pattern: "[0-9]+", value: undefined },
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("確認コード"), "abc");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("指定された形式で入力してください。")).toBeInTheDocument();
+    });
+  },
+});
+
+export const TooLong = meta.story({
+  args: { label: "メモ", name: "note", value: undefined },
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("メモ"), "abcd");
+    canvas.getByLabelText("メモ").setAttribute("maxlength", "2");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("文字数が多すぎます。")).toBeInTheDocument();
+    });
+  },
+});
+
+export const EnglishMissing = meta.story({
+  args: { label: "ユーザー名", name: "name", required: true, value: undefined },
+  decorators: [withEnglishFieldValidation],
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "x");
+    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("Enter a value.")).toBeInTheDocument();
+    });
+  },
+});
+
+export const EnglishTypeMismatch = meta.story({
+  args: { label: "メールアドレス", name: "email", required: true, type: "email", value: undefined },
+  decorators: [withEnglishFieldValidation],
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("メールアドレス"), "not-an-email");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("Enter a valid format.")).toBeInTheDocument();
+    });
+  },
+});
+
+export const EnglishPatternMismatch = meta.story({
+  args: { label: "確認コード", name: "code", pattern: "[0-9]+", value: undefined },
+  decorators: [withEnglishFieldValidation],
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("確認コード"), "abc");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("Follow the requested format.")).toBeInTheDocument();
+    });
+  },
+});
+
+export const EnglishTooShort = meta.story({
+  args: {
+    label: "パスワード（12文字以上）",
+    minLength: 12,
+    name: "password",
+    type: "password",
+    value: undefined,
+  },
+  decorators: [withEnglishFieldValidation],
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("パスワード（12文字以上）"), "short");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("Not enough characters.")).toBeInTheDocument();
+    });
+  },
+});
+
+export const EnglishTooLong = meta.story({
+  args: { label: "メモ", name: "note", value: undefined },
+  decorators: [withEnglishFieldValidation],
+  play: async ({ canvas, canvasElement }) => {
+    const { page, userEvent } = await import("vite-plus/test/browser/context");
+    const rendered = page.elementLocator(canvasElement);
+    await userEvent.fill(rendered.getByLabelText("メモ"), "abcd");
+    canvas.getByLabelText("メモ").setAttribute("maxlength", "2");
+    await userEvent.tab();
+    await waitFor(async () => {
+      await expect(canvas.getByText("Too many characters.")).toBeInTheDocument();
     });
   },
 });
