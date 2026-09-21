@@ -1,7 +1,8 @@
-import { errorMessage } from "@repo/auth-ui";
+import { useAtom } from "@effect/atom-react";
 import { apiData } from "@repo/runtime/client";
-import { STATUS_VARIANT, useToast } from "@repo/ui";
-import { useState } from "react";
+import { localState, request, resultError, useToast } from "@repo/ui";
+import { Option } from "effect";
+import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
 import { MemberStateChanged, UserDeleted } from "#shared/contracts/index.ts";
@@ -31,45 +32,56 @@ async function perform(user: ListedUser, operation: RowOperation): Promise<strin
   return `${user.email} を${accountStateLabels[changed.accountState]}にしました。`;
 }
 
+const useRowConfirming = localState(Option.none<RowOperation>());
+
+const changeAtom = Atom.family((userId: string) => {
+  void userId;
+  return Atom.fn(({ operation, user }: Readonly<{ operation: RowOperation; user: ListedUser }>) =>
+    request(async () => perform(user, operation)),
+  );
+});
+
 function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowAction {
   const notify = useToast();
-  const [confirming, setConfirming] = useState<RowOperation>();
-  const [pending, setPending] = useState(false);
+  const [confirming, setConfirming] = useRowConfirming();
+  const [changeState, run] = useAtom(changeAtom(user.id), { mode: "promiseExit" });
   function handleStateChange(): void {
-    setConfirming("state");
+    setConfirming(Option.some("state"));
   }
   function handleDelete(): void {
-    setConfirming("delete");
+    setConfirming(Option.some("delete"));
   }
   function handleOpenChange(open: boolean): void {
     if (!open) {
-      setConfirming(undefined);
+      setConfirming(Option.none());
+    }
+  }
+  async function execute(operation: RowOperation): Promise<void> {
+    const change = AsyncResult.fromExit(await run({ operation, user }));
+    if (AsyncResult.isSuccess(change)) {
+      notify("success", change.value);
+      onChanged();
+      return;
+    }
+    const failure = resultError(change);
+    if (failure !== undefined) {
+      notify("error", failure);
     }
   }
   function handleConfirm(): void {
-    if (confirming === undefined) {
+    if (Option.isNone(confirming)) {
       return;
     }
-    setConfirming(undefined);
-    setPending(true);
-    async function run(operation: RowOperation): Promise<void> {
-      try {
-        notify(STATUS_VARIANT.success, await perform(user, operation));
-        onChanged();
-      } catch (error) {
-        notify(STATUS_VARIANT.failure, errorMessage(error));
-      }
-      setPending(false);
-    }
-    void run(confirming);
+    setConfirming(Option.none());
+    void execute(confirming.value);
   }
   return {
-    confirming,
+    confirming: Option.getOrUndefined(confirming),
     handleConfirm,
     handleDelete,
     handleOpenChange,
     handleStateChange,
-    pending,
+    pending: changeState.waiting,
   };
 }
 

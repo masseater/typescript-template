@@ -1,7 +1,8 @@
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { formatWarekiDate } from "@repo/ui";
-import { useEffect, useState } from "react";
+import { formatWarekiDate, requestAtom, type RequestResult } from "@repo/ui";
+import { Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
 import { UserList } from "#shared/contracts/index.ts";
@@ -24,18 +25,7 @@ interface ListedUsers {
   readonly users: readonly ListedUser[];
 }
 
-type UserListState =
-  | Readonly<{ list: ListedUsers; status: "loaded" }>
-  | Readonly<{ message: string; status: "failed" }>
-  | Readonly<{ status: "loading" }>;
-
-interface Outcome {
-  readonly attempt: number;
-  readonly path: string;
-  readonly state: UserListState;
-}
-
-async function fetchUsers(query: Readonly<Record<string, string>>): Promise<UserListState> {
+async function listUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers> {
   try {
     const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
     const listed = users.map(
@@ -49,36 +39,22 @@ async function fetchUsers(query: Readonly<Record<string, string>>): Promise<User
         twoFactorEnabled,
       }),
     );
-    return { list: { total, users: listed }, status: "loaded" };
-  } catch (error) {
-    return { message: errorMessage(error), status: "failed" };
+    return { total, users: listed };
+  } catch (failure) {
+    throw new Error(errorMessage(failure));
   }
 }
 
-function useUserList(search: UsersSearch): Readonly<{ reload: () => void; state: UserListState }> {
-  const query = userListQuery(search);
-  const path = new URLSearchParams(query).toString();
-  const [attempt, setAttempt] = useState(0);
-  const [outcome, setOutcome] = useState<Outcome>();
-  useEffect(() => {
-    const controller = { active: true };
-    async function load(): Promise<void> {
-      const state = await fetchUsers(query);
-      if (controller.active) {
-        setOutcome({ attempt, path, state });
-      }
-    }
-    void load();
-    return (): void => {
-      controller.active = false;
-    };
-  }, [attempt, path, query]);
-  function reload(): void {
-    setAttempt((current) => current + 1);
-  }
-  const current = outcome?.path === path && outcome.attempt === attempt;
-  return { reload, state: current ? outcome.state : { status: "loading" } };
+const userListAtom = Atom.family((query: Readonly<Record<string, string>>) =>
+  requestAtom(async () => listUsers(query)),
+);
+
+function useUserList(
+  search: UsersSearch,
+): Readonly<{ listing: RequestResult<ListedUsers>; reload: () => void }> {
+  const atom = userListAtom(userListQuery(search));
+  return { listing: useAtomValue(atom), reload: useAtomRefresh(atom) };
 }
 
 export { useUserList };
-export type { ListedUser, ListedUsers, UserListState };
+export type { ListedUser, ListedUsers };

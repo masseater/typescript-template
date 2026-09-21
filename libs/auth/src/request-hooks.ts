@@ -252,8 +252,7 @@ const confirmsEmailChange = function confirmsEmailChange(
   ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
   const query: unknown = ctx.query;
-  const token =
-    typeof query === "object" && query !== null && "token" in query ? query.token : undefined;
+  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
   return (
     ctx.path === emailVerificationPath &&
     typeof token === "string" &&

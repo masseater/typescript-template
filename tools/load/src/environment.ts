@@ -10,7 +10,7 @@ import {
   waitUntilResponds,
 } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 
 const readinessChecks = 120;
 const readinessInterval = "500 millis";
@@ -22,9 +22,7 @@ const oneMinuteLoadAverage = (): number => {
 };
 
 const isMissing = (thrown: unknown): boolean => {
-  return (
-    typeof thrown === "object" && thrown !== null && "code" in thrown && thrown.code === "ENOENT"
-  );
+  return Predicate.isObject(thrown) && "code" in thrown && thrown.code === "ENOENT";
 };
 
 class EnvironmentUnusable extends Schema.TaggedError<EnvironmentUnusable>()("EnvironmentUnusable", {

@@ -1,3 +1,4 @@
+import { originVisitor } from "./alias-visitor.ts";
 import {
   filename,
   reportViolation,
@@ -5,7 +6,7 @@ import {
   type Node,
   type NodeOf,
 } from "./lint-context.ts";
-import { origins, propertyName, staticText } from "./references.ts";
+import { origins, propertyName, staticText, type Origin } from "./references.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
@@ -152,4 +153,69 @@ const effectFailuresVisitor = (inspection: LintContext): Visitor => {
   };
 };
 
-export { effectFailuresVisitor, effectStackVisitor };
+const forbiddenStateApis: Readonly<Record<string, readonly string[]>> = {
+  "@effect/atom-react": [
+    "HydrationBoundary",
+    "RegistryContext",
+    "make",
+    "useAtomInitialValues",
+    "useAtomRef",
+    "useAtomRefProp",
+    "useAtomRefPropValue",
+    "useAtomSuspense",
+  ],
+  "effect/unstable/reactivity": ["AtomRef", "searchParam"],
+  react: [
+    "Component",
+    "PureComponent",
+    "createRef",
+    "useActionState",
+    "useReducer",
+    "useRef",
+    "useState",
+    "useSyncExternalStore",
+  ],
+  "react-dom": ["useFormState", "useFormStatus"],
+};
+
+const forbiddenStateList = Object.entries(forbiddenStateApis)
+  .map(([source, apis]) => `${source} の ${apis.join("・")}`)
+  .join("、");
+
+const isForbiddenState = (origin: Origin): boolean => {
+  const [source = "", ...members] = origin;
+  const apis = forbiddenStateApis[source];
+  return apis !== undefined && members.some((member) => apis.includes(member));
+};
+
+const atomStateVisitor = (inspection: LintContext): Visitor => {
+  return {
+    ...originVisitor(inspection, isForbiddenState),
+    ExportAllDeclaration(node: Node): void {
+      if (
+        node.type === "ExportAllDeclaration" &&
+        Object.hasOwn(forbiddenStateApis, node.source.value)
+      ) {
+        reportViolation(inspection, node);
+      }
+    },
+    ExportNamedDeclaration(node: Node): void {
+      if (node.type !== "ExportNamedDeclaration" || !node.source) {
+        return;
+      }
+      const apis = forbiddenStateApis[node.source.value];
+      if (apis === undefined) {
+        return;
+      }
+      for (const specifier of node.specifiers) {
+        const exported =
+          specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
+        if (apis.includes(exported)) {
+          reportViolation(inspection, specifier);
+        }
+      }
+    },
+  };
+};
+
+export { atomStateVisitor, effectFailuresVisitor, effectStackVisitor, forbiddenStateList };

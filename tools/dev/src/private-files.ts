@@ -1,7 +1,7 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, open, readFile, stat } from "node:fs/promises";
 
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
 
@@ -16,7 +16,7 @@ const privateDirectoryMode = 0o700;
 const groupAndOtherPermissions = 0o077;
 
 function isErrorCode(error: unknown, code: string): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === code;
+  return Predicate.isObject(error) && "code" in error && error.code === code;
 }
 
 function closeFile(file: FileHandle): Effect.Effect<void, LocalCommandFailure> {

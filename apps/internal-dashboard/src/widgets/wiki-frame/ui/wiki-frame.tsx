@@ -1,15 +1,16 @@
-import { ButtonLink, Icon, NavigationLink } from "@repo/ui";
+import { ButtonLink, Icon, NavigationLink, localState } from "@repo/ui";
 import { MenuIcon, SearchIcon } from "lucide-react";
-import { useState } from "react";
 
 import type { ReactElement, ReactNode, ReactPortal } from "react";
+
+const useTreeOpen = localState(false);
 
 function WikiFrame({
   children,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
 }>): ReactElement {
-  const [treeOpen, setTreeOpen] = useState(false);
+  const [treeOpen, setTreeOpen] = useTreeOpen();
   function toggleTree(): void {
     setTreeOpen((open) => !open);
   }
