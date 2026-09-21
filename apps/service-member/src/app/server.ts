@@ -1,11 +1,13 @@
-import { activeGoogleAnalyticsMeasurementId, readEnvironment } from "@repo/config";
+import { activeGoogleAnalyticsMeasurementId, readEnvironment, readJobs } from "@repo/config";
 import { purgeExpiredWithdrawnMembers } from "@repo/db";
-import { appServerEntry } from "@repo/runtime/worker";
+import { Process, consumeJobs } from "@repo/runtime/jobs";
+import { appServerEntry, withQueue } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 
 import { paraglideMiddleware } from "#paraglide/server.js";
+import { UserInbox } from "#shared/inbox/index.ts";
 import { reporting, runtime } from "#shared/server-api/index.ts";
 
 const googleAnalytics =
@@ -24,11 +26,19 @@ const startHandler = {
   },
 };
 
-const fetchWorker = appServerEntry(runtime, startHandler, reporting, { googleAnalytics });
+export { Process, UserInbox };
 
 export default {
-  fetch: fetchWorker.fetch.bind(fetchWorker),
-  scheduled: async (_controller, _environment, context): Promise<void> => {
+  ...withQueue(
+    appServerEntry(runtime, startHandler, reporting, { googleAnalytics }),
+    async (batch, environment) =>
+      consumeJobs(batch, await Effect.runPromise(Effect.orDie(readJobs(environment)))),
+  ),
+  scheduled: async (
+    _controller: ScheduledController,
+    _environment: unknown,
+    context: ExecutionContext,
+  ): Promise<void> => {
     context.waitUntil(
       runtime.runPromise(
         Effect.gen(function* purgeWithdrawnMembers() {

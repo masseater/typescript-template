@@ -11,6 +11,7 @@ import { verificationSettings } from "./verification-fixture.ts";
 import type {
   Ai,
   D1Database,
+  DurableObjectNamespace,
   KVNamespace,
   R2Bucket,
   SendEmail,
@@ -63,9 +64,20 @@ const userBindings: AppBindings<"service-member"> = {
     get: async (): Promise<null> => null,
     put: async (): Promise<null> => null,
   }),
+  JOBS: binding({ send: async (): Promise<undefined> => undefined }),
+  PROCESS: binding({
+    create: async (): Promise<{ id: string }> => ({ id: "job" }),
+    get: async (): Promise<{ status: () => Promise<{ status: string }> }> => ({
+      status: async () => ({ status: "complete" }),
+    }),
+  }),
   STRIPE_PRICE_ID: "price_test",
   STRIPE_SECRET_KEY: "sk_test_secret_of_at_least_32_characters",
   STRIPE_WEBHOOK_SECRET: "whsec_test_secret_of_at_least_32_ch",
+  USER_INBOX: binding<DurableObjectNamespace>({
+    get: (): undefined => undefined,
+    idFromName: (): undefined => undefined,
+  }),
 };
 
 const confirmation = "0".repeat(16);

@@ -95,6 +95,8 @@ export {
   Email,
   HttpsOrigin,
   appEnvKey,
+  bindingWith,
+  decode,
   distinctOrigins,
   isLocalDevelopmentOrigin,
   minimumAuthSecretLength,
@@ -120,8 +122,26 @@ export {
   reportSubjects,
 } from "./trust.ts";
 export type { ModerationKind, ReportReason, ReportStatus, ReportSubject } from "./trust.ts";
+export {
+  JobPayload,
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+  readJobs,
+} from "./jobs.ts";
+export type { JobResult, JobsBindings } from "./jobs.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type { AppConfig, AssetFetcher, StripeConfig, StripeKeyMode } from "./environment.ts";
+export {
+  localUserInbox,
+  readRealtime,
+  realtimePath,
+  realtimeSocketUrl,
+  userInboxBinding,
+  userInboxClassName,
+} from "./realtime.ts";
 export { respondedSuccessfully, waitUntilResponds } from "./responds.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "./notifications.ts";
 export type { NotificationKind } from "./notifications.ts";

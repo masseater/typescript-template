@@ -22,10 +22,12 @@ import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { groupsApi } from "./groups-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { jobsApi } from "./jobs-api.ts";
 import { leaveApi } from "./leave-api.ts";
 import { memberFailures } from "./member-failures.ts";
 import { messagingApi } from "./messaging-api.ts";
 import { photoApi } from "./photo-api.ts";
+import { realtimeApi } from "./realtime-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
 import { supportApi } from "./support-api.ts";
 import { trustApi } from "./trust-api.ts";
@@ -64,6 +66,8 @@ function memberApi(
     .use(billingApi(api))
     .onBeforeHandle(consentGate(api))
     .use(interviewApi(api))
+    .use(jobsApi(api))
+    .use(realtimeApi(api))
     .use(photoApi(api))
     .use(socialApi(api))
     .use(visibilityApi(api))
