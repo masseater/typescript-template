@@ -4,7 +4,6 @@ import { createAuthClient } from "better-auth/client";
 const memberAuthClient = createAuthClient({
   basePath: "/api/auth",
   fetchOptions: {
-    baseURL: "/api/auth",
     credentials: "same-origin",
     redirect: "error",
   },

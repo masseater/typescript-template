@@ -116,7 +116,7 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
     );
     following = row !== undefined;
   }
-  return { ...shown(member), following };
+  return following === undefined ? shown(member) : { ...shown(member), following };
 });
 
 const listMembers = Effect.fn("listMembers")(function* listMembers(page: {

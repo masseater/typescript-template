@@ -1,17 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiPage, loadApiKeys } from "#pages/settings/index.ts";
-
-import type { ReactElement } from "react";
+import { AiPage } from "#pages/settings/index.ts";
 
 const Route = createFileRoute("/_member/settings/ai")({
-  component: AiRoute,
-  loader: async () => loadApiKeys(),
+  component: AiPage,
 });
-
-function AiRoute(): ReactElement {
-  const keys = Route.useLoaderData();
-  return <AiPage keys={keys} />;
-}
 
 export { Route };

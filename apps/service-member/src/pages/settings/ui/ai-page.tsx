@@ -6,13 +6,14 @@ import {
   Field,
   FormColumn,
   Page,
+  STATUS_VARIANT,
   StatusMessage,
   localState,
 } from "@repo/ui";
-import { useRouter } from "@tanstack/react-router";
 
 import { revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
 import { useApiKeyForm } from "#pages/settings/model/api-key-form.ts";
+import { useApiKeys } from "#pages/settings/model/api-keys.ts";
 
 import type { ReactElement } from "react";
 
@@ -64,11 +65,8 @@ function ApiKeyItem({
   );
 }
 
-function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactElement {
-  const router = useRouter();
-  const reload = (): void => {
-    void router.invalidate();
-  };
+function AiPage(): ReactElement {
+  const { error, keys, reload } = useApiKeys();
   const form = useApiKeyForm(reload);
   const issuedNotice =
     form.issued === undefined
@@ -95,7 +93,11 @@ function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactEle
         </Button>
         <ActionStatus action={form.action} notice={issuedNotice} />
       </FormColumn>
-      {keys.length === 0 ? (
+      {error !== undefined ? (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
+      ) : keys === undefined ? (
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
+      ) : keys.length === 0 ? (
         <StatusMessage>API キーはまだありません。</StatusMessage>
       ) : (
         <ul>
