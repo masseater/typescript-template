@@ -1,11 +1,12 @@
 import { AUTHENTICATION_METHOD } from "@repo/config";
 import { useAction, ActionStatus, Heading } from "@repo/ui";
-import { useState, type ReactElement } from "react";
 
 import { PasskeySettings } from "./passkey-settings";
 import { RecoveryNotice } from "./recovery-notice";
 import { TotpSettings } from "./totp-settings";
+import { useNotice } from "./use-notice";
 
+import type { ReactElement } from "react";
 import type { SettingsContext } from "./mfa-types";
 import type { SessionView } from "./protocol";
 
@@ -19,15 +20,12 @@ const readRecovery = (): string | undefined => {
 };
 
 const MFASettings = ({ session }: Readonly<{ session: SessionView }>): ReactElement => {
-  const [notice, setNotice] = useState<string>();
+  const { clearNotice, notice, showNotice } = useNotice();
   const recovery = readRecovery();
   const action = useAction();
-  const clearNotice = (): void => {
-    setNotice(undefined);
-  };
   const settingsContext: SettingsContext = {
     action,
-    onNotice: setNotice,
+    onNotice: showNotice,
     onNoticeClear: clearNotice,
     recovery,
     session,

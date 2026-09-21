@@ -1,5 +1,12 @@
-import { Button, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
-import { useState } from "react";
+import {
+  Button,
+  Heading,
+  STATUS_VARIANT,
+  StatusMessage,
+  localState,
+  useOptionalString,
+} from "@repo/ui";
+import { Option } from "effect";
 
 import type { ReactElement } from "react";
 
@@ -7,21 +14,23 @@ function profileUrl(memberId: string): string {
   return `${globalThis.location.origin}/users/${memberId}`;
 }
 
+const useQrOpen = localState(false);
+
 function ProfileShare({
   memberId,
   privateProfile,
 }: Readonly<{ memberId: string; privateProfile: boolean }>): ReactElement {
-  const [message, setMessage] = useState<string | undefined>();
-  const [qrOpen, setQrOpen] = useState(false);
+  const [feedback, setFeedback] = useOptionalString();
+  const [qrOpen, setQrOpen] = useQrOpen();
 
   const copyLink = async (): Promise<void> => {
     await navigator.clipboard.writeText(profileUrl(memberId));
-    setMessage("リンクをコピーしました。");
+    setFeedback(Option.some("リンクをコピーしました。"));
   };
 
   const shareNative = async (): Promise<void> => {
     if (typeof navigator.share !== "function") {
-      setMessage("この端末では共有機能を使えません。");
+      setFeedback(Option.some("この端末では共有機能を使えません。"));
       return;
     }
     await navigator.share({ title: "プロフィール", url: profileUrl(memberId) });
@@ -55,7 +64,7 @@ function ProfileShare({
           src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(profileUrl(memberId))}`}
         />
       )}
-      {message !== undefined && <p className="text-sm text-muted-foreground">{message}</p>}
+      {Option.isSome(feedback) && <p className="text-sm text-muted-foreground">{feedback.value}</p>}
     </section>
   );
 }

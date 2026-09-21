@@ -3,9 +3,16 @@ import { appServerEntry } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 import { Effect } from "effect";
 
+import { paraglideMiddleware } from "#paraglide/server.js";
 import { reporting, runtime } from "#shared/server-api/index.ts";
 
-const fetchWorker = appServerEntry(runtime, handler, reporting);
+const startHandler = {
+  fetch(request: Request): Promise<Response> {
+    return paraglideMiddleware(request, () => handler.fetch(request));
+  },
+};
+
+const fetchWorker = appServerEntry(runtime, startHandler, reporting);
 
 export default {
   fetch: fetchWorker.fetch.bind(fetchWorker),

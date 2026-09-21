@@ -1,61 +1,44 @@
-import { decodeJson } from "@repo/runtime/client";
-import { Button, FormColumn } from "@repo/ui";
-import { Schema } from "effect";
-import { useState } from "react";
+import { Button, FormColumn, STATUS_VARIANT, StatusMessage, localState, useAction } from "@repo/ui";
 
+import { submitDecision } from "#pages/consent/api/consent.ts";
 import { serviceName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
 
-const Redirect = Schema.Struct({ url: Schema.String });
+const useDecided = localState(false);
 
-async function submitDecision(accept: boolean): Promise<void> {
-  const response = await fetch("/api/auth/oauth2/consent", {
-    body: JSON.stringify({ accept, oauth_query: globalThis.location.search.slice(1) }),
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error("連携の許可を処理できませんでした。");
-  }
-  globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
-}
-
-function ConsentActions({
-  client,
-  onError,
-}: Readonly<{ client: string; onError: (message: string) => void }>): ReactElement {
-  const [pending, setPending] = useState(false);
-  async function decide(accept: boolean): Promise<void> {
-    setPending(true);
-    onError("");
-    try {
+function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement {
+  const action = useAction();
+  const [decided, setDecided] = useDecided();
+  function decide(accept: boolean): void {
+    action.run(async () => {
       await submitDecision(accept);
-    } catch (error) {
-      onError(error instanceof Error ? error.message : String(error));
-      setPending(false);
-    }
+      setDecided(true);
+    });
   }
   function allow(): void {
-    void decide(true);
+    decide(true);
   }
   function deny(): void {
-    void decide(false);
+    decide(false);
   }
+  const disabled = action.blocked || decided;
   return (
     <FormColumn>
       <p>
         {client} に {serviceName} の閲覧を許可しますか？
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button type="button" variant="primary" disabled={pending} onClick={allow}>
+        <Button type="button" variant="primary" disabled={disabled} onClick={allow}>
           許可する
         </Button>
-        <Button type="button" disabled={pending} onClick={deny}>
+        <Button type="button" disabled={disabled} onClick={deny}>
           拒否する
         </Button>
       </div>
+      {action.error !== undefined && (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
+      )}
     </FormColumn>
   );
 }
