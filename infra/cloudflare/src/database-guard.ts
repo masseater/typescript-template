@@ -43,12 +43,13 @@ const assertDatabaseUnclaimed = Effect.fn("assertDatabaseUnclaimed")(
   ) {
     const verdict = yield* databaseVerdict(access, target, store);
     if (isUnreadable(verdict)) {
-      return yield* Effect.fail(
-        new CloudflareFailure({ code: "account_read_unavailable", keys: verdict.unreadable }),
-      );
+      return yield* new CloudflareFailure({
+        code: "account_read_unavailable",
+        keys: verdict.unreadable,
+      });
     }
     if (verdict === "taken") {
-      return yield* Effect.fail(nameTaken());
+      return yield* nameTaken();
     }
   },
 );
@@ -72,20 +73,16 @@ const assertDatabaseMigrated = Effect.fn("assertDatabaseMigrated")(function* ass
     ),
   );
   if (status.state === "unrecorded") {
-    return yield* Effect.fail(
-      new CloudflareFailure({
-        code: "database_migration_history_missing",
-        keys: [String(status.declared)],
-      }),
-    );
+    return yield* new CloudflareFailure({
+      code: "database_migration_history_missing",
+      keys: [String(status.declared)],
+    });
   }
   if (status.pending > 0) {
-    return yield* Effect.fail(
-      new CloudflareFailure({
-        code: "database_migrations_pending",
-        keys: [String(status.applied), String(status.declared)],
-      }),
-    );
+    return yield* new CloudflareFailure({
+      code: "database_migrations_pending",
+      keys: [String(status.applied), String(status.declared)],
+    });
   }
 });
 

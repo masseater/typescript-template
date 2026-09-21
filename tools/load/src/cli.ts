@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { NodeServices } from "@effect/platform-node";
 import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
 import { applicationOrigins, mailpitOrigin } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, Path, Schema, Sink, Stdio } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { type BinaryUnavailable, exists, installBinary } from "./binary.ts";
 import {
@@ -35,8 +35,16 @@ class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFai
 type Failure = BinaryUnavailable | EnvironmentUnusable | LoadTestFailure;
 
 const scenarios = fileURLToPath(new URL("../scenarios/", import.meta.url));
-const home = path.join(repositoryRoot, ".local/k6");
-const summaryFile = path.join(home, "summary.json");
+const { home, summaryFile } = Effect.runSync(
+  Effect.gen(function* locateK6Home() {
+    const paths = yield* Path.Path;
+    const homeDirectory = paths.join(repositoryRoot, ".local/k6");
+    return {
+      home: homeDirectory,
+      summaryFile: paths.join(homeDirectory, "summary.json"),
+    };
+  }).pipe(Effect.provide(NodeServices.layer)),
+);
 const usage =
   "vp run --filter @repo/load load <service-member|service-admin|internal-dashboard> [smoke|peak]";
 const rebuild = "vp run --filter @repo/dev setup loopback, then vp run --filter @repo/<app> build";
@@ -53,28 +61,30 @@ const runScenario = (
   environment: Readonly<Record<string, string>>,
 ): Effect.Effect<boolean, LoadTestFailure> => {
   const thresholdsExitCode = 99;
-  const standardErrorDescriptor = 2;
-  return Effect.callback<boolean, LoadTestFailure>((resume) => {
-    const child = spawn(
-      measured.binary,
-      ["run", "--summary-export", summaryFile, measured.scenario],
-      {
-        cwd: repositoryRoot,
-        env: { ...process.env, ...environment },
-        stdio: ["ignore", standardErrorDescriptor, "inherit"],
-      },
-    );
-    child.once("error", () => {
-      resume(Effect.fail(new LoadTestFailure({ reason: "scenario_failed" })));
-    });
-    child.once("exit", (code) => {
-      resume(
-        code === 0 || code === thresholdsExitCode
-          ? Effect.succeed(code === thresholdsExitCode)
-          : Effect.fail(new LoadTestFailure({ code: code ?? 0, reason: "scenario_failed" })),
-      );
-    });
-  });
+  return Effect.gen(function* runMeasuredScenario() {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const stdio = yield* Stdio.Stdio;
+    const exitCode = yield* spawner
+      .exitCode(
+        ChildProcess.make(
+          measured.binary,
+          ["run", "--summary-export", summaryFile, measured.scenario],
+          {
+            cwd: repositoryRoot,
+            env: environment,
+            extendEnv: true,
+            stderr: "inherit",
+            stdin: "ignore",
+            stdout: Sink.as(stdio.stderr(), new Uint8Array()),
+          },
+        ),
+      )
+      .pipe(Effect.mapError(() => new LoadTestFailure({ reason: "scenario_failed" })));
+    if (exitCode !== 0 && exitCode !== thresholdsExitCode) {
+      return yield* new LoadTestFailure({ code: exitCode, reason: "scenario_failed" });
+    }
+    return exitCode === thresholdsExitCode;
+  }).pipe(Effect.provide(NodeServices.layer));
 };
 
 const requireMeasurement = (): Effect.Effect<Report, LoadTestFailure> => {
@@ -117,7 +127,8 @@ const prepare = Effect.fn("prepare")(function* prepare(
   app: (typeof loadCliArguments.Type)["app"],
   origin: string,
 ) {
-  const scenario = path.join(scenarios, `${app}-journey.ts`);
+  const paths = yield* Path.Path;
+  const scenario = paths.join(scenarios, `${app}-journey.ts`);
   if (!(yield* exists(scenario))) {
     return yield* new LoadTestFailure({ reason: "scenario_missing" });
   }
@@ -151,9 +162,13 @@ const measure = Effect.fn("measure")(function* measure(input: typeof loadCliArgu
 
 const announce = Effect.fn("announce")(function* announce(reported: Measured) {
   const { crossed, measured, ...rest } = reported;
-  yield* Console.log(
-    JSON.stringify({ event: "load.measured", ok: !crossed, ...rest, ...measured }),
-  );
+  const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+    event: "load.measured",
+    ok: !crossed,
+    ...rest,
+    ...measured,
+  });
+  yield* Console.log(encoded);
   if (crossed) {
     return yield* new LoadTestFailure({ crossed: measured.crossed, reason: "thresholds_crossed" });
   }
@@ -193,6 +208,7 @@ runCli(
       LoadTestFailure: (failed) =>
         announceFailure({ crossed: failed.crossed, exitCode: failed.code, reason: failed.reason }),
     }),
+    Effect.provide(NodeServices.layer),
   ),
   (cause) => causeRecord("load.run_failed", { cause, fields: { reason: "unexpected" } }),
 );

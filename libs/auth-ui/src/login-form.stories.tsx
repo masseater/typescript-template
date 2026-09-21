@@ -1,7 +1,8 @@
+import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { expect, userEvent } from "storybook/test";
 
-import preview from "../storybook/preview";
+import preview, { playTask } from "../storybook/preview";
 import { LoginForm } from "./login-form";
 
 const meta = preview.meta({ args: { onAuthenticated: () => undefined }, component: LoginForm });
@@ -9,11 +10,20 @@ const meta = preview.meta({ args: { onAuthenticated: () => undefined }, componen
 export const Default = meta.story();
 
 export const TypesCredentials = meta.story({
-  play: async ({ canvas }) => {
-    await userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com");
-    await userEvent.type(canvas.getByLabelText("パスワード"), "correct horse battery");
-    await expect(canvas.getByRole("button", { name: "ログイン" })).toBeEnabled();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* typeCredentials() {
+        yield* playTask(() =>
+          userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com"),
+        );
+        yield* playTask(() =>
+          userEvent.type(canvas.getByLabelText("パスワード"), "correct horse battery"),
+        );
+        yield* playTask(() =>
+          expect(canvas.getByRole("button", { name: "ログイン" })).toBeEnabled(),
+        );
+      }),
+    ),
 });
 
 export const Rejected = meta.story({
@@ -27,12 +37,20 @@ export const Rejected = meta.story({
       ),
     );
   },
-  play: async ({ canvas }) => {
-    await userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com");
-    await userEvent.type(canvas.getByLabelText("パスワード"), "wrong password");
-    await userEvent.click(canvas.getByRole("button", { name: "ログイン" }));
-    await expect(await canvas.findByRole("alert")).toHaveTextContent(
-      "メールアドレスまたはパスワードが違います。",
-    );
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* rejectCredentials() {
+        yield* playTask(() =>
+          userEvent.type(canvas.getByLabelText("メールアドレス"), "taro@example.com"),
+        );
+        yield* playTask(() =>
+          userEvent.type(canvas.getByLabelText("パスワード"), "wrong password"),
+        );
+        yield* playTask(() => userEvent.click(canvas.getByRole("button", { name: "ログイン" })));
+        const failureAlert = yield* playTask(() => canvas.findByRole("alert"));
+        yield* playTask(() =>
+          expect(failureAlert).toHaveTextContent("メールアドレスまたはパスワードが違います。"),
+        );
+      }),
+    ),
 });

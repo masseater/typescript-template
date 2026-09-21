@@ -13,10 +13,6 @@ interface ProbeResult {
   readonly detail: string;
 }
 
-type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
-
-const REQUEST_TIMEOUT_MS = 10_000;
-
 const HealthPayload = Schema.Struct({
   ok: Schema.Literal(true),
   release: Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u)),
@@ -27,23 +23,26 @@ function probeResult(target: HealthTarget, healthy: boolean, detail: string): Pr
   return { detail, healthy, service: target.service };
 }
 
-function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
-  return Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
-    fetch(`${target.origin}/api/health`, {
-      headers: { accept: "application/json" },
-      redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-    }),
-  ).pipe(Effect.option);
+function requestHealth(
+  fetchImpl: typeof fetch,
+  target: HealthTarget,
+): Effect.Effect<Option.Option<Response>> {
+  return Effect.tryPromise({
+    catch: () => "unreachable" as const,
+    try: (signal) =>
+      fetchImpl(`${target.origin}/api/health`, {
+        headers: { accept: "application/json" },
+        redirect: "manual",
+        signal,
+      }),
+  }).pipe(Effect.option);
 }
 
 const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   target: HealthTarget,
-  response: ProbeResponse,
+  response: Response,
 ) {
-  const body = yield* Effect.tryPromise(async (): Promise<unknown> => response.json()).pipe(
-    Effect.option,
-  );
+  const body = yield* Effect.tryPromise(() => response.json()).pipe(Effect.option);
   if (Option.isNone(body)) {
     return probeResult(target, false, "body_unreadable");
   }
@@ -55,7 +54,7 @@ const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
 });
 
 const probeService = Effect.fn("probeService")(function* probeService(target: HealthTarget) {
-  const response = yield* requestHealth(target);
+  const response = yield* requestHealth(fetch, target);
   if (Option.isNone(response)) {
     return probeResult(target, false, "unreachable");
   }

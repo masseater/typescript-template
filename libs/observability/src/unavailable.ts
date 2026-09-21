@@ -1,6 +1,6 @@
-import { Cause, Console, Effect, Predicate, Result } from "effect";
+import { Cause, Console, Effect, Predicate, Result, Schema } from "effect";
 
-import { redactSecrets, redactedField } from "./redact.ts";
+import { appliedField, redactSecrets, redactedField } from "./redact.ts";
 import { failureAttributesOf } from "./request-span.ts";
 import { serviceLabel } from "./structured-logs.ts";
 
@@ -40,7 +40,13 @@ function loggableField(key: string, value: unknown): unknown {
 }
 
 function errorFields(error: unknown): string {
-  const encoded = Result.try(() => JSON.stringify(error, loggableField));
+  const encoded = Result.try(() =>
+    Effect.runSync(
+      Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+        appliedField(error, loggableField),
+      ),
+    ),
+  );
   return Result.isSuccess(encoded) ? summarized(encoded.success, false) : unserializable;
 }
 
@@ -96,7 +102,11 @@ function reportUnavailable(
 ): Effect.Effect<void> {
   return Effect.gen(function* reportUnavailableProgram() {
     const sink = reporting.log ?? (yield* Console.Console);
-    sink.error(JSON.stringify(unavailableLog(cause, reporting.service)));
+    sink.error(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+        unavailableLog(cause, reporting.service),
+      ).pipe(Effect.orDie),
+    );
   });
 }
 

@@ -1,14 +1,14 @@
-import { closeSync } from "node:fs";
-
 import { attempt } from "es-toolkit";
 import { unlock } from "fs-native-extensions";
+
+import { closeDescriptor } from "../host-descriptors.ts";
 
 export const closeFileDescriptorAfterFailure = (input: {
   descriptor: number;
   precedingFailure: unknown;
 }): never => {
   const [closeFailure] = attempt<true, Error>(() => {
-    closeSync(input.descriptor);
+    closeDescriptor(input.descriptor);
     return true;
   });
   if (closeFailure !== null) {
@@ -26,7 +26,7 @@ export const releaseFileLock = (descriptor: number): void => {
     return true;
   });
   const [closeFailure] = attempt<true, Error>(() => {
-    closeSync(descriptor);
+    closeDescriptor(descriptor);
     return true;
   });
   if (unlockFailure !== null && closeFailure !== null) {

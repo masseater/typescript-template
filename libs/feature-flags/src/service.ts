@@ -19,7 +19,7 @@ export type FlagState = Readonly<{
 
 type FeatureFlagsService = Readonly<{
   readonly getBoolean: (flagKey: FlagKey) => Effect.Effect<boolean>;
-  readonly list: () => Effect.Effect<readonly FlagState[]>;
+  readonly list: Effect.Effect<readonly FlagState[]>;
   readonly setBoolean: (flagKey: FlagKey, enabled: boolean) => Effect.Effect<FlagState>;
 }>;
 
@@ -75,8 +75,7 @@ const featureFlagsFromClient = (
       defaultVariation: flagDefinitionByKey[flagKey].defaultVariation,
       flagKey,
     }),
-  list: () =>
-    Effect.all(flagDefinitions.map((definition) => flagStateForDefinition(client, definition))),
+  list: Effect.forEach(flagDefinitions, (definition) => flagStateForDefinition(client, definition)),
   setBoolean: (flagKey: FlagKey, enabled: boolean) => write(flagKey, enabled),
 });
 

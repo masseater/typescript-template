@@ -18,14 +18,18 @@ function buildsInTurn(
 }
 
 describe("a worker runtime whose layer failed to build", () => {
-  it("builds the layer again for the next request", async () => {
+  it("builds the layer again for the next request", () => {
     expect.hasAssertions();
     const runtime = workerRuntime(
       buildsInTurn(Effect.fail("unavailable"), Effect.succeed({ value: "rebuilt" })),
     );
-    const first = await runtime.runPromiseExit(readAttempt);
-    const second = await runtime.runPromiseExit(readAttempt);
-    await runtime.dispose();
-    expect([Exit.isFailure(first), second]).toStrictEqual([true, Exit.succeed("rebuilt")]);
+    return Effect.runPromise(
+      Effect.gen(function* rebuild() {
+        const first = yield* Effect.promise(() => runtime.runPromiseExit(readAttempt));
+        const second = yield* Effect.promise(() => runtime.runPromiseExit(readAttempt));
+        yield* Effect.promise(() => runtime.dispose());
+        expect([Exit.isFailure(first), second]).toStrictEqual([true, Exit.succeed("rebuilt")]);
+      }),
+    );
   });
 });

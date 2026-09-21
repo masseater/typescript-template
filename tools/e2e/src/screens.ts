@@ -1,3 +1,6 @@
+import { Effect } from "effect";
+
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
 import type { Locator, Page } from "playwright";
@@ -5,48 +8,70 @@ import type { Locator, Page } from "playwright";
 const hydrationTimeout = 60_000;
 const appearanceTimeout = 60_000;
 
-const readyButton = async (page: Page, buttonName: string): Promise<Locator> => {
-  const button = page.getByRole("button", { exact: true, name: buttonName });
-  await button.waitFor({ state: "visible", timeout: appearanceTimeout });
-  await until({
-    attempt: async () => (await button.isEnabled()) || undefined,
-    deadline: deadlineIn(hydrationTimeout),
-    reason: "E2E_CONTROL_STAYED_DISABLED",
+const pageStep = <Result>(run: () => Promise<Result>): Effect.Effect<Result, JourneyFailure> =>
+  Effect.tryPromise({
+    try: run,
+    catch: (cause) => failed("E2E_PAGE_STEP_FAILED", cause),
   });
-  return button;
-};
 
-const press = async (page: Page, buttonName: string): Promise<void> => {
-  const button = await readyButton(page, buttonName);
-  await button.click();
-};
+const readyButton = (page: Page, buttonName: string): Effect.Effect<Locator, JourneyFailure> =>
+  Effect.gen(function* waitForEnabledButton() {
+    const button = page.getByRole("button", { exact: true, name: buttonName });
+    yield* pageStep(() => button.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    yield* until({
+      attempt: () =>
+        pageStep(() => button.isEnabled()).pipe(Effect.map((enabled) => enabled || undefined)),
+      deadline: deadlineIn(hydrationTimeout),
+      reason: "E2E_CONTROL_STAYED_DISABLED",
+    });
+    return button;
+  });
 
-const field = (page: Page, fieldLabel: string): Locator => {
-  return page.getByLabel(fieldLabel, { exact: true }).first();
-};
+const press = (page: Page, buttonName: string): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* pressButton() {
+    const button = yield* readyButton(page, buttonName);
+    yield* pageStep(() => button.click());
+  });
 
-const fill = async (
+const field = (page: Page, fieldLabel: string): Locator =>
+  page.getByLabel(fieldLabel, { exact: true }).first();
+
+const fill = (
   page: Page,
   entered: { readonly fieldLabel: string; readonly typed: string },
-): Promise<void> => {
-  const input = field(page, entered.fieldLabel);
-  await input.waitFor({ state: "visible", timeout: appearanceTimeout });
-  await input.fill(entered.typed);
-};
+): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* fillField() {
+    const input = field(page, entered.fieldLabel);
+    yield* pageStep(() => input.waitFor({ state: "visible", timeout: appearanceTimeout }));
+    yield* pageStep(() => input.fill(entered.typed));
+  });
 
-const seeHeading = async (page: Page, headingName: string): Promise<void> => {
-  const heading = page.getByRole("heading", { exact: true, name: headingName }).first();
-  await heading.waitFor({ state: "visible", timeout: appearanceTimeout });
-};
+const seeHeading = (page: Page, headingName: string): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* waitForHeading() {
+    const heading = page.getByRole("heading", { exact: true, name: headingName }).first();
+    yield* pageStep(() => heading.waitFor({ state: "visible", timeout: appearanceTimeout }));
+  });
 
-const seeText = async (page: Page, shownText: string): Promise<void> => {
-  const shown = page.getByText(shownText, { exact: false }).first();
-  await shown.waitFor({ state: "visible", timeout: appearanceTimeout });
-};
+const seeText = (page: Page, shownText: string): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* waitForText() {
+    const shown = page.getByText(shownText, { exact: false }).first();
+    yield* pageStep(() => shown.waitFor({ state: "visible", timeout: appearanceTimeout }));
+  });
 
-const seeAnyHeading = async (page: Page): Promise<void> => {
-  const heading = page.getByRole("heading", { level: 1 }).first();
-  await heading.waitFor({ state: "visible", timeout: appearanceTimeout });
-};
+const seeAnyHeading = (page: Page): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* waitForAnyHeading() {
+    const heading = page.getByRole("heading", { level: 1 }).first();
+    yield* pageStep(() => heading.waitFor({ state: "visible", timeout: appearanceTimeout }));
+  });
 
-export { appearanceTimeout, field, fill, press, readyButton, seeAnyHeading, seeHeading, seeText };
+export {
+  appearanceTimeout,
+  field,
+  fill,
+  pageStep,
+  press,
+  readyButton,
+  seeAnyHeading,
+  seeHeading,
+  seeText,
+};

@@ -15,10 +15,14 @@ const indicator = (
 const Checkbox = ({
   "aria-label": ariaLabel,
   checked,
+  disabled = false,
+  name,
   onCheckedChange,
 }: Readonly<{
   "aria-label": string;
   checked: boolean;
+  disabled?: boolean;
+  name?: string | undefined;
   onCheckedChange: (checked: boolean) => void;
 }>): ReactElement => {
   return (
@@ -26,6 +30,8 @@ const Checkbox = ({
       data-slot="checkbox"
       aria-label={ariaLabel}
       checked={checked}
+      disabled={disabled}
+      name={name}
       onCheckedChange={onCheckedChange}
       className="box-border flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-input bg-card outline-none focus-visible:focus-indicator-outer disabled:cursor-not-allowed disabled:border-border/50 disabled:bg-card-hover data-invalid:border-destructive data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground"
     >

@@ -1,3 +1,5 @@
+/// <reference types="@cloudflare/vitest-plugin/types" />
+/// <reference types="@cloudflare/workers-types" />
 import { applyD1Migrations, reset } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { getColumns } from "drizzle-orm";
@@ -31,7 +33,7 @@ function runStatement(
 ): Effect.Effect<D1Result, DatabaseFailure> {
   return Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
-    try: async () =>
+    try: () =>
       env.DB.prepare(sql)
         .bind(...params)
         .run(),
@@ -41,9 +43,9 @@ function runStatement(
 function testDatabase(migrated: boolean): Layer.Layer<Database> {
   return Layer.unwrap(
     Effect.gen(function* database() {
-      yield* Effect.promise(async () => reset());
+      yield* Effect.promise(() => reset());
       if (migrated) {
-        yield* Effect.promise(async () => applyD1Migrations(env.DB, env.TEST_MIGRATIONS));
+        yield* Effect.promise(() => applyD1Migrations(env.DB, env.TEST_MIGRATIONS));
       }
       return Database.layer(env.DB);
     }).pipe(Effect.orDie),

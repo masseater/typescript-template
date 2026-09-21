@@ -1,9 +1,6 @@
-import { mkdtemp, realpath, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, FileSystem } from "effect";
 import { http, passthrough } from "msw";
 import { setupServer } from "msw/node";
 
@@ -13,8 +10,16 @@ import { downloadUrl, releases } from "./releases.ts";
 const archives = [...releases.values()].map((release) => downloadUrl(release.archive));
 
 const temporaryHome = Effect.acquireRelease(
-  Effect.promise(async () => realpath(await mkdtemp(path.join(tmpdir(), "template-k6-")))),
-  (home) => Effect.promise(async () => rm(home, { force: true, recursive: true })),
+  Effect.gen(function* createTemporaryHome() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const temporaryDirectory = yield* filesystem.makeTempDirectory({ prefix: "template-k6-" });
+    return yield* filesystem.realPath(temporaryDirectory);
+  }).pipe(Effect.orDie),
+  (home) =>
+    Effect.gen(function* removeTemporaryHome() {
+      const filesystem = yield* FileSystem.FileSystem;
+      yield* filesystem.remove(home, { force: true, recursive: true });
+    }).pipe(Effect.orDie),
 );
 
 const tamperedArchives = Effect.acquireRelease(
@@ -42,6 +47,6 @@ describe("the pinned k6 binary", () => {
       const failure = yield* installBinary(home).pipe(Effect.flip);
       assert.instanceOf(failure, BinaryUnavailable);
       assert.strictEqual(failure.reason, "archive_corrupted");
-    }).pipe(Effect.scoped),
+    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );
 });

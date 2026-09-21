@@ -1,8 +1,11 @@
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { journeyTest } from "./journey-fixture.ts";
 import { journeyRoles } from "./journey-roles.ts";
 import { runDocumentJourney, runMemberJourney, runOperatorJourney } from "./journeys.ts";
+import { pageStep } from "./screens.ts";
 
 const backupCodesIssuedOnEnrollment = 10;
 const documentsReadByAnyone = 2;
@@ -10,21 +13,29 @@ const robotsDirective = "noindex, nofollow";
 
 describe("アプリ全体の導線", () => {
   const it = journeyTest
-    .extend("memberJourney", async ({ environment, page }) =>
-      runMemberJourney({ environment, page }),
+    .extend("memberJourney", ({ environment, page }) =>
+      Effect.runPromise(
+        runMemberJourney({ environment, page }).pipe(Effect.provide(NodeServices.layer)),
+      ),
     )
-    .extend("operatorJourney", async ({ environment, page }) =>
-      runOperatorJourney({ environment, page }),
+    .extend("operatorJourney", ({ environment, page }) =>
+      Effect.runPromise(
+        runOperatorJourney({ environment, page }).pipe(Effect.provide(NodeServices.layer)),
+      ),
     )
-    .extend("documentJourney", async ({ environment, page }) =>
-      runDocumentJourney({ environment, page }),
+    .extend("documentJourney", ({ environment, page }) =>
+      Effect.runPromise(runDocumentJourney({ environment, page })),
     )
-    .extend("robotsTags", async ({ environment, page }) =>
-      Promise.all(
-        journeyRoles.map(async (role) => {
-          const originReply = await page.request.get(environment.originOf(role));
-          return originReply.headers()["x-robots-tag"];
-        }),
+    .extend("robotsTags", ({ environment, page }) =>
+      Effect.runPromise(
+        Effect.forEach(
+          journeyRoles,
+          (role) =>
+            pageStep(() => page.request.get(environment.originOf(role))).pipe(
+              Effect.map((originReply) => originReply.headers()["x-robots-tag"]),
+            ),
+          { concurrency: "unbounded" },
+        ),
       ),
     );
 

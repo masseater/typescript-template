@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Schema } from "effect";
 
 import { InvalidUsersSearch, UsersPage, normalizeUsersSearch } from "#pages/users/index.ts";
 
@@ -8,7 +9,7 @@ const Route = createFileRoute("/_admin/members")({
     try {
       return normalizeUsersSearch(search);
     } catch (error) {
-      if (error instanceof InvalidUsersSearch) {
+      if (Schema.is(InvalidUsersSearch)(error)) {
         throw redirect({ replace: true, search: {}, to: "/members" });
       }
       throw error;
