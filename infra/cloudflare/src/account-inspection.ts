@@ -165,4 +165,3 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
 }
 
 export { blocked, inspectAccount };
-export type { Inspection };
