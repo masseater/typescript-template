@@ -1,10 +1,12 @@
-import { type ActionState, CheckboxField, Field, FormColumn, Heading } from "@repo/ui";
-import { useState, type ReactElement } from "react";
+import { type ActionState, CheckboxField, Field, FormColumn, Heading, localState } from "@repo/ui";
 
 import { BackupCodeList } from "./backup-code-list";
 import { TotpVerifyForm } from "./totp-verify-form";
 
+import type { ReactElement } from "react";
 import type { Enrollment } from "./mfa-types";
+
+const useSaved = localState(false);
 
 const TotpEnrollment = ({
   action,
@@ -15,7 +17,7 @@ const TotpEnrollment = ({
   readonly enrollment: Enrollment;
   readonly onVerified: () => void;
 }): ReactElement => {
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useSaved();
   return (
     <FormColumn>
       <Field multiline label="認証アプリ登録用 URI" readOnly value={enrollment.totpURI} />

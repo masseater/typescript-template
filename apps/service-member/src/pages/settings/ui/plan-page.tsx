@@ -1,10 +1,11 @@
-import { Button, ConfirmDialog, FormColumn, Page, StatusMessage } from "@repo/ui";
-import { useState } from "react";
+import { Button, ConfirmDialog, FormColumn, Page, StatusMessage, localState } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
+const usePlanConfirming = localState(false);
+
 function PlanPage(): ReactElement {
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = usePlanConfirming();
   return (
     <Page title="プランと解約">
       <StatusMessage>有料プランの契約と解約はまだありません。</StatusMessage>
