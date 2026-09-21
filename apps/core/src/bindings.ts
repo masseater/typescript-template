@@ -1,5 +1,3 @@
-import type { D1Database, SendEmail } from "@cloudflare/workers-types";
-
 type CoreBindings = {
   readonly AUTH_SECRET: string;
   readonly DB: D1Database;
