@@ -18,7 +18,7 @@ containers:
       privileged: true
 ```
 
-`OTEL_EBPF_OPEN_PORT` は、そのポートを開いているプロセスを対象にする。`OTEL_EBPF_TRACE_PRINTER=text` は、見えた HTTP を標準出力へ書く。他のコンテナのプロセスを見るには、ホストの PID 名前空間が要る。`privileged` は、プローブをカーネルへ載せるために要る。Linux の `amd64` と `arm64` で、カーネルは 5.8 以降が前提である。OTLP の送り先は別に設定し、Collector へ出せる。プロトコルの外にある値、たとえば処理の途中の変数は、このプローブには見えない。件数と分布として残す先は [Prometheus](/observability/prometheus) である。
+HTTP のバイト列を見るほかに、kprobe はカーネルの関数、uprobe はプロセスの関数へフックする。`OTEL_EBPF_OPEN_PORT` は、そのポートを開いているプロセスを対象にする。`OTEL_EBPF_TRACE_PRINTER=text` は、見えた HTTP を標準出力へ書く。他のコンテナのプロセスを見るには、ホストの PID 名前空間が要る。`privileged` は、プローブをカーネルへ載せるために要る。Linux の `amd64` と `arm64` で、カーネルは 5.8 以降が前提である。OTLP の送り先は別に設定し、Collector へ出せる。プロトコルの外にある値、たとえば処理の途中の変数は、このプローブには見えない。件数と分布として残す先は [Prometheus](/observability/prometheus) である。
 
 ## 参考文献
 

@@ -3,7 +3,9 @@ title: Tracing / Logging / Profiling
 description: 同じ trace id で、区間と文言とスタックを残す
 ---
 
-Tracing は span の木、Logging は起きたことの文言、Profiling は実行中のスタックの標本である。三つは別の信号で、同じ trace id を持つと同じ要求へ戻れる。
+Tracing は span の木、Logging は起きたことの文言、Profiling は実行中のスタックの標本である。三つは別の信号で、同じ trace id を持つと同じ要求へ戻れる。Metrics は「遅い」こと、trace は「どの要求のどこが遅い」こと、profile は「その時間にスタックのどの関数にいた」ことを持つ。
+
+Continuous profiling は、本番のプロセスから一定間隔でスタックを取り続ける。一回だけ取るプロファイルは、止めた瞬間より前を残さない。Flame graph は、同じスタックが標本に何回出たかを横幅で示す。pprof はその標本の形式の一つである。
 
 ```text
 span  user.load  trace_id=4bf92f3577b34da6a3ce929d0e0e4736  span_id=00f067aa0ba902b7
