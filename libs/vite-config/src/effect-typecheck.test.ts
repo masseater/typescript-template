@@ -121,7 +121,7 @@ describe("effect typecheck gate", () => {
       expect(parsed.workspaces["."]?.some((entry) => entry.code === "TS2322")).toBe(true);
       const result = runGate({ cwd, baseline: written.baseline });
       expect(result.code).toBe(0);
-      expect(result.printed).not.toMatch(/typecheck gate:/u);
+      expect(result.printed).toBe("");
     } finally {
       rmSync(cwd, { force: true, recursive: true });
     }
@@ -200,7 +200,7 @@ describe("effect typecheck gate", () => {
         },
       }),
     ).toBe(0);
-    expect(printed).not.toMatch(/typecheck gate:/u);
+    expect(printed).toBe("");
     expect(
       runEffectTypecheck({
         cwd: checkout,
