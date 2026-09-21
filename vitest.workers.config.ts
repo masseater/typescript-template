@@ -13,12 +13,12 @@ import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";
-import { Effect, Path } from "effect";
+import { paths } from "@repo/vite-config";
+import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
 
 const root = import.meta.dirname;
-const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 const mailRecorder = "MailRecorder";
 const probeMonitor = "ProbeMonitor";
 

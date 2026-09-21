@@ -7,6 +7,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
+import { Effect } from "effect";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
@@ -32,64 +33,68 @@ const destinations = [
 
 const absent = ["探す", "メッセージ", "通知", "有料"] as const;
 
-async function markup(locale: Locale, path: string): Promise<string> {
-  overwriteGetLocale(() => locale);
-  const rootRoute = createRootRoute({
-    component: () =>
-      createElement(
-        RegistryProvider,
-        null,
-        createElement(MemberFrame, {
-          children: createElement("p", null, "本文"),
-          memberBoard: true,
-          user: member,
-        }),
-      ),
-  });
-  const router = createRouter({
-    history: createMemoryHistory({ initialEntries: [path] }),
-    routeTree: rootRoute.addChildren([
-      createRoute({
-        component: () => createElement("span"),
-        getParentRoute: () => rootRoute,
-        path: "/",
-      }),
-      createRoute({
-        component: () => createElement("span"),
-        getParentRoute: () => rootRoute,
-        path: "/home",
-      }),
-      createRoute({
-        component: () => createElement("span"),
-        getParentRoute: () => rootRoute,
-        path: "/board",
-      }),
-      createRoute({
-        component: () => createElement("span"),
-        getParentRoute: () => rootRoute,
-        path: "/settings",
-      }),
-      createRoute({
-        component: () => createElement("span"),
-        getParentRoute: () => rootRoute,
-        path: "/support",
-      }),
-      createRoute({
-        component: () => createElement("span"),
-        getParentRoute: () => rootRoute,
-        path: "/users/$id",
-      }),
-    ]),
-  });
-  await router.load();
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+function markup(locale: Locale, path: string): Promise<string> {
+  return Effect.runPromise(
+    Effect.gen(function* loadFrame() {
+      overwriteGetLocale(() => locale);
+      const rootRoute = createRootRoute({
+        component: () =>
+          createElement(
+            RegistryProvider,
+            null,
+            createElement(MemberFrame, {
+              children: createElement("p", null, "本文"),
+              memberBoard: true,
+              user: member,
+            }),
+          ),
+      });
+      const router = createRouter({
+        history: createMemoryHistory({ initialEntries: [path] }),
+        routeTree: rootRoute.addChildren([
+          createRoute({
+            component: () => createElement("span"),
+            getParentRoute: () => rootRoute,
+            path: "/",
+          }),
+          createRoute({
+            component: () => createElement("span"),
+            getParentRoute: () => rootRoute,
+            path: "/home",
+          }),
+          createRoute({
+            component: () => createElement("span"),
+            getParentRoute: () => rootRoute,
+            path: "/board",
+          }),
+          createRoute({
+            component: () => createElement("span"),
+            getParentRoute: () => rootRoute,
+            path: "/settings",
+          }),
+          createRoute({
+            component: () => createElement("span"),
+            getParentRoute: () => rootRoute,
+            path: "/support",
+          }),
+          createRoute({
+            component: () => createElement("span"),
+            getParentRoute: () => rootRoute,
+            path: "/users/$id",
+          }),
+        ]),
+      });
+      yield* Effect.promise(() => router.load());
+      return renderToStaticMarkup(createElement(RouterProvider, { router }));
+    }),
+  );
 }
 
 describe("member navigation", () => {
   const it = test
-    .extend("theFrame", async () => markup("ja", "/home"))
-    .extend("theProfileFrame", async () => markup("ja", "/users/member-1"))
-    .extend("theEnglishFrame", async () => markup("en", "/home"));
+    .extend("theFrame", () => markup("ja", "/home"))
+    .extend("theProfileFrame", () => markup("ja", "/users/member-1"))
+    .extend("theEnglishFrame", () => markup("en", "/home"));
 
   it("lists home, profile, and the board on the compact rail", ({ theFrame }) => {
     expect.hasAssertions();

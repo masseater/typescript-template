@@ -376,6 +376,7 @@ export {
   toolTest,
   withoutEnvFileLoader,
 };
+export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };

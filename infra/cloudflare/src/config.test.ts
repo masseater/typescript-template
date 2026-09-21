@@ -64,12 +64,13 @@ const userBindings: AppBindings<"service-member"> = {
     get: (): Promise<null> => Promise.resolve(null),
     put: (): Promise<null> => Promise.resolve(null),
   }),
-  JOBS: binding({ send: async (): Promise<undefined> => undefined }),
+  JOBS: binding({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
   PROCESS: binding({
-    create: async (): Promise<{ id: string }> => ({ id: "job" }),
-    get: async (): Promise<{ status: () => Promise<{ status: string }> }> => ({
-      status: async () => ({ status: "complete" }),
-    }),
+    create: (): Promise<{ id: string }> => Promise.resolve({ id: "job" }),
+    get: (): Promise<{ status: () => Promise<{ status: string }> }> =>
+      Promise.resolve({
+        status: (): Promise<{ status: string }> => Promise.resolve({ status: "complete" }),
+      }),
   }),
   USER_INBOX: binding<DurableObjectNamespace>({
     get: (): undefined => undefined,
