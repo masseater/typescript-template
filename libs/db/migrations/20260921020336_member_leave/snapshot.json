@@ -1,11 +1,19 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "48658ea3-a6d0-40ad-8ea7-9d2e45bf7152",
-  "prevIds": ["19c6bf9b-7db4-46d0-b977-8288d59b6908"],
+  "id": "3400fbbb-dbd8-4895-a3c4-83080fd5fc84",
+  "prevIds": ["e1e5424e-834e-46f9-9e02-121188112534"],
   "ddl": [
     {
       "name": "account",
+      "entityType": "tables"
+    },
+    {
+      "name": "agreement_acceptance",
+      "entityType": "tables"
+    },
+    {
+      "name": "agreement_version",
       "entityType": "tables"
     },
     {
@@ -225,6 +233,126 @@
       "name": "user_id",
       "entityType": "columns",
       "table": "account"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "accepted_at",
+      "entityType": "columns",
+      "table": "agreement_acceptance"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "agreement_acceptance"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "version_id",
+      "entityType": "columns",
+      "table": "agreement_acceptance"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "body",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_by",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "published_at",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "published_by",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "summary",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "version",
+      "entityType": "columns",
+      "table": "agreement_version"
     },
     {
       "type": "text",
@@ -1987,6 +2115,16 @@
       "table": "two_factor"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "company_photo_key",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -2013,6 +2151,16 @@
       "default": "false",
       "generated": null,
       "name": "email_verified",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "face_photo_key",
       "entityType": "columns",
       "table": "user"
     },
@@ -2080,6 +2228,16 @@
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "searchable",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
       "default": "0",
       "generated": null,
       "name": "security_version",
@@ -2103,6 +2261,16 @@
       "default": null,
       "generated": null,
       "name": "updated_at",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'all_members'",
+      "generated": null,
+      "name": "visibility",
       "entityType": "columns",
       "table": "user"
     },
@@ -2306,6 +2474,50 @@
       "name": "fk_account_user_id_user_id_fk",
       "entityType": "fks",
       "table": "account"
+    },
+    {
+      "columns": ["user_id"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_agreement_acceptance_user_id_user_id_fk",
+      "entityType": "fks",
+      "table": "agreement_acceptance"
+    },
+    {
+      "columns": ["version_id"],
+      "tableTo": "agreement_version",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "nameExplicit": false,
+      "name": "fk_agreement_acceptance_version_id_agreement_version_id_fk",
+      "entityType": "fks",
+      "table": "agreement_acceptance"
+    },
+    {
+      "columns": ["created_by"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_agreement_version_created_by_user_id_fk",
+      "entityType": "fks",
+      "table": "agreement_version"
+    },
+    {
+      "columns": ["published_by"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_agreement_version_published_by_user_id_fk",
+      "entityType": "fks",
+      "table": "agreement_version"
     },
     {
       "columns": ["author_id"],
@@ -2561,6 +2773,13 @@
       "table": "two_factor"
     },
     {
+      "columns": ["user_id", "version_id"],
+      "nameExplicit": false,
+      "name": "agreement_acceptance_pk",
+      "entityType": "pks",
+      "table": "agreement_acceptance"
+    },
+    {
       "columns": ["follower_id", "followee_id"],
       "nameExplicit": false,
       "name": "follow_pk",
@@ -2572,6 +2791,13 @@
       "nameExplicit": false,
       "name": "account_pk",
       "table": "account",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "agreement_version_pk",
+      "table": "agreement_version",
       "entityType": "pks"
     },
     {
@@ -2734,6 +2960,38 @@
       "name": "account_user_id_idx",
       "entityType": "indexes",
       "table": "account"
+    },
+    {
+      "columns": [
+        {
+          "value": "version",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "agreement_version_version_unique",
+      "entityType": "indexes",
+      "table": "agreement_version"
+    },
+    {
+      "columns": [
+        {
+          "value": "kind",
+          "isExpression": false
+        },
+        {
+          "value": "published_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "agreement_version_kind_published_at_idx",
+      "entityType": "indexes",
+      "table": "agreement_version"
     },
     {
       "columns": [
@@ -3180,6 +3438,12 @@
       "name": "verification_identifier_idx",
       "entityType": "indexes",
       "table": "verification"
+    },
+    {
+      "value": "\"kind\" IN ('terms', 'privacy')",
+      "name": "agreement_version_kind",
+      "entityType": "checks",
+      "table": "agreement_version"
     },
     {
       "value": "\"step\" IN ('agreement', 'choose', 'profile', 'interview', 'done')",
