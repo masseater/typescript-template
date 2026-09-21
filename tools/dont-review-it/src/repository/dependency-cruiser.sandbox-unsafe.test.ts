@@ -94,6 +94,11 @@ const detected: readonly Case[] = [
   ],
   ["no-database-admin-outside-admin", { "libs/db/src/index.ts": 'export * from "./admin.ts";\n' }],
   [
+    "no-database-staff-outside-wiki",
+    { "apps/service-admin/src/index.ts": 'export * from "@repo/db/staff";\n' },
+  ],
+  ["no-database-staff-outside-wiki", { "libs/db/src/index.ts": 'export * from "./staff.ts";\n' }],
+  [
     "no-database-operations-outside-tooling",
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
@@ -214,6 +219,10 @@ const accepted: readonly Case[] = [
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],
   [
+    "no-database-staff-outside-wiki",
+    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/staff";\n' },
+  ],
+  [
     "no-database-operations-outside-tooling",
     { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
@@ -247,6 +256,12 @@ const accepted: readonly Case[] = [
   [
     "no-wiki-to-database",
     { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
+  ],
+  [
+    "no-wiki-to-database",
+    {
+      "apps/internal-dashboard/src/staff.worker.test.ts": 'export * from "@repo/db/testing";\n',
+    },
   ],
   [
     "no-browser-to-server",

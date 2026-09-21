@@ -1,4 +1,4 @@
-import { AUTHENTICATION_METHOD, applications } from "@repo/config";
+import { AUTHENTICATION_METHOD, ROLE, accountPermissions, applications, roles } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 import { boardPost, boardThread } from "./board-schema.ts";
@@ -109,25 +109,70 @@ const rateLimit = sqliteTable(
 );
 
 /** @canonical-values db.audit-action */
-export const auditActions = ["flag_toggled", "role_changed", "user_deleted"] as const;
+export const auditActions = [
+  "flag_toggled",
+  "role_changed",
+  "user_deleted",
+  "member_suspended",
+  "member_unsuspended",
+  "admin_invited",
+  "admin_permission_changed",
+  "admin_disabled",
+  "admin_enabled",
+  "staff_invited",
+  "staff_permission_changed",
+  "staff_removed",
+  "invite_accepted",
+] as const;
 export type AuditAction = (typeof auditActions)[number];
 export const AUDIT_ACTION = {
   flagToggled: auditActions[0],
   roleChanged: auditActions[1],
   userDeleted: auditActions[2],
-} as const;
+  memberSuspended: auditActions[3],
+  memberUnsuspended: auditActions[4],
+  adminInvited: auditActions[5],
+  adminPermissionChanged: auditActions[6],
+  adminDisabled: auditActions[7],
+  adminEnabled: auditActions[8],
+  staffInvited: auditActions[9],
+  staffPermissionChanged: auditActions[10],
+  staffRemoved: auditActions[11],
+  inviteAccepted: auditActions[12],
+} as const satisfies Record<string, AuditAction>;
 
 const auditEvent = sqliteTable(
   "audit_event",
   {
     action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
+    actorKind: text("actor_kind", { enum: roles }).notNull().default(ROLE.administrator),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     targetId: text("target_id").notNull(),
   },
 
   (table) => [index("audit_event_created_at_idx").on(table.createdAt)],
+);
+
+const invite = sqliteTable(
+  "invite",
+  {
+    acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+    audience: text("audience", { enum: applications }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    email: text("email").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey(),
+    inviterId: text("inviter_id").notNull(),
+    permission: text("permission", { enum: accountPermissions }).notNull(),
+    tokenHash: text("token_hash").notNull(),
+  },
+
+  (table) => [
+    uniqueIndex("invite_token_hash_unique").on(table.tokenHash),
+    index("invite_email_idx").on(table.audience, table.email),
+  ],
 );
 
 const schema = {
@@ -137,6 +182,7 @@ const schema = {
   boardThread,
   follow,
   interview,
+  invite,
   memberOnboarding,
   jwks,
   oauthAccessToken,
@@ -154,7 +200,7 @@ const schema = {
   verification,
 };
 
-export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
+export { account, auditEvent, invite, passkey, rateLimit, schema, twoFactor, verification };
 export {
   jwks,
   oauthAccessToken,

@@ -1,5 +1,13 @@
 import { applications } from "@repo/config";
-import { AUTHENTICATION_METHOD, ROLE, authenticationMethods, roles } from "@repo/config/identity";
+import {
+  ACCOUNT_STATE,
+  AUTHENTICATION_METHOD,
+  ROLE,
+  accountPermissions,
+  accountStates,
+  authenticationMethods,
+  roles,
+} from "@repo/config/identity";
 import { getAuthTables } from "better-auth/db";
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/effect-schema";
@@ -14,12 +22,16 @@ if (userModel === undefined || sessionModel === undefined) {
 const user = sqliteTable(
   userModel.modelName,
   {
+    accountState: text("account_state", { enum: accountStates })
+      .notNull()
+      .default(ACCOUNT_STATE.active),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     email: text("email").notNull(),
     emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
     id: text("id").primaryKey(),
     image: text("image"),
     name: text("name").notNull(),
+    permission: text("permission", { enum: accountPermissions }),
     profile: text("profile").notNull().default(""),
     socialLinks: text("social_links", { mode: "json" })
       .$type<readonly string[]>()
@@ -33,7 +45,12 @@ const user = sqliteTable(
 
   (table) => [
     uniqueIndex("user_email_unique").on(table.email),
-    check("user_role", sql`${table.role} IN ('member', 'admin')`),
+    check("user_role", sql`${table.role} IN ('member', 'admin', 'staff')`),
+    check("user_account_state", sql`${table.accountState} IN ('active', 'suspended')`),
+    check(
+      "user_permission",
+      sql`(${table.role} = 'member' AND ${table.permission} IS NULL) OR (${table.role} = 'admin' AND ${table.permission} IN ('viewer', 'operator', 'owner')) OR (${table.role} = 'staff' AND ${table.permission} IN ('viewer', 'editor'))`,
+    ),
   ],
 );
 
