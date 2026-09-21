@@ -3,10 +3,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {},
   "dependencies": {
+    "@better-auth/api-key": "catalog:",
     "@better-auth/drizzle-adapter": "1.7.5",
     "@better-auth/mcp": "1.7.5",
     "@better-auth/passkey": "catalog:",

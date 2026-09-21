@@ -94,8 +94,28 @@ const detected: readonly Case[] = [
   ],
   ["no-database-admin-outside-admin", { "libs/db/src/index.ts": 'export * from "./admin.ts";\n' }],
   [
+    "no-database-staff-outside-wiki",
+    { "apps/service-admin/src/index.ts": 'export * from "@repo/db/staff";\n' },
+  ],
+  ["no-database-staff-outside-wiki", { "libs/db/src/index.ts": 'export * from "./staff.ts";\n' }],
+  [
     "no-database-operations-outside-tooling",
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    {
+      "apps/service-member/src/shared/server-api/photo-api.ts":
+        'export * from "@repo/config/storage";\n',
+    },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    { "libs/auth/src/index.ts": 'export * from "@repo/config/storage";\n' },
   ],
   [
     "no-testing-entry-outside-tests",
@@ -125,14 +145,6 @@ const detected: readonly Case[] = [
       "libs/auth/src/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/index.ts": 'export * from "./helper.test.ts";\n',
     },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export type { Db } from "@repo/db";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -214,8 +226,23 @@ const accepted: readonly Case[] = [
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],
   [
+    "no-database-staff-outside-wiki",
+    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/staff";\n' },
+  ],
+  [
     "no-database-operations-outside-tooling",
     { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    {
+      "apps/service-member/src/shared/photo/photo-store.ts":
+        'export * from "@repo/config/storage";\n',
+    },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    { "libs/vite-config/src/vite.ts": 'export * from "@repo/config/storage";\n' },
   ],
   [
     "no-testing-entry-outside-tests",
@@ -243,10 +270,6 @@ const accepted: readonly Case[] = [
       "libs/auth/src/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/session.test.ts": 'export * from "./helper.test.ts";\n',
     },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
   ],
   [
     "no-browser-to-server",

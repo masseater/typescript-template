@@ -1,4 +1,6 @@
-import { adminNavGroups } from "./admin-nav.ts";
+import { useSessionUser } from "@repo/auth-ui";
+
+import { visibleNavGroups } from "./admin-nav.ts";
 import { AdminNavigationItem } from "./admin-navigation-item.tsx";
 
 import type { ReactElement } from "react";
@@ -10,10 +12,11 @@ function AdminNavigation({
   collapsed: boolean;
   onNavigate: () => void;
 }>): ReactElement {
+  const { permission } = useSessionUser();
   return (
     <nav id="admin-navigation" aria-label="メイン" className="flex flex-1 flex-col overflow-y-auto">
       <div className="flex flex-1 flex-col gap-4 p-2">
-        {adminNavGroups.map((group) => (
+        {visibleNavGroups(permission).map((group) => (
           <div key={group.label} className="flex flex-col gap-1">
             {collapsed ? null : (
               <p className="px-3 text-sm leading-tight font-bold text-muted-foreground">

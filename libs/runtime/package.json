@@ -8,6 +8,7 @@
     "./http": "./src/http.ts",
     "./worker": "./src/worker.ts",
     "./client": "./src/client.ts",
+    "./contracts": "./src/contracts.ts",
     "./account": "./src/account.ts",
     "./testing": "./src/app-fixture.ts",
     "./security": "./src/security.ts"

@@ -3,10 +3,12 @@ import { sessionApi, unavailable } from "@repo/runtime/account";
 import { apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
 import { Effect } from "effect";
 
+import { dashboardApi } from "./dashboard-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { serveMcp } from "./mcp.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { searchWiki } from "./search.ts";
+import { staffApi } from "./staff-api.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 
@@ -24,7 +26,9 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
 
 const wikiApi = createApi(apiRoot)
   .use(sessionApi(api))
+  .use(staffApi(api))
   .use(flagsApi(api))
+  .use(dashboardApi(api))
   .get("/search", api.raw(search, {}));
 
 const wikiProtocol = createApi("")

@@ -15,6 +15,9 @@ const deploymentKey = {
   otlpEndpoint: "TEMPLATE_OTLP_ENDPOINT",
   prefix: "TEMPLATE_PREFIX",
   reserveUsd: "TEMPLATE_RESERVE_USD",
+  stripePriceId: "TEMPLATE_STRIPE_PRICE_ID",
+  stripeSecretKey: "TEMPLATE_STRIPE_SECRET_KEY",
+  stripeWebhookSecret: "TEMPLATE_STRIPE_WEBHOOK_SECRET",
 } as const;
 
 const budgetKeys = [
@@ -34,6 +37,9 @@ const deploymentKeys = [
   deploymentKey.authSecret,
   deploymentKey.mailFrom,
   deploymentKey.prefix,
+  deploymentKey.stripePriceId,
+  deploymentKey.stripeSecretKey,
+  deploymentKey.stripeWebhookSecret,
 ] as const;
 
 const optionalDeploymentKeys = [

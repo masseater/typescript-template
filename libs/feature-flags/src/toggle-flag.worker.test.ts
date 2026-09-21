@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { AUDIT_ACTION, auditEvent, query } from "@repo/db";
+import { auditActions } from "@repo/db/dashboard-literals";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, Layer } from "effect";
 
@@ -24,7 +25,9 @@ describe("FlagEditorAccess", () => {
           Layer.mergeAll(memoryFeatureFlagsLayer, editorsOnly(new Set(["viewer-id"]))),
         ),
       );
-      const flagEditorRequired = yield* access.assertEditor("viewer-id").pipe(Effect.flip);
+      const flagEditorRequired = yield* access
+        .assertEditor({ id: "viewer-id", permission: null })
+        .pipe(Effect.flip);
       assert.strictEqual(flagEditorRequired._tag, "FlagEditorRequired");
     }),
   );
@@ -56,7 +59,9 @@ describe("toggleFlag", () => {
         database.select().from(auditEvent).orderBy(auditEvent.createdAt),
       );
       const flagToggleAuditRows = auditRows.filter(
-        (auditEventRecord) => auditEventRecord.action === AUDIT_ACTION.flagToggled,
+        (auditEventRecord) =>
+          auditEventRecord.action === AUDIT_ACTION.flagToggled &&
+          auditActions.includes(auditEventRecord.action),
       );
       assert.strictEqual(flagToggleAuditRows.length, 2);
       assert.strictEqual(flagToggleAuditRows[0]?.actorId, "staff-actor");

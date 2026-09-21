@@ -2,6 +2,7 @@ import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/rea
 
 import {
   InvalidUsersSearch,
+  PaidPlanRequired,
   UsersFailed,
   UsersPending,
   loadMembers,
@@ -22,6 +23,19 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   }
 }
 
+async function loadMembersOrUpgrade(
+  search: UsersSearch,
+): Promise<Awaited<ReturnType<typeof loadMembers>>> {
+  try {
+    return await loadMembers(search);
+  } catch (error) {
+    if (error instanceof PaidPlanRequired) {
+      throw redirect({ replace: true, search: {}, to: "/upgrade" });
+    }
+    throw error;
+  }
+}
+
 // oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/users/")({
   validateSearch: requireUsersSearch,
@@ -37,7 +51,7 @@ const Route = createFileRoute("/_member/users/")({
       throw redirect({ replace: true, search, to: "/users" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembers(deps),
+  loader: async ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembersOrUpgrade(deps),
   component: UsersRoute,
   errorComponent: UsersFailed,
   pendingComponent: UsersPending,

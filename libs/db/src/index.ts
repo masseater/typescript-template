@@ -12,11 +12,22 @@ export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
-export { AUDIT_ACTION, auditEvent, onboardingSteps, schema } from "./schema.ts";
+export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
+export {
+  AUDIT_CHANNEL,
+  NOTIFICATION_KIND,
+  auditEvent,
+  notificationKinds,
+  onboardingSteps,
+  schema,
+} from "./schema.ts";
+export type { NotificationKind } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
 export { checkDatabase };
+export { InviteRejected } from "./invite-rejected.ts";
+export { acceptInvite, previewInvite } from "./invite.ts";
 export {
   claimMailSlot,
   findPasskeyUser,
@@ -29,6 +40,30 @@ export {
   revokeUserSessions,
 } from "./security.ts";
 export {
+  canViewProfile,
+  clearPhotoKeys,
+  photoKeysOf,
+  profileListed,
+  profileVisibleTo,
+  readVisibility,
+  setPhotoKey,
+  updateVisibility,
+  visiblePhotoKey,
+} from "./member-profile.ts";
+export type { PhotoKeys, VisibilitySettings } from "./member-profile.ts";
+export {
+  AgreementRequired,
+  AgreementVersionUnavailable,
+  acceptAgreementVersions,
+  acceptedAgreements,
+  pendingAgreementKinds,
+  pendingAgreements,
+  publishedAgreement,
+  requireCurrentAgreements,
+  requireSignupAgreements,
+} from "./agreement.ts";
+export type { AcceptedAgreement, PublishedAgreement } from "./agreement.ts";
+export {
   InterviewConflict,
   InterviewLimitReached,
   countInterviewTurn,
@@ -36,3 +71,39 @@ export {
   startInterview,
   storeInterview,
 } from "./interview.ts";
+export {
+  MemberLeaveUnavailable,
+  RecoveryExpired,
+  RecoveryUnavailable,
+  acceptRecovery,
+  declineRecovery,
+  findRecoveryOffer,
+  purgeExpiredWithdrawnMembers,
+  retentionDays,
+  withdrawMember,
+} from "./member-leave.ts";
+export {
+  AuditPage,
+  TrendQuery,
+  dashboardStaff,
+  refreshMetricSnapshots,
+} from "./dashboard-staff.ts";
+export type {
+  AuditEventView,
+  MetricTrendPoint,
+  OverviewCard,
+  OverviewMetrics,
+  ReadOnlyDashboardStaff,
+} from "./dashboard-staff.ts";
+export { PaidPlanRequired } from "./paid-plan-required.ts";
+export {
+  attachCheckout,
+  findSubscription,
+  isPaidMember,
+  markPaymentFailed,
+  memberOfCustomer,
+  planOf,
+  recordSubscription,
+  requirePaid,
+} from "./billing.ts";
+export type { StripeEventRecord, SubscriptionRecord } from "./billing.ts";

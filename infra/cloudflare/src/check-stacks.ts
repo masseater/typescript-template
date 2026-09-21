@@ -5,6 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
 import { APPLICATION, appEnvKey, applications, grants } from "@repo/config";
+import { photoBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
 import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
@@ -19,6 +20,7 @@ import {
   compileStack,
   describeCause,
 } from "./inventory.ts";
+import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -27,6 +29,7 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
+import { photoBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Application } from "@repo/config";
@@ -104,6 +107,18 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
+      ...(grants(app, "billing")
+        ? [
+            `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
+            `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
+            `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
+          ]
+        : []),
+      ...(grants(app, "storage")
+        ? [
+            `${photoBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Photos.bucketName:jurisdiction=<unresolved ApplyExpr>`,
+          ]
+        : []),
     ].toSorted(),
     declared: {
       ...sharedWorker,
@@ -112,10 +127,12 @@ function applicationResource(app: Application, release: string): ResourceInvento
         runWorkerFirst: true,
       },
       bundle: false,
+      ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
       domain: { name: new URL(origins[app]).hostname, zoneId: verificationSettings.zoneId },
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,
       rules: [{ globs: ["**/*.js", "**/*.mjs", "**/*.txt", "**/*.wasm", "**/*.map"] }],
+      ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
     },
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
@@ -247,6 +264,15 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
         plainText(healthOriginKey[APPLICATION.wiki], origins[APPLICATION.wiki]),
       ],
     }),
+  }),
+  storage: declaredStack("storage", {
+    Photos: {
+      adopt: false,
+      bindings: [],
+      declared: { name: photoBucketName(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.R2.Bucket",
+    },
   }),
   observability: declaredStack("observability", {
     Traces: {
