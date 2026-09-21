@@ -98,6 +98,21 @@ const detected: readonly Case[] = [
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
+    "no-photo-storage-outside-photo-module",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    {
+      "apps/service-member/src/shared/server-api/photo-api.ts":
+        'export * from "@repo/config/storage";\n',
+    },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    { "libs/auth/src/index.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
     "no-testing-entry-outside-tests",
     { "libs/auth/src/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
@@ -216,6 +231,17 @@ const accepted: readonly Case[] = [
   [
     "no-database-operations-outside-tooling",
     { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    {
+      "apps/service-member/src/shared/photo/photo-store.ts":
+        'export * from "@repo/config/storage";\n',
+    },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    { "libs/vite-config/src/vite.ts": 'export * from "@repo/config/storage";\n' },
   ],
   [
     "no-testing-entry-outside-tests",

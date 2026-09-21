@@ -20,9 +20,12 @@ import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { photoApi } from "./photo-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
+import { visibilityApi } from "./visibility-api.ts";
 
 import type { Interviewer } from "#shared/interview/index.ts";
+import type { PhotoStore } from "#shared/photo/index.ts";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 import type { OpsMail } from "./ops-mail.ts";
@@ -32,7 +35,7 @@ const failures = {
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
 };
 
-function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail>) {
+function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoStore>) {
   return createApi(apiRoot)
     .use(accountApi(api))
     .use(contactApi(api))
@@ -41,7 +44,9 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail>) {
     .use(onboardingStepApi(api))
     .onBeforeHandle(consentGate(api))
     .use(interviewApi(api))
+    .use(photoApi(api))
     .use(socialApi(api))
+    .use(visibilityApi(api))
     .get(
       "/profile",
       api.route(
