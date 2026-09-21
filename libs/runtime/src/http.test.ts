@@ -13,7 +13,7 @@ import {
 } from "./http.ts";
 import { startRoute, workerRuntime } from "./worker.ts";
 
-import type { AnyElysia, Context } from "elysia";
+import type { AnyElysia } from "elysia";
 
 const EchoBody = Schema.Struct({
   name: Schema.Trim.check(Schema.isLengthBetween(1, 100)),
@@ -48,7 +48,7 @@ function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect
   return startRoute({
     fetch: async (request: Request): Promise<Response> => {
       const handle = request.method === "HEAD" ? handlers.HEAD : handlers.ANY;
-      return handle({ request } as Context);
+      return handle({ request });
     },
   });
 }

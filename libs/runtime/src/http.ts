@@ -26,7 +26,7 @@ interface FailedEvent {
   readonly data: Readonly<{ message: string; status: FailureStatus }>;
   readonly event: "failed";
 }
-type ElysiaHandler = (context: Context) => Promise<Response>;
+type ElysiaHandler = (context: { readonly request: Request }) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
 type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
 interface ApiRoutes<Requirements> {
@@ -35,7 +35,7 @@ interface ApiRoutes<Requirements> {
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ) => (context: Context) => Promise<unknown>;
+  ) => (context: Context) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
@@ -94,10 +94,10 @@ function elysiaServer(app: AnyElysia): {
     HEAD: ElysiaHandler;
   }>;
 } {
-  async function handle(context: Context): Promise<Response> {
+  async function handle(context: { readonly request: Request }): Promise<Response> {
     return app.fetch(context.request);
   }
-  async function handleHead(context: Context): Promise<Response> {
+  async function handleHead(context: { readonly request: Request }): Promise<Response> {
     const { headers: asked, url } = context.request;
     const response = await app.fetch(new Request(url, { headers: asked, method: "GET" }));
     const headers = new Headers(response.headers);
@@ -265,9 +265,9 @@ function apiRoutes<Requirements>(
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ): (context: Context) => Promise<unknown> {
+  ): (context: Context) => Promise<EventStream<Encoded | FailedEvent> | Failed> {
     const open = openStream(event, handler, failures);
-    return async (context): Promise<unknown> => {
+    return async (context): Promise<EventStream<Encoded | FailedEvent> | Failed> => {
       const opened = await settle(context, open, (cause) => unavailableStatus(cause, reporting));
       if (opened instanceof EventFeed) {
         Object.assign(context.set.headers, streamHeaders);

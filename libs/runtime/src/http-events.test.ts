@@ -6,8 +6,6 @@ import { apiServerClient } from "./client.ts";
 import { AppOrigin, apiRoutes, createApi, elysiaServer, readSearchParams } from "./http.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
-import type { Context } from "elysia";
-
 const origin = "http://localhost:3001";
 const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "service-member" });
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
@@ -115,7 +113,7 @@ describe("an event stream route seen by its callers", () => {
       const { handlers } = elysiaServer(createApi("/api").get("/events", ticks));
       const { HEAD: head } = handlers;
       const request = new Request(`${origin}/api/events`, { method: "HEAD" });
-      const response = yield* Effect.promise(async () => head({ request } as Context));
+      const response = yield* Effect.promise(async () => head({ request }));
       const text = yield* Effect.promise(async () => response.text());
       assert.deepStrictEqual(
         [response.status, response.headers.get("content-type"), text],
@@ -149,10 +147,9 @@ describe("an event stream route seen by its callers", () => {
       const client = apiServerClient(createApi("/api").get("/events", ticks), {});
       const reply = yield* Effect.promise(async () => client.api.events.get());
       assert.isNotNull(reply.data);
-      const received = Stream.fromAsyncIterable(
-        reply.data as AsyncIterable<unknown>,
-        (cause) => cause,
-      ).pipe(Stream.mapEffect((event) => decodeTick(event)));
+      const received = Stream.fromAsyncIterable(reply.data, (cause) => cause).pipe(
+        Stream.mapEffect((event) => decodeTick(event)),
+      );
       assert.deepStrictEqual(yield* Stream.runCollect(received), [tick(1), tick(second)]);
     }),
   );
