@@ -5,7 +5,7 @@ import { serviceName } from "#shared/config/index.ts";
 import { memberNavItems, titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { SessionView } from "@repo/auth-ui";
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 const collapsedMemberMark = "ユーザー";
@@ -24,7 +24,7 @@ function MemberFrame({
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
   memberBoard: boolean;
-  user: Session["user"];
+  user: SessionView["user"];
 }>): ReactElement {
   const { pathname } = useLocation();
   const destinations = memberNavItems(memberBoard, user.id).map((item) => ({

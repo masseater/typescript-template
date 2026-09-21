@@ -14,7 +14,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
 import { MemberFrame } from "./member-frame.tsx";
 
-import type { Session } from "#entities/session/index.ts";
+import type { SessionView } from "@repo/auth-ui";
 
 const member = {
   email: "member@example.com",
@@ -22,7 +22,7 @@ const member = {
   name: "会員",
   role: ROLE.member,
   twoFactorEnabled: false,
-} as const satisfies Session["user"];
+} as const satisfies SessionView["user"];
 
 const destinations = [
   { label: "ホーム", path: "/home" },
