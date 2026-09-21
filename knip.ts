@@ -41,6 +41,9 @@ const workspaces = {
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
   },
+  "libs/vite-config": {
+    entry: ["src/effect-typecheck.ts"],
+  },
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
@@ -131,7 +134,6 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db-local": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
-  "tools/commander": ["src/app/cli.ts!", "src/app/check-start.ts!"],
   "tools/dev": [
     "src/cli.ts!",
     "src/prepare-browser.ts!",
@@ -141,16 +143,6 @@ const scripts = {
     "src/observe/symbolicate.ts!",
     "src/observe/receiver-check.ts!",
   ],
-};
-
-const commanderWorkspace = (
-  only: (...files: readonly string[]) => string[],
-): NonNullable<KnipConfiguration["workspaces"]>[string] => {
-  return {
-    entry: [...application.entry, ...only(...scripts["tools/commander"])],
-    ignoreDependencies: [...only("playwright"), "steiger"],
-    ignoreExportsUsedInFile: { interface: true },
-  };
 };
 
 const config = ({
@@ -218,7 +210,9 @@ const config = ({
         entry: productionOnly(...scripts["libs/db-local"]),
         project: ["src/**/*.ts!"],
       },
-      "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
+      "libs/vite-config": {
+        entry: productionOnly("src/effect-typecheck.ts!"),
+      },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
         ignoreDependencies: ["playwright"],

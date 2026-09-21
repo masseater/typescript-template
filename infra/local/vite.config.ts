@@ -9,13 +9,7 @@ export default defineConfig({
       logs: { cache: false, command: "./src/compose.ts logs" },
       status: { cache: false, command: "./src/compose.ts status" },
       up: { cache: false, command: "./src/compose.ts up" },
-      ...lifecycle({
-        precommit: [],
-        premerge: [],
-        prepush: ["check:effect"],
-        prepr: [],
-        prerelease: [],
-      }),
+      ...lifecycle({ prepush: ["check:effect"] }),
     },
   },
 });

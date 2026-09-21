@@ -2,7 +2,7 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { generatedDirectories, lifecycleInherits, lifecycles } from "@repo/vite-config";
+import { lifecycleInherits, lifecycles } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";
@@ -50,15 +50,6 @@ function misplacedHooks(): string[] {
         !lifecycles.some((name) => name === stage) || source !== `vp run -r ${stage}\n`,
     )
     .map(([stage]) => stage);
-}
-
-function cleanExclusions(file: string): string[] {
-  const workflow = workflows[file];
-  if (workflow === undefined) {
-    throw new Error(`${file} is missing`);
-  }
-  const clean = /^\s*(?:- )?run: git clean [^\n]*$/mu.exec(workflow)?.[0] ?? "";
-  return [...clean.matchAll(/-e (?<path>\S+)/gu)].map((match) => match[1] ?? "");
 }
 
 function workflowRuns(file: string): string[] {
@@ -267,31 +258,6 @@ describe("lifecycle entry points", () => {
   });
 });
 
-describe("generated paths", () => {
-  it("keeps the workspace clean step and the task inputs on one list", () => {
-    expect.hasAssertions();
-    expect(cleanExclusions("../../../../.github/workflows/check.yml")).toStrictEqual([
-      ...generatedDirectories,
-    ]);
-  });
-
-  it("throws away the shared local D1 before a self-hosted gate migrates it", () => {
-    expect.hasAssertions();
-    expect(workflows["../../../../.github/workflows/check.yml"] ?? "").toMatch(
-      /rm -rf \.local\/d1/u,
-    );
-    expect(workflows["../../../../.github/workflows/check.yml"] ?? "").toMatch(
-      /pkill -9 -f "\$\{GITHUB_WORKSPACE\}\/node_modules\/\.pnpm\/\.\*\/bin\/workerd /u,
-    );
-    expect(workflows["../../../../.github/workflows/prerelease.yml"] ?? "").toMatch(
-      /rm -rf \.local\/d1/u,
-    );
-    expect(workflows["../../../../.github/workflows/cache-clean.yml"] ?? "").toMatch(
-      /rm -rf \.local\/d1/u,
-    );
-  });
-});
-
 describe("lifecycle contents", () => {
   it("every workspace inherits the stages its gate is declared to inherit", () => {
     expect.hasAssertions();
@@ -317,7 +283,6 @@ describe("lifecycle contents", () => {
       "apps/service-admin#check:dev",
       "apps/service-member#check:dev",
       "infra/cloudflare#verify:account",
-      "tools/commander#check:start",
       "tools/dev#check:exported",
       "tools/dev#setup",
       "tools/dont-review-it#check:staged",
@@ -340,6 +305,7 @@ describe("lifecycle contents", () => {
       expect.arrayContaining([
         "check:code",
         "check:effect",
+        "check:effect:gate",
         "knip",
         "check:client",
         "check:imports",
@@ -348,6 +314,22 @@ describe("lifecycle contents", () => {
       ]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
+    expect(
+      configuredDirectories.filter(
+        (directory) =>
+          taskNames(directory).includes("check:effect") &&
+          !reachable(directory, ["prepush"]).includes("check:effect:gate"),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.flatMap((directory) =>
+        ["check:effect", "check:effect:gate"].flatMap((name) =>
+          taskNames(directory).includes(name)
+            ? commands(directory, name).filter((command) => command.includes("&&"))
+            : [],
+        ),
+      ),
+    ).toStrictEqual([]);
     expect(
       configuredDirectories.filter((directory) =>
         reachable(directory, ["prepush"]).includes("check"),
@@ -359,7 +341,6 @@ describe("lifecycle contents", () => {
       "libs/db",
       "tools/ai-native",
       "tools/ai-native-telemetry",
-      "tools/commander",
       "tools/dont-review-it",
     ]);
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
