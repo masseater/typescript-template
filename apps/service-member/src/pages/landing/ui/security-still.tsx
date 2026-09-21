@@ -1,4 +1,5 @@
 import { AccountSecurity } from "@repo/auth-ui";
+import { ROLE } from "@repo/config/identity";
 
 import type { ReactElement } from "react";
 
@@ -8,7 +9,7 @@ const sampleSession = {
     email: "hana@example.com",
     id: "sample-member",
     name: "山田 花子",
-    role: "member",
+    role: ROLE.member,
     twoFactorEnabled: true,
   },
 } as const;

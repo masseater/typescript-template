@@ -1,3 +1,4 @@
+import { ROLE } from "@repo/config/identity";
 import { ToastProvider } from "@repo/ui";
 import {
   RouterContextProvider,
@@ -21,7 +22,7 @@ const member = {
   email: "member@example.com",
   id: "member-1",
   name: "会員",
-  role: "member",
+  role: ROLE.member,
   twoFactorEnabled: false,
 } as const satisfies Session["user"];
 
