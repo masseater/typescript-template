@@ -42,4 +42,4 @@ async function submitDecision(accept: boolean): Promise<void> {
   globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
 }
 
-export { clientNameOptions, loadClientName, submitDecision };
+export { clientNameOptions, submitDecision };
