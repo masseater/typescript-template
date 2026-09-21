@@ -47,7 +47,5 @@ function wikiLayer(
   );
 }
 
-export { Embedder } from "./embedder.ts";
-export { EmbeddingFailed } from "./embedding-failed.ts";
 export { wikiLayer, wikiService };
 export type { WikiServices };
