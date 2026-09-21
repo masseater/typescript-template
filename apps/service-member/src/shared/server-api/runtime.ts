@@ -6,8 +6,9 @@ import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
 import { Stripe } from "#shared/billing/index.ts";
-import { Interviewer } from "#shared/interview/index.ts";
+import { Interviewer } from "#shared/interview/server.ts";
 import { PhotoStore } from "#shared/photo/index.ts";
+import { ProfileLayoutAssembler } from "#shared/profile-layout/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
@@ -32,6 +33,7 @@ const runtime = workerRuntime(() =>
     ),
     Interviewer.fromEnvironment(env),
     PhotoStore.fromEnvironment(env),
+    ProfileLayoutAssembler.fromEnvironment(env),
     Stripe.fromEnvironment(env),
   ),
 );

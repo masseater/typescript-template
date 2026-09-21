@@ -12,7 +12,7 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Layer, Schema } from "effect";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
-import { Interviewer } from "#shared/interview/index.ts";
+import { Interviewer } from "#shared/interview/server.ts";
 import { memberApi } from "./member-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 

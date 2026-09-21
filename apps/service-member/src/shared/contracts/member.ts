@@ -1,6 +1,9 @@
 import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
 import { Effect, Schema, SchemaGetter } from "effect";
 
+import { Sheet } from "#shared/interview/sheet.ts";
+import { ProfileLayout } from "#shared/profile-layout/schema.ts";
+
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
 const maximumProfileLength = 2000;
@@ -79,6 +82,8 @@ const MemberView = Schema.Struct({
   name: Schema.String,
   photos: PhotoVersions,
   profile: Schema.String,
+  profileLayout: ProfileLayout,
+  sheet: Sheet,
   socialLinks: SocialLinks,
 });
 
