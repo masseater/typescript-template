@@ -52,7 +52,7 @@ function HomePage(): ReactElement {
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       )}
       {feed !== undefined && feed.items.length === 0 && (
-        <StatusMessage variant={STATUS_VARIANT.pending}>
+        <StatusMessage variant={STATUS_VARIANT.empty}>
           フォローしている利用者の動きはまだありません。
         </StatusMessage>
       )}

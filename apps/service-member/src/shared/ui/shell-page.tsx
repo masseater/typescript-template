@@ -14,7 +14,7 @@ function ShellPage({
       <Heading as="h1" size="page">
         {title}
       </Heading>
-      <StatusMessage variant={STATUS_VARIANT.pending}>{detail}</StatusMessage>
+      <StatusMessage variant={STATUS_VARIANT.empty}>{detail}</StatusMessage>
     </main>
   );
 }

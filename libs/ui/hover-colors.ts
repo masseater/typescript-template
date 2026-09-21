@@ -77,4 +77,4 @@ const hoverViolations = (css: string): string[] => {
   return violations.toSorted();
 };
 
-export { hoverViolations };
+export { hoverViolations, luminance as relativeLuminance };
