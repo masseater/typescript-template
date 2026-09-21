@@ -168,13 +168,6 @@ const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   return AI;
 });
 
-const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(input: unknown) {
-  const config = yield* readConfig(input);
-  return { ...config, AI: yield* readAi(input) };
-});
-
-type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
-
 export {
   AuthSecret,
   Email,
@@ -186,6 +179,5 @@ export {
   readAi,
   readConfig,
   readEnvironment,
-  readWikiConfig,
 };
-export type { AppConfig, AssetFetcher, WikiConfig };
+export type { AppConfig, AssetFetcher };
