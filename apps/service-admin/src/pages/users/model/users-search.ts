@@ -14,9 +14,10 @@ const UsersSearchParams = Schema.Struct({
 
 type UsersSearch = typeof UsersSearchParams.Type;
 
-class InvalidUsersSearch extends Error {
-  override readonly name = "InvalidUsersSearch";
-}
+class InvalidUsersSearch extends Schema.TaggedError<InvalidUsersSearch>()(
+  "InvalidUsersSearch",
+  {},
+) {}
 
 const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
 

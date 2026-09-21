@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { fail } from "./config.ts";
 
@@ -9,6 +9,7 @@ const NO_ALERT_LEVEL = 0;
 const WARNING_LEVEL = 80;
 const EXHAUSTED_LEVEL = 100;
 const WARNING_RATIO = 0.8;
+const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 interface BudgetDecision {
   periodStart: string;
@@ -48,14 +49,14 @@ const evaluateBudget = Effect.fn("evaluateBudget")(function* evaluateBudget(
     allowanceUsd,
     estimatedTotalJpy: (snapshot.usageUsd + config.FIXED_COST_USD) * config.JPY_PER_USD,
     level,
-    notificationKey: JSON.stringify([
+    notificationKey: yield* encodeJson([
       snapshot.periodStart,
       config.BUDGET_JPY,
       config.JPY_PER_USD,
       config.FIXED_COST_USD,
       config.RESERVE_USD,
       level,
-    ]),
+    ]).pipe(Effect.orDie),
     periodStart: snapshot.periodStart,
     usageUsd: snapshot.usageUsd,
   };

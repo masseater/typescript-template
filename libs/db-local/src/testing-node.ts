@@ -14,19 +14,18 @@ const HttpQuery = Schema.Struct({
 });
 const HttpBatch = Schema.Struct({ batch: Schema.Array(HttpQuery) });
 
-const boundStatements = (database: D1Database, requestJson: unknown) => {
-  return Schema.decodeUnknownPromise(HttpBatch)(requestJson).then(({ batch }) =>
-    batch.map((query) => database.prepare(query.sql).bind(...(query.params ?? []))),
-  );
-};
+const boundStatements = (database: D1Database, requestJson: unknown) =>
+  Effect.gen(function* bindStatements() {
+    const { batch } = yield* Schema.decodeUnknownEffect(HttpBatch)(requestJson);
+    return batch.map((query) => database.prepare(query.sql).bind(...(query.params ?? [])));
+  });
 
-const executeD1HttpBatch = async (
-  database: D1Database,
-  requestJson: unknown,
-): Promise<{ readonly result: D1Result[]; readonly success: true }> => {
-  const executedStatements = await database.batch(await boundStatements(database, requestJson));
-  return { result: executedStatements, success: true };
-};
+const executeD1HttpBatch = (database: D1Database, requestJson: unknown) =>
+  Effect.gen(function* executeHttpBatch() {
+    const statements = yield* boundStatements(database, requestJson);
+    const executedStatements = yield* Effect.promise(() => database.batch(statements));
+    return { result: executedStatements, success: true };
+  });
 
 const columnValues = (row: unknown): readonly unknown[] => {
   if (typeof row !== "object" || row === null) {
@@ -35,25 +34,18 @@ const columnValues = (row: unknown): readonly unknown[] => {
   return Object.values(row);
 };
 
-const executeD1RawBatch = async (
-  database: D1Database,
-  requestJson: unknown,
-): Promise<{
-  readonly result: readonly {
-    readonly results: { readonly rows: readonly (readonly unknown[])[] };
-    readonly success: true;
-  }[];
-  readonly success: true;
-}> => {
-  const executedStatements = await database.batch(await boundStatements(database, requestJson));
-  return {
-    result: executedStatements.map((executedStatement) => ({
-      results: { rows: executedStatement.results.map((row) => columnValues(row)) },
+const executeD1RawBatch = (database: D1Database, requestJson: unknown) =>
+  Effect.gen(function* executeRawBatch() {
+    const statements = yield* boundStatements(database, requestJson);
+    const executedStatements = yield* Effect.promise(() => database.batch(statements));
+    return {
+      result: executedStatements.map((executedStatement) => ({
+        results: { rows: executedStatement.results.map((row) => columnValues(row)) },
+        success: true,
+      })),
       success: true,
-    })),
-    success: true,
-  };
-};
+    };
+  });
 
 class TestBinding extends Context.Service<TestBinding, D1Database>()("@repo/db/TestBinding") {}
 
@@ -63,7 +55,7 @@ function runStatement(
 ): Effect.Effect<D1Result, unknown, TestBinding> {
   return Effect.gen(function* statement() {
     const database = yield* TestBinding;
-    return yield* Effect.tryPromise(async () =>
+    return yield* Effect.tryPromise(() =>
       database
         .prepare(sql)
         .bind(...params)
@@ -75,7 +67,7 @@ function runStatement(
 const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
   TestBinding,
   Effect.acquireRelease(
-    Effect.promise(async () => {
+    Effect.gen(function* openRuntime() {
       const runtime = new Miniflare(
         convertV4MiniflareOptions({
           compatibilityDate: workerCompatibility.date,
@@ -85,9 +77,12 @@ const testBinding: Layer.Layer<TestBinding, RemoteFailure> = Layer.effect(
           script: "export default { fetch() { return new Response('test-database'); } };",
         }),
       );
-      return { database: await runtime.getD1Database(localDatabase.binding), runtime };
+      return {
+        database: yield* Effect.promise(() => runtime.getD1Database(localDatabase.binding)),
+        runtime,
+      };
     }),
-    ({ runtime }) => Effect.promise(async () => runtime.dispose()),
+    ({ runtime }) => Effect.promise(() => runtime.dispose()),
   ).pipe(Effect.map(({ database }) => database)),
 );
 

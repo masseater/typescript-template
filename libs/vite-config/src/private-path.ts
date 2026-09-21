@@ -1,6 +1,7 @@
-import path from "node:path";
-
 import { APPLICATION, applications, type Application } from "@repo/config";
+import { Effect, Path } from "effect";
+
+const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 
 const applicationsExcept = (application: Application): Application[] =>
   applications.filter((candidate) => candidate !== application);
@@ -24,7 +25,7 @@ const privatePath = ({
   repositoryRoot: string;
 }>): boolean => {
   const slashedPath = candidatePath.replaceAll("\\", "/");
-  const repositoryRelativePath = path.relative(repositoryRoot, slashedPath).replaceAll("\\", "/");
+  const repositoryRelativePath = paths.relative(repositoryRoot, slashedPath).replaceAll("\\", "/");
   const foreignApplications = applicationsExcept(application).join("|");
   return (
     /^(?:infra|tools)(?:\/|$)/u.test(repositoryRelativePath) ||

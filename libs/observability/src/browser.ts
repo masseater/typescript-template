@@ -1,3 +1,4 @@
+import { DateTime, Effect, Fiber, Schedule, Schema } from "effect";
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
 import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
@@ -38,7 +39,7 @@ const outgoingSpan = (
 } => {
   const span = {
     spanId: randomHex(spanIdBytes),
-    start: Date.now(),
+    start: DateTime.toEpochMillis(DateTime.nowUnsafe()),
     traceId: randomHex(traceIdBytes),
   };
   const traced = new Request(outgoing, {
@@ -47,47 +48,49 @@ const outgoingSpan = (
   return { span, traced };
 };
 
-const tracedFetch = async (
-  instrumentation: FetchInstrumentation,
-  outgoing: Request,
-): Promise<Response> => {
-  const startedAt = performance.now();
-  const { span, traced } = outgoingSpan(outgoing);
-  const fallbackRequestId = crypto.randomUUID();
-  const recordAnswer = (answered: {
-    readonly requestId: string;
-    readonly status: number;
-  }): void => {
-    instrumentation.queue.enqueue({
-      ...span,
-      ...answered,
-      duration: elapsedSince(startedAt),
-      kind: "http",
-      method: httpMethod(outgoing.method),
-      name: "http.client.request",
-      route: routeLabel(new URL(outgoing.url).pathname, instrumentation.routes),
-      value: 0,
-    });
-  };
-  try {
-    const received = await instrumentation.send(traced);
-    recordAnswer({
-      requestId: [received.headers.get("x-request-id")].find(isRequestId) ?? fallbackRequestId,
-      status: received.status,
-    });
-    return received;
-  } catch (unsent) {
-    recordAnswer({ requestId: fallbackRequestId, status: 0 });
-    throw unsent;
-  }
-};
+const tracedFetch = (instrumentation: FetchInstrumentation, outgoing: Request): Promise<Response> =>
+  Effect.runPromise(
+    Effect.gen(function* tracedFetchProgram() {
+      const startedAt = performance.now();
+      const { span, traced } = outgoingSpan(outgoing);
+      const fallbackRequestId = crypto.randomUUID();
+      const recordAnswer = (answered: {
+        readonly requestId: string;
+        readonly status: number;
+      }): void => {
+        instrumentation.queue.enqueue({
+          ...span,
+          ...answered,
+          duration: elapsedSince(startedAt),
+          kind: "http",
+          method: httpMethod(outgoing.method),
+          name: "http.client.request",
+          route: routeLabel(new URL(outgoing.url).pathname, instrumentation.routes),
+          value: 0,
+        });
+      };
+      return yield* Effect.tryPromise(() => instrumentation.send(traced)).pipe(
+        Effect.tap((received) =>
+          Effect.sync(() => {
+            recordAnswer({
+              requestId:
+                [received.headers.get("x-request-id")].find(isRequestId) ?? fallbackRequestId,
+              status: received.status,
+            });
+          }),
+        ),
+        Effect.tapError(() =>
+          Effect.sync(() => {
+            recordAnswer({ requestId: fallbackRequestId, status: 0 });
+          }),
+        ),
+      );
+    }),
+  );
 
 const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
   const originalFetch = globalThis.fetch;
-  const instrumentedFetch = async (
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ): Promise<Response> => {
+  const instrumentedFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = new URL(
       input instanceof Request ? input.url : String(input),
       globalThis.location.href,
@@ -120,7 +123,7 @@ const documentFields = (
     method: httpMethod("GET"),
     route: routeLabel(globalThis.location.pathname, recorder.routes),
     spanId: randomHex(spanIdBytes),
-    start: Date.now(),
+    start: DateTime.toEpochMillis(DateTime.nowUnsafe()),
     status: 0,
   };
 };
@@ -192,21 +195,27 @@ const observeVitals = (recorder: Recorder): (() => void) => {
 
 const batchSender =
   (exporter: { readonly endpoint: string; readonly send: typeof fetch }) =>
-  async (batch: readonly BrowserEvent[]): Promise<void> => {
-    const delivery = await exporter.send(exporter.endpoint, {
-      body: JSON.stringify(batch),
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      keepalive: true,
-      method: "POST",
-      mode: "same-origin",
-      redirect: "error",
-      signal: AbortSignal.timeout(exportTimeoutMilliseconds),
-    });
-    if (!delivery.ok) {
-      throw new Error(`Browser telemetry rejected (${String(delivery.status)})`);
-    }
-  };
+  (batch: readonly BrowserEvent[]): Promise<void> =>
+    Effect.runPromise(
+      Effect.gen(function* sendBatch() {
+        const body = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(batch);
+        const delivery = yield* Effect.tryPromise(() =>
+          exporter.send(exporter.endpoint, {
+            body,
+            credentials: "same-origin",
+            headers: { "content-type": "application/json" },
+            keepalive: true,
+            method: "POST",
+            mode: "same-origin",
+            redirect: "error",
+            signal: AbortSignal.timeout(exportTimeoutMilliseconds),
+          }),
+        );
+        if (!delivery.ok) {
+          return yield* Effect.die(`Browser telemetry rejected (${String(delivery.status)})`);
+        }
+      }),
+    );
 
 export const initBrowserTelemetry = ({
   endpoint,
@@ -232,13 +241,18 @@ export const initBrowserTelemetry = ({
   const restoreFetch = patchFetch({ endpoint, queue, routes, send });
   const stopListening = listen(recorder);
   const stopObservingVitals = observeVitals(recorder);
-  const flushTimer = globalThis.setInterval(() => {
-    queue.flushInBackground();
-  }, flushIntervalMilliseconds);
+  const flushFiber = Effect.runFork(
+    Effect.repeat(
+      Effect.sync(() => {
+        queue.flushInBackground();
+      }),
+      Schedule.spaced(`${flushIntervalMilliseconds} millis`),
+    ),
+  );
   return {
     dispose: () => {
       queue.close();
-      globalThis.clearInterval(flushTimer);
+      Effect.runFork(Fiber.interrupt(flushFiber));
       restoreFetch();
       stopListening();
       stopObservingVitals();

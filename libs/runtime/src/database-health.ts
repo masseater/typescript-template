@@ -22,7 +22,7 @@ function isolateCheck(services: Context.Context<Database>): Effect.Effect<void, 
       isolate.expiresAt = now + Duration.toMillis(healthCacheWindow);
     }
     const { check } = isolate;
-    yield* yield* Effect.promise(async () => check);
+    yield* yield* Effect.promise(() => check);
   });
 }
 

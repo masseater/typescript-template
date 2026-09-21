@@ -14,7 +14,7 @@ const localBindings = {
 
 describe("readEnvironment", () => {
   describe("local bindings without a release", () => {
-    const it = test.extend("localEnvironment", async () =>
+    const it = test.extend("localEnvironment", () =>
       Effect.runPromise(readEnvironment(localBindings)));
 
     it("marks the environment local, names the release local and derives the Mailpit endpoint", ({
@@ -30,7 +30,7 @@ describe("readEnvironment", () => {
   });
 
   describe("an HTTPS origin on a LAN host", () => {
-    const it = test.extend("lanEnvironment", async () =>
+    const it = test.extend("lanEnvironment", () =>
       Effect.runPromise(
         readEnvironment({
           ...localBindings,
@@ -50,7 +50,7 @@ describe("readEnvironment", () => {
   });
 
   describe("a public HTTPS origin without Mailpit", () => {
-    const it = test.extend("publicEnvironment", async () => {
+    const it = test.extend("publicEnvironment", () => {
       const { MAILPIT_URL: _mailpit, ...remoteBindings } = localBindings;
       return Effect.runPromise(
         readEnvironment({ ...remoteBindings, APP_ORIGIN: "https://app.example.test" }),
@@ -121,7 +121,7 @@ describe("readEnvironment", () => {
       'Expected an absolute URL\n  at ["APP_ORIGIN"]',
     ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
-    const it = test.extend("refusal", async () =>
+    const it = test.extend("refusal", () =>
       Effect.runPromise(Effect.flip(readEnvironment({ ...localBindings, ...overridden }))));
 
     it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
@@ -131,7 +131,7 @@ describe("readEnvironment", () => {
 });
 
 describe("an OTLP switch beside an endpoint", () => {
-  const it = test.extend("otlpEnvironment", async () =>
+  const it = test.extend("otlpEnvironment", () =>
     Effect.runPromise(
       readEnvironment({
         ...localBindings,

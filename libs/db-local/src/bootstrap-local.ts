@@ -16,7 +16,7 @@ runCli(
     const { env } = yield* localDatabasePlatform;
     const administrator = yield* bootstrapAdmin(email).pipe(Effect.provide(Database.layer(env.DB)));
     yield* Console.log(
-      JSON.stringify({
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
         action: "admin_bootstrap",
         role: administrator.role,
         userId: administrator.id,

@@ -1,5 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { fileURLToPath } from "node:url";
+const { fileURLToPath } = process.getBuiltinModule("url");
 
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";

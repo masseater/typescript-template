@@ -24,7 +24,7 @@ const query = <Value>(
     const database = yield* Database;
     return yield* Effect.tryPromise({
       catch: (cause) => new DatabaseFailure({ cause }),
-      try: async () => run(database),
+      try: () => Promise.resolve(run(database)),
     });
   });
 };

@@ -2,6 +2,7 @@ import { assert, it } from "@effect/vitest";
 import { Cause, Effect } from "effect";
 
 import { CloudflareFailure } from "./config.ts";
+import { encodeJson } from "./platform.ts";
 import { describeCause, redact } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -22,9 +23,9 @@ const adoptionMessage = [
 ].join("");
 
 it.effect("keeps the values that identify the deployment out of every reported failure", () =>
-  Effect.sync(() => {
+  Effect.gen(function* program() {
     const described = describeCause(Cause.die(new Error(adoptionMessage)), confidential);
-    const printed = JSON.stringify(described);
+    const printed = yield* encodeJson(described);
     assert.include(printed, "<redacted:TEMPLATE_PREFIX>");
     assert.include(printed, "<redacted:CLOUDFLARE_ACCOUNT_ID>");
     assert.include(printed, "<redacted:TEMPLATE_APP_DOMAIN>");

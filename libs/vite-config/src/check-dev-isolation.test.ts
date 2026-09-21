@@ -1,16 +1,24 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import { repositoryRoot } from "@repo/config/repository-root";
 import { describe, expect, it } from "vite-plus/test";
 
 import { appRun } from "./vite.ts";
 
-const devStartSource = readFileSync(
-  path.join(repositoryRoot, "tools/dev/src/dev-start.ts"),
-  "utf8",
-);
-const viteSource = readFileSync(new URL("./vite.ts", import.meta.url), "utf8");
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly readFileSync: (location: string, encoding: string) => string;
+};
+const nodePath = process.getBuiltinModule("path") as {
+  readonly dirname: (location: string) => string;
+  readonly join: (...parts: readonly string[]) => string;
+};
+const nodeUrl = process.getBuiltinModule("url") as {
+  readonly fileURLToPath: (location: URL) => string;
+};
+
+const readText = (location: string): string => nodeFs.readFileSync(location, "utf8");
+
+const here = nodePath.dirname(nodeUrl.fileURLToPath(new URL(import.meta.url)));
+const devStartSource = readText(nodePath.join(repositoryRoot, "tools/dev/src/dev-start.ts"));
+const viteSource = readText(nodePath.join(here, "vite.ts"));
 
 describe("app build", () => {
   it("type-checks the workspace graph before Rolldown links named imports", () => {

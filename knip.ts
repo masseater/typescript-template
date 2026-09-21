@@ -15,6 +15,8 @@ const workspaces = {
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
+      "oxlint",
+      "oxlint-tsgolint",
     ],
     project: ["*.{js,ts}"],
     vitest: {
@@ -43,9 +45,6 @@ const workspaces = {
   },
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
-  },
-  "libs/vite-config": {
-    entry: ["src/effect-typecheck.ts"],
   },
   "libs/monitor": {
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
@@ -77,7 +76,6 @@ const workspaces = {
     },
   },
   "tools/ai-native": {
-    ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
@@ -90,7 +88,7 @@ const workspaces = {
       "src/repository/lint.ts!",
       "src/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@repo/observability!", "@tanstack/intent"],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
     project: [
       "src/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
@@ -238,9 +236,6 @@ const config = ({
       "libs/db-local": {
         entry: productionOnly(...scripts["libs/db-local"]),
         project: ["src/**/*.ts!"],
-      },
-      "libs/vite-config": {
-        entry: productionOnly("src/effect-typecheck.ts!"),
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],

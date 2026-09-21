@@ -1,18 +1,22 @@
 import { useAtomValue } from "@effect/atom-react";
 import { STATUS_VARIANT, StatusMessage, requestAtom, resultError } from "@repo/ui";
+import { Effect } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 
+import { authTask } from "./browser-http.ts";
 import { verifyEmailToken } from "./verify-email-token.ts";
 
 import type { ReactElement } from "react";
 
-const verificationAtom = requestAtom(async () => {
-  const accepted = await verifyEmailToken();
+const confirmEmail = Effect.gen(function* confirmAddress() {
+  const accepted = yield* authTask(() => verifyEmailToken());
   if (accepted) {
     globalThis.location.replace("/login");
   }
   return accepted;
 });
+
+const verificationAtom = requestAtom(() => Effect.runPromise(confirmEmail));
 
 const EmailVerification = (): ReactElement => {
   const verification = useAtomValue(verificationAtom);

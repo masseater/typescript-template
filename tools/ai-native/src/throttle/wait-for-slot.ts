@@ -1,6 +1,6 @@
-import { basename } from "node:path";
-import { setTimeout as delay } from "node:timers/promises";
+import { Effect } from "effect";
 
+import { baseName, epochMillis } from "../host.ts";
 import {
   dropInterruptHandler,
   installInterruptHandler,
@@ -28,16 +28,16 @@ type PollState = {
   lastPrinted: string;
 };
 
-const reportProgress = (configuration: WaitConfiguration, heldState: PollState): string => {
+const reportProgress = (configuration: WaitConfiguration, held: PollState): string => {
   const waiting = sweepWaiters(configuration.slotDir);
-  const line = `throttle: waiting ${waiting.indexOf(heldState.entryName) + 1}/${waiting.length}`;
+  const line = `throttle: waiting ${waiting.indexOf(held.entryName) + 1}/${waiting.length}`;
   if (configuration.interactive) {
-    const elapsedSec = Math.floor((Date.now() - heldState.startedAt) / 1000);
+    const elapsedSec = Math.floor((epochMillis() - held.startedAt) / 1000);
     process.stderr.write(`\r\u001B[K${line} ${elapsedSec}s`);
-    return heldState.lastPrinted;
+    return held.lastPrinted;
   }
   const printKey = `${line}|${slotStateFingerprint(configuration.slotDir, configuration.limit)}`;
-  if (printKey !== heldState.lastPrinted) process.stderr.write(`${line}\n`);
+  if (printKey !== held.lastPrinted) process.stderr.write(`${line}\n`);
   return printKey;
 };
 
@@ -53,39 +53,50 @@ const budgetExhausted = (configuration: WaitConfiguration): "budget-exhausted" =
   return "budget-exhausted";
 };
 
-const pollForSlot = async (
+const pollForSlot = (
   configuration: WaitConfiguration,
-  heldState: PollState,
-): Promise<SlotHold | "budget-exhausted"> => {
-  const lastPrinted = reportProgress(configuration, heldState);
-  const hold = await tryAcquireAny(configuration);
-  if (hold !== null) {
-    closeProgressLine(configuration);
-    return hold;
-  }
-  if (Date.now() - heldState.startedAt >= configuration.waitBudgetMs)
-    return budgetExhausted(configuration);
-  await delay(configuration.pollMs);
-  return pollForSlot(configuration, { ...heldState, lastPrinted });
-};
+  held: PollState,
+): Promise<SlotHold | "budget-exhausted"> =>
+  Effect.runPromise(
+    Effect.gen(function* pollHeldSlot() {
+      const lastPrinted = reportProgress(configuration, held);
+      const hold = yield* Effect.promise(() => tryAcquireAny(configuration));
+      if (hold !== null) {
+        closeProgressLine(configuration);
+        return hold;
+      }
+      if (epochMillis() - held.startedAt >= configuration.waitBudgetMs) {
+        return budgetExhausted(configuration);
+      }
+      yield* Effect.sleep(`${configuration.pollMs} millis`);
+      return yield* Effect.promise(() => pollForSlot(configuration, { ...held, lastPrinted }));
+    }),
+  );
 
-export const waitForSlot = async (
+export const waitForSlot = (
   configuration: WaitConfiguration,
-): Promise<SlotHold | "budget-exhausted"> => {
-  const entryPath = enqueueWaiter(configuration.slotDir);
-  const interruptHandler = makeWaitingInterruptHandler({
-    entryPath,
-    removeEntry: removeWaiter,
-  });
-  installInterruptHandler(interruptHandler);
-  try {
-    return await pollForSlot(configuration, {
-      entryName: basename(entryPath),
-      startedAt: Date.now(),
-      lastPrinted: "",
-    });
-  } finally {
-    removeWaiter(entryPath);
-    dropInterruptHandler(interruptHandler);
-  }
-};
+): Promise<SlotHold | "budget-exhausted"> =>
+  Effect.runPromise(
+    Effect.gen(function* waitUntilFree() {
+      const waiterPath = enqueueWaiter(configuration.slotDir);
+      const interruptHandler = makeWaitingInterruptHandler({
+        entryPath: waiterPath,
+        removeEntry: removeWaiter,
+      });
+      installInterruptHandler(interruptHandler);
+      return yield* Effect.promise(() =>
+        pollForSlot(configuration, {
+          entryName: baseName(waiterPath),
+          startedAt: epochMillis(),
+          lastPrinted: "",
+        }),
+      ).pipe(
+        Effect.ensuring(
+          Effect.sync(() => {
+            removeWaiter(waiterPath);
+            dropInterruptHandler(interruptHandler);
+          }),
+        ),
+      );
+    }),
+  );

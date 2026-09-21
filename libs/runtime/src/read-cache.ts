@@ -38,26 +38,21 @@ function attempt<Value>(
 
 function cacheOf(namespace: Namespace): ReadCacheShape {
   const get = (key: string): Effect.Effect<string | undefined, StorageFailed> =>
-    attempt("get", async () => {
-      const value = await namespace.get(key);
-      return value === null ? undefined : value;
-    });
+    attempt("get", () => namespace.get(key).then((value) => (value === null ? undefined : value)));
   const put = (
     key: string,
     value: string,
     options?: { readonly expirationTtl?: number },
   ): Effect.Effect<void, StorageFailed> =>
-    attempt("put", async () => {
-      await namespace.put(
+    attempt("put", () =>
+      namespace.put(
         key,
         value,
         options?.expirationTtl === undefined ? undefined : { expirationTtl: options.expirationTtl },
-      );
-    });
+      ),
+    );
   const remove = (key: string): Effect.Effect<void, StorageFailed> =>
-    attempt("delete", async () => {
-      await namespace.delete(key);
-    });
+    attempt("delete", () => namespace.delete(key));
   return {
     get,
     getOrLoad: (key, load, options) =>

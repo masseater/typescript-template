@@ -1,5 +1,6 @@
 import { localState } from "@repo/ui";
-import { Option } from "effect";
+import { Effect, Option, Schema } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { useDocsSearch } from "fumadocs-core/search/client";
 import {
   SearchDialog,
@@ -17,12 +18,22 @@ import type { SortedResult } from "fumadocs-core/search";
 import type { SharedProps } from "fumadocs-ui/components/dialog/search";
 import type { ReactElement } from "react";
 
+class SearchFailed extends Schema.TaggedError<SearchFailed>()("SearchFailed", {
+  message: Schema.String,
+}) {}
+
 type SearchMode = "semantic" | "keyword_only";
 
-interface WikiSearchResult {
-  readonly mode: SearchMode;
-  readonly results: SortedResult[];
-}
+const SearchHit = Schema.Struct({
+  content: Schema.String,
+  id: Schema.String,
+  type: Schema.String,
+  url: Schema.String,
+});
+const WikiSearchResult = Schema.Struct({
+  mode: Schema.Literals(["semantic", "keyword_only"]),
+  results: Schema.Array(SearchHit),
+});
 
 const searchApi = "/api/search";
 const keywordOnlyNotice = "意味検索が使えないため、キーワード検索のみです。";
@@ -31,16 +42,25 @@ const useSearchMode = localState(Option.none<SearchMode>());
 function searchClient(onMode: (mode: SearchMode | undefined) => void) {
   return {
     deps: [searchApi],
-    async search(query: string) {
-      const url = new URL(searchApi, globalThis.location.origin);
-      url.searchParams.set("query", query);
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      const body = (await response.json()) as WikiSearchResult;
-      onMode(body.mode);
-      return body.results;
+    search(query: string) {
+      return Effect.runPromise(
+        Effect.gen(function* wikiSearch() {
+          const url = new URL(searchApi, globalThis.location.origin);
+          url.searchParams.set("query", query);
+          const response = yield* HttpClient.get(url.href).pipe(
+            Effect.provide(FetchHttpClient.layer),
+            Effect.orDie,
+          );
+          if (response.status < 200 || response.status >= 300) {
+            return yield* new SearchFailed({ message: yield* response.text });
+          }
+          const body = yield* HttpClientResponse.schemaBodyJson(WikiSearchResult)(response).pipe(
+            Effect.orDie,
+          );
+          onMode(body.mode);
+          return body.results as SortedResult[];
+        }),
+      );
     },
   };
 }

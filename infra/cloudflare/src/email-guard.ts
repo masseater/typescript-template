@@ -85,9 +85,7 @@ const assertSendingDomainUnclaimed = Effect.fn("assertSendingDomainUnclaimed")(
     if (refused.length === 0) {
       return;
     }
-    return yield* Effect.fail(
-      new CloudflareFailure({ code: "sending_domain_unavailable", keys: refused }),
-    );
+    return yield* new CloudflareFailure({ code: "sending_domain_unavailable", keys: refused });
   },
 );
 

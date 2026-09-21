@@ -24,15 +24,15 @@ const bundle = (plugins: readonly PluginOption[]): Promise<unknown> =>
   });
 
 describe("failOnBrokenSourceMaps", () => {
-  it("fails the build when a transform drops the source map", async () => {
+  it("fails the build when a transform drops the source map", () => {
     expect.hasAssertions();
-    await expect(bundle([failOnBrokenSourceMaps(), transformWithoutMap()])).rejects.toThrow(
+    return expect(bundle([failOnBrokenSourceMaps(), transformWithoutMap()])).rejects.toThrow(
       "SOURCEMAP_BROKEN",
     );
   });
 
-  it("leaves a build whose transforms keep the source map alone", async () => {
+  it("leaves a build whose transforms keep the source map alone", () => {
     expect.hasAssertions();
-    await expect(bundle([failOnBrokenSourceMaps()])).resolves.toBeDefined();
+    return expect(bundle([failOnBrokenSourceMaps()])).resolves.toBeDefined();
   });
 });
