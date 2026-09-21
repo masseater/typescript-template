@@ -1,7 +1,7 @@
 import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
-import { fieldDefinitions } from "#shared/interview/sheet.ts";
+import { fieldDefinitions } from "#shared/interview/index.ts";
 import { MemberPage } from "#widgets/member-page/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 

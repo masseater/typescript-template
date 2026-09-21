@@ -14,7 +14,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
 import { MemberFrame } from "./member-frame.tsx";
 
-import type { Session } from "#entities/session/model/session.ts";
+import type { Session } from "#entities/session/index.ts";
 
 const member = {
   email: "member@example.com",
