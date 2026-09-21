@@ -8,6 +8,11 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { createLibraryVocabularyLoader } from "./harvester.ts";
 
+import type { LibraryVocabularyIndex } from "./vocabulary-index.ts";
+
+const caseFolded = (index: LibraryVocabularyIndex): LibraryVocabularyIndex =>
+  index.map((entry) => ({ ...entry, declarationId: entry.declarationId.toLowerCase() }));
+
 const FIXTURE_ROOT = mkdtempSync(join(tmpdir(), "dont-review-it-library-vocabulary-harvester-"));
 
 class RuntimeRefusal extends Error {
@@ -49,7 +54,7 @@ describe("createLibraryVocabularyLoader", () => {
     });
 
     it("becomes an owner of the values it names", ({ theVocabularyOfTheLiteralUnion }) => {
-      expect(theVocabularyOfTheLiteralUnion).toStrictEqual([
+      expect(caseFolded(theVocabularyOfTheLiteralUnion)).toStrictEqual([
         {
           packageName: "palette",
           typeName: "Shade",
@@ -95,7 +100,7 @@ describe("createLibraryVocabularyLoader", () => {
     it("keeps only the type that names values, and records that others pass", ({
       theVocabularyOfTheWidenedUnion,
     }) => {
-      expect(theVocabularyOfTheWidenedUnion).toStrictEqual([
+      expect(caseFolded(theVocabularyOfTheWidenedUnion)).toStrictEqual([
         {
           packageName: "palette",
           typeName: "Shade",
@@ -144,7 +149,7 @@ describe("createLibraryVocabularyLoader", () => {
     });
 
     it("is read through to the declaration it points at", ({ theVocabularyOfTheReExport }) => {
-      expect(theVocabularyOfTheReExport).toStrictEqual([
+      expect(caseFolded(theVocabularyOfTheReExport)).toStrictEqual([
         {
           packageName: "palette",
           typeName: "Tone",

@@ -68,8 +68,11 @@ const locatedDiagnosticLine = /^(.+)\((\d+),(\d+)\): error (TS\d+): (.*)$/u;
 const prettyDiagnosticLine = /^(.+):(\d+):(\d+) - error (TS\d+): (.*)$/u;
 const looseDiagnosticLine = /^error (TS\d+): (.*)$/u;
 
-const fingerprintOf = (entry: Diagnostic): string =>
-  JSON.stringify([entry.file, entry.code, entry.message]);
+const portableMessage = (message: string, repositoryRoot: string): string =>
+  message.split(path.resolve(repositoryRoot)).join("<repository>");
+
+const fingerprintOf = (entry: Diagnostic, repositoryRoot: string): string =>
+  JSON.stringify([entry.file, entry.code, portableMessage(entry.message, repositoryRoot)]);
 
 const compareCounted = (left: CountedDiagnostic, right: CountedDiagnostic): number => {
   const file = left.file.localeCompare(right.file);
@@ -109,10 +112,13 @@ const parseTscOutput = (output: string): readonly Diagnostic[] =>
     return diagnosticOf("", loose[1], loose[2]);
   });
 
-const countDiagnostics = (diagnostics: readonly Diagnostic[]): readonly CountedDiagnostic[] => {
+const countDiagnostics = (
+  diagnostics: readonly Diagnostic[],
+  repositoryRoot: string,
+): readonly CountedDiagnostic[] => {
   const counts = new Map<string, CountedDiagnostic>();
   for (const diagnostic of diagnostics) {
-    const fingerprint = fingerprintOf(diagnostic);
+    const fingerprint = fingerprintOf(diagnostic, repositoryRoot);
     const existing = counts.get(fingerprint);
     counts.set(fingerprint, {
       ...diagnostic,
@@ -164,10 +170,13 @@ const baselinedEntries = (
 const difference = (
   actual: readonly CountedDiagnostic[],
   expected: readonly CountedDiagnostic[],
+  repositoryRoot: string,
 ): readonly CountedDiagnostic[] => {
-  const expectedCounts = new Map(expected.map((entry) => [fingerprintOf(entry), entry.count]));
+  const expectedCounts = new Map(
+    expected.map((entry) => [fingerprintOf(entry, repositoryRoot), entry.count]),
+  );
   return actual.flatMap((entry) => {
-    const allowed = expectedCounts.get(fingerprintOf(entry)) ?? 0;
+    const allowed = expectedCounts.get(fingerprintOf(entry, repositoryRoot)) ?? 0;
     if (entry.count <= allowed) {
       return [];
     }
@@ -179,10 +188,12 @@ const evaluateTypecheck = (
   workspace: string,
   diagnostics: readonly Diagnostic[],
   baseline: TypecheckBaseline,
+  repositoryRoot: string,
 ): TypecheckVerdict => {
   const alwaysFail = alwaysFailing(diagnostics);
   const countable = countDiagnostics(
     diagnostics.filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code)),
+    repositoryRoot,
   );
   const expected = countDiagnostics(
     baselinedEntries(baseline, workspace).flatMap((entry) =>
@@ -192,9 +203,10 @@ const evaluateTypecheck = (
         message: entry.message,
       })),
     ),
+    repositoryRoot,
   );
-  const unexpected = difference(countable, expected);
-  const leftover = difference(expected, countable);
+  const unexpected = difference(countable, expected, repositoryRoot);
+  const leftover = difference(expected, countable, repositoryRoot);
   return {
     ok: alwaysFail.length === 0 && unexpected.length === 0 && leftover.length === 0,
     alwaysFail,
@@ -203,8 +215,17 @@ const evaluateTypecheck = (
   };
 };
 
-const snapshotOf = (diagnostics: readonly Diagnostic[]): readonly BaselineEntry[] =>
-  countDiagnostics(diagnostics.filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code)));
+const snapshotOf = (
+  diagnostics: readonly Diagnostic[],
+  repositoryRoot: string,
+): readonly BaselineEntry[] =>
+  countDiagnostics(
+    diagnostics.filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code)),
+    repositoryRoot,
+  ).map((entry) => ({
+    ...entry,
+    message: portableMessage(entry.message, repositoryRoot),
+  }));
 
 const formatCounted = (entries: readonly CountedDiagnostic[]): string =>
   entries
@@ -349,13 +370,13 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
         version: 1,
         workspaces: {
           ...baseline.workspaces,
-          [workspace]: snapshotOf(diagnostics),
+          [workspace]: snapshotOf(diagnostics, asked.repositoryRoot),
         },
       }),
     );
     return 0;
   }
-  const verdict = evaluateTypecheck(workspace, diagnostics, baseline);
+  const verdict = evaluateTypecheck(workspace, diagnostics, baseline, asked.repositoryRoot);
   if (!verdict.ok) {
     asked.print(formatReport(verdict));
     return 1;
@@ -430,6 +451,7 @@ export {
   diagnosticOf,
   effectTsgoBin,
   evaluateTypecheck,
+  fingerprintOf,
   isInvokedAsCli,
   locateCompiler,
   maybeStart,

@@ -20,6 +20,7 @@ import {
   diagnosticOf,
   effectTsgoBin,
   evaluateTypecheck,
+  fingerprintOf,
   locateCompiler,
   isInvokedAsCli,
   maybeStart,
@@ -155,7 +156,12 @@ describe("effect typecheck gate", () => {
       expect(result.code).toBe(1);
       expect(result.printed).toMatch(/missing-export errors/u);
       expect(
-        evaluateTypecheck(".", parseTscOutput(compiled.output), parseBaseline(listed)).ok,
+        evaluateTypecheck(
+          ".",
+          parseTscOutput(compiled.output),
+          parseBaseline(listed),
+          repositoryRoot,
+        ).ok,
       ).toBe(false);
     } finally {
       rmSync(cwd, { force: true, recursive: true });
@@ -263,6 +269,21 @@ describe("effect typecheck gate", () => {
     );
     expect(() => workspaceOf(path.join(repositoryRoot, ".."), repositoryRoot)).toThrow(
       /is outside/u,
+    );
+    const checkout = "/tmp/checkout-a";
+    const diagnostic = {
+      file: "src/monitor-fixture.ts",
+      code: "TS4023",
+      message: `Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "${checkout}/libs/monitor/src/index" but cannot be named.`,
+    };
+    expect(fingerprintOf(diagnostic, checkout)).toBe(
+      fingerprintOf(
+        {
+          ...diagnostic,
+          message: diagnostic.message.replace(checkout, "/tmp/checkout-b"),
+        },
+        "/tmp/checkout-b",
+      ),
     );
     const committed = readFileSync(
       path.join(repositoryRoot, "libs/vite-config/src/effect-typecheck-baseline.json"),

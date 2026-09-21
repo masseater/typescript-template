@@ -521,7 +521,7 @@
       {
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repository>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repository>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -617,7 +617,7 @@
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repository>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repository>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -1189,7 +1189,7 @@
       {
         "file": "src/monitor-fixture.ts",
         "code": "TS4023",
-        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/libs/monitor/src/index\" but cannot be named.",
+        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repository>/libs/monitor/src/index\" but cannot be named.",
         "count": 1
       },
       {
@@ -1250,18 +1250,6 @@
         "file": "src/monitor-fixture.ts",
         "code": "TS4094",
         "message": "Property 'run' of exported anonymous class type may not be private or protected.",
-        "count": 1
-      },
-      {
-        "file": "src/vite.test.ts",
-        "code": "TS2339",
-        "message": "Property 'premerge' does not exist on type '{ \"check:effect\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; build: { ...; }; }'.",
-        "count": 1
-      },
-      {
-        "file": "src/vite.test.ts",
-        "code": "TS2339",
-        "message": "Property 'prepr' does not exist on type '{ \"check:effect\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; build: { ...; }; }'.",
         "count": 1
       }
     ],

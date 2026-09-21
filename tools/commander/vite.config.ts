@@ -29,11 +29,9 @@ export default defineConfig({
       },
       start: { cache: false, command: "./src/app/cli.ts", dependsOn: ["build"] },
       ...lifecycle({
-        precommit: [],
         prepush: ["check:effect", "check"],
         prepr: ["build"],
         premerge: ["check:start"],
-        prerelease: [],
       }),
     },
   },
