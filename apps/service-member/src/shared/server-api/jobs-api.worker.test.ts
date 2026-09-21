@@ -22,6 +22,8 @@ import {
 import { env } from "cloudflare:workers";
 import { Effect, Layer, Schema } from "effect";
 
+import type { JobsBindings } from "@repo/config";
+
 import { jobsApi } from "./jobs-api.ts";
 
 const routes = {
@@ -55,9 +57,10 @@ it.effect("enqueues a job, runs the workflow steps, and reports completion", () 
     yield* Schema.decodeUnknownEffect(JobPayload)({ jobId: body.id });
 
     const view = yield* Effect.promise(async () => {
-      const instance = await introspectWorkflowInstance(env[jobsWorkflowBinding], body.id);
+      const jobsEnv = env as typeof env & JobsBindings;
+      const instance = await introspectWorkflowInstance(jobsEnv[jobsWorkflowBinding], body.id);
       try {
-        await instance.modify(async (modifier) => {
+        await instance.modify(async (modifier: { readonly disableSleeps: () => Promise<void> }) => {
           await modifier.disableSleeps();
         });
 

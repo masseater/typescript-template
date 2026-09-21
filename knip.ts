@@ -172,6 +172,7 @@ const config = ({
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/jobs-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
       "infra/cloudflare/src/account-inspection.ts": ["types"],
       "infra/cloudflare/src/account-lookup.ts": ["exports"],

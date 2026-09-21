@@ -1,4 +1,5 @@
 import { JobPayload, readJobs } from "@repo/config";
+import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
 import { createApi } from "@repo/runtime/http";
 import { enqueueJob, jobStatus } from "@repo/runtime/jobs";
@@ -22,6 +23,7 @@ const JobStatusView = Schema.Struct({
 const failures = {
   ...unavailable,
   ConfigurationInvalid: "unexpected" as const,
+  InputInvalid: { message: "入力内容を確認してください。", status: httpStatus.badRequest },
 };
 
 function jobsApi(api: ApiRoutes<AppServices>) {
