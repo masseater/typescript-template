@@ -1,14 +1,14 @@
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { spawnSync } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { Writable } from "node:stream";
-// oxlint-disable-next-line import/no-nodejs-modules
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "@repo/config/repository-root";
@@ -193,7 +193,7 @@ describe("effect typecheck gate", () => {
       expect(parsed.workspaces["."]?.some((entry) => entry.code === "TS2322")).toBe(true);
       const result = runGate({ cwd, baseline: written.baseline });
       expect(result.code).toBe(0);
-      expect(result.printed).not.toMatch(/typecheck gate:/u);
+      expect(result.printed).toBe("");
     } finally {
       rmSync(cwd, { force: true, recursive: true });
     }
@@ -272,7 +272,7 @@ describe("effect typecheck gate", () => {
         },
       }),
     ).toBe(0);
-    expect(printed).not.toMatch(/typecheck gate:/u);
+    expect(printed).toBe("");
     expect(
       runEffectTypecheck({
         cwd: checkout,

@@ -16,7 +16,6 @@ const unavailable = 503;
 const NICKNAME_LIMIT = 30;
 
 function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<Network["use"]>
 ): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(
@@ -68,16 +67,16 @@ it.effect("the model's structured answer becomes values and the next question", 
           ask: "nickname",
           finish: false,
           message: "東京のエンジニアさんなんですね。なんて呼べばいいですか？",
-          // oxlint-disable-next-line unicorn/no-null
+          // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
           reply: null,
           skip: false,
           values: {
             area: "東京",
-            // oxlint-disable-next-line unicorn/no-null
+            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             interests: null,
-            // oxlint-disable-next-line unicorn/no-null
+            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             message: null,
-            // oxlint-disable-next-line unicorn/no-null
+            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             nickname: null,
             occupation: "エンジニア",
           },
@@ -108,10 +107,10 @@ it.effect("parts of the answer that break the sheet's rules are dropped one by o
           values: {
             area: "大阪",
             interests: ["音楽", "料理", "読書", "映画", "旅行", "登山"],
-            // oxlint-disable-next-line unicorn/no-null
+            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             message: null,
             nickname: "あ".repeat(NICKNAME_LIMIT + 1),
-            // oxlint-disable-next-line unicorn/no-null
+            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             occupation: null,
           },
         }),
@@ -159,8 +158,7 @@ it.effect("the member's words reach the model only as data beside the instructio
 it.effect("a model error and an unreadable answer are both reported as a model failure", () =>
   Effect.gen(function* program() {
     const server = yield* withServer(
-      // oxlint-disable-next-line unicorn/no-null
-      http.post(endpoint, () => new HttpResponse(null, { status: unavailable })),
+      http.post(endpoint, () => new HttpResponse(undefined, { status: unavailable })),
     );
     const failed = yield* understand(access, "たろう").pipe(Effect.flip);
     assert.deepStrictEqual(failed.reason, "model_failed");

@@ -450,11 +450,14 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
     return 1;
   }
   const compiled = asked.compile();
-  asked.print(printedOutput(compiled.output));
   const diagnostics = parseTscOutput(compiled.output).map((diagnostic) =>
     portableDiagnostic(diagnostic, asked.repositoryRoot),
   );
+  const printTranscript = (): void => {
+    asked.print(printedOutput(compiled.output));
+  };
   if (diagnostics.length === 0 && compiled.status !== 0) {
+    printTranscript();
     asked.print("typecheck gate: compiler exited without diagnostics\n");
     return 1;
   }
@@ -467,6 +470,7 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
     const owned = ownedDiagnostics(diagnostics, asked.cwd, asked.repositoryRoot);
     const alwaysFail = alwaysFailing(owned);
     if (alwaysFail.length > 0) {
+      printTranscript();
       asked.print(formatReport({ ok: false, alwaysFail, unexpected: [], leftover: [] }));
       return 1;
     }
@@ -490,6 +494,7 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
     asked.repositoryRoot,
   );
   if (!verdict.ok) {
+    printTranscript();
     asked.print(formatReport(verdict));
     return 1;
   }

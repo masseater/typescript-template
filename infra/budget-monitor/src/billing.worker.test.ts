@@ -16,7 +16,6 @@ const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/billable-usage`;
 
 function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<Network["use"]>
 ): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(
@@ -39,8 +38,7 @@ it.effect("fetches the official V1 endpoint using bearer authentication", () =>
     yield* withServer(
       http.get(endpoint, ({ request }) => {
         if (request.headers.get("authorization") !== "Bearer test-token") {
-          // oxlint-disable-next-line unicorn/no-null
-          return new HttpResponse(null, { status: 401 });
+          return new HttpResponse(undefined, { status: 401 });
         }
         return HttpResponse.json({
           result: [

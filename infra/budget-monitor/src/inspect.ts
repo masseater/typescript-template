@@ -8,7 +8,6 @@ import { evaluateBudget } from "./decision.ts";
 
 runCli(
   Effect.gen(function* program() {
-    // oxlint-disable-next-line node/no-process-env
     const config = yield* parseBudgetConfig(process.env);
     const usage = yield* fetchUsage(
       config.CLOUDFLARE_ACCOUNT_ID,

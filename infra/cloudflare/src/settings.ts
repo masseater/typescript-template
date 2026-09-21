@@ -21,7 +21,6 @@ const DEFAULT_JPY_PER_USD = 150;
 const FULL_SAMPLING = 1;
 const DEFAULT_USD = 0;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function optional<Value>(config: Config.Config<Value>): Config.Config<Value | undefined> {
   return Config.option(config).pipe(Config.map(Option.getOrUndefined));
 }
