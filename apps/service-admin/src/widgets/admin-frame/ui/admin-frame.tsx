@@ -44,7 +44,7 @@ function AdminFrame({
             </>
           )}
         </div>
-        <AdminNavigation collapsed={collapsed} onNavigate={closeNavigation} />
+        <AdminNavigation collapsed={collapsed} />
         <div className="mt-auto border-t border-border p-2">
           <AccountMenu collapsed={collapsed} email={email} name={name} />
         </div>

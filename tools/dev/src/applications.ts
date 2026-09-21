@@ -42,7 +42,6 @@ function httpStatus(app: App, origin: string): Effect.Effect<number | null> {
     }),
   ).pipe(
     Effect.match({
-      // oxlint-disable-next-line unicorn/no-null -- a failed readiness probe is recorded as JSON null so the status event still carries the httpStatus field
       onFailure: () => null,
       onSuccess: (response) => response.status,
     }),
