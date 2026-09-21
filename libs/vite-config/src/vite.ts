@@ -472,6 +472,7 @@ export {
   workspaceCheckImports,
   withoutEnvFileLoader,
 };
+export { runEffectTypecheck as runTypecheckGate } from "./effect-typecheck.ts";
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
