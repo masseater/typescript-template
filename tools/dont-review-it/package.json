@@ -17,6 +17,7 @@
     "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts",
     "dont-review-it-typecheck": "./src/repository/typecheck-workspaces.ts",
     "quality-check-client": "./src/repository/client-bundle.ts",
+    "quality-check-imports": "./src/repository/workspace-imports.ts",
     "quality-check-react": "./src/repository/react-doctor.ts"
   },
   "files": [
@@ -57,6 +58,7 @@
     "@repo/vite-config": "workspace:*",
     "@shadcn/lint": "catalog:",
     "citty": "0.2.2",
+    "dependency-cruiser": "catalog:",
     "effect": "catalog:",
     "es-toolkit": "catalog:",
     "jsonc-parser": "3.3.1",
@@ -80,7 +82,6 @@
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "dependency-cruiser": "catalog:",
     "msw": "catalog:",
     "shell-quote": "catalog:",
     "vite": "catalog:",

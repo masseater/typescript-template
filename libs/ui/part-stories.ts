@@ -1,9 +1,14 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
+import path from "node:path";
 
+import { repositoryRoot } from "@repo/config/repository-root";
 import { parseSync } from "vite-plus";
 
 import { field } from "./record-field.ts";
+
+const fromRepo = (file: string): string =>
+  path.isAbsolute(file) ? file : path.join(repositoryRoot, file);
 
 interface A11yRelaxation {
   readonly file: string;
@@ -25,7 +30,7 @@ const storyName = (part: string): string => {
 };
 
 const storylessParts = (directory: string): string[] => {
-  const files = readdirSync(directory).filter(
+  const files = readdirSync(fromRepo(directory)).filter(
     (file) => file.endsWith(".tsx") && !file.endsWith(".test.tsx"),
   );
   const stories = new Set(files.filter((file) => file.endsWith(storySuffix)));
@@ -84,7 +89,7 @@ const exportedStories = (body: readonly unknown[]): ExportedStory[] => {
 };
 
 const fileRelaxations = (file: string): A11yRelaxation[] => {
-  const { program } = parseSync(file, readFileSync(file, "utf-8"));
+  const { program } = parseSync(file, readFileSync(fromRepo(file), "utf-8"));
   return exportedStories(nodes(program, "body")).flatMap(
     ({ name, options }: Readonly<ExportedStory>) =>
       disabledRules(property(property(options, "parameters"), "a11y")).map((rule) => ({
@@ -113,7 +118,7 @@ const partsManifest = new URL("./package.json", import.meta.url);
 const workerFile = "libs/ui/storybook/public/mockServiceWorker.js";
 
 const vendoredWorkerViolations = (): string[] => {
-  const { program } = parseSync(workerFile, readFileSync(workerFile, "utf-8"));
+  const { program } = parseSync(workerFile, readFileSync(fromRepo(workerFile), "utf-8"));
   const declarator = nodes(program, "body")
     .flatMap((node: unknown) => nodes(node, "declarations"))
     .find((declaration: unknown) => field(field(declaration, "id"), "name") === "PACKAGE_VERSION");
@@ -130,7 +135,7 @@ const vendoredWorkerViolations = (): string[] => {
 const agentConfigFile = ".mcp.json";
 
 const storybookEndpointViolations = (origin: string): string[] => {
-  const parsed: unknown = JSON.parse(readFileSync(agentConfigFile, "utf-8"));
+  const parsed: unknown = JSON.parse(readFileSync(fromRepo(agentConfigFile), "utf-8"));
   const url: unknown = field(field(field(parsed, "mcpServers"), "storybook"), "url");
   const expected = `${origin}/mcp`;
   return url === expected

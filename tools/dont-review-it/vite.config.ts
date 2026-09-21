@@ -1,7 +1,13 @@
 import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
+import {
+  checkCode,
+  effectDiagnostics,
+  intentValidation,
+  lifecycle,
+  testCoverageRun,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -9,7 +15,8 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       ...intentValidation,
-      ...testRun,
+      ...checkCode,
+      ...testCoverageRun,
       "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
       "pr-affected": { cache: false, command: "./src/repository/pr-affected.ts" },
       "clean:shared-task-cache": {
@@ -17,9 +24,9 @@ export default defineConfig({
         command: "./src/repository/clean-shared-task-cache.ts",
       },
       ...lifecycle({
-        precommit: ["check:staged"],
+        precommit: ["check:staged", "check:code"],
         prepush: ["check:effect", "check"],
-        prepr: ["test"],
+        premerge: ["test"],
       }),
     },
   },
