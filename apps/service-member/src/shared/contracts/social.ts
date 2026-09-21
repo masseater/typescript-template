@@ -6,7 +6,7 @@ const OnboardingStep = Schema.Literals([
   "profile",
   "interview",
   "done",
-]);
+] as const);
 
 const OnboardingView = Schema.Struct({
   step: OnboardingStep,
@@ -27,5 +27,11 @@ const FeedItem = Schema.Struct({
 const HomeFeed = Schema.Struct({
   items: Schema.Array(FeedItem),
 });
+
+type OnboardingStep = typeof OnboardingStep.Type;
+type OnboardingView = typeof OnboardingView.Type;
+type OnboardingAdvance = typeof OnboardingAdvance.Type;
+type FeedItem = typeof FeedItem.Type;
+type HomeFeed = typeof HomeFeed.Type;
 
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView };
