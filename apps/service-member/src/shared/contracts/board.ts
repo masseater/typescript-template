@@ -8,7 +8,17 @@ const maximumBoardPage = 1_000_000;
 const boardThreadPageSize = 20;
 const boardPostPageSize = 50;
 
-const BoardAuthor = Schema.NullOr(Schema.Struct({ id: Schema.String, name: Schema.String }));
+const withdrawnAuthorName = "退会した会員";
+
+const BoardAuthor = Schema.NullOr(
+  Schema.Union([
+    Schema.Struct({ id: Schema.String, name: Schema.String }),
+    Schema.Struct({
+      name: Schema.Literal(withdrawnAuthorName),
+      withdrawn: Schema.Literal(true),
+    }),
+  ]),
+);
 
 const BoardThreadSummary = Schema.Struct({
   author: BoardAuthor,
@@ -74,4 +84,5 @@ export {
   maximumBoardBodyLength,
   maximumBoardPage,
   maximumBoardTitleLength,
+  withdrawnAuthorName,
 };

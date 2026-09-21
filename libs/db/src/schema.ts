@@ -5,6 +5,7 @@ import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
+import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
 import {
   jwks,
@@ -146,7 +147,9 @@ const schema = {
   boardThread,
   follow,
   interview,
+  leaveRequest,
   memberOnboarding,
+  withdrawnMember,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -178,4 +181,5 @@ export {
 export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

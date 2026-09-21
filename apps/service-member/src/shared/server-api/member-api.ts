@@ -20,6 +20,7 @@ import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { leaveApi } from "./leave-api.ts";
 import { photoApi } from "./photo-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
@@ -42,6 +43,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     .use(flagsApi(api))
     .use(agreementApi(api))
     .use(onboardingStepApi(api))
+    .use(leaveApi(api))
     .onBeforeHandle(consentGate(api))
     .use(interviewApi(api))
     .use(photoApi(api))

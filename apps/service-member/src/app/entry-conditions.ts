@@ -5,6 +5,7 @@ import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
 import { loadSession } from "#entities/session/index.ts";
 import { loadOnboardingStep } from "#pages/account/welcome/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
+import { loadRecoveryOffer } from "#pages/recovery/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { Session } from "#entities/session/index.ts";
@@ -20,6 +21,8 @@ const welcomePath = {
   interview: "/welcome/interview",
   profile: "/welcome/profile",
 } as const satisfies Readonly<Record<Exclude<OnboardingStep, "done">, string>>;
+
+const recoveryPath = "/welcome/recovery";
 
 async function enterPublicFrame(pathname: string): Promise<void> {
   if (!entrances.has(pathname)) {
@@ -41,6 +44,10 @@ async function enterMemberFrame(
   }
   const step = await loadOnboardingStep();
   if (step !== "done") {
+    const offer = await loadRecoveryOffer();
+    if (offer.available) {
+      throw redirect({ to: recoveryPath });
+    }
     throw redirect({ to: welcomePath[step] });
   }
   if (pathname.startsWith("/welcome")) {
@@ -64,6 +71,14 @@ async function enterWelcomeFrame(
   const step = await loadOnboardingStep();
   if (step === "done") {
     throw redirect({ to: "/home" });
+  }
+  const pathname = new URL(href).pathname;
+  const offer = await loadRecoveryOffer();
+  if (offer.available && pathname !== recoveryPath) {
+    throw redirect({ to: recoveryPath });
+  }
+  if (!offer.available && pathname === recoveryPath) {
+    throw redirect({ to: welcomePath[step] });
   }
   return { session, step };
 }

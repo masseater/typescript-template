@@ -60,3 +60,13 @@ export {
   startInterview,
   storeInterview,
 } from "./interview.ts";
+export {
+  MemberLeaveUnavailable,
+  RecoveryExpired,
+  RecoveryUnavailable,
+  acceptRecovery,
+  declineRecovery,
+  findRecoveryOffer,
+  purgeExpiredWithdrawnMembers,
+  withdrawMember,
+} from "./member-leave.ts";
