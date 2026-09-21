@@ -1,17 +1,26 @@
+import { retiredPackagesFromStateKinds } from "./state-kinds.ts";
+
 const atomState = "Effect Atom (effect/unstable/reactivity と @effect/atom-react)";
 
-const retiredPackages: Readonly<Record<string, string>> = {
+const infrastructureRetiredPackages: Readonly<Record<string, string>> = {
+  "@pulumi/": "alchemy",
+  "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
+  pulumi: "alchemy",
+  "react-intl": "Paraglide JS",
+  "smarthr-ui": "@repo/ui の shadcn/ui (Base UI) 部品",
+  "styled-components": "Tailwind CSS v4 のユーティリティ",
+};
+
+const atomUiRetiredPackages: Readonly<Record<string, string>> = {
   "@effect-atom/": atomState,
   "@formatjs/": "Paraglide JS",
   "@legendapp/state": atomState,
   "@lingui/": "Paraglide JS",
   "@nanostores/": atomState,
   "@preact/signals-react": atomState,
-  "@pulumi/": "alchemy",
   "@reduxjs/": atomState,
   "@tanstack/react-store": atomState,
   "@tanstack/store": atomState,
-  "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
   effector: atomState,
   "effector-react": atomState,
   i18next: "Paraglide JS",
@@ -21,17 +30,19 @@ const retiredPackages: Readonly<Record<string, string>> = {
   "mobx-react-lite": atomState,
   nanostores: atomState,
   "next-intl": "Paraglide JS",
-  pulumi: "alchemy",
   "react-i18next": "Paraglide JS",
-  "react-intl": "Paraglide JS",
   "react-redux": atomState,
   recoil: atomState,
   redux: atomState,
-  "smarthr-ui": "@repo/ui の shadcn/ui (Base UI) 部品",
-  "styled-components": "Tailwind CSS v4 のユーティリティ",
   "typesafe-i18n": "Paraglide JS",
   valtio: atomState,
   zustand: atomState,
+};
+
+const retiredPackages: Readonly<Record<string, string>> = {
+  ...infrastructureRetiredPackages,
+  ...atomUiRetiredPackages,
+  ...retiredPackagesFromStateKinds(),
 };
 
 const retiredEntries: Readonly<Record<string, string>> = {
@@ -72,4 +83,10 @@ const retiredImportGuidance = Object.entries({ ...retiredPackages, ...retiredEnt
   .map(([retired, replacement]) => `${retired} は${replacementMessage(replacement)}`)
   .join("");
 
-export { replacementFor, replacementForImport, replacementMessage, retiredImportGuidance };
+export {
+  replacementFor,
+  replacementForImport,
+  replacementMessage,
+  retiredImportGuidance,
+  retiredPackages,
+};
