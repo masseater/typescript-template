@@ -2,16 +2,9 @@ import { Stack } from "alchemy";
 import { ApiToken } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
+import { accountTokens } from "./account-tokens.ts";
 import { settings } from "./settings.ts";
 import { stackName, stackOptions } from "./stacks.ts";
-
-const accountTokens = {
-  BillingRead: { permission: "Billing Read", slug: "billing-read" },
-  FlagshipWrite: { permission: "Flagship Write", slug: "flagship-write" },
-  ObservabilityQuery: { permission: "Workers Observability Write", slug: "observability-query" },
-} as const satisfies Readonly<
-  Record<string, { permission: ApiToken.PermissionGroupName; slug: string }>
->;
 
 type TokenResource = keyof typeof accountTokens;
 

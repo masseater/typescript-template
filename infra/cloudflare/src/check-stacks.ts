@@ -11,6 +11,7 @@ import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/confi
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Cause, Console, Effect, Schema } from "effect";
 
+import { accountTokens } from "./account-tokens.ts";
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { hstsSetting } from "./config.ts";
 import {
@@ -30,6 +31,7 @@ import {
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Application } from "@repo/config";
+import type { ApiToken } from "alchemy/Cloudflare";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 
@@ -150,7 +152,7 @@ function monitorResource(options: {
   };
 }
 
-function accountToken(slug: string, permission: string): ResourceInventory {
+function accountToken(slug: string, permission: ApiToken.PermissionGroupRef): ResourceInventory {
   return {
     adopt: false,
     bindings: [],
@@ -264,9 +266,15 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
     },
   }),
   tokens: declaredStack("tokens", {
-    BillingRead: accountToken("billing-read", "Billing Read"),
-    FlagshipWrite: accountToken("flagship-write", "Flagship Write"),
-    ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
+    BillingRead: accountToken(accountTokens.BillingRead.slug, accountTokens.BillingRead.permission),
+    FlagshipWrite: accountToken(
+      accountTokens.FlagshipWrite.slug,
+      accountTokens.FlagshipWrite.permission,
+    ),
+    ObservabilityQuery: accountToken(
+      accountTokens.ObservabilityQuery.slug,
+      accountTokens.ObservabilityQuery.permission,
+    ),
   }),
   zone: declaredStack("zone", {
     AlwaysUseHttps: zoneSetting("always_use_https", "on"),
