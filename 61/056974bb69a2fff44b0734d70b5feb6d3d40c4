@@ -1,1 +1,6 @@
-prepr failed locally: lifecycle dropped precommit and prerelease tasks, the vocabulary fixture compared temp-path case, and moving the typecheck command out of the library made knip drop its entry
+Revision history for #1063:
+
+rev 2 (content) 2026-09-21 12:07 UTC — prepr failed locally: lifecycle dropped precommit and prerelease tasks, the vocabulary fixture compared temp-path case, and moving the typecheck command out of the library made knip drop its entry
+rev 1 (initial) 2026-09-21 12:07 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1063,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"e6a29e0d10f3b25f033d82a1f27ddd50accc266f","timestamp_iso":"2026-09-21T12:07:37Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"e6a29e0d10f3b25f033d82a1f27ddd50accc266f","new_sha":"61056974bb69a2fff44b0734d70b5feb6d3d40c4","timestamp_iso":"2026-09-21T12:07:37Z","reason":"prepr failed locally: lifecycle dropped precommit and prerelease tasks, the vocabulary fixture compared temp-path case, and moving the typecheck command out of the library made knip drop its entry","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/e6a29e0d10f3b25f033d82a1f27ddd50accc266f...61056974bb69a2fff44b0734d70b5feb6d3d40c4"}]} -->
