@@ -44,12 +44,6 @@ jobs:
         with:
           node-version-file: package.json
           cache: ${{ vars.CI_RUNNER == '' }}
-      - &mise
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        env:
-          MISE_CEILING_PATHS: ${{ runner.workspace }}
-        with:
-          cache: ${{ vars.CI_RUNNER == '' }}
       - &vite-task-cache
         id: vite-task-cache
         if: vars.CI_RUNNER == ''
@@ -86,7 +80,6 @@ jobs:
       - *reset-local-database
       - *browser-cache
       - *setup
-      - *mise
       - *vite-task-cache
       - *task-cache-share
       - run: vp run -r premerge
@@ -101,7 +94,6 @@ jobs:
       - *clean-workspace
       - *browser-cache
       - *setup
-      - *mise
       - *vite-task-cache
       - *task-cache-share
       - run: vp run --filter @repo/e2e test:e2e
@@ -114,7 +106,6 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
-      - *mise
       - run: vp check
       - run: vp run -r prepr
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
