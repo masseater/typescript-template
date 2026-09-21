@@ -1,3 +1,4 @@
+import { GROUP_JOIN_POLICY } from "@repo/db/group-join-policy";
 import {
   Button,
   ButtonLink,
@@ -43,11 +44,15 @@ function CreateGroupForm(): ReactElement {
             type="button"
             variant="primary"
             disabled={form.blocked}
-            onClick={() => form.submit("invite")}
+            onClick={() => form.submit(GROUP_JOIN_POLICY.invite)}
           >
             招待制で作る
           </Button>
-          <Button type="button" disabled={form.blocked} onClick={() => form.submit("open")}>
+          <Button
+            type="button"
+            disabled={form.blocked}
+            onClick={() => form.submit(GROUP_JOIN_POLICY.open)}
+          >
             自由参加で作る
           </Button>
           <ButtonLink to="/messages" search={{}}>

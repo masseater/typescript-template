@@ -1,8 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ACCOUNT_STATE, ROLE } from "@repo/config";
-import { query, schema } from "@repo/db";
+import { and, eq, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { homeFeed } from "../server-api/member-social.ts";

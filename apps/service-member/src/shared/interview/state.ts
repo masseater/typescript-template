@@ -10,6 +10,11 @@ const settledPhases = ["summary", "history_consent", "saved"] as const;
 
 /** @canonical-values interview.field-status */
 export const fieldStatuses = ["unanswered", "answered", "skipped"] as const;
+export const FIELD_STATUS = {
+  answered: fieldStatuses[1],
+  skipped: fieldStatuses[2],
+  unanswered: fieldStatuses[0],
+} as const;
 
 const Progress = Schema.Struct({ sheet: Sheet, skipped: Schema.Array(FieldKey) });
 const Message = Schema.Struct({

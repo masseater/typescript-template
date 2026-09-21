@@ -1,8 +1,7 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_SCOPE, ROLE } from "@repo/config";
-import { requirePaid, query, schema } from "@repo/db";
+import { and, eq, query, requirePaid, schema } from "@repo/db";
 import { AppOrigin, secureResponse } from "@repo/runtime/http";
-import { and, eq } from "drizzle-orm";
 import { Clock, Effect, Schema } from "effect";
 
 import { ProfileUpdate, maximumMessageBodyLength } from "#shared/contracts/index.ts";

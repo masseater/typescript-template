@@ -7,6 +7,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
+import { groupJoinPolicies } from "./group-join-policy.ts";
 import { user } from "./identity-schema.ts";
 
 /** @canonical-values db.conversation-kind */
@@ -15,14 +16,6 @@ export type ConversationKind = (typeof conversationKinds)[number];
 export const CONVERSATION_KIND = {
   direct: conversationKinds[0],
   group: conversationKinds[1],
-} as const;
-
-/** @canonical-values db.group-join-policy */
-export const groupJoinPolicies = ["invite", "open"] as const;
-export type GroupJoinPolicy = (typeof groupJoinPolicies)[number];
-export const GROUP_JOIN_POLICY = {
-  invite: groupJoinPolicies[0],
-  open: groupJoinPolicies[1],
 } as const;
 
 /** @canonical-values db.group-membership-role */

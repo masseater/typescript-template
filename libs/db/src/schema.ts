@@ -282,18 +282,18 @@ export { follow, memberOnboarding, onboardingSteps } from "./member-social-schem
 export { notification, notificationPreference } from "./notification-schema.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
 export type { NotificationKind } from "@repo/config";
+export { GROUP_JOIN_POLICY, groupJoinPolicies } from "./group-join-policy.ts";
+export type { GroupJoinPolicy } from "./group-join-policy.ts";
 export {
   CONVERSATION_KIND,
-  GROUP_JOIN_POLICY,
   GROUP_MEMBERSHIP_ROLE,
   conversation,
   conversationKinds,
   conversationParticipant,
   directMessage,
   groupInvite,
-  groupJoinPolicies,
   groupMembership,
   groupMembershipRoles,
   memberGroup,
 } from "./messaging-schema.ts";
-export type { ConversationKind, GroupJoinPolicy, GroupMembershipRole } from "./messaging-schema.ts";
+export type { ConversationKind, GroupMembershipRole } from "./messaging-schema.ts";

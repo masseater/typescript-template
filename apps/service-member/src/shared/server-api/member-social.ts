@@ -2,13 +2,17 @@ import { ROLE } from "@repo/config";
 import {
   NOTIFICATION_KIND,
   UserNotFound,
+  and,
+  desc,
+  eq,
+  inArray,
   onboardingSteps,
+  or,
   pairBlocked,
   profileVisibleTo,
   query,
   schema,
 } from "@repo/db";
-import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { FollowSelfForbidden } from "./follow-self-forbidden.ts";

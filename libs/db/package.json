@@ -10,6 +10,7 @@
     "./testing": "./src/testing.ts",
     "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts",
+    "./group-join-policy": "./src/group-join-policy.ts",
     "./inquiry-staff": "./src/inquiry-staff.ts",
     "./inquiry-status": "./src/inquiry-status.ts",
     "./dashboard-literals": "./src/dashboard-literals.ts"

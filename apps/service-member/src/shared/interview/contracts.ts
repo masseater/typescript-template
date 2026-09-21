@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
 import { FieldKey, Reply, displayValue, fieldDefinitions, fieldKeys } from "./sheet.ts";
-import { fieldStatuses, roles, settledPhases } from "./state.ts";
+import { FIELD_STATUS, fieldStatuses, roles, settledPhases } from "./state.ts";
 
 import type { FieldName, SheetData } from "./sheet.ts";
 import type { InterviewState } from "./state.ts";
@@ -26,12 +26,6 @@ const InterviewView = Schema.Struct({
 
 type FieldViewData = typeof FieldView.Type;
 type InterviewViewData = typeof InterviewView.Type;
-
-const FIELD_STATUS = {
-  answered: fieldStatuses[1],
-  skipped: fieldStatuses[2],
-  unanswered: fieldStatuses[0],
-} as const;
 
 function fieldViews(sheet: SheetData, skipped: readonly FieldName[]): readonly FieldViewData[] {
   const skippedFields = new Set(skipped);

@@ -44,10 +44,10 @@ import {
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
+import type { OpsMail } from "./ops-mail.ts";
 
 const failures = {
   ...unavailable,
-  AgreementRequired: agreementRequired,
   FollowSelfForbidden: {
     message: "自分自身をフォローすることはできません。",
     status: httpStatus.badRequest,
@@ -57,6 +57,11 @@ const failures = {
     status: httpStatus.notFound,
   },
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
+};
+
+const onboardingFailures = {
+  ...failures,
+  AgreementRequired: agreementRequired,
 };
 
 function onboardingStepApi(api: ApiRoutes<AppServices>) {
@@ -74,7 +79,7 @@ function onboardingStepApi(api: ApiRoutes<AppServices>) {
   );
 }
 
-function socialApi(api: ApiRoutes<AppServices>) {
+function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
   return createApi("")
     .post(
       "/onboarding",
@@ -90,7 +95,7 @@ function socialApi(api: ApiRoutes<AppServices>) {
             yield* advanceOnboarding(user.id, step);
             return { step };
           }),
-        failures,
+        onboardingFailures,
       ),
     )
     .get(

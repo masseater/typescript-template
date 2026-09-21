@@ -1,10 +1,11 @@
+import { groupJoinPolicies } from "@repo/db/group-join-policy";
 import { Schema } from "effect";
 
 import { Identifier } from "./member.ts";
 
 const maximumGroupNameLength = 100;
 
-const GroupJoinPolicy = Schema.Literals(["invite", "open"]);
+const GroupJoinPolicy = Schema.Literals(groupJoinPolicies);
 
 const GroupOwner = Schema.Struct({ id: Schema.String, name: Schema.String });
 

@@ -7,9 +7,8 @@ import {
   type AccountPermission,
   type Role,
 } from "@repo/config";
-import { query, recordSubscription, schema } from "@repo/db";
+import { eq, query, recordSubscription, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 

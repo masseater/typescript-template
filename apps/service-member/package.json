@@ -27,7 +27,6 @@
     "@tanstack/react-start": "catalog:",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
-    "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",

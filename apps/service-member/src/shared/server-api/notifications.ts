@@ -1,6 +1,5 @@
 import { sendNotificationEmail } from "@repo/auth";
-import { NOTIFICATION_KIND, query, schema } from "@repo/db";
-import { and, count, desc, eq, isNull } from "drizzle-orm";
+import { NOTIFICATION_KIND, and, count, desc, eq, isNull, query, schema } from "@repo/db";
 import { Effect } from "effect";
 
 import { NotificationNotFound } from "./notification-not-found.ts";

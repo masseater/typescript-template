@@ -12,6 +12,7 @@ export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
+export { and, count, desc, eq, gt, inArray, isNull, ne, not, or, sql } from "drizzle-orm";
 export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
 export {
   AUDIT_CHANNEL,

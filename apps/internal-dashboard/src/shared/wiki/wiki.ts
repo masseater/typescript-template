@@ -20,7 +20,7 @@ import type { AppServices } from "@repo/runtime";
 
 const wikiService = APPLICATION.wiki;
 
-type WikiServices = AppServices | Embedder | FeatureFlags;
+type WikiServices = AppServices | Embedder | FeatureFlags | FlagEditorAccess;
 
 const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
   assertEditor: (user) =>
