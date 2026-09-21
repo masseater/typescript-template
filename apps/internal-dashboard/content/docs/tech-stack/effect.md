@@ -39,7 +39,7 @@ effect-tsgo diagnostics --project tsconfig.json --format text --strict --severit
 
 JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功するまでフィールドを読まない。
 
-画面の購読が、待っているか、値があるか、失敗したかを一つの値で持つときは Atom（`effect/unstable/reactivity`）を使う。同じキーを複数の部品が見るキャッシュは [TanStack Query](/tech-stack/tanstack-query) で、Atom はそれを持たない。
+画面の購読が、待っているか、値があるか、失敗したかを一つの値で持つときは Atom（`effect/unstable/reactivity`）を使う。同じキーを複数の部品が見るキャッシュは [TanStack Query](/tech-stack/tanstack-query) で、Atom はそれを持たない。実行の区間を span として残すときは [OpenTelemetry](/tech-stack/opentelemetry) の `withSpan` を使う。
 
 ## 参考文献
 

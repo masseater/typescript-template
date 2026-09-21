@@ -7,6 +7,7 @@
     "typescript",
     "vite-plus",
     "effect",
+    "opentelemetry",
     "drizzle",
     "tanstack-query",
     "ui",
