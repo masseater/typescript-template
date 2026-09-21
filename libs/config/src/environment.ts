@@ -1,6 +1,6 @@
 import { Effect, Predicate, Schema } from "effect";
 
-import { loopbackHosts } from "./applications.ts";
+import { loopbackHosts, mailpitSendPath } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
 import { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
 
@@ -165,7 +165,7 @@ const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(i
     local,
     ...(scalars.MAILPIT_URL === undefined
       ? {}
-      : { MAILPIT_SEND_URL: `${scalars.MAILPIT_URL}/api/v1/send` }),
+      : { MAILPIT_SEND_URL: `${scalars.MAILPIT_URL}${mailpitSendPath}` }),
   };
 });
 

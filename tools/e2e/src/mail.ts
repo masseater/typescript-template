@@ -2,6 +2,7 @@ import { once } from "node:events";
 import { createServer } from "node:http";
 import { text } from "node:stream/consumers";
 
+import { mailpitSendPath } from "@repo/config";
 import { Effect, Ref } from "effect";
 
 import { freePort, loopback, loopbackOrigin } from "./ports.ts";
@@ -10,7 +11,6 @@ import { deadlineIn, until } from "./waiting.ts";
 const accepted = 202;
 const notFound = 404;
 const deliveryTimeout = 60_000;
-const sendPath = "/api/v1/send";
 
 type MailSink = {
   readonly origin: string;
@@ -37,7 +37,7 @@ const startMailSink = async (): Promise<MailSink> => {
   const server = createServer((incoming, outgoing) => {
     Effect.runFork(
       Effect.promise(async () => {
-        if (incoming.method !== "POST" || incoming.url !== sendPath) {
+        if (incoming.method !== "POST" || incoming.url !== mailpitSendPath) {
           outgoing.writeHead(notFound).end();
           return;
         }

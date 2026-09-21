@@ -69,3 +69,4 @@ export const storybookOrigin = `http://localhost:${STORYBOOK_PORT}`;
 const MAILPIT_PORT = 8025;
 export const mailpitPort = MAILPIT_PORT;
 export const mailpitOrigin = loopbackOrigin(MAILPIT_PORT);
+export const mailpitSendPath = "/api/v1/send";

@@ -6,7 +6,7 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 
 import { Auth } from "@repo/auth";
-import { APPLICATION, applicationOrigins, applications, type Application } from "@repo/config";
+import { APPLICATION, applicationOrigins, applications, mailpitSendPath, type Application } from "@repo/config";
 import { Database } from "@repo/db";
 import { ensureAdminRole, type BootstrapKind } from "@repo/db/bootstrap";
 import { localDatabaseStore, writeLocalDatabaseConfig } from "@repo/db/local";
@@ -281,7 +281,7 @@ const ensureOperators = Effect.fn("ensureOperators")(function* ensureOperators()
         mail: {
           APP_ORIGIN: origin,
           EMAIL_FROM: "no-reply@example.test",
-          MAILPIT_SEND_URL: `${sink.origin}/api/v1/send`,
+          MAILPIT_SEND_URL: `${sink.origin}${mailpitSendPath}`,
         },
         secret: credentials.authSecret,
       }).pipe(Layer.provideMerge(Database.layer(env.DB)));
