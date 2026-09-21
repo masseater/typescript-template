@@ -31,6 +31,8 @@ const sharedBindings = {
   }),
   EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
   EMAIL_FROM: settings.mailFrom,
+  FLAGSHIP_ACCOUNT_ID: settings.accountId,
+  FLAGS: binding({ appId: "flags" }),
   OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 
@@ -44,6 +46,9 @@ const userBindings: AppBindings<"service-member"> = {
     get: async (): Promise<null> => null,
     put: async (): Promise<null> => null,
   }),
+  STRIPE_PRICE_ID: "price_test",
+  STRIPE_SECRET_KEY: "sk_test_secret_of_at_least_32_characters",
+  STRIPE_WEBHOOK_SECRET: "whsec_test_secret_of_at_least_32_ch",
 };
 
 const confirmation = "0".repeat(16);

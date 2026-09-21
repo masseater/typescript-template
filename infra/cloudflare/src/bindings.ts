@@ -38,9 +38,9 @@ interface CapabilityEnv {
 }
 
 type Intersection<Members> = (Members extends unknown ? (member: Members) => void : never) extends (
-  member: Member,
+  member: infer IntersectionMember,
 ) => void
-  ? Member
+  ? IntersectionMember
   : never;
 
 type GrantedEnv<App extends Application> = [CapabilityOf<App>] extends [never]
