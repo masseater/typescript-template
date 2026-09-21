@@ -1,25 +1,28 @@
 import { AccountMenu } from "@repo/auth-ui";
 import { localState } from "@repo/ui";
+import { useState } from "react";
 
 import { AdminHeader } from "./admin-header.tsx";
+import { adminProductName, collapsedAdminMark } from "./admin-nav.ts";
 import { AdminNavigation } from "./admin-navigation.tsx";
 
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 const useNavigationOpen = localState(false);
-const useCollapsed = localState(false);
 
 function AdminFrame({
   children,
+  defaultCollapsed = false,
   email,
   name,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
+  defaultCollapsed?: boolean;
   email: string;
   name: string;
 }>): ReactElement {
   const [navigationOpen, setNavigationOpen] = useNavigationOpen();
-  const [collapsed, setCollapsed] = useCollapsed();
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   function toggleNavigation(): void {
     setNavigationOpen((open) => !open);
   }
@@ -36,10 +39,15 @@ function AdminFrame({
       >
         <div className={`border-b border-border py-3 ${collapsed ? "px-2 text-center" : "px-3"}`}>
           {collapsed ? (
-            <p className="text-sm leading-tight font-bold text-foreground">管</p>
+            <p className="text-sm leading-tight font-bold text-foreground">
+              <span className="sr-only">{adminProductName}</span>
+              <span aria-hidden="true">{collapsedAdminMark}</span>
+            </p>
           ) : (
             <>
-              <p className="text-base leading-tight font-bold text-foreground">管理画面</p>
+              <p className="text-base leading-tight font-bold text-foreground">
+                {adminProductName}
+              </p>
               <p className="text-sm leading-tight text-muted-foreground">運用コンソール</p>
             </>
           )}

@@ -1,8 +1,8 @@
 import { ButtonLink, Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
-import { MenuIcon, PanelLeftIcon, SearchIcon } from "lucide-react";
+import { MenuIcon, PanelLeftIcon } from "lucide-react";
 
-import { dashboardPageTitles } from "./dashboard-nav.ts";
+import { dashboardPageTitles, dashboardProductName } from "./dashboard-nav.ts";
 
 import type { ReactElement } from "react";
 
@@ -21,7 +21,7 @@ function DashboardHeader({
   const title =
     pathname in dashboardPageTitles
       ? dashboardPageTitles[pathname as keyof typeof dashboardPageTitles]
-      : "社内ダッシュボード";
+      : dashboardProductName;
   return (
     <header className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2">
       <button
@@ -46,20 +46,11 @@ function DashboardHeader({
       <nav aria-label="パンくず" className="min-w-0 truncate text-base leading-tight font-bold">
         {title}
       </nav>
-      <label className="ml-auto flex max-w-64 min-w-0 flex-1 items-center gap-2 rounded-md border border-input bg-card px-2 py-1 text-muted-foreground">
-        <Icon icon={SearchIcon} size="small" />
-        <input
-          type="search"
-          placeholder="この画面内を検索"
-          disabled
-          className="min-w-0 flex-1 bg-transparent text-base leading-tight text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
-        />
-      </label>
       <a
         href="https://analytics.google.com/"
         target="_blank"
         rel="noreferrer"
-        className="rounded-sm text-link underline outline-none hover:text-link-hover focus-visible:focus-indicator-outer"
+        className="ml-auto rounded-sm text-link underline outline-none hover:text-link-hover focus-visible:focus-indicator-outer"
       >
         Google Analytics
       </a>
