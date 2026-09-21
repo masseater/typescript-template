@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { assert, it } from "@effect/vitest";
@@ -108,20 +105,16 @@ it.effect("reports a missing file instead of deploying without it", () =>
 
 it.effect("resolves the same file the staged-diff check reads", () =>
   Effect.acquireUseRelease(
-    // oxlint-disable-next-line node/no-process-env
     Effect.sync(() => process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"]),
     () =>
       Effect.sync(() => {
-        // oxlint-disable-next-line node/no-process-env
         delete process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"];
         assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        // oxlint-disable-next-line node/no-process-env
         process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"] = "/elsewhere/cloudflare.env";
         assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
       }),
     (previous) =>
       Effect.sync(() => {
-        // oxlint-disable-next-line node/no-process-env
         const environment = process.env;
         delete environment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
         Object.assign(

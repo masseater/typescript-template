@@ -190,7 +190,7 @@ const withdrawInterviewHistoryConsent = Effect.fn("interview.withdrawHistoryCons
 
 const restartInterview = Effect.fn("interview.restart")(function* restartInterview(userId: string) {
   const { version } = yield* current(userId);
-  // oxlint-disable-next-line unicorn/no-null
+  // oxlint-disable-next-line unicorn/no-null -- restart clears the saved sheet by writing SQL null into the nullable savedSheet column
   return yield* replace(userId, version, { savedSheet: null, state: begin() });
 });
 

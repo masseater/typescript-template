@@ -35,7 +35,6 @@ const health = Effect.fn("health")(function* health() {
   return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function emailVerificationFailure(error: EmailVerificationFailed): Failure {
   return error.rateLimited
     ? { message: "しばらく待ってから再度お試しください。", status: httpStatus.tooManyRequests }

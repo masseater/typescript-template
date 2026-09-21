@@ -17,7 +17,6 @@ interface FetchWorker {
   readonly fetch: (
     request: Request,
     environment: unknown,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     context: ExecutionContext,
   ) => Promise<Response>;
 }

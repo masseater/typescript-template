@@ -14,9 +14,9 @@ import type { AppBindings } from "./bindings.ts";
 const release = "0".repeat(16);
 const settings = verificationSettings;
 
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- the type parameter names the Cloudflare binding a partial stub stands in for in this config test
 function binding<Binding>(value: object): Binding {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the assertion is the cast that turns the partial stub into the Cloudflare binding this config test supplies
   return value as Binding;
 }
 

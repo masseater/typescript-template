@@ -108,7 +108,6 @@ const processedTexts = Effect.suspend(() =>
 
 function pageResults(
   url: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   keywordResults: readonly KeywordResult[],
   semanticResults: readonly SemanticMatch[],
 ): SortedResult[] {
@@ -165,7 +164,6 @@ const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(quer
 
 const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
   query: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   options?: SearchOptions,
 ) {
   const [keywordResults, texts, semanticResults] = yield* Effect.all(

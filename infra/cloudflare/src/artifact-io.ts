@@ -1,11 +1,8 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, readdir, realpath } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect, Schema } from "effect";
 
-// oxlint-disable-next-line import/no-nodejs-modules
 import type { Dirent } from "node:fs";
 
 type ArtifactEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
@@ -51,22 +48,20 @@ function io<Value>(run: () => Promise<Value>): Effect.Effect<Value, ArtifactFail
   });
 }
 
-function entryFiles(
-  directory: string,
-  entry: ArtifactEntry,
-): Effect.Effect<string[], ArtifactFailure> {
-  if (entry.isSymbolicLink()) {
-    return fail("artifact_symlink_forbidden");
-  }
-  const filename = path.join(directory, entry.name);
-  if (entry.isDirectory()) {
-    // oxlint-disable-next-line typescript/no-use-before-define
-    return files(filename);
-  }
-  return entry.isFile() ? Effect.succeed([filename]) : fail("artifact_file_type_invalid");
-}
-
 function files(directory: string): Effect.Effect<string[], ArtifactFailure> {
+  const entryFiles = (
+    entryDirectory: string,
+    entry: ArtifactEntry,
+  ): Effect.Effect<string[], ArtifactFailure> => {
+    if (entry.isSymbolicLink()) {
+      return fail("artifact_symlink_forbidden");
+    }
+    const filename = path.join(entryDirectory, entry.name);
+    if (entry.isDirectory()) {
+      return files(filename);
+    }
+    return entry.isFile() ? Effect.succeed([filename]) : fail("artifact_file_type_invalid");
+  };
   return io(async () => readdir(directory, { withFileTypes: true })).pipe(
     Effect.flatMap((entries) =>
       Effect.all(

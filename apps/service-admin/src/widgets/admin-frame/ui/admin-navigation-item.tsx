@@ -23,7 +23,7 @@ function AdminNavigationItem({
 }>): ReactElement {
   return (
     <li>
-      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates */}
       <NavigationLink
         to={to}
         variant="side"
