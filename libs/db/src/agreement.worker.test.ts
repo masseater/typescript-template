@@ -13,6 +13,7 @@ import {
   publishedAgreement,
   requireCurrentAgreements,
   requireSignupAgreements,
+  withdrawAgreementKind,
 } from "./agreement.ts";
 import { query } from "./database.ts";
 import { addSession, addUser } from "./records-fixture.ts";
@@ -58,6 +59,7 @@ it.effect(
     Effect.gen(function* program() {
       yield* addUser({ userId: "member" });
       assert.deepStrictEqual((yield* pendingAgreementKinds("member")).toSorted(), [
+        AGREEMENT_KIND.interview_history,
         AGREEMENT_KIND.privacy,
         AGREEMENT_KIND.terms,
       ]);
@@ -92,6 +94,11 @@ it.effect("records who accepted which version and when, then clears the pending 
     assert.deepStrictEqual(
       history.map(({ acceptedAt: at, kind, version }) => ({ at: at.getTime(), kind, version })),
       [
+        {
+          at: acceptedAt.getTime(),
+          kind: AGREEMENT_KIND.interview_history,
+          version: "interview-history-1",
+        },
         { at: acceptedAt.getTime(), kind: AGREEMENT_KIND.privacy, version: "privacy-1" },
         { at: acceptedAt.getTime(), kind: AGREEMENT_KIND.terms, version: "terms-1" },
       ],
@@ -99,7 +106,7 @@ it.effect("records who accepted which version and when, then clears the pending 
     const rows = yield* query((database) =>
       database.select().from(agreementAcceptance).where(eq(agreementAcceptance.userId, "member")),
     );
-    assert.strictEqual(rows.length, 2);
+    assert.strictEqual(rows.length, 3);
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -140,7 +147,7 @@ it.effect("asks again only for the kind whose accepted version was superseded", 
     assert.deepStrictEqual(blocked.kinds, [AGREEMENT_KIND.terms]);
     yield* acceptAllPending("member");
     yield* requireCurrentAgreements("member");
-    assert.strictEqual((yield* acceptedAgreements("member")).length, 4);
+    assert.strictEqual((yield* acceptedAgreements("member")).length, 5);
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -192,6 +199,23 @@ it.effect("rejects a duplicate version label", () =>
       }),
     );
     assert.strictEqual(failure._tag, "AgreementVersionTaken");
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("withdraws only agreement kinds marked withdrawable", () =>
+  Effect.gen(function* program() {
+    yield* addUser({ userId: "member" });
+    yield* acceptAllPending("member");
+    yield* withdrawAgreementKind({ kind: AGREEMENT_KIND.interview_history, userId: "member" });
+    assert.isFalse(
+      (yield* acceptedAgreements("member")).some(
+        (agreement) => agreement.kind === AGREEMENT_KIND.interview_history,
+      ),
+    );
+    const termsWithdrawal = yield* Effect.flip(
+      withdrawAgreementKind({ kind: AGREEMENT_KIND.terms, userId: "member" }),
+    );
+    assert.strictEqual(termsWithdrawal._tag, "AgreementWithdrawalUnavailable");
   }).pipe(Effect.provide(TestDatabase)),
 );
 

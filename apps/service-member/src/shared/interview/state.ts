@@ -6,7 +6,7 @@ import { FieldKey, Reply, Sheet, maximumOptions } from "./sheet.ts";
 const maximumUtterance = 500;
 
 const roles = ["interviewer", ROLE.member] as const;
-const settledPhases = ["summary", "saved"] as const;
+const settledPhases = ["summary", "history_consent", "saved"] as const;
 
 const Progress = Schema.Struct({ sheet: Sheet, skipped: Schema.Array(FieldKey) });
 const Message = Schema.Struct({

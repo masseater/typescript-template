@@ -1,9 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { InterviewSettingsPage } from "#pages/settings/index.ts";
+import { InterviewSettingsPage, loadInterviewView } from "#pages/settings/index.ts";
+
+import type { ReactElement } from "react";
 
 const Route = createFileRoute("/_member/settings/interview")({
-  component: InterviewSettingsPage,
+  component: InterviewSettingsRoute,
+  loader: loadInterviewView,
 });
+
+function InterviewSettingsRoute(): ReactElement {
+  const interview = Route.useLoaderData();
+  return <InterviewSettingsPage interview={interview} />;
+}
 
 export { Route };

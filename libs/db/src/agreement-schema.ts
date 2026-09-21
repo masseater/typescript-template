@@ -28,7 +28,10 @@ const agreementVersion = sqliteTable(
   (table) => [
     uniqueIndex("agreement_version_version_unique").on(table.version),
     index("agreement_version_kind_published_at_idx").on(table.kind, table.publishedAt),
-    check("agreement_version_kind", sql`${table.kind} IN ('terms', 'privacy')`),
+    check(
+      "agreement_version_kind",
+      sql`${table.kind} IN ('terms', 'privacy', 'interview_history')`,
+    ),
   ],
 );
 

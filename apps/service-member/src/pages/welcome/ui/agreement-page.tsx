@@ -1,7 +1,11 @@
 import { Button, Heading, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
-import { PendingAgreementList, acceptAgreements } from "#entities/agreement/index.ts";
+import {
+  PendingAgreementList,
+  acceptAgreements,
+  signupAgreementKinds,
+} from "#entities/agreement/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
@@ -10,7 +14,7 @@ import type { ReactElement } from "react";
 function AgreementPage({ agreements }: Readonly<{ agreements: Agreements }>): ReactElement {
   const navigate = useNavigate();
   const action = useAction();
-  const { pending } = agreements;
+  const pending = signupAgreementKinds(agreements.pending);
 
   return (
     <main className="flex flex-col gap-4">
