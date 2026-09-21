@@ -72,4 +72,5 @@ const adminApi = createApi(apiRoot)
     ),
   );
 
-export { adminApi };
+export { adminApi, adminApi as app };
+export default adminApi;
