@@ -9,7 +9,6 @@ import {
   schema,
   viewerBlockedTarget,
 } from "@repo/db";
-import type { Database, DatabaseFailure } from "@repo/db";
 import { and, count, desc, eq, not } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -19,6 +18,7 @@ import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 
 import type { SheetData } from "#shared/interview/sheet.ts";
 import type { ProfileLayoutData } from "#shared/profile-layout/schema.ts";
+import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;
 
