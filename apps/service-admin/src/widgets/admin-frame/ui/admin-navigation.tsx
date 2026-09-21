@@ -5,10 +5,8 @@ import type { ReactElement } from "react";
 
 function AdminNavigation({
   collapsed,
-  onNavigate,
 }: Readonly<{
   collapsed: boolean;
-  onNavigate: () => void;
 }>): ReactElement {
   return (
     <nav id="admin-navigation" aria-label="メイン" className="flex flex-1 flex-col overflow-y-auto">
@@ -29,7 +27,6 @@ function AdminNavigation({
                   icon={item.icon}
                   label={item.label}
                   to={item.to}
-                  onNavigate={onNavigate}
                 />
               ))}
             </ul>

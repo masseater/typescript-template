@@ -67,16 +67,12 @@ it.effect("the model's structured answer becomes values and the next question", 
           ask: "nickname",
           finish: false,
           message: "東京のエンジニアさんなんですね。なんて呼べばいいですか？",
-          // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
           reply: null,
           skip: false,
           values: {
             area: "東京",
-            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             interests: null,
-            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             message: null,
-            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             nickname: null,
             occupation: "エンジニア",
           },
@@ -107,10 +103,8 @@ it.effect("parts of the answer that break the sheet's rules are dropped one by o
           values: {
             area: "大阪",
             interests: ["音楽", "料理", "読書", "映画", "旅行", "登山"],
-            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             message: null,
             nickname: "あ".repeat(NICKNAME_LIMIT + 1),
-            // oxlint-disable-next-line unicorn/no-null -- the model JSON schema uses null for an answer field the model left empty
             occupation: null,
           },
         }),

@@ -7,17 +7,15 @@ interface SentMail {
   readonly to: readonly string[];
 }
 
-const sent: SentMail[] = [];
-
 class MailRecorder extends WorkerEntrypoint {
-  // oxlint-disable-next-line eslint/class-methods-use-this -- WorkerEntrypoint publishes send and taken as instance RPC methods, while the recorded mail is the module array those methods share
+  readonly #sent: SentMail[] = [];
+
   public send(message: SentMail): void {
-    sent.push(message);
+    this.#sent.push(message);
   }
 
-  // oxlint-disable-next-line eslint/class-methods-use-this -- WorkerEntrypoint publishes send and taken as instance RPC methods, while the recorded mail is the module array those methods share
   public taken(): SentMail[] {
-    return sent.splice(0);
+    return this.#sent.splice(0);
   }
 }
 
