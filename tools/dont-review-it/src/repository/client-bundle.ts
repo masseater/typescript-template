@@ -160,5 +160,5 @@ runCli(
       yield* markFailed;
     }
   }),
-  (cause) => causeRecord("quality.client_bundle_failed", cause),
+  (cause) => causeRecord("quality.client_bundle_failed", { cause }),
 );

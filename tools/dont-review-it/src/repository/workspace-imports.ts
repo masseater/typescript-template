@@ -50,5 +50,5 @@ runCli(
       yield* markFailed;
     }
   }),
-  (cause) => causeRecord("quality.imports_failed", cause),
+  (cause) => causeRecord("quality.imports_failed", { cause }),
 );
