@@ -8,13 +8,13 @@ import { createServer } from "node:http";
 import { Auth } from "@repo/auth";
 import { APPLICATION, applicationOrigins, mailpitSendPath } from "@repo/config";
 import { Database } from "@repo/db";
+import { localDatabasePlatform } from "@repo/db-local/platform";
 import { ensureAdminRole } from "@repo/db/bootstrap";
 import { createEmailVerificationToken } from "better-auth/api";
 import { Effect, Layer, Schema } from "effect";
 import { URI } from "otpauth";
 
 import { failure, fileIo } from "./failure.ts";
-import { localDatabasePlatform } from "./local-database-platform.ts";
 import { local, readCredentials } from "./local-environment.ts";
 import { assertOwnerOnly, isErrorCode, replacePrivateFile } from "./private-files.ts";
 
