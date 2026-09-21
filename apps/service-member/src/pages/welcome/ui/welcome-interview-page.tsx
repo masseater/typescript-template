@@ -1,6 +1,7 @@
-import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
+import { Button, Heading, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
+import { InterviewRoom } from "#widgets/interview-room/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { ReactElement } from "react";
@@ -8,12 +9,12 @@ import type { ReactElement } from "react";
 function WelcomeInterviewPage(): ReactElement {
   const navigate = useNavigate();
   const action = useAction();
-
-  const finish = (): void => {
-    action.run(async () => {
-      await saveOnboardingStep("done");
-      await navigate({ to: "/home" });
-    });
+  const finish = async (): Promise<void> => {
+    await saveOnboardingStep("done");
+    await navigate({ to: "/home" });
+  };
+  const skip = (): void => {
+    action.run(finish);
   };
 
   return (
@@ -22,18 +23,12 @@ function WelcomeInterviewPage(): ReactElement {
         <Heading as="h1" size="page">
           AI インタビュー
         </Heading>
-        <Button disabled={action.blocked} onClick={finish} type="button" variant="secondary">
+        <Button disabled={action.blocked} onClick={skip} type="button" variant="secondary">
           インタビューをスキップ
         </Button>
       </div>
-      <StatusMessage variant={STATUS_VARIANT.pending}>
-        登録直後の AI
-        インタビュー本体は、設定のインタビューと合わせて後続で接続します。いまはスキップしてホームへ進めます。
-      </StatusMessage>
       {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
-      <Button disabled={action.blocked} onClick={finish} type="button" variant="primary">
-        ホームへ進む
-      </Button>
+      <InterviewRoom onSaved={finish} />
     </main>
   );
 }

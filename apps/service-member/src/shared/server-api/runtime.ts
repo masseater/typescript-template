@@ -5,7 +5,7 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
-import { Interviewer } from "#shared/interview/index.ts";
+import { Interviewer } from "#shared/interview/server.ts";
 import { routes } from "#shared/telemetry/index.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
