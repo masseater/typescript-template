@@ -14,9 +14,7 @@ function opsMailLayer(config: AppConfig): Layer.Layer<OpsMail> {
     EMAIL_FROM: config.EMAIL_FROM,
     OPS_EMAIL: config.OPS_EMAIL,
     ...(config.EMAIL === undefined ? {} : { EMAIL: config.EMAIL }),
-    ...(config.MAILPIT_SEND_URL === undefined
-      ? {}
-      : { MAILPIT_SEND_URL: config.MAILPIT_SEND_URL }),
+    ...(config.MAILPIT_SEND_URL === undefined ? {} : { MAILPIT_SEND_URL: config.MAILPIT_SEND_URL }),
   });
 }
 

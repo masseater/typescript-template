@@ -1,4 +1,5 @@
 import { FIELD_STATUS, type InterviewViewData } from "#shared/interview/index.ts";
+
 import type { ReactElement } from "react";
 
 type FieldView = InterviewViewData["fields"][number];
