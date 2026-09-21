@@ -1,23 +1,21 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 
-type SentMail = {
+interface SentMail {
   readonly from: string;
   readonly subject: string;
   readonly text: string;
   readonly to: readonly string[];
-};
+}
 
 class MailRecorder extends WorkerEntrypoint {
-  #delivered: SentMail[] = [];
+  static readonly #mailbox: SentMail[] = [];
 
-  public send(sentMail: SentMail): void {
-    this.#delivered = [...this.#delivered, sentMail];
+  public send(message: SentMail): void {
+    (this.constructor as typeof MailRecorder).#mailbox.push(message);
   }
 
-  public taken(): readonly SentMail[] {
-    const delivered = this.#delivered;
-    this.#delivered = [];
-    return delivered;
+  public taken(): SentMail[] {
+    return (this.constructor as typeof MailRecorder).#mailbox.splice(0);
   }
 }
 

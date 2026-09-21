@@ -1,5 +1,5 @@
 {
-  "extends": "@repo/dont-review-it/tsconfig/library.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["vite-plus/client", "node"]
   },

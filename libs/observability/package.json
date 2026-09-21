@@ -16,6 +16,9 @@
     "web-vitals": "6.2.2"
   },
   "devDependencies": {
-    "@repo/vite-config": "workspace:*"
+    "@effect/vitest": "catalog:",
+    "@msw/cloudflare": "catalog:",
+    "@repo/vite-config": "workspace:*",
+    "msw": "catalog:"
   }
 }

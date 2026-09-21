@@ -13,7 +13,6 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
-    "@repo/observability": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
     "effect": "catalog:"
@@ -21,6 +20,7 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
+    "@effect/vitest": "catalog:",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",

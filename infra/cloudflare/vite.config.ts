@@ -1,5 +1,5 @@
 import { applications } from "@repo/config";
-import { awaitingEffectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/monitors.ts";
@@ -9,7 +9,7 @@ const stackBuilds = [...applications, ...monitorStacks].map((unit) => `@repo/${u
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics,
+      ...effectDiagnostics,
       "bootstrap:state": { cache: false, command: "./src/bootstrap-state.ts" },
       "db:bootstrap:remote": { cache: false, command: "./src/database-command.ts bootstrap" },
       "db:migrate:remote": { cache: false, command: "./src/database-command.ts migrate" },

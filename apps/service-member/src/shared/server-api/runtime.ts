@@ -19,7 +19,7 @@ const service = APPLICATION.user;
 const reporting: Reporting = { service };
 const runtime = workerRuntime(() =>
   Layer.mergeAll(
-    appLayer({ env: env, audience: service, routes: routes }),
+    appLayer(env, service, routes),
     Layer.unwrap(
       readWorkerConfig(env).pipe(
         Effect.map((config): Layer.Layer<FeatureFlags | OpsMail> =>

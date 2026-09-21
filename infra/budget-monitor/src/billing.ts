@@ -1,6 +1,5 @@
 import { CloudflareId } from "@repo/config";
 import { DateTime, Effect, Schema } from "effect";
-import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import { BudgetFailure, fail } from "./config.ts";
 
@@ -38,34 +37,31 @@ const UsageEnvelope = Schema.Struct({
 
 type UsageRecord = typeof UsageRow.Type;
 
-type UsageSnapshot = {
-  readonly periodStart: string;
-  readonly measuredThrough: string;
-  readonly usageUsd: number;
-  readonly records: number;
-};
+interface UsageSnapshot {
+  periodStart: string;
+  measuredThrough: string;
+  usageUsd: number;
+  records: number;
+}
 
-type RowExpectation = {
-  readonly accountId: string;
-  readonly periodStart: string;
-  readonly now: number;
-};
+interface RowExpectation {
+  accountId: string;
+  periodStart: string;
+  now: number;
+}
 
-const billableUsageEndpoint = (accountId: string): string =>
-  `https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`;
-
-const billingPeriodStart = (rows: readonly UsageRecord[]): Effect.Effect<string, BudgetFailure> => {
+function billingPeriodStart(rows: readonly UsageRecord[]): Effect.Effect<string, BudgetFailure> {
   const starts = new Set(rows.map((item) => item.BillingPeriodStart));
   const [periodStart] = starts;
   return starts.size === 1 && periodStart !== undefined
     ? Effect.succeed(periodStart)
     : fail("billing_period_ambiguous");
-};
+}
 
-const rowFailure = (
+function rowFailure(
   item: UsageRecord,
   expectation: Readonly<RowExpectation>,
-): BudgetFailure["code"] | undefined => {
+): BudgetFailure["code"] | undefined {
   if (item.BillingAccountId !== expectation.accountId) {
     return "billing_account_mismatch";
   }
@@ -77,10 +73,10 @@ const rowFailure = (
     start > expectation.now ||
     end > expectation.now + FUTURE_CHARGE_TOLERANCE_HOURS * MILLISECONDS_PER_HOUR;
   return outOfPeriod ? "billing_dates_invalid" : undefined;
-};
+}
 
-const hasDuplicateRows = (rows: readonly UsageRecord[]): Effect.Effect<boolean> =>
-  Effect.forEach(rows, (item) =>
+function hasDuplicateRows(rows: readonly UsageRecord[]): Effect.Effect<boolean> {
+  return Effect.forEach(rows, (item) =>
     encodeJson([
       item.SubscriptionId,
       item.ZoneId,
@@ -89,21 +85,22 @@ const hasDuplicateRows = (rows: readonly UsageRecord[]): Effect.Effect<boolean> 
       item.ChargePeriodEnd,
     ]).pipe(Effect.orDie),
   ).pipe(Effect.map((keys) => new Set(keys).size !== rows.length));
+}
 
-const latestChargeEnd = (
+function latestChargeEnd(
   rows: readonly UsageRecord[],
   now: number,
-): Effect.Effect<number, BudgetFailure> => {
+): Effect.Effect<number, BudgetFailure> {
   const latest = Math.max(...rows.map((item) => Date.parse(item.ChargePeriodEnd)));
   return now - latest > MAX_DATA_AGE_HOURS * MILLISECONDS_PER_HOUR
     ? fail("billing_data_stale")
     : Effect.succeed(latest);
-};
+}
 
-const totalCost = (rows: readonly UsageRecord[]): Effect.Effect<number, BudgetFailure> => {
+function totalCost(rows: readonly UsageRecord[]): Effect.Effect<number, BudgetFailure> {
   const total = rows.reduce((sum, item) => sum + item.BilledCost, 0);
   return Number.isFinite(total) ? Effect.succeed(total) : fail("billing_cost_invalid");
-};
+}
 
 const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(
   input: unknown,
@@ -132,7 +129,24 @@ const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(
   return snapshot;
 });
 
-const httpFailed = (): BudgetFailure => new BudgetFailure({ code: "billing_http_failed" });
+function httpFailed(): BudgetFailure {
+  return new BudgetFailure({ code: "billing_http_failed" });
+}
+
+const requestUsage = (
+  fetchImpl: typeof fetch,
+  accountId: string,
+  token: string,
+): Effect.Effect<Response, BudgetFailure> =>
+  Effect.tryPromise({
+    catch: httpFailed,
+    try: (signal) =>
+      fetchImpl(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, {
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        redirect: "manual",
+        signal,
+      }),
+  });
 
 const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   accountId: string,
@@ -142,17 +156,15 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
   if (!isCloudflareId(accountId)) {
     return yield* fail("billing_account_invalid");
   }
-  const response = yield* HttpClient.get(billableUsageEndpoint(accountId), {
-    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-  }).pipe(Effect.provide(FetchHttpClient.layer), Effect.mapError(httpFailed));
-  if (response.status < 200 || response.status >= 300) {
+  const response = yield* requestUsage(fetch, accountId, token);
+  if (!response.ok) {
     return yield* fail("billing_http_failed");
   }
-  const body = yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(response).pipe(
+  const body = yield* Effect.tryPromise(() => response.json()).pipe(
     Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })),
   );
   return yield* summarizeUsage(body, accountId, now);
 });
 
-export { billableUsageEndpoint, fetchUsage };
+export { fetchUsage };
 export type { UsageSnapshot };

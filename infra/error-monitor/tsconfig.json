@@ -1,15 +1,5 @@
 {
-  "extends": "@repo/dont-review-it/tsconfig/library.json",
-  "compilerOptions": {
-    "types": ["node", "@cloudflare/workers-types", "@cloudflare/vitest-plugin/types"],
-    "plugins": [
-      {
-        "name": "@effect/language-service"
-      }
-    ],
-    "noPropertyAccessFromIndexSignature": true,
-    "noFallthroughCasesInSwitch": true,
-    "erasableSyntaxOnly": true
-  },
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "types": ["node", "@cloudflare/workers-types"] },
   "include": ["src/**/*.ts", "vite.config.ts"]
 }

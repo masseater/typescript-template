@@ -1,19 +1,17 @@
 import { Effect, Option, Schema } from "effect";
-import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import type { Application as HealthService } from "@repo/config";
 
-type HealthTarget = {
+interface HealthTarget {
   readonly service: HealthService;
   readonly origin: string;
-  readonly healthEndpoint: string;
-};
+}
 
-type ProbeResult = {
+interface ProbeResult {
   readonly service: HealthService;
   readonly healthy: boolean;
   readonly detail: string;
-};
+}
 
 const HealthPayload = Schema.Struct({
   ok: Schema.Literal(true),
@@ -21,54 +19,49 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
-const observedProbe = (asked: {
-  readonly healthTarget: HealthTarget;
-  readonly healthy: boolean;
-  readonly detail: string;
-}): ProbeResult => ({
-  detail: asked.detail,
-  healthy: asked.healthy,
-  service: asked.healthTarget.service,
-});
+function probeResult(target: HealthTarget, healthy: boolean, detail: string): ProbeResult {
+  return { detail, healthy, service: target.service };
+}
 
-const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHealthPayload(
-  healthTarget: HealthTarget,
-  healthResponse: HttpClientResponse.HttpClientResponse,
+function requestHealth(
+  fetchImpl: typeof fetch,
+  target: HealthTarget,
+): Effect.Effect<Option.Option<Response>> {
+  return Effect.tryPromise({
+    catch: () => "unreachable" as const,
+    try: (signal) =>
+      fetchImpl(`${target.origin}/api/health`, {
+        headers: { accept: "application/json" },
+        redirect: "manual",
+        signal,
+      }),
+  }).pipe(Effect.option);
+}
+
+const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
+  target: HealthTarget,
+  response: Response,
 ) {
-  const responseBody = yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(healthResponse).pipe(
-    Effect.option,
-  );
-  if (Option.isNone(responseBody)) {
-    return observedProbe({ detail: "body_unreadable", healthTarget, healthy: false });
+  const body = yield* Effect.tryPromise(() => response.json()).pipe(Effect.option);
+  if (Option.isNone(body)) {
+    return probeResult(target, false, "body_unreadable");
   }
-  const decodedPayload = yield* Schema.decodeUnknownEffect(HealthPayload)(responseBody.value).pipe(
-    Effect.option,
-  );
-  if (Option.isNone(decodedPayload) || decodedPayload.value.service !== healthTarget.service) {
-    return observedProbe({ detail: "payload_invalid", healthTarget, healthy: false });
+  const payload = yield* Schema.decodeUnknownEffect(HealthPayload)(body.value).pipe(Effect.option);
+  if (Option.isNone(payload) || payload.value.service !== target.service) {
+    return probeResult(target, false, "payload_invalid");
   }
-  return observedProbe({
-    detail: `release_${decodedPayload.value.release}`,
-    healthTarget,
-    healthy: true,
-  });
+  return probeResult(target, true, `release_${payload.value.release}`);
 });
 
-const probeService = Effect.fn("probeService")(function* probeService(healthTarget: HealthTarget) {
-  const healthResponse = yield* HttpClient.get(healthTarget.healthEndpoint, {
-    headers: { accept: "application/json" },
-  }).pipe(Effect.provide(FetchHttpClient.layer), Effect.option);
-  if (Option.isNone(healthResponse)) {
-    return observedProbe({ detail: "unreachable", healthTarget, healthy: false });
+const probeService = Effect.fn("probeService")(function* probeService(target: HealthTarget) {
+  const response = yield* requestHealth(fetch, target);
+  if (Option.isNone(response)) {
+    return probeResult(target, false, "unreachable");
   }
-  if (healthResponse.value.status < 200 || healthResponse.value.status >= 300) {
-    return observedProbe({
-      detail: `status_${healthResponse.value.status}`,
-      healthTarget,
-      healthy: false,
-    });
+  if (!response.value.ok) {
+    return probeResult(target, false, `status_${response.value.status}`);
   }
-  return yield* decodeHealthPayload(healthTarget, healthResponse.value);
+  return yield* payloadResult(target, response.value);
 });
 
 export { probeService };

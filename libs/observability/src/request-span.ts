@@ -1,38 +1,44 @@
 import { Cause, Clock, Context, Effect, Fiber, Predicate, Tracer } from "effect";
 
-import { annotateLogs, annotateSpan, withSpan, type Attributes } from "./annotations.ts";
+import { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
 import { CurrentRequest, type RequestContext } from "./current-request.ts";
 import {
   errorAttributes,
   errorFingerprint,
   fingerprintIdentity,
   identifierPattern,
+  type ErrorAttributes,
 } from "./errors.ts";
 import { httpStatus } from "./http-status.ts";
 import { httpMethod, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
 import { logAt, statusSeverity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
+
 type Entropy = {
   readonly requestId: () => string;
   readonly epochMilliseconds: () => number;
   readonly monotonicMilliseconds: () => number;
 };
-const nanosPerMillisecond = 1000000n;
-const activeClock = (): Clock.Clock | undefined => {
-  return Fiber.getCurrent()?.getRef(Clock.Clock);
+
+const nanosPerMillisecond = 1_000_000n;
+
+const activeClock = (): Clock.Clock => {
+  const fiber = Fiber.getCurrent();
+  if (fiber === undefined) {
+    throw new Error("time was read outside an Effect fiber");
+  }
+  return fiber.getRef(Clock.Clock);
 };
+
 export const RequestEntropy = Context.Reference<Entropy>("@repo/observability/RequestEntropy", {
   defaultValue: (): Entropy => ({
-    epochMilliseconds: (): number => activeClock()?.currentTimeMillisUnsafe() ?? Date.now(),
-    monotonicMilliseconds: (): number => {
-      const clock = activeClock();
-      return clock === undefined
-        ? performance.now()
-        : Number(clock.monotonicTimeNanosUnsafe() / nanosPerMillisecond);
-    },
+    epochMilliseconds: (): number => activeClock().currentTimeMillisUnsafe(),
+    monotonicMilliseconds: (): number =>
+      Number(activeClock().monotonicTimeNanosUnsafe() / nanosPerMillisecond),
     requestId: (): string => crypto.randomUUID(),
   }),
 });
+
 const incomingParent = (
   headers: Readonly<Pick<Headers, "get">>,
 ): Tracer.ExternalSpan | undefined => {
@@ -41,6 +47,7 @@ const incomingParent = (
     ? undefined
     : Tracer.externalSpan({ spanId: parent.parentSpanId, traceId: parent.traceId });
 };
+
 const requestContextOf = (observed: {
   readonly entropy: Entropy;
   readonly span: Readonly<Pick<Tracer.Span, "spanId" | "traceId">>;
@@ -53,6 +60,7 @@ const requestContextOf = (observed: {
     traceparent: traceparentOf(span),
   };
 };
+
 const correlatedResponse = (correlated: {
   readonly handled: Response;
   readonly requestContext: RequestContext;
@@ -74,33 +82,41 @@ const correlatedResponse = (correlated: {
     statusText: handled.statusText,
   });
 };
-export const failureAttributesOf = (failed: unknown): Attributes => {
+
+export const failureAttributesOf = (
+  failed: unknown,
+): ErrorAttributes & { readonly "error.tag"?: string } => {
   const attributes = errorAttributes(failed);
   const failureTag = Predicate.isObject(failed) ? failed["_tag"] : undefined;
   if (typeof failureTag !== "string" || !identifierPattern.test(failureTag)) {
-    return {
-      "error.fingerprint": attributes["error.fingerprint"],
-      "error.locations": attributes["error.locations"],
-      ...(attributes["error.type"] === undefined ? {} : { "error.type": attributes["error.type"] }),
-    };
+    return attributes;
   }
   const fingerprint = errorFingerprint(
     fingerprintIdentity(failed),
     `${failureTag}\n${attributes["error.locations"]}`,
   );
-  return {
-    "error.fingerprint": fingerprint,
-    "error.locations": attributes["error.locations"],
-    "error.tag": failureTag,
-    ...(attributes["error.type"] === undefined ? {} : { "error.type": attributes["error.type"] }),
-  };
+  return { ...attributes, "error.fingerprint": fingerprint, "error.tag": failureTag };
 };
-export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> =>
-  logAt("Error", {
-    attributes: failureAttributesOf(Cause.squash(cause)),
+
+export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> => {
+  const attributes = failureAttributesOf(Cause.squash(cause));
+  return logAt("Error", {
+    attributes: {
+      "error.fingerprint": attributes["error.fingerprint"],
+      "error.locations": attributes["error.locations"],
+      ...(typeof attributes["error.type"] === "string"
+        ? { "error.type": attributes["error.type"] }
+        : {}),
+      ...(typeof attributes["error.tag"] === "string"
+        ? { "error.tag": attributes["error.tag"] }
+        : {}),
+    },
     eventName: "application.error",
   });
+};
+
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
+
 const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<Response> => {
   return reportFailure(cause).pipe(
     Effect.as(
@@ -111,6 +127,7 @@ const failureResponse = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<R
     ),
   );
 };
+
 const recordRequest = (served: {
   readonly incoming: Readonly<Pick<Request, "method" | "url">>;
   readonly responseStatus: number;
@@ -131,6 +148,7 @@ const recordRequest = (served: {
       eventName: "http.server.request",
     });
   });
+
 const respond = <Requirements>(served: {
   readonly incoming: Request;
   readonly requestContext: RequestContext;
@@ -156,6 +174,7 @@ const respond = <Requirements>(served: {
     }),
   );
 };
+
 export const observeRequest = <Requirements>(
   incoming: Request,
   handle: (incoming: Request) => Effect.Effect<Response, never, Requirements | CurrentRequest>,

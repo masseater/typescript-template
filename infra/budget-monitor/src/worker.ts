@@ -1,12 +1,15 @@
-import { monitorWorker, type MonitorBindings } from "@repo/monitor";
-import { withSpan } from "@repo/observability";
+import { monitorWorker } from "@repo/monitor";
 import { Clock, Effect, Schema } from "effect";
 
 import { fetchUsage } from "./billing.ts";
 import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
 
-const budget = monitorWorker<MonitorBindings & BudgetMonitorEnv>({
+import type { MonitorBindings } from "@repo/monitor";
+
+interface Bindings extends MonitorBindings, BudgetMonitorEnv {}
+
+const budget = monitorWorker<Bindings>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
@@ -35,8 +38,9 @@ const budget = monitorWorker<MonitorBindings & BudgetMonitorEnv>({
         );
       }
       return decision;
-    }).pipe(withSpan("BudgetMonitor.check"));
+    }).pipe(Effect.withSpan("BudgetMonitor.check"));
   },
+  className: budgetMonitorWorker.className,
   event: budgetMonitorWorker.event,
   failure: {
     subject: "Cloudflare budget monitoring failed",
@@ -44,7 +48,7 @@ const budget = monitorWorker<MonitorBindings & BudgetMonitorEnv>({
   },
 });
 
-class BudgetMonitor extends budget.Worker {}
+const BudgetMonitor = budget.Worker;
 
 export { BudgetMonitor };
 export default budget.handler;

@@ -10,4 +10,4 @@ const startHandler = {
   },
 };
 
-export default appServerEntry({ runtime, routeHandler: startHandler, reporting });
+export default appServerEntry(runtime, startHandler, reporting);

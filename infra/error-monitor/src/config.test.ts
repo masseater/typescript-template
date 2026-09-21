@@ -1,7 +1,7 @@
-import { Effect } from "effect";
-import { describe, expect, test } from "vite-plus/test";
+import { assert, it } from "@effect/vitest";
+import { Effect, Schema } from "effect";
 
-import { ErrorMonitorFailure, parseErrorMonitorConfig } from "./config.ts";
+import { parseErrorMonitorConfig } from "./config.ts";
 
 const ACCOUNT_ID_LENGTH = 32;
 const TOKEN_LENGTH = 40;
@@ -9,27 +9,26 @@ const TOKEN_LENGTH = 40;
 const valid = {
   CLOUDFLARE_ACCOUNT_ID: "a".repeat(ACCOUNT_ID_LENGTH),
   OBSERVABILITY_TOKEN: "t".repeat(TOKEN_LENGTH),
-} as const;
+};
 
-describe("parseErrorMonitorConfig", () => {
-  const it = test.extend("acceptedConfig", () =>
-    Effect.runPromise(parseErrorMonitorConfig(valid)));
+it.effect("accepts a scoped token", () =>
+  Effect.gen(function* program() {
+    assert.deepStrictEqual(yield* parseErrorMonitorConfig(valid), valid);
+  }),
+);
 
-  it("accepts a scoped token", ({ acceptedConfig }) => {
-    expect(acceptedConfig).toStrictEqual(valid);
-  });
-});
-
-describe.for([
-  [{ CLOUDFLARE_ACCOUNT_ID: "private-not-an-account" }],
-  [{ OBSERVABILITY_TOKEN: "short" }],
-] as const)("invalid settings %s", ([override]) => {
-  const it = test.extend("configFailure", () =>
-    Effect.runPromise(Effect.flip(parseErrorMonitorConfig({ ...valid, ...override }))));
-
-  it("refuses without echoing the invalid value", ({ configFailure }) => {
-    expect(configFailure).toStrictEqual(
-      new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
-    );
-  });
-});
+for (const override of [
+  { CLOUDFLARE_ACCOUNT_ID: "private-not-an-account" },
+  { OBSERVABILITY_TOKEN: "short" },
+]) {
+  it.effect(`refuses invalid settings without echoing them: ${JSON.stringify(override)}`, () =>
+    Effect.gen(function* program() {
+      const failure = yield* parseErrorMonitorConfig({ ...valid, ...override }).pipe(Effect.flip);
+      assert.strictEqual(failure.code, "error_monitor_config_invalid");
+      assert.notInclude(
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
+        "private-not-an-account",
+      );
+    }),
+  );
+}

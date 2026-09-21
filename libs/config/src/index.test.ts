@@ -1,14 +1,15 @@
+import { assert, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
-import { describe, expect, test } from "vite-plus/test";
 
-import { ConfigurationInvalid } from "./configuration-invalid.ts";
 import {
   HttpsOrigin,
   adminPageSize,
   distinctOrigins,
+  isLocalDevelopmentOrigin,
   maximumAdminPageSize,
   readAi,
   readConfig,
+  readEnvironment,
   readJobs,
   usageAllowanceRemains,
 } from "./index.ts";
@@ -21,205 +22,202 @@ const local = {
   OPS_EMAIL: "ops@example.test",
 };
 
-const workerBindings = {
-  AI: { run: Effect.runPromise },
-  ASSETS: { fetch: fetch },
-  DB: { batch: queueMicrotask, prepare: structuredClone },
-  EMAIL: { send: queueMicrotask },
+const reason = function reason(
+  input: unknown,
+): Effect.Effect<string, Effect.Success<ReturnType<typeof readEnvironment>>> {
+  return readEnvironment(input).pipe(
+    Effect.flip,
+    Effect.map((error) => error.reason),
+  );
 };
 
-const { AI: _aiBinding, ...requiredWorkerBindings } = workerBindings;
+it.effect("validates local configuration and defaults the release to local", () =>
+  Effect.gen(function* program() {
+    const result = yield* readEnvironment(local);
+    assert.strictEqual(result.local, true);
+    assert.strictEqual(result.APP_RELEASE, "local");
+    assert.include(yield* reason({ ...local, APP_RELEASE: "private@example.com" }), "APP_RELEASE");
+  }),
+);
 
-const budgetWithinReserve = {
-  budgetJpy: 5000,
-  fixedCostUsd: 40,
-  jpyPerUsd: 100,
-  reserveUsd: 9,
+it.effect("rejects Mailpit for public application origins", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* reason({ ...local, APP_ORIGIN: "https://app.example.test" }),
+      "Mailpit is restricted to local development",
+    );
+  }),
+);
+
+it.effect("treats only loopback and HTTPS LAN hosts as local development", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      (yield* readEnvironment({ ...local, APP_ORIGIN: "https://template-user.local.example.test" }))
+        .local,
+      true,
+    );
+    assert.strictEqual(
+      yield* reason({ ...local, APP_ORIGIN: "http://template-user.local.example.test" }),
+      "HTTPS is required outside localhost",
+    );
+    for (const origin of [
+      "https://example.localhost",
+      "https://user.template.local.example.test",
+      "https://app.example.ts.net",
+      "https://app.example.test",
+    ]) {
+      assert.strictEqual(isLocalDevelopmentOrigin(origin), false);
+    }
+  }),
+);
+
+it.effect("requires HTTPS for non-local origins", () =>
+  Effect.gen(function* program() {
+    const { MAILPIT_URL: _mailpit, ...remote } = local;
+    assert.strictEqual(
+      yield* reason({ ...remote, APP_ORIGIN: "http://app.example.test" }),
+      "HTTPS is required outside localhost",
+    );
+  }),
+);
+
+it.effect("rejects an OTLP switch that has no endpoint to switch", () =>
+  Effect.gen(function* program() {
+    for (const enabled of ["true", "false"]) {
+      assert.strictEqual(
+        yield* reason({ ...local, OTLP_ENABLED: enabled }),
+        "OTLP_ENABLED needs OTLP_ENDPOINT",
+      );
+    }
+    assert.strictEqual(
+      (yield* readEnvironment({ ...local, OTLP_ENABLED: "true", OTLP_ENDPOINT: local.MAILPIT_URL }))
+        .OTLP_ENABLED,
+      "true",
+    );
+    assert.isUndefined((yield* readEnvironment(local)).OTLP_ENABLED);
+  }),
+);
+
+it.effect("rejects weak session secrets and pathful application origins", () =>
+  Effect.gen(function* program() {
+    assert.include(yield* reason({ ...local, AUTH_SECRET: "weak" }), "32");
+    assert.include(
+      yield* reason({ ...local, APP_ORIGIN: "http://localhost:3001/path" }),
+      "An origin without a path is required",
+    );
+    assert.include(yield* reason({ ...local, APP_ORIGIN: "not-a-url" }), "absolute URL");
+  }),
+);
+
+const noop = function noop(): undefined {
+  return undefined;
 };
+
+const bindings = {
+  AI: { run: noop },
+  ASSETS: { fetch: noop },
+  DB: { batch: noop, prepare: noop },
+  EMAIL: { send: noop },
+};
+
+const configReason = function configReason(
+  input: unknown,
+): Effect.Effect<string, Effect.Success<ReturnType<typeof readConfig>>> {
+  return readConfig(input).pipe(
+    Effect.flip,
+    Effect.map((error) => error.reason),
+  );
+};
+
+it.effect("accepts the bindings the worker declares", () =>
+  Effect.gen(function* program() {
+    const config = yield* readConfig({ ...local, ...bindings });
+    assert.strictEqual<unknown>(config.DB, bindings.DB);
+    assert.strictEqual<unknown>(yield* readAi({ ...local, ...bindings }), bindings.AI);
+    assert.strictEqual<unknown>(yield* readAi(local), undefined);
+    const withoutRunner = yield* readAi({ ...local, AI: {} }).pipe(Effect.flip);
+    assert.strictEqual(withoutRunner._tag, "ConfigurationInvalid");
+    const jobs = {
+      JOBS: { send: noop },
+      PROCESS: { create: noop, get: noop },
+    };
+    assert.strictEqual<unknown>((yield* readJobs({ ...local, ...jobs })).JOBS, jobs.JOBS);
+    const withoutQueue = yield* readJobs({ ...local, PROCESS: jobs.PROCESS }).pipe(Effect.flip);
+    assert.strictEqual(withoutQueue._tag, "ConfigurationInvalid");
+  }),
+);
+
+const absent = null;
 
 const brokenBindings = [
-  ["an assets binding with no fetch", { ASSETS: {} }, 'Expected Fetcher\n  at ["ASSETS"]'],
-  ["a string where the fetcher goes", { ASSETS: "fetch" }, 'Expected Fetcher\n  at ["ASSETS"]'],
-  [
-    "an absent assets binding",
-    { ASSETS: JSON.parse("null") as unknown },
-    'Expected Fetcher\n  at ["ASSETS"]',
-  ],
-  [
-    "a database with no batch",
-    { DB: { prepare: queueMicrotask } },
-    'Expected D1Database\n  at ["DB"]',
-  ],
-  [
-    "a database with no prepare",
-    { DB: { batch: queueMicrotask } },
-    'Expected D1Database\n  at ["DB"]',
-  ],
-  [
-    "a database whose batch is not callable",
-    { DB: { batch: "batch", prepare: queueMicrotask } },
-    'Expected D1Database\n  at ["DB"]',
-  ],
-  ["an email binding with no send", { EMAIL: {} }, 'Expected SendEmail\n  at ["EMAIL"]'],
+  { broken: { ASSETS: {} }, expected: "Fetcher", label: "an assets binding with no fetch" },
+  { broken: { ASSETS: "fetch" }, expected: "Fetcher", label: "a string where the fetcher goes" },
+  { broken: { ASSETS: absent }, expected: "Fetcher", label: "an absent assets binding" },
+  { broken: { DB: { prepare: noop } }, expected: "D1Database", label: "a database with no batch" },
+  { broken: { DB: { batch: noop } }, expected: "D1Database", label: "a database with no prepare" },
+  {
+    broken: { DB: { batch: "batch", prepare: noop } },
+    expected: "D1Database",
+    label: "a database whose batch is not callable",
+  },
+  { broken: { EMAIL: {} }, expected: "SendEmail", label: "an email binding with no send" },
 ] as const;
 
-describe("readConfig", () => {
-  const it = test.extend("workerConfig", () =>
-    Effect.runPromise(readConfig({ ...local, ...workerBindings })));
+for (const { broken, expected, label } of brokenBindings) {
+  it.effect(`names the binding it rejects: ${label}`, () =>
+    Effect.gen(function* program() {
+      assert.include(yield* configReason({ ...local, ...bindings, ...broken }), expected);
+    }),
+  );
+}
 
-  it("accepts the bindings the worker declares", ({ workerConfig }) => {
-    expect(workerConfig).toStrictEqual({
-      ...local,
-      ...requiredWorkerBindings,
-      APP_RELEASE: "local",
-      MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
-      local: true,
-    });
-  });
-});
+it.effect("accepts an https origin and rejects any other scheme", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* Schema.decodeEffect(HttpsOrigin)("https://app.example.test"),
+      "https://app.example.test",
+    );
+    const rejected = yield* Schema.decodeEffect(HttpsOrigin)("http://localhost").pipe(Effect.flip);
+    assert.include(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(rejected),
+      "HTTPS is required",
+    );
+  }),
+);
 
-describe("readAi", () => {
-  const it = test.extend("runner", () =>
-    Effect.runPromise(readAi({ ...local, ...workerBindings })));
+it.effect("treats repeated origins as one", () =>
+  Effect.sync(() => {
+    assert.isTrue(distinctOrigins(["https://a.example.test", "https://b.example.test"]));
+    assert.isFalse(distinctOrigins(["https://a.example.test", "https://a.example.test"]));
+  }),
+);
 
-  it("returns the AI binding", ({ runner }) => {
-    expect(runner).toStrictEqual(workerBindings.AI);
-  });
-});
+it.effect("keeps a usage allowance only when the yen budget exceeds fixed cost and reserve", () =>
+  Effect.sync(() => {
+    const amounts = { budgetJpy: 5000, fixedCostUsd: 40, jpyPerUsd: 100, reserveUsd: 9 };
+    assert.isTrue(usageAllowanceRemains(amounts));
+    assert.isFalse(usageAllowanceRemains({ ...amounts, reserveUsd: 10 }));
+  }),
+);
 
-describe("a worker without an AI binding", () => {
-  const it = test.extend("runner", () => Effect.runPromise(readAi(local)));
+it.effect("pages administrators fifty at a time and never more than one hundred", () =>
+  Effect.sync(() => {
+    assert.strictEqual(adminPageSize, 50);
+    assert.strictEqual(maximumAdminPageSize, 100);
+  }),
+);
 
-  it("leaves the runner absent", ({ runner }) => {
-    expect(runner).toStrictEqual(undefined);
-  });
-});
-
-describe("an AI binding with no run", () => {
-  const it = test.extend("refusal", () =>
-    Effect.runPromise(readAi({ ...local, AI: {} }).pipe(Effect.flip)));
-
-  it("names the AI binding", ({ refusal }) => {
-    expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: 'Expected Ai\n  at ["AI"]' }));
-  });
-});
-
-describe("readJobs", () => {
-  const jobs = {
-    JOBS: { send: queueMicrotask },
-    PROCESS: { create: queueMicrotask, get: structuredClone },
-  };
-  const it = test.extend("jobsBindings", () => Effect.runPromise(readJobs({ ...local, ...jobs })));
-
-  it("returns the jobs queue binding", ({ jobsBindings }) => {
-    expect(jobsBindings.JOBS).toStrictEqual(jobs.JOBS);
-  });
-});
-
-describe("jobs without a queue", () => {
-  const it = test.extend("refusal", () =>
-    Effect.runPromise(
-      readJobs({ ...local, PROCESS: { create: queueMicrotask, get: structuredClone } }).pipe(
-        Effect.flip,
-      ),
-    ));
-
-  it("names the jobs queue", ({ refusal }) => {
-    expect(refusal._tag).toBe("ConfigurationInvalid");
-  });
-});
-
-describe.for(brokenBindings)("%s", ([, broken, reasonText]) => {
-  const it = test.extend("refusal", () =>
-    Effect.runPromise(readConfig({ ...local, ...workerBindings, ...broken }).pipe(Effect.flip)));
-
-  it("names the binding it rejects", ({ refusal }) => {
-    expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: reasonText }));
-  });
-});
-
-describe("HttpsOrigin", () => {
-  const it = test.extend("decodedOrigin", () =>
-    Effect.runPromise(Schema.decodeUnknownEffect(HttpsOrigin)("https://app.example.test")));
-
-  it("accepts an https origin", ({ decodedOrigin }) => {
-    expect(decodedOrigin).toBe("https://app.example.test");
-  });
-});
-
-describe("an origin that is not https", () => {
-  const it = test.extend("schemaMessage", () =>
-    Effect.runPromise(
-      Schema.decodeUnknownEffect(HttpsOrigin)("http://localhost").pipe(
-        Effect.flip,
-        Effect.map((schemaError) => schemaError.message),
-      ),
-    ));
-
-  it("requires https", ({ schemaMessage }) => {
-    expect(schemaMessage).toBe("HTTPS is required");
-  });
-});
-
-describe.for([
-  [["https://a.example.test", "https://b.example.test"], true],
-  [["https://a.example.test", "https://a.example.test"], false],
-] as const)("%j", ([origins, originsAreDistinct]) => {
-  const it = test.extend("originsAreDistinct", () => distinctOrigins(origins));
-
-  it("treats repeated origins as one", ({ originsAreDistinct: distinctness }) => {
-    expect(distinctness).toBe(originsAreDistinct);
-  });
-});
-
-describe("a budget that still covers fixed cost and reserve", () => {
-  const it = test.extend("allowanceRemains", () => usageAllowanceRemains(budgetWithinReserve));
-
-  it("keeps a usage allowance", ({ allowanceRemains }) => {
-    expect(allowanceRemains).toBe(true);
-  });
-});
-
-describe("a reserve that consumes the budget", () => {
-  const it = test.extend("allowanceRemains", () =>
-    usageAllowanceRemains({ ...budgetWithinReserve, reserveUsd: 10 }));
-
-  it("keeps no usage allowance", ({ allowanceRemains }) => {
-    expect(allowanceRemains).toBe(false);
-  });
-});
-
-describe("adminPageSize", () => {
-  const it = test.extend("pageSize", () => adminPageSize);
-
-  it("pages administrators fifty at a time", ({ pageSize }) => {
-    expect(pageSize).toBe(50);
-  });
-});
-
-describe("maximumAdminPageSize", () => {
-  const it = test.extend("pageLimit", () => maximumAdminPageSize);
-
-  it("never pages more than one hundred", ({ pageLimit }) => {
-    expect(pageLimit).toBe(100);
-  });
-});
-
-describe("mail delivery", () => {
-  const { MAILPIT_URL: _mailpit, ...withoutMailpit } = local;
-  const { EMAIL: _email, ...withoutEmail } = workerBindings;
-  const it = test.extend("refusal", () =>
-    Effect.runPromise(
-      readConfig({
+it.effect("requires a way to deliver mail", () =>
+  Effect.gen(function* program() {
+    const { MAILPIT_URL: _mailpit, ...withoutMailpit } = local;
+    const { EMAIL: _email, ...withoutEmail } = bindings;
+    assert.strictEqual(
+      yield* configReason({
         ...withoutMailpit,
         ...withoutEmail,
         APP_ORIGIN: "https://app.example.test",
-      }).pipe(Effect.flip),
-    ));
-
-  it("requires a way to deliver mail", ({ refusal }) => {
-    expect(refusal).toStrictEqual(
-      new ConfigurationInvalid({ reason: "An email delivery binding is required" }),
+      }),
+      "An email delivery binding is required",
     );
-  });
-});
+  }),
+);

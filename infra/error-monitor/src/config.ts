@@ -31,23 +31,15 @@ const ErrorMonitorEnvironment = Schema.Struct({
 
 type ErrorMonitorEnv = typeof ErrorMonitorEnvironment.Encoded;
 
-const parseErrorMonitorConfig = (
+function parseErrorMonitorConfig(
   input: unknown,
-): Effect.Effect<typeof ErrorMonitorEnvironment.Type, ErrorMonitorFailure> =>
-  Schema.decodeUnknownEffect(ErrorMonitorEnvironment)(input).pipe(
+): Effect.Effect<typeof ErrorMonitorEnvironment.Type, ErrorMonitorFailure> {
+  return Schema.decodeUnknownEffect(ErrorMonitorEnvironment)(input).pipe(
     Effect.mapError(
       () => new ErrorMonitorFailure({ code: "error_monitor_config_invalid", keys: [] }),
     ),
   );
+}
 
-const observabilityQueryEndpoint = (accountId: string): string =>
-  `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/observability/telemetry/query`;
-
-export {
-  ErrorMonitorFailure,
-  errorMonitorEnv,
-  errorMonitorWorker,
-  observabilityQueryEndpoint,
-  parseErrorMonitorConfig,
-};
+export { ErrorMonitorFailure, errorMonitorEnv, errorMonitorWorker, parseErrorMonitorConfig };
 export type { ErrorMonitorEnv };

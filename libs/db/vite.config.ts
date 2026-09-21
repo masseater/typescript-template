@@ -1,10 +1,10 @@
-import { awaitingEffectDiagnostics, lifecycle } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics,
+      ...effectDiagnostics,
       check: {
         command: "drizzle-kit check",
         input: [{ auto: true }, "!node_modules/.cache/**"],

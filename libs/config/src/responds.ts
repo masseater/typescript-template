@@ -1,56 +1,60 @@
-import { Effect, Schedule, type Duration } from "effect";
+import { Duration, Effect, Schedule } from "effect";
 
 const firstSuccess = 200;
 const firstRedirect = 300;
 
-const respondedSuccessfully = (httpStatus: number): boolean =>
-  httpStatus >= firstSuccess && httpStatus < firstRedirect;
+function respondedSuccessfully(status: number): boolean {
+  return status >= firstSuccess && status < firstRedirect;
+}
 
-const waitUntilResponds = <Failure>(probe: {
-  readonly accept: (httpStatus: number) => boolean;
+function waitUntilResponds<Rejected, Unreachable>(request: {
+  readonly accept: (status: number) => boolean;
   readonly method: "GET" | "POST";
-  readonly onStatus: (httpStatus: number) => Failure;
-  readonly onUnreachable: (unreachableFailure: unknown) => Failure;
-  readonly retry?: {
-    readonly interval: `${number} ${Duration.Unit}`;
-    readonly times: number;
-  };
+  readonly onStatus: (status: number) => Rejected;
+  readonly onUnreachable: (error: unknown) => Unreachable;
+  readonly retry?: { readonly interval: Duration.Input; readonly times: number };
   readonly timeoutMilliseconds?: number;
   readonly url: string;
-}): Effect.Effect<number, Failure> => {
+}): Effect.Effect<number, Rejected | Unreachable> {
+  return waitUntilRespondsWith(fetch, request);
+}
+
+function waitUntilRespondsWith<Rejected, Unreachable>(
+  fetchImpl: typeof fetch,
+  request: {
+    readonly accept: (status: number) => boolean;
+    readonly method: "GET" | "POST";
+    readonly onStatus: (status: number) => Rejected;
+    readonly onUnreachable: (error: unknown) => Unreachable;
+    readonly retry?: { readonly interval: Duration.Input; readonly times: number };
+    readonly timeoutMilliseconds?: number;
+    readonly url: string;
+  },
+): Effect.Effect<number, Rejected | Unreachable> {
   const attempt = Effect.tryPromise({
-    catch: (unreachableFailure) => probe.onUnreachable(unreachableFailure),
-    try: async () => {
-      const fetched = await fetch(probe.url, {
-        method: probe.method,
+    catch: (error) => request.onUnreachable(error),
+    try: (signal) =>
+      fetchImpl(request.url, {
+        method: request.method,
         redirect: "manual",
-        ...(probe.timeoutMilliseconds === undefined
-          ? {}
-          : { signal: AbortSignal.timeout(probe.timeoutMilliseconds) }),
-      });
-      const responseBody = fetched.body;
-      if (responseBody !== null) {
-        await responseBody.cancel();
-      }
-      return fetched.status;
-    },
+        signal:
+          request.timeoutMilliseconds === undefined
+            ? signal
+            : AbortSignal.timeout(request.timeoutMilliseconds),
+      }).then((response) => response.arrayBuffer().then(() => response.status)),
   }).pipe(
-    Effect.flatMap((httpStatus) =>
-      probe.accept(httpStatus)
-        ? Effect.succeed(httpStatus)
-        : Effect.fail(probe.onStatus(httpStatus)),
+    Effect.filterOrFail(
+      (status) => request.accept(status),
+      (status) => request.onStatus(status),
     ),
   );
-  const scheduledRetry = probe.retry;
-  if (scheduledRetry === undefined) {
+  const retry = request.retry;
+  if (retry === undefined) {
     return attempt;
   }
   return attempt.pipe(
-    Effect.retry({
-      schedule: Schedule.spaced(scheduledRetry.interval),
-      times: scheduledRetry.times,
-    }),
+    Effect.retry({ schedule: Schedule.spaced(retry.interval), times: retry.times }),
   );
-};
+}
 
 export { respondedSuccessfully, waitUntilResponds };

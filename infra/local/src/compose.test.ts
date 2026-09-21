@@ -1,5 +1,9 @@
+import { fileURLToPath } from "node:url";
+
+import { NodeServices } from "@effect/platform-node";
 import { mailpitPort } from "@repo/config";
-import { describe, expect, test } from "vite-plus/test";
+import { Effect, FileSystem } from "effect";
+import { describe, expect, it } from "vite-plus/test";
 
 import { receiverPorts } from "./receiver.ts";
 
@@ -7,33 +11,27 @@ const MAILPIT_SMTP_PORT = 1025;
 
 const published = /^\s+- "127\.0\.0\.1:(?<host>\d+):(?<container>\d+)"$/gmu;
 
-const composeModules: Readonly<Record<string, string>> = import.meta.glob("../compose.yaml", {
-  eager: true,
-  import: "default",
-});
-
-const composeYaml = Object.values(composeModules)[0] ?? "";
-
-const publishedPorts = Array.from(composeYaml.matchAll(published), ({ groups }) => {
-  const host = groups?.host;
-  const container = groups?.container;
-  return `${host}:${container}`;
-});
-
-const expectedPublishedPorts = [
-  `${receiverPorts.otlp}:${receiverPorts.otlp}`,
-  `${receiverPorts.logs}:${receiverPorts.logs}`,
-  `${receiverPorts.traces}:${receiverPorts.traces}`,
-  `${mailpitPort}:${mailpitPort}`,
-  `${MAILPIT_SMTP_PORT}:${MAILPIT_SMTP_PORT}`,
-];
-
 describe("local services", () => {
-  const it = test.extend("publishedLoopbackPorts", () => publishedPorts);
-
-  it("publish every loopback port the rest of the repository reads", ({
-    publishedLoopbackPorts,
-  }) => {
-    expect(publishedLoopbackPorts).toStrictEqual(expectedPublishedPorts);
-  });
+  it("publish every loopback port the rest of the repository reads", () =>
+    Effect.runPromise(
+      Effect.gen(function* readPublishedPorts() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const compose = yield* filesystem.readFileString(
+          fileURLToPath(new URL("../compose.yaml", import.meta.url)),
+        );
+        const ports = Array.from(
+          compose.matchAll(published),
+          ({ groups }) => `${groups?.["host"]}:${groups?.["container"]}`,
+        );
+        const expected = [
+          `${receiverPorts.otlp}:${receiverPorts.otlp}`,
+          `${receiverPorts.logs}:${receiverPorts.logs}`,
+          `${receiverPorts.traces}:${receiverPorts.traces}`,
+          `${mailpitPort}:${mailpitPort}`,
+          `${MAILPIT_SMTP_PORT}:${MAILPIT_SMTP_PORT}`,
+        ];
+        expect.hasAssertions();
+        expect(ports).toStrictEqual(expected);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 });

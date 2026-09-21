@@ -2,14 +2,16 @@ import { Effect, Schema } from "effect";
 
 import { ErrorLocations, errorTypes } from "./errors.ts";
 import { RequestId, SpanId, TraceId, httpMethods } from "./protocol.ts";
+
 export const maximumBatchSize = 32;
-const maximumClockSkew = 60000;
-const maximumEventAge = 3600000;
+const maximumClockSkew = 60_000;
+const maximumEventAge = 3_600_000;
 const maximumStatus = 599;
 const minimumHttpStatus = 100;
-export const maximumMeasurement = 600000;
-const Measurement = Schema.Number.check(
-  Schema.isFinite(),
+
+export const maximumMeasurement = 600_000;
+
+const Measurement = Schema.Finite.check(
   Schema.isBetween({ maximum: maximumMeasurement, minimum: 0 }),
 );
 const sharedFields = {
@@ -18,7 +20,7 @@ const sharedFields = {
   requestId: RequestId,
   route: Schema.String,
   spanId: SpanId,
-  start: Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0)),
+  start: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
   traceId: TraceId,
   value: Measurement,
 };
@@ -52,11 +54,14 @@ const decodeEvents = Schema.decodeUnknownEffect(
   Schema.Array(BrowserEventSchema).check(Schema.isLengthBetween(1, maximumBatchSize)),
   { onExcessProperty: "error" },
 );
+
 export type BrowserEvent = typeof BrowserEventSchema.Type;
+
 class BrowserEventsInvalid extends Schema.TaggedError<BrowserEventsInvalid>()(
   "BrowserEventsInvalid",
   {},
 ) {}
+
 export const parseBrowserEvents = (received: {
   readonly body: unknown;
   readonly routeLabels: Readonly<ReadonlySet<string>>;

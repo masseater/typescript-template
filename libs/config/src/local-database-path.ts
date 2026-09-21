@@ -1,21 +1,25 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import path from "node:path";
+import { Config, ConfigProvider, Effect, Option, Path } from "effect";
 
+const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 const localDatabaseVariable = "TEMPLATE_LOCAL_DATABASE";
-const repositoryDirectory = path.join(import.meta.dirname, "../../../.local/d1");
+const repositoryDirectory = paths.join(import.meta.dirname, "../../../.local/d1");
+
+const localDatabaseDirectory = (): string => {
+  const override = Effect.runSync(
+    Config.option(Config.string(localDatabaseVariable)).pipe(
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
+    ),
+  );
+  return Option.match(override, {
+    onNone: () => repositoryDirectory,
+    onSome: (value) => (value === "" ? repositoryDirectory : paths.resolve(value)),
+  });
+};
 
 const localDatabase = {
   binding: "DB",
   database_id: "00000000-0000-0000-0000-000000000001",
   database_name: "template-shared",
-};
-
-const localDatabaseDirectory = (
-  // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-  environment: Readonly<Record<string, string | undefined>> = process.env,
-): string => {
-  const override = environment[localDatabaseVariable];
-  return override === undefined || override === "" ? repositoryDirectory : path.resolve(override);
 };
 
 const localDatabasePersistence = localDatabaseDirectory();
