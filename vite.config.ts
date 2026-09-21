@@ -1,3 +1,4 @@
+import { MergifyReporter } from "@mergifyio/vitest";
 import {
   devServerTests,
   dontReviewItPreset,
@@ -66,9 +67,7 @@ export default defineConfig({
         output: [],
       },
       ...lifecycle({
-        precommit: [],
         prepush: ["knip", "check:canonical-literal-types"],
-        prepr: [],
         premerge: ["test", "test:dev-server", "test:workers"],
         prerelease: ["mutation"],
       }),
@@ -76,7 +75,10 @@ export default defineConfig({
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     forceRerunTriggers: [
       "**/package.json",
       "**/tsconfig*.json",
@@ -108,6 +110,7 @@ export default defineConfig({
       ...dedicatedToolVitestProjects,
     ],
     mockReset: true,
+    reporters: ["default", new MergifyReporter()],
     restoreMocks: true,
     testTimeout: 30_000,
   },

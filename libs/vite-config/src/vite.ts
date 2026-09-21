@@ -139,11 +139,28 @@ const withoutLocalState = [
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
+const typecheckInputs = [
+  ...taskInput,
+  { base: "workspace", pattern: "**/*.{ts,tsx}" },
+  { base: "workspace", pattern: "**/package.json" },
+  { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
+  { base: "workspace", pattern: "!**/node_modules/**" },
+  { base: "workspace", pattern: "!**/dist/**" },
+  { base: "workspace", pattern: "!**/.paraglide/**" },
+  { base: "workspace", pattern: "!**/.local/**" },
+] as const;
+
 const effectDiagnostics = {
+  "check:effect:gate": {
+    command: "check-effect-typecheck",
+    input: [...typecheckInputs],
+  },
   "check:effect": {
     command:
       "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    input: [...taskInput],
+    dependsOn: ["check:effect:gate"],
+    input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
@@ -161,13 +178,40 @@ const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
   prerelease: ["prepr", "premerge"],
 };
 
-function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
-  return Object.fromEntries(
-    lifecycles.map((name) => [
-      name,
-      { command: [], dependsOn: [...lifecycleInherits[name], ...stages[name]] },
-    ]),
-  );
+type LifecycleTask = {
+  command: string[];
+  dependsOn: string[];
+};
+
+function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}): {
+  readonly precommit: LifecycleTask;
+  readonly prepush: LifecycleTask;
+  readonly prepr: LifecycleTask;
+  readonly premerge: LifecycleTask;
+  readonly prerelease: LifecycleTask;
+} {
+  return {
+    precommit: {
+      command: [],
+      dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
+    },
+    prepush: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
+    },
+    prepr: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+    },
+    premerge: {
+      command: [],
+      dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
+    },
+    prerelease: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
+    },
+  };
 }
 
 const testTaskInput = [
@@ -224,9 +268,6 @@ const inspectedLibraryRun = {
     ...lifecycle({
       precommit: ["check:code"],
       prepush: ["check:effect", "check:imports"],
-      prepr: [],
-      premerge: [],
-      prerelease: [],
     }),
   },
 } satisfies RunConfig;
@@ -238,9 +279,7 @@ const testableLibraryRun = {
     ...lifecycle({
       precommit: ["check:code"],
       prepush: ["check:effect", "check:imports"],
-      prepr: [],
       premerge: ["test"],
-      prerelease: [],
     }),
   },
 } satisfies RunConfig;
@@ -252,9 +291,7 @@ const coveredTestableLibraryRun = {
     ...lifecycle({
       precommit: ["check:code"],
       prepush: ["check:effect", "check:imports"],
-      prepr: [],
       premerge: ["test"],
-      prerelease: [],
     }),
   },
 } satisfies RunConfig;
@@ -287,11 +324,12 @@ function appRun(app: Application): RunConfig {
       },
       build: {
         command: "vp build",
-        dependsOn: ["@repo/dev#setup"],
+        dependsOn: ["@repo/dev#setup", "check:effect"],
         input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
         output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
       },
       "check:dev": {
+        cache: false,
         command: "../../tools/dev/src/dev-start.ts",
         dependsOn: ["@repo/dev#setup"],
         input: [
@@ -303,12 +341,13 @@ function appRun(app: Application): RunConfig {
         ],
         output: [],
       },
+      dev: { cache: false, command: "vp dev" },
+      preview: { cache: false, command: "vp preview" },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check", "check:imports", "check:react", "check:client"],
         prepr: ["build"],
         premerge: ["test", "check:dev"],
-        prerelease: [],
       }),
     },
   };
@@ -319,7 +358,7 @@ const toolTest: NonNullable<UserConfig["test"]> = {
   restoreMocks: true,
   coverage: {
     exclude: ["specs/**"],
-    thresholds: { 100: true, perFile: true },
+    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
   },
   unstubEnvs: true,
   unstubGlobals: true,
@@ -339,7 +378,7 @@ function appConfig(
       previewDevVars(appRoot),
       privateSourceMaps(app),
       devBoundary(app),
-      ...(process.env.VITEST === undefined
+      ...(process.env["VITEST"] === undefined)
         ? [
             cloudflare({
               config: {

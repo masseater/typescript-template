@@ -14,10 +14,22 @@ const devStartSource = readFileSync(
 );
 const viteSource = readFileSync(new URL("./vite.ts", import.meta.url), "utf8");
 
+describe("app build", () => {
+  it("type-checks the workspace graph before Rolldown links named imports", () => {
+    expect.hasAssertions();
+    expect(appRun("service-member").tasks!["build"]).toEqual(
+      expect.objectContaining({
+        command: "vp build",
+        dependsOn: ["@repo/dev#setup", "check:effect"],
+      }),
+    );
+  });
+});
+
 describe("check:dev local D1", () => {
   it("does not share the workspace migrate before starting each app", () => {
     expect.hasAssertions();
-    const task = appRun("service-member").tasks["check:dev"];
+    const task = appRun("service-member").tasks!["check:dev"];
     expect(task).toEqual(
       expect.objectContaining({
         command: "../../tools/dev/src/dev-start.ts",

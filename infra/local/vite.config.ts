@@ -11,10 +11,8 @@ export default defineConfig({
       up: { cache: false, command: "./src/compose.ts up" },
       ...lifecycle({
         precommit: ["check:code"],
-        premerge: ["test"],
         prepush: ["check:effect", "check:imports"],
-        prepr: [],
-        prerelease: [],
+        premerge: ["test"],
       }),
     },
   },

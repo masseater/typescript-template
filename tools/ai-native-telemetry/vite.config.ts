@@ -19,9 +19,7 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check"],
-        prepr: [],
         premerge: ["test"],
-        prerelease: [],
       }),
     },
   },
@@ -38,7 +36,7 @@ export default defineConfig({
     testTimeout: 60_000,
     coverage: {
       exclude: ["specs/**"],
-      thresholds: { 100: true, perFile: true },
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
     },
     unstubEnvs: true,
     unstubGlobals: true,

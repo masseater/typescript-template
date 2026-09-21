@@ -18,4 +18,12 @@ describe("pull request check scope", () => {
     expect(vite).not.toContain('"infra/**/*.test.ts"');
     expect(vite).not.toContain('"libs/**/*.test.ts"');
   });
+
+  it("records a stuck pull-request check as a failure before the runner sits pending", () => {
+    expect.hasAssertions();
+    const workflow = readFileSync(path.join(repositoryRoot, ".github/workflows/check.yml"), "utf8");
+    expect(workflow).toMatch(
+      /^ {2}check:\n {4}if: .+\n {4}runs-on: .+\n {4}timeout-minutes: 15$/mu,
+    );
+  });
 });

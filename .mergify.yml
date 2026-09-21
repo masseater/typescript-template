@@ -1,18 +1,16 @@
 pull_request_rules:
-  - name: queue on label
+  - name: queue on label or renovate
     conditions:
-      - label = ready-to-merge
+      - or:
+          - label = ready-to-merge
+          - author = renovate[bot]
     actions:
       queue:
         name: default
 
-merge_queue:
-  max_parallel_checks: 1
-
 queue_rules:
   - name: default
     batch_size: 5
-    checks_timeout: 45 min
     merge_method: merge
     queue_conditions:
       - base = main
@@ -20,3 +18,5 @@ queue_rules:
     merge_conditions:
       - check-success = merge-queue
       - check-success = e2e
+merge_queue:
+  mode: isolated

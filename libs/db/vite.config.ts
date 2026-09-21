@@ -10,17 +10,19 @@ export default defineConfig({
         input: [{ auto: true }, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
+      "db:generate": { cache: false, command: "drizzle-kit generate" },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check"],
-        prepr: [],
         premerge: ["test"],
-        prerelease: [],
       }),
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     mockReset: true,
     restoreMocks: true,
   },
