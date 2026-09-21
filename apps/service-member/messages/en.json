@@ -21,6 +21,7 @@
   "feature_security_title": "Protect your account",
   "feature_security_body": "Make login stronger with passkeys and two-factor authentication.",
   "closing_title": "Let's get started",
+  "profile_preview_caption": "Sample profile",
   "locale_ja": "日本語",
   "locale_en": "English",
   "locale_label": "Language"
