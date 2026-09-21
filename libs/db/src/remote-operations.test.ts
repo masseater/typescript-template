@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import { EmptyTestDatabase, TestBinding, runStatement } from "@repo/db-local";
 import { APPLICATION } from "@repo/config";
+import { EmptyTestDatabase, TestBinding, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Effect } from "effect";

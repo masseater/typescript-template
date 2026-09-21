@@ -3,8 +3,8 @@ import { FieldValidationMessageProvider } from "@repo/ui";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
-import { FIELD_STATUS } from "#shared/interview/index.ts";
 import { fieldValidationMessages } from "#shared/i18n/index.ts";
+import { FIELD_STATUS } from "#shared/interview/index.ts";
 import { InterviewScreen } from "./screen.tsx";
 
 import type { InterviewViewData } from "#shared/interview/index.ts";
