@@ -5,10 +5,6 @@
   "imports": {
     "#*": "./src/*"
   },
-  "scripts": {
-    "dev": "vp dev",
-    "preview": "vp preview"
-  },
   "dependencies": {
     "@better-auth/oauth-provider": "1.7.5",
     "@effect/atom-react": "catalog:",
