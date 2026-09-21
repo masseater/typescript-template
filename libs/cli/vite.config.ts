@@ -1,6 +1,7 @@
 import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
+<<<<<<< HEAD
 export default defineConfig({
   run: effectRun,
   test: {
@@ -9,3 +10,6 @@ export default defineConfig({
     restoreMocks: true,
   },
 });
+=======
+export default defineConfig({ run: effectRun });
+>>>>>>> origin/main
