@@ -4,6 +4,8 @@ import { MonitorFailure } from "./failure.ts";
 import { monitorWorker, type MonitorBindings } from "./index.ts";
 import { type SentMail } from "./mail-recorder.ts";
 
+import type { DurableObjectNamespace } from "@cloudflare/workers-types";
+
 /** @canonical-values monitor.probe-outcome */
 const probeOutcomes = ["die", "fail", "notify", "succeed"] as const;
 

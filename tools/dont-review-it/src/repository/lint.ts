@@ -273,7 +273,7 @@ const lintOptions = {
       files: [
         "infra/budget-monitor/**",
         "infra/cloudflare/**",
-              "libs/config/**",
+        "libs/config/**",
         "libs/vite-config/**",
         "tools/dev/**",
         "tools/dont-review-it/src/repository/client-bundle.ts",

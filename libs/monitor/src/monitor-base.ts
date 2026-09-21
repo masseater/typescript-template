@@ -4,6 +4,12 @@ import { Cause, Console, Effect, Exit, Predicate, Schema, SchemaGetter } from "e
 
 import { MonitorFailure } from "./failure.ts";
 
+import type {
+  DurableObjectNamespace,
+  DurableObjectState,
+  SendEmail,
+} from "@cloudflare/workers-types";
+
 type Alert = {
   readonly subject: string;
   readonly text: string;
@@ -47,7 +53,9 @@ const failureReason = (cause: Readonly<Cause.Cause<unknown>>): string => {
 
 const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
 const splitRecipients = SchemaGetter.transform((recipientText: string) => recipientText.split(","));
-const joinRecipients = SchemaGetter.transform((recipients: readonly string[]) => recipients.join(","));
+const joinRecipients = SchemaGetter.transform((recipients: readonly string[]) =>
+  recipients.join(","),
+);
 const AlertEnvironment = Schema.Struct({
   ALERT_FROM: Email,
   ALERT_TO: Schema.String.pipe(
@@ -130,8 +138,9 @@ abstract class Monitor<Bindings extends MonitorBindings> {
       );
       const day = new Date(reported.started).toISOString().slice(0, ISO_DATE_LENGTH);
       if (
-        (yield* Effect.promise(async () => durableState.storage.get<string>("failureNotifiedDay"))) !==
-        day
+        (yield* Effect.promise(async () =>
+          durableState.storage.get<string>("failureNotifiedDay"),
+        )) !== day
       ) {
         yield* reported.notify(failure);
         yield* Effect.promise(async () => durableState.storage.put("failureNotifiedDay", day));

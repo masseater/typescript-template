@@ -149,7 +149,7 @@ describe("inspection coverage", () => {
       "infra/cloudflare/**",
       "infra/error-monitor/**",
       "infra/health-monitor/**",
-          "libs/auth/**",
+      "libs/auth/**",
       "libs/db/**",
       "libs/observability/**",
       "libs/runtime/**",

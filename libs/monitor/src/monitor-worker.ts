@@ -4,6 +4,8 @@ import { Effect } from "effect";
 import { monitorCheckUrl } from "./binding.ts";
 import { Monitor, type Alert, type MonitorBindings, type Notify } from "./monitor-base.ts";
 
+import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
+
 const monitorHandler = (
   monitorEvent: string,
 ): {
@@ -35,7 +37,10 @@ const monitorWorker = <Bindings extends MonitorBindings>(definition: {
   readonly event: string;
   readonly failure: Alert;
 }): {
-  readonly Worker: new (durableState: DurableObjectState, env: Bindings) => {
+  readonly Worker: new (
+    durableState: DurableObjectState,
+    env: Bindings,
+  ) => {
     fetch(): Promise<Response>;
   };
   readonly handler: ReturnType<typeof monitorHandler>;
