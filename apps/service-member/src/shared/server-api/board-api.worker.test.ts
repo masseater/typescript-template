@@ -14,6 +14,22 @@ import { Effect, Layer, Schema } from "effect";
 import { BoardThreadCreated, BoardThreadList, BoardThreadView } from "#shared/contracts/index.ts";
 import { boardApi } from "./board-api.ts";
 
+declare global {
+  // oxlint-disable-next-line typescript/no-namespace
+  namespace Cloudflare {
+    interface Env {
+      readonly EMAIL: {
+        taken(): ReadonlyArray<{
+          readonly from: string;
+          readonly subject: string;
+          readonly text: string;
+          readonly to: readonly string[];
+        }>;
+      };
+    }
+  }
+}
+
 const routes = { "/api/board": "board-api" };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
@@ -38,19 +54,20 @@ function send(
   path: string,
   init: { readonly body?: unknown; readonly cookie?: string; readonly method?: "GET" | "POST" },
 ): Effect.Effect<Response> {
-  return Effect.promise(async () =>
-    app.fetch(
+  return Effect.promise(async () => {
+    const method = init.method ?? (init.body === undefined ? "GET" : "POST");
+    return app.fetch(
       new Request(`${fixtureOrigin}${apiRoot}${path}`, {
-        body: init.body === undefined ? undefined : JSON.stringify(init.body),
         headers: {
           "content-type": "application/json",
           cookie: init.cookie ?? "",
           origin: fixtureOrigin,
         },
-        method: init.method ?? (init.body === undefined ? "GET" : "POST"),
+        method,
+        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
       }),
-    ),
-  );
+    );
+  });
 }
 
 const jsonOf = (response: Response): Effect.Effect<unknown> =>

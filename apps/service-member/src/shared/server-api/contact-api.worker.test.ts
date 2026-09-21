@@ -13,6 +13,22 @@ import { Effect, Layer } from "effect";
 import { contactApi } from "./contact-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
+declare global {
+  // oxlint-disable-next-line typescript/no-namespace
+  namespace Cloudflare {
+    interface Env {
+      readonly EMAIL: {
+        taken(): ReadonlyArray<{
+          readonly from: string;
+          readonly subject: string;
+          readonly text: string;
+          readonly to: readonly string[];
+        }>;
+      };
+    }
+  }
+}
+
 const contactRateLimitMax = 5;
 
 const routes = { "/api/contact": "contact-api" };

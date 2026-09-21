@@ -1,13 +1,7 @@
 import { verifySession } from "@repo/auth";
-import {
-  FeatureFlags,
-  FlagEditorRequired,
-  requireFlagEditor,
-  toggleFlag,
-  toggleFlagRemote,
-} from "@repo/feature-flags";
+import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
 import { httpStatus } from "@repo/observability";
-import { apiRoot, createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
+import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
 
@@ -17,11 +11,14 @@ import { readWikiConfig } from "#shared/wiki/wiki-config.ts";
 import type { WikiServices } from "#shared/wiki/index.ts";
 
 const failures = {
+  ConfigurationInvalid: "unexpected",
+  DatabaseFailure: "unexpected",
   FlagEditorRequired: {
     message: "機能フラグの変更権限がありません。",
     status: httpStatus.forbidden,
   },
-};
+  FlagshipWriteFailed: "unexpected",
+} as const;
 
 const listFlags = Effect.fn("listFlags")(function* listFlags(request: Request) {
   yield* verifySession(request.headers);
@@ -52,9 +49,9 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 });
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
-  return createApi(apiRoot)
-    .get("/flags", api.route(FlagList, listFlags, {}))
-    .patch("/flags", api.route(FlagToggled, patchFlag, { ...failures, FlagEditorRequired }));
+  return createApi("")
+    .get("/flags", api.route(FlagList, listFlags, { DatabaseFailure: "unexpected" }))
+    .patch("/flags", api.route(FlagToggled, patchFlag, failures));
 }
 
 export { flagsApi };

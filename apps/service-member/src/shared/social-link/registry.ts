@@ -32,14 +32,13 @@ const socialNetworks = [
 ] as const;
 
 type SocialNetwork = (typeof socialNetworks)[number];
-type SocialNetworkId = SocialNetwork["id"];
 
 type ClassifiedSocialUrl =
   | { readonly network: SocialNetwork | null; readonly ok: true; readonly url: string }
   | { readonly ok: false; readonly reason: "invalid" | "not-https" };
 
-const hostIndex = new Map(
-  socialNetworks.flatMap((network) => network.hosts.map((host) => [host, network] as const)),
+const hostIndex = new Map<string, SocialNetwork>(
+  socialNetworks.flatMap((network) => network.hosts.map((host) => [host, network])),
 );
 
 function classifySocialUrl(raw: string): ClassifiedSocialUrl {

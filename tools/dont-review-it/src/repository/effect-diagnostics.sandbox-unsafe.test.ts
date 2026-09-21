@@ -55,19 +55,10 @@ describe("effect diagnostics coverage", () => {
     );
   });
 
-  it("fails the gate before effect diagnostics and before the bundle", () => {
-    expect.assertions(4);
-    const gates = Object.values(configs)
-      .map((config) => namedTask(config, "check:effect:gate"))
-      .filter((task) => task !== undefined);
-    expect(gates).toStrictEqual(gates.map(() => effectDiagnostics["check:effect:gate"]));
-    expect(gates).toHaveLength(declarations.length);
-    expect(effectDiagnostics["check:effect"]).toEqual(
-      expect.objectContaining({
-        command:
-          "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-        dependsOn: ["check:effect:gate"],
-      }),
+  it("typechecks with effect-tsgo before the bundle", () => {
+    expect.assertions(2);
+    expect(effectDiagnostics["check:effect"].command).toBe(
+      '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
     );
     expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
   });

@@ -36,7 +36,7 @@ function FlagRow({
         />
       </div>
       {action.error === undefined ? null : (
-        <StatusMessage variant={STATUS_VARIANT.error}>{action.error}</StatusMessage>
+        <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
       )}
     </div>
   );

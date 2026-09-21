@@ -1,5 +1,4 @@
-import { UserNotFound, containsKeyword, query, schema } from "@repo/db";
-import { and, count, desc, eq, or } from "drizzle-orm";
+import { UserNotFound, and, containsKeyword, count, desc, eq, or, query, schema } from "@repo/db";
 import { Effect } from "effect";
 
 const { user } = schema;

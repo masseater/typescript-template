@@ -22,10 +22,14 @@ function AdminNavigation({
               {group.items.map((item) => (
                 <AdminNavigationItem
                   key={item.to}
-                  badge={item.badge}
                   collapsed={collapsed}
                   icon={item.icon}
                   label={item.label}
+<<<<<<< HEAD
+=======
+                  badge={item.badge}
+                  onNavigate={onNavigate}
+>>>>>>> b0e1ae9a (fix: fail prepush typecheck on every compiler diagnostic)
                   to={item.to}
                 />
               ))}

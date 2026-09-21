@@ -145,7 +145,6 @@ const typecheckInputs = [
   { base: "workspace", pattern: "**/*.{ts,tsx}" },
   { base: "workspace", pattern: "**/package.json" },
   { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
   { base: "workspace", pattern: "!**/node_modules/**" },
   { base: "workspace", pattern: "!**/dist/**" },
   { base: "workspace", pattern: "!**/.paraglide/**" },
@@ -153,14 +152,8 @@ const typecheckInputs = [
 ] as const;
 
 const effectDiagnostics = {
-  "check:effect:gate": {
-    command: "check-effect-typecheck",
-    input: [...typecheckInputs],
-  },
   "check:effect": {
-    command:
-      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    dependsOn: ["check:effect:gate"],
+    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];

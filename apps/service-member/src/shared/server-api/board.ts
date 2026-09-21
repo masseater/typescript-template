@@ -1,6 +1,5 @@
 import { ROLE } from "@repo/config";
-import { query, schema } from "@repo/db";
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, query, schema, sql } from "@repo/db";
 import { Clock, Effect } from "effect";
 
 import { BoardMemberRequired } from "./board-member-required.ts";

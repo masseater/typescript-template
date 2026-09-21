@@ -10,7 +10,8 @@ import { FlagList, FlagToggled } from "#shared/contracts/index.ts";
 import type { FlagEntry } from "#shared/contracts/index.ts";
 
 async function fetchFlags(): Promise<readonly FlagEntry[]> {
-  const { flags } = apiData(FlagList, await wikiClient().flags.get());
+  const { api } = await wikiClient();
+  const { flags } = apiData(FlagList, await api.flags.get());
   return flags;
 }
 
@@ -35,7 +36,8 @@ function useFlagList(): Readonly<{
 
   const toggle = async (key: FlagEntry["key"], enabled: boolean): Promise<string | undefined> => {
     try {
-      const updated = apiData(FlagToggled, await wikiClient().flags.patch({ enabled, key }));
+      const { api } = await wikiClient();
+      const updated = apiData(FlagToggled, await api.flags.patch({ enabled, key }));
       setOverrides((current) => ({ ...current, [updated.key]: updated }));
       return undefined;
     } catch (error) {

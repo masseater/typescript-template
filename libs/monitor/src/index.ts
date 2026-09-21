@@ -5,6 +5,12 @@ import { Cause, Console, Effect, Exit, Predicate, Schema, SchemaGetter } from "e
 import { monitorBinding } from "./binding.ts";
 import { MonitorFailure } from "./failure.ts";
 
+import type {
+  DurableObjectNamespace,
+  DurableObjectState,
+  SendEmail,
+} from "@cloudflare/workers-types";
+
 interface Alert {
   readonly subject: string;
   readonly text: string;

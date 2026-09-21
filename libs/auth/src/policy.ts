@@ -72,19 +72,22 @@ const authenticationMethodFor = (path: string | undefined): AuthenticationMethod
   (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
   AUTHENTICATION_METHOD.password;
 
-const assertEligibleUser: <
+function assertEligibleUser<
   TUser extends { readonly emailVerified: boolean; readonly role: string },
->(
-  eligibleUser: TUser | undefined,
-  audience: Application,
-) => asserts eligibleUser is TUser = (eligibleUser, audience) => {
-  if (eligibleUser === undefined || !eligibleUser.emailVerified) {
-    deny("VERIFIED_EMAIL_REQUIRED");
+>(eligibleUser: TUser | undefined, audience: Application): asserts eligibleUser is TUser {
+  if (
+    eligibleUser !== undefined &&
+    eligibleUser.emailVerified &&
+    (audience === APPLICATION.user || eligibleUser.role === ROLE.administrator)
+  ) {
+    return;
   }
-  if (audience !== APPLICATION.user && eligibleUser.role !== ROLE.administrator) {
-    deny("ADMIN_REQUIRED");
-  }
-};
+  deny(
+    eligibleUser !== undefined && eligibleUser.emailVerified
+      ? "ADMIN_REQUIRED"
+      : "VERIFIED_EMAIL_REQUIRED",
+  );
+}
 
 export {
   assertEligibleUser,

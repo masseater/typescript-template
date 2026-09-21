@@ -1,5 +1,6 @@
 import "./temporal.ts";
 import { dateToWareki } from "@smarthr/wareki";
+import { Temporal } from "temporal-polyfill";
 
 const warekiOf = (gregorian: Date | string): string => {
   const wareki = dateToWareki(gregorian);

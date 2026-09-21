@@ -30,7 +30,11 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
   headers: Headers,
 ) {
   const { instance } = yield* Auth;
-  const verification = new URL("/api/auth/verify-email", instance.options.baseURL);
+  const baseURL = instance.options.baseURL;
+  if (typeof baseURL !== "string") {
+    return yield* new EmailVerificationFailed({ rateLimited: false });
+  }
+  const verification = new URL("/api/auth/verify-email", baseURL);
   verification.searchParams.set("token", token);
   const response = yield* handleAuthRequest(new Request(verification, { headers, method: "GET" }));
   yield* Effect.promise(async () => response.body?.cancel());

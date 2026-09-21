@@ -11,7 +11,7 @@ const privateDirectoryMode = 0o700;
 const textEncoder = new TextEncoder();
 
 function isErrorCode(error: unknown, code: string): boolean {
-  return Predicate.isObject(error) && "code" in error && error.code === code;
+  return Predicate.isObject(error) && "code" in error && error["code"] === code;
 }
 
 function withFileSystemError<A, R = never>(

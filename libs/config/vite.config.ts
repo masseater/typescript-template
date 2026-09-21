@@ -7,7 +7,6 @@ const typecheckInput = [
   { base: "workspace", pattern: "**/*.{ts,tsx}" },
   { base: "workspace", pattern: "**/package.json" },
   { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
   { base: "workspace", pattern: "!**/node_modules/**" },
   { base: "workspace", pattern: "!**/dist/**" },
   { base: "workspace", pattern: "!**/.paraglide/**" },
@@ -17,14 +16,8 @@ const typecheckInput = [
 export default defineConfig({
   run: {
     tasks: {
-      "check:effect:gate": {
-        command: "check-effect-typecheck",
-        input: [...typecheckInput],
-      },
       "check:effect": {
-        command:
-          "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-        dependsOn: ["check:effect:gate"],
+        command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
         input: [...typecheckInput],
       },
       precommit: { command: [], dependsOn: [] },

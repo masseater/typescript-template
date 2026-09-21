@@ -30,7 +30,11 @@ class Mailbox extends Context.Service<Mailbox, Ref.Ref<readonly Delivery[]>>()(
 ) {}
 
 const receiveMail = (deliveries: Mailbox["Service"]) => {
-  return async ({ request }: { readonly request: Request }): Promise<Response> => {
+  return async ({
+    request,
+  }: {
+    readonly request: { readonly json: () => Promise<unknown> };
+  }): Promise<Response> => {
     const mailpitMessage = await decodeMail(await request.json());
     const link = mailpitMessage.Text.split("\n").find((line) => line.startsWith("http://"));
     if (

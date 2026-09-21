@@ -23,7 +23,7 @@ const route = getRouteApi("/_welcome");
 
 function WelcomeLayout(): ReactElement {
   const { step } = route.useRouteContext();
-  const label = step === "done" ? "" : progressLabel[step];
+  const label = step === "done" ? "" : (progressLabel[step] ?? "");
   return (
     <WelcomeShell progress={label}>
       <Outlet />

@@ -1,6 +1,10 @@
 import { ButtonLink, formatWarekiMonth } from "@repo/ui";
 
+<<<<<<< HEAD
 import { MemberPage } from "#widgets/member-page/index.ts";
+=======
+import { SocialLinks } from "#shared/social-link/index.ts";
+>>>>>>> 04b0965b (fix: fail prepush typecheck on every compiler diagnostic)
 import { Biography } from "./biography.tsx";
 import { ProfileBody } from "./profile-body.tsx";
 import { ProfileShare } from "./profile-share.tsx";

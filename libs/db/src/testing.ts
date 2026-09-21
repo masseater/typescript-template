@@ -1,3 +1,5 @@
+/// <reference types="@cloudflare/vitest-plugin/types" />
+/// <reference types="@cloudflare/workers-types" />
 import { applyD1Migrations, reset } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { getColumns } from "drizzle-orm";

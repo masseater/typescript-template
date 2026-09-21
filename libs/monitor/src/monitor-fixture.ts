@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { MonitorFailure } from "./failure.ts";
 import { monitorWorker } from "./index.ts";
 
+import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
 import type { MonitorBindings } from "./index.ts";
 import type { SentMail } from "./mail-recorder.ts";
 
@@ -47,10 +48,23 @@ const probeMonitor = monitorWorker<MonitorBindings>({
   failure: probeFailure,
 });
 
-const ProbeMonitor = probeMonitor.Worker;
+const ProbeMonitor: new (
+  ctx: DurableObjectState,
+  env: MonitorBindings,
+) => {
+  fetch(): Promise<Response>;
+} = probeMonitor.Worker;
+
+const handler: {
+  readonly fetch: () => Response;
+  readonly scheduled: (
+    controller: unknown,
+    env: { readonly MONITOR: Pick<DurableObjectNamespace, "get" | "idFromName"> },
+  ) => Promise<void>;
+} = probeMonitor.handler;
 
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
 export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
-export default probeMonitor.handler;
+export default handler;

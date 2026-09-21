@@ -243,9 +243,13 @@ const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 export type BetterAuthInstance = {
   readonly $context: Promise<unknown>;
-  readonly api: unknown;
-  readonly handler: unknown;
-  readonly options: unknown;
+  readonly api: {
+    readonly verifyEmail: (input: {
+      readonly query: { readonly token: string };
+    }) => Promise<unknown>;
+  };
+  readonly handler: (request: Request) => Promise<Response>;
+  readonly options: BetterAuthOptions;
 };
 
 export const createAuth = ({

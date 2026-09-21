@@ -146,6 +146,9 @@ describe("an event stream route seen by its callers", () => {
       const client = apiServerClient(createApi("/api").get("/events", ticks), {});
       const reply = yield* Effect.promise(async () => client.api.events.get());
       assert.isNotNull(reply.data);
+      if (Symbol.asyncIterator in reply.data === false) {
+        return yield* Effect.die(reply.data);
+      }
       const received = Stream.fromAsyncIterable(reply.data, (cause) => cause).pipe(
         Stream.mapEffect((event) => decodeTick(event)),
       );

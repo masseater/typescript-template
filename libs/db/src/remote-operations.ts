@@ -235,6 +235,7 @@ const bootstrapDatabase = <Result>(
 export {
   APPLICATION_TABLES,
   MIGRATIONS_TABLE_PRESENT,
+  RemoteFailure,
   bootstrapDatabase,
   fail,
   loadRemoteMigrations,

@@ -7,7 +7,10 @@ import { stackName, stackOptions } from "./stacks.ts";
 
 const accountTokens = {
   BillingRead: { permission: "Billing Read", slug: "billing-read" },
-  FlagshipWrite: { permission: "Flagship Write", slug: "flagship-write" },
+  FlagshipWrite: {
+    permission: "Flagship Write" as ApiToken.PermissionGroupName,
+    slug: "flagship-write",
+  },
   ObservabilityQuery: { permission: "Workers Observability Write", slug: "observability-query" },
 } as const satisfies Readonly<
   Record<string, { permission: ApiToken.PermissionGroupName; slug: string }>

@@ -124,7 +124,7 @@ const rejectUnsafeFields = function rejectUnsafeFields(
 ): void {
   const body: unknown = ctx.body;
   const fields = Predicate.isObject(body) ? body : {};
-  if ("trustDevice" in fields && fields.trustDevice === true) {
+  if ("trustDevice" in fields && fields["trustDevice"] === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }
   if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path)) {
@@ -136,7 +136,7 @@ const rejectUnsafeFields = function rejectUnsafeFields(
   if (
     ctx.path === "/passkey/verify-registration" &&
     "createSession" in fields &&
-    fields.createSession === true
+    fields["createSession"] === true
   ) {
     deny("REGISTRATION_SESSION_DISABLED");
   }
@@ -252,7 +252,7 @@ const confirmsEmailChange = function confirmsEmailChange(
   ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
   const query: unknown = ctx.query;
-  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
+  const token = Predicate.isObject(query) && "token" in query ? query["token"] : undefined;
   return (
     ctx.path === emailVerificationPath &&
     typeof token === "string" &&

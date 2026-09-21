@@ -13,7 +13,7 @@ import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
+import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
 function appEnv(
@@ -64,7 +64,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
           ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
         }),
   });
-  const env: DeclaredEnv | WikiEnv =
+  const env =
     target === APPLICATION.wiki
       ? {
           ...shared,

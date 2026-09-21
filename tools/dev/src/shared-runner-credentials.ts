@@ -9,7 +9,7 @@ import type { App, Credentials } from "./local-environment.ts";
 
 const sharedRunnerSeed = "continuous-integration";
 
-function sharedRunnerCredentials(): Credentials {
+function sharedRunnerCredentials(): Credentials & { readonly origins: "loopback" } {
   return {
     authSecret: createHash("sha256").update(sharedRunnerSeed).digest("base64url"),
     origins: "loopback",

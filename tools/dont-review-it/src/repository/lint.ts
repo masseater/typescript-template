@@ -386,7 +386,7 @@ const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
     .map((override) => override.rules ?? {}),
 );
 
-const builtInPlugins = new Set([
+const builtInPlugins: ReadonlySet<string> = new Set([
   "eslint",
   "import",
   "jest",
@@ -410,7 +410,7 @@ const overridePluginMismatches = (overrides: typeof lintOptions.overrides): read
     if (plugins === undefined) {
       return [];
     }
-    const enabled = new Set(plugins);
+    const enabled = new Set<string>(plugins);
     return Object.keys(override.rules ?? {}).flatMap((rule) => {
       const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
       if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {
