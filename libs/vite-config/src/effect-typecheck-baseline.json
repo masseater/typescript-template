@@ -211,7 +211,7 @@
       {
         "file": "src/shared/server-api/flags-api.ts",
         "code": "TS377004",
-        "message": "This Effect requires a service that is missing from the expected Effect context: `FlagEditorAccess`. effect(missingEffectContext)",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `FeatureFlags`. effect(missingEffectContext)",
         "count": 1
       },
       {
