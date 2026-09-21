@@ -153,4 +153,4 @@ function titleForPath(pathname: string): string {
 }
 
 export { memberHasPaidPlan, memberNavItems, titleForPath };
-export type { MemberNavItem, NavBadges };
+export type { NavBadges };

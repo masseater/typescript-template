@@ -17,7 +17,7 @@ import {
 import { Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
-import { baselineProfileLayout, interviewProfileLayout } from "#shared/profile-layout/default.ts";
+import { baselineProfileLayout, interviewProfileLayout } from "#shared/profile-layout/index.ts";
 import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 
 import type { SheetData } from "#shared/interview/sheet.ts";

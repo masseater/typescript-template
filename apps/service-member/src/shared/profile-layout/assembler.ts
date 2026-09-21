@@ -5,7 +5,7 @@ import { chat } from "@tanstack/ai";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 
 import { displayValue, fieldDefinitions, fieldKeys } from "#shared/interview/sheet.ts";
-import { interviewProfileLayout } from "./default.ts";
+import { interviewProfileLayout } from "#shared/profile-layout/index.ts";
 import { LayoutFailed } from "./layout-failed.ts";
 import { profileBlock, ProfileLayout } from "./schema.ts";
 
