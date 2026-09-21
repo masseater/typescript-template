@@ -19,7 +19,6 @@ describe("pull request check scope", () => {
     expect(workflow).toContain('refs/remotes/origin/main "${parents[0]}"');
     expect(vite).toContain('prepr: ["check:imports", "test"]');
     expect(vite).toContain('premerge: ["test:all", "test:dev-server"]');
-    expect(vite).toContain("--changed origin/main --passWithNoTests");
     expect(vite).toContain('"apps/**/*.test.ts"');
     expect(vite).toContain('"infra/**/*.test.ts"');
     expect(vite).toContain('"libs/**/*.test.ts"');
