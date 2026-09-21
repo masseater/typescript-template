@@ -43,9 +43,6 @@ const workspaces = {
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
   },
-  "libs/vite-config": {
-    entry: ["src/effect-typecheck.ts"],
-  },
   "libs/monitor": {
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
@@ -246,9 +243,6 @@ const config = ({
       "libs/db-local": {
         entry: productionOnly(...scripts["libs/db-local"]),
         project: ["src/**/*.ts!"],
-      },
-      "libs/vite-config": {
-        entry: productionOnly("src/effect-typecheck.ts!"),
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
