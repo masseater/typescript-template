@@ -65,8 +65,12 @@ const spawnChild = (launch: SpawnLaunch): SpawnedChild => {
   };
 };
 
-const printedOutput = (printed: string | Buffer): string =>
-  typeof printed === "string" ? printed : Buffer.from(printed).toString("utf8");
+const printedOutput = (printed: string | Buffer | null | undefined): string =>
+  printed === undefined || printed === null
+    ? ""
+    : typeof printed === "string"
+      ? printed
+      : Buffer.from(printed).toString("utf8");
 
 const spawnChildSync = (
   launch: SpawnLaunch,

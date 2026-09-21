@@ -8,20 +8,33 @@ import { ProfileEditor } from "./profile-editor.tsx";
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import type { ReactElement } from "react";
 
+function showSaved(
+  memberId: string,
+  invalidate: () => Promise<unknown>,
+  goToProfile: (memberId: string) => Promise<unknown>,
+  notify: (kind: "success", message: string) => void,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* afterSave() {
+      yield* Effect.promise(() => invalidate());
+      yield* Effect.promise(() => goToProfile(memberId));
+      notify("success", "プロフィールを保存しました。");
+    }),
+  );
+}
+
 function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  function showSaved(): Promise<void> {
-    return Effect.runPromise(
-      Effect.gen(function* afterSave() {
-        yield* Effect.promise(() => router.invalidate());
-        yield* Effect.promise(() => navigate({ params: { id: initial.id }, to: "/users/$id" }));
-        notify("success", "プロフィールを保存しました。");
-      }),
-    );
-  }
-  const form = useProfileForm(initial, showSaved);
+  const form = useProfileForm(initial, () =>
+    showSaved(
+      initial.id,
+      () => router.invalidate(),
+      (id) => navigate({ params: { id }, to: "/users/$id" }),
+      notify,
+    ),
+  );
   return (
     <Page title="プロフィールの編集">
       <FormColumn>

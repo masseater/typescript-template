@@ -829,11 +829,13 @@ describe("the package surface", () => {
         access: "public",
       },
       dependencies: {
+        "@effect/platform-node": "catalog:",
         "@opentelemetry/api": "catalog:",
         "@opentelemetry/api-logs": "0.221.0",
         "@opentelemetry/semantic-conventions": "1.43.0",
         "@repo/ai-native-telemetry": "workspace:*",
         "cc-hooks-ts": "2.1.251",
+        effect: "catalog:",
         "es-toolkit": "catalog:",
         "fs-native-extensions": "1.5.0",
         "shell-quote": "1.10.0",

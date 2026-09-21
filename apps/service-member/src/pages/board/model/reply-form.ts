@@ -16,20 +16,27 @@ interface ReplyForm {
 
 const useBody = localState("");
 
+function postReply(
+  threadId: string,
+  body: string,
+  setBody: (value: string) => void,
+  onPosted: () => Promise<void>,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* publishReply() {
+      yield* Effect.promise(() => replyToThread(threadId, body));
+      setBody("");
+      yield* Effect.promise(() => onPosted());
+    }),
+  );
+}
+
 function useReplyForm(threadId: string, onPosted: () => Promise<void>): ReplyForm {
   const [body, setBody] = useBody();
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(() =>
-      Effect.runPromise(
-        Effect.gen(function* postReply() {
-          yield* Effect.promise(() => replyToThread(threadId, body));
-          setBody("");
-          yield* Effect.promise(() => onPosted());
-        }),
-      ),
-    );
+    action.run(() => postReply(threadId, body, setBody, onPosted));
   }
   return {
     blocked: action.blocked,

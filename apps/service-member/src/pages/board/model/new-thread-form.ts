@@ -5,6 +5,19 @@ import { openThread } from "#pages/board/api/board.ts";
 
 import type { SubmitEventHandler } from "react";
 
+function createThread(
+  title: string,
+  body: string,
+  onCreated: (threadId: string) => Promise<void>,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* publishThread() {
+      const threadId = yield* Effect.promise(() => openThread(title, body));
+      yield* Effect.promise(() => onCreated(threadId));
+    }),
+  );
+}
+
 interface NewThreadForm {
   readonly blocked: boolean;
   readonly body: string;
@@ -22,14 +35,7 @@ function useNewThreadForm(onCreated: (threadId: string) => Promise<void>): NewTh
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(() =>
-      Effect.runPromise(
-        Effect.gen(function* createThread() {
-          const threadId = yield* Effect.promise(() => openThread(title.value, body.value));
-          yield* Effect.promise(() => onCreated(threadId));
-        }),
-      ),
-    );
+    action.run(() => createThread(title.value, body.value, onCreated));
   }
   return {
     blocked: action.blocked,

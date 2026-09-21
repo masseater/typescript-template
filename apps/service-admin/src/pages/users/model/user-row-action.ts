@@ -1,7 +1,7 @@
 import { useAtom } from "@effect/atom-react";
 import { apiData } from "@repo/runtime/client";
 import { localState, request, resultError, useToast } from "@repo/ui";
-import { Effect, Option } from "effect";
+import { Effect, Exit, Option } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
@@ -43,6 +43,31 @@ const changeAtom = Atom.family((userId: string) => {
   );
 });
 
+function executeChange(
+  run: (
+    input: Readonly<{ operation: RowOperation; user: ListedUser }>,
+  ) => Promise<Exit.Exit<string, unknown>>,
+  notify: (kind: "success" | "error", message: string) => void,
+  onChanged: () => void,
+  operation: RowOperation,
+  user: ListedUser,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* executeRowOperation() {
+      const change = AsyncResult.fromExit(yield* Effect.promise(() => run({ operation, user })));
+      if (AsyncResult.isSuccess(change)) {
+        notify("success", change.value);
+        onChanged();
+        return;
+      }
+      const failure = resultError(change);
+      if (failure !== undefined) {
+        notify("error", failure);
+      }
+    }),
+  );
+}
+
 function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowAction {
   const notify = useToast();
   const [confirming, setConfirming] = useRowConfirming();
@@ -59,20 +84,7 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
     }
   }
   function execute(operation: RowOperation): void {
-    void Effect.runPromise(
-      Effect.gen(function* executeRowOperation() {
-        const change = AsyncResult.fromExit(yield* Effect.promise(() => run({ operation, user })));
-        if (AsyncResult.isSuccess(change)) {
-          notify("success", change.value);
-          onChanged();
-          return;
-        }
-        const failure = resultError(change);
-        if (failure !== undefined) {
-          notify("error", failure);
-        }
-      }),
-    );
+    void executeChange(run, notify, onChanged, operation, user);
   }
   function handleConfirm(): void {
     if (Option.isNone(confirming)) {

@@ -1,3 +1,5 @@
+import { env as processEnvironment } from "node:process";
+
 import { context, metrics, SpanStatusCode, trace, type Span } from "@opentelemetry/api";
 import { logs, SeverityNumber } from "@opentelemetry/api-logs";
 import {
@@ -29,7 +31,7 @@ const SERVICE_NAME = "mst-command";
 const instrumented = (): boolean => startTelemetry(SERVICE_NAME).enabled;
 
 export const childEnvironment = (): NodeJS.ProcessEnv | undefined =>
-  instrumented() ? environmentCarryingContext() : undefined;
+  instrumented() ? environmentCarryingContext() : processEnvironment;
 
 const measureSpan = (input: {
   readonly command: Command;

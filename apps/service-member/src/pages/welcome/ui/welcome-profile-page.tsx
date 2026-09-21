@@ -11,6 +11,20 @@ import type { ReactElement } from "react";
 const useName = localState("");
 const useProfile = localState("");
 
+function finishWelcomeProfile(
+  name: string,
+  profile: string,
+  goHome: () => Promise<unknown>,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* persist() {
+      yield* Effect.promise(() => saveProfile(name, profile, []));
+      yield* Effect.promise(() => saveOnboardingStep("done"));
+      yield* Effect.promise(() => goHome());
+    }),
+  );
+}
+
 function WelcomeProfilePage(): ReactElement {
   const navigate = useNavigate();
   const action = useAction();
@@ -44,15 +58,7 @@ function WelcomeProfilePage(): ReactElement {
       <Button
         disabled={action.blocked || name.trim() === ""}
         onClick={() => {
-          action.run(() =>
-            Effect.runPromise(
-              Effect.gen(function* finishWelcome() {
-                yield* Effect.promise(() => saveProfile(name, profile, []));
-                yield* Effect.promise(() => saveOnboardingStep("done"));
-                yield* Effect.promise(() => navigate({ to: "/home" }));
-              }),
-            ),
-          );
+          action.run(() => finishWelcomeProfile(name, profile, () => navigate({ to: "/home" })));
         }}
         type="button"
         variant="primary"

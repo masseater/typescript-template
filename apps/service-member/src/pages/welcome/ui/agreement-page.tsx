@@ -6,6 +6,15 @@ import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { ReactElement } from "react";
 
+function acceptAgreement(goToChoose: () => Promise<unknown>): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* accept() {
+      yield* Effect.promise(() => saveOnboardingStep("choose"));
+      yield* Effect.promise(() => goToChoose());
+    }),
+  );
+}
+
 function AgreementPage(): ReactElement {
   const navigate = useNavigate();
   const action = useAction();
@@ -26,14 +35,7 @@ function AgreementPage(): ReactElement {
       <Button
         disabled={action.blocked}
         onClick={() => {
-          action.run(() =>
-            Effect.runPromise(
-              Effect.gen(function* acceptAgreement() {
-                yield* Effect.promise(() => saveOnboardingStep("choose"));
-                yield* Effect.promise(() => navigate({ to: "/welcome/choose" }));
-              }),
-            ),
-          );
+          action.run(() => acceptAgreement(() => navigate({ to: "/welcome/choose" })));
         }}
         type="button"
         variant="primary"

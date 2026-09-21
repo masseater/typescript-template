@@ -4,6 +4,21 @@ import { Effect } from "effect";
 import type { FlagEntry } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
+function toggleFlag(
+  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>,
+  key: FlagEntry["key"],
+  enabled: boolean,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* toggleRow() {
+      const message = yield* Effect.promise(() => onToggle(key, enabled));
+      if (message !== undefined) {
+        throw new Error(message);
+      }
+    }),
+  );
+}
+
 function FlagRow({
   entry,
   onToggle,
@@ -27,18 +42,7 @@ function FlagRow({
           label={entry.enabled ? "オン" : "オフ"}
           name={`flag-${entry.key}`}
           onCheckedChange={(checked) => {
-            action.run(() =>
-              Effect.runPromise(
-                Effect.gen(function* toggleRow() {
-                  const message = yield* Effect.promise(() =>
-                    onToggle(entry.key, checked === true),
-                  );
-                  if (message !== undefined) {
-                    throw new Error(message);
-                  }
-                }),
-              ),
-            );
+            action.run(() => toggleFlag(onToggle, entry.key, checked === true));
           }}
         />
       </div>

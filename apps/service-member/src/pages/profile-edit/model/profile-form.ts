@@ -52,21 +52,26 @@ const fieldsAtom = Atom.family((initial: Profile) =>
   }),
 );
 
+function saveDraft(
+  name: string,
+  profile: string,
+  socialLinks: readonly DraftLink[],
+  onSaved: () => Promise<void>,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* persist() {
+      yield* Effect.promise(() => saveProfile(name, profile, savedLinks(socialLinks)));
+      yield* Effect.promise(() => onSaved());
+    }),
+  );
+}
+
 function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>): ProfileForm {
   const [fields, setFields] = useAtom(fieldsAtom(initial));
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(() =>
-      Effect.runPromise(
-        Effect.gen(function* saveDraft() {
-          yield* Effect.promise(() =>
-            saveProfile(fields.name, fields.profile, savedLinks(fields.socialLinks)),
-          );
-          yield* Effect.promise(() => onSaved());
-        }),
-      ),
-    );
+    action.run(() => saveDraft(fields.name, fields.profile, fields.socialLinks, onSaved));
   }
   return {
     ...fields,

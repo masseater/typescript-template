@@ -16,20 +16,33 @@ import { maximumBoardBodyLength, maximumBoardTitleLength } from "#shared/contrac
 
 import type { ReactElement } from "react";
 
+function showCreated(
+  threadId: string,
+  invalidate: () => Promise<unknown>,
+  goToThread: (threadId: string) => Promise<unknown>,
+  notify: (kind: "success", message: string) => void,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* afterCreate() {
+      yield* Effect.promise(() => invalidate());
+      yield* Effect.promise(() => goToThread(threadId));
+      notify("success", "スレッドを立てました。");
+    }),
+  );
+}
+
 function NewThreadForm(): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  function showCreated(threadId: string): Promise<void> {
-    return Effect.runPromise(
-      Effect.gen(function* afterCreate() {
-        yield* Effect.promise(() => router.invalidate());
-        yield* Effect.promise(() => navigate({ params: { id: threadId }, to: "/board/$id" }));
-        notify("success", "スレッドを立てました。");
-      }),
-    );
-  }
-  const form = useNewThreadForm(showCreated);
+  const form = useNewThreadForm((threadId) =>
+    showCreated(
+      threadId,
+      () => router.invalidate(),
+      (id) => navigate({ params: { id }, to: "/board/$id" }),
+      notify,
+    ),
+  );
   return (
     <section aria-labelledby="new-thread-heading" className="flex flex-col gap-4">
       <Heading as="h2" size="section">
