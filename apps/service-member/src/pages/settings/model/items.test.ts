@@ -14,6 +14,7 @@ describe("settings items", () => {
       "/settings/ai",
       "/settings/plan",
       "/settings/agreements",
+      "/settings/recovery",
       "/settings/leave",
     ]);
   });

@@ -6,6 +6,7 @@ import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
+import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 import { accountTokenRef } from "./tokens.ts";
 
@@ -60,6 +61,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
+    crons: target === APPLICATION.user ? [memberLeavePurgeCron] : undefined,
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env,
     main: artifacts.mainModule,

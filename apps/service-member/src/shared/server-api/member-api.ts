@@ -20,6 +20,7 @@ import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { leaveApi } from "./leave-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
 
 import type { Interviewer } from "#shared/interview/index.ts";
@@ -39,6 +40,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail>) {
     .use(flagsApi(api))
     .use(agreementApi(api))
     .use(onboardingStepApi(api))
+    .use(leaveApi(api))
     .onBeforeHandle(consentGate(api))
     .use(interviewApi(api))
     .use(socialApi(api))

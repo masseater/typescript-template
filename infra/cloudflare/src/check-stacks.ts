@@ -19,6 +19,7 @@ import {
   compileStack,
   describeCause,
 } from "./inventory.ts";
+import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -112,6 +113,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
         runWorkerFirst: true,
       },
       bundle: false,
+      ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
       domain: { name: new URL(origins[app]).hostname, zoneId: verificationSettings.zoneId },
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,
