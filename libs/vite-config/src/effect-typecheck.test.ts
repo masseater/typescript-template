@@ -162,6 +162,63 @@ describe("effect typecheck gate", () => {
     }
   });
 
+  it("treats diagnostics that differ only by checkout path as the same diagnostic", () => {
+    expect.hasAssertions();
+    const checkout = path.join(repositoryRoot, ".local", "effect-typecheck-checkout");
+    const sibling = `${checkout}-other`;
+    const output = `src/monitor-fixture.ts(48,7): error TS4023: Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "${checkout}/libs/monitor/src/index" but cannot be named.\n`;
+    const baseline = serializeBaseline({
+      version: 1,
+      workspaces: {
+        ".": [
+          {
+            file: "src/monitor-fixture.ts",
+            code: "TS4023",
+            message: `Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "<repo>/libs/monitor/src/index" but cannot be named.`,
+            count: 1,
+          },
+        ],
+      },
+    });
+    let printed = "";
+    let stored = emptyBaseline;
+    expect(
+      runEffectTypecheck({
+        cwd: checkout,
+        repositoryRoot: checkout,
+        args: [],
+        baselinePath: "baseline.json",
+        compile: () => ({ output, status: 1 }),
+        readText: () => baseline,
+        writeText: () => undefined,
+        print: (text) => {
+          printed += text;
+        },
+      }),
+    ).toBe(0);
+    expect(printed).not.toMatch(/typecheck gate:/u);
+    expect(
+      runEffectTypecheck({
+        cwd: checkout,
+        repositoryRoot: checkout,
+        args: ["--write"],
+        baselinePath: "baseline.json",
+        compile: () => ({
+          output: `src/a.ts(1,1): error TS4023: from "${checkout}/libs/a" and "${sibling}/libs/a"\n`,
+          status: 1,
+        }),
+        readText: () => emptyBaseline,
+        writeText: (_file, text) => {
+          stored = text;
+        },
+        print: () => undefined,
+      }),
+    ).toBe(0);
+    expect(stored).toContain("<repo>/libs/a");
+    expect(stored).toContain(`${sibling}/libs/a`);
+    expect(stored).not.toContain(`${checkout}/libs/a`);
+  });
+
   it("fails when a snapshotted diagnostic disappears", () => {
     expect.hasAssertions();
     const cwd = createFixture({ "value.ts": "export const value = 1;\n" });

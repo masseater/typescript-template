@@ -68,6 +68,64 @@ const locatedDiagnosticLine = /^(.+)\((\d+),(\d+)\): error (TS\d+): (.*)$/u;
 const prettyDiagnosticLine = /^(.+):(\d+):(\d+) - error (TS\d+): (.*)$/u;
 const looseDiagnosticLine = /^error (TS\d+): (.*)$/u;
 
+const checkoutMarker = "<repo>";
+
+const checkoutRoots = (repositoryRoot: string): readonly string[] => {
+  const resolved = path.resolve(repositoryRoot);
+  try {
+    const real = realpathSync(resolved);
+    return real === resolved ? [resolved] : [real, resolved];
+  } catch {
+    return [resolved];
+  }
+};
+
+const withoutCheckoutPath = (text: string, repositoryRoot: string): string => {
+  const roots = checkoutRoots(repositoryRoot).toSorted((left, right) => right.length - left.length);
+  let current = text;
+  for (const root of roots) {
+    let result = "";
+    let cursor = 0;
+    while (cursor < current.length) {
+      const found = current.indexOf(root, cursor);
+      if (found === -1) {
+        result += current.slice(cursor);
+        break;
+      }
+      const after = found + root.length;
+      const next = current[after];
+      result += current.slice(cursor, found);
+      if (next === undefined || next === "/") {
+        result += checkoutMarker;
+      } else {
+        result += root;
+      }
+      cursor = after;
+    }
+    current = result;
+  }
+  return current;
+};
+
+const portableDiagnostic = (diagnostic: Diagnostic, repositoryRoot: string): Diagnostic => ({
+  file: withoutCheckoutPath(diagnostic.file, repositoryRoot),
+  code: diagnostic.code,
+  message: withoutCheckoutPath(diagnostic.message, repositoryRoot),
+});
+
+const portableBaseline = (baseline: TypecheckBaseline, repositoryRoot: string): TypecheckBaseline => ({
+  version: 1,
+  workspaces: Object.fromEntries(
+    Object.entries(baseline.workspaces).map(([workspace, entries]) => [
+      workspace,
+      entries.map((entry) => ({
+        ...portableDiagnostic(entry, repositoryRoot),
+        count: entry.count,
+      })),
+    ]),
+  ),
+});
+
 const fingerprintOf = (entry: Diagnostic): string =>
   JSON.stringify([entry.file, entry.code, entry.message]);
 
@@ -330,13 +388,18 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
   }
   const compiled = asked.compile();
   asked.print(printedOutput(compiled.output));
-  const diagnostics = parseTscOutput(compiled.output);
+  const diagnostics = parseTscOutput(compiled.output).map((diagnostic) =>
+    portableDiagnostic(diagnostic, asked.repositoryRoot),
+  );
   if (diagnostics.length === 0 && compiled.status !== 0) {
     asked.print("typecheck gate: compiler exited without diagnostics\n");
     return 1;
   }
   const workspace = workspaceOf(asked.cwd, asked.repositoryRoot);
-  const baseline = parseBaseline(asked.readText(asked.baselinePath));
+  const baseline = portableBaseline(
+    parseBaseline(asked.readText(asked.baselinePath)),
+    asked.repositoryRoot,
+  );
   if (asked.args.includes(writeFlag)) {
     const alwaysFail = alwaysFailing(diagnostics);
     if (alwaysFail.length > 0) {

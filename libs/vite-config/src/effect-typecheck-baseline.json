@@ -521,7 +521,7 @@
       {
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -617,7 +617,7 @@
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -1189,7 +1189,7 @@
       {
         "file": "src/monitor-fixture.ts",
         "code": "TS4023",
-        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/libs/monitor/src/index\" but cannot be named.",
+        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
         "count": 1
       },
       {
