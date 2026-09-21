@@ -41,4 +41,3 @@ const recordingSink = (): RecordedLines & {
   };
 };
 export { recordingSink };
-export type { RecordedLines };

@@ -1,8 +1,9 @@
 import { Effect, Option, Tracer } from "effect";
 
-import { recordingSink, type RecordedLines } from "./recording-sink.ts";
+import { recordingSink } from "./recording-sink.ts";
 
 import type { LogSink } from "./structured-logs.ts";
+type RecordedLines = Omit<ReturnType<typeof recordingSink>, "sink">;
 export const recordedLogs = async (
   logging: (sink: LogSink) => Effect.Effect<unknown, unknown>,
 ): Promise<RecordedLines> => {
