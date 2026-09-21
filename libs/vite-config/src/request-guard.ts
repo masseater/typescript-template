@@ -28,7 +28,7 @@ const decodedPathname = (encodedPathname: string, remainingDepth: number): strin
 };
 
 const isMissingPath = (cause: unknown): boolean =>
-  Predicate.isObject(cause) && "code" in cause && cause.code === "ENOENT";
+  Predicate.isObject(cause) && "code" in cause && cause["code"] === "ENOENT";
 
 const resolvePath = async (
   file: string,
