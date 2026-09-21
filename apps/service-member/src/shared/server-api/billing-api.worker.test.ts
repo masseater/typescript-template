@@ -10,7 +10,7 @@ import {
 import { APPLICATION, PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime";
+import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
