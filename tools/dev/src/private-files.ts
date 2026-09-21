@@ -1,32 +1,30 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { chmod, open, readFile, stat } from "node:fs/promises";
+import { Effect, FileSystem, Path, PlatformError, Predicate, Result } from "effect";
 
-import { Effect, Predicate } from "effect";
-
-import { failure, fileIo } from "./failure.ts";
-
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { FileHandle } from "node:fs/promises";
-import type { LocalCommandFailure } from "./failure.ts";
+import { failure } from "./failure.ts";
+import { isAlreadyExists, urlPath, withFileSystem } from "./platform.ts";
 
 type FileLocation = Readonly<URL>;
 
 const privateFileMode = 0o600;
 const privateDirectoryMode = 0o700;
 const groupAndOtherPermissions = 0o077;
+const textEncoder = new TextEncoder();
 
 function isErrorCode(error: unknown, code: string): boolean {
   return Predicate.isObject(error) && "code" in error && error.code === code;
 }
 
-function closeFile(file: FileHandle): Effect.Effect<void, LocalCommandFailure> {
-  return fileIo(async () => file.close());
+function withFileSystemError<A>(
+  operation: (fs: FileSystem.FileSystem) => Effect.Effect<A, PlatformError.PlatformError>,
+): Effect.Effect<A, PlatformError.PlatformError, FileSystem.FileSystem> {
+  return FileSystem.FileSystem.pipe(Effect.flatMap(operation));
 }
 
 const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
   location: FileLocation,
 ) {
-  const entry = yield* fileIo(async () => stat(location));
+  const path = yield* urlPath(location);
+  const entry = yield* withFileSystem((fs) => fs.stat(path));
   // oxlint-disable-next-line no-bitwise
   if ((entry.mode & groupAndOtherPermissions) !== 0) {
     return yield* failure("credentials_permissions_invalid");
@@ -37,9 +35,13 @@ const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
 function unchangedPrivateFile(
   location: FileLocation,
   content: string,
-): Effect.Effect<boolean, never> {
+): Effect.Effect<boolean, never, FileSystem.FileSystem | Path.Path> {
   return assertOwnerOnly(location).pipe(
-    Effect.flatMap(() => fileIo(async () => readFile(location, "utf-8"))),
+    Effect.flatMap(() =>
+      urlPath(location).pipe(
+        Effect.flatMap((path) => withFileSystem((fs) => fs.readFileString(path))),
+      ),
+    ),
     Effect.map((existing) => existing === content),
     Effect.catch(() => Effect.succeed(false)),
   );
@@ -49,40 +51,43 @@ const replacePrivateFile = Effect.fn("replacePrivateFile")(function* replacePriv
   location: FileLocation,
   content: string,
 ) {
+  const path = yield* urlPath(location);
   if (yield* unchangedPrivateFile(location, content)) {
     return;
   }
-  yield* Effect.acquireUseRelease(
-    fileIo(async () => open(location, "w", privateFileMode)),
-    (file) => fileIo(async () => file.writeFile(content)),
-    closeFile,
+  yield* Effect.scoped(
+    withFileSystem((fs) =>
+      fs
+        .open(path, { flag: "w", mode: privateFileMode })
+        .pipe(Effect.flatMap((file) => file.writeAll(textEncoder.encode(content)))),
+    ),
   );
-  yield* fileIo(async () => chmod(location, privateFileMode));
+  yield* withFileSystem((fs) => fs.chmod(path, privateFileMode));
 });
 
 const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFile(
   location: FileLocation,
   content: string,
 ) {
-  yield* Effect.acquireUseRelease(
-    Effect.tryPromise({
-      catch: (error) =>
-        failure(isErrorCode(error, "EEXIST") ? "configuration_exists" : "file_io_failed"),
-      try: async () => open(location, "wx", privateFileMode),
-    }),
-    (file) => fileIo(async () => file.writeFile(content)),
-    closeFile,
-  ).pipe(
-    Effect.catchIf(
-      (error) => error.reason === "configuration_exists",
-      () =>
-        fileIo(async () => readFile(location, "utf-8")).pipe(
-          Effect.flatMap((existing) =>
-            existing === content ? Effect.void : Effect.fail(failure("configuration_differs")),
-          ),
-        ),
+  const path = yield* urlPath(location);
+  const written = yield* Effect.result(
+    Effect.scoped(
+      withFileSystemError((fs) =>
+        fs
+          .open(path, { flag: "wx", mode: privateFileMode })
+          .pipe(Effect.flatMap((file) => file.writeAll(textEncoder.encode(content)))),
+      ),
     ),
   );
+  if (Result.isFailure(written)) {
+    if (!isAlreadyExists(written.failure)) {
+      return yield* failure("file_io_failed");
+    }
+    const existing = yield* withFileSystem((fs) => fs.readFileString(path));
+    if (existing !== content) {
+      return yield* failure("configuration_differs");
+    }
+  }
   yield* assertOwnerOnly(location);
 });
 
