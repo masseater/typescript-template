@@ -1,4 +1,5 @@
 import { APPLICATION, grants } from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
@@ -7,17 +8,31 @@ import { workerCompatibilityOptions, workerObservability, workerSubdomain } from
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
+import type { KV, R2 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
-  return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
-}
+const appEnv = Effect.fn("appEnv")(function* appEnv(
+  target: Application,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shared: SharedEnv,
+) {
+  const ai = grants(target, "ai") ? { AI: Workers.AI("AI") } : {};
+  const storage: Partial<
+    Record<typeof fileBucketBinding, R2.Bucket> & Record<typeof cacheNamespaceBinding, KV.Namespace>
+  > = grants(target, "storage")
+    ? {
+        [cacheNamespaceBinding]: yield* cacheNamespaceRef(),
+        [fileBucketBinding]: yield* fileBucketRef(),
+      }
+    : {};
+  return { ...shared, ...ai, ...storage } satisfies DeclaredEnv;
+});
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
@@ -30,7 +45,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const shared = appEnv(target, {
+  const shared = yield* appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     AUTH_SECRET: secret,

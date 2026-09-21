@@ -6,6 +6,8 @@ import { Layer } from "effect";
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
 import { DatabaseHealth } from "./database-health.ts";
+import { FileStore } from "./file-store.ts";
+import { ReadCache } from "./read-cache.ts";
 
 import type { AuthFailure } from "@repo/auth";
 import type { AppConfig, Application } from "@repo/config";
@@ -17,6 +19,8 @@ type AppServices =
   | Auth
   | Database
   | DatabaseHealth
+  | FileStore
+  | ReadCache
   | Telemetry
   | TelemetryFlusher;
 
@@ -25,6 +29,10 @@ function configuredAppLayer(
   config: AppConfig,
   audience: Application,
   routes: Readonly<Record<string, string>>,
+  storage: {
+    readonly cache: Parameters<typeof ReadCache.layer>[0];
+    readonly files: Parameters<typeof FileStore.layer>[0];
+  } = { cache: undefined, files: undefined },
 ): Layer.Layer<AppServices, AuthFailure | TelemetryInvalid> {
   const database = DatabaseHealth.layer.pipe(Layer.provideMerge(Database.layer(config.DB)));
   const auth = Auth.layer({
@@ -47,9 +55,13 @@ function configuredAppLayer(
     auth,
     Layer.succeed(AppOrigin, config.APP_ORIGIN),
     Layer.succeed(Assets, config.ASSETS),
+    FileStore.layer(storage.files),
+    ReadCache.layer(storage.cache),
   );
   return services.pipe(Layer.provideMerge(telemetry));
 }
 
 export { configuredAppLayer };
 export type { AppServices };
+export type { StoredFile } from "./file-store.ts";
+export { StorageFailed } from "./storage-failed.ts";
