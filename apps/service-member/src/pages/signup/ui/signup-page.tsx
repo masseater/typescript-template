@@ -1,13 +1,14 @@
-import { ActionStatus, FormColumn, TextLink, useAction } from "@repo/ui";
-import { useState } from "react";
+import { ActionStatus, FormColumn, TextLink, localState, useAction } from "@repo/ui";
 
 import { CardPage } from "#shared/ui/index.ts";
 import { SignUpFields } from "./signup-fields.tsx";
 
 import type { ReactElement } from "react";
 
+const useSent = localState(false);
+
 function SignUpPage(): ReactElement {
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useSent();
   const action = useAction();
   function showSent(): void {
     setSent(true);

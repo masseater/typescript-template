@@ -1,6 +1,5 @@
-import { Button, Field, FormColumn, Heading, useAction } from "@repo/ui";
+import { Button, Field, FormColumn, Heading, localState, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
@@ -8,11 +7,14 @@ import { saveProfile } from "../api/profile.ts";
 
 import type { ReactElement } from "react";
 
+const useName = localState("");
+const useProfile = localState("");
+
 function WelcomeProfilePage(): ReactElement {
   const navigate = useNavigate();
   const action = useAction();
-  const [name, setName] = useState("");
-  const [profile, setProfile] = useState("");
+  const [name, setName] = useName();
+  const [profile, setProfile] = useProfile();
 
   return (
     <main className="flex flex-col gap-4">
