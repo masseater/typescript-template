@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { consumeText } from "../node-file-stream.ts";
 import { createEscapeStripper } from "./strip-escapes.ts";
 
 describe("createEscapeStripper", () => {
@@ -11,9 +12,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("plain text\nsecond line\n"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -29,9 +28,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("\x1b[31mred\x1b[0m end"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -47,9 +44,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b[2K\x1b[1;5Hb\x1b[?25lc"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -67,9 +62,7 @@ describe("createEscapeStripper", () => {
           stripper.write(Buffer.from("[3"));
           stripper.write(Buffer.from("2mtwo"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -86,9 +79,7 @@ describe("createEscapeStripper", () => {
           stripper.write(Buffer.from("a\x1b"));
           stripper.write(Buffer.from("Mb"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -104,9 +95,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("x\x1b]0;window title\x07y"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -122,9 +111,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("x\x1b]8;;https://example.com\x1b\\y"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -140,9 +127,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1bPq#0\x1b\\b\x1b_note\x1b\\c"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -158,9 +143,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b]0;title\x1b[31mred"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -176,9 +159,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b]0;t\x1b\x07b"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -194,9 +175,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b(Bb\x1b#8c"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -212,9 +191,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b$(0b"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -230,9 +207,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b(\x01b"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -248,9 +223,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b\x1b[1mb"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -266,9 +239,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("a\x1b[3\nb"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -284,9 +255,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("done\x1b[3"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -302,9 +271,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("done\x1b"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -322,9 +289,7 @@ describe("createEscapeStripper", () => {
           stripper.write(bytes.subarray(0, 4));
           stripper.write(bytes.subarray(4));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 
@@ -340,9 +305,7 @@ describe("createEscapeStripper", () => {
           const stripper = createEscapeStripper();
           stripper.write(Buffer.from("\x1b[1m\x1b[0m"));
           stripper.end();
-          return Buffer.concat(
-            yield* Effect.promise(() => Array.fromAsync(stripper as AsyncIterable<Buffer>)),
-          ).toString();
+          return yield* Effect.promise(() => consumeText(stripper));
         }),
       ));
 

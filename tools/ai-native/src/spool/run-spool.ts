@@ -25,8 +25,9 @@ import {
   type ChildEnd,
 } from "./child-outcome.ts";
 import { formatElapsed } from "./format-elapsed.ts";
-import { commandIdOf, defaultSpoolRoot, timestampOf } from "./log-destination.ts";
+import { defaultSpoolRoot } from "./log-destination.ts";
 import { parseCommand, type Command } from "./parse-command.ts";
+import { recordNameOf } from "./record-name.ts";
 import { isPassthroughSignalled, runPassthrough } from "./run-passthrough.ts";
 import { createEscapeStripper } from "./strip-escapes.ts";
 
@@ -320,7 +321,11 @@ const runEscaped = (command: Command, deps: ResolvedDeps): Promise<number> =>
       const rootDir = deps.spoolRoot();
       const filePath = joinPath(
         rootDir,
-        `${timestampOf(deps.now())}-${commandIdOf(command)}-${deps.uniqueSuffix()}.log`,
+        recordNameOf({
+          stampedInstant: deps.now(),
+          command,
+          uniqueSuffix: deps.uniqueSuffix(),
+        }),
       );
       const opened = yield* Effect.promise(() => openRecordFile(rootDir, filePath));
       if (opened instanceof Error) {

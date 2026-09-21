@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import { describe, expect, test } from "vite-plus/test";
 
 import {

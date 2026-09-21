@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
@@ -40,45 +38,49 @@ describe("waitForSlot", () => {
   describe("a slot held by a holder that is still alive", () => {
     const it = throttleTest
       .extend("theCodeOfARunBehindALiveHolder", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const pendingRun = runThrottle(TRIVIAL_COMMAND, {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 10_000,
-            pollMs: 100,
-            isInteractive: false,
-          });
-          yield* Effect.promise(() => delay(350));
-          yield* Effect.promise(() => hold.release());
-          return pendingRun;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const pendingRun = runThrottle(TRIVIAL_COMMAND, {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 10_000,
+              pollMs: 100,
+              isInteractive: false,
+            });
+            yield* Effect.promise(() => delay(350));
+            yield* Effect.promise(() => hold.release());
+            return yield* Effect.promise(() => pendingRun);
+          }),
+        ),
       )
       .extend("aLiveHolderKeepsItsSlotUntilRelease", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const before = epochMillis();
-          const pendingRun = runThrottle(TRIVIAL_COMMAND, {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 10_000,
-            pollMs: 100,
-            isInteractive: false,
-          });
-          yield* Effect.promise(() => delay(350));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => pendingRun);
-          const elapsed = epochMillis() - before;
-          return elapsed > 300 && elapsed < 20_000;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const before = epochMillis();
+            const pendingRun = runThrottle(TRIVIAL_COMMAND, {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 10_000,
+              pollMs: 100,
+              isInteractive: false,
+            });
+            yield* Effect.promise(() => delay(350));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => pendingRun);
+            const elapsed = epochMillis() - before;
+            return elapsed > 300 && elapsed < 20_000;
+          }),
+        ),
       );
 
     it(
@@ -101,167 +103,179 @@ describe("waitForSlot", () => {
   describe("two runs queued behind one holder", () => {
     const it = throttleTest
       .extend("theWaiterEntryOwnersWhileTwoRunsWait", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const seams = {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 60,
-            isInteractive: false,
-          };
-          const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(150));
-          const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(200));
-          const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map((waiterFileName) =>
-            waiterFileName.split("-").at(1),
-          );
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => runA);
-          yield* Effect.promise(() => runB);
-          return waiting;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const seams = {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 60,
+              isInteractive: false,
+            };
+            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(150));
+            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(200));
+            const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map(
+              (waiterFileName) => waiterFileName.split("-").at(1),
+            );
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => runA);
+            yield* Effect.promise(() => runB);
+            return waiting;
+          }),
+        ),
       )
       .extend("theWaiterEntryOwnersAfterADeadEntryWasPlanted", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const seams = {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 60,
-            isInteractive: false,
-          };
-          const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(150));
-          const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(200));
-          writeFileString({
-            location: joinPath(
-              slotDirectory,
-              "waiters",
-              `0000000000000-${String(EXITED_PID)}-deadbeef`,
-            ),
-            written: `${String(EXITED_PID)}\n`,
-          });
-          yield* Effect.promise(() => delay(200));
-          const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map((waiterFileName) =>
-            waiterFileName.split("-").at(1),
-          );
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => runA);
-          yield* Effect.promise(() => runB);
-          return waiting;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const seams = {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 60,
+              isInteractive: false,
+            };
+            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(150));
+            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(200));
+            writeFileString({
+              location: joinPath(
+                slotDirectory,
+                "waiters",
+                `0000000000000-${String(EXITED_PID)}-deadbeef`,
+              ),
+              written: `${String(EXITED_PID)}\n`,
+            });
+            yield* Effect.promise(() => delay(200));
+            const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map(
+              (waiterFileName) => waiterFileName.split("-").at(1),
+            );
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => runA);
+            yield* Effect.promise(() => runB);
+            return waiting;
+          }),
+        ),
       )
       .extend("theWaiterEntryOwnersAfterTheHolderReleased", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const seams = {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 60,
-            isInteractive: false,
-          };
-          const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(150));
-          const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(200));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => delay(150));
-          const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map((waiterFileName) =>
-            waiterFileName.split("-").at(1),
-          );
-          yield* Effect.promise(() => runA);
-          yield* Effect.promise(() => runB);
-          return waiting;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const seams = {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 60,
+              isInteractive: false,
+            };
+            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(150));
+            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(200));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => delay(150));
+            const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map(
+              (waiterFileName) => waiterFileName.split("-").at(1),
+            );
+            yield* Effect.promise(() => runA);
+            yield* Effect.promise(() => runB);
+            return waiting;
+          }),
+        ),
       )
       .extend("theWaitersLeftOnceBothRunsFinished", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const seams = {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 60,
-            isInteractive: false,
-          };
-          const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(150));
-          const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(200));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => runA);
-          yield* Effect.promise(() => runB);
-          return readDirectory(joinPath(slotDirectory, "waiters"));
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const seams = {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 60,
+              isInteractive: false,
+            };
+            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(150));
+            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(200));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => runA);
+            yield* Effect.promise(() => runB);
+            return readDirectory(joinPath(slotDirectory, "waiters"));
+          }),
+        ),
       )
       .extend("theRankOfTheSecondWaiterIsNamed", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const seams = {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 60,
-            isInteractive: false,
-          };
-          const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(150));
-          const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(200));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => runA);
-          yield* Effect.promise(() => runB);
-          return stderr.text().includes("throttle: waiting 2/2\n");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const seams = {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 60,
+              isInteractive: false,
+            };
+            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(150));
+            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(200));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => runA);
+            yield* Effect.promise(() => runB);
+            return stderr.text().includes("throttle: waiting 2/2\n");
+          }),
+        ),
       )
       .extend("theRankOfTheLastWaiterLeftIsNamed", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const seams = {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 60,
-            isInteractive: false,
-          };
-          const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(150));
-          const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-          yield* Effect.promise(() => delay(200));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => runA);
-          yield* Effect.promise(() => runB);
-          return stderr.text().includes("throttle: waiting 1/1\n");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const seams = {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 60,
+              isInteractive: false,
+            };
+            const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(150));
+            const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
+            yield* Effect.promise(() => delay(200));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => runA);
+            yield* Effect.promise(() => runB);
+            return stderr.text().includes("throttle: waiting 1/1\n");
+          }),
+        ),
       );
 
     it(
@@ -322,146 +336,160 @@ describe("waitForSlot", () => {
   describe("a non-interactive wait that runs out of its budget", () => {
     const it = throttleTest
       .extend("theCodeOfAFirstRunThatRanOutOfBudget", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const code = yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 400,
-              pollMs: 100,
-              isInteractive: false,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return code;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const code = yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 100,
+                isInteractive: false,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return code;
+          }),
+        ),
       )
       .extend("aRunThatRanOutOfBudgetWaitedTheWholeBudget", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const before = epochMillis();
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 400,
-              pollMs: 100,
-              isInteractive: false,
-            }),
-          );
-          const elapsed = epochMillis() - before;
-          yield* Effect.promise(() => hold.release());
-          return elapsed >= 400 && elapsed < 1500;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const before = epochMillis();
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 100,
+                isInteractive: false,
+              }),
+            );
+            const elapsed = epochMillis() - before;
+            yield* Effect.promise(() => hold.release());
+            return elapsed >= 400 && elapsed < 1500;
+          }),
+        ),
       )
       .extend("theGaveUpReportsOfTwoRuns", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const seams = {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 400,
-            pollMs: 100,
-            isInteractive: false,
-          };
-          yield* Effect.promise(() => runThrottle(TRIVIAL_COMMAND, seams));
-          yield* Effect.promise(() => runThrottle(TRIVIAL_COMMAND, seams));
-          yield* Effect.promise(() => hold.release());
-          return stderr.text().match(GAVE_UP_LINE_PATTERN);
-        }),
-      )
-      .extend("theWaitersLeftAfterTheBudgetRanOut", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const seams = {
               slotDir: slotDirectory,
               limit: 1,
               waitBudgetMs: 400,
               pollMs: 100,
               isInteractive: false,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return readDirectory(joinPath(slotDirectory, "waiters"));
-        }),
+            };
+            yield* Effect.promise(() => runThrottle(TRIVIAL_COMMAND, seams));
+            yield* Effect.promise(() => runThrottle(TRIVIAL_COMMAND, seams));
+            yield* Effect.promise(() => hold.release());
+            return stderr.text().match(GAVE_UP_LINE_PATTERN);
+          }),
+        ),
+      )
+      .extend("theWaitersLeftAfterTheBudgetRanOut", ({ slotDirectory }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 100,
+                isInteractive: false,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return readDirectory(joinPath(slotDirectory, "waiters"));
+          }),
+        ),
       )
       .extend("theCodeOfANonInteractiveWaitOutOfBudget", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const code = yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 400,
-              pollMs: 60,
-              isInteractive: false,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return code;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const code = yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 60,
+                isInteractive: false,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return code;
+          }),
+        ),
       )
       .extend("aNonInteractiveWaitOverwritesNothing", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 400,
-              pollMs: 60,
-              isInteractive: false,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return stderr.text().includes("\r");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 60,
+                isInteractive: false,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return stderr.text().includes("\r");
+          }),
+        ),
       )
       .extend("theRankLinesANonInteractiveWaitWrote", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 400,
-              pollMs: 60,
-              isInteractive: false,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return stderr.text().match(RANK_LINE_PATTERN);
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 60,
+                isInteractive: false,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return stderr.text().match(RANK_LINE_PATTERN);
+          }),
+        ),
       );
 
     it(
@@ -520,83 +548,91 @@ describe("waitForSlot", () => {
   describe("an interactive wait", () => {
     const it = throttleTest
       .extend("theCodeOfAnInteractiveWait", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const pendingRun = runThrottle(TRIVIAL_COMMAND, {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 100,
-            isInteractive: true,
-          });
-          yield* Effect.promise(() => delay(350));
-          yield* Effect.promise(() => hold.release());
-          return pendingRun;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const pendingRun = runThrottle(TRIVIAL_COMMAND, {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 100,
+              isInteractive: true,
+            });
+            yield* Effect.promise(() => delay(350));
+            yield* Effect.promise(() => hold.release());
+            return yield* Effect.promise(() => pendingRun);
+          }),
+        ),
       )
       .extend("anInteractiveWaitOverwritesItsLine", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const pendingRun = runThrottle(TRIVIAL_COMMAND, {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 100,
-            isInteractive: true,
-          });
-          yield* Effect.promise(() => delay(350));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => pendingRun);
-          return stderr.text().includes("\r");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const pendingRun = runThrottle(TRIVIAL_COMMAND, {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 100,
+              isInteractive: true,
+            });
+            yield* Effect.promise(() => delay(350));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => pendingRun);
+            return stderr.text().includes("\r");
+          }),
+        ),
       )
       .extend("anInteractiveWaitNamesTheElapsedTime", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const pendingRun = runThrottle(TRIVIAL_COMMAND, {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 100,
-            isInteractive: true,
-          });
-          yield* Effect.promise(() => delay(350));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => pendingRun);
-          return stderr.text().includes("throttle: waiting 1/1 0s");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const pendingRun = runThrottle(TRIVIAL_COMMAND, {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 100,
+              isInteractive: true,
+            });
+            yield* Effect.promise(() => delay(350));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => pendingRun);
+            return stderr.text().includes("throttle: waiting 1/1 0s");
+          }),
+        ),
       )
       .extend("anInteractiveWaitClosesItsLine", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const pendingRun = runThrottle(TRIVIAL_COMMAND, {
-            slotDir: slotDirectory,
-            limit: 1,
-            waitBudgetMs: 15_000,
-            pollMs: 100,
-            isInteractive: true,
-          });
-          yield* Effect.promise(() => delay(350));
-          yield* Effect.promise(() => hold.release());
-          yield* Effect.promise(() => pendingRun);
-          return stderr.text().includes("0s\n");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const pendingRun = runThrottle(TRIVIAL_COMMAND, {
+              slotDir: slotDirectory,
+              limit: 1,
+              waitBudgetMs: 15_000,
+              pollMs: 100,
+              isInteractive: true,
+            });
+            yield* Effect.promise(() => delay(350));
+            yield* Effect.promise(() => hold.release());
+            yield* Effect.promise(() => pendingRun);
+            return stderr.text().includes("0s\n");
+          }),
+        ),
       );
 
     it("runs once the slot is freed", { timeout: 10_000 }, ({ theCodeOfAnInteractiveWait }) => {
@@ -627,64 +663,70 @@ describe("waitForSlot", () => {
   describe("an interactive wait that runs out of its budget", () => {
     const it = throttleTest
       .extend("theCodeOfAnInteractiveWaitOutOfBudget", ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          const code = yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 300,
-              pollMs: 100,
-              isInteractive: true,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return code;
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            const code = yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 300,
+                pollMs: 100,
+                isInteractive: true,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return code;
+          }),
+        ),
       )
       .extend("anInteractiveWaitOutOfBudgetClosesItsLine", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 300,
-              pollMs: 100,
-              isInteractive: true,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return stderr.text().includes("0s\nthrottle: gave up: ");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 300,
+                pollMs: 100,
+                isInteractive: true,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return stderr.text().includes("0s\nthrottle: gave up: ");
+          }),
+        ),
       )
       .extend("anInteractiveWaitOutOfBudgetReportsGivingUp", ({ slotDirectory, stderr }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 300,
-              pollMs: 100,
-              isInteractive: true,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-          return stderr.text().includes("\r") && stderr.text().includes("gave up");
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 300,
+                pollMs: 100,
+                isInteractive: true,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+            return stderr.text().includes("\r") && stderr.text().includes("gave up");
+          }),
+        ),
       );
 
     it(
@@ -717,23 +759,25 @@ describe("waitForSlot", () => {
       "theRunBehindASlotHeldForTheWholeBudget",
       { auto: true },
       ({ slotDirectory }) =>
-        Effect.gen(function* () {
-          ensureSlots(slotDirectory, 1);
-          const hold = yield* Effect.promise(() =>
-            tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-          );
-          if (hold === null) throw new Error("the slot was already held");
-          yield* Effect.promise(() =>
-            runThrottle(TRIVIAL_COMMAND, {
-              slotDir: slotDirectory,
-              limit: 1,
-              waitBudgetMs: 400,
-              pollMs: 100,
-              isInteractive: false,
-            }),
-          );
-          yield* Effect.promise(() => hold.release());
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            ensureSlots(slotDirectory, 1);
+            const hold = yield* Effect.promise(() =>
+              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
+            );
+            if (hold === null) throw new Error("the slot was already held");
+            yield* Effect.promise(() =>
+              runThrottle(TRIVIAL_COMMAND, {
+                slotDir: slotDirectory,
+                limit: 1,
+                waitBudgetMs: 400,
+                pollMs: 100,
+                isInteractive: false,
+              }),
+            );
+            yield* Effect.promise(() => hold.release());
+          }),
+        ),
     );
 
     it("puts nothing on standard output", { timeout: 10_000 }, ({ stdout }) => {

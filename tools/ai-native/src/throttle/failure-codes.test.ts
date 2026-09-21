@@ -10,7 +10,7 @@ describe("failureSpelling", () => {
   describe("a refusal the file system named with a code", () => {
     const it = test.extend("theSpellingOfACodedRefusal", () => {
       const [refusal] = attempt<string, Error>(() =>
-        readFileString(joinPath(tmpdir(), "throttle-marker-that-was-never-written"), "utf8"),
+        readFileString(joinPath(tmpdir(), "throttle-marker-that-was-never-written")),
       );
       return failureSpelling(refusal);
     });
@@ -39,10 +39,12 @@ describe("failureSpelling", () => {
 
   describe("a refusal whose code is not spelled as text", () => {
     const it = test.extend("theSpellingOfAnUnspelledCode", () => {
-      class RefusalCarryingANumberedCode extends Error {
-        readonly code = 13;
-      }
-      return failureSpelling(new RefusalCarryingANumberedCode("the marker could not be read"));
+      const refusal: { name: "Error"; message: string; code: number } = {
+        name: "Error",
+        message: "the marker could not be read",
+        code: 13,
+      };
+      return failureSpelling(refusal);
     });
 
     it("spells the refusal by what it says", ({ theSpellingOfAnUnspelledCode }) => {

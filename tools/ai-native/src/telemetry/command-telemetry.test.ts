@@ -120,20 +120,16 @@ describe("childEnvironment", () => {
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
           return context.with(
             trace.setSpanContext(context.active(), {
@@ -141,7 +137,10 @@ describe("childEnvironment", () => {
               spanId: ACTIVE_SPAN_ID,
               traceFlags: TraceFlags.SAMPLED,
             }),
-            () => pick(commandTelemetry.childEnvironment(), ["TRACEPARENT"]),
+            () => {
+              const environment = commandTelemetry.childEnvironment();
+              return environment === undefined ? {} : pick(environment, ["TRACEPARENT"]);
+            },
           );
         }),
       ));
@@ -177,10 +176,12 @@ describe("measureCommand", () => {
             });
             vi.resetModules();
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
-            return commandTelemetry.measureCommand({
-              command: MEASURED_COMMAND,
-              run: () => FAILING_EXIT_CODE,
-            });
+            return yield* Effect.promise(() =>
+              commandTelemetry.measureCommand({
+                command: MEASURED_COMMAND,
+                run: () => Promise.resolve(FAILING_EXIT_CODE),
+              }),
+            );
           }),
         ));
 
@@ -229,7 +230,10 @@ describe("measureCommand", () => {
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             yield* Effect.promise(() =>
-              commandTelemetry.measureCommand({ command: MEASURED_COMMAND, run: () => 0 }),
+              commandTelemetry.measureCommand({
+                command: MEASURED_COMMAND,
+                run: () => Promise.resolve(0),
+              }),
             );
             process.emit("beforeExit", 0);
             yield* Effect.promise(() => started.shutdown());
@@ -284,25 +288,23 @@ describe("measureCommand", () => {
             ).mockResolvedValue();
             const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
-            onTestFinished(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => started.shutdown());
-                  process.exitCode = undefined;
-                  process.removeAllListeners("beforeExit");
-                  context.disable();
-                  propagation.disable();
-                  trace.disable();
-                  metrics.disable();
-                  logs.disable();
-                }),
-              ),
-            );
-            const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
-            return commandTelemetry.measureCommand({
-              command: MEASURED_COMMAND,
-              run: () => FAILING_EXIT_CODE,
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+              return started.shutdown();
             });
+            const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
+            return yield* Effect.promise(() =>
+              commandTelemetry.measureCommand({
+                command: MEASURED_COMMAND,
+                run: () => Promise.resolve(FAILING_EXIT_CODE),
+              }),
+            );
           }),
         ));
 
@@ -360,23 +362,22 @@ describe("measureCommand", () => {
             ).mockResolvedValue();
             const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
-            onTestFinished(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => started.shutdown());
-                  process.exitCode = undefined;
-                  process.removeAllListeners("beforeExit");
-                  context.disable();
-                  propagation.disable();
-                  trace.disable();
-                  metrics.disable();
-                  logs.disable();
-                }),
-              ),
-            );
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+              return started.shutdown();
+            });
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             yield* Effect.promise(() =>
-              commandTelemetry.measureCommand({ command: MEASURED_COMMAND, run: () => 0 }),
+              commandTelemetry.measureCommand({
+                command: MEASURED_COMMAND,
+                run: () => Promise.resolve(0),
+              }),
             );
             process.emit("beforeExit", 0);
             yield* Effect.promise(() => vi.waitUntil(() => stopped.mock.calls.length > 0));
@@ -448,25 +449,21 @@ describe("measureCommand", () => {
             ).mockResolvedValue();
             const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
-            onTestFinished(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => started.shutdown());
-                  process.exitCode = undefined;
-                  process.removeAllListeners("beforeExit");
-                  context.disable();
-                  propagation.disable();
-                  trace.disable();
-                  metrics.disable();
-                  logs.disable();
-                }),
-              ),
-            );
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+              return started.shutdown();
+            });
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             yield* Effect.promise(() =>
               commandTelemetry.measureCommand({
                 command: MEASURED_COMMAND,
-                run: () => FAILING_EXIT_CODE,
+                run: () => Promise.resolve(FAILING_EXIT_CODE),
               }),
             );
             process.emit("beforeExit", 0);
@@ -543,25 +540,21 @@ describe("measureCommand", () => {
               .mockResolvedValue();
             const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
-            onTestFinished(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => started.shutdown());
-                  process.exitCode = undefined;
-                  process.removeAllListeners("beforeExit");
-                  context.disable();
-                  propagation.disable();
-                  trace.disable();
-                  metrics.disable();
-                  logs.disable();
-                }),
-              ),
-            );
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+              return started.shutdown();
+            });
             const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
             yield* Effect.promise(() =>
               commandTelemetry.measureCommand({
                 command: MEASURED_COMMAND,
-                run: () => FAILING_EXIT_CODE,
+                run: () => Promise.resolve(FAILING_EXIT_CODE),
               }),
             );
             process.emit("beforeExit", 0);
@@ -682,20 +675,16 @@ describe("recordCommandRecord", () => {
             .mockResolvedValue();
           const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
           commandTelemetry.recordCommandRecord({
             commandLine: MEASURED_COMMAND_LINE,
@@ -764,20 +753,16 @@ describe("recordCommandRecord", () => {
             .mockResolvedValue();
           const telemetry = yield* Effect.promise(() => import("@repo/ai-native-telemetry"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           const commandTelemetry = yield* Effect.promise(() => import("./command-telemetry.ts"));
           commandTelemetry.recordCommandRecord({
             commandLine: MEASURED_COMMAND_LINE,

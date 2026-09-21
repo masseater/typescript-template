@@ -293,10 +293,11 @@ describe("signalProcessTree", () => {
 
   describe("a POSIX group and root that are both gone", () => {
     const it = test.extend("theOutcomeOfAPosixGroupAndRootThatAreBothGone", () => {
-      class MissingProcessError extends Error {
-        readonly code = "ESRCH";
-      }
-      const missingProcess = new MissingProcessError("missing");
+      const missingProcess: Error & { code: "ESRCH" } = {
+        name: "Error",
+        message: "missing",
+        code: "ESRCH",
+      };
       return signalProcessTree({
         pid: 4321,
         signal: "SIGKILL",

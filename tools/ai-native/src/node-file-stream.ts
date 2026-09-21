@@ -1,3 +1,12 @@
+type PassThroughStream = {
+  end: () => void;
+  on: (event: string, listener: (part: Buffer) => void) => unknown;
+  once: (event: string, listener: () => void) => unknown;
+  pipe: (destination: unknown, options?: { end?: boolean }) => PassThroughStream;
+  write: (part: string | Uint8Array) => boolean;
+  [Symbol.asyncIterator]: () => AsyncIterator<Uint8Array>;
+};
+
 type FileWriteStream = {
   destroy: () => void;
   end: (done?: () => void) => void;
@@ -7,6 +16,8 @@ type FileWriteStream = {
 };
 
 type ReadableFile = {
+  destroy: () => void;
+  pipe: (destination: unknown, options?: { end?: boolean }) => unknown;
   [Symbol.asyncIterator]?: () => AsyncIterator<Uint8Array>;
 };
 
@@ -16,10 +27,7 @@ const fileStreamApi = process.getBuiltinModule("fs") as {
 };
 
 const streamApi = process.getBuiltinModule("stream") as {
-  readonly PassThrough: new () => {
-    write: (part: string | Uint8Array) => boolean;
-    [Symbol.asyncIterator]?: () => AsyncIterator<Uint8Array>;
-  };
+  readonly PassThrough: new () => PassThroughStream;
 };
 
 const streamConsumers = process.getBuiltinModule("stream/consumers") as {
@@ -36,4 +44,4 @@ const consumeText = (readable: unknown): Promise<string> => streamConsumers.text
 const PassThrough = streamApi.PassThrough;
 
 export { consumeText, openReadStream, openWriteStream, PassThrough };
-export type { FileWriteStream, ReadableFile };
+export type { FileWriteStream, PassThroughStream, ReadableFile };

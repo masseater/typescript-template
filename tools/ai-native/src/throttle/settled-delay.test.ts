@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { delay } from "../host.ts";
 import { settledDelay } from "./settled-delay.ts";
 
 describe("settledDelay", () => {

@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { attemptAsync } from "es-toolkit";
 
 import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
-import { spawnChild, type SpawnedChild } from "../node-spawn.ts";
+import { spawnChild } from "../node-spawn.ts";
 import { signalProcessTree, TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
 import { DELAY_ENDING, settledDelay } from "./settled-delay.ts";
 import {
@@ -18,10 +18,19 @@ import type { Invocation } from "./usage.ts";
 
 const KILL_GRACE_MS = 5_000;
 
+type CommandChild = {
+  readonly pid: number | undefined;
+  once(event: "error", listener: (failure: Error) => void): unknown;
+  once(
+    event: "exit",
+    listener: (code: number | null, signal: NodeJS.Signals | null) => void,
+  ): unknown;
+};
+
 type RunCommandDependencies = {
   platform: NodeJS.Platform;
   signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Error | null;
-  spawnChild: (input: { executable: string; args: readonly string[] }) => SpawnedChild;
+  spawnChild: (input: { executable: string; args: readonly string[] }) => CommandChild;
   killGraceMs: number;
 };
 
@@ -168,7 +177,7 @@ const reportRunEnd = (input: {
   return input.releaseFailure === null ? verdictCode : reportReleaseFailure(input.releaseFailure);
 };
 
-const settledChild = (child: SpawnedChild): Promise<Settled> =>
+const settledChild = (child: CommandChild): Promise<Settled> =>
   Effect.runPromise(
     Effect.callback<Settled>((resume) => {
       child.once(CHILD_PROCESS_EVENT.failure, (failure: Error) => {

@@ -169,20 +169,16 @@ describe("startTelemetry", () => {
             .mockResolvedValue();
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
             span.end();
           });
@@ -229,20 +225,16 @@ describe("startTelemetry", () => {
             .mockResolvedValue();
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           telemetry.startTelemetry(SECOND_MEASURED_SERVICE);
           trace.getTracer(TRACER_NAME).startActiveSpan(MEASURED_SPAN, (span) => {
             span.end();
@@ -278,6 +270,7 @@ describe("startTelemetry", () => {
           vi.spyOn(traceExporterModule.OTLPTraceExporter.prototype, "shutdown").mockImplementation(
             () => {
               stopped("traces");
+              return Promise.resolve();
             },
           );
           const metricExporterModule = yield* Effect.promise(
@@ -288,6 +281,7 @@ describe("startTelemetry", () => {
             "shutdown",
           ).mockImplementation(() => {
             stopped("metrics");
+            return Promise.resolve();
           });
           const logExporterModule = yield* Effect.promise(
             () => import("@opentelemetry/exporter-logs-otlp-http"),
@@ -295,24 +289,21 @@ describe("startTelemetry", () => {
           vi.spyOn(logExporterModule.OTLPLogExporter.prototype, "shutdown").mockImplementation(
             () => {
               stopped("logs");
+              return Promise.resolve();
             },
           );
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           process.emit("beforeExit", 0);
           yield* Effect.promise(() => started.shutdown());
           return stopped;
@@ -340,20 +331,16 @@ describe("startTelemetry", () => {
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
-            onTestFinished(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => started.shutdown());
-                  process.exitCode = undefined;
-                  process.removeAllListeners("beforeExit");
-                  context.disable();
-                  propagation.disable();
-                  trace.disable();
-                  metrics.disable();
-                  logs.disable();
-                }),
-              ),
-            );
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+              return started.shutdown();
+            });
             const marked = vi.fn<(exitCode: unknown) => void>();
             vi.spyOn(process.stderr, "write").mockImplementation(() => {
               marked(process.exitCode);
@@ -386,20 +373,16 @@ describe("startTelemetry", () => {
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
-            onTestFinished(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => started.shutdown());
-                  process.exitCode = undefined;
-                  process.removeAllListeners("beforeExit");
-                  context.disable();
-                  propagation.disable();
-                  trace.disable();
-                  metrics.disable();
-                  logs.disable();
-                }),
-              ),
-            );
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+              return started.shutdown();
+            });
             const written = vi.fn<(failureReport: string) => void>();
             vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
               written(String(failureReport));
@@ -432,20 +415,16 @@ describe("startTelemetry", () => {
             vi.resetModules();
             const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
             const started = telemetry.startTelemetry(MEASURED_SERVICE);
-            onTestFinished(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => started.shutdown());
-                  process.exitCode = undefined;
-                  process.removeAllListeners("beforeExit");
-                  context.disable();
-                  propagation.disable();
-                  trace.disable();
-                  metrics.disable();
-                  logs.disable();
-                }),
-              ),
-            );
+            onTestFinished(() => {
+              process.exitCode = undefined;
+              process.removeAllListeners("beforeExit");
+              context.disable();
+              propagation.disable();
+              trace.disable();
+              metrics.disable();
+              logs.disable();
+              return started.shutdown();
+            });
             const written = vi.fn<(failureReport: string) => void>();
             vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
               written(String(failureReport));
@@ -531,20 +510,16 @@ describe("inheritedContext", () => {
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           return trace.getSpanContext(telemetry.inheritedContext());
         }),
       ));
@@ -575,20 +550,16 @@ describe("inheritedContext", () => {
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           return trace.getSpanContext(telemetry.inheritedContext());
         }),
       ));
@@ -616,20 +587,16 @@ describe("environmentCarryingContext", () => {
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           return context.with(
             trace.setSpanContext(context.active(), {
               traceId: ACTIVE_TRACE_ID,
@@ -662,20 +629,16 @@ describe("environmentCarryingContext", () => {
           vi.resetModules();
           const telemetry = yield* Effect.promise(() => import("./telemetry.ts"));
           const started = telemetry.startTelemetry(MEASURED_SERVICE);
-          onTestFinished(() =>
-            Effect.runPromise(
-              Effect.gen(function* () {
-                yield* Effect.promise(() => started.shutdown());
-                process.exitCode = undefined;
-                process.removeAllListeners("beforeExit");
-                context.disable();
-                propagation.disable();
-                trace.disable();
-                metrics.disable();
-                logs.disable();
-              }),
-            ),
-          );
+          onTestFinished(() => {
+            process.exitCode = undefined;
+            process.removeAllListeners("beforeExit");
+            context.disable();
+            propagation.disable();
+            trace.disable();
+            metrics.disable();
+            logs.disable();
+            return started.shutdown();
+          });
           return pick(telemetry.environmentCarryingContext(), ["TRACEPARENT"]);
         }),
       ));

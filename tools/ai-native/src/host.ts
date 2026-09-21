@@ -47,7 +47,7 @@ const writeFileString = (fileWrite: {
   );
 };
 
-const readFileString = (location: string): string =>
+const readFileString = (location: string, _encoding?: string): string =>
   runFilesystem(filesystem.readFileString(location));
 
 const readDirectory = (location: string): readonly string[] =>
@@ -77,9 +77,9 @@ const nodeFs = process.getBuiltinModule("fs") as {
   readonly statSync: (location: string) => { readonly size: number; isFile: () => boolean };
 };
 
-const fileInfo = (location: string): { readonly size: number; readonly isFile: boolean } => {
+const fileInfo = (location: string): { readonly size: number; readonly isFile: () => boolean } => {
   const recorded = nodeFs.statSync(location);
-  return { size: recorded.size, isFile: recorded.isFile() };
+  return { size: recorded.size, isFile: () => recorded.isFile() };
 };
 
 const changeMode = (location: string, permissionBits: number): void => {

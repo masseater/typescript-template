@@ -61,16 +61,18 @@ describe("runPassthrough", () => {
         }),
       )
       .extend("theSummaryOfAPassedThroughRun", ({ stdout }) =>
-        Effect.gen(function* () {
-          yield* Effect.promise(() =>
-            runPassthrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              monotonicNow: () => 0,
-            }),
-          );
-          return stdout.text();
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              runPassthrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                monotonicNow: () => 0,
+              }),
+            );
+            return stdout.text();
+          }),
+        ),
       );
 
     it("hands the code of the command back unchanged", ({ theCodeOfAPassedThroughRun }) => {
@@ -94,28 +96,32 @@ describe("runPassthrough", () => {
         }),
       )
       .extend("theStderrOfAPassedThroughMissingExecutable", ({ stderr }) =>
-        Effect.gen(function* () {
-          yield* Effect.promise(() =>
-            runPassthrough([MISSING_EXECUTABLE], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              monotonicNow: () => 0,
-            }),
-          );
-          return stderr.text();
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              runPassthrough([MISSING_EXECUTABLE], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                monotonicNow: () => 0,
+              }),
+            );
+            return stderr.text();
+          }),
+        ),
       )
       .extend("theStdoutOfAPassedThroughMissingExecutable", ({ stdout }) =>
-        Effect.gen(function* () {
-          yield* Effect.promise(() =>
-            runPassthrough([MISSING_EXECUTABLE], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              monotonicNow: () => 0,
-            }),
-          );
-          return stdout.text();
-        }),
+        Effect.runPromise(
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              runPassthrough([MISSING_EXECUTABLE], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                monotonicNow: () => 0,
+              }),
+            );
+            return stdout.text();
+          }),
+        ),
       );
 
     it("is refused with the code kept for a command that cannot start", ({
@@ -141,17 +147,19 @@ describe("runPassthrough", () => {
 
   describe("a command measured just under a minute", () => {
     const it = standardIoTest.extend("theSummaryOfARunJustUnderAMinute", ({ stdout }) =>
-      Effect.gen(function* () {
-        const ticks = [0, 59_999].values();
-        yield* Effect.promise(() =>
-          runPassthrough([NODE, "-e", SILENT_SCRIPT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            monotonicNow: () => ticks.next().value ?? 0,
-          }),
-        );
-        return stdout.text();
-      }),
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const ticks = [0, 59_999].values();
+          yield* Effect.promise(() =>
+            runPassthrough([NODE, "-e", SILENT_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              monotonicNow: () => ticks.next().value ?? 0,
+            }),
+          );
+          return stdout.text();
+        }),
+      ),
     );
 
     it("keeps the elapsed time in seconds", ({ theSummaryOfARunJustUnderAMinute }) => {

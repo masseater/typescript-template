@@ -1,11 +1,10 @@
-import { once } from "node:events";
-import { tmpdir } from "node:os";
 import { env as processEnvironment } from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { waitChildExit } from "../emitter-wait.ts";
 import { delay, joinPath, makeTempDirectory, readDirectory, removePath } from "../host.ts";
 import { consumeText } from "../node-file-stream.ts";
 import { spawnChild } from "../node-spawn.ts";
@@ -32,7 +31,7 @@ describe("cli", () => {
         },
       });
       return Promise.all([
-        once(child, "exit"),
+        waitChildExit(child),
         consumeText(child.stdout),
         consumeText(child.stderr),
       ]);
@@ -93,7 +92,7 @@ describe("cli", () => {
           },
         });
         return Promise.all([
-          once(child, "exit"),
+          waitChildExit(child),
           consumeText(child.stdout),
           consumeText(child.stderr),
         ]);
@@ -127,7 +126,7 @@ describe("cli", () => {
           },
         });
         return Promise.all([
-          once(child, "exit"),
+          waitChildExit(child),
           consumeText(child.stdout),
           consumeText(child.stderr),
         ]);
@@ -153,24 +152,20 @@ describe("cli", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             const tmpRoot = makeTempDirectory("throttle-cli-tmp-");
+            onCleanup(() => {
+              removePath(tmpRoot);
+            });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
             ensureSlots(slotDir, 1);
-            const holdTheOnlySlot = () =>
+            const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
                 const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
                 if (held !== null) return held.release;
                 yield* Effect.promise(() => delay(200));
-                return holdTheOnlySlot();
+                return yield* holdTheOnlySlot();
               });
-            const release = yield* Effect.promise(() => holdTheOnlySlot());
-            onCleanup(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => release());
-                  removePath(tmpRoot);
-                }),
-              ),
-            );
+            const release = yield* holdTheOnlySlot();
+            onCleanup(release);
             const child = spawnChild({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", ""],
@@ -184,15 +179,19 @@ describe("cli", () => {
               readDirectory(waitersDir).filter((waiterFileName) =>
                 waiterFileName.includes(`-${String(child.pid)}-`),
               );
-            const untilEnqueued = () =>
+            const untilEnqueued = (): Effect.Effect<void> =>
               Effect.gen(function* () {
                 if (ownEntries().length === 1) return;
                 yield* Effect.promise(() => delay(100));
-                return untilEnqueued();
+                return yield* untilEnqueued();
               });
-            yield* Effect.promise(() => untilEnqueued());
+            yield* untilEnqueued();
             child.kill("SIGTERM");
-            return Promise.all([once(child, "exit"), consumeText(child.stdout)]);
+            const { stdout } = child;
+            if (stdout === null) throw new Error("stdout was not piped");
+            return yield* Effect.promise(() =>
+              Promise.all([waitChildExit(child), consumeText(stdout)]),
+            );
           }),
         ));
 
@@ -210,24 +209,20 @@ describe("cli", () => {
         Effect.runPromise(
           Effect.gen(function* () {
             const tmpRoot = makeTempDirectory("throttle-cli-tmp-");
+            onCleanup(() => {
+              removePath(tmpRoot);
+            });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
             ensureSlots(slotDir, 1);
-            const holdTheOnlySlot = () =>
+            const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
                 const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
                 if (held !== null) return held.release;
                 yield* Effect.promise(() => delay(200));
-                return holdTheOnlySlot();
+                return yield* holdTheOnlySlot();
               });
-            const release = yield* Effect.promise(() => holdTheOnlySlot());
-            onCleanup(() =>
-              Effect.runPromise(
-                Effect.gen(function* () {
-                  yield* Effect.promise(() => release());
-                  removePath(tmpRoot);
-                }),
-              ),
-            );
+            const release = yield* holdTheOnlySlot();
+            onCleanup(release);
             const child = spawnChild({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", ""],
@@ -241,22 +236,22 @@ describe("cli", () => {
               readDirectory(waitersDir).filter((waiterFileName) =>
                 waiterFileName.includes(`-${String(child.pid)}-`),
               );
-            const untilEnqueued = () =>
+            const untilEnqueued = (): Effect.Effect<void> =>
               Effect.gen(function* () {
                 if (ownEntries().length === 1) return;
                 yield* Effect.promise(() => delay(100));
-                return untilEnqueued();
+                return yield* untilEnqueued();
               });
-            yield* Effect.promise(() => untilEnqueued());
+            yield* untilEnqueued();
             child.kill("SIGTERM");
-            yield* Effect.promise(() => once(child, "exit"));
-            const untilDrained = () =>
+            yield* Effect.promise(() => waitChildExit(child));
+            const untilDrained = (): Effect.Effect<void> =>
               Effect.gen(function* () {
                 if (ownEntries().length === 0) return;
                 yield* Effect.promise(() => delay(100));
-                return untilDrained();
+                return yield* untilDrained();
               });
-            yield* Effect.promise(() => untilDrained());
+            yield* untilDrained();
             return ownEntries();
           }),
         ));

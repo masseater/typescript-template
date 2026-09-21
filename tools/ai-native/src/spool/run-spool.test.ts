@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
@@ -18,7 +16,7 @@ import {
   removePath,
   writeFileString,
 } from "../host.ts";
-import { PassThrough, consumeText, openReadStream } from "../node-file-stream.ts";
+import { PassThrough, openReadStream } from "../node-file-stream.ts";
 import { spawnChildSync } from "../node-spawn.ts";
 import { runSpool } from "./run-spool.ts";
 
@@ -32,7 +30,7 @@ class CapturedStream extends PassThrough {
     });
   }
 
-  consumeText(): string {
+  text(): string {
     return this.captured;
   }
 }
@@ -86,7 +84,7 @@ const ESCAPED_OUTPUT_ROOT = joinPath(TEST_ROOT, "escaped-output");
 
 const INTERLEAVED_OUTPUT_SCRIPT = [
   "const delay = (ms) => new Promise((r) => setTimeout(r, ms));",
-  '(() => Effect.gen(function* () { console.log("out one"); yield* Effect.promise(() => (delay(200))); console.error("err two"); yield* Effect.promise(() => (delay(200))); console.log("out three"); }))();',
+  '(async () => { console.log("out one"); await delay(200); console.error("err two"); await delay(200); console.log("out three"); })();',
 ].join(" ");
 
 const INTERLEAVED_OUTPUT_COMMAND_LINE = [NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT].join(" ");
@@ -145,7 +143,7 @@ const BLOCKED_ROOT = joinPath(BLOCKED_ROOT_PARENT, "blocked");
 
 const SENTINEL_PATH = joinPath(BLOCKED_ROOT_PARENT, "sentinel");
 
-const SENTINEL_SCRIPT = 'require("node:fs").writeFileString(process.argv[1], "ran");';
+const SENTINEL_SCRIPT = 'require("node:fs").writeFileSync(process.argv[1], "ran");';
 
 const SENTINEL_COMMAND_LINE = [NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH].join(" ");
 
@@ -163,8 +161,8 @@ const FIFO_SCRIPT = [
   "const gate = process.argv[1];",
   "const marker = process.argv[2];",
   "const poll = () => {",
-  "  if (!fs.fileExists(gate)) { setTimeout(poll, 20); return; }",
-  '  process.stdout.write("y".repeat(2097152), () => { fs.writeFileString(marker, "done"); process.exit(0); });',
+  "  if (!fs.existsSync(gate)) { setTimeout(poll, 20); return; }",
+  '  process.stdout.write("y".repeat(2097152), () => { fs.writeFileSync(marker, "done"); process.exit(0); });',
   "};",
   "poll();",
 ].join(" ");
@@ -174,14 +172,6 @@ const FIFO_COMMAND_LINE = [NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER].join
 const CONCURRENT_ROOT = joinPath(TEST_ROOT, "concurrent");
 
 const PID_SCRIPT = "console.log(process.pid)";
-
-const SEAMED_NAME_ROOT = joinPath(TEST_ROOT, "seamed-name");
-
-const SEAMED_NAME_SCRIPT = "console.log(1)";
-
-const LONG_IDENTIFIER_ROOT = joinPath(TEST_ROOT, "long-identifier");
-
-const LONG_IDENTIFIER_ARGUMENT = `${"x".repeat(60)}.js`;
 
 const ELAPSED_SECONDS_ROOT = joinPath(TEST_ROOT, "elapsed-seconds");
 
@@ -237,9 +227,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfFiveThousandLines", ({}, { onCleanup }) => {
         removePath(FIVE_THOUSAND_LINES_ROOT);
-        onCleanup(() => {
-          removePath(FIVE_THOUSAND_LINES_ROOT);
-        });
+        onCleanup(() => { removePath(FIVE_THOUSAND_LINES_ROOT); });
         return runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -251,64 +239,58 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfFiveThousandLines", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FIVE_THOUSAND_LINES_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FIVE_THOUSAND_LINES_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(FIVE_THOUSAND_LINES_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       )
       .extend("theStderrOfFiveThousandLines", ({ stderr }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FIVE_THOUSAND_LINES_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FIVE_THOUSAND_LINES_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
-            }),
-          );
-          return stderr.text();
-        }),
+            onCleanup(() => { removePath(FIVE_THOUSAND_LINES_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
+              }),
+            );
+            return stderr.text();
+          })),
       )
       .extend("theRecordOfFiveThousandLines", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FIVE_THOUSAND_LINES_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FIVE_THOUSAND_LINES_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
-            }),
-          );
-          return readFileString(joinPath(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME), "utf8");
-        }),
+            onCleanup(() => { removePath(FIVE_THOUSAND_LINES_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", FIVE_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => FIVE_THOUSAND_LINES_ROOT,
+              }),
+            );
+            return readFileString(joinPath(FIVE_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME), "utf8");
+          })),
       );
 
     it(
@@ -352,9 +334,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfTenThousandLines", ({}, { onCleanup }) => {
         removePath(TEN_THOUSAND_LINES_ROOT);
-        onCleanup(() => {
-          removePath(TEN_THOUSAND_LINES_ROOT);
-        });
+        onCleanup(() => { removePath(TEN_THOUSAND_LINES_ROOT); });
         return runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -366,46 +346,42 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfTenThousandLines", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(TEN_THOUSAND_LINES_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(TEN_THOUSAND_LINES_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => TEN_THOUSAND_LINES_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(TEN_THOUSAND_LINES_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => TEN_THOUSAND_LINES_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       )
       .extend("theRecordSizeOfTenThousandLines", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(TEN_THOUSAND_LINES_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(TEN_THOUSAND_LINES_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => TEN_THOUSAND_LINES_ROOT,
-            }),
-          );
-          return Buffer.byteLength(
-            readFileString(joinPath(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
-          );
-        }),
+            onCleanup(() => { removePath(TEN_THOUSAND_LINES_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", TEN_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => TEN_THOUSAND_LINES_ROOT,
+              }),
+            );
+            return Buffer.byteLength(
+              readFileString(joinPath(TEN_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
+            );
+          })),
       );
 
     it(
@@ -441,9 +417,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfHundredThousandLines", ({}, { onCleanup }) => {
         removePath(HUNDRED_THOUSAND_LINES_ROOT);
-        onCleanup(() => {
-          removePath(HUNDRED_THOUSAND_LINES_ROOT);
-        });
+        onCleanup(() => { removePath(HUNDRED_THOUSAND_LINES_ROOT); });
         return runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -455,46 +429,42 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfHundredThousandLines", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(HUNDRED_THOUSAND_LINES_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(HUNDRED_THOUSAND_LINES_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => HUNDRED_THOUSAND_LINES_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(HUNDRED_THOUSAND_LINES_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => HUNDRED_THOUSAND_LINES_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       )
       .extend("theRecordSizeOfHundredThousandLines", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(HUNDRED_THOUSAND_LINES_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(HUNDRED_THOUSAND_LINES_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => HUNDRED_THOUSAND_LINES_ROOT,
-            }),
-          );
-          return Buffer.byteLength(
-            readFileString(joinPath(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
-          );
-        }),
+            onCleanup(() => { removePath(HUNDRED_THOUSAND_LINES_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", HUNDRED_THOUSAND_LINES_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => HUNDRED_THOUSAND_LINES_ROOT,
+              }),
+            );
+            return Buffer.byteLength(
+              readFileString(joinPath(HUNDRED_THOUSAND_LINES_ROOT, SEAMED_LOG_NAME)),
+            );
+          })),
       );
 
     it(
@@ -530,9 +500,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfASilentCommand", ({}, { onCleanup }) => {
         removePath(SILENT_COMMAND_ROOT);
-        onCleanup(() => {
-          removePath(SILENT_COMMAND_ROOT);
-        });
+        onCleanup(() => { removePath(SILENT_COMMAND_ROOT); });
         return runSpool(["--", NODE, "-e", SILENT_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -544,24 +512,22 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfASilentCommand", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(SILENT_COMMAND_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(SILENT_COMMAND_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", SILENT_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => SILENT_COMMAND_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(SILENT_COMMAND_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", SILENT_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => SILENT_COMMAND_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       );
 
     it("carries the code of the command it wrapped", ({ theCodeOfASilentCommand }) => {
@@ -577,24 +543,22 @@ describe("runSpool", () => {
 
   describe("a command colouring its output with escape sequences", () => {
     const it = standardIoTest.extend("theRunColouringItsOutput", ({}, { onCleanup }) =>
-      Effect.gen(function* () {
-        removePath(ESCAPED_OUTPUT_ROOT);
-        onCleanup(() => {
+      Effect.runPromise(Effect.gen(function* () {
           removePath(ESCAPED_OUTPUT_ROOT);
-        });
-        yield* Effect.promise(() =>
-          runSpool(["--", NODE, "-e", ESCAPED_OUTPUT_SCRIPT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => ESCAPED_OUTPUT_ROOT,
-          }),
-        );
-        return readFileString(joinPath(ESCAPED_OUTPUT_ROOT, SEAMED_LOG_NAME), "utf8");
-      }),
+          onCleanup(() => { removePath(ESCAPED_OUTPUT_ROOT); });
+          yield* Effect.promise(() =>
+            runSpool(["--", NODE, "-e", ESCAPED_OUTPUT_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => ESCAPED_OUTPUT_ROOT,
+            }),
+          );
+          return readFileString(joinPath(ESCAPED_OUTPUT_ROOT, SEAMED_LOG_NAME), "utf8");
+        })),
     );
 
     it("keeps the visible characters and drops the escapes", ({ theRunColouringItsOutput }) => {
@@ -606,9 +570,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfBothStreams", ({}, { onCleanup }) => {
         removePath(INTERLEAVED_OUTPUT_ROOT);
-        onCleanup(() => {
-          removePath(INTERLEAVED_OUTPUT_ROOT);
-        });
+        onCleanup(() => { removePath(INTERLEAVED_OUTPUT_ROOT); });
         return runSpool(["--", NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -620,24 +582,22 @@ describe("runSpool", () => {
         });
       })
       .extend("theRecordOfBothStreams", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(INTERLEAVED_OUTPUT_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(INTERLEAVED_OUTPUT_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
-            }),
-          );
-          return readFileString(joinPath(INTERLEAVED_OUTPUT_ROOT, SEAMED_LOG_NAME), "utf8");
-        }),
+            onCleanup(() => { removePath(INTERLEAVED_OUTPUT_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", INTERLEAVED_OUTPUT_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
+              }),
+            );
+            return readFileString(joinPath(INTERLEAVED_OUTPUT_ROOT, SEAMED_LOG_NAME), "utf8");
+          })),
       );
 
     it(
@@ -662,60 +622,54 @@ describe("runSpool", () => {
   describe("a command still running after its first line", () => {
     const it = standardIoTest
       .extend("theRecordSeenWhileStillGoing", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(DELAYED_MARK_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(DELAYED_MARK_ROOT);
-          });
-          const running = runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => DELAYED_MARK_ROOT,
-          });
-          const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
-          while (!fileExists(logPath) || !readFileString(logPath).includes("first-mark")) {
-            yield* Effect.promise(() => delay(20));
-          }
-          const observed = readFileString(logPath);
-          yield* Effect.promise(() => running);
-          return observed;
-        }),
+            onCleanup(() => { removePath(DELAYED_MARK_ROOT); });
+            const running = runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => DELAYED_MARK_ROOT,
+            });
+            const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
+            while (!fileExists(logPath) || !readFileString(logPath).includes("first-mark")) {
+              yield* Effect.promise(() => delay(20));
+            }
+            const observed = readFileString(logPath);
+            yield* Effect.promise(() => running);
+            return observed;
+          })),
       )
       .extend("theOutcomeRacedWhileStillGoing", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(DELAYED_MARK_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(DELAYED_MARK_ROOT);
-          });
-          const running = runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => DELAYED_MARK_ROOT,
-          });
-          const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
-          while (!fileExists(logPath) || !readFileString(logPath).includes("first-mark")) {
-            yield* Effect.promise(() => delay(20));
-          }
-          const settled = yield* Effect.promise(() =>
-            Promise.race([running, Promise.resolve("still recording")]),
-          );
-          yield* Effect.promise(() => running);
-          return settled;
-        }),
+            onCleanup(() => { removePath(DELAYED_MARK_ROOT); });
+            const running = runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => DELAYED_MARK_ROOT,
+            });
+            const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
+            while (!fileExists(logPath) || !readFileString(logPath).includes("first-mark")) {
+              yield* Effect.promise(() => delay(20));
+            }
+            const settled = yield* Effect.promise(() =>
+              Promise.race([running, Promise.resolve("still recording")]),
+            );
+            yield* Effect.promise(() => running);
+            return settled;
+          })),
       )
       .extend("theCodeOfTheDelayedCommand", ({}, { onCleanup }) => {
         removePath(DELAYED_MARK_ROOT);
-        onCleanup(() => {
-          removePath(DELAYED_MARK_ROOT);
-        });
+        onCleanup(() => { removePath(DELAYED_MARK_ROOT); });
         return runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -727,24 +681,22 @@ describe("runSpool", () => {
         });
       })
       .extend("theRecordLeftByTheDelayedCommand", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(DELAYED_MARK_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(DELAYED_MARK_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => DELAYED_MARK_ROOT,
-            }),
-          );
-          return readFileString(joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME), "utf8");
-        }),
+            onCleanup(() => { removePath(DELAYED_MARK_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", DELAYED_MARK_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => DELAYED_MARK_ROOT,
+              }),
+            );
+            return readFileString(joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME), "utf8");
+          })),
       );
 
     it(
@@ -786,9 +738,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfARunExitingWithSeven", ({}, { onCleanup }) => {
         removePath(FAILING_ROOT);
-        onCleanup(() => {
-          removePath(FAILING_ROOT);
-        });
+        onCleanup(() => { removePath(FAILING_ROOT); });
         return runSpool(["--", NODE, "-e", FAILING_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -800,44 +750,40 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfARunExitingWithSeven", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FAILING_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FAILING_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", FAILING_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => FAILING_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(FAILING_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", FAILING_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => FAILING_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       )
       .extend("theStderrOfARunExitingWithSeven", ({ stderr }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FAILING_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FAILING_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", FAILING_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => FAILING_ROOT,
-            }),
-          );
-          return stderr.text();
-        }),
+            onCleanup(() => { removePath(FAILING_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", FAILING_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => FAILING_ROOT,
+              }),
+            );
+            return stderr.text();
+          })),
       );
 
     it("hands the code of the command back unchanged", ({ theCodeOfARunExitingWithSeven }) => {
@@ -861,9 +807,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfThirtyRows", ({}, { onCleanup }) => {
         removePath(THIRTY_ROWS_ROOT);
-        onCleanup(() => {
-          removePath(THIRTY_ROWS_ROOT);
-        });
+        onCleanup(() => { removePath(THIRTY_ROWS_ROOT); });
         return runSpool(["--", NODE, "-e", THIRTY_ROWS_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -875,24 +819,22 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfThirtyRows", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(THIRTY_ROWS_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(THIRTY_ROWS_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", THIRTY_ROWS_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => THIRTY_ROWS_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(THIRTY_ROWS_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", THIRTY_ROWS_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => THIRTY_ROWS_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       );
 
     it("hands the code of the command back unchanged", ({ theCodeOfThirtyRows }) => {
@@ -910,9 +852,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfAnOpenLine", ({}, { onCleanup }) => {
         removePath(PARTIAL_LINE_ROOT);
-        onCleanup(() => {
-          removePath(PARTIAL_LINE_ROOT);
-        });
+        onCleanup(() => { removePath(PARTIAL_LINE_ROOT); });
         return runSpool(["--", NODE, "-e", PARTIAL_LINE_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -924,24 +864,22 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfAnOpenLine", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(PARTIAL_LINE_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(PARTIAL_LINE_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", PARTIAL_LINE_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => PARTIAL_LINE_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(PARTIAL_LINE_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", PARTIAL_LINE_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => PARTIAL_LINE_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       );
 
     it("hands the code of the command back unchanged", ({ theCodeOfAnOpenLine }) => {
@@ -959,9 +897,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfAKilledCommand", ({}, { onCleanup }) => {
         removePath(SELF_KILLING_ROOT);
-        onCleanup(() => {
-          removePath(SELF_KILLING_ROOT);
-        });
+        onCleanup(() => { removePath(SELF_KILLING_ROOT); });
         return runSpool(["--", NODE, "-e", SELF_KILLING_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -973,44 +909,40 @@ describe("runSpool", () => {
         });
       })
       .extend("theSummaryOfAKilledCommand", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(SELF_KILLING_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(SELF_KILLING_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", SELF_KILLING_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => SELF_KILLING_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(SELF_KILLING_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", SELF_KILLING_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => SELF_KILLING_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       )
       .extend("theRecordOfAKilledCommand", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(SELF_KILLING_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(SELF_KILLING_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", SELF_KILLING_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => SELF_KILLING_ROOT,
-            }),
-          );
-          return readFileString(joinPath(SELF_KILLING_ROOT, SEAMED_LOG_NAME), "utf8");
-        }),
+            onCleanup(() => { removePath(SELF_KILLING_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", SELF_KILLING_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => SELF_KILLING_ROOT,
+              }),
+            );
+            return readFileString(joinPath(SELF_KILLING_ROOT, SEAMED_LOG_NAME), "utf8");
+          })),
       );
 
     it("turns the signal into a code above the signal base", ({ theCodeOfAKilledCommand }) => {
@@ -1032,9 +964,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfAMissingExecutable", ({}, { onCleanup }) => {
         removePath(MISSING_EXECUTABLE_ROOT);
-        onCleanup(() => {
-          removePath(MISSING_EXECUTABLE_ROOT);
-        });
+        onCleanup(() => { removePath(MISSING_EXECUTABLE_ROOT); });
         return runSpool(["--", MISSING_EXECUTABLE], {
           stdout: process.stdout,
           stderr: process.stderr,
@@ -1046,64 +976,58 @@ describe("runSpool", () => {
         });
       })
       .extend("theStdoutOfAMissingExecutable", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(MISSING_EXECUTABLE_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(MISSING_EXECUTABLE_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", MISSING_EXECUTABLE], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => MISSING_EXECUTABLE_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(MISSING_EXECUTABLE_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", MISSING_EXECUTABLE], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => MISSING_EXECUTABLE_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       )
       .extend("theStderrOfAMissingExecutable", ({ stderr }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(MISSING_EXECUTABLE_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(MISSING_EXECUTABLE_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", MISSING_EXECUTABLE], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => MISSING_EXECUTABLE_ROOT,
-            }),
-          );
-          return stderr.text();
-        }),
+            onCleanup(() => { removePath(MISSING_EXECUTABLE_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", MISSING_EXECUTABLE], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => MISSING_EXECUTABLE_ROOT,
+              }),
+            );
+            return stderr.text();
+          })),
       )
       .extend("theRecordsLeftByAMissingExecutable", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(MISSING_EXECUTABLE_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(MISSING_EXECUTABLE_ROOT);
-          });
-          yield* Effect.promise(() =>
-            runSpool(["--", MISSING_EXECUTABLE], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => MISSING_EXECUTABLE_ROOT,
-            }),
-          );
-          return readDirectory(MISSING_EXECUTABLE_ROOT);
-        }),
+            onCleanup(() => { removePath(MISSING_EXECUTABLE_ROOT); });
+            yield* Effect.promise(() =>
+              runSpool(["--", MISSING_EXECUTABLE], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => MISSING_EXECUTABLE_ROOT,
+              }),
+            );
+            return readDirectory(MISSING_EXECUTABLE_ROOT);
+          })),
       );
 
     it("is refused with the code kept for a command that cannot start", ({
@@ -1133,9 +1057,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodeOfABlockedRoot", ({}, { onCleanup }) => {
         removePath(BLOCKED_ROOT_PARENT);
-        onCleanup(() => {
-          removePath(BLOCKED_ROOT_PARENT);
-        });
+        onCleanup(() => { removePath(BLOCKED_ROOT_PARENT); });
         makeDirectory(BLOCKED_ROOT_PARENT);
         writeFileString({ location: BLOCKED_ROOT, written: "occupied" });
         return runSpool(["--", NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH], {
@@ -1149,70 +1071,64 @@ describe("runSpool", () => {
         });
       })
       .extend("theStdoutOfABlockedRoot", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(BLOCKED_ROOT_PARENT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(BLOCKED_ROOT_PARENT);
-          });
-          makeDirectory(BLOCKED_ROOT_PARENT);
-          writeFileString({ location: BLOCKED_ROOT, written: "occupied" });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => BLOCKED_ROOT,
-            }),
-          );
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(BLOCKED_ROOT_PARENT); });
+            makeDirectory(BLOCKED_ROOT_PARENT);
+            writeFileString({ location: BLOCKED_ROOT, written: "occupied" });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => BLOCKED_ROOT,
+              }),
+            );
+            return stdout.text();
+          })),
       )
       .extend("theStderrOfABlockedRoot", ({ stderr }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(BLOCKED_ROOT_PARENT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(BLOCKED_ROOT_PARENT);
-          });
-          makeDirectory(BLOCKED_ROOT_PARENT);
-          writeFileString({ location: BLOCKED_ROOT, written: "occupied" });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => BLOCKED_ROOT,
-            }),
-          );
-          return stderr.text();
-        }),
+            onCleanup(() => { removePath(BLOCKED_ROOT_PARENT); });
+            makeDirectory(BLOCKED_ROOT_PARENT);
+            writeFileString({ location: BLOCKED_ROOT, written: "occupied" });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => BLOCKED_ROOT,
+              }),
+            );
+            return stderr.text();
+          })),
       )
       .extend("theEntriesLeftBesideABlockedRoot", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(BLOCKED_ROOT_PARENT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(BLOCKED_ROOT_PARENT);
-          });
-          makeDirectory(BLOCKED_ROOT_PARENT);
-          writeFileString({ location: BLOCKED_ROOT, written: "occupied" });
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-              isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
-              uniqueSuffix: () => SEAM_SUFFIX,
-              monotonicNow: () => 0,
-              spoolRoot: () => BLOCKED_ROOT,
-            }),
-          );
-          return readDirectory(BLOCKED_ROOT_PARENT);
-        }),
+            onCleanup(() => { removePath(BLOCKED_ROOT_PARENT); });
+            makeDirectory(BLOCKED_ROOT_PARENT);
+            writeFileString({ location: BLOCKED_ROOT, written: "occupied" });
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", SENTINEL_SCRIPT, SENTINEL_PATH], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                isPassthrough: () => false,
+                now: () => dateFrom(SEAM_INSTANT),
+                uniqueSuffix: () => SEAM_SUFFIX,
+                monotonicNow: () => 0,
+                spoolRoot: () => BLOCKED_ROOT,
+              }),
+            );
+            return readDirectory(BLOCKED_ROOT_PARENT);
+          })),
       );
 
     it("is refused with the code kept for a failed recording", ({ theCodeOfABlockedRoot }) => {
@@ -1237,143 +1153,131 @@ describe("runSpool", () => {
   describe("a record that breaks while the command is still writing", () => {
     const it = standardIoTest
       .extend("theCodeOfALostRecord", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FIFO_ROOT);
-          removePath(FIFO_GATE_DIRECTORY);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FIFO_ROOT);
             removePath(FIFO_GATE_DIRECTORY);
-          });
-          makeDirectory(FIFO_ROOT);
-          makeDirectory(FIFO_GATE_DIRECTORY);
-          const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
-          if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
-            throw new Error(`could not create the pipe at ${fifoPath}`);
-          }
-          const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => FIFO_ROOT,
-          });
-          const reader = openReadStream(fifoPath);
-          const observed = new CapturedStream();
-          reader.pipe(observed);
-          while (!observed.text().includes("phase one")) {
-            yield* Effect.promise(() => delay(20));
-          }
-          reader.destroy();
-          writeFileString({ location: FIFO_GATE, written: "open" });
-          return running;
-        }),
+            onCleanup(() => { removePath(FIFO_ROOT); removePath(FIFO_GATE_DIRECTORY); });
+            makeDirectory(FIFO_ROOT);
+            makeDirectory(FIFO_GATE_DIRECTORY);
+            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
+              throw new Error(`could not create the pipe at ${fifoPath}`);
+            }
+            const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => FIFO_ROOT,
+            });
+            const reader = openReadStream(fifoPath);
+            const observed = new CapturedStream();
+            reader.pipe(observed);
+            while (!observed.text().includes("phase one")) {
+              yield* Effect.promise(() => delay(20));
+            }
+            reader.destroy();
+            writeFileString({ location: FIFO_GATE, written: "open" });
+            return yield* Effect.promise(() => running);
+          })),
       )
       .extend("theStdoutOfALostRecord", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FIFO_ROOT);
-          removePath(FIFO_GATE_DIRECTORY);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FIFO_ROOT);
             removePath(FIFO_GATE_DIRECTORY);
-          });
-          makeDirectory(FIFO_ROOT);
-          makeDirectory(FIFO_GATE_DIRECTORY);
-          const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
-          if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
-            throw new Error(`could not create the pipe at ${fifoPath}`);
-          }
-          const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => FIFO_ROOT,
-          });
-          const reader = openReadStream(fifoPath);
-          const observed = new CapturedStream();
-          reader.pipe(observed);
-          while (!observed.text().includes("phase one")) {
-            yield* Effect.promise(() => delay(20));
-          }
-          reader.destroy();
-          writeFileString({ location: FIFO_GATE, written: "open" });
-          yield* Effect.promise(() => running);
-          return stdout.text();
-        }),
+            onCleanup(() => { removePath(FIFO_ROOT); removePath(FIFO_GATE_DIRECTORY); });
+            makeDirectory(FIFO_ROOT);
+            makeDirectory(FIFO_GATE_DIRECTORY);
+            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
+              throw new Error(`could not create the pipe at ${fifoPath}`);
+            }
+            const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => FIFO_ROOT,
+            });
+            const reader = openReadStream(fifoPath);
+            const observed = new CapturedStream();
+            reader.pipe(observed);
+            while (!observed.text().includes("phase one")) {
+              yield* Effect.promise(() => delay(20));
+            }
+            reader.destroy();
+            writeFileString({ location: FIFO_GATE, written: "open" });
+            yield* Effect.promise(() => running);
+            return stdout.text();
+          })),
       )
       .extend("theStderrOfALostRecord", ({ stderr }, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FIFO_ROOT);
-          removePath(FIFO_GATE_DIRECTORY);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FIFO_ROOT);
             removePath(FIFO_GATE_DIRECTORY);
-          });
-          makeDirectory(FIFO_ROOT);
-          makeDirectory(FIFO_GATE_DIRECTORY);
-          const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
-          if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
-            throw new Error(`could not create the pipe at ${fifoPath}`);
-          }
-          const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => FIFO_ROOT,
-          });
-          const reader = openReadStream(fifoPath);
-          const observed = new CapturedStream();
-          reader.pipe(observed);
-          while (!observed.text().includes("phase one")) {
-            yield* Effect.promise(() => delay(20));
-          }
-          reader.destroy();
-          writeFileString({ location: FIFO_GATE, written: "open" });
-          yield* Effect.promise(() => running);
-          return stderr.text();
-        }),
+            onCleanup(() => { removePath(FIFO_ROOT); removePath(FIFO_GATE_DIRECTORY); });
+            makeDirectory(FIFO_ROOT);
+            makeDirectory(FIFO_GATE_DIRECTORY);
+            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
+              throw new Error(`could not create the pipe at ${fifoPath}`);
+            }
+            const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => FIFO_ROOT,
+            });
+            const reader = openReadStream(fifoPath);
+            const observed = new CapturedStream();
+            reader.pipe(observed);
+            while (!observed.text().includes("phase one")) {
+              yield* Effect.promise(() => delay(20));
+            }
+            reader.destroy();
+            writeFileString({ location: FIFO_GATE, written: "open" });
+            yield* Effect.promise(() => running);
+            return stderr.text();
+          })),
       )
       .extend("theMarkerLeftByALostRecord", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(FIFO_ROOT);
-          removePath(FIFO_GATE_DIRECTORY);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(FIFO_ROOT);
             removePath(FIFO_GATE_DIRECTORY);
-          });
-          makeDirectory(FIFO_ROOT);
-          makeDirectory(FIFO_GATE_DIRECTORY);
-          const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
-          if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
-            throw new Error(`could not create the pipe at ${fifoPath}`);
-          }
-          const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => FIFO_ROOT,
-          });
-          const reader = openReadStream(fifoPath);
-          const observed = new CapturedStream();
-          reader.pipe(observed);
-          while (!observed.text().includes("phase one")) {
-            yield* Effect.promise(() => delay(20));
-          }
-          reader.destroy();
-          writeFileString({ location: FIFO_GATE, written: "open" });
-          yield* Effect.promise(() => running);
-          return readFileString(FIFO_MARKER);
-        }),
+            onCleanup(() => { removePath(FIFO_ROOT); removePath(FIFO_GATE_DIRECTORY); });
+            makeDirectory(FIFO_ROOT);
+            makeDirectory(FIFO_GATE_DIRECTORY);
+            const fifoPath = joinPath(FIFO_ROOT, SEAMED_LOG_NAME);
+            if (spawnChildSync({ executable: "mkfifo", handed: [fifoPath] }).status !== 0) {
+              throw new Error(`could not create the pipe at ${fifoPath}`);
+            }
+            const running = runSpool(["--", NODE, "-e", FIFO_SCRIPT, FIFO_GATE, FIFO_MARKER], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => 0,
+              spoolRoot: () => FIFO_ROOT,
+            });
+            const reader = openReadStream(fifoPath);
+            const observed = new CapturedStream();
+            reader.pipe(observed);
+            while (!observed.text().includes("phase one")) {
+              yield* Effect.promise(() => delay(20));
+            }
+            reader.destroy();
+            writeFileString({ location: FIFO_GATE, written: "open" });
+            yield* Effect.promise(() => running);
+            return readFileString(FIFO_MARKER);
+          })),
       );
 
     it(
@@ -1409,17 +1313,17 @@ describe("runSpool", () => {
 
   describe("a run told to pass the streams through", () => {
     const it = standardIoTest.extend("theSummaryOfAPassedThroughRun", ({ stdout }) =>
-      Effect.gen(function* () {
-        yield* Effect.promise(() =>
-          runSpool(["--", NODE, "-e", SILENT_SCRIPT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => true,
-            monotonicNow: () => 0,
-          }),
-        );
-        return stdout.text();
-      }),
+      Effect.runPromise(Effect.gen(function* () {
+          yield* Effect.promise(() =>
+            runSpool(["--", NODE, "-e", SILENT_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => true,
+              monotonicNow: () => 0,
+            }),
+          );
+          return stdout.text();
+        })),
     );
 
     it("hands the run to the passing through route, which names no record", ({
@@ -1435,9 +1339,7 @@ describe("runSpool", () => {
     const it = standardIoTest
       .extend("theCodesOfFiveConcurrentRuns", ({}, { onCleanup }) => {
         removePath(CONCURRENT_ROOT);
-        onCleanup(() => {
-          removePath(CONCURRENT_ROOT);
-        });
+        onCleanup(() => { removePath(CONCURRENT_ROOT); });
         return Promise.all(
           Array.from({ length: 5 }, () => {
             return runSpool(["--", NODE, "-e", PID_SCRIPT], {
@@ -1452,85 +1354,78 @@ describe("runSpool", () => {
         );
       })
       .extend("theRecordNameShapesOfFiveConcurrentRuns", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(CONCURRENT_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(CONCURRENT_ROOT);
-          });
-          yield* Effect.promise(() =>
-            Promise.all(
-              Array.from({ length: 5 }, () => {
-                return runSpool(["--", NODE, "-e", PID_SCRIPT], {
-                  stdout: process.stdout,
-                  stderr: process.stderr,
-                  isPassthrough: () => false,
-                  spoolRoot: () => CONCURRENT_ROOT,
-                  now: () => dateFrom(SEAM_INSTANT),
-                  monotonicNow: () => 0,
-                });
-              }),
-            ),
-          );
-          return readDirectory(CONCURRENT_ROOT).map((logFileName) =>
-            /^\d{8}T\d{6}Z-node--e-[0-9a-f]{8}\.log$/.test(logFileName),
-          );
-        }),
+            onCleanup(() => { removePath(CONCURRENT_ROOT); });
+            yield* Effect.promise(() =>
+              Promise.all(
+                Array.from({ length: 5 }, () => {
+                  return runSpool(["--", NODE, "-e", PID_SCRIPT], {
+                    stdout: process.stdout,
+                    stderr: process.stderr,
+                    isPassthrough: () => false,
+                    spoolRoot: () => CONCURRENT_ROOT,
+                    now: () => dateFrom(SEAM_INSTANT),
+                    monotonicNow: () => 0,
+                  });
+                })),
+            );
+            return readDirectory(CONCURRENT_ROOT).map((logFileName) =>
+              /^\d{8}T\d{6}Z-node--e-[0-9a-f]{8}\.log$/.test(logFileName),
+            );
+          })),
       )
       .extend("theWholeLineShapesOfFiveConcurrentRuns", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(CONCURRENT_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(CONCURRENT_ROOT);
-          });
-          yield* Effect.promise(() =>
-            Promise.all(
-              Array.from({ length: 5 }, () => {
-                return runSpool(["--", NODE, "-e", PID_SCRIPT], {
-                  stdout: process.stdout,
-                  stderr: process.stderr,
-                  isPassthrough: () => false,
-                  spoolRoot: () => CONCURRENT_ROOT,
-                  now: () => dateFrom(SEAM_INSTANT),
-                  monotonicNow: () => 0,
-                });
-              }),
-            ),
-          );
-          return readDirectory(CONCURRENT_ROOT).map((logFileName) =>
-            /^\d+\n$/.test(
-              readFileString(joinPath(CONCURRENT_ROOT, logFileName), "utf8").split("\n\n")[1] ?? "",
-            ),
-          );
-        }),
+            onCleanup(() => { removePath(CONCURRENT_ROOT); });
+            yield* Effect.promise(() =>
+              Promise.all(
+                Array.from({ length: 5 }, () => {
+                  return runSpool(["--", NODE, "-e", PID_SCRIPT], {
+                    stdout: process.stdout,
+                    stderr: process.stderr,
+                    isPassthrough: () => false,
+                    spoolRoot: () => CONCURRENT_ROOT,
+                    now: () => dateFrom(SEAM_INSTANT),
+                    monotonicNow: () => 0,
+                  });
+                })),
+            );
+            return readDirectory(CONCURRENT_ROOT).map((logFileName) =>
+              /^\d+\n$/.test(
+                readFileString(joinPath(CONCURRENT_ROOT, logFileName), "utf8").split("\n\n")[1] ??
+                  "",
+              ),
+            );
+          })),
       )
       .extend("theFirstAppearanceShapesOfFiveConcurrentRunBodies", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          removePath(CONCURRENT_ROOT);
-          onCleanup(() => {
+        Effect.runPromise(Effect.gen(function* () {
             removePath(CONCURRENT_ROOT);
-          });
-          yield* Effect.promise(() =>
-            Promise.all(
-              Array.from({ length: 5 }, () => {
-                return runSpool(["--", NODE, "-e", PID_SCRIPT], {
-                  stdout: process.stdout,
-                  stderr: process.stderr,
-                  isPassthrough: () => false,
-                  spoolRoot: () => CONCURRENT_ROOT,
-                  now: () => dateFrom(SEAM_INSTANT),
-                  monotonicNow: () => 0,
-                });
-              }),
-            ),
-          );
-          const recordedPidLines = readDirectory(CONCURRENT_ROOT).map(
-            (logFileName) =>
-              readFileString(joinPath(CONCURRENT_ROOT, logFileName), "utf8").split("\n\n")[1] ?? "",
-          );
-          return recordedPidLines.map(
-            (recordedPidLine, index) => recordedPidLines.indexOf(recordedPidLine) === index,
-          );
-        }),
+            onCleanup(() => { removePath(CONCURRENT_ROOT); });
+            yield* Effect.promise(() =>
+              Promise.all(
+                Array.from({ length: 5 }, () => {
+                  return runSpool(["--", NODE, "-e", PID_SCRIPT], {
+                    stdout: process.stdout,
+                    stderr: process.stderr,
+                    isPassthrough: () => false,
+                    spoolRoot: () => CONCURRENT_ROOT,
+                    now: () => dateFrom(SEAM_INSTANT),
+                    monotonicNow: () => 0,
+                  });
+                })),
+            );
+            const recordedPidLines = readDirectory(CONCURRENT_ROOT).map(
+              (logFileName) =>
+                readFileString(joinPath(CONCURRENT_ROOT, logFileName), "utf8").split("\n\n")[1] ??
+                "",
+            );
+            return recordedPidLines.map(
+              (recordedPidLine, index) => recordedPidLines.indexOf(recordedPidLine) === index,
+            );
+          })),
       );
 
     it(
@@ -1584,85 +1479,25 @@ describe("runSpool", () => {
     );
   });
 
-  describe("a run seamed with a fixed instant and a fixed unique part", () => {
-    const it = standardIoTest.extend("theRecordsNamedBySeams", ({}, { onCleanup }) =>
-      Effect.gen(function* () {
-        removePath(SEAMED_NAME_ROOT);
-        onCleanup(() => {
-          removePath(SEAMED_NAME_ROOT);
-        });
-        yield* Effect.promise(() =>
-          runSpool(["--", NODE, "-e", SEAMED_NAME_SCRIPT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom("2026-08-11T12:00:00.789Z"),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => SEAMED_NAME_ROOT,
-          }),
-        );
-        return readDirectory(SEAMED_NAME_ROOT);
-      }),
-    );
-
-    it("names the record by the instant, the command and the unique part", ({
-      theRecordsNamedBySeams,
-    }) => {
-      expect(theRecordsNamedBySeams).toStrictEqual([SEAMED_LOG_NAME]);
-    });
-  });
-
-  describe("a run whose command identifier runs past forty characters", () => {
-    const it = standardIoTest.extend("theRecordsNamedByALongCommand", ({}, { onCleanup }) =>
-      Effect.gen(function* () {
-        removePath(LONG_IDENTIFIER_ROOT);
-        onCleanup(() => {
-          removePath(LONG_IDENTIFIER_ROOT);
-        });
-        yield* Effect.promise(() =>
-          runSpool(["--", NODE, LONG_IDENTIFIER_ARGUMENT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            now: () => dateFrom("2026-08-11T12:00:00.789Z"),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => 0,
-            spoolRoot: () => LONG_IDENTIFIER_ROOT,
-          }),
-        );
-        return readDirectory(LONG_IDENTIFIER_ROOT);
-      }),
-    );
-
-    it("cuts the identifier at forty characters", ({ theRecordsNamedByALongCommand }) => {
-      expect(theRecordsNamedByALongCommand).toStrictEqual([
-        `20260811T120000Z-node-${"x".repeat(35)}-${SEAM_SUFFIX}.log`,
-      ]);
-    });
-  });
-
   describe("a run measured at twelve and a bit seconds", () => {
     const it = standardIoTest.extend("theSummaryOfATwelveSecondRun", ({ stdout }, { onCleanup }) =>
-      Effect.gen(function* () {
-        removePath(ELAPSED_SECONDS_ROOT);
-        onCleanup(() => {
+      Effect.runPromise(Effect.gen(function* () {
           removePath(ELAPSED_SECONDS_ROOT);
-        });
-        const ticks = [0, 12_399].values();
-        yield* Effect.promise(() =>
-          runSpool(["--", NODE, "-e", ELAPSED_SECONDS_SCRIPT], {
-            stdout: process.stdout,
-            stderr: process.stderr,
-            isPassthrough: () => false,
-            spoolRoot: () => ELAPSED_SECONDS_ROOT,
-            now: () => dateFrom(SEAM_INSTANT),
-            uniqueSuffix: () => SEAM_SUFFIX,
-            monotonicNow: () => ticks.next().value ?? 0,
-          }),
-        );
-        return stdout.text();
-      }),
+          onCleanup(() => { removePath(ELAPSED_SECONDS_ROOT); });
+          const ticks = [0, 12_399].values();
+          yield* Effect.promise(() =>
+            runSpool(["--", NODE, "-e", ELAPSED_SECONDS_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              isPassthrough: () => false,
+              spoolRoot: () => ELAPSED_SECONDS_ROOT,
+              now: () => dateFrom(SEAM_INSTANT),
+              uniqueSuffix: () => SEAM_SUFFIX,
+              monotonicNow: () => ticks.next().value ?? 0,
+            }),
+          );
+          return stdout.text();
+        })),
     );
 
     it("cuts the elapsed time down to a tenth of a second", ({ theSummaryOfATwelveSecondRun }) => {
@@ -1675,72 +1510,66 @@ describe("runSpool", () => {
   describe("a run handed no seams at all", () => {
     const it = standardIoTest
       .extend("theCodeOfADefaultRun", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          vi.stubEnv("CI", undefined);
-          const exitCode = yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-            }),
-          );
-          onCleanup(() => {
-            removePath(/spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "", {
-              force: true,
+        Effect.runPromise(Effect.gen(function* () {
+            vi.stubEnv("CI", undefined);
+            const exitCode = yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+              }),
+            );
+            onCleanup(() => {
+              removePath(
+                /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "",
+              );
             });
-          });
-          return exitCode;
-        }),
+            return exitCode;
+          })),
       )
       .extend("theSpoolDirectoryOfADefaultRun", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          vi.stubEnv("CI", undefined);
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-            }),
-          );
-          const recordPath =
-            /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
-          onCleanup(() => {
-            removePath(recordPath);
-          });
-          return parentPath(recordPath);
-        }),
+        Effect.runPromise(Effect.gen(function* () {
+            vi.stubEnv("CI", undefined);
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+              }),
+            );
+            const recordPath =
+              /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
+            onCleanup(() => { removePath(recordPath); });
+            return parentPath(recordPath);
+          })),
       )
       .extend("theRecordNameShapeOfADefaultRun", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          vi.stubEnv("CI", undefined);
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-            }),
-          );
-          const recordPath =
-            /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
-          onCleanup(() => {
-            removePath(recordPath);
-          });
-          return /^\d{8}T\d{6}Z-node--e-[0-9a-f]{8}\.log$/.test(baseName(recordPath));
-        }),
+        Effect.runPromise(Effect.gen(function* () {
+            vi.stubEnv("CI", undefined);
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+              }),
+            );
+            const recordPath =
+              /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
+            onCleanup(() => { removePath(recordPath); });
+            return /^\d{8}T\d{6}Z-node--e-[0-9a-f]{8}\.log$/.test(baseName(recordPath));
+          })),
       )
       .extend("theRecordOfADefaultRun", ({ stdout }, { onCleanup }) =>
-        Effect.gen(function* () {
-          vi.stubEnv("CI", undefined);
-          yield* Effect.promise(() =>
-            runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
-              stdout: process.stdout,
-              stderr: process.stderr,
-            }),
-          );
-          const recordPath =
-            /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
-          onCleanup(() => {
-            removePath(recordPath);
-          });
-          return readFileString(recordPath);
-        }),
+        Effect.runPromise(Effect.gen(function* () {
+            vi.stubEnv("CI", undefined);
+            yield* Effect.promise(() =>
+              runSpool(["--", NODE, "-e", DEFAULT_RUN_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+              }),
+            );
+            const recordPath =
+              /spool: log: (.+) \(\d+ bytes, \d+ lines\)/.exec(stdout.text())?.[1] ?? "";
+            onCleanup(() => { removePath(recordPath); });
+            return readFileString(recordPath);
+          })),
       );
 
     it("hands the code of the command back unchanged", ({ theCodeOfADefaultRun }) => {

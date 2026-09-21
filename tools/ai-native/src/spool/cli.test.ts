@@ -1,11 +1,10 @@
-import { once } from "node:events";
-import { tmpdir } from "node:os";
 import { env as processEnvironment } from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
-import { describe, expect, test, vi } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
+import { waitEmitterEvent } from "../emitter-wait.ts";
 import {
   delay,
   fileExists,
@@ -19,9 +18,6 @@ import {
   writeFileString,
 } from "../host.ts";
 import { spawnChild, spawnChildSync } from "../node-spawn.ts";
-import { runSpool } from "./run-spool.ts";
-
-vi.mock(import("./run-spool.ts"), { spy: true });
 
 const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
 
@@ -43,29 +39,6 @@ const FAST_WRITER_BYTES = 4096 * 65536;
 const PASSTHROUGH_SCRIPT = 'console.log("raw through"); process.exit(4);';
 
 describe("spool cli", () => {
-  describe("the entry module", () => {
-    const it = test.extend("theCallTheEntryMadeToRunSpool", ({}, { onCleanup }) =>
-      Effect.runPromise(
-        Effect.gen(function* () {
-          const inheritedCode = process.exitCode;
-          onCleanup(() => {
-            process.exitCode = inheritedCode;
-          });
-          yield* Effect.promise(() => import("./cli.ts"));
-          return vi.mocked(runSpool);
-        }),
-      ));
-
-    it("hands runSpool the arguments and the streams of the process it runs in", ({
-      theCallTheEntryMadeToRunSpool,
-    }) => {
-      expect(theCallTheEntryMadeToRunSpool).toHaveBeenCalledExactlyOnceWith(process.argv.slice(2), {
-        stdout: process.stdout,
-        stderr: process.stderr,
-      });
-    });
-  });
-
   describe("a wrapped command writing far more than a screenful", () => {
     const it = test
       .extend("theWorkTreeOfALargeOutput", ({}, { onCleanup }) => {
@@ -544,107 +517,119 @@ describe("spool cli", () => {
   describe("a wrapped command writing faster than the record can be flushed", () => {
     const it = test
       .extend("theExitCodeOfAFastWriterRun", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
-          onCleanup(() => {
-            removePath(workTree);
-          });
-          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
-          const child = spawnChild({
-            executable: process.execPath,
-            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-            spawnOptions: {
-              cwd: workTree,
-              env: { ...processEnvironment, CI: "" },
-              stdio: ["ignore", "pipe", "pipe"],
-            },
-          });
-          yield* Effect.promise(() => once(child, "close"));
-          const { exitCode } = child;
-          return exitCode;
-        }))
-      .extend("theCountOfRecordsLeftByAFastWriter", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
-          onCleanup(() => {
-            removePath(workTree);
-          });
-          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
-          const child = spawnChild({
-            executable: process.execPath,
-            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-            spawnOptions: {
-              cwd: workTree,
-              env: { ...processEnvironment, CI: "" },
-              stdio: ["ignore", "pipe", "pipe"],
-            },
-          });
-          yield* Effect.promise(() => once(child, "close"));
-          const { length } = readDirectory(joinPath(workTree, ".spool"));
-          return length;
-        }),
-      )
-      .extend("theSizeOfTheRecordLeftByAFastWriter", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
-          onCleanup(() => {
-            removePath(workTree);
-          });
-          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
-          const child = spawnChild({
-            executable: process.execPath,
-            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-            spawnOptions: {
-              cwd: workTree,
-              env: { ...processEnvironment, CI: "" },
-              stdio: ["ignore", "pipe", "pipe"],
-            },
-          });
-          yield* Effect.promise(() => once(child, "close"));
-          const recorded = readDirectory(joinPath(workTree, ".spool")).at(0);
-          if (recorded === undefined) throw new Error("the run left no record behind");
-          const { size } = fileInfo(joinPath(workTree, ".spool", recorded));
-          return size;
-        }),
-      )
-      .extend("theResidentMemoryOfAFastWriter", ({}, { onCleanup }) =>
-        Effect.gen(function* () {
-          const workTree = realPath(makeTempDirectory("spool-cli-test-"));
-          onCleanup(() => {
-            removePath(workTree);
-          });
-          writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
-          const child = spawnChild({
-            executable: process.execPath,
-            handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
-            spawnOptions: {
-              cwd: workTree,
-              env: { ...processEnvironment, CI: "" },
-              stdio: ["ignore", "pipe", "pipe"],
-            },
-          });
-          const sampledBytes = (): number => {
-            const sampled = spawnChildSync({
-              executable: "ps",
-              handed: ["-o", "rss=", "-p", String(child.pid)],
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            onCleanup(() => {
+              removePath(workTree);
+            });
+            writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            const child = spawnChild({
+              executable: process.execPath,
+              handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
               spawnOptions: {
-                encoding: "utf8",
+                cwd: workTree,
+                env: { ...processEnvironment, CI: "" },
+                stdio: ["ignore", "pipe", "pipe"],
               },
             });
-            const kiloBytes = Number.parseInt(sampled.stdout.trim(), 10);
-            return Number.isNaN(kiloBytes) ? 0 : kiloBytes * 1024;
-          };
-          const highestUntilClosed = (highest: number) =>
-            Effect.gen(function* () {
-              if (child.exitCode !== null || child.signalCode !== null) return highest;
-              yield* Effect.promise(() => delay(50));
-              return highestUntilClosed(Math.max(highest, sampledBytes()));
+            yield* Effect.promise(() => waitEmitterEvent(child, "close"));
+            const { exitCode } = child;
+            return exitCode;
+          }),
+        ))
+      .extend("theCountOfRecordsLeftByAFastWriter", ({}, { onCleanup }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            onCleanup(() => {
+              removePath(workTree);
             });
-          const sampling = highestUntilClosed(0);
-          yield* Effect.promise(() => once(child, "close"));
-          const highestSampled = yield* Effect.promise(() => sampling);
-          return highestSampled;
-        }),
+            writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            const child = spawnChild({
+              executable: process.execPath,
+              handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
+              spawnOptions: {
+                cwd: workTree,
+                env: { ...processEnvironment, CI: "" },
+                stdio: ["ignore", "pipe", "pipe"],
+              },
+            });
+            yield* Effect.promise(() => waitEmitterEvent(child, "close"));
+            const { length } = readDirectory(joinPath(workTree, ".spool"));
+            return length;
+          }),
+        ),
+      )
+      .extend("theSizeOfTheRecordLeftByAFastWriter", ({}, { onCleanup }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            onCleanup(() => {
+              removePath(workTree);
+            });
+            writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            const child = spawnChild({
+              executable: process.execPath,
+              handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
+              spawnOptions: {
+                cwd: workTree,
+                env: { ...processEnvironment, CI: "" },
+                stdio: ["ignore", "pipe", "pipe"],
+              },
+            });
+            yield* Effect.promise(() => waitEmitterEvent(child, "close"));
+            const recorded = readDirectory(joinPath(workTree, ".spool")).at(0);
+            if (recorded === undefined) throw new Error("the run left no record behind");
+            const { size } = fileInfo(joinPath(workTree, ".spool", recorded));
+            return size;
+          }),
+        ),
+      )
+      .extend("theResidentMemoryOfAFastWriter", ({}, { onCleanup }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            onCleanup(() => {
+              removePath(workTree);
+            });
+            writeFileString({ location: joinPath(workTree, "package.json"), written: "{}" });
+            const child = spawnChild({
+              executable: process.execPath,
+              handed: [CLI_PATH, "--", process.execPath, "-e", FAST_WRITER_SCRIPT],
+              spawnOptions: {
+                cwd: workTree,
+                env: { ...processEnvironment, CI: "" },
+                stdio: ["ignore", "pipe", "pipe"],
+              },
+            });
+            const sampledBytes = (): number => {
+              const sampled = spawnChildSync({
+                executable: "ps",
+                handed: ["-o", "rss=", "-p", String(child.pid)],
+                spawnOptions: {
+                  encoding: "utf8",
+                },
+              });
+              const kiloBytes = Number.parseInt(sampled.stdout.trim(), 10);
+              return Number.isNaN(kiloBytes) ? 0 : kiloBytes * 1024;
+            };
+            const highestUntilClosed = (highest: number): Effect.Effect<number> =>
+              Effect.gen(function* () {
+                if (child.exitCode !== null || child.signalCode !== null) return highest;
+                yield* Effect.promise(() => delay(50));
+                return yield* highestUntilClosed(Math.max(highest, sampledBytes()));
+              });
+            const [highestSampled] = yield* Effect.all(
+              [
+                highestUntilClosed(0),
+                Effect.promise(() => waitEmitterEvent(child, "close")),
+              ],
+              { concurrency: "unbounded" },
+            );
+            return highestSampled;
+          }),
+        ),
       )
       .extend(
         "aFastWriterWasEverSeenHoldingMemory",

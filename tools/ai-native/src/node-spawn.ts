@@ -1,11 +1,16 @@
-type PipeableStream = {
-  pipe: (destination: unknown, options?: { end?: boolean }) => PipeableStream;
+type ChildStream = {
+  on: (event: string, listener: (emission: Buffer) => void) => ChildStream;
+  once: (event: string, listener: (emission: Buffer) => void) => ChildStream;
+  pipe: (destination: unknown, options?: { end?: boolean }) => ChildStream;
 };
 
 type SpawnOptions = {
   readonly cwd?: string;
   readonly detached?: boolean;
+  readonly encoding?: BufferEncoding;
   readonly env?: NodeJS.ProcessEnv;
+  readonly input?: string;
+  readonly maxBuffer?: number;
   readonly stdio?: "inherit" | "ignore" | readonly (string | number)[];
   readonly windowsHide?: boolean;
 };
@@ -24,8 +29,8 @@ type SpawnedChild = {
   readonly exitCode: NodeChild["exitCode"];
   readonly pid: NodeChild["pid"];
   readonly signalCode: NodeChild["signalCode"];
-  readonly stderr: PipeableStream | null;
-  readonly stdout: PipeableStream | null;
+  readonly stderr: ChildStream | null;
+  readonly stdout: ChildStream | null;
   kill: NodeChild["kill"];
   once: NodeChild["once"];
 };
@@ -33,14 +38,14 @@ type SpawnedChild = {
 type SyncExit = {
   readonly error?: Error | undefined;
   readonly status: number | null;
-  readonly stderr: string | Buffer;
-  readonly stdout: string | Buffer;
+  readonly stderr: string;
+  readonly stdout: string;
 };
 
-const asPipeable = (stream: NodeChild["stdout"]): PipeableStream | null =>
-  stream === null ? null : (stream as PipeableStream);
-
 type NodeSpawnOptions = Parameters<typeof spawnedProcessApi.spawn>[2];
+
+const asChildStream = (stream: NodeChild["stdout"]): ChildStream | null =>
+  stream === null ? null : (stream as ChildStream);
 
 const spawnChild = (launch: SpawnLaunch): SpawnedChild => {
   const child = spawnedProcessApi.spawn(
@@ -59,15 +64,18 @@ const spawnChild = (launch: SpawnLaunch): SpawnedChild => {
       return child.signalCode;
     },
     get stderr() {
-      return asPipeable(child.stderr);
+      return asChildStream(child.stderr);
     },
     get stdout() {
-      return asPipeable(child.stdout);
+      return asChildStream(child.stdout);
     },
     kill: child.kill.bind(child),
     once: child.once.bind(child),
   };
 };
+
+const printedOutput = (printed: string | Buffer): string =>
+  typeof printed === "string" ? printed : Buffer.from(printed).toString("utf8");
 
 const spawnChildSync = (launch: SpawnLaunch): SyncExit => {
   const exit = spawnedProcessApi.spawnSync(
@@ -78,10 +86,10 @@ const spawnChildSync = (launch: SpawnLaunch): SyncExit => {
   return {
     error: exit.error,
     status: exit.status,
-    stderr: exit.stderr,
-    stdout: exit.stdout,
+    stderr: printedOutput(exit.stderr),
+    stdout: printedOutput(exit.stdout),
   };
 };
 
 export { spawnChild, spawnChildSync };
-export type { SpawnedChild, SpawnOptions, SyncExit };
+export type { ChildStream, SpawnedChild, SpawnOptions, SyncExit };

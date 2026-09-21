@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { runHook } from "cc-hooks-ts";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { spawnChildSync } from "../node-spawn.ts";
@@ -12,25 +12,11 @@ vi.mock(import("cc-hooks-ts"), { spy: true });
 
 const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
 
-const SLICING_COMMAND_PAYLOAD = JSON.stringify({
-  cwd: "/repo",
-  hook_event_name: "PreToolUse",
-  session_id: "session",
-  tool_input: { command: "vp test | tail -50" },
-  tool_name: "Bash",
-  tool_use_id: "toolu_1",
-  transcript_path: "/repo/transcript.jsonl",
-});
+const SLICING_COMMAND_PAYLOAD =
+  '{"cwd":"/repo","hook_event_name":"PreToolUse","session_id":"session","tool_input":{"command":"vp test | tail -50"},"tool_name":"Bash","tool_use_id":"toolu_1","transcript_path":"/repo/transcript.jsonl"}';
 
-const WHOLE_RECORD_COMMAND_PAYLOAD = JSON.stringify({
-  cwd: "/repo",
-  hook_event_name: "PreToolUse",
-  session_id: "session",
-  tool_input: { command: "git rev-parse HEAD" },
-  tool_name: "Bash",
-  tool_use_id: "toolu_1",
-  transcript_path: "/repo/transcript.jsonl",
-});
+const WHOLE_RECORD_COMMAND_PAYLOAD =
+  '{"cwd":"/repo","hook_event_name":"PreToolUse","session_id":"session","tool_input":{"command":"git rev-parse HEAD"},"tool_name":"Bash","tool_use_id":"toolu_1","transcript_path":"/repo/transcript.jsonl"}';
 
 describe("unabridged cli", () => {
   describe("the entry module", () => {
@@ -64,16 +50,18 @@ describe("unabridged cli", () => {
         const { status } = theRunOverASlicingCommand;
         return status;
       })
-      .extend("theDecisionOverASlicingCommand", (): unknown =>
-        JSON.parse(
-          spawnChildSync({
-            executable: process.execPath,
-            handed: [CLI_PATH],
-            spawnOptions: {
-              encoding: "utf8",
-              input: SLICING_COMMAND_PAYLOAD,
-            },
-          }).stdout,
+      .extend("theDecisionOverASlicingCommand", () =>
+        Effect.runPromise(
+          Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(
+            spawnChildSync({
+              executable: process.execPath,
+              handed: [CLI_PATH],
+              spawnOptions: {
+                encoding: "utf8",
+                input: SLICING_COMMAND_PAYLOAD,
+              },
+            }).stdout,
+          ),
         ),
       );
 
