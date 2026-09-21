@@ -139,11 +139,22 @@ const withoutLocalState = [
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
+const typecheckInputs = [
+  ...taskInput,
+  { base: "workspace", pattern: "**/*.{ts,tsx}" },
+  { base: "workspace", pattern: "**/package.json" },
+  { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "!**/node_modules/**" },
+  { base: "workspace", pattern: "!**/dist/**" },
+  { base: "workspace", pattern: "!**/.paraglide/**" },
+  { base: "workspace", pattern: "!**/.local/**" },
+] as const;
+
 const effectDiagnostics = {
   "check:effect": {
     command:
       "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    input: [...taskInput],
+    input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
@@ -211,7 +222,7 @@ const appRun = {
     ...sliceBoundaries,
     build: {
       command: "vp build",
-      dependsOn: ["@repo/dev#setup"],
+      dependsOn: ["@repo/dev#setup", "check:effect"],
       input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
