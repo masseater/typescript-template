@@ -182,6 +182,7 @@ const config = ({
       "infra/cloudflare/src/verification-fixture.ts": ["exports"],
       "libs/db/src/testing.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.ts": ["unlisted"],
+      "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
       "libs/runtime/src/app-fixture.ts": ["unlisted"],
       "libs/runtime/src/bindings.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
