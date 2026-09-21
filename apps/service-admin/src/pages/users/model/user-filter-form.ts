@@ -42,7 +42,9 @@ function useUserFilterForm(search: UsersSearch): UserFilterForm {
   const [values, setValues] = useAtom(filterAtom(search));
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    void navigate({ search: usersSearchFromFilters(values.keyword, values.status, values.verified) });
+    void navigate({
+      search: usersSearchFromFilters(values.keyword, values.status, values.verified),
+    });
   }
   function handleClear(): void {
     void navigate({ search: {} });
