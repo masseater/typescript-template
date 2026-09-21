@@ -1,4 +1,5 @@
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+import { Schema } from "effect";
 
 import {
   BoardFailed,
@@ -15,7 +16,7 @@ function requireBoardSearch(raw: unknown): BoardSearch {
   try {
     return normalizeBoardSearch(raw);
   } catch (error) {
-    if (error instanceof InvalidBoardSearch) {
+    if (Schema.is(InvalidBoardSearch)(error)) {
       throw redirect({ replace: true, search: {}, to: "/board" });
     }
     throw error;
@@ -36,8 +37,7 @@ const Route = createFileRoute("/_member/board/")({
       throw redirect({ replace: true, search, to: "/board" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) =>
-    loadThreads(deps.page),
+  loader: ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) => loadThreads(deps.page),
   component: BoardRoute,
   errorComponent: BoardFailed,
   pendingComponent: BoardPending,

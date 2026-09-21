@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
   applicationPorts,
@@ -21,6 +18,7 @@ import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
+import { Effect } from "effect";
 import {
   defineConfig,
   type ConfigEnv,
@@ -31,31 +29,40 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { filesystem, isNotFound, paths } from "./host.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
-const readDevVars = async (appRoot: string): Promise<string | undefined> => {
-  try {
-    return await readFile(path.join(appRoot, ".dev.vars"), "utf-8");
-  } catch (readFailure: unknown) {
-    if (readFailure instanceof Error && "code" in readFailure && readFailure.code === "ENOENT") {
-      return undefined;
-    }
-    throw readFailure;
-  }
-};
+const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
+  filesystem.readFileString(paths.join(appRoot, ".dev.vars")).pipe(
+    Effect.catchIf(isNotFound, () => Effect.as(Effect.void, undefined as string | undefined)),
+    Effect.orDie,
+  );
 
 const previewDevVars = (appRoot: string): Plugin => {
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
-    async generateBundle() {
-      const source = await readDevVars(appRoot);
-      if (source === undefined) {
-        return this.error(
-          `Missing ${path.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
-        );
-      }
-      this.emitFile({ fileName: ".dev.vars", source, type: "asset" });
+    generateBundle() {
+      const emitDevVarsFile = (
+        file: Readonly<{ fileName: string; source: string; type: "asset" }>,
+      ): void => {
+        this.emitFile(file);
+      };
+      const reportMissingDevVars = (missingDevVarsText: string): void => {
+        this.error(missingDevVarsText);
+      };
+      return Effect.runPromise(
+        Effect.gen(function* emitDevVars() {
+          const source = yield* readDevVars(appRoot);
+          if (source === undefined) {
+            reportMissingDevVars(
+              `Missing ${paths.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
+            );
+            return;
+          }
+          emitDevVarsFile({ fileName: ".dev.vars", source, type: "asset" });
+        }),
+      );
     },
     name: "template-preview-dev-vars",
   };
@@ -119,7 +126,7 @@ const stripEnvFileLoader = (
 const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
   const [kept, removed] = stripEnvFileLoader(plugins);
   if (removed === 0) {
-    throw new Error(`${envFileLoader} plugin not found`);
+    return Effect.runSync(Effect.die(`${envFileLoader} plugin not found`));
   }
   return [...kept];
 };
@@ -187,7 +194,6 @@ const typecheckInputs = [
   { base: "workspace", pattern: "**/*.{ts,tsx}" },
   { base: "workspace", pattern: "**/package.json" },
   { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
   { base: "workspace", pattern: "!**/node_modules/**" },
   { base: "workspace", pattern: "!**/dist/**" },
   { base: "workspace", pattern: "!**/.paraglide/**" },
@@ -195,14 +201,8 @@ const typecheckInputs = [
 ] as const;
 
 const effectDiagnostics = {
-  "check:effect:gate": {
-    command: "check-effect-typecheck",
-    input: [...typecheckInputs],
-  },
   "check:effect": {
-    command:
-      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    dependsOn: ["check:effect:gate"],
+    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
@@ -303,7 +303,7 @@ const appConfig = (
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
 ): ((env: Readonly<ConfigEnv>) => UserConfig) => {
-  const appRoot = path.join(repositoryRoot, "apps", app);
+  const appRoot = paths.join(repositoryRoot, "apps", app);
   const realtime = grants(app, "realtime");
   return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
@@ -389,8 +389,8 @@ export {
   toolTest,
   withoutEnvFileLoader,
 };
+export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
-export { runTypecheckGate } from "./effect-typecheck.ts";
 export type { Tasks };
 export { devBoundary };

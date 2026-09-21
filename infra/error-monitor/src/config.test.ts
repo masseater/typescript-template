@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { parseErrorMonitorConfig } from "./config.ts";
 
@@ -25,7 +25,10 @@ for (const override of [
     Effect.gen(function* program() {
       const failure = yield* parseErrorMonitorConfig({ ...valid, ...override }).pipe(Effect.flip);
       assert.strictEqual(failure.code, "error_monitor_config_invalid");
-      assert.notInclude(JSON.stringify(failure), "private-not-an-account");
+      assert.notInclude(
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
+        "private-not-an-account",
+      );
     }),
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+import { Schema } from "effect";
 
 import {
   InvalidUsersSearch,
@@ -15,7 +16,7 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   try {
     return normalizeUsersSearch(raw);
   } catch (error) {
-    if (error instanceof InvalidUsersSearch) {
+    if (Schema.is(InvalidUsersSearch)(error)) {
       throw redirect({ replace: true, search: {}, to: "/users" });
     }
     throw error;
@@ -36,7 +37,7 @@ const Route = createFileRoute("/_member/users/")({
       throw redirect({ replace: true, search, to: "/users" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembers(deps),
+  loader: ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembers(deps),
   component: UsersRoute,
   errorComponent: UsersFailed,
   pendingComponent: UsersPending,

@@ -4,6 +4,7 @@ import { Effect, Redacted } from "effect";
 
 import { CONFIRMATION_LENGTH } from "./config.ts";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
+import { encodeJson } from "./platform.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Plan } from "alchemy/Plan";
@@ -71,7 +72,7 @@ function withProps(props: Readonly<Record<string, unknown>>): PlannedStack {
 }
 
 it.effect("prints the rows and their bindings without the stage or any property value", () =>
-  Effect.sync(() => {
+  Effect.gen(function* program() {
     const report = planReport(created);
     assert.deepStrictEqual(report, {
       rows: [
@@ -85,7 +86,7 @@ it.effect("prints the rows and their bindings without the stage or any property 
       ],
       stack: "template-user",
     });
-    const printed = JSON.stringify(report);
+    const printed = yield* encodeJson(report);
     assert.notInclude(printed, stack.stage);
     assert.notInclude(printed, "user.example.com");
     assert.notInclude(printed, "first-secret-value");

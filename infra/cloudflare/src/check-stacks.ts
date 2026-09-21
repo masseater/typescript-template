@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { isDeepStrictEqual } from "node:util";
+const { isDeepStrictEqual } = process.getBuiltinModule("util");
 
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
@@ -30,6 +29,7 @@ import {
   compileStack,
   describeCause,
 } from "./inventory.ts";
+import { encodeJson } from "./platform.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -386,7 +386,7 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
     !isDeepStrictEqual(senders.toSorted(), [...sendingStacks].toSorted());
   if (differs) {
     yield* Console.error(
-      JSON.stringify({ event: "stacks.roles_differ", onboarding, senders, violations }),
+      yield* encodeJson({ event: "stacks.roles_differ", onboarding, senders, violations }),
     );
   }
   return differs;
@@ -398,7 +398,7 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   const matches = isDeepStrictEqual(inventory, expected);
   if (!matches) {
     yield* Console.error(
-      JSON.stringify({ actual: inventory, event: "stacks.differs", expected, stack }),
+      yield* encodeJson({ actual: inventory, event: "stacks.differs", expected, stack }),
     );
   }
   return { matches, onboards: onboards(inventory), sends: bindsSendEmail(inventory) } as const;
@@ -406,13 +406,13 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
 
 runCli(
   Effect.gen(function* program() {
-    const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
+    const verified = yield* Effect.forEach(stackNames, (stack) => verifyStack(stack));
     const differs = yield* rolesDiffer(verified);
     if (differs || verified.some((entry) => !entry.matches)) {
       yield* markFailed;
       return;
     }
-    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
+    yield* Console.log(yield* encodeJson({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
       reportFailed({

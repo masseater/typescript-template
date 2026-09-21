@@ -47,7 +47,7 @@ const headerRejection = (received: {
     : Option.none();
 };
 
-const parseJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
+const parseJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 const decodeChunks = (chunks: Chunk.Chunk<Uint8Array>): string => {
   const decoder = new TextDecoder();
@@ -60,7 +60,9 @@ const readBody = (bounded: {
   readonly body: Readonly<AsyncIterable<Uint8Array>>;
   readonly limit: number;
 }): Effect.Effect<unknown, RequestRejected> =>
-  Stream.fromAsyncIterable(bounded.body, (cause) => cause).pipe(
+  Stream.fromAsyncIterable(bounded.body, (cause): never => {
+    throw cause instanceof Error ? cause : new Error(String(cause));
+  }).pipe(
     Stream.runFoldEffect(
       (): { readonly byteLength: number; readonly chunks: Chunk.Chunk<Uint8Array> } => ({
         byteLength: 0,
@@ -79,8 +81,9 @@ const readBody = (bounded: {
         Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
       ),
     ),
-    Effect.catch((cause) =>
-      cause instanceof RequestRejected ? Effect.fail(cause) : Effect.die(cause),
+    Effect.catchIf(
+      (cause) => !Schema.is(RequestRejected)(cause),
+      (cause) => Effect.die(cause),
     ),
   );
 

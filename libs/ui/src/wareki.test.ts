@@ -1,9 +1,10 @@
 import { dateToWareki } from "@smarthr/wareki";
+import { DateTime } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { formatWarekiDate, formatWarekiDateTime, formatWarekiMonth } from "./wareki.ts";
 
-const reiwaStart = new Date("2019-05-01T00:00:00Z");
+const reiwaStart = DateTime.toDate(DateTime.makeUnsafe("2019-05-01T00:00:00Z"));
 const lateEveningUtc = Date.UTC(2019, 4, 1, 23, 30);
 
 describe("formatWarekiDate", () => {

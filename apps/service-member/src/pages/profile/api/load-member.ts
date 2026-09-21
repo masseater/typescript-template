@@ -6,17 +6,16 @@ import { MemberView } from "#shared/contracts/index.ts";
 
 import type { Member } from "#pages/profile/model/member.ts";
 
-async function loadMember(id: string): Promise<Member> {
-  const { api } = await userClient();
-  const member = apiDataOrNone(
-    MemberView,
-    await api.member.get({ query: { id } }),
-    absent.notFound,
+function loadMember(id: string): Promise<Member> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.member.get({ query: { id } }).then((response) => {
+      const member = apiDataOrNone(MemberView, response, absent.notFound);
+      if (member === undefined) {
+        throw notFound();
+      }
+      return member;
+    }),
   );
-  if (member === undefined) {
-    throw notFound();
-  }
-  return member;
 }
 
 export { loadMember };

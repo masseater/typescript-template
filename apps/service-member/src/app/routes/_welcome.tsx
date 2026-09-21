@@ -14,7 +14,7 @@ const progressLabel: Readonly<Record<Exclude<OnboardingStep, "done">, string>> =
 };
 
 const Route = createFileRoute("/_welcome")({
-  beforeLoad: async ({ location }: Readonly<{ location: Readonly<{ href: string }> }>) =>
+  beforeLoad: ({ location }: Readonly<{ location: Readonly<{ href: string }> }>) =>
     enterWelcomeFrame(location.href),
   component: WelcomeLayout,
 });
@@ -23,7 +23,7 @@ const route = getRouteApi("/_welcome");
 
 function WelcomeLayout(): ReactElement {
   const { step } = route.useRouteContext();
-  const label = step === "done" ? "" : progressLabel[step];
+  const label = step === "done" ? "" : (progressLabel[step] ?? "");
   return (
     <WelcomeShell progress={label}>
       <Outlet />

@@ -10,7 +10,7 @@ function WikiDocPage(): ReactElement {
 
 const Route = createFileRoute("/wiki/$")({
   component: WikiDocPage,
-  loader: async ({ location }: Readonly<{ location: Readonly<{ pathname: string }> }>) =>
+  loader: ({ location }: Readonly<{ location: Readonly<{ pathname: string }> }>) =>
     loadWikiPage({
       data: location.pathname
         .replace(/^\/wiki\/?/, "")
