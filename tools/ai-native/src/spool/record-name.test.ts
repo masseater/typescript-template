@@ -10,8 +10,7 @@ describe("recordNameOf", () => {
         stampedInstant: dateFrom("2026-08-11T12:00:00.789Z"),
         command: ["node", "-e", "console.log(1)"],
         uniqueSuffix: "cafe0123",
-      }),
-    );
+      }));
 
     it("names the record by the instant, the command and the unique part", ({
       theRecordNameOfASeamedCommand,
@@ -26,8 +25,7 @@ describe("recordNameOf", () => {
         stampedInstant: dateFrom("2026-08-11T12:00:00.789Z"),
         command: ["node", `${"x".repeat(60)}.js`],
         uniqueSuffix: "cafe0123",
-      }),
-    );
+      }));
 
     it("cuts the identifier at forty characters", ({ theRecordNameOfALongCommand }) => {
       expect(theRecordNameOfALongCommand).toBe(

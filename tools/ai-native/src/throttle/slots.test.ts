@@ -392,8 +392,7 @@ describe("tryAcquireAny", () => {
         return Effect.runPromise(
           Effect.tryPromise({
             try: () => tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-            catch: (refusal): boolean =>
-              failedWithCode(refusal, new Set(["EISDIR", "EPERM"])),
+            catch: (refusal): boolean => failedWithCode(refusal, new Set(["EISDIR", "EPERM"])),
           }).pipe(
             Effect.match({
               onFailure: (coded) => coded,
@@ -621,9 +620,7 @@ describe("a slot whose holder is killed without releasing it", () => {
             const stdout = holder.stdout;
             if (stdout === null) throw new Error("holder stdout missing");
             yield* Effect.promise(() => waitEmitterEvent(stdout, "data"));
-            return yield* Effect.promise(() =>
-              tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
-            );
+            return yield* Effect.promise(() => tryAcquireAny({ slotDir: slotDirectory, limit: 1 }));
           }),
         ),
       )

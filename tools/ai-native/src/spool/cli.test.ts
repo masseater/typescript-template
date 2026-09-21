@@ -621,10 +621,7 @@ describe("spool cli", () => {
                 return yield* highestUntilClosed(Math.max(highest, sampledBytes()));
               });
             const [highestSampled] = yield* Effect.all(
-              [
-                highestUntilClosed(0),
-                Effect.promise(() => waitEmitterEvent(child, "close")),
-              ],
+              [highestUntilClosed(0), Effect.promise(() => waitEmitterEvent(child, "close"))],
               { concurrency: "unbounded" },
             );
             return highestSampled;
