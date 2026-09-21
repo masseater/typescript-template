@@ -98,7 +98,12 @@ const filesUnder = (directory: string, nested: boolean): readonly string[] => {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     if (SKIPPED_DIRECTORIES.has(entry.name)) return [];
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) return nested ? filesUnder(path, true) : [];
+    const directoryEntry =
+      entry.isDirectory() ||
+      (!entry.isFile() &&
+        !entry.isSymbolicLink() &&
+        statSync(path, { throwIfNoEntry: false })?.isDirectory() === true);
+    if (directoryEntry) return nested ? filesUnder(path, true) : [];
     if (!TEXT_EXTENSIONS.has(extensionOf(entry.name))) return [];
     if (entry.name === "pnpm-lock.yaml") return [];
     return [path];
@@ -201,15 +206,18 @@ const COMMAND = /(?:command["']?\s*:\s*|^\s*"[^"]+"\s*:\s*)["'`]([^"'`]+)["'`]/g
 const specifiersIn = (text: string): readonly string[] =>
   [...text.matchAll(SPECIFIER)].map((match) => match[1] ?? "");
 
-const insideRepository = (file: string): boolean => {
-  let resolved = file;
-  try {
-    resolved = realpathSync(file);
-  } catch {
-    resolved = file;
-  }
-  const fromRoot = relative(repositoryRoot, resolved);
+const staysInRepository = (file: string): boolean => {
+  const fromRoot = relative(repositoryRoot, file);
   return fromRoot !== "" && !fromRoot.startsWith("..") && !fromRoot.includes("node_modules");
+};
+
+const insideRepository = (file: string): boolean => {
+  if (staysInRepository(file)) return true;
+  try {
+    return staysInRepository(realpathSync(file));
+  } catch {
+    return false;
+  }
 };
 
 const resolvedSpecifier = (fromFile: string, specifier: string): string | null => {
