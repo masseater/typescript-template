@@ -2,8 +2,19 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, grants, loopbackAddress, type Application } from "@repo/config";
+import {
+  applicationPorts,
+  grants,
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+  loopbackAddress,
+  type Application,
+} from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
+import { localUserInbox, userInboxClassName } from "@repo/config/realtime";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
@@ -293,6 +304,7 @@ const appConfig = (
   plugins: readonly PluginOption[] = noExtraPlugins,
 ): ((env: Readonly<ConfigEnv>) => UserConfig) => {
   const appRoot = path.join(repositoryRoot, "apps", app);
+  const realtime = grants(app, "realtime");
   return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
     plugins: [
@@ -309,8 +321,31 @@ const appConfig = (
           compatibility_date: workerCompatibility.date,
           compatibility_flags: [...workerCompatibility.flags],
           d1_databases: [localDatabase],
+          ...(realtime
+            ? {
+                durable_objects: {
+                  bindings: [localUserInbox],
+                },
+                migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
+              }
+            : {}),
           main: "./src/app/server.ts",
           name: `template-${app}`,
+          ...(grants(app, "jobs")
+            ? {
+                queues: {
+                  consumers: [{ queue: jobsQueueName }],
+                  producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
+                },
+                workflows: [
+                  {
+                    binding: jobsWorkflowBinding,
+                    class_name: jobsWorkflowClass,
+                    name: jobsWorkflowName,
+                  },
+                ],
+              }
+            : {}),
           ...(grants(app, "storage")
             ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
             : {}),

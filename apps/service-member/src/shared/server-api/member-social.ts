@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { onboardingSteps, query, schema } from "@repo/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";

@@ -3,6 +3,24 @@
   "workspaces": {
     ".": [
       {
+        "file": "libs/monitor/src/index.ts",
+        "code": "TS2304",
+        "message": "Cannot find name 'DurableObjectNamespace'.",
+        "count": 2
+      },
+      {
+        "file": "libs/monitor/src/index.ts",
+        "code": "TS2304",
+        "message": "Cannot find name 'DurableObjectState'.",
+        "count": 4
+      },
+      {
+        "file": "libs/monitor/src/index.ts",
+        "code": "TS2304",
+        "message": "Cannot find name 'SendEmail'.",
+        "count": 1
+      },
+      {
         "file": "tools/dont-review-it/src/repository/lint.ts",
         "code": "TS2345",
         "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
@@ -116,6 +134,12 @@
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -283,6 +307,12 @@
         "count": 1
       },
       {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
         "file": "src/shared/server-api/server-app.ts",
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
@@ -360,6 +390,12 @@
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -627,6 +663,12 @@
         "count": 1
       },
       {
+        "file": "src/shared/server-api/jobs-api.worker.test.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2345",
         "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; profile: SQLiteColumn<...>; updat...'.",
@@ -681,6 +723,20 @@
         "count": 1
       }
     ],
+    "infra/budget-monitor": [
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
+        "file": "vite.config.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 1
+      }
+    ],
     "infra/cloudflare": [
       {
         "file": "../../libs/monitor/src/index.ts",
@@ -707,6 +763,12 @@
         "count": 1
       },
       {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
         "file": "src/account-inspection.test.ts",
         "code": "TS2339",
         "message": "Property 'cause' does not exist on type 'Exit<{ alertQuota: \"counted\" | \"free\" | Readonly<{ unreadable: readonly string[]; }>; database: \"free\" | \"owned\" | \"taken\" | Readonly<{ unreadable: readonly string[]; }>; deployToken: Readonly<...> | readonly string[]; ... 8 more ...; workersSubdomain: Readonly<...> | Presence; }, never>'.",
@@ -717,12 +779,6 @@
         "code": "TS7006",
         "message": "Parameter 'reason' implicitly has an 'any' type.",
         "count": 2
-      },
-      {
-        "file": "src/app.ts",
-        "code": "TS2375",
-        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: Redacted<string>; DB: Database; EMAIL: SendEmail; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID: string; ... 7 more ...; FLAGSHIP_APP_ID: Output<...>; } | { ...; } | DeclaredEnv' is not assignable to type 'DeclaredEnv | WikiEnv' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
       },
       {
         "file": "src/artifacts.test.ts",
@@ -773,6 +829,42 @@
         "count": 1
       }
     ],
+    "infra/error-monitor": [
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
+        "file": "vite.config.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 1
+      }
+    ],
+    "infra/health-monitor": [
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
+        "file": "vite.config.ts",
+        "code": "TS2769",
+        "message": "No overload matches this call.",
+        "count": 1
+      }
+    ],
+    "infra/local": [
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      }
+    ],
     "libs/auth": [
       {
         "file": "../db/src/index.ts",
@@ -796,6 +888,12 @@
         "file": "../observability/src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
+        "count": 1
+      },
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -871,11 +969,45 @@
         "count": 1
       }
     ],
+    "libs/auth-ui": [
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      }
+    ],
+    "libs/config": [
+      {
+        "file": "src/naming.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'URL' is not assignable to parameter of type 'string | URL'.",
+        "count": 1
+      },
+      {
+        "file": "src/responds.test.ts",
+        "code": "TS2322",
+        "message": "Type 'number' is not assignable to type 'string'.",
+        "count": 5
+      },
+      {
+        "file": "src/responds.test.ts",
+        "code": "TS2345",
+        "message": "Argument of type 'number' is not assignable to parameter of type 'string'.",
+        "count": 2
+      }
+    ],
     "libs/db": [
       {
         "file": "../../infra/cloudflare/src/remote-command.ts",
         "code": "TS2883",
         "message": "The inferred type of 'runRemoteDatabaseCommand' cannot be named without a reference to 'RemoteFailure' from '../node_modules/@repo/db/src/remote-input.ts'. This is likely not portable. A type annotation is necessary.",
+        "count": 1
+      },
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -902,6 +1034,12 @@
         "file": "../db/src/index.ts",
         "code": "TS6133",
         "message": "'eq' is declared but its value is never read.",
+        "count": 1
+      },
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       }
     ],
@@ -965,9 +1103,89 @@
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
         "count": 1
+      },
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      }
+    ],
+    "libs/monitor": [
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4023",
+        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'check' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'ctx' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'env' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'event' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'failure' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'notifier' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'reportFailure' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'reportSuccess' of exported anonymous class type may not be private or protected.",
+        "count": 1
+      },
+      {
+        "file": "src/monitor-fixture.ts",
+        "code": "TS4094",
+        "message": "Property 'run' of exported anonymous class type may not be private or protected.",
+        "count": 1
       }
     ],
     "libs/observability": [
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
       {
         "file": "src/request-span.ts",
         "code": "TS2322",
@@ -1037,6 +1255,12 @@
         "count": 1
       },
       {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      },
+      {
         "file": "src/http-events.test.ts",
         "code": "TS2345",
         "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
@@ -1046,6 +1270,22 @@
         "file": "src/http.ts",
         "code": "TS2322",
         "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "count": 1
+      }
+    ],
+    "libs/ui": [
+      {
+        "file": "../vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "count": 1
+      }
+    ],
+    "libs/vite-config": [
+      {
+        "file": "src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       }
     ],
@@ -1110,6 +1350,12 @@
         "file": "../../libs/observability/src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/vite-config/src/request-guard.ts",
+        "code": "TS4111",
+        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
