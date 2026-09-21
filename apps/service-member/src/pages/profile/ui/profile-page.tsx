@@ -72,9 +72,9 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
           {member.name}
         </Heading>
       </div>
-      <Biography own={own} text={member.profile} />
-      <CompanyPhoto memberId={member.id} version={member.photos.company} />
-      <SocialLinks urls={member.socialLinks} />
+      <Biography own={own} text={blocked ? "" : member.profile} />
+      {blocked ? null : <CompanyPhoto memberId={member.id} version={member.photos.company} />}
+      {blocked ? null : <SocialLinks urls={member.socialLinks} />}
       <p className="text-sm leading-normal text-muted-foreground">
         {formatWarekiMonth(member.joined)}に登録
       </p>
@@ -84,10 +84,10 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
           <ProfileShare memberId={member.id} privateProfile={false} />
         </>
       )}
-      {!own && (
+      {!own && !blocked && (
         <div className="flex flex-wrap gap-3">
           <Button
-            disabled={followAction.blocked || blocked}
+            disabled={followAction.blocked}
             onClick={toggleFollow}
             type="button"
             variant="secondary"
@@ -103,9 +103,19 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
             type="button"
             variant="secondary"
           >
-            {blocked ? "ブロックを解除" : "ブロック"}
+            ブロック
           </Button>
         </div>
+      )}
+      {!own && blocked && (
+        <Button
+          disabled={blockAction.blocked}
+          onClick={toggleBlock}
+          type="button"
+          variant="secondary"
+        >
+          ブロックを解除
+        </Button>
       )}
       {followAction.error !== undefined && (
         <p className="text-sm text-destructive">{followAction.error}</p>

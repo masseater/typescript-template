@@ -1,6 +1,6 @@
 import { Auth } from "@repo/auth";
 import { AuthApps, authTest, authTestSecret, runWith } from "@repo/auth/testing";
-import { APPLICATION, MEMBER_MCP_CAPABILITY, SUBSCRIPTION_STATUS } from "@repo/config";
+import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS } from "@repo/config";
 import { query, recordSubscription, schema } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { appLayer } from "@repo/runtime/bindings";
@@ -12,14 +12,13 @@ import { Context, Effect, Layer } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { routes } from "#shared/telemetry/index.ts";
-import { replaceMcpGrants } from "./grants.ts";
 import { serveMcp } from "./mcp.ts";
 import {
   callTool,
   mcpChallenge,
   memberOrigin,
-  memberTokens,
   responseStatus,
+  tokenFor,
   type FetchMcp,
 } from "./member-oauth-fixture.ts";
 
@@ -59,16 +58,6 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
     Effect.promise(async () => app.fetch(request));
   return { fetchMcp, stop: Effect.promise(async () => runtime.dispose()) };
 }
-
-const idOf = Effect.fn("idOf")(function* idOf(email: string) {
-  const [row] = yield* query((database) =>
-    database.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1),
-  );
-  if (row === undefined) {
-    return yield* Effect.die(`missing member ${email}`);
-  }
-  return row.id;
-});
 
 const toolText = (body: unknown): string => {
   if (typeof body !== "object" || body === null || !("result" in body)) {
@@ -127,108 +116,79 @@ describe("member MCP authorization", () => {
     );
   });
 
-  it("rejects ungranted tools and allows the tools the member granted", async ({ auth }) => {
+  it("rejects tools the member did not permit and allows the scopes they granted", async ({
+    auth,
+  }) => {
     const result = await runWith(auth, () =>
       Effect.gen(function* program() {
-        const owner = yield* memberTokens("owner@example.com");
-        const ownerId = yield* idOf(owner.email);
-        const peer = yield* memberTokens("peer@example.com");
-        const peerId = yield* idOf(peer.email);
+        yield* tokenFor("peer@example.com", MEMBER_MCP_SCOPE.profileRead);
         yield* query(async (database) => {
           await database
             .update(user)
             .set({ name: "peer", searchable: true })
-            .where(eq(user.id, peerId));
+            .where(eq(user.email, "peer@example.com"));
         });
+        const [peer] = yield* query((database) =>
+          database.select({ id: user.id }).from(user).where(eq(user.email, "peer@example.com")),
+        );
+        const grantedRead = yield* tokenFor("reader@example.com", MEMBER_MCP_SCOPE.profileRead);
         const app = memberMcpApp(auth);
-        const deniedProfile = yield* callTool(
+        const profile = yield* callTool(app.fetchMcp, grantedRead.accessToken, "get_profile");
+        const deniedSearch = yield* callTool(
           app.fetchMcp,
-          owner.tokens.access_token,
-          "get_profile",
+          grantedRead.accessToken,
+          "search_members",
         );
-        const deniedSend = yield* callTool(
-          app.fetchMcp,
-          owner.tokens.access_token,
-          "send_message",
-          {
-            body: secretBody,
-            recipientId: peerId,
-          },
-        );
-        yield* replaceMcpGrants(ownerId, [
-          MEMBER_MCP_CAPABILITY.profileRead,
-          MEMBER_MCP_CAPABILITY.messageSend,
-        ]);
-        const profile = yield* callTool(app.fetchMcp, owner.tokens.access_token, "get_profile");
-        const unpaidSend = yield* callTool(
-          app.fetchMcp,
-          owner.tokens.access_token,
-          "send_message",
-          {
-            body: secretBody,
-            recipientId: peerId,
-          },
-        );
+        const deniedSend = yield* callTool(app.fetchMcp, grantedRead.accessToken, "send_message", {
+          body: secretBody,
+          recipientId: "missing",
+        });
+        const scope = [MEMBER_MCP_SCOPE.search, MEMBER_MCP_SCOPE.messageSend].join(" ");
+        const granted = yield* tokenFor("sender@example.com", scope);
         yield* recordSubscription(
-          { createdAt: new Date("2026-09-20T00:00:00.000Z"), id: "evt_owner", type: "updated" },
+          { createdAt: new Date("2026-09-20T00:00:00.000Z"), id: "evt_sender", type: "updated" },
           {
             cancelAtPeriodEnd: false,
             currentPeriodEnd: new Date("2099-01-01T00:00:00.000Z"),
-            memberId: ownerId,
+            memberId: granted.userId,
             status: SUBSCRIPTION_STATUS.active,
-            stripeCustomerId: "cus_owner",
-            stripeSubscriptionId: "sub_owner",
+            stripeCustomerId: "cus_sender",
+            stripeSubscriptionId: "sub_sender",
           },
         );
-        const sent = yield* callTool(app.fetchMcp, owner.tokens.access_token, "send_message", {
-          body: secretBody,
-          recipientId: peerId,
+        const searched = yield* callTool(app.fetchMcp, granted.accessToken, "search_members", {
+          keyword: "peer",
         });
-        const deniedSearch = yield* callTool(
-          app.fetchMcp,
-          owner.tokens.access_token,
-          "search_members",
-          {
-            keyword: "peer",
-          },
-        );
-        yield* replaceMcpGrants(ownerId, [MEMBER_MCP_CAPABILITY.memberSearch]);
-        const searched = yield* callTool(
-          app.fetchMcp,
-          owner.tokens.access_token,
-          "search_members",
-          {
-            keyword: "peer",
-          },
-        );
-        const profileAfterRevoke = yield* callTool(
-          app.fetchMcp,
-          owner.tokens.access_token,
-          "get_profile",
-        );
+        const sent = yield* callTool(app.fetchMcp, granted.accessToken, "send_message", {
+          body: "こんにちは",
+          recipientId: peer?.id ?? "",
+        });
+        const deniedProfile = yield* callTool(app.fetchMcp, granted.accessToken, "update_profile", {
+          name: "sender",
+          profile: "",
+          socialLinks: [],
+        });
         yield* app.stop;
         return {
-          deniedProfile,
-          deniedSearch,
-          deniedSend,
-          profile,
-          profileAfterRevoke,
-          searched,
-          sent,
-          unpaidSend,
+          deniedProfile: toolText(deniedProfile),
+          deniedSearch: toolText(deniedSearch),
+          deniedSend: toolText(deniedSend),
+          peerId: peer?.id,
+          profile: toolText(profile),
+          searched: toolText(searched),
+          sent: toolText(sent),
+          userId: grantedRead.userId,
         };
       }),
     );
-    expect(toolText(result.deniedProfile)).toBe("grant_required");
-    expect(toolText(result.deniedSend)).toBe("grant_required");
-    expect(toolText(result.unpaidSend)).toBe("paid_required");
-    expect(toolText(result.deniedSearch)).toBe("grant_required");
-    expect(toolText(result.profileAfterRevoke)).toBe("grant_required");
-    expect(toolText(result.profile)).toContain("owner@example.com");
-    expect(toolText(result.profile)).not.toContain(secretBody);
-    expect(toolText(result.sent)).toContain("conversationId");
-    expect(toolText(result.sent)).not.toContain(secretBody);
-    expect(toolText(result.searched)).toContain("peer");
-    expect(toolText(result.searched)).not.toContain(secretBody);
+    expect(JSON.parse(result.profile)).toMatchObject({ id: result.userId });
+    expect(result.deniedSearch).toBe(`permission_required:${MEMBER_MCP_SCOPE.search}`);
+    expect(result.deniedSend).toBe(`permission_required:${MEMBER_MCP_SCOPE.messageSend}`);
+    expect(
+      JSON.parse(result.searched).members.map((member: { id: string }) => member.id),
+    ).toContain(result.peerId);
+    expect(JSON.parse(result.sent)).toMatchObject({ conversationId: expect.any(String) });
+    expect(result.sent).not.toContain(secretBody);
+    expect(result.deniedProfile).toBe(`permission_required:${MEMBER_MCP_SCOPE.profileUpdate}`);
   });
 });

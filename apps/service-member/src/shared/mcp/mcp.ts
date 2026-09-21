@@ -1,29 +1,38 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
-import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_CAPABILITY, ROLE } from "@repo/config";
+import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_SCOPE, ROLE } from "@repo/config";
 import { requirePaid, query, schema } from "@repo/db";
 import { AppOrigin, secureResponse } from "@repo/runtime/http";
 import { and, eq } from "drizzle-orm";
 import { Clock, Effect, Schema } from "effect";
 
-import { ConversationOpen, ProfileUpdate, memberPageSize } from "#shared/contracts/index.ts";
-import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
+import { ProfileUpdate, maximumMessageBodyLength } from "#shared/contracts/index.ts";
+import { getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { MessagingMemberRequired } from "#shared/server-api/messaging-member-required.ts";
-import { openDirectConversation } from "#shared/server-api/messaging.ts";
+import { openDirectConversation, sendDirectMessage } from "#shared/server-api/messaging.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
-import { requireMcpGrant } from "./grants.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { MemberMcpActor } from "./authorize-mcp.ts";
 
 const { session, user } = schema;
 const mcpVersion = "1.0.0";
+const defaultPageSize = 20;
 
-const MemberId = Schema.toStandardSchemaV1(Schema.Struct({ memberId: Schema.String }));
 const MemberSearch = Schema.toStandardSchemaV1(
-  Schema.Struct({ keyword: Schema.optionalKey(Schema.String) }),
+  Schema.Struct({
+    keyword: Schema.optionalKey(Schema.String),
+    limit: Schema.optionalKey(Schema.Int),
+    offset: Schema.optionalKey(Schema.Int),
+  }),
 );
 const ProfileInput = Schema.toStandardSchemaV1(ProfileUpdate);
-const MessageInput = Schema.toStandardSchemaV1(ConversationOpen);
+const MessageInput = Schema.toStandardSchemaV1(
+  Schema.Struct({
+    body: Schema.String.check(Schema.isLengthBetween(1, maximumMessageBodyLength)),
+    conversationId: Schema.optionalKey(Schema.String),
+    recipientId: Schema.optionalKey(Schema.String),
+  }),
+);
 
 const toolText = (value: unknown): { content: [{ type: "text"; text: string }] } => ({
   content: [{ text: JSON.stringify(value), type: "text" }],
@@ -37,14 +46,11 @@ const toolFailure = (
 });
 
 const failureText = (failure: { readonly _tag?: string }): string => {
-  if (failure._tag === "McpGrantRequired") {
-    return "grant_required";
-  }
   if (failure._tag === "PaidPlanRequired") {
-    return "paid_required";
+    return "paid_plan_required";
   }
   if (failure._tag === "MessagingConversationNotFound" || failure._tag === "UserNotFound") {
-    return "not_found";
+    return "target_unavailable";
   }
   if (failure._tag === "MessagingMemberRequired") {
     return "member_required";
@@ -96,6 +102,10 @@ const requireMemberSession = Effect.fn("requireMemberSession")(function* require
   return row.id;
 });
 
+function denied(scope: string): { content: [{ type: "text"; text: string }]; isError: true } {
+  return toolFailure(`permission_required:${scope}`);
+}
+
 function createServer(
   actor: MemberMcpActor,
   runMember: <Value>(program: Effect.Effect<Value, unknown, AppServices>) => Promise<Value>,
@@ -107,89 +117,101 @@ function createServer(
   server.registerTool(
     "get_profile",
     { description: "Read the signed-in member's own profile." },
-    async () =>
-      run(
+    async () => {
+      if (!actor.scopes.has(MEMBER_MCP_SCOPE.profileRead)) {
+        return denied(MEMBER_MCP_SCOPE.profileRead);
+      }
+      return run(
         Effect.gen(function* program() {
           const id = yield* signedInMember;
-          yield* requireMcpGrant(id, MEMBER_MCP_CAPABILITY.profileRead);
           const profile = yield* getProfile(id);
           if (profile === null) {
             return yield* new MessagingMemberRequired();
           }
           return profile;
         }),
-      ),
+      );
+    },
   );
 
   server.registerTool(
     "update_profile",
     {
-      description: "Update the signed-in member's own profile.",
+      description: "Update the signed-in member's name, profile text, and links.",
       inputSchema: ProfileInput,
     },
-    async (values) =>
-      run(
+    async (values) => {
+      if (!actor.scopes.has(MEMBER_MCP_SCOPE.profileUpdate)) {
+        return denied(MEMBER_MCP_SCOPE.profileUpdate);
+      }
+      return run(
         Effect.gen(function* program() {
           const id = yield* signedInMember;
-          yield* requireMcpGrant(id, MEMBER_MCP_CAPABILITY.profileWrite);
           return yield* updateProfile(id, values);
         }),
-      ),
-  );
-
-  server.registerTool(
-    "get_member",
-    {
-      description: "Read one member profile the signed-in member is allowed to see.",
-      inputSchema: MemberId,
+      );
     },
-    async ({ memberId: targetId }) =>
-      run(
-        Effect.gen(function* program() {
-          const id = yield* signedInMember;
-          yield* requireMcpGrant(id, MEMBER_MCP_CAPABILITY.profileRead);
-          return yield* getMember(id, targetId);
-        }),
-      ),
   );
 
   server.registerTool(
     "search_members",
     {
-      description: "List or search members. Paid members only, and only with the search grant.",
+      description: "List or search members who opted into search. Paid members only.",
       inputSchema: MemberSearch,
     },
-    async ({ keyword }) =>
-      run(
+    async (filters) => {
+      if (!actor.scopes.has(MEMBER_MCP_SCOPE.search)) {
+        return denied(MEMBER_MCP_SCOPE.search);
+      }
+      const limit = filters.limit ?? defaultPageSize;
+      const offset = filters.offset ?? 0;
+      if (limit < 1 || limit > 50 || offset < 0) {
+        return toolFailure("target_unavailable");
+      }
+      return run(
         Effect.gen(function* program() {
           const id = yield* signedInMember;
-          yield* requireMcpGrant(id, MEMBER_MCP_CAPABILITY.memberSearch);
           yield* requirePaid(id);
-          return yield* listMembers({
-            keyword,
-            limit: memberPageSize,
-            offset: 0,
+          return yield* listMembers(id, {
+            keyword: filters.keyword,
+            limit,
+            offset,
           });
         }),
-      ),
+      );
+    },
   );
 
   server.registerTool(
     "send_message",
     {
       description:
-        "Send a direct message. Requires the message grant. Opening a new thread requires a paid plan.",
+        "Send a direct message. Opening a new conversation requires a paid plan. Replying does not.",
       inputSchema: MessageInput,
     },
-    async ({ body, recipientId }) =>
-      run(
+    async ({ body, conversationId, recipientId }) => {
+      if (!actor.scopes.has(MEMBER_MCP_SCOPE.messageSend)) {
+        return denied(MEMBER_MCP_SCOPE.messageSend);
+      }
+      if (conversationId !== undefined) {
+        return run(
+          Effect.gen(function* program() {
+            const id = yield* signedInMember;
+            return yield* sendDirectMessage(id, conversationId, body);
+          }),
+        );
+      }
+      if (recipientId === undefined) {
+        return toolFailure("target_unavailable");
+      }
+      return run(
         Effect.gen(function* program() {
           const id = yield* signedInMember;
-          yield* requireMcpGrant(id, MEMBER_MCP_CAPABILITY.messageSend);
           const sent = yield* openDirectConversation(id, recipientId, body);
           return { conversationId: sent.conversationId, id: sent.messageId };
         }),
-      ),
+      );
+    },
   );
 
   return server;

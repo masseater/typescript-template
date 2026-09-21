@@ -1,13 +1,14 @@
 import {
   UserNotFound,
+  blockHides,
   containsKeyword,
-  pairBlocked,
   profileListed,
   profileVisibleTo,
   query,
   schema,
+  viewerBlockedTarget,
 } from "@repo/db";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, not } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
@@ -96,6 +97,23 @@ function ownProfile({
 }
 
 const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, memberId: string) {
+  const [hidden] = yield* query((database) =>
+    database
+      .select(memberColumns)
+      .from(user)
+      .where(and(eq(user.id, memberId), viewerBlockedTarget(viewerId)))
+      .limit(1),
+  );
+  if (hidden !== undefined) {
+    return {
+      ...shown(hidden),
+      blocked: true,
+      following: false,
+      photos: { company: null, face: null },
+      profile: "",
+      socialLinks: [],
+    };
+  }
   const [member] = yield* query((database) =>
     database
       .select(memberColumns)
@@ -107,7 +125,6 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
     return yield* new UserNotFound();
   }
   let following: boolean | undefined;
-  let blocked: boolean | undefined;
   if (viewerId !== memberId) {
     const [row] = yield* query((database) =>
       database
@@ -117,26 +134,24 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
         .limit(1),
     );
     following = row !== undefined;
-    blocked = yield* pairBlocked(viewerId, memberId);
   }
   const base = shown(member);
-  if (following === undefined && blocked === undefined) {
+  if (following === undefined) {
     return base;
   }
-  return {
-    ...base,
-    ...(blocked === undefined ? {} : { blocked }),
-    ...(following === undefined ? {} : { following }),
-  };
+  return { ...base, following };
 });
 
-const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
-  readonly keyword?: string | undefined;
-  readonly limit: number;
-  readonly offset: number;
-}) {
+const listMembers = Effect.fn("listMembers")(function* listMembers(
+  viewerId: string,
+  page: {
+    readonly keyword?: string | undefined;
+    readonly limit: number;
+    readonly offset: number;
+  },
+) {
   const named = page.keyword === undefined ? undefined : containsKeyword(user.name, page.keyword);
-  const listed = and(profileListed, named);
+  const listed = and(profileListed, not(blockHides(viewerId)), named);
   const members = yield* query((database) =>
     database
       .select(memberColumns)

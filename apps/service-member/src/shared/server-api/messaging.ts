@@ -1,6 +1,6 @@
 import { ROLE } from "@repo/config";
-import { CONVERSATION_KIND, pairBlocked, query, requirePaid, schema } from "@repo/db";
-import { and, count, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
+import { CONVERSATION_KIND, blockBetween, pairBlocked, query, requirePaid, schema } from "@repo/db";
+import { and, count, desc, eq, gt, isNull, ne, not, or, sql } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
 import { maySendGroupMessage } from "#shared/messaging/index.ts";
@@ -13,6 +13,14 @@ const { conversation, conversationParticipant, directMessage, memberGroup, user 
 const groupConversationKind = CONVERSATION_KIND.group;
 const directConversationKind = CONVERSATION_KIND.direct;
 const withdrawnSenderLabel = "退会した会員";
+
+function visibleInThread(viewerId: string, conversationId: string, hideBlocked: boolean) {
+  const inThread = eq(directMessage.conversationId, conversationId);
+  if (!hideBlocked) {
+    return inThread;
+  }
+  return and(inThread, not(blockBetween(viewerId, sql`${directMessage.senderId}`)));
+}
 
 interface Page {
   readonly limit: number;
@@ -222,6 +230,7 @@ const groupTargetOf = Effect.fn("groupTargetOf")(function* groupTargetOf(convers
 const unreadCountFor = Effect.fn("unreadCountFor")(function* unreadCountFor(
   viewerId: string,
   conversationId: string,
+  hideBlocked: boolean,
 ) {
   const [membership] = yield* query((database) =>
     database
@@ -242,7 +251,7 @@ const unreadCountFor = Effect.fn("unreadCountFor")(function* unreadCountFor(
       .from(directMessage)
       .where(
         and(
-          eq(directMessage.conversationId, conversationId),
+          visibleInThread(viewerId, conversationId, hideBlocked),
           gt(directMessage.createdAt, readAt),
           or(isNull(directMessage.senderId), ne(directMessage.senderId, viewerId)),
         ),
@@ -287,11 +296,11 @@ const listGroupConversations = Effect.fn("listGroupConversations")(function* lis
       database
         .select({ body: directMessage.body })
         .from(directMessage)
-        .where(eq(directMessage.conversationId, membership.conversationId))
+        .where(visibleInThread(viewerId, membership.conversationId, true))
         .orderBy(desc(directMessage.createdAt), desc(directMessage.id))
         .limit(1),
     );
-    const unreadCount = yield* unreadCountFor(viewerId, membership.conversationId);
+    const unreadCount = yield* unreadCountFor(viewerId, membership.conversationId, true);
     summaries.push({
       group: target.group,
       id: thread.id,
@@ -336,7 +345,7 @@ const findGroupConversation = Effect.fn("findGroupConversation")(function* findG
         senderName: directMessage.senderName,
       })
       .from(directMessage)
-      .where(eq(directMessage.conversationId, conversationId))
+      .where(visibleInThread(viewerId, conversationId, true))
       .orderBy(directMessage.createdAt, directMessage.id)
       .limit(page.limit)
       .offset(page.offset),
@@ -345,7 +354,7 @@ const findGroupConversation = Effect.fn("findGroupConversation")(function* findG
     database
       .select({ count: count() })
       .from(directMessage)
-      .where(eq(directMessage.conversationId, conversationId)),
+      .where(visibleInThread(viewerId, conversationId, true)),
   );
   const conversationView: ConversationView = {
     group: target.group,
@@ -451,7 +460,7 @@ const listDirectConversations = Effect.fn("listDirectConversations")(
           .orderBy(desc(directMessage.createdAt), desc(directMessage.id))
           .limit(1),
       );
-      const unreadCount = yield* unreadCountFor(viewerId, membership.conversationId);
+      const unreadCount = yield* unreadCountFor(viewerId, membership.conversationId, false);
       summaries.push({
         id: thread.id,
         kind: directConversationKind,
@@ -717,7 +726,7 @@ const totalUnreadCount = Effect.fn("totalUnreadCount")(function* totalUnreadCoun
   for (const membership of memberships) {
     const [thread] = yield* query((database) =>
       database
-        .select({ id: conversation.id })
+        .select({ id: conversation.id, kind: conversation.kind })
         .from(conversation)
         .where(eq(conversation.id, membership.conversationId))
         .limit(1),
@@ -725,7 +734,11 @@ const totalUnreadCount = Effect.fn("totalUnreadCount")(function* totalUnreadCoun
     if (thread === undefined) {
       continue;
     }
-    unread += yield* unreadCountFor(viewerId, membership.conversationId);
+    unread += yield* unreadCountFor(
+      viewerId,
+      membership.conversationId,
+      thread.kind === groupConversationKind,
+    );
   }
   return unread;
 });

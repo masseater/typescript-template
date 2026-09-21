@@ -1,4 +1,5 @@
 import { requireSuccess } from "@repo/auth-ui";
+import { memberApiKeyReadPermissions } from "@repo/config";
 import { createIsomorphicFn } from "@tanstack/react-start";
 
 import { memberAuthClient } from "#shared/auth/index.ts";
@@ -11,6 +12,11 @@ type ListedApiKey = Readonly<{
 }>;
 
 type CreatedApiKey = ListedApiKey & Readonly<{ key: string }>;
+
+type ApiKeyChoice = Readonly<{
+  messageSend: boolean;
+  profileUpdate: boolean;
+}>;
 
 type AuthRequest = Readonly<{ baseURL: string; cookie: string }>;
 
@@ -57,10 +63,18 @@ const loadApiKeys = createIsomorphicFn()
   })
   .client(async (): Promise<readonly ListedApiKey[]> => listKeys(undefined));
 
-async function createApiKey(name: string): Promise<CreatedApiKey> {
+async function createApiKey(name: string, choice: ApiKeyChoice): Promise<CreatedApiKey> {
+  const profile = choice.profileUpdate
+    ? ["read", "update"]
+    : [...memberApiKeyReadPermissions.profile];
   const created = requireSuccess(
     await memberAuthClient.apiKey.create({
       name,
+      permissions: {
+        ...memberApiKeyReadPermissions,
+        ...(choice.messageSend ? { messages: ["send"] } : {}),
+        profile,
+      },
     }),
   );
   return {

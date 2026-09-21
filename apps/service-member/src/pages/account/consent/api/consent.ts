@@ -45,9 +45,13 @@ const loadClientName = createIsomorphicFn()
     return clientNameFrom(response, clientId);
   });
 
-async function submitDecision(accept: boolean): Promise<void> {
+async function submitDecision(accept: boolean, scopes: readonly string[]): Promise<void> {
   const response = await fetch("/api/auth/oauth2/consent", {
-    body: JSON.stringify({ accept, oauth_query: globalThis.location.search.slice(1) }),
+    body: JSON.stringify({
+      accept,
+      oauth_query: globalThis.location.search.slice(1),
+      ...(accept ? { scope: scopes.join(" ") } : {}),
+    }),
     credentials: "same-origin",
     headers: { "content-type": "application/json" },
     method: "POST",

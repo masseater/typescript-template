@@ -3,6 +3,7 @@ import {
   NOTIFICATION_KIND,
   UserNotFound,
   onboardingSteps,
+  pairBlocked,
   profileVisibleTo,
   query,
   schema,
@@ -105,6 +106,9 @@ const followMember = Effect.fn("followMember")(function* followMember(
     database.select({ name: user.name }).from(user).where(eq(user.id, followerId)).limit(1),
   );
   if (follower === undefined) {
+    return yield* new UserNotFound();
+  }
+  if (yield* pairBlocked(followerId, followeeId)) {
     return yield* new UserNotFound();
   }
   const now = new Date();

@@ -1,1 +1,1 @@
-export const memberScopes = ["member:use", "offline_access"] as const;
+export { memberMcpScopes as memberScopes } from "@repo/config";

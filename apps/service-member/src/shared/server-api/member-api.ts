@@ -23,7 +23,6 @@ import { flagsApi } from "./flags-api.ts";
 import { groupsApi } from "./groups-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { leaveApi } from "./leave-api.ts";
-import { mcpGrantsApi } from "./mcp-grants-api.ts";
 import { memberFailures } from "./member-failures.ts";
 import { messagingApi } from "./messaging-api.ts";
 import { photoApi } from "./photo-api.ts";
@@ -95,7 +94,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
             yield* requirePaid(user.id);
             const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
             const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
+            const list = yield* listMembers(user.id, { keyword, limit: memberPageSize, offset });
             return { ...list, pageSize: memberPageSize };
           }),
         failures,
@@ -117,8 +116,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     .use(boardApi(api))
     .use(groupsApi(api))
     .use(messagingApi(api))
-    .use(trustApi(api))
-    .use(mcpGrantsApi(api));
+    .use(trustApi(api));
 }
 
 export { memberApi };

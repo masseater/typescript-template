@@ -7,7 +7,7 @@ import {
   UnexpectedStatus,
   type BrowserClient,
 } from "@repo/auth/testing";
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, memberMcpScopes } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { Data, Effect, Schema } from "effect";
 
@@ -49,7 +49,7 @@ const authorizeUrl = (clientId: string, challenge: string): URL => {
     redirect_uri: redirectUri,
     resource: `${memberOrigin}/mcp`,
     response_type: "code",
-    scope: "member:use offline_access",
+    scope: memberMcpScopes.join(" "),
     state: "state-value",
   });
   return new URL(`/api/auth/oauth2/authorize?${authorizeQuery.toString()}`, memberOrigin);
@@ -92,6 +92,7 @@ const startMemberAuthorization = Effect.fn("startMemberAuthorization")(
 const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthorization(
   member: BrowserClient,
   oauthQuery: string,
+  scope: string,
 ) {
   const continued = yield* member.json("/oauth2/continue", {
     oauth_query: oauthQuery,
@@ -101,6 +102,7 @@ const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthor
   const consented = yield* member.json("/oauth2/consent", {
     accept: true,
     oauth_query: consentPage.search.slice(1),
+    scope,
   });
   const callbackUrl = new URL((yield* decodeRedirect(consented.body)).url);
   return callbackUrl.searchParams.get("code") ?? "";
@@ -132,8 +134,18 @@ const memberTokens = Effect.fn("memberTokens")(function* memberTokens(email: str
   yield* registerVerified(email);
   const member = yield* signInAs(APPLICATION.user, email);
   const flow = yield* startMemberAuthorization();
-  const code = yield* grantAuthorization(member, flow.oauthQuery);
+  const code = yield* grantAuthorization(member, flow.oauthQuery, memberMcpScopes.join(" "));
   return { email, tokens: yield* exchangeCode(flow, code) };
+});
+
+const tokenFor = Effect.fn("tokenFor")(function* tokenFor(email: string, scope: string) {
+  const flow = yield* startMemberAuthorization();
+  yield* registerVerified(email);
+  const member = yield* signInAs(APPLICATION.user, email);
+  const code = yield* grantAuthorization(member, flow.oauthQuery, scope);
+  const tokens = yield* exchangeCode(flow, code);
+  const session = yield* member.verify();
+  return { accessToken: tokens.access_token, userId: session.user.id };
 });
 
 const mcpChallenge = Effect.fn("mcpChallenge")(function* mcpChallenge() {
@@ -193,4 +205,13 @@ const callTool = Effect.fn("callTool")(function* callTool(
 });
 
 export type { FetchMcp };
-export { callTool, mcpChallenge, memberOrigin, memberTokens, responseStatus };
+export {
+  callTool,
+  grantAuthorization,
+  mcpChallenge,
+  memberOrigin,
+  memberTokens,
+  responseStatus,
+  startMemberAuthorization,
+  tokenFor,
+};

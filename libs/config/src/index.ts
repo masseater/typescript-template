@@ -106,8 +106,9 @@ export {
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
 export { memberRetentionDays } from "./member-retention.ts";
-export { MEMBER_MCP_CAPABILITY, memberMcpCapabilities } from "./member-mcp.ts";
-export type { MemberMcpCapability } from "./member-mcp.ts";
+export { memberMcpCapabilities } from "./member-mcp.ts";
+export { MEMBER_MCP_SCOPE, memberMcpScopes, memberMcpToolScopes } from "./member-mcp.ts";
+export type { MemberMcpScope } from "./member-mcp.ts";
 export {
   MODERATION_KIND,
   REPORT_REASON,

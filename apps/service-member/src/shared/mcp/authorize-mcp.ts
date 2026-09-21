@@ -1,5 +1,6 @@
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
-import { Auth, memberScopes } from "@repo/auth";
+import { Auth } from "@repo/auth";
+import { MEMBER_MCP_SCOPE, memberMcpScopes, memberMcpToolScopes } from "@repo/config";
 import { httpStatus } from "@repo/observability/http-status";
 import { APIError } from "better-auth/api";
 import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
@@ -8,11 +9,14 @@ import { Effect, Option, Schema } from "effect";
 
 import type { BetterAuthInstance } from "@repo/auth";
 
-type MemberMcpActor = Readonly<{ sessionId: string; userId: string }>;
+type MemberMcpActor = Readonly<{
+  scopes: ReadonlySet<string>;
+  sessionId: string;
+  userId: string;
+}>;
 
 type TokenClaims = Awaited<ReturnType<typeof verifyJwsAccessToken>>;
 
-const requiredScopes = ["member:use"];
 const JSON_RPC_SERVER_ERROR = -32_000;
 const Jwk = Schema.StructWithRest(Schema.Struct({ kty: Schema.String }), [
   Schema.Record(Schema.String, Schema.Unknown),
@@ -34,7 +38,7 @@ function jsonRpcError(
 
 function challengeResponse(error: unknown, resource: string): Response {
   const challenge = createResourceServerChallenge(error, resource, {
-    challengeScopes: requiredScopes,
+    challengeScopes: [MEMBER_MCP_SCOPE.profileRead],
   });
   if (!(challenge instanceof ChallengeError)) {
     return jsonRpcError(httpStatus.unauthorized, "ACCESS_TOKEN_INVALID", {});
@@ -83,18 +87,25 @@ function verifiedClaims(
   });
 }
 
+function grantedScopes(claims: Readonly<Record<string, unknown>>): ReadonlySet<string> {
+  const { scope } = claims;
+  const granted = new Set(typeof scope === "string" ? scope.split(" ") : []);
+  return new Set(memberMcpScopes.filter((registered) => granted.has(registered)));
+}
+
 function scopeError(claims: Readonly<Record<string, unknown>>): Option.Option<unknown> {
-  const { cnf, scope } = claims;
+  const { cnf } = claims;
   if (cnf !== undefined) {
     return Option.some(unauthorized("SENDER_CONSTRAINED_TOKEN_UNSUPPORTED"));
   }
-  const granted = new Set(typeof scope === "string" ? scope.split(" ") : []);
-  const missing = requiredScopes.filter((required) => !granted.has(required));
-  const allowed = memberScopes.filter((registered) => granted.has(registered));
-  if (allowed.length === 0) {
+  const granted = grantedScopes(claims);
+  const tools = memberMcpToolScopes.filter((scope) => granted.has(scope));
+  if (granted.size === 0) {
     return Option.some(unauthorized("ACCESS_TOKEN_INVALID"));
   }
-  return missing.length > 0 ? Option.some(createInsufficientScopeError(missing)) : Option.none();
+  return tools.length === 0
+    ? Option.some(createInsufficientScopeError([...memberMcpToolScopes]))
+    : Option.none();
 }
 
 const actorFor = Effect.fn("actorFor")(function* actorFor(
@@ -115,7 +126,11 @@ const actorFor = Effect.fn("actorFor")(function* actorFor(
   if (typeof sub !== "string" || typeof sid !== "string") {
     return jsonRpcError(httpStatus.forbidden, "MEMBER_SESSION_REQUIRED", {});
   }
-  return { sessionId: sid, userId: sub } satisfies MemberMcpActor;
+  return {
+    scopes: grantedScopes(claims.success),
+    sessionId: sid,
+    userId: sub,
+  } satisfies MemberMcpActor;
 });
 
 const authorizeMcpRequest = Effect.fn("authorizeMcpRequest")(function* authorizeMcpRequest(

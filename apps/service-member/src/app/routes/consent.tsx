@@ -6,10 +6,13 @@ import { ConsentPage, loadClientName } from "#pages/account/consent/index.ts";
 import type { ReactElement } from "react";
 
 const searchSchema = Schema.toStandardSchemaV1(
-  Schema.Struct({ client_id: Schema.optionalKey(Schema.String) }),
+  Schema.Struct({
+    client_id: Schema.optionalKey(Schema.String),
+    scope: Schema.optionalKey(Schema.String),
+  }),
 );
 
-type ConsentSearch = Readonly<{ client_id?: string | undefined }>;
+type ConsentSearch = Readonly<{ client_id?: string | undefined; scope?: string | undefined }>;
 
 const Route = createFileRoute("/consent")({
   component: ConsentRoute,

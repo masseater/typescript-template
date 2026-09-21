@@ -59,7 +59,7 @@ export {
   memberPageSize,
   memberRetentionDays,
 } from "./member.ts";
-export { McpGrants } from "./mcp.ts";
+export { scopeLabel } from "./mcp.ts";
 export { Blocked, BlockMember, ReportCreate, ReportFiled } from "./trust.ts";
 export { FollowList, FollowMember, FollowMemberQuery, FollowState } from "./follow.ts";
 export { MemberFlags } from "./flags.ts";

@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ROLE, type Role } from "@repo/config";
-import { GROUP_JOIN_POLICY, query, schema } from "@repo/db";
+import { blockMember, GROUP_JOIN_POLICY, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";
@@ -245,6 +245,22 @@ describe("ownership and posting", () => {
       const listed = yield* listGroupConversations("guest", wholePage);
       assert.strictEqual(listed.total, 1);
       assert.strictEqual(listed.conversations[0]?.group.name, "勉強会");
+    }).pipe(Effect.provide(TestDatabase)),
+  );
+
+  it.effect("hides messages from a blocked sender in an open group", () =>
+    Effect.gen(function* program() {
+      yield* addUser({ userId: "owner" });
+      yield* addUser({ userId: "guest" });
+      const created = yield* openGroup("owner", "公開グループ", GROUP_JOIN_POLICY.open);
+      yield* joinGroup("guest", created.groupId);
+      const hiddenBody = "ブロックされる本文";
+      yield* sendGroupMessage("guest", created.conversationId, hiddenBody);
+      yield* blockMember("owner", "guest");
+      const thread = yield* findGroupConversation("owner", created.conversationId, wholePage);
+      assert.strictEqual(JSON.stringify(thread).includes(hiddenBody), false);
+      const listed = yield* listGroupConversations("owner", { limit: 20, offset: 0 });
+      assert.strictEqual(listed.conversations[0]?.lastMessagePreview.includes(hiddenBody), false);
     }).pipe(Effect.provide(TestDatabase)),
   );
 });

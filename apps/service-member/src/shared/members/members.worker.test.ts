@@ -56,7 +56,7 @@ describe("member visibility", () => {
   it.effect("lists only active members", () =>
     Effect.gen(function* program() {
       yield* community;
-      const listed = yield* listMembers({ limit: 10, offset: 0 });
+      const listed = yield* listMembers("viewer", { limit: 10, offset: 0 });
       assert.deepStrictEqual(listed.members.map((member) => member.id).toSorted(), [
         "active",
         "viewer",
