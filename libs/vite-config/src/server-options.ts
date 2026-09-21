@@ -1,11 +1,9 @@
 import { APPLICATION, type Application } from "@repo/config";
-import { Effect, Path } from "effect";
 
+import { paths } from "./host.ts";
 import { applicationsExcept } from "./private-path.ts";
 
 import type { UserConfig } from "vite-plus";
-
-const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 
 const serverOptions = ({
   application,

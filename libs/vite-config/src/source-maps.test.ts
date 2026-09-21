@@ -1,10 +1,8 @@
 import { APPLICATION } from "@repo/config";
-import { Effect, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { paths } from "./host.ts";
 import { SOURCE_MAP_MANIFEST, sourceMapDirectories, sourceMapManifest } from "./source-maps.ts";
-
-const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 
 describe("source map locations", () => {
   const repositoryRoot = "/repo";

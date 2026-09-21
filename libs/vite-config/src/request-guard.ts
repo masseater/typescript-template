@@ -34,14 +34,13 @@ const resolvePath = (
 > =>
   Effect.runPromise(
     filesystem.realPath(file).pipe(
-      Effect.map((resolved) => ({ kind: "resolved" as const, path: resolved })),
-      Effect.catch((cause) =>
-        Effect.succeed(
+      Effect.match({
+        onFailure: (cause) =>
           isNotFound(cause)
             ? { kind: "missing" as const }
             : { kind: "unresolvable" as const, cause },
-        ),
-      ),
+        onSuccess: (resolved) => ({ kind: "resolved" as const, path: resolved }),
+      }),
     ),
   );
 
@@ -79,10 +78,12 @@ const boundaryVerdict = (
     Effect.gen(function* boundaryVerdictProgram() {
       const roots = yield* Effect.promise(() => rootsOf());
       return { denied: yield* Effect.promise(() => deniesRequest(requestUrl, roots)) };
-    }),
-  ).then(
-    (verdict) => verdict,
-    (undecidableRequest: unknown) => ({ undecidable: undecidableRequest }),
+    }).pipe(
+      Effect.match({
+        onFailure: (undecidableRequest) => ({ undecidable: undecidableRequest }),
+        onSuccess: (verdict) => verdict,
+      }),
+    ),
   );
 
 type RequestGuard = (

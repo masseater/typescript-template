@@ -21,11 +21,14 @@ const devBoundary = (application: Application, repositoryRoot = defaultRepositor
         repositoryRoot,
       }),
     configResolved(config: Readonly<{ server: Readonly<Pick<ResolvedConfig["server"], "host">> }>) {
-      return canonicalRepositoryRoot.then(() => {
-        if (![loopbackAddress, "localhost", "::1"].includes(String(config.server.host))) {
-          throw new Error("DEV_SERVER_MUST_LISTEN_ON_LOOPBACK");
-        }
-      });
+      return Effect.runPromise(
+        Effect.gen(function* requireLoopback() {
+          yield* Effect.promise(() => canonicalRepositoryRoot);
+          if (![loopbackAddress, "localhost", "::1"].includes(String(config.server.host))) {
+            return yield* Effect.die("DEV_SERVER_MUST_LISTEN_ON_LOOPBACK");
+          }
+        }),
+      );
     },
     configureServer(
       server: Readonly<{
@@ -35,12 +38,16 @@ const devBoundary = (application: Application, repositoryRoot = defaultRepositor
     ) {
       server.middlewares.use(
         createRequestGuard(() =>
-          canonicalRepositoryRoot.then((canonical) => ({
-            application,
-            applicationRoot: server.config.root,
-            canonicalRepositoryRoot: canonical,
-            repositoryRoot,
-          })),
+          Effect.runPromise(
+            Effect.promise(() => canonicalRepositoryRoot).pipe(
+              Effect.map((canonical) => ({
+                application,
+                applicationRoot: server.config.root,
+                canonicalRepositoryRoot: canonical,
+                repositoryRoot,
+              })),
+            ),
+          ),
         ),
       );
     },

@@ -1,7 +1,6 @@
 import { APPLICATION, applications, type Application } from "@repo/config";
-import { Effect, Path } from "effect";
 
-const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
+import { paths } from "./host.ts";
 
 const applicationsExcept = (application: Application): Application[] =>
   applications.filter((candidate) => candidate !== application);

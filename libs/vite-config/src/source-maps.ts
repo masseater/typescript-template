@@ -1,8 +1,6 @@
-import { Effect, Path } from "effect";
+import { paths } from "./host.ts";
 
 import type { Application } from "@repo/config";
-
-const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 
 const sourceMapDirectories = (
   repositoryRoot: string,

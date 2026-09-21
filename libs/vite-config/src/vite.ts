@@ -19,36 +19,48 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
 import { Effect } from "effect";
-import { defineConfig } from "vite-plus";
+import {
+  defineConfig,
+  type ConfigEnv,
+  type Plugin,
+  type PluginOption,
+  type ServerOptions,
+  type UserConfig,
+} from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
-import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
-
-function readDevVars(appRoot: string) {
-  return filesystem.readFileString(paths.join(appRoot, ".dev.vars")).pipe(
+const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
+  filesystem.readFileString(paths.join(appRoot, ".dev.vars")).pipe(
     Effect.catchIf(isNotFound, () => Effect.as(Effect.void, undefined as string | undefined)),
     Effect.orDie,
   );
-}
 
 const previewDevVars = (appRoot: string): Plugin => {
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
     generateBundle() {
-      const plugin = this;
+      const emitDevVarsFile = (
+        file: Readonly<{ fileName: string; source: string; type: "asset" }>,
+      ): void => {
+        this.emitFile(file);
+      };
+      const reportMissingDevVars = (missingDevVarsText: string): void => {
+        this.error(missingDevVarsText);
+      };
       return Effect.runPromise(
         Effect.gen(function* emitDevVars() {
           const source = yield* readDevVars(appRoot);
           if (source === undefined) {
-            return plugin.error(
+            reportMissingDevVars(
               `Missing ${paths.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
             );
+            return;
           }
-          plugin.emitFile({ fileName: ".dev.vars", source, type: "asset" });
+          emitDevVarsFile({ fileName: ".dev.vars", source, type: "asset" });
         }),
       );
     },
@@ -114,7 +126,7 @@ const stripEnvFileLoader = (
 const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
   const [kept, removed] = stripEnvFileLoader(plugins);
   if (removed === 0) {
-    throw new Error(`${envFileLoader} plugin not found`);
+    return Effect.runSync(Effect.die(`${envFileLoader} plugin not found`));
   }
   return [...kept];
 };
