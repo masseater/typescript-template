@@ -9,7 +9,7 @@ TanStack Start は、React の画面とサーバー側の処理を同じルー�
 
 その URL を開いたときにサーバーで走るのが loader で、返すのは画面の初期データだけである。表示したあとに同じデータを取り直す処理は loader に書かない。[TanStack Query](/tech-stack/tanstack-query) の `queryKey` に書く。
 
-ブラウザから呼べて、本体がサーバーでだけ実行される関数は `createServerFn` である。`handler` は URL として公開されない。ブラウザ以外が HTTP で呼ぶ API は、サーバールートに置く。
+ブラウザから呼べて、本体がサーバーでだけ実行される関数は `createServerFn` である。`handler` は URL として公開されない。ブラウザ以外が HTTP で呼ぶ API は、サーバールートにマウントした [Elysia](/tech-stack/elysia) に置く。
 
 ```ts
 const renameUser = createServerFn({ method: "POST" })

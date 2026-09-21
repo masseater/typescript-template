@@ -8,6 +8,7 @@ description: 主要技術の働きと、公式ドキュメント・サンプル�
 ## ページ
 
 - [TanStack Start](/tech-stack/tanstack-start) — ファイル経路、loader、server function
+- [Elysia](/tech-stack/elysia) — `/api` の HTTP と Eden Treaty
 - [TypeScript](/tech-stack/typescript) — 添字、optional property、`import type`
 - [Vite+](/tech-stack/vite-plus) — `vp`
 - [Effect](/tech-stack/effect) — `Effect.fn`、Schema、Atom

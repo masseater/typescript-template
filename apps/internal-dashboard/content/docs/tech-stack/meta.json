@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "tanstack-start",
+    "elysia",
     "typescript",
     "vite-plus",
     "effect",
