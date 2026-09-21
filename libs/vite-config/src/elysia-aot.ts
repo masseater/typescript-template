@@ -1,11 +1,12 @@
-import { createRequire, register } from "node:module";
+import { register } from "node:module";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { aot } from "elysia/plugin/aot/vite";
 
 import type { Plugin } from "vite-plus";
 
-const elysiaEntry = createRequire(import.meta.url).resolve("elysia");
+const elysiaEntry = fileURLToPath(import.meta.resolve("elysia"));
 
 let cloudflareStubsRegistered = false;
 
