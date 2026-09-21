@@ -733,7 +733,7 @@ describe("the package surface", () => {
         "@opentelemetry/api-logs": "0.221.0",
         "@opentelemetry/semantic-conventions": "1.43.0",
         "@repo/ai-native-telemetry": "workspace:*",
-        "cc-hooks-ts": "2.1.220",
+        "cc-hooks-ts": "2.1.251",
         "es-toolkit": "catalog:",
         "fs-native-extensions": "1.5.0",
         "shell-quote": "1.10.0",
