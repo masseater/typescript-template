@@ -1,4 +1,4 @@
-import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
 
 import { useFlagList } from "#pages/flags/model/flag-list.ts";
 import { OpsPage } from "#widgets/ops-page/index.ts";
@@ -7,28 +7,29 @@ import { FlagRow } from "./flag-row.tsx";
 import type { ReactElement } from "react";
 
 function FlagsPage(): ReactElement {
-  const { reload, state, toggle } = useFlagList();
+  const { flags, listing, reload, toggle } = useFlagList();
+  const failure = resultError(listing);
 
   return (
     <OpsPage title="機能フラグ">
-      {state.status === "loading" ? (
-        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-      ) : null}
-      {state.status === "failed" ? (
+      {failure !== undefined ? (
         <StatusMessage variant={STATUS_VARIANT.error}>
-          {state.message}
+          {failure}
           <button aria-label="再読み込み" className="ml-2 underline" onClick={reload} type="button">
             再読み込み
           </button>
         </StatusMessage>
       ) : null}
-      {state.status === "loaded" ? (
+      {flags === undefined && failure === undefined ? (
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
+      ) : null}
+      {flags === undefined ? null : (
         <div className="flex flex-col gap-3">
-          {state.flags.map((entry) => (
+          {flags.map((entry) => (
             <FlagRow key={entry.key} entry={entry} onToggle={toggle} />
           ))}
         </div>
-      ) : null}
+      )}
     </OpsPage>
   );
 }

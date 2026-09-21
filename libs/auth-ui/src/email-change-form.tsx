@@ -1,10 +1,12 @@
 import { AUTHENTICATION_METHOD, type StrongAuthenticationMethod } from "@repo/config";
 import { ActionStatus, Field, FormColumn, useAction, useTextInput } from "@repo/ui";
-import { useState, type ReactElement, type SyntheticEvent } from "react";
 
 import { authClient } from "./client";
 import { requireSecureContext, requireSuccess, type SessionView } from "./protocol";
 import { StrongAuthControls } from "./strong-auth-controls";
+import { useNotice } from "./use-notice";
+
+import type { ReactElement, SyntheticEvent } from "react";
 
 const requestedNotice =
   "新しいメールアドレスに確認メールを送りました。届いたリンクを開くと変更が確定します。いまのメールアドレスにもお知らせを送りました。";
@@ -25,9 +27,9 @@ const EmailChangeForm = ({
   const newEmail = useTextInput();
   const code = useTextInput();
   const action = useAction();
-  const [notice, setNotice] = useState<string>();
+  const { clearNotice, notice, showNotice } = useNotice();
   const confirmChange = (method: StrongAuthenticationMethod): void => {
-    setNotice(undefined);
+    clearNotice();
     action.run(async () => {
       if (newEmail.value === "") {
         throw new Error("新しいメールアドレスを入力してください。");
@@ -36,7 +38,7 @@ const EmailChangeForm = ({
       requireSuccess(await authClient.changeEmail({ newEmail: newEmail.value }));
       newEmail.handleChange("");
       code.handleChange("");
-      setNotice(requestedNotice);
+      showNotice(requestedNotice);
     });
   };
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
