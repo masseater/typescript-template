@@ -40,4 +40,4 @@ const assertCoreNotPublic = (inventory: StackInventory): string | undefined => {
   return corePublicViolation(worker.declared);
 };
 
-export { assertCoreNotPublic, corePublicViolation };
+export { assertCoreNotPublic };
