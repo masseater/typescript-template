@@ -193,19 +193,15 @@ function refusedRows(planned: PlannedStack): readonly Refusal[] {
   ];
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function resourceProps(nodes: Plan["resources"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ([fqn, node]: readonly [string, Plan["resources"][string]]) =>
       [fqn, node.action === "noop" ? undefined : node.props] as const,
   );
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function actionInputs(nodes: Plan["actions"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ([fqn, node]: readonly [string, Plan["actions"][string]]) =>
       [fqn, node.action === "run" ? node.input : undefined] as const,
   );
