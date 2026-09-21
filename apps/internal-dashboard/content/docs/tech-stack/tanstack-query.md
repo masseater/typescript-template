@@ -18,6 +18,14 @@ URL を開いた直後の初期データは、このキーとは別で、[TanSta
 
 [Effect](/tech-stack/effect) の Atom は購読一つの状態で、`queryKey` を持たない。待っているか、成功したか、失敗したかを、その購読の値として持つ。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| 同じ `userId` を二つの画面が見る | それぞれが `useState` と `fetch` を持ち、結果が二つになる | 同じ `queryKey: ["user", userId]` を `useQuery` すると、同じ結果を見る |
+| URL を開いた直後 | 取得の結果を、その画面の state が持ち続ける | loader が初期データだけを返す。表示したあとの再取得は `queryKey` の側にある |
+| 更新したあと | 取得の関数を、その画面がもう一度呼ぶ | 取り直す手続きは `useMutation` に書く。Atom は `queryKey` を持たない |
+
 ## 参考文献
 
 - 公式 — [TanStack Query](https://tanstack.com/query/latest)

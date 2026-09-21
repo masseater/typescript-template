@@ -43,6 +43,15 @@ UPDATE `user` SET `profile` = '' WHERE `profile` IS NULL;
 
 適用済みのフォルダは変えない。`__drizzle_migrations` がフォルダ名と SQL のハッシュを記録していて、中身を変えると一致しなくなる。次の変更は新しいフォルダにする。適用順はフォルダ名の時刻順で、時刻は generate が付ける。`drizzle-kit check` は、同じ snapshot から別々に生成されたマイグレーションの衝突を見る。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| `db.select().from(user)` | 戻り値の形を、テーブルとは別に `{ id: string; name: string }` と書く | `sqliteTable` の列が `rows` の要素の型になる |
+| `name` の隣に列を足す | SQL を手で書き、TypeScript の型は別の場所に残る | `sqliteTable` を変えて `drizzle-kit generate` すると、型と `migrations/<時刻>_<名前>/migration.sql` の両方が変わる |
+| D1 で insert のあと update する | 先行する文の結果を見てから次の文を送る対話的なトランザクションは無い | 送る文が先に揃っているときは `db.batch` にまとめる |
+| 列の名前を `bio` から `profile` にする | SQL の意図と、Kit が見る差が別々になる | generate の確認でリネームだと答えないと、Kit は列を作り直す。`snapshot.json` は手で直さない |
+
 ## 参考文献
 
 - 公式 — [Drizzle ORM](https://orm.drizzle.team/)

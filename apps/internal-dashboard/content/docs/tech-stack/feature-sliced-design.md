@@ -29,6 +29,14 @@ import { ProfilePage, loadMember } from "#pages/profile/index.ts";
 
 層の外のファイル、上の層への import、public API を通さない import は steiger が失敗させる。コマンドは `steiger src --fail-on-warnings` である。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| `/users/123` | ルートファイルが、画面の表示まで持つ | `src/app/routes/_member/users.$id.tsx` は URL を繋ぐだけ。`ProfilePage` と `loadMember` は `#pages/profile/index.ts` から取る |
+| `pages/settings` からプロフィールを使う | 同じ層のファイルを直接 import できる | `pages/profile` は `pages/settings` を知らない。外から見えるのは `index.ts` だけである |
+| `pages/profile/ui/profile-page.tsx` をルートから import する | レビューで見つける | `steiger src --fail-on-warnings` が失敗する |
+
 ## 参考文献
 
 - 公式 — [Feature-Sliced Design](https://fsd.how/)

@@ -17,6 +17,14 @@ const renameUser = createServerFn({ method: "POST" })
   .handler(async ({ data }) => data.name);
 ```
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| `/users/123` | URL の登録と、画面のファイルを別に持つ | `src/routes/_member/users.$id.tsx` が `/users/123` になる。フォルダ `_member` は URL に出ない |
+| 最初の表示 | ブラウザが空の画面を出してから、データを取りに行く | その URL を開いたとき、loader がサーバーで初期データだけを返す |
+| 名前の変更 | `POST` の URL を公開し、ブラウザ以外もその URL を HTTP で呼ぶ | `createServerFn` の `handler` は URL を持たない。本体はサーバーでだけ実行され、返すのは `data.name` である |
+
 ## 参考文献
 
 - 公式 — [TanStack Start](https://tanstack.com/start/latest)

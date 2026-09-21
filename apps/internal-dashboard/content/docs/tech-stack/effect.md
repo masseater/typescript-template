@@ -41,6 +41,14 @@ JSON のように外から来た値は、`Schema.decodeUnknownEffect` が成功�
 
 画面の購読が、待っているか、値があるか、失敗したかを一つの値で持つときは Atom（`effect/unstable/reactivity`）を使う。同じキーを複数のコンポーネントが見るキャッシュは [TanStack Query](/tech-stack/tanstack-query) で、Atom はそれを持たない。実行の区間を span として残すときは [OpenTelemetry](/tech-stack/opentelemetry) の `withSpan` を使う。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| `findUser("123")` | 呼んだ時点で `find` が呼ばれ、行が無ければ例外になる | 呼んだ時点では `Effect` が返るだけ。`runPromise` したときに `find` が呼ばれ、行が無ければ `UserNotFound` になる |
+| `Database` を渡さない | 実行してから、必要なサービスが無いことに気づく | その `runPromise` は、型の時点でコンパイルが失敗する |
+| yield も `runPromise` もしていない呼び出し | TypeScript は通る | `effect-tsgo diagnostics` が、実行が始まる前に失敗させる |
+
 ## 参考文献
 
 - 公式 — [Effect](https://effect.website/)

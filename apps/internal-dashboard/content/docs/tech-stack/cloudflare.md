@@ -18,6 +18,14 @@ export default {
 
 同じ id へのアクセスを同じオブジェクトへ届け、リクエストが終わったあともそのオブジェクトが状態を持つときは Durable Objects を使う。`fetch` のローカル変数には、その状態は残せない。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| 応答を返したあと | プロセスがメモリを持ち続ける | そのメモリは残らない。開発時も同じ workerd で動く |
+| `user` の `name` | 接続文字列をソースに書き、`fetch` がそれを使って繋ぐ | `env.DB.prepare` の binding の先が D1 で、結果は `Response.json(row)` で返す。接続先をソースに書くと、宣言を変えても文字列の側は変わらない |
+| 同じ id の状態 | `fetch` のローカル変数は、次のリクエストに残らない | Durable Objects が、その id のオブジェクトに状態を残す |
+
 ## 参考文献
 
 - 公式 — [Cloudflare Workers](https://developers.cloudflare.com/workers/)

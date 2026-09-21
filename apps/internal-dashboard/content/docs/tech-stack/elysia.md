@@ -59,6 +59,14 @@ const reply = await api.contact.post({ email: "a@b.test", message: "hello" });
 
 `api` はプレフィックス `/api`、`contact` は URL `/contact` である。`post` の引数が JSON になる。成功は `reply.data`、失敗は `reply.error` に入り、本体を Schema で読むときは `apiData` に渡す。ブラウザから同じ呼び出しをするときは `apiClient<typeof app>()` の戻り値を使う。画面のコードをサーバーとブラウザで一つの関数にするときは `createIsomorphicFn` で分け、server 側は受信した cookie を `apiServerClient` に渡し、client 側は `apiClient` を返す。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| 問い合わせの送信 | `createServerFn` には URL が無いので、ブラウザ以外はこの関数を HTTP で呼べない | `POST /api/contact` が `app.fetch` に届き、`routes.route` が `submitContact` を実行する |
+| 2000 字を超える本文 | ハンドラがその場で status を決める | `MessageTooLong` が表の 400 になる。スキーマを満たさない JSON は `InputInvalid` で、この表には書かない |
+| `api.contact.post` | URL と JSON の形を、サーバーとは別の型に書く | 引数と `reply.data` は登録した `app` から出る。サーバーは `treaty(app)`、ブラウザは `treaty<App>(location.origin)` で同じ URL を呼ぶ |
+
 ## 参考文献
 
 - 公式 — [Elysia](https://elysiajs.com/)

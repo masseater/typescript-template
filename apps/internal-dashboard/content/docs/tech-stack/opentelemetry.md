@@ -65,6 +65,14 @@ globalThis.fetch = async (input, init) => {
 
 `fetch("/users/123")` は `traced` を送る。`hex(16)` が trace id、`hex(8)` が span id で、呼び出しごとに変わる。`fetch("https://other.example/")` と `fetch("/api/telemetry")` は `originalFetch` のままである。ブラウザから SLI までの層は [Observability](/observability) が持つ。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| `runPromise` した `user.load` | ログの行が、どのリクエストのものかをあとから繋げない | `http.server.request` が開き、`user.load` がその子になる。同じリクエストのログに trace id `4bf92f3577b34da6a3ce929d0e0e4736` が付く |
+| 来た `traceparent` | サーバーが新しい trace id を切る | ヘッダが読めるときは、親 span が `00f067aa0ba902b7` になる。読めなければ新しい trace id を切る |
+| ブラウザの `fetch("/users/123")` | `traceparent` は呼び出し側がヘッダに書く | 同じオリジンなら `hex(16)` と `hex(8)` で新しい id が付く。サーバーの `observeRequest` がその trace id を続ける |
+
 ## 参考文献
 
 - 公式 — [OpenTelemetry](https://opentelemetry.io/docs/what-is-opentelemetry/)

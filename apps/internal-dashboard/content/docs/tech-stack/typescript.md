@@ -23,6 +23,15 @@ const assigned: Profile = { name: undefined };
 
 実行時に外から入った値には型が無い。フィールドを読む前に、[Effect](/tech-stack/effect) の `Schema.decodeUnknownEffect` へ通す。`runPromise` の型に失敗やサービスが残っているときは、TypeScript がコンパイルを失敗させる。yield していない Effect のように、実行が始まる前に出す診断は [Effect](/tech-stack/effect) の `effect-tsgo` が持つ。
 
+## 採ると
+
+| 見ているもの | 採る前 | 採ったあと |
+| --- | --- | --- |
+| `ids[0]` | `string` として通る | `string \| undefined` になる。`string` として使うには、要素があることを先に確認する |
+| `{ name: undefined }` | `name?` を省略した `{}` と同じ型になる | `Profile` への代入が失敗する。`{}` は `Profile` として通る |
+| `import { User }` | 型だけの名前が、値の import に残る | `import type` で入れない場合、型チェックが失敗する |
+| 外から来た JSON | フィールドを読んだあとで、欠けに気づく | `Schema.decodeUnknownEffect` が成功するまでフィールドを読まない |
+
 ## 参考文献
 
 - 公式 — [TypeScript](https://www.typescriptlang.org/)
