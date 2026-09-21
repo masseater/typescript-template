@@ -22,7 +22,7 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys
+// oxlint-disable-next-line eslint/sort-keys -- TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference
 const Route = createFileRoute("/_member/users/")({
   validateSearch: requireUsersSearch,
   loaderDeps: ({ search }: Readonly<{ search: UsersSearch }>) => search,
