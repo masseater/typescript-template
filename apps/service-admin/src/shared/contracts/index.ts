@@ -25,3 +25,12 @@ export {
   laterPage,
   maximumKeywordLength,
 } from "./users.ts";
+export {
+  ReportAction,
+  ReportActionResult,
+  ReportDetail,
+  ReportList,
+  ReportListQuery,
+  ReportQuery,
+  reportPageSize,
+} from "./reports.ts";

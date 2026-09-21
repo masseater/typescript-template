@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ROLE, SUBSCRIPTION_STATUS, type Role } from "@repo/config";
-import { query, recordSubscription, schema } from "@repo/db";
+import { blockMember, query, recordSubscription, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -198,5 +198,28 @@ describe("conversation access", () => {
         "MessagingMemberRequired",
       );
     }).pipe(Effect.provide(TestDatabase)),
+  );
+
+  it.effect(
+    "stops new messages in either direction after a block, but keeps the thread readable",
+    () =>
+      Effect.gen(function* program() {
+        yield* addUser({ userId: "paid" });
+        yield* addUser({ userId: "free" });
+        yield* makePaid("paid");
+        const opened = yield* startConversation("paid", "free", greeting);
+        yield* blockMember("free", "paid");
+        const thread = yield* findDirectConversation("paid", opened.conversationId, wholePage);
+        assert.strictEqual(thread.messages[0]?.body, greeting);
+        assert.isTrue(thread.conversation.blocked);
+        assert.strictEqual(
+          yield* failureTag(sendDirectMessage("paid", opened.conversationId, reply)),
+          "MessagingBlocked",
+        );
+        assert.strictEqual(
+          yield* failureTag(openDirectConversation("free", "paid", reply)),
+          "MessagingBlocked",
+        );
+      }).pipe(Effect.provide(TestDatabase)),
   );
 });

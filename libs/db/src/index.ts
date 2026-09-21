@@ -26,6 +26,17 @@ export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
 export { checkDatabase };
 export {
+  TrustSubjectNotFound,
+  TrustTargetUnavailable,
+  blockBetween,
+  blockHides,
+  blockMember,
+  fileReport,
+  pairBlocked,
+  unblockMember,
+  viewerBlockedTarget,
+} from "./trust.ts";
+export {
   claimMailSlot,
   findPasskeyUser,
   findUser,

@@ -86,3 +86,4 @@ export {
   messagingConversationPageSize,
   messagingMessagePageSize,
 } from "./messaging.ts";
+export { Blocked, BlockMember, ReportCreate, ReportFiled } from "./trust.ts";

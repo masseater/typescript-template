@@ -1,5 +1,7 @@
+import { REPORT_SUBJECT } from "@repo/config";
 import { Avatar, formatWarekiDateTime } from "@repo/ui";
 
+import { ReportControl } from "#shared/report-control.tsx";
 import { AuthorName, unavailableAuthor } from "./author-name.tsx";
 
 import type { Thread } from "#pages/board/api/board.ts";
@@ -15,6 +17,7 @@ function PostItem({ post }: Readonly<{ post: Thread["posts"][number] }>): ReactE
           <span className="ml-2 text-muted-foreground">{formatWarekiDateTime(post.createdAt)}</span>
         </p>
         <p className="text-base leading-normal break-words whitespace-pre-wrap">{post.body}</p>
+        <ReportControl subjectId={post.id} subjectKind={REPORT_SUBJECT.boardPost} />
       </div>
     </li>
   );

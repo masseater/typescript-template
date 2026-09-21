@@ -1,6 +1,6 @@
 import { ROLE } from "@repo/config";
-import { query, schema } from "@repo/db";
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { blockBetween, query, schema } from "@repo/db";
+import { and, count, desc, eq, isNull, not, or, sql } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
 import { BoardMemberRequired } from "./board-member-required.ts";
@@ -34,7 +34,11 @@ interface Page {
   readonly offset: number;
 }
 
-const boardMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
+const boardMember = and(
+  eq(user.role, ROLE.member),
+  eq(user.emailVerified, true),
+  eq(user.suspended, false),
+);
 const authorColumns = { authorId: user.id, authorName: user.name };
 const threadColumns = {
   ...authorColumns,
@@ -116,16 +120,23 @@ const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThread
   page: Page,
 ) {
   yield* requireBoardMember(viewerId);
+  const visible = or(
+    isNull(boardThread.authorId),
+    not(blockBetween(viewerId, sql`${boardThread.authorId}`)),
+  );
   const threads = yield* query((database) =>
     database
       .select(threadColumns)
       .from(boardThread)
       .leftJoin(user, and(eq(user.id, boardThread.authorId), boardMember))
+      .where(visible)
       .orderBy(desc(boardThread.lastPostedAt), desc(boardThread.id))
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [total] = yield* query((database) => database.select({ count: count() }).from(boardThread));
+  const [total] = yield* query((database) =>
+    database.select({ count: count() }).from(boardThread).where(visible),
+  );
   return { threads: threads.map(shownThread), total: total?.count ?? 0 };
 });
 
@@ -151,7 +162,12 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
       .select(postColumns)
       .from(boardPost)
       .leftJoin(user, and(eq(user.id, boardPost.authorId), boardMember))
-      .where(eq(boardPost.threadId, threadId))
+      .where(
+        and(
+          eq(boardPost.threadId, threadId),
+          or(isNull(boardPost.authorId), not(blockBetween(viewerId, sql`${boardPost.authorId}`))),
+        ),
+      )
       .orderBy(boardPost.createdAt, boardPost.id)
       .limit(page.limit)
       .offset(page.offset),

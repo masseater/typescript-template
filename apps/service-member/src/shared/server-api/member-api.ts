@@ -26,6 +26,7 @@ import { memberFailures } from "./member-failures.ts";
 import { messagingApi } from "./messaging-api.ts";
 import { photoApi } from "./photo-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
+import { trustApi } from "./trust-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
 
 import type { Stripe } from "#shared/billing/index.ts";
@@ -90,7 +91,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
             yield* requirePaid(user.id);
             const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
             const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers({ keyword, limit: memberPageSize, offset });
+            const list = yield* listMembers(user.id, { keyword, limit: memberPageSize, offset });
             return { ...list, pageSize: memberPageSize };
           }),
         failures,
@@ -110,7 +111,8 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
       ),
     )
     .use(boardApi(api))
-    .use(messagingApi(api));
+    .use(messagingApi(api))
+    .use(trustApi(api));
 }
 
 export { memberApi };

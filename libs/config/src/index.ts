@@ -84,3 +84,14 @@ export { NOTIFICATION_KIND, notificationKinds } from "./notifications.ts";
 export type { NotificationKind } from "./notifications.ts";
 export { CONVERSATION_KIND, conversationKinds } from "./messaging.ts";
 export type { ConversationKind } from "./messaging.ts";
+export {
+  MODERATION_KIND,
+  REPORT_REASON,
+  REPORT_STATUS,
+  REPORT_SUBJECT,
+  moderationKinds,
+  reportReasons,
+  reportStatuses,
+  reportSubjects,
+} from "./trust.ts";
+export type { ModerationKind, ReportReason, ReportStatus, ReportSubject } from "./trust.ts";

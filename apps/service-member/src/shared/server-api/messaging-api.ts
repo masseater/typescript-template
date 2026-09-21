@@ -34,6 +34,10 @@ import type { ApiRoutes } from "@repo/runtime/http";
 const failures = {
   ...unavailable,
   ...paidFailures,
+  MessagingBlocked: {
+    message: "ブロック中のためメッセージを送れません。",
+    status: httpStatus.forbidden,
+  },
   MessagingConversationNotFound: {
     message: "会話が見つかりません。",
     status: httpStatus.notFound,

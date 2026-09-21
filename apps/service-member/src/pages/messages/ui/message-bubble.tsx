@@ -1,3 +1,7 @@
+import { REPORT_SUBJECT } from "@repo/config";
+
+import { ReportControl } from "#shared/report-control.tsx";
+
 import type { ConversationThread } from "#pages/messages/api/messages.ts";
 import type { ReactElement } from "react";
 
@@ -11,6 +15,9 @@ function MessageBubble({
       >
         <p className="text-sm leading-normal text-muted-foreground">{message.sender.name}</p>
         <p className="text-base leading-normal break-words whitespace-pre-wrap">{message.body}</p>
+        {message.mine ? null : (
+          <ReportControl subjectId={message.id} subjectKind={REPORT_SUBJECT.message} />
+        )}
       </div>
     </li>
   );

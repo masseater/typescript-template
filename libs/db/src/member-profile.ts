@@ -1,9 +1,10 @@
 import { PHOTO_SLOT, PROFILE_VISIBILITY, ROLE } from "@repo/config";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, not, or } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { query } from "./database.ts";
 import { user } from "./identity-schema.ts";
+import { blockHides } from "./trust.ts";
 import { UserNotFound } from "./user-not-found.ts";
 
 import type { PhotoSlot, ProfileVisibility } from "@repo/config";
@@ -13,10 +14,11 @@ const openProfile: SQL | undefined = and(
   eq(user.visibility, PROFILE_VISIBILITY.allMembers),
   eq(user.emailVerified, true),
   eq(user.role, ROLE.member),
+  eq(user.suspended, false),
 );
 
 function profileVisibleTo(viewerId: string): SQL | undefined {
-  return or(eq(user.id, viewerId), openProfile);
+  return and(or(eq(user.id, viewerId), openProfile), not(blockHides(viewerId)));
 }
 
 const profileListed: SQL | undefined = and(openProfile, eq(user.searchable, true));

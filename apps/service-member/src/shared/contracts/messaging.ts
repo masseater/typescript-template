@@ -53,6 +53,7 @@ const ConversationQuery = Schema.Struct({
 
 const ConversationView = Schema.Struct({
   conversation: Schema.Struct({
+    blocked: Schema.Boolean,
     id: Schema.String,
     peer: ConversationPeer,
     total: Schema.Finite,

@@ -1,12 +1,14 @@
 import {
   UserNotFound,
+  blockHides,
   containsKeyword,
   profileListed,
   profileVisibleTo,
   query,
   schema,
+  viewerBlockedTarget,
 } from "@repo/db";
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, not } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
@@ -16,6 +18,7 @@ const { follow, user } = schema;
 type PhotoVersions = Readonly<{ company: string | null; face: string | null }>;
 
 type Member = Readonly<{
+  blocked?: boolean;
   id: string;
   joined: string;
   name: string;
@@ -95,6 +98,23 @@ function ownProfile({
 }
 
 const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, memberId: string) {
+  const [hidden] = yield* query((database) =>
+    database
+      .select(memberColumns)
+      .from(user)
+      .where(and(eq(user.id, memberId), viewerBlockedTarget(viewerId)))
+      .limit(1),
+  );
+  if (hidden !== undefined) {
+    return {
+      ...shown(hidden),
+      blocked: true,
+      following: false,
+      photos: { company: null, face: null },
+      profile: "",
+      socialLinks: [],
+    };
+  }
   const [member] = yield* query((database) =>
     database
       .select(memberColumns)
@@ -119,13 +139,16 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
   return { ...shown(member), following };
 });
 
-const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
-  readonly keyword?: string | undefined;
-  readonly limit: number;
-  readonly offset: number;
-}) {
+const listMembers = Effect.fn("listMembers")(function* listMembers(
+  viewerId: string,
+  page: {
+    readonly keyword?: string | undefined;
+    readonly limit: number;
+    readonly offset: number;
+  },
+) {
   const named = page.keyword === undefined ? undefined : containsKeyword(user.name, page.keyword);
-  const listed = and(profileListed, named);
+  const listed = and(profileListed, not(blockHides(viewerId)), named);
   const members = yield* query((database) =>
     database
       .select(memberColumns)

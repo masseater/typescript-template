@@ -29,6 +29,7 @@ const user = sqliteTable(
       .default([]),
     role: text("role", { enum: roles }).notNull().default(ROLE.member),
     searchable: integer("searchable", { mode: "boolean" }).notNull().default(false),
+    suspended: integer("suspended", { mode: "boolean" }).notNull().default(false),
     securityVersion: integer("security_version").notNull().default(0),
     twoFactorEnabled: integer("two_factor_enabled", { mode: "boolean" }).notNull().default(false),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),

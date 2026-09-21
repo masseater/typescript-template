@@ -11,7 +11,7 @@ import {
 import { useRouter } from "@tanstack/react-router";
 
 import { followMember, unfollowMember } from "#pages/profile/api/follow.ts";
-import { memberPhotoUrl } from "#shared/api/index.ts";
+import { blockMember, memberPhotoUrl, unblockMember } from "#shared/api/index.ts";
 import { SocialLinks } from "#shared/social-link";
 import { Biography } from "./biography.tsx";
 import { CompanyPhoto } from "./company-photo.tsx";
@@ -26,6 +26,7 @@ const useFollowingOverride = localState<boolean | undefined>(undefined);
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
   const router = useRouter();
   const followAction = useAction();
+  const blockAction = useAction();
   const [followingOverride, setFollowingOverride] = useFollowingOverride();
   const following = followingOverride ?? member.following ?? false;
 
@@ -37,6 +38,17 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
       } else {
         await followMember(member.id);
         setFollowingOverride(true);
+      }
+      await router.invalidate();
+    });
+  };
+
+  const toggleBlock = (): void => {
+    blockAction.run(async () => {
+      if (member.blocked === true) {
+        await unblockMember(member.id);
+      } else {
+        await blockMember(member.id);
       }
       await router.invalidate();
     });
@@ -54,9 +66,11 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
           {member.name}
         </Heading>
       </div>
-      <Biography own={own} text={member.profile} />
-      <CompanyPhoto memberId={member.id} version={member.photos.company} />
-      <SocialLinks urls={member.socialLinks} />
+      <Biography own={own} text={member.blocked === true ? "" : member.profile} />
+      {member.blocked === true ? null : (
+        <CompanyPhoto memberId={member.id} version={member.photos.company} />
+      )}
+      {member.blocked === true ? null : <SocialLinks urls={member.socialLinks} />}
       <p className="text-sm leading-normal text-muted-foreground">
         {formatWarekiMonth(member.joined)}に登録
       </p>
@@ -66,7 +80,7 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
           <ProfileShare memberId={member.id} privateProfile={false} />
         </>
       )}
-      {!own && (
+      {!own && member.blocked !== true && (
         <div className="flex flex-wrap gap-3">
           <Button
             disabled={followAction.blocked}
@@ -79,10 +93,31 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
           <ButtonLink search={{ peer: member.id }} to="/messages" variant="secondary">
             メッセージを送る
           </ButtonLink>
+          <Button
+            disabled={blockAction.blocked}
+            onClick={toggleBlock}
+            type="button"
+            variant="secondary"
+          >
+            ブロックする
+          </Button>
         </div>
+      )}
+      {!own && member.blocked === true && (
+        <Button
+          disabled={blockAction.blocked}
+          onClick={toggleBlock}
+          type="button"
+          variant="secondary"
+        >
+          ブロックを外す
+        </Button>
       )}
       {followAction.error !== undefined && (
         <p className="text-sm text-destructive">{followAction.error}</p>
+      )}
+      {blockAction.error !== undefined && (
+        <p className="text-sm text-destructive">{blockAction.error}</p>
       )}
     </ProfileBody>
   );

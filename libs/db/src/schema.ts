@@ -22,6 +22,7 @@ import {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+import { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -171,6 +172,9 @@ const schema = {
   interview,
   leaveRequest,
   memberOnboarding,
+  memberBlock,
+  memberReport,
+  moderationAction,
   notification,
   notificationPreference,
   withdrawnMember,
@@ -222,5 +226,6 @@ export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
 export { notification, notificationPreference } from "./notification-schema.ts";
+export { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
 export type { NotificationKind } from "@repo/config";

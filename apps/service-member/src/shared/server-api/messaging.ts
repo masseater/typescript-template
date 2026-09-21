@@ -1,8 +1,9 @@
 import { CONVERSATION_KIND, ROLE } from "@repo/config";
-import { query, requirePaid, schema } from "@repo/db";
+import { pairBlocked, query, requirePaid, schema } from "@repo/db";
 import { and, count, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
+import { MessagingBlocked } from "./messaging-blocked.ts";
 import { MessagingConversationNotFound } from "./messaging-conversation-not-found.ts";
 import { MessagingMemberRequired } from "./messaging-member-required.ts";
 
@@ -44,12 +45,17 @@ interface ConversationSummary {
 }
 
 interface ConversationView {
+  readonly blocked: boolean;
   readonly id: string;
   readonly peer: ConversationPeer;
   readonly total: number;
 }
 
-const messagingMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
+const messagingMember = and(
+  eq(user.role, ROLE.member),
+  eq(user.emailVerified, true),
+  eq(user.suspended, false),
+);
 const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
 
 function directKeyFor(memberA: string, memberB: string): string {
@@ -303,6 +309,7 @@ const findDirectConversation = Effect.fn("findDirectConversation")(function* fin
       .where(eq(directMessage.conversationId, conversationId)),
   );
   const conversationView: ConversationView = {
+    blocked: peer.withdrawn ? false : yield* pairBlocked(viewerId, peer.id),
     id: conversationId,
     peer,
     total: total?.count ?? 0,
@@ -357,6 +364,9 @@ const openDirectConversation = Effect.fn("openDirectConversation")(function* ope
   if (recipient === undefined || recipient.id === senderId) {
     return yield* new MessagingConversationNotFound();
   }
+  if (yield* pairBlocked(senderId, recipientId)) {
+    return yield* new MessagingBlocked();
+  }
   const existingId = yield* findDirectConversationId(senderId, recipientId);
   if (existingId === undefined) {
     yield* requirePaid(senderId);
@@ -400,6 +410,10 @@ const sendDirectMessage = Effect.fn("sendDirectMessage")(function* sendDirectMes
 ) {
   const sender = yield* requireMessagingMember(senderId);
   yield* requireParticipant(senderId, conversationId);
+  const peer = yield* peerOf(senderId, conversationId);
+  if (!peer.withdrawn && (yield* pairBlocked(senderId, peer.id))) {
+    return yield* new MessagingBlocked();
+  }
   const messageId = yield* insertMessage(sender.id, sender.name, conversationId, body);
   return messageId;
 });

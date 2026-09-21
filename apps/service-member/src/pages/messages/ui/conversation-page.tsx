@@ -1,4 +1,4 @@
-import { Heading, PageNavigation, TextLink } from "@repo/ui";
+import { Heading, PageNavigation, STATUS_VARIANT, StatusMessage, TextLink } from "@repo/ui";
 
 import { ConversationBody } from "./conversation-body.tsx";
 import { ConversationPageLink } from "./conversation-page-link.tsx";
@@ -35,10 +35,16 @@ function ConversationPage({
         ))}
       </ul>
       <PageNavigation current={current} last={last} renderLink={pageLink} />
-      <ReplyForm
-        conversationId={thread.conversation.id}
-        lastPage={Math.ceil((thread.total + 1) / thread.pageSize)}
-      />
+      {thread.conversation.blocked ? (
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          ブロック中のためメッセージを送れません。
+        </StatusMessage>
+      ) : (
+        <ReplyForm
+          conversationId={thread.conversation.id}
+          lastPage={Math.ceil((thread.total + 1) / thread.pageSize)}
+        />
+      )}
     </ConversationBody>
   );
 }

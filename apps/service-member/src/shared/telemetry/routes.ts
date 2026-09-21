@@ -24,6 +24,8 @@ export const routes = {
   "/api/messages/conversations": "messages-conversations-api",
   "/api/messages/lookup": "messages-lookup-api",
   "/api/messages/send": "messages-send-api",
+  "/api/trust/block": "trust-block-api",
+  "/api/trust/report": "trust-report-api",
   "/api/leave": "leave-api",
   "/api/profile": "profile-api",
   "/api/profile/photo": "profile-photo-api",

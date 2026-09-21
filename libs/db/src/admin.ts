@@ -157,3 +157,10 @@ export {
 } from "./agreement-admin.ts";
 export { LastAdminRequired } from "./last-admin-required.ts";
 export { TargetUnavailable } from "./target-unavailable.ts";
+export {
+  dismissReport,
+  listReports,
+  readReport,
+  suspendTarget,
+  warnTarget,
+} from "./trust-admin.ts";

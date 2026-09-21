@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { PROFILE_VISIBILITY, ROLE } from "@repo/config";
-import { query, schema, setPhotoKey } from "@repo/db";
+import { blockMember, query, schema, setPhotoKey } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect } from "effect";
 
@@ -54,17 +54,37 @@ it.effect("shows another member only when their profile is open to members", () 
 
 it.effect("lists only open profiles that asked to be listed", () =>
   Effect.gen(function* program() {
+    yield* addUser("viewer");
     yield* addUser("hidden", { searchable: true, visibility: PROFILE_VISIBILITY.self });
     yield* addUser("unlisted");
     yield* addUser("listed", { searchable: true });
-    const page = yield* listMembers(firstPage);
+    const page = yield* listMembers("viewer", firstPage);
     assert.deepStrictEqual(
       page.members.map((member) => member.id),
       ["listed"],
     );
     assert.strictEqual(page.total, 1);
-    const searched = yield* listMembers({ ...firstPage, keyword: "hidden" });
+    const searched = yield* listMembers("viewer", { ...firstPage, keyword: "hidden" });
     assert.strictEqual(searched.total, 0);
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("hides a profile from the person who was blocked, and redacts it for the blocker", () =>
+  Effect.gen(function* program() {
+    yield* addUser("viewer");
+    yield* addUser("guard", { searchable: true });
+    yield* addUser("quiet", { searchable: true });
+    yield* blockMember("guard", "viewer");
+    yield* blockMember("viewer", "quiet");
+    assert.strictEqual(yield* failureTag(getMember("viewer", "guard")), "UserNotFound");
+    const redacted = yield* getMember("viewer", "quiet");
+    assert.strictEqual(redacted.blocked, true);
+    assert.strictEqual(redacted.profile, "");
+    const page = yield* listMembers("viewer", firstPage);
+    assert.deepStrictEqual(
+      page.members.map((member) => member.id),
+      [],
+    );
   }).pipe(Effect.provide(TestDatabase)),
 );
 
