@@ -37,7 +37,6 @@ const awaitingPresetPackages = [
   "libs/observability/**",
   "libs/runtime/**",
   "libs/vite-config/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -46,7 +45,6 @@ const templateWorkspaces = [
   "apps/**",
   "libs/**",
   "infra/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/e2e/**",
   "tools/load/**",
