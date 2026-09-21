@@ -7,7 +7,6 @@ export {
   probeAlert,
   probeEvent,
   probeFailure,
-  probeHandler,
 } from "./libs/monitor/src/monitor-fixture.ts";
 export type { Outcome, SentMail } from "./libs/monitor/src/monitor-fixture.ts";
 export { UserInbox } from "./apps/service-member/src/shared/inbox/inbox.ts";

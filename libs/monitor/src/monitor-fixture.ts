@@ -60,6 +60,6 @@ const workersHandler = {
 
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
-export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure, probeHandler };
+export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
 export default workersHandler;
