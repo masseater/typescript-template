@@ -1,19 +1,14 @@
-import { LoginPage } from "@repo/auth-ui";
+import { browserHttp, LoginPage } from "@repo/auth-ui";
 import { httpStatus } from "@repo/observability/http-status";
 import { decodeJson } from "@repo/runtime/client";
-import { Effect, Layer, Schema } from "effect";
-import { FetchHttpClient, HttpBody, HttpClient } from "effect/unstable/http";
+import { Effect, Schema } from "effect";
+import { HttpBody, HttpClient } from "effect/unstable/http";
 
 import { serviceName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
 
 const Redirect = Schema.Struct({ url: Schema.String });
-
-const browserHttp = Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { credentials: "same-origin" }),
-);
 
 function requestContinuation(oauthQuery: string) {
   return Effect.gen(function* continueOAuth() {

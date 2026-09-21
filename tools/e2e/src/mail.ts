@@ -87,12 +87,10 @@ type MailSink = {
 const sinkOn = (opened: {
   readonly deliveries: Ref.Ref<readonly string[]>;
   readonly port: number;
-  readonly scope: Scope.Scope;
+  readonly stop: Effect.Effect<void, JourneyFailure>;
 }): MailSink => ({
   origin: loopbackOrigin(opened.port),
-  stop: Scope.close(opened.scope, Exit.succeed(undefined)).pipe(
-    Effect.mapError((cause) => failed("E2E_MAIL_SINK_NOT_STOPPED", cause)),
-  ),
+  stop: opened.stop,
   waitForLink: (recipient: string, prefix: string) =>
     linkArrives({ deliveries: opened.deliveries, prefix, recipient }),
 });
@@ -113,7 +111,13 @@ const startMailSink = (): Effect.Effect<MailSink, JourneyFailure> =>
     const deliveries = yield* Ref.make<readonly string[]>([]);
     yield* server.serve(recordDelivery(deliveries)).pipe(Scope.provide(scope));
     const port = yield* listeningPort(server.address);
-    return sinkOn({ deliveries, port, scope });
+    return sinkOn({
+      deliveries,
+      port,
+      stop: Scope.close(scope, Exit.succeed(undefined)).pipe(
+        Effect.mapError((cause) => failed("E2E_MAIL_SINK_NOT_STOPPED", cause)),
+      ),
+    });
   });
 
 export { startMailSink };

@@ -1,15 +1,11 @@
+import { browserHttp } from "@repo/auth-ui";
 import { httpStatus } from "@repo/observability/http-status";
 import { decodeJson } from "@repo/runtime/client";
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 const Redirect = Schema.Struct({ url: Schema.String });
-
-const browserHttp = Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { credentials: "same-origin" }),
-);
 
 function loadClientName(clientId: string): Effect.Effect<string | undefined> {
   return Effect.gen(function* loadName() {

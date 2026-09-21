@@ -4,21 +4,19 @@ type ChildStream = {
   pipe: (destination: unknown, options?: { end?: boolean }) => ChildStream;
 };
 
-type SpawnOptions = {
-  readonly cwd?: string;
-  readonly detached?: boolean;
-  readonly encoding?: BufferEncoding;
-  readonly env?: NodeJS.ProcessEnv;
-  readonly input?: string;
-  readonly maxBuffer?: number;
-  readonly stdio?: "inherit" | "ignore" | readonly (string | number)[];
-  readonly windowsHide?: boolean;
-};
-
 type SpawnLaunch = {
   readonly executable: string;
   readonly handed?: readonly string[];
-  readonly spawnOptions?: SpawnOptions;
+  readonly spawnOptions?: {
+    readonly cwd?: string;
+    readonly detached?: boolean;
+    readonly encoding?: BufferEncoding;
+    readonly env?: NodeJS.ProcessEnv;
+    readonly input?: string;
+    readonly maxBuffer?: number;
+    readonly stdio?: "inherit" | "ignore" | readonly (string | number)[];
+    readonly windowsHide?: boolean;
+  };
 };
 
 const spawnedProcessApi = process.getBuiltinModule("child_process");
@@ -33,13 +31,6 @@ type SpawnedChild = {
   readonly stdout: ChildStream | null;
   kill: NodeChild["kill"];
   once: NodeChild["once"];
-};
-
-type SyncExit = {
-  readonly error?: Error | undefined;
-  readonly status: number | null;
-  readonly stderr: string;
-  readonly stdout: string;
 };
 
 type NodeSpawnOptions = Parameters<typeof spawnedProcessApi.spawn>[2];
@@ -77,7 +68,14 @@ const spawnChild = (launch: SpawnLaunch): SpawnedChild => {
 const printedOutput = (printed: string | Buffer): string =>
   typeof printed === "string" ? printed : Buffer.from(printed).toString("utf8");
 
-const spawnChildSync = (launch: SpawnLaunch): SyncExit => {
+const spawnChildSync = (
+  launch: SpawnLaunch,
+): {
+  readonly error?: Error | undefined;
+  readonly status: number | null;
+  readonly stderr: string;
+  readonly stdout: string;
+} => {
   const exit = spawnedProcessApi.spawnSync(
     launch.executable,
     [...(launch.handed ?? [])],

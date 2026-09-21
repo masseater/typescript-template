@@ -2,18 +2,16 @@ import { Schema, type Crypto, type Effect, type FileSystem, type Path } from "ef
 
 import type { ChildProcessSpawner } from "effect/unstable/process";
 
-type HostServices =
-  | ChildProcessSpawner.ChildProcessSpawner
-  | Crypto.Crypto
-  | FileSystem.FileSystem
-  | Path.Path;
-
 class JourneyFailure extends Schema.TaggedError<JourneyFailure>()("JourneyFailure", {
   detail: Schema.optionalKey(Schema.String),
   reason: Schema.String,
 }) {}
 
-type Journey<Success> = Effect.Effect<Success, JourneyFailure, HostServices>;
+type Journey<Success> = Effect.Effect<
+  Success,
+  JourneyFailure,
+  ChildProcessSpawner.ChildProcessSpawner | Crypto.Crypto | FileSystem.FileSystem | Path.Path
+>;
 
 const spelled = (cause: unknown): string => {
   if (typeof cause === "string") {

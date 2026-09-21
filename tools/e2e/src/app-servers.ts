@@ -16,7 +16,9 @@ import type { DatabaseEnvironment } from "./local-database.ts";
 const readyTimeout = 300_000;
 
 const probeApplication = (served: {
-  readonly handle: ChildProcessSpawner.ChildProcessHandle;
+  readonly handle: {
+    readonly isRunning: ChildProcessSpawner.ChildProcessHandle["isRunning"];
+  };
   readonly origin: string;
 }): Effect.Effect<true | undefined, JourneyFailure> =>
   Effect.gen(function* probeRunningApplication() {
@@ -38,7 +40,9 @@ const explainUnavailable = (
   });
 
 const reachHealth = (served: {
-  readonly handle: ChildProcessSpawner.ChildProcessHandle;
+  readonly handle: {
+    readonly isRunning: ChildProcessSpawner.ChildProcessHandle["isRunning"];
+  };
   readonly log: string;
   readonly origin: string;
 }): Effect.Effect<void, JourneyFailure, FileSystem.FileSystem> =>

@@ -85,7 +85,7 @@ describe("effect diagnostics coverage", () => {
   });
 
   it("keeps Effect language-service diagnostics on and failing tsc", () => {
-    expect.assertions(2);
+    expect.assertions(3);
     const declared = [...Object.values(sharedProjects), ...Object.values(projects)].flatMap(
       (project) => {
         const plugins = field(field(field(project, "default"), "compilerOptions"), "plugins");
@@ -98,6 +98,7 @@ describe("effect diagnostics coverage", () => {
     expect(languageService).toStrictEqual(
       languageService.map(() => EFFECT_LANGUAGE_SERVICE as unknown),
     );
+    expect(languageService.map((plugin) => field(plugin, "diagnostics"))).not.toContain(false);
     expect(
       Object.values(sharedProjects).map((project) =>
         field(field(field(project, "default"), "compilerOptions"), "plugins"),

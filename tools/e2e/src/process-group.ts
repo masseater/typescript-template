@@ -12,9 +12,10 @@ const killGroup = (pid: number, signal: "SIGKILL" | "SIGTERM"): Effect.Effect<vo
     catch: (unsignalled) => failed("E2E_PROCESS_GROUP_UNSIGNALLED", unsignalled),
   }).pipe(Effect.ignore);
 
-const stopGroup = (
-  handle: ChildProcessSpawner.ChildProcessHandle,
-): Effect.Effect<void, never, ChildProcessSpawner.ChildProcessSpawner> =>
+const stopGroup = (handle: {
+  readonly exitCode: ChildProcessSpawner.ChildProcessHandle["exitCode"];
+  readonly pid: ChildProcessSpawner.ChildProcessHandle["pid"];
+}): Effect.Effect<void, never, ChildProcessSpawner.ChildProcessSpawner> =>
   Effect.gen(function* stopProcessGroup() {
     const pid = Number(handle.pid);
     yield* killGroup(pid, "SIGTERM");
