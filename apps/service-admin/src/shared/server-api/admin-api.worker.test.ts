@@ -160,7 +160,12 @@ describe("admin API authorization", () => {
       yield* app.as("operator", memberSuspension);
       const audit = yield* Effect.provide(auditActionsOf("target"), Database.layer(env.DB));
       assert.deepStrictEqual(audit, [
-        { action: "member_suspended", actorId: "operator", actorKind: ROLE.administrator },
+        {
+          action: "member_suspended",
+          actorId: "operator",
+          actorKind: ROLE.administrator,
+          channel: "ui",
+        },
       ]);
       yield* app.stop;
     }),

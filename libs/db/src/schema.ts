@@ -108,6 +108,11 @@ const rateLimit = sqliteTable(
   (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
 );
 
+/** @canonical-values db.audit-channel */
+export const auditChannels = ["ui", "mcp"] as const;
+export type AuditChannel = (typeof auditChannels)[number];
+export const AUDIT_CHANNEL = { mcp: auditChannels[1], ui: auditChannels[0] } as const;
+
 /** @canonical-values db.audit-action */
 export const auditActions = [
   "flag_toggled",
@@ -147,6 +152,7 @@ const auditEvent = sqliteTable(
     action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
     actorKind: text("actor_kind", { enum: roles }).notNull().default(ROLE.administrator),
+    channel: text("channel", { enum: auditChannels }).notNull().default(AUDIT_CHANNEL.ui),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     targetId: text("target_id").notNull(),

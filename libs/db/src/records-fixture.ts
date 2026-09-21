@@ -65,6 +65,7 @@ export const auditActionsOf = Effect.fn("auditActionsOf")(function* auditActions
         action: auditEvent.action,
         actorId: auditEvent.actorId,
         actorKind: auditEvent.actorKind,
+        channel: auditEvent.channel,
       })
       .from(auditEvent)
       .where(eq(auditEvent.targetId, targetId))

@@ -18,7 +18,7 @@ import { query } from "./database.ts";
 import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
-import { AUDIT_ACTION, user } from "./schema.ts";
+import { AUDIT_ACTION, AUDIT_CHANNEL, user, type AuditChannel } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";
@@ -105,14 +105,34 @@ const adminEntry = (
   actor: Readonly<{ user: Readonly<{ id: string }> }>,
   action: AuditEntry["action"],
   targetId: string,
-): AuditEntry => ({ ...adminActor(actor, action), targetId });
+  channel: AuditChannel = AUDIT_CHANNEL.ui,
+): AuditEntry => ({ ...adminActor(actor, action), channel, targetId });
+
+export const getMember = Effect.fn("getMember")(function* getMember(
+  sessionId: string,
+  memberId: string,
+) {
+  yield* requireAdmin(sessionId);
+  const [member] = yield* query((database) =>
+    database
+      .select(memberColumns)
+      .from(user)
+      .where(and(eq(user.id, memberId), eq(user.role, ROLE.member), liveAdmin(database, sessionId)))
+      .limit(1),
+  );
+  if (!member) {
+    return yield* new TargetUnavailable();
+  }
+  return member;
+});
 
 export const setMemberState = Effect.fn("setMemberState")(function* setMemberState(change: {
-  readonly sessionId: string;
-  readonly memberId: string;
   readonly accountState: AccountState;
+  readonly channel?: AuditChannel;
+  readonly memberId: string;
+  readonly sessionId: string;
 }) {
-  const { accountState, memberId, sessionId } = change;
+  const { accountState, channel = AUDIT_CHANNEL.ui, memberId, sessionId } = change;
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
   const action =
     accountState === ACCOUNT_STATE.suspended
@@ -121,7 +141,7 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
   const [, changedMembers] = yield* query(async (database) => {
     const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
     const audit = database.run(
-      auditWhenTargeted(database, adminEntry(actor, action, memberId), live),
+      auditWhenTargeted(database, adminEntry(actor, action, memberId, channel), live),
     );
     const transition = database
       .update(user)
@@ -140,12 +160,17 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
 export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
   sessionId: string,
   targetId: string,
+  channel: AuditChannel = AUDIT_CHANNEL.ui,
 ) {
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
   const [, removedUsers] = yield* query(async (database) => {
     const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
     const audit = database.run(
-      auditWhenTargeted(database, adminEntry(actor, AUDIT_ACTION.userDeleted, targetId), live),
+      auditWhenTargeted(
+        database,
+        adminEntry(actor, AUDIT_ACTION.userDeleted, targetId, channel),
+        live,
+      ),
     );
     const removal = database
       .delete(user)
@@ -188,6 +213,7 @@ export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId
 });
 
 export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft: {
+  readonly channel?: AuditChannel;
   readonly email: string;
   readonly permission: AdminPermission;
   readonly sessionId: string;
@@ -195,7 +221,7 @@ export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft:
   const actor = yield* requireAdmin(draft.sessionId, ADMIN_PERMISSION.owner);
   return yield* issueInvite({
     audience: APPLICATION.admin,
-    audit: adminActor(actor, AUDIT_ACTION.adminInvited),
+    audit: { ...adminActor(actor, AUDIT_ACTION.adminInvited), channel: draft.channel },
     email: draft.email,
     permission: draft.permission,
   });
@@ -204,17 +230,18 @@ export const inviteAdmin = Effect.fn("inviteAdmin")(function* inviteAdmin(draft:
 export const setAdminPermission = Effect.fn("setAdminPermission")(
   function* setAdminPermission(change: {
     readonly adminId: string;
+    readonly channel?: AuditChannel;
     readonly permission: AdminPermission;
     readonly sessionId: string;
   }) {
-    const { adminId, permission, sessionId } = change;
+    const { adminId, channel = AUDIT_CHANNEL.ui, permission, sessionId } = change;
     const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
     const [, changedAdmins] = yield* query(async (database) => {
       const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.owner);
       const audit = database.run(
         auditWhenTargeted(
           database,
-          adminEntry(actor, AUDIT_ACTION.adminPermissionChanged, adminId),
+          adminEntry(actor, AUDIT_ACTION.adminPermissionChanged, adminId, channel),
           live,
         ),
       );
@@ -234,11 +261,12 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
 );
 
 export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(change: {
-  readonly adminId: string;
   readonly accountState: AccountState;
+  readonly adminId: string;
+  readonly channel?: AuditChannel;
   readonly sessionId: string;
 }) {
-  const { accountState, adminId, sessionId } = change;
+  const { accountState, adminId, channel = AUDIT_CHANNEL.ui, sessionId } = change;
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
   if (actor.user.id === adminId) {
     return yield* new TargetUnavailable();
@@ -250,7 +278,7 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
   const [, changedAdmins] = yield* query(async (database) => {
     const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.owner);
     const audit = database.run(
-      auditWhenTargeted(database, adminEntry(actor, action, adminId), live),
+      auditWhenTargeted(database, adminEntry(actor, action, adminId, channel), live),
     );
     const transition = database
       .update(user)

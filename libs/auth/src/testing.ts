@@ -1,6 +1,7 @@
 export {
   AuthApps,
   PASSWORD,
+  assignAdminPermissionByEmail,
   assignRoleByEmail,
   assignRoleById,
   audienceInputs,
@@ -30,3 +31,8 @@ export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixt
 export { signedSessionCookie } from "./auth-test-fixture.ts";
 export { UnexpectedStatus } from "./unexpected-status.ts";
 export { startAuthorization, wikiOrigin, wikiStaff } from "./wiki-oauth-fixture.ts";
+export {
+  adminOperator,
+  adminOrigin,
+  startAuthorization as startAdminAuthorization,
+} from "./admin-oauth-fixture.ts";
