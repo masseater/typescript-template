@@ -1,6 +1,6 @@
-import { INQUIRY_STATUS } from "@repo/db/inquiry-status";
+import { INQUIRY_STATUS } from "@repo/config/inquiry";
 
-import type { InquiryStatus } from "@repo/db/inquiry-status";
+import type { InquiryStatus } from "@repo/config/inquiry";
 
 const inquiryStatusLabels: Readonly<Record<InquiryStatus, string>> = {
   answered: "対応中",

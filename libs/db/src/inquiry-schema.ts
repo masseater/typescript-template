@@ -1,17 +1,8 @@
-import { roles } from "@repo/config";
+import { INQUIRY_STATUS, inquiryStatuses, roles, type InquiryStatus } from "@repo/config";
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./identity-schema.ts";
-
-/** @canonical-values db.inquiry-status */
-export const inquiryStatuses = ["open", "answered", "closed"] as const;
-export type InquiryStatus = (typeof inquiryStatuses)[number];
-export const INQUIRY_STATUS = {
-  answered: inquiryStatuses[1],
-  closed: inquiryStatuses[2],
-  open: inquiryStatuses[0],
-} as const;
 
 export type InquiryAuthorKind = (typeof roles)[number];
 export const INQUIRY_AUTHOR_KIND = { admin: roles[1], member: roles[0] } as const;

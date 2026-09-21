@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { APPLICATION, ROLE } from "@repo/config";
+import { APPLICATION, INQUIRY_STATUS, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -14,7 +14,7 @@ import {
   replyAsAdmin,
 } from "./inquiry.ts";
 import { addSession, addUser } from "./records-fixture.ts";
-import { auditEvent, INQUIRY_STATUS } from "./schema.ts";
+import { auditEvent } from "./schema.ts";
 import { TestDatabase } from "./testing.ts";
 
 function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(

@@ -1,3 +1,4 @@
+import { INQUIRY_STATUS, inquiryStatuses, type InquiryStatus } from "@repo/config";
 import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { Effect, Schema } from "effect";
 
@@ -9,12 +10,9 @@ import {
   AUDIT_ACTION,
   auditEvent,
   INQUIRY_AUTHOR_KIND,
-  INQUIRY_STATUS,
   inquiry,
   inquiryMessage,
-  inquiryStatuses,
   type AuditAction,
-  type InquiryStatus,
 } from "./schema.ts";
 import { user } from "./schema.ts";
 

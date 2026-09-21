@@ -179,11 +179,9 @@ export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export {
   INQUIRY_AUTHOR_KIND,
-  INQUIRY_STATUS,
   inquiry,
   inquiryAuthorKinds,
   inquiryMessage,
-  inquiryStatuses,
 } from "./inquiry-schema.ts";
-export type { InquiryAuthorKind, InquiryStatus } from "./inquiry-schema.ts";
+export type { InquiryAuthorKind } from "./inquiry-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

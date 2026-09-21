@@ -1,15 +1,10 @@
+import { inquiryStatuses } from "@repo/config";
 import { asc, count, desc, eq, gte, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { query } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
-import {
-  INQUIRY_AUTHOR_KIND,
-  inquiry,
-  inquiryAuthorKinds,
-  inquiryMessage,
-  inquiryStatuses,
-} from "./schema.ts";
+import { INQUIRY_AUTHOR_KIND, inquiry, inquiryAuthorKinds, inquiryMessage } from "./schema.ts";
 import { user } from "./schema.ts";
 
 interface StaffInquirySummary {

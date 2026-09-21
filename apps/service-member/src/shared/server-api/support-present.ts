@@ -1,5 +1,5 @@
 import { ROLE } from "@repo/config";
-import { INQUIRY_STATUS } from "@repo/db/inquiry-status";
+import { INQUIRY_STATUS } from "@repo/config/inquiry";
 
 import type { getMemberInquiry, listMemberInquiries } from "@repo/db";
 import type { Effect } from "effect";
