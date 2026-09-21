@@ -5,7 +5,7 @@ import { Cause, Console, Effect, Exit, Predicate, Schema, SchemaGetter } from "e
 import { monitorBinding } from "./binding.ts";
 import { MonitorFailure } from "./failure.ts";
 
-interface Alert {
+export interface Alert {
   readonly subject: string;
   readonly text: string;
 }
