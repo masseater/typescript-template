@@ -1510,9 +1510,6 @@ importers:
 
   tools/ai-native:
     dependencies:
-      '@effect/platform-node':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@opentelemetry/api':
         specifier: 'catalog:'
         version: 1.9.1
