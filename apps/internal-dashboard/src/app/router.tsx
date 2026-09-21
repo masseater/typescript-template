@@ -16,7 +16,7 @@ function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
     defaultOptions: { mutations: { networkMode: "always" }, queries: { networkMode: "always" } },
   });
   provideSessionLoader(queryClient, loadBrowserSession);
-  const router = createAppRouter(routeTree, { queryClient });
+  const router = createAppRouter(routeTree, { routerContext: { queryClient } });
   setupRouterSsrQueryIntegration({ queryClient, router });
   return router;
 }
