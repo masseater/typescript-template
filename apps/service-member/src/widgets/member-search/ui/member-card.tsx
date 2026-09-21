@@ -1,7 +1,7 @@
 import { PHOTO_SLOT } from "@repo/config";
 import { Avatar, CardLink } from "@repo/ui";
 
-import { memberPhotoUrl } from "#shared/api/index.ts";
+import { memberPhotoUrl } from "#shared/photo-url/index.ts";
 import { MemberSummary } from "./member-summary.tsx";
 
 import type { ReactElement } from "react";
@@ -9,7 +9,12 @@ import type { ReactElement } from "react";
 function MemberCard({
   member,
 }: Readonly<{
-  member: { readonly id: string; readonly name: string; readonly profile: string };
+  member: {
+    readonly id: string;
+    readonly name: string;
+    readonly photos: Readonly<{ company: string | null; face: string | null }>;
+    readonly profile: string;
+  };
 }>): ReactElement {
   return (
     <li>

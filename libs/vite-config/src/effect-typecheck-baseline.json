@@ -1312,12 +1312,6 @@
       },
       {
         "file": "src/monitor-fixture.ts",
-        "code": "TS4023",
-        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
-        "count": 1
-      },
-      {
-        "file": "src/monitor-fixture.ts",
         "code": "TS4082",
         "message": "Default export of the module has or is using private name 'MonitorHandler'.",
         "count": 1
