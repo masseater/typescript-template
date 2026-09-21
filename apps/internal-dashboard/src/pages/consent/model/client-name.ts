@@ -1,15 +1,9 @@
-import { useAtomValue } from "@effect/atom-react";
-import { requestAtom, type RequestResult } from "@repo/ui";
-import { Atom } from "effect/unstable/reactivity";
+import { useQuery } from "@tanstack/react-query";
 
-import { loadClientName } from "#pages/consent/api/consent.ts";
+import { clientNameOptions } from "#pages/consent/api/consent.ts";
 
-const clientNameAtom = Atom.family((clientId: string) =>
-  requestAtom(async () => loadClientName(clientId)),
-);
-
-function useClientName(clientId: string): RequestResult<string | undefined> {
-  return useAtomValue(clientNameAtom(clientId));
+function useClientName(clientId: string) {
+  return useQuery(clientNameOptions(clientId));
 }
 
 export { useClientName };
