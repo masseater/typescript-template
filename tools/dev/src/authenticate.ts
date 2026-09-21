@@ -59,7 +59,6 @@ const agent = Effect.fn("agent")(function* agent(
   socketDirectory: string,
   args: readonly string[],
 ) {
-  // oxlint-disable-next-line node/no-process-env
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...(yield* sessionArguments(app, credentials)), ...args], {
     cwd: root,

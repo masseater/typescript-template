@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { readFile, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { serverOnlyMarkers } from "@repo/vite-config";
@@ -46,12 +43,21 @@ const ArtifactWrites = Context.Reference<ArtifactMode>("@repo/infra-cloudflare/A
   defaultValue: (): ArtifactMode => "describe",
 });
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
-const PUBLIC_ASSET_EXTENSIONS: ReadonlySet<string> = new Set([".css", ".woff2"]);
+const PUBLIC_ASSET_EXTENSIONS: ReadonlySet<string> = new Set([
+  ".css",
+  ".eot",
+  ".otf",
+  ".ttf",
+  ".woff",
+  ".woff2",
+]);
 
 interface WorkerModule {
   readonly contentFile: string;
   readonly name: string;
 }
+
+const isPublicAsset = (file: string): boolean => PUBLIC_ASSET_EXTENSIONS.has(path.extname(file));
 
 const workerModuleGlobs = [
   ...[...MODULE_EXTENSIONS].map((extension) => `**/*${extension}`),
@@ -160,12 +166,10 @@ const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerMod
   if (!serverFiles.includes(path.join(output.server, MAIN_MODULE))) {
     return yield* fail("worker_entry_missing_index_js");
   }
-  const publicAssets = serverFiles.filter((file) =>
-    PUBLIC_ASSET_EXTENSIONS.has(path.extname(file)),
-  );
+  const publicAssets = serverFiles.filter((file) => isPublicAsset(file));
   const code = yield* Effect.all(
     serverFiles
-      .filter((file) => !PUBLIC_ASSET_EXTENSIONS.has(path.extname(file)))
+      .filter((file) => !isPublicAsset(file))
       .map((file) => workerModule(output.server, file)),
   );
   yield* assertServerPublicAssetsPublished(output, publicAssets, clientFiles);
