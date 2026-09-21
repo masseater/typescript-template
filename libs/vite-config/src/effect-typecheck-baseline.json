@@ -19,12 +19,6 @@
         "code": "TS2304",
         "message": "Cannot find name 'SendEmail'.",
         "count": 1
-      },
-      {
-        "file": "tools/dont-review-it/src/repository/lint.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
-        "count": 1
       }
     ],
     "apps/internal-dashboard": [
@@ -134,12 +128,6 @@
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -313,12 +301,6 @@
         "count": 1
       },
       {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
         "file": "src/shared/server-api/server-app.ts",
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
@@ -402,12 +384,6 @@
         "file": "../../libs/ui/src/wareki.ts",
         "code": "TS2304",
         "message": "Cannot find name 'Temporal'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -759,20 +735,6 @@
         "count": 1
       }
     ],
-    "infra/budget-monitor": [
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
-        "file": "vite.config.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
-        "count": 1
-      }
-    ],
     "infra/cloudflare": [
       {
         "file": "../../libs/monitor/src/index.ts",
@@ -796,12 +758,6 @@
         "file": "../../libs/observability/src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -889,42 +845,6 @@
         "count": 1
       }
     ],
-    "infra/error-monitor": [
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
-        "file": "vite.config.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
-        "count": 1
-      }
-    ],
-    "infra/health-monitor": [
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
-        "file": "vite.config.ts",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
-        "count": 1
-      }
-    ],
-    "infra/local": [
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      }
-    ],
     "libs/auth": [
       {
         "file": "../db/src/index.ts",
@@ -948,12 +868,6 @@
         "file": "../observability/src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -1029,53 +943,11 @@
         "count": 1
       }
     ],
-    "libs/auth-ui": [
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      }
-    ],
-    "libs/cli": [
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      }
-    ],
-    "libs/config": [
-      {
-        "file": "src/naming.test.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'URL' is not assignable to parameter of type 'string | URL'.",
-        "count": 1
-      },
-      {
-        "file": "src/responds.test.ts",
-        "code": "TS2322",
-        "message": "Type 'number' is not assignable to type 'string'.",
-        "count": 5
-      },
-      {
-        "file": "src/responds.test.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'number' is not assignable to parameter of type 'string'.",
-        "count": 2
-      }
-    ],
     "libs/db": [
       {
         "file": "../../infra/cloudflare/src/remote-command.ts",
         "code": "TS2883",
         "message": "The inferred type of 'runRemoteDatabaseCommand' cannot be named without a reference to 'RemoteFailure' from '../node_modules/@repo/db/src/remote-input.ts'. This is likely not portable. A type annotation is necessary.",
-        "count": 1
-      },
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       },
       {
@@ -1102,12 +974,6 @@
         "file": "../db/src/index.ts",
         "code": "TS6133",
         "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
         "count": 1
       }
     ],
@@ -1171,21 +1037,9 @@
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
         "count": 1
-      },
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
       }
     ],
     "libs/monitor": [
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
       {
         "file": "src/monitor-fixture.ts",
         "code": "TS4023",
@@ -1255,12 +1109,6 @@
     ],
     "libs/observability": [
       {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
         "file": "src/request-span.ts",
         "code": "TS2322",
         "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
@@ -1329,12 +1177,6 @@
         "count": 1
       },
       {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
         "file": "src/http-events.test.ts",
         "code": "TS2345",
         "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
@@ -1344,30 +1186,6 @@
         "file": "src/http.ts",
         "code": "TS2322",
         "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      }
-    ],
-    "libs/ui": [
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      }
-    ],
-    "libs/vite-config": [
-      {
-        "file": "src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      }
-    ],
-    "tools/ai-native": [
-      {
-        "file": "../dont-review-it/src/repository/lint.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
         "count": 1
       }
     ],
@@ -1427,9 +1245,93 @@
         "count": 1
       },
       {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<{ plistFile: string; root: string; }, any, any>' is not assignable to parameter of type 'Effect<{ plistFile: string; root: string; }, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 4
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<CiRunnerReport, any, any>' is not assignable to parameter of type 'Effect<CiRunnerReport, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 5
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<LocalCommandFailure, any, any>' is not assignable to parameter of type 'Effect<LocalCommandFailure, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<Path, any, any>' is not assignable to parameter of type 'Effect<Path, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<string, any, any>' is not assignable to parameter of type 'Effect<string, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 4
+      },
+      {
+        "file": "src/ci-runner.test.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 17
+      },
+      {
+        "file": "src/cli.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/cli.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/dev-start.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<never, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/dev-start.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/gateway.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '@effect/platform-node' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/gateway.ts",
+        "code": "TS2352",
+        "message": "Conversion of type 'Effect<never, GatewayFailure, any>' to type 'Effect<void, GatewayFailure, never>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.",
+        "count": 1
+      },
+      {
+        "file": "src/gateway.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/observe/symbolicate.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/observe/symbolicate.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
         "count": 1
       },
       {
@@ -1443,6 +1345,54 @@
         "code": "TS18046",
         "message": "'auth.instance.handler' is of type 'unknown'.",
         "count": 1
+      },
+      {
+        "file": "src/platform.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '@effect/platform-node' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/prepare-browser.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<unknown, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 1
+      },
+      {
+        "file": "src/prepare-browser.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 1
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<Info, any, any>' is not assignable to parameter of type 'Effect<Info, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<string, any, any>' is not assignable to parameter of type 'Effect<string, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<URL, any, any>' is not assignable to parameter of type 'Effect<URL, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 2
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS2379",
+        "message": "Argument of type 'Effect<void, any, any>' is not assignable to parameter of type 'Effect<void, any, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
+        "count": 4
+      },
+      {
+        "file": "src/private-files.test.ts",
+        "code": "TS377004",
+        "message": "This Effect requires a service that is missing from the expected Effect context: `any`. effect(missingEffectContext)",
+        "count": 10
       },
       {
         "file": "src/private-files.ts",

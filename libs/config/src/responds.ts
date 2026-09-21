@@ -7,15 +7,15 @@ function respondedSuccessfully(status: number): boolean {
   return status >= firstSuccess && status < firstRedirect;
 }
 
-function waitUntilResponds<Failure>(request: {
+function waitUntilResponds<StatusFailure, UnreachableFailure>(request: {
   readonly accept: (status: number) => boolean;
   readonly method: "GET" | "POST";
-  readonly onStatus: (status: number) => Failure;
-  readonly onUnreachable: (error: unknown) => Failure;
+  readonly onStatus: (status: number) => StatusFailure;
+  readonly onUnreachable: (error: unknown) => UnreachableFailure;
   readonly retry?: { readonly interval: Duration.Input; readonly times: number };
   readonly timeoutMilliseconds?: number;
   readonly url: string;
-}): Effect.Effect<number, Failure> {
+}): Effect.Effect<number, StatusFailure | UnreachableFailure> {
   const attempt = Effect.tryPromise({
     catch: (error) => request.onUnreachable(error),
     try: async () => {
