@@ -663,6 +663,12 @@
         "count": 1
       },
       {
+        "file": "src/shared/server-api/jobs-api.worker.test.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2345",
         "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; profile: SQLiteColumn<...>; updat...'.",
@@ -773,12 +779,6 @@
         "code": "TS7006",
         "message": "Parameter 'reason' implicitly has an 'any' type.",
         "count": 2
-      },
-      {
-        "file": "src/app.ts",
-        "code": "TS2375",
-        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: Redacted<string>; DB: Database; EMAIL: SendEmail; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID: string; ... 7 more ...; FLAGSHIP_APP_ID: Output<...>; } | { ...; } | DeclaredEnv' is not assignable to type 'DeclaredEnv | WikiEnv' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
       },
       {
         "file": "src/artifacts.test.ts",
@@ -1122,12 +1122,6 @@
         "file": "src/monitor-fixture.ts",
         "code": "TS4023",
         "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
-        "count": 1
-      },
-      {
-        "file": "src/monitor-fixture.ts",
-        "code": "TS4082",
-        "message": "Default export of the module has or is using private name 'MonitorHandler'.",
         "count": 1
       },
       {
