@@ -21,9 +21,11 @@ DROP TRIGGER IF EXISTS `user_role_revoke_oauth_grants`;--> statement-breakpoint
 PRAGMA foreign_keys=OFF;--> statement-breakpoint
 CREATE TABLE `__new_user` (
 	`account_state` text DEFAULT 'active' NOT NULL,
+	`company_photo_key` text,
 	`created_at` integer NOT NULL,
 	`email` text NOT NULL,
 	`email_verified` integer DEFAULT false NOT NULL,
+	`face_photo_key` text,
 	`id` text PRIMARY KEY NOT NULL,
 	`image` text,
 	`name` text NOT NULL,
@@ -31,15 +33,17 @@ CREATE TABLE `__new_user` (
 	`profile` text DEFAULT '' NOT NULL,
 	`social_links` text DEFAULT '[]' NOT NULL,
 	`role` text DEFAULT 'member' NOT NULL,
+	`searchable` integer DEFAULT false NOT NULL,
 	`security_version` integer DEFAULT 0 NOT NULL,
 	`two_factor_enabled` integer DEFAULT false NOT NULL,
 	`updated_at` integer NOT NULL,
+	`visibility` text DEFAULT 'all_members' NOT NULL,
 	CONSTRAINT "user_role" CHECK("role" IN ('member', 'admin', 'staff')),
 	CONSTRAINT "user_account_state" CHECK("account_state" IN ('active', 'suspended')),
 	CONSTRAINT "user_permission" CHECK(("role" = 'member' AND "permission" IS NULL) OR ("role" = 'admin' AND "permission" IN ('viewer', 'operator', 'owner')) OR ("role" = 'staff' AND "permission" IN ('viewer', 'editor')))
 );
 --> statement-breakpoint
-INSERT INTO `__new_user`(`account_state`, `created_at`, `email`, `email_verified`, `id`, `image`, `name`, `permission`, `profile`, `social_links`, `role`, `security_version`, `two_factor_enabled`, `updated_at`) SELECT 'active', `created_at`, `email`, `email_verified`, `id`, `image`, `name`, CASE WHEN `role` = 'admin' THEN 'owner' ELSE NULL END, `profile`, `social_links`, `role`, `security_version`, `two_factor_enabled`, `updated_at` FROM `user`;--> statement-breakpoint
+INSERT INTO `__new_user`(`account_state`, `company_photo_key`, `created_at`, `email`, `email_verified`, `face_photo_key`, `id`, `image`, `name`, `permission`, `profile`, `social_links`, `role`, `searchable`, `security_version`, `two_factor_enabled`, `updated_at`, `visibility`) SELECT 'active', `company_photo_key`, `created_at`, `email`, `email_verified`, `face_photo_key`, `id`, `image`, `name`, CASE WHEN `role` = 'admin' THEN 'owner' WHEN `role` = 'staff' THEN 'editor' ELSE NULL END, `profile`, `social_links`, `role`, `searchable`, `security_version`, `two_factor_enabled`, `updated_at`, `visibility` FROM `user`;--> statement-breakpoint
 DROP TABLE `user`;--> statement-breakpoint
 ALTER TABLE `__new_user` RENAME TO `user`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
