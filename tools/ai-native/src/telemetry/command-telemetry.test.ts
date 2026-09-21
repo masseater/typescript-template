@@ -829,7 +829,6 @@ describe("the package surface", () => {
         access: "public",
       },
       dependencies: {
-        "@effect/platform-node": "catalog:",
         "@opentelemetry/api": "catalog:",
         "@opentelemetry/api-logs": "0.221.0",
         "@opentelemetry/semantic-conventions": "1.43.0",

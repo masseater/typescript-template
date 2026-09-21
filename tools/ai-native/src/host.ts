@@ -1,11 +1,16 @@
-import { NodeServices } from "@effect/platform-node";
 import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
-import { Crypto, DateTime, Effect, Path } from "effect";
+import { DateTime } from "effect";
 
-const withHostPath = <Value>(pick: (hostPath: Path.Path) => Value): Value =>
-  Effect.runSync(Effect.provide(Effect.map(Path.Path, pick), NodeServices.layer));
+const nodePath = process.getBuiltinModule("path") as {
+  readonly basename: (location: string) => string;
+  readonly dirname: (location: string) => string;
+  readonly join: (...parts: readonly string[]) => string;
+  readonly resolve: (...parts: readonly string[]) => string;
+};
 
-const crypto = Effect.runSync(Effect.provide(Crypto.Crypto, NodeServices.layer));
+const nodeCrypto = process.getBuiltinModule("crypto") as {
+  readonly randomBytes: (byteCount: number) => Uint8Array;
+};
 
 const nodeFs = process.getBuiltinModule("fs") as {
   readonly existsSync: (location: string) => boolean;
@@ -17,17 +22,13 @@ const nodeFs = process.getBuiltinModule("fs") as {
   readonly writeFileSync: (location: string, written: string) => void;
 };
 
-const joinPath = (...parts: readonly string[]): string =>
-  withHostPath((hostPath) => hostPath.join(...parts));
+const joinPath = (...parts: readonly string[]): string => nodePath.join(...parts);
 
-const parentPath = (location: string): string =>
-  withHostPath((hostPath) => hostPath.dirname(location));
+const parentPath = (location: string): string => nodePath.dirname(location);
 
-const baseName = (location: string): string =>
-  withHostPath((hostPath) => hostPath.basename(location));
+const baseName = (location: string): string => nodePath.basename(location);
 
-const resolvePath = (...parts: readonly string[]): string =>
-  withHostPath((hostPath) => hostPath.resolve(...parts));
+const resolvePath = (...parts: readonly string[]): string => nodePath.resolve(...parts);
 
 const fileExists = (location: string): boolean => nodeFs.existsSync(location);
 
@@ -57,7 +58,7 @@ const removePath = (location: string): void => {
 };
 
 const randomHex = (byteCount: number): string =>
-  Buffer.from(Effect.runSync(crypto.randomBytes(byteCount).pipe(Effect.orDie))).toString("hex");
+  Buffer.from(nodeCrypto.randomBytes(byteCount)).toString("hex");
 
 const epochMillis = (): number => DateTime.toEpochMillis(DateTime.nowUnsafe());
 

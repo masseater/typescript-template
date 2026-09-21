@@ -669,7 +669,7 @@ describe("spool cli", () => {
       .extend(
         "aFastWriterStaysFarBelowTheBytesItMoved",
         ({ theResidentMemoryOfAFastWriter }) =>
-          theResidentMemoryOfAFastWriter > 0 && theResidentMemoryOfAFastWriter < 192 * 1024 * 1024,
+          theResidentMemoryOfAFastWriter > 0 && theResidentMemoryOfAFastWriter < FAST_WRITER_BYTES,
       );
 
     it(

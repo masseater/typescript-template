@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Data, Effect, Stream } from "effect";
 
 import { waitEmitterEvent } from "../emitter-wait.ts";
 
@@ -96,40 +96,40 @@ const consumeBytes = (startingState: StripState, bytes: Buffer): StripStep =>
 const writeChunk = (destination: PassThroughStream, part: Buffer): Promise<void> =>
   destination.write(part) ? Promise.resolve() : waitEmitterEvent(destination, "drain");
 
-const stripInto = (
-  arrivals: AsyncIterator<Buffer>,
-  stripping: { readonly state: StripState; readonly destination: PassThroughStream },
-): Promise<void> =>
-  Effect.runPromise(
-    Effect.gen(function* stripArrival() {
-      const arrived = yield* Effect.promise(() => arrivals.next());
-      if (arrived.done === true) {
-        return;
-      }
-      if (stripping.state === ground && !arrived.value.includes(ESC)) {
-        yield* Effect.promise(() => writeChunk(stripping.destination, arrived.value));
-        return yield* Effect.promise(() => stripInto(arrivals, stripping));
-      }
-      const consumed = consumeBytes(stripping.state, arrived.value);
-      if (consumed.emitted !== "") {
-        yield* Effect.promise(() =>
-          writeChunk(stripping.destination, Buffer.from(consumed.emitted, "latin1")),
-        );
-      }
-      return yield* Effect.promise(() =>
-        stripInto(arrivals, { state: consumed.state, destination: stripping.destination }),
-      );
-    }),
-  );
+const writeStrippedArrival = (input: {
+  readonly arrival: Buffer;
+  readonly destination: PassThroughStream;
+  readonly stripMachine: StripState;
+}): Effect.Effect<StripState> =>
+  input.stripMachine === ground && !input.arrival.includes(ESC)
+    ? Effect.promise(() => writeChunk(input.destination, input.arrival)).pipe(
+        Effect.as(input.stripMachine),
+      )
+    : Effect.gen(function* writeConsumed() {
+        const consumed = consumeBytes(input.stripMachine, input.arrival);
+        if (consumed.emitted !== "") {
+          yield* Effect.promise(() =>
+            writeChunk(input.destination, Buffer.from(consumed.emitted, "latin1")),
+          );
+        }
+        return consumed.state;
+      });
+
+class StripSourceFailed extends Data.TaggedError("StripSourceFailed")<{
+  readonly cause: unknown;
+}> {}
 
 const stripUntilExhausted = (
   source: AsyncIterable<Buffer>,
   destination: PassThroughStream,
 ): Promise<void> =>
   Effect.runPromise(
-    Effect.promise(() =>
-      stripInto(source[Symbol.asyncIterator](), { state: ground, destination }),
-    ).pipe(
+    Stream.fromAsyncIterable(source, (cause) => new StripSourceFailed({ cause })).pipe(
+      Stream.runFoldEffect(
+        () => ground,
+        (stripMachine, arrival) => writeStrippedArrival({ arrival, destination, stripMachine }),
+      ),
+      Effect.asVoid,
       Effect.ensuring(
         Effect.sync(() => {
           destination.end();
