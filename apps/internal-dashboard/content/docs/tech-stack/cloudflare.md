@@ -3,11 +3,9 @@ title: Cloudflare
 description: アプリが動く Workers と、コードへ渡される binding
 ---
 
-実行環境は Cloudflare です。アプリは Workers として動き、常駐するサーバープロセスは持ちません。リクエストが来たとき、[Alchemy](/tech-stack/alchemy) が宣言した Worker が応答します。開発中とテストも、同じ実行系（workerd）で行います。
+実行環境は Cloudflare Workers です。常駐するサーバープロセスはなく、リクエストが来たときに Worker が応答します。開発中も、同じ実行系（workerd）で動かせます。資源の宣言は [Alchemy](/tech-stack/alchemy) です。
 
-共有データは D1（SQLite）に置きます。メール送信や機能フラグのような依存は、接続文字列をコードへ書かず、Worker の binding として渡されます。Durable Objects は、1 つの実体が自分の状態を持ち続けるときに使います。
-
-画面確認のログは、手元では Cloudflare Local Explorer、デプロイ後は Workers Observability から取ります。開発の流れの中での位置は [開発の流れ](/getting-started/development-flow) にあります。
+Worker の外にあるもの（データベース、メール、フラグなど）は、接続文字列をコードへ書かず、binding として渡します。D1 は SQLite のデータベースです。Durable Objects は、1 つの実体が自分の状態を持ち続けるときに使います。
 
 ## 公式と読みもの
 

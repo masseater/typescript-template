@@ -3,7 +3,7 @@ title: Drizzle
 description: SQL に近い TypeScript で、SQLite のテーブルとクエリを書く
 ---
 
-Drizzle は、SQL に近い TypeScript でテーブルとクエリを書く ORM です。テーブル定義が型の出どころで、マイグレーションはその定義から Drizzle Kit が作ります。相手のデータベースは SQLite で、Cloudflare では [D1](/tech-stack/cloudflare) です。
+Drizzle は、SQL に近い TypeScript でテーブルとクエリを書く ORM です。テーブル定義が型の出どころで、マイグレーションはその定義から Drizzle Kit が作ります。SQLite を相手にでき、Cloudflare では [D1](/tech-stack/cloudflare) につなぎます。
 
 D1 には、対話的なトランザクションがありません。複数の書き込みを 1 回にまとめるときは batch を使います。
 

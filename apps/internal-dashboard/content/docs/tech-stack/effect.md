@@ -10,9 +10,7 @@ Effect は、非同期処理を「呼んだ瞬間に走る関数」ではなく�
 - DB や設定のような依存は、引数で引き回す代わりに `yield*` でサービスから取ります。足りないサービスは型に残るので、入口で渡し忘れるとコンパイルが通りません。
 - 外から来た未知の値（環境変数、JSON）は Effect Schema で検証してから中へ入れます。通らなければ、その値を使った処理へ進みません。
 
-インフラの宣言も同じ書き方です。資源を宣言する仕組みは [Alchemy](/tech-stack/alchemy) です。
-
-画面が「いまの取得結果」を購読するときは、Effect Atom（`effect/unstable/reactivity` の `Atom`）を使います。成功と失敗と待ちが 1 つの値になります。これは [TanStack Query](/tech-stack/tanstack-query) のキャッシュとは別です。
+取得結果を画面で購読する仕組みとして、Effect Atom（`effect/unstable/reactivity` の `Atom`）があります。成功と失敗と待ちが 1 つの値になります。これは [TanStack Query](/tech-stack/tanstack-query) のキャッシュとは別です。
 
 ## 公式と読みもの
 

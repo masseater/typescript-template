@@ -18,5 +18,5 @@ TanStack Start は、React の画面と、その画面がサーバーで行う�
 
 - 公式は [TanStack Start](https://tanstack.com/start/latest) です。最初に読むなら [概要](https://tanstack.com/start/latest/docs/framework/react/overview) と [server functions](https://tanstack.com/start/latest/docs/framework/react/guide/server-functions) です。
 - Workers への載せ方は [Hosting](https://tanstack.com/start/latest/docs/framework/react/guide/hosting) と [Cloudflare のフレームワークガイド](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/) にあります。
-- 動くサンプルは [start-basic-cloudflare](https://github.com/TanStack/router/tree/main/examples/react/start-basic-cloudflare) です。あの例は wrangler でデプロイします。このリポジトリの資源の宣言は [Alchemy](/tech-stack/alchemy) です。
+- 動くサンプルは [start-basic-cloudflare](https://github.com/TanStack/router/tree/main/examples/react/start-basic-cloudflare) です。
 - 何を足したフレームワークなのかは [TanStack Start v1 Release Candidate](https://tanstack.com/blog/announcing-tanstack-start-v1) と [Why choose TanStack Start and Router?](https://tanstack.com/blog/why-tanstack-start-and-router) が短いです。

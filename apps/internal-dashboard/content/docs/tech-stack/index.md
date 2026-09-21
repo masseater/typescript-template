@@ -3,7 +3,7 @@ title: 技術スタック
 description: 主要技術を、初めて読む人向けに説明し、公式・サンプル・記事へつなぐ
 ---
 
-この節は、主要技術を初めて読む人向けの説明です。採用の優先度は [モダン化計画](/plans/modernization)、部品の置き方は [フロントエンド](/guidelines/frontend)、外に残る状態の宣言は [インフラ](/guidelines/infrastructure) が持ちます。ライブラリの版は `pnpm-workspace.yaml` の catalog が持ち、この節には書きません。
+この節は、主要技術を初めて読む人向けの説明です。部品の置き方は [フロントエンド](/guidelines/frontend)、外に残る状態の宣言は [インフラ](/guidelines/infrastructure) が持ちます。ライブラリの版は `pnpm-workspace.yaml` の catalog が持ち、この節には書きません。
 
 領域ごとの一行の対応は [このテンプレートは何か](/getting-started/what-is-this) にあります。
 
