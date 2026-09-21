@@ -1,4 +1,6 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { access, chmod, copyFile, lstat, mkdir, readFile, readdir } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { sourceMapDirectories, sourceMapManifest } from "@repo/vite-config/source-maps";
@@ -7,6 +9,7 @@ import { Effect, Schema } from "effect";
 import { ArtifactFailure, fail, io, isMissing } from "./artifact-io.ts";
 import { retainGenerations } from "./retention.ts";
 
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import type { Dirent } from "node:fs";
 import type { Application } from "@repo/config";
 

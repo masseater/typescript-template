@@ -1,6 +1,10 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { constants } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { lstat, open } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { parseEnv } from "node:util";
 
 import { deploymentKeys } from "@repo/observability/deployment-keys";
@@ -10,6 +14,7 @@ import { secretsFile } from "./deployment.ts";
 import { projectName } from "./project.ts";
 import { modeAllowsGroupOrOther, openFlagsReadOnlyNoFollow } from "./unix-permission-bits.ts";
 
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import type { FileHandle } from "node:fs/promises";
 
 function declaredKeys(contents: string): ReadonlySet<string> {

@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createPublicKey } from "node:crypto";
 
 import { loopbackAddress } from "@repo/config";
@@ -54,6 +55,7 @@ function launchGateway(): Effect.Effect<unknown, LocalCommandFailure, Path.Path>
 const ensureGateway = Effect.fn("ensureGateway")(function* ensureGateway() {
   const portlessHomePath = yield* urlPath(portlessHome);
   const portlessEnvironment = {
+    // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
     ...process.env,
     PORTLESS_STATE_DIR: portlessHomePath,
     PORTLESS_SYNC_HOSTS: "0",
