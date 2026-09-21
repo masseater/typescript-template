@@ -272,8 +272,8 @@ export {
   inquiryMessage,
 } from "./inquiry-schema.ts";
 export type { InquiryAuthorKind } from "./inquiry-schema.ts";
-export { INQUIRY_STATUS, inquiryStatuses } from "./inquiry-status.ts";
-export type { InquiryStatus } from "./inquiry-status.ts";
+export { INQUIRY_STATUS, inquiryStatuses } from "@repo/config";
+export type { InquiryStatus } from "@repo/config";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { memberMcpGrant } from "./member-mcp-schema.ts";
 export { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";

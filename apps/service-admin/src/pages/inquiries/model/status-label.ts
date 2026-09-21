@@ -1,11 +1,9 @@
-import { INQUIRY_STATUS } from "@repo/db/inquiry-status";
-
-import type { InquiryStatus } from "@repo/db/inquiry-status";
+import { INQUIRY_STATUS, type InquiryStatus } from "@repo/config";
 
 const inquiryStatusLabels: Readonly<Record<InquiryStatus, string>> = {
-  answered: "対応中",
-  closed: "完了",
-  open: "受付",
+  [INQUIRY_STATUS.answered]: "対応中",
+  [INQUIRY_STATUS.closed]: "完了",
+  [INQUIRY_STATUS.open]: "受付",
 };
 
 function inquiryStatusLabel(status: InquiryStatus): string {

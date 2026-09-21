@@ -27,22 +27,23 @@ const previewInvitation = async (
   endpoint: string,
   token: string,
 ): Promise<
-  Readonly<{ email: string; status: "available" }> | Readonly<{ message: string; status: "closed" }>
+  | Readonly<{ email: string; status: "available" }>
+  | Readonly<{ message: string; status: "unavailable" }>
 > => {
   const closedMessage =
     "招待が無効か、有効期限が切れています。招待した人に再送を依頼してください。";
   try {
     const served = await fetchInvitationResponse(endpoint, token);
     if (served.status === httpStatus.notFound) {
-      return { message: closedMessage, status: "closed" };
+      return { message: closedMessage, status: "unavailable" };
     }
     if (!served.ok) {
-      return { message: await inviteFailureOf(served, closedMessage), status: "closed" };
+      return { message: await inviteFailureOf(served, closedMessage), status: "unavailable" };
     }
     const servedInvite: unknown = await served.json();
     return { email: decodeJson(InvitePreview, servedInvite).email, status: "available" };
   } catch (previewFailure) {
-    return { message: errorMessage(previewFailure), status: "closed" };
+    return { message: errorMessage(previewFailure), status: "unavailable" };
   }
 };
 

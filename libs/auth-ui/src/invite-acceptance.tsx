@@ -111,7 +111,7 @@ const InviteAcceptance = ({
       </FormColumn>
     );
   }
-  if (invitation.status === "closed") {
+  if (invitation.status === "unavailable") {
     return <StatusMessage variant={STATUS_VARIANT.failure}>{invitation.message}</StatusMessage>;
   }
   const markAccepted = (): void => {

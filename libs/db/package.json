@@ -11,7 +11,6 @@
     "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts",
     "./inquiry-staff": "./src/inquiry-staff.ts",
-    "./inquiry-status": "./src/inquiry-status.ts",
     "./dashboard-literals": "./src/dashboard-literals.ts"
   },
   "dependencies": {

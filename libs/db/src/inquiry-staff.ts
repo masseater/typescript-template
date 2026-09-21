@@ -1,3 +1,4 @@
+import { type InquiryStatus } from "@repo/config";
 import { asc, count, desc, eq, gte, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -16,7 +17,7 @@ interface StaffInquirySummary {
   readonly createdAt: Date;
   readonly id: string;
   readonly memberId: string;
-  readonly status: "answered" | "closed" | "open";
+  readonly status: InquiryStatus;
   readonly subject: string;
   readonly updatedAt: Date;
 }
