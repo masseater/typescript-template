@@ -6,7 +6,9 @@ import {
   overridePluginMismatches,
   templateWorkspaces,
 } from "./lint.ts";
-import { reachable, taskNames } from "./tasks.ts";
+import { repositoryRoot } from "./repository-root.ts";
+import { commands, reachable, taskNames } from "./tasks.ts";
+import { typecheckProjects } from "./typecheck-projects.ts";
 
 const manifests: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../{apps,libs,infra,tools}/*/package.json",
@@ -189,6 +191,29 @@ describe("inspection coverage", () => {
     expect(taskNames(".")).toContain("check:repository");
     expect(reachable(".", ["prepush"])).not.toContain("check:repository");
     expect(reachable(".", ["premerge"])).not.toContain("check:repository");
+  });
+
+  it("typechecks every workspace even when oxlint ignorePatterns skip it", () => {
+    expect.hasAssertions();
+    const projects = typecheckProjects(repositoryRoot);
+    const discovered = [
+      "tsconfig.json",
+      ...Object.keys(tsconfigs).map((key) => workspacePath(key)),
+    ].toSorted();
+    const skippedByLint = discovered.filter((project) =>
+      lintOptions.ignorePatterns.some((pattern) => {
+        const prefix = pattern.endsWith("/**") ? pattern.slice(0, -3) : undefined;
+        return prefix !== undefined && project.startsWith(`${prefix}/`);
+      }),
+    );
+    expect(projects).toStrictEqual(discovered);
+    expect(
+      skippedByLint.map((project) => project.replace(/\/tsconfig\.json$/u, "")).toSorted(),
+    ).toStrictEqual(
+      awaitingPresetPackages.map((pattern) => pattern.replace(/\/\*\*$/u, "")).toSorted(),
+    );
+    expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
+    expect(reachable(".", ["prepush", "prepr", "premerge"])).not.toContain("check:types");
   });
 
   it("typechecks workspace vite configs and the quality doctor config", () => {

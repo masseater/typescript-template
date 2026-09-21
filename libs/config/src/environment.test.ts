@@ -86,6 +86,11 @@ describe("readEnvironment", () => {
       "Mailpit is restricted to local development",
     ],
     [
+      "Mailpit and an OTLP switch that are both invalid",
+      { APP_ORIGIN: "https://app.example.test", OTLP_ENABLED: "true" },
+      "Mailpit is restricted to local development",
+    ],
+    [
       "an OTLP switch turned on without an endpoint",
       { OTLP_ENABLED: "true" },
       "OTLP_ENABLED needs OTLP_ENDPOINT",
