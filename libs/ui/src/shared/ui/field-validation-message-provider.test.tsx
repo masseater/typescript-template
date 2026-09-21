@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { FieldValidationMessageProvider } from "./field-validation-message-provider.tsx";
 import {
@@ -9,33 +9,55 @@ import {
 
 import type { ReactElement } from "react";
 
-const messages = {
-  patternMismatch: "p",
-  tooLong: "l",
-  tooShort: "s",
-  typeMismatch: "t",
-  valueMissing: "v",
-} as const;
-
-const Probe = (): ReactElement => {
-  const value = useFieldValidationMessages();
-  return <span>{fieldValidationMessageKinds.map((kind) => value[kind]).join("")}</span>;
-};
-
 describe("field validation messages", () => {
-  it("throws without a provider", () => {
-    expect.hasAssertions();
-    expect(() => renderToStaticMarkup(<Probe />)).toThrow("Field validation messages are missing.");
+  const it = test
+    .extend("theMissingCatalog", () => {
+      const ReadJapaneseFieldValidationCatalog = (): ReactElement => {
+        const japaneseFieldValidationMessages = useFieldValidationMessages();
+        return (
+          <span>
+            {fieldValidationMessageKinds
+              .map((constraintKind) => japaneseFieldValidationMessages[constraintKind])
+              .join("")}
+          </span>
+        );
+      };
+      try {
+        return renderToStaticMarkup(<ReadJapaneseFieldValidationCatalog />);
+      } catch (thrown) {
+        return thrown;
+      }
+    })
+    .extend("theSuppliedCatalogMarkup", () => {
+      const japaneseFieldValidationMessages = {
+        patternMismatch: "p",
+        tooLong: "l",
+        tooShort: "s",
+        typeMismatch: "t",
+        valueMissing: "v",
+      } as const;
+      const ReadJapaneseFieldValidationCatalog = (): ReactElement => {
+        const suppliedFieldValidationMessages = useFieldValidationMessages();
+        return (
+          <span>
+            {fieldValidationMessageKinds
+              .map((constraintKind) => suppliedFieldValidationMessages[constraintKind])
+              .join("")}
+          </span>
+        );
+      };
+      return renderToStaticMarkup(
+        <FieldValidationMessageProvider messages={japaneseFieldValidationMessages}>
+          <ReadJapaneseFieldValidationCatalog />
+        </FieldValidationMessageProvider>,
+      );
+    });
+
+  it("throws without a provider", ({ theMissingCatalog }) => {
+    expect(theMissingCatalog).toStrictEqual(new Error("Field validation messages are missing."));
   });
 
-  it("supplies the messages from the provider", () => {
-    expect.hasAssertions();
-    expect(
-      renderToStaticMarkup(
-        <FieldValidationMessageProvider messages={messages}>
-          <Probe />
-        </FieldValidationMessageProvider>,
-      ),
-    ).toBe("<span>vtpsl</span>");
+  it("supplies the catalog from the provider", ({ theSuppliedCatalogMarkup }) => {
+    expect(theSuppliedCatalogMarkup).toStrictEqual("<span>vtpsl</span>");
   });
 });
