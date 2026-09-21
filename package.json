@@ -25,6 +25,8 @@
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "catalog:",
+    "textlint": "catalog:",
+    "textlint-rule-preset-ai-words-ja": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",

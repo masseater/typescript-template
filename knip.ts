@@ -15,6 +15,8 @@ const workspaces = {
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
+      "textlint",
+      "textlint-rule-preset-ai-words-ja",
     ],
     project: ["*.{js,ts}"],
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
