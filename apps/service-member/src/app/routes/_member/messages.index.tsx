@@ -22,7 +22,6 @@ function requireMessagesSearch(raw: unknown): MessagesSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys -- TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference
 const Route = createFileRoute("/_member/messages/")({
   validateSearch: requireMessagesSearch,
   loaderDeps: ({ search }: Readonly<{ search: MessagesSearch }>) => ({ page: search.page ?? 1 }),

@@ -11,26 +11,17 @@ function AdminNavigationItem({
   collapsed,
   icon,
   label,
-  onNavigate,
   to,
 }: Readonly<{
   badge?: number | undefined;
   collapsed: boolean;
   icon: LucideIcon;
   label: string;
-  onNavigate: () => void;
   to: AdminNavPath;
 }>): ReactElement {
   return (
     <li>
-      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates */}
-      <NavigationLink
-        to={to}
-        variant="side"
-        activeOptions={activeOptions}
-        title={label}
-        onClick={onNavigate}
-      >
+      <NavigationLink to={to} variant="side" activeOptions={activeOptions} title={label}>
         <span className={`flex items-center gap-2 ${collapsed ? "justify-center" : ""}`}>
           <Icon icon={icon} />
           {collapsed ? null : <span className="min-w-0 flex-1 truncate">{label}</span>}

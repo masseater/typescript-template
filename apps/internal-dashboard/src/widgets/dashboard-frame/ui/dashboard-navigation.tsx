@@ -7,10 +7,8 @@ import type { ReactElement } from "react";
 
 function DashboardNavigation({
   collapsed,
-  onNavigate,
 }: Readonly<{
   collapsed: boolean;
-  onNavigate: () => void;
 }>): ReactElement {
   const { permission } = useSessionUser();
   return (
@@ -35,7 +33,6 @@ function DashboardNavigation({
                   icon={item.icon}
                   label={item.label}
                   to={item.to}
-                  onNavigate={onNavigate}
                 />
               ))}
             </ul>

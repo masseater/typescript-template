@@ -67,11 +67,9 @@ function shownAuthor(row: {
   if (row.storedAuthorId !== null && row.authorName !== null) {
     return { id: row.storedAuthorId, name: row.authorName };
   }
-  if (row.withdrawnId !== null) {
-    return { name: withdrawnAuthorName, withdrawn: true };
-  }
-  // oxlint-disable-next-line unicorn/no-null -- a removed author is SQL null, and the summary keeps that null instead of inventing a name
-  return null;
+  return row.withdrawnId === null
+    ? null
+    : { name: withdrawnAuthorName, withdrawn: true };
 }
 
 function shownThread(row: {

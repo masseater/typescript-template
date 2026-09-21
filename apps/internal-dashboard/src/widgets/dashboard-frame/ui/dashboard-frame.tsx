@@ -43,7 +43,7 @@ function DashboardFrame({
             </>
           )}
         </div>
-        <DashboardNavigation collapsed={collapsed} onNavigate={closeNavigation} />
+        <DashboardNavigation collapsed={collapsed} />
         <div className="mt-auto border-t border-border p-2">
           <AccountMenu collapsed={collapsed} email={email} name={name} />
         </div>

@@ -6,12 +6,10 @@ function bytesOf(...parts: readonly (readonly number[] | Uint8Array)[]): Uint8Ar
 }
 
 function bigEndian16(value: number): number[] {
-  // oxlint-disable-next-line no-bitwise -- JPEG segment lengths and WebP feature flags are packed bit fields, so those values are written with bitwise operators
   return [(value >> 8) & 0xff, value & 0xff];
 }
 
 function bigEndian32(value: number): number[] {
-  // oxlint-disable-next-line no-bitwise -- JPEG segment lengths and WebP feature flags are packed bit fields, so those values are written with bitwise operators
   return [(value >>> 24) & 0xff, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff];
 }
 
@@ -61,7 +59,6 @@ function jpegMarkers(bytes: Uint8Array): number[] {
     if (marker === 0xd9) {
       break;
     }
-    // oxlint-disable-next-line no-bitwise -- JPEG segment lengths and WebP feature flags are packed bit fields, so those values are written with bitwise operators
     const length = ((bytes[position + 2] ?? 0) << 8) | (bytes[position + 3] ?? 0);
     position += 2 + length;
     if (marker === 0xda) {

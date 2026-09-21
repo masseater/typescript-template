@@ -22,7 +22,6 @@ function requireBoardSearch(raw: unknown): BoardSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys -- TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference
 const Route = createFileRoute("/_member/board/")({
   validateSearch: requireBoardSearch,
   loaderDeps: ({ search }: Readonly<{ search: BoardSearch }>) => ({ page: search.page ?? 1 }),

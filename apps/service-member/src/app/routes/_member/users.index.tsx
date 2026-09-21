@@ -15,7 +15,6 @@ function usersSearchOrEmpty(raw: unknown): UsersSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys -- TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference
 const Route = createFileRoute("/_member/users/")({
   beforeLoad: ({ search }) => {
     throw redirect({ replace: true, search: usersSearchOrEmpty(search), to: "/search" });

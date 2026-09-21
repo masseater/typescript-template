@@ -2,12 +2,12 @@ import { Effect, FileSystem, Path, PlatformError, Predicate, Result } from "effe
 
 import { failure } from "./failure.ts";
 import { isAlreadyExists, urlPath, withFileSystem } from "./platform.ts";
+import { modeAllowsGroupOrOther } from "./unix-permission-bits.ts";
 
 type FileLocation = Readonly<URL>;
 
 const privateFileMode = 0o600;
 const privateDirectoryMode = 0o700;
-const groupAndOtherPermissions = 0o077;
 const textEncoder = new TextEncoder();
 
 function isErrorCode(error: unknown, code: string): boolean {
@@ -25,8 +25,7 @@ const assertOwnerOnly = Effect.fn("assertOwnerOnly")(function* assertOwnerOnly(
 ) {
   const path = yield* urlPath(location);
   const entry = yield* withFileSystem((fs) => fs.stat(path));
-  // oxlint-disable-next-line no-bitwise -- group and other permission bits are masked out of the file mode to refuse a credentials file others can read
-  if ((entry.mode & groupAndOtherPermissions) !== 0) {
+  if (modeAllowsGroupOrOther(entry.mode)) {
     return yield* failure("credentials_permissions_invalid");
   }
   return entry;

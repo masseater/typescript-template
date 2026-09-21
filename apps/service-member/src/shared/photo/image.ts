@@ -123,7 +123,6 @@ function sanitizeJpeg(bytes: Uint8Array): Uint8Array<ArrayBuffer> | undefined {
     if (high === undefined || low === undefined) {
       return undefined;
     }
-    // oxlint-disable-next-line no-bitwise -- JPEG segment lengths and WebP feature flags are packed bit fields, so those values are written with bitwise operators
     const segmentEnd = lengthOffset + ((high << 8) | low);
     if (segmentEnd > bytes.byteLength || segmentEnd < position + jpegSegmentHeaderLength) {
       return undefined;
@@ -218,7 +217,6 @@ function withoutMetadataFlags(chunk: Uint8Array): Uint8Array {
   const copy = Uint8Array.from(chunk);
   const flags = copy[webpChunkHeaderLength];
   if (flags !== undefined) {
-    // oxlint-disable-next-line no-bitwise -- JPEG segment lengths and WebP feature flags are packed bit fields, so those values are written with bitwise operators
     copy[webpChunkHeaderLength] = flags & ~(webpExifFlag | webpXmpFlag);
   }
   return copy;

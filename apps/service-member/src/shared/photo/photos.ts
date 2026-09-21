@@ -55,12 +55,10 @@ const removePhoto = Effect.fn("removePhoto")(function* removePhoto(
   memberId: string,
   slot: PhotoSlot,
 ) {
-  // oxlint-disable-next-line unicorn/no-null -- the photo key column is nullable SQL, and null is the stored absence of a photo
   const previous = yield* setPhotoKey(memberId, slot, null);
   if (previous !== null) {
     yield* (yield* PhotoStore).remove([previous]);
   }
-  // oxlint-disable-next-line unicorn/no-null -- the photo key column is nullable SQL, and null is the stored absence of a photo
   return { slot, version: null } satisfies PhotoState;
 });
 

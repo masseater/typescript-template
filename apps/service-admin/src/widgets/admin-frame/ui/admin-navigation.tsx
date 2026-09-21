@@ -10,10 +10,8 @@ import type { ReactElement } from "react";
 
 function AdminNavigation({
   collapsed,
-  onNavigate,
 }: Readonly<{
   collapsed: boolean;
-  onNavigate: () => void;
 }>): ReactElement {
   const { permission } = useSessionUser();
   const pendingState = useAtomValue(pendingCountAtom);
@@ -42,7 +40,6 @@ function AdminNavigation({
                   icon={item.icon}
                   label={item.label}
                   to={item.to}
-                  onNavigate={onNavigate}
                 />
               ))}
             </ul>

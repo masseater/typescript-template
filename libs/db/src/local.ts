@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { mkdir, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
