@@ -22,7 +22,7 @@ import {
   PublishedAgreementQuery,
   PublishedAgreementView,
 } from "#shared/contracts/index.ts";
-import { withdrawInterviewHistoryConsent } from "#shared/interview/index.ts";
+import { withdrawInterviewHistoryConsent } from "#shared/interview/server.ts";
 
 import type { AgreementRequired } from "@repo/db";
 import type { AppServices } from "@repo/runtime";

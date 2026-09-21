@@ -2,16 +2,23 @@ import {
   UserNotFound,
   blockHides,
   containsKeyword,
+  findInterview,
   profileListed,
   profileVisibleTo,
   query,
   schema,
   viewerBlockedTarget,
 } from "@repo/db";
+import type { Database, DatabaseFailure } from "@repo/db";
 import { and, count, desc, eq, not } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
+import { baselineProfileLayout, interviewProfileLayout } from "#shared/profile-layout/default.ts";
+import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
+
+import type { SheetData } from "#shared/interview/sheet.ts";
+import type { ProfileLayoutData } from "#shared/profile-layout/schema.ts";
 
 const { follow, user } = schema;
 
@@ -23,6 +30,8 @@ type Member = Readonly<{
   name: string;
   photos: PhotoVersions;
   profile: string;
+  profileLayout: ProfileLayoutData;
+  sheet: SheetData;
   socialLinks: readonly string[];
 }>;
 
@@ -61,21 +70,46 @@ function photosOf({ companyPhotoKey, facePhotoKey }: PhotoKeyColumns): PhotoVers
   return { company: photoVersion(companyPhotoKey), face: photoVersion(facePhotoKey) };
 }
 
-function shown({
-  companyPhotoKey,
-  createdAt,
-  facePhotoKey,
-  ...member
-}: PhotoKeyColumns &
-  Readonly<{
-    createdAt: Readonly<Date>;
-    id: string;
-    name: string;
-    profile: string;
-    socialLinks: readonly string[];
-  }>): Member {
+const emptyPresentation = {
+  profileLayout: baselineProfileLayout,
+  sheet: {},
+} as const;
+
+function profilePresentation(
+  memberId: string,
+): Effect.Effect<
+  Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>,
+  DatabaseFailure,
+  Database
+> {
+  return Effect.gen(function* program() {
+    const interview = yield* findInterview(memberId);
+    if (interview?.savedSheet === null || interview?.savedSheet === undefined) {
+      return emptyPresentation;
+    }
+    const saved = readSavedSheet(interview.savedSheet);
+    return {
+      profileLayout: saved.layout ?? interviewProfileLayout,
+      sheet: saved.sheet,
+    };
+  });
+}
+
+function shown(
+  member: PhotoKeyColumns &
+    Readonly<{
+      createdAt: Readonly<Date>;
+      id: string;
+      name: string;
+      profile: string;
+      socialLinks: readonly string[];
+    }>,
+  presentation: Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>,
+): Member {
+  const { companyPhotoKey, createdAt, facePhotoKey, ...rest } = member;
   return {
-    ...member,
+    ...rest,
+    ...presentation,
     joined: createdAt.toISOString().slice(0, monthLength),
     photos: photosOf({ companyPhotoKey, facePhotoKey }),
   };
@@ -106,7 +140,7 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
   );
   if (hidden !== undefined) {
     return {
-      ...shown(hidden),
+      ...shown(hidden, emptyPresentation),
       blocked: true,
       following: false,
       photos: { company: null, face: null },
@@ -135,7 +169,7 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
     );
     following = row !== undefined;
   }
-  const base = shown(member);
+  const base = shown(member, yield* profilePresentation(memberId));
   if (following === undefined) {
     return base;
   }
@@ -164,7 +198,10 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(
   const [total] = yield* query((database) =>
     database.select({ count: count() }).from(user).where(listed),
   );
-  return { members: members.map((member) => shown(member)), total: total?.count ?? 0 };
+  const presented = yield* Effect.forEach(members, (member) =>
+    Effect.map(profilePresentation(member.id), (presentation) => shown(member, presentation)),
+  );
+  return { members: presented, total: total?.count ?? 0 };
 });
 
 const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {

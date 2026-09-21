@@ -11,6 +11,8 @@ import {
 import { logAt } from "@repo/observability";
 import { Clock, Effect, Option, Schema } from "effect";
 
+import { assembleProfileLayout } from "#shared/profile-layout/assembler.ts";
+import { writeSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { viewOf } from "./contracts.ts";
 import {
   accepts,
@@ -131,9 +133,10 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
 const finishSaving = Effect.fn("interview.finishSaving")(function* finishSaving(
   userId: string,
   version: number,
-  state: InterviewState,
-  savedSheet: InterviewState["sheet"],
+  state: Exclude<InterviewState, { readonly phase: "asking" }>,
 ) {
+  const layout = yield* assembleProfileLayout(state.sheet);
+  const savedSheet = yield* Effect.orDie(writeSavedSheet(state.sheet, layout));
   const accepted = yield* hasAcceptedLatestAgreement(userId, AGREEMENT_KIND.interview_history);
   const next = accepted ? save(state) : requestHistoryConsent(state);
   return yield* replace(userId, version, { savedSheet, state: next });
@@ -144,7 +147,7 @@ const saveInterview = Effect.fn("interview.save")(function* saveInterview(userId
   if (state.phase !== "summary") {
     return yield* new TurnRejected();
   }
-  return yield* finishSaving(userId, version, state, state.sheet);
+  return yield* finishSaving(userId, version, state);
 });
 
 const respondHistoryConsent = Effect.fn("interview.respondHistoryConsent")(

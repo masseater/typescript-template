@@ -4,6 +4,7 @@ import { blockMember, query, schema, setPhotoKey } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect } from "effect";
 
+import { baselineProfileLayout } from "#shared/profile-layout/default.ts";
 import { getMember, getProfile, listMembers, updateProfile } from "./members.ts";
 
 import type { ProfileVisibility } from "@repo/config";
@@ -79,6 +80,8 @@ it.effect("hides a profile from the person who was blocked, and redacts it for t
     const redacted = yield* getMember("viewer", "quiet");
     assert.strictEqual(redacted.blocked, true);
     assert.strictEqual(redacted.profile, "");
+    assert.deepStrictEqual(redacted.sheet, {});
+    assert.deepStrictEqual(redacted.profileLayout, baselineProfileLayout);
     const page = yield* listMembers("viewer", firstPage);
     assert.deepStrictEqual(
       page.members.map((member) => member.id),

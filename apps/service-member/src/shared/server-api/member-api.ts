@@ -32,15 +32,18 @@ import { trustApi } from "./trust-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
 
 import type { Stripe } from "#shared/billing/index.ts";
-import type { Interviewer } from "#shared/interview/index.ts";
+import type { Interviewer } from "#shared/interview/server.ts";
 import type { PhotoStore } from "#shared/photo/index.ts";
+import type { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 import type { OpsMail } from "./ops-mail.ts";
 
 const failures = { ...memberFailures, ...apiKeyWriteFailure, ...paidFailures };
 
-function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoStore | Stripe>) {
+function memberApi(
+  api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoStore | ProfileLayoutAssembler | Stripe>,
+) {
   return createApi(apiRoot)
     .use(accountApi(api))
     .use(contactApi(api))

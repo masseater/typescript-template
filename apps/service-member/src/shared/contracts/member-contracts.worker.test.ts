@@ -3,6 +3,7 @@ import { getSchemaShape } from "@repo/db/testing";
 import { Effect, Schema } from "effect";
 import { expect } from "vite-plus/test";
 
+import { baselineProfileLayout } from "#shared/profile-layout/default.ts";
 import {
   MemberList,
   MemberListQuery,
@@ -44,8 +45,10 @@ describe("member view", () => {
         name: "山田 花子",
         photos: { company: "1", face: "1" },
         profile: "はじめまして。",
+        profileLayout: baselineProfileLayout,
         role: "admin",
         searchable: false,
+        sheet: {},
         socialLinks: ["https://x.com/hanako"],
         twoFactorEnabled: true,
         visibility: "self",
@@ -56,6 +59,8 @@ describe("member view", () => {
         name: "山田 花子",
         photos: { company: "1", face: "1" },
         profile: "はじめまして。",
+        profileLayout: baselineProfileLayout,
+        sheet: {},
         socialLinks: ["https://x.com/hanako"],
       });
     }),
@@ -71,6 +76,8 @@ describe("member view", () => {
           name: "reader",
           photos: noPhotos,
           profile: "",
+          profileLayout: baselineProfileLayout,
+          sheet: {},
           socialLinks: [],
         }).pipe(Effect.flip);
         assert.strictEqual(failure._tag, "SchemaError");
@@ -133,7 +140,9 @@ describe("member list response", () => {
             name: "a",
             photos: noPhotos,
             profile: "",
+            profileLayout: baselineProfileLayout,
             role: "admin",
+            sheet: {},
             socialLinks: [],
           },
         ],
@@ -142,7 +151,16 @@ describe("member list response", () => {
       });
       assert.deepStrictEqual(encoded, {
         members: [
-          { id: "a", joined: "2026-09", name: "a", photos: noPhotos, profile: "", socialLinks: [] },
+          {
+            id: "a",
+            joined: "2026-09",
+            name: "a",
+            photos: noPhotos,
+            profile: "",
+            profileLayout: baselineProfileLayout,
+            sheet: {},
+            socialLinks: [],
+          },
         ],
         pageSize: 24,
         total: 1,
