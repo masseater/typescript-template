@@ -149,6 +149,27 @@ it.effect("asks again only for the kind whose accepted version was superseded", 
   }).pipe(Effect.provide(TestDatabase)),
 );
 
+it.effect("reports canPublish for a strong admin and refuses a member", () =>
+  Effect.gen(function* program() {
+    const sessionId = yield* adminSession("publisher");
+    assert.strictEqual((yield* listAgreementVersions(sessionId)).canPublish, true);
+    yield* addUser({ userId: "member" });
+    const memberSession = yield* addSession({ audience: APPLICATION.admin, userId: "member" });
+    const draft = yield* createAgreementDraft({
+      body: "draft",
+      kind: AGREEMENT_KIND.terms,
+      sessionId,
+      summary: undefined,
+      version: "terms-9",
+    });
+    const failure = yield* Effect.flip(
+      publishAgreementVersion({ id: draft.id, sessionId: memberSession }),
+    );
+    assert.strictEqual(failure._tag, "AdminStrongSessionRequired");
+    assert.strictEqual((yield* publishedAgreement(AGREEMENT_KIND.terms))?.version, "terms-1");
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
 it.effect("publishes once, records an audit event and refuses a second publication", () =>
   Effect.gen(function* program() {
     const sessionId = yield* adminSession("admin");
