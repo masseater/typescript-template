@@ -18,6 +18,7 @@ import {
   workspaceDirectories,
   workspaceNames,
 } from "./tasks.ts";
+import { devServerTests } from "./test-runtime.ts";
 import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob("../../../../.vite-hooks/pre-*", {
@@ -170,6 +171,49 @@ function strayTestTasks(): string[] {
 function unmatchedProjectNames(): string[] {
   return testProjectDirectories.filter(
     (directory) => !(workspaceNames[directory] ?? "").startsWith("@repo/"),
+  );
+}
+
+function commandTokens(command: string): string[] {
+  return command.match(/'[^']*'|\S+/gu) ?? [];
+}
+
+function selectsMergeBase(tokens: readonly string[]): boolean {
+  return (
+    tokens.includes("--passWithNoTests") &&
+    tokens.some(
+      (token, index) =>
+        (token === "--changed" && tokens[index + 1] === "origin/main") ||
+        token === "--changed=origin/main",
+    )
+  );
+}
+
+function withoutChangedSelection(tokens: readonly string[]): string[] {
+  return tokens.filter(
+    (token) =>
+      token !== "--changed" &&
+      token !== "origin/main" &&
+      token !== "--changed=origin/main" &&
+      token !== "--passWithNoTests",
+  );
+}
+
+function fullSuiteOnTheMergeQueue(directory: string): boolean {
+  const [full = ""] = commands(directory, "test:all");
+  const [selected = ""] = commands(directory, "test");
+  const fullTokens = commandTokens(full);
+  const selectedTokens = commandTokens(selected);
+  const pullRequest = reachable(directory, ["prepr"]);
+  const mergeQueue = reachable(directory, ["premerge"]);
+  return (
+    selectsMergeBase(selectedTokens) &&
+    !selectsMergeBase(fullTokens) &&
+    withoutChangedSelection(selectedTokens).join("\0") === fullTokens.join("\0") &&
+    pullRequest.includes("test") &&
+    !pullRequest.includes("test:all") &&
+    mergeQueue.includes("test:all") &&
+    !mergeQueue.includes("test")
   );
 }
 
@@ -372,14 +416,30 @@ describe("test ownership", () => {
 
   it("leaves the workspace projects out of the root test task", () => {
     expect.hasAssertions();
-    expect(commands(".", "test")).toStrictEqual([
-      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts' --changed origin/main --passWithNoTests",
-    ]);
-    expect(commands(".", "test:all")).toStrictEqual([
-      "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
-    ]);
-    expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
+    for (const name of ["test", "test:all"]) {
+      const tokens = commandTokens(commands(".", name)[0] ?? "");
+      expect(tokens).toContain("--project");
+      expect(tokens).toContain("--exclude");
+      expect(tokens.some((token) => token.includes("!@repo/*"))).toBe(true);
+      expect(tokens.some((token) => token.includes(devServerTests))).toBe(true);
+    }
+    const devServer = commandTokens(commands(".", "test:dev-server")[0] ?? "");
+    expect(devServer).toContain("--project");
+    expect(devServer.some((token) => token.includes("dev-server"))).toBe(true);
+    expect(devServer.some((token) => token === "--changed" || token.startsWith("--changed="))).toBe(
+      false,
+    );
     expect(unmatchedProjectNames()).toStrictEqual([]);
+  });
+
+  it("selects pull request tests from the merge base and runs the full suite in the merge queue", () => {
+    expect.hasAssertions();
+    const owners = configuredDirectories.filter(
+      (directory) =>
+        taskNames(directory).includes("test") && taskNames(directory).includes("test:all"),
+    );
+    expect(owners.length).toBeGreaterThan(0);
+    expect(owners.filter((directory) => !fullSuiteOnTheMergeQueue(directory))).toStrictEqual([]);
   });
 
   it("keeps every tools package with tests on a vitest project or pull request gate", () => {
