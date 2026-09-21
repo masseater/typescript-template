@@ -41,13 +41,13 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/auth-suite.ts",
+        "file": "../../libs/auth/src/auth-test-fixture.ts",
         "code": "TS18046",
         "message": "'member.instance.api' is of type 'unknown'.",
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/auth-suite.ts",
+        "file": "../../libs/auth/src/auth-test-fixture.ts",
         "code": "TS2345",
         "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
         "count": 2
@@ -59,13 +59,13 @@
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/mail-box.ts",
+        "file": "../../libs/auth/src/mail-fixture.ts",
         "code": "TS2307",
         "message": "Cannot find module '@msw/cloudflare' or its corresponding type declarations.",
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/mail-box.ts",
+        "file": "../../libs/auth/src/mail-fixture.ts",
         "code": "TS2345",
         "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
         "count": 1
@@ -101,13 +101,13 @@
         "count": 2
       },
       {
-        "file": "../../libs/auth/src/wiki-oauth.ts",
+        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
         "code": "TS6133",
         "message": "'AuthApps' is declared but its value is never read.",
         "count": 1
       },
       {
-        "file": "../../libs/auth/src/wiki-oauth.ts",
+        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
         "code": "TS6133",
         "message": "'decodeRedirect' is declared but its value is never read.",
         "count": 1
@@ -223,7 +223,7 @@
       {
         "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
         "code": "TS2307",
-        "message": "Cannot find module './wiki-oauth.ts' or its corresponding type declarations.",
+        "message": "Cannot find module './wiki-oauth-fixture.ts' or its corresponding type declarations.",
         "count": 1
       },
       {
@@ -450,12 +450,6 @@
         "file": "src/shared/server-api/flags-api.ts",
         "code": "TS2345",
         "message": "Argument of type '() => Effect<{ memberBoard: boolean; }, never, FeatureFlags>' is not assignable to parameter of type 'Handler<{ readonly memberBoard: boolean; }, never, Requirements | AppServices>'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS377004",
-        "message": "This Effect requires a service that is missing from the expected Effect context: `FeatureFlags`. effect(missingEffectContext)",
         "count": 1
       },
       {

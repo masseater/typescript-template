@@ -269,7 +269,6 @@ const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
 
 export {
   STATE_STORE_SOURCE,
-  decodeBody,
   endpoint,
   isUnreadable,
   readList,

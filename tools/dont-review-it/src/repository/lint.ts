@@ -196,11 +196,7 @@ const lintOptions = {
                 name: ["Ai", "DurableObjectState", "Request"],
                 package: "@cloudflare/workers-types",
               },
-              {
-                from: "package",
-                name: ["Column", "DrizzleD1Database", "SQLiteAsyncDatabase"],
-                package: "drizzle-orm",
-              },
+              { from: "package", name: ["Column", "DrizzleD1Database"], package: "drizzle-orm" },
               { from: "package", name: ["AnyElysia"], package: "elysia" },
               { from: "package", name: ["Plan", "ProgressEvent"], package: "alchemy" },
               {
@@ -266,25 +262,6 @@ const lintOptions = {
           LINT_SEVERITY.ERROR,
           { considerDefaultExhaustiveForUnions: true },
         ],
-      },
-    },
-    {
-      files: [
-        "infra/budget-monitor/**",
-        "infra/cloudflare/**",
-        "infra/local/**",
-        "libs/config/**",
-        "libs/db/src/local.ts",
-        "libs/db/src/missing-record-return.test.ts",
-        "libs/vite-config/**",
-        "tools/dev/**",
-        "tools/dont-review-it/src/configs/oxlint.ts",
-        "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
-        "tools/dont-review-it/src/repository/**",
-      ],
-      rules: {
-        "import/no-nodejs-modules": LINT_SEVERITY.OFF,
-        "node/no-process-env": LINT_SEVERITY.OFF,
       },
     },
     {

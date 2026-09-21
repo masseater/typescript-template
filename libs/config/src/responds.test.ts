@@ -1,8 +1,14 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { randomUUID } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { readdirSync, writeFileSync } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { mkdtemp, rm } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createServer, type Server } from "node:http";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { Effect } from "effect";
