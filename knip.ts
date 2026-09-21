@@ -218,6 +218,9 @@ const config = ({
         entry: productionOnly(...scripts["libs/db-local"]),
         project: ["src/**/*.ts!"],
       },
+      "libs/vite-config": {
+        entry: productionOnly("src/effect-typecheck.ts!"),
+      },
       "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
