@@ -685,12 +685,6 @@
         "count": 1
       },
       {
-        "file": "src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -772,12 +766,6 @@
         "file": "../auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -913,12 +901,6 @@
         "count": 1
       },
       {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
         "file": "../auth/src/request-hooks.ts",
         "code": "TS4111",
         "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
@@ -957,13 +939,7 @@
       {
         "file": "src/http-events.test.ts",
         "code": "TS2345",
-        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
-        "count": 1
-      },
-      {
-        "file": "src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
+        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly [x: string]: unknown; readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
         "count": 1
       }
     ],
@@ -986,12 +962,6 @@
         "file": "../../libs/auth/src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
         "count": 1
       },
       {
