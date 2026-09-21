@@ -58,11 +58,10 @@ function markup(locale: Locale, view: "header" | "rail" | "tabs"): string {
         ? createElement(MemberTabs, { memberBoard: true, profileId: member.id })
         : createElement(MemberTopBar, { user: member });
   return renderToStaticMarkup(
-    createElement(
-      RouterContextProvider,
-      { router },
-      view === "tabs" ? child : createElement(ToastProvider, null, child),
-    ),
+    createElement(RouterContextProvider, {
+      children: view === "tabs" ? child : createElement(ToastProvider, null, child),
+      router,
+    }),
   );
 }
 

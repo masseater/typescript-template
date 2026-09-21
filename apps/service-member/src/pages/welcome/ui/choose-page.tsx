@@ -20,7 +20,7 @@ function ChoosePage(): ReactElement {
   return (
     <ChooseView
       blocked={action.blocked}
-      error={action.error}
+      {...(action.error === undefined ? {} : { error: action.error })}
       onInterview={() => {
         choose("interview");
       }}
