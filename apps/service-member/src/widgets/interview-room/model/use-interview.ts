@@ -54,7 +54,8 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
     });
   };
   return {
-    busy: turnAction.pending || saveAction.pending || restartAction.pending || consentAction.pending,
+    busy:
+      turnAction.pending || saveAction.pending || restartAction.pending || consentAction.pending,
     consent: (accept: boolean) => {
       consentAction.run(async () => {
         const next = await respondHistoryConsent(accept);
