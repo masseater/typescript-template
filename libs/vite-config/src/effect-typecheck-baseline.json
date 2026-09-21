@@ -1335,14 +1335,6 @@
         "count": 1
       }
     ],
-    "libs/vite-config": [
-      {
-        "file": "src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      }
-    ],
     "tools/ai-native": [
       {
         "file": "../dont-review-it/src/repository/lint.ts",

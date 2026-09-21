@@ -174,18 +174,6 @@
     "approver": "the owner of the package that augments the Cloudflare workers env"
   },
   {
-    "path": "libs/vite-config/src/check-dev-isolation.test.ts",
-    "rule": "no-nodejs-modules",
-    "grounds": "this file runs in Node and calls a Node API that has no portable module",
-    "approver": "the owner of the package that crosses this platform boundary"
-  },
-  {
-    "path": "libs/vite-config/src/effect-typecheck.test.ts",
-    "rule": "no-nodejs-modules",
-    "grounds": "this file runs in Node and calls a Node API that has no portable module",
-    "approver": "the owner of the package that crosses this platform boundary"
-  },
-  {
     "path": "tools/dev/src/applications.ts",
     "rule": "no-null",
     "grounds": "a failed readiness probe is recorded as JSON null so the status event still carries the httpStatus field",
@@ -211,12 +199,6 @@
   },
   {
     "path": "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
-    "rule": "no-nodejs-modules",
-    "grounds": "this file runs in Node and calls a Node API that has no portable module",
-    "approver": "the owner of the package that crosses this platform boundary"
-  },
-  {
-    "path": "tools/dont-review-it/src/repository/check-effect-typecheck.ts",
     "rule": "no-nodejs-modules",
     "grounds": "this file runs in Node and calls a Node API that has no portable module",
     "approver": "the owner of the package that crosses this platform boundary"
