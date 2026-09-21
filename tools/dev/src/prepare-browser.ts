@@ -88,4 +88,4 @@ const program = Effect.gen(function* prepareBrowser() {
   );
 }).pipe(Effect.scoped, Effect.provide(layer));
 
-runCli(program, (cause) => causeRecord("local.browser_cli_prepare_failed", cause));
+runCli(program, (cause) => causeRecord("local.browser_cli_prepare_failed", { cause }));
