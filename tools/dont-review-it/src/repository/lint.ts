@@ -283,7 +283,9 @@ const lintOptions = {
         "libs/db/src/missing-record-return.test.ts",
         "libs/vite-config/**/*.test.ts",
         "tools/dev/**",
-        "tools/dont-review-it/**",
+        "tools/dont-review-it/src/configs/oxlint.ts",
+        "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
+        "tools/dont-review-it/src/repository/**",
       ],
       rules: {
         "import/no-nodejs-modules": LINT_SEVERITY.OFF,
