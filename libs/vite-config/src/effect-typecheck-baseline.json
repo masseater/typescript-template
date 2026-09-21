@@ -175,7 +175,7 @@
       {
         "file": "src/pages/flags/ui/flag-row.tsx",
         "code": "TS2339",
-        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
+        "message": "Property 'error' does not exist on type '{ readonly empty: \"empty\"; readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
         "count": 1
       },
       {
@@ -193,7 +193,7 @@
       {
         "file": "src/pages/flags/ui/flags-page.tsx",
         "code": "TS2339",
-        "message": "Property 'error' does not exist on type '{ readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
+        "message": "Property 'error' does not exist on type '{ readonly empty: \"empty\"; readonly failure: \"failure\"; readonly info: \"info\"; readonly pending: \"pending\"; readonly success: \"success\"; }'.",
         "count": 1
       },
       {
