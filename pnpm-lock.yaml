@@ -191,6 +191,9 @@ catalogs:
     '@inlang/paraglide-js':
       specifier: 2.25.4
       version: 2.25.4
+    '@mergifyio/vitest':
+      specifier: 0.3.7
+      version: 0.3.7
     '@msw/cloudflare':
       specifier: 0.0.1
       version: 0.0.1
@@ -368,6 +371,9 @@ importers:
       '@effect/tsgo':
         specifier: 0.45.0
         version: 0.45.0
+      '@mergifyio/vitest':
+        specifier: 'catalog:'
+        version: 0.3.7(vitest@4.1.11)
       '@repo/config':
         specifier: workspace:*
         version: link:libs/config
@@ -1872,6 +1878,9 @@ importers:
 
   tools/e2e:
     devDependencies:
+      '@mergifyio/vitest':
+        specifier: 'catalog:'
+        version: 0.3.7(vitest@4.1.11)
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
@@ -4081,6 +4090,66 @@ packages:
 
   '@mdx-js/mdx@3.1.1':
     resolution: {integrity: sha512-f6ZO2ifpwAQIpzGWaBQT2TXxPv6z3RBzQKpVftEWN78Vl/YweF1uwussDx8ECAXVtr3Rs89fKyG9YlzUs9DyGQ==}
+
+  '@mergifyio/ci-core@0.3.7':
+    resolution: {integrity: sha512-BzCq2nd1w7hD/BFqHBZjJR+Vl/KVmMhI2+O6a2QDkr/HDQnPnSbbfp5wmzjSCuJB5qraNF4tNxkpcGqgOqSiyQ==}
+    engines: {node: '>=22.0.0'}
+
+  '@mergifyio/ci-native-darwin-arm64@0.3.7':
+    resolution: {integrity: sha512-q4bgKj42isii/D39ZO610nZFPIGETH5APGaMGqnUpRQX/AZUptLnDEkwkpKImvakgg3cA4CTy30TQD1aBeR+dg==}
+    engines: {node: '>=22.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@mergifyio/ci-native-darwin-x64@0.3.7':
+    resolution: {integrity: sha512-oOy9GFL4KUneHuki6UgBn/DQUT6o2fRHe7nAN7yfvxRT2fXvfUjtQOCJOixxwC1RSI3O+hspBQkdurJluN8qHg==}
+    engines: {node: '>=22.0.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@mergifyio/ci-native-linux-arm64-gnu@0.3.7':
+    resolution: {integrity: sha512-BNROhqe7IfY/t/mABnmdVVQMwHBSaxEvLbp/isxkAey7SrRXvE23e9Ci2Px1NYoSRAw00r4c0IkDOFA40VqBoA==}
+    engines: {node: '>=22.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@mergifyio/ci-native-linux-arm64-musl@0.3.7':
+    resolution: {integrity: sha512-7qeXB15bhOHjDTtF5se4CiUHPsK0JJBI5CN6l5C+1wvZLpPI2wb6B5vhq4ZQoQxS46RmY5DhAKNqVOjWsey77A==}
+    engines: {node: '>=22.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@mergifyio/ci-native-linux-x64-gnu@0.3.7':
+    resolution: {integrity: sha512-AbDmHuYOjNfIp9mV478jCg83/PRhwvMz3kQ2Sm+VfOVzVyd6JAwXC4ujpHhfXcYdTDSlcB54YCk31GmkgEx/xg==}
+    engines: {node: '>=22.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@mergifyio/ci-native-linux-x64-musl@0.3.7':
+    resolution: {integrity: sha512-LmsFUU97S21tny1DJbEFQg9Qt6CZCwePNPgLaru/lqhBLdkMgIath9BgzC4I1s4WO2orUuWo0ZvkKowfzNCylA==}
+    engines: {node: '>=22.0.0'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@mergifyio/ci-native-win32-x64-msvc@0.3.7':
+    resolution: {integrity: sha512-IYiF5Sg71qDS1dQ5VZmi297eW5ZzDPNHhbb9zZHMPM7+QirIKNToXRYNUHT6lITieUABErO7o92IfKIcxRVF2g==}
+    engines: {node: '>=22.0.0'}
+    cpu: [x64]
+    os: [win32]
+
+  '@mergifyio/ci-native@0.3.7':
+    resolution: {integrity: sha512-nUEUAOacedEiKwHvNzoKgcUXTAWxj+JUCsmNrc91oERS67BAr728Ajg4r+aM+vxseCTbPOPLQ91YvDcJBctjGw==}
+    engines: {node: '>=22.0.0'}
+
+  '@mergifyio/vitest@0.3.7':
+    resolution: {integrity: sha512-q27x/Cfm8OuhFwEK12TWUjibeMIUpjkl9RZodUdWjLxs974QSZQwObGyfOy2qv7iircyckmpTLjW2mcybhmlYQ==}
+    engines: {node: '>=22.0.0'}
+    peerDependencies:
+      vitest: 4.1.11
 
   '@mermaid-js/parser@2.0.0':
     resolution: {integrity: sha512-K8BeapFUfrfxbRAUQAG5oBOCwo1+bNWzaVnPxTCutkfrTBn6T/j91FIhqxWJ32SUeQ9T3iy1zcmPZ5ROZEvDrg==}
@@ -14362,6 +14431,46 @@ snapshots:
       vfile: 6.0.3
     transitivePeerDependencies:
       - supports-color
+
+  '@mergifyio/ci-core@0.3.7':
+    dependencies:
+      '@mergifyio/ci-native': 0.3.7
+
+  '@mergifyio/ci-native-darwin-arm64@0.3.7':
+    optional: true
+
+  '@mergifyio/ci-native-darwin-x64@0.3.7':
+    optional: true
+
+  '@mergifyio/ci-native-linux-arm64-gnu@0.3.7':
+    optional: true
+
+  '@mergifyio/ci-native-linux-arm64-musl@0.3.7':
+    optional: true
+
+  '@mergifyio/ci-native-linux-x64-gnu@0.3.7':
+    optional: true
+
+  '@mergifyio/ci-native-linux-x64-musl@0.3.7':
+    optional: true
+
+  '@mergifyio/ci-native-win32-x64-msvc@0.3.7':
+    optional: true
+
+  '@mergifyio/ci-native@0.3.7':
+    optionalDependencies:
+      '@mergifyio/ci-native-darwin-arm64': 0.3.7
+      '@mergifyio/ci-native-darwin-x64': 0.3.7
+      '@mergifyio/ci-native-linux-arm64-gnu': 0.3.7
+      '@mergifyio/ci-native-linux-arm64-musl': 0.3.7
+      '@mergifyio/ci-native-linux-x64-gnu': 0.3.7
+      '@mergifyio/ci-native-linux-x64-musl': 0.3.7
+      '@mergifyio/ci-native-win32-x64-msvc': 0.3.7
+
+  '@mergifyio/vitest@0.3.7(vitest@4.1.11)':
+    dependencies:
+      '@mergifyio/ci-core': 0.3.7
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@4.1.11)(@vitest/browser-preview@4.1.11)(@vitest/coverage-v8@4.1.11)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
 
   '@mermaid-js/parser@2.0.0':
     dependencies:

@@ -166,7 +166,7 @@ const config = ({
     ignore: productionOnly("src/app/routeTree.gen.ts", ".paraglide/**"),
   };
   return {
-    ignoreDependencies: ["vite", "vitest"],
+    ignoreDependencies: ["vite"],
     ignoreIssues: {
       "libs/ui/storybook/preview.tsx": ["unlisted"],
     },

@@ -60,6 +60,8 @@ jobs:
             vite-task-${{ runner.os }}-${{ runner.arch }}-
       - run: vp check
       - run: vp run -r prepr
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:
@@ -77,6 +79,8 @@ jobs:
       - *beads
       - *vite-task-cache
       - run: vp run -r premerge
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
 
   e2e:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
@@ -88,6 +92,8 @@ jobs:
       - *setup
       - *vite-task-cache
       - run: vp run --filter @repo/e2e test:e2e
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
 
   cache:
     if: github.event_name == 'push'
@@ -100,6 +106,8 @@ jobs:
       - *beads
       - run: vp check
       - run: vp run -r prepr
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache

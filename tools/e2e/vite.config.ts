@@ -1,3 +1,4 @@
+import { MergifyReporter } from "@mergifyio/vitest";
 import { effectDiagnostics, lifecycle } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -27,6 +28,7 @@ export default defineConfig({
     maxWorkers: 1,
     mockReset: true,
     pool: "forks",
+    reporters: ["default", new MergifyReporter()],
     restoreMocks: true,
     testTimeout: 600_000,
   },
