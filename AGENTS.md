@@ -1,8 +1,10 @@
 # AGENTS.md
 
-- viteplus を使用している。pnpm はパッケージマネージャーとしては使用していませんが、モノレポ管理ツールとして使用している。パッケージをインストール時は `vp install` をすること。
-- 汎用的に使用できるテンプレートとして構築すること。特定の企業や事情に基づく記述をコミットログレベルで混入させないこと。
-- 最新 main の取込は例外なく必須。作業中のブランチ・開いている PR・MQ 待ち・監視中の CONFLICTING/DIRTY PR は、着手時・push 前・CI 失敗 / DIRTY / CONFLICTING / behind trunk を検知したたびに `git fetch origin main` のうえ最新 main を取り込むこと（`mergify stack sync` または trunk への rebase）。behind のまま push しない。コンフリクトを残したまま `ready-to-merge` やキューに載せない。並行して触っている PR が複数ある場合も、それぞれ同じルールで同期すること。
+- viteplus を使用している。pnpm はパッケージマネージャーとしては使用していないが、モノレポ管理ツールとして使用している。パッケージをインストール時は `vp install` をすること。
+- 汎用的に使用できるテンプレートとして構築すること。特定の企業や事情に基づく記述をコミットログレベルでも混入させないこと。
+- 基本的に複数のブランチによる並行開発が行われる。stacked prの機能を用いて効率的に進めること。
+- 最新 main の取込は例外なく必須。作業中のブランチ・開いている PR・MQ 待ち・監視中の CONFLICTING/DIRTY PR は、着手時・push 前・CI 失敗 / DIRTY / CONFLICTING / behind trunk を検知したたびに `git fetch origin main` のうえ最新 main を取り込むこと（`mergify stack sync` または trunk への rebase）。behind のまま push しない。
+- コンフリクトを残したまま `ready-to-merge` やキューに載せない。並行して触っている PR が複数ある場合も、それぞれ同じルールで同期すること。
 - merge 前の CI で全件テストされるので、ローカルで全件テストする必要はない。むしろ開発が低速になる要因なので全件テストの実行は原則禁止。
 - `apps/internal-dashboard/content/docs` に各種ドキュメントがある。適宜参照する。
 - アプリケーションコードで表現できない領域について触れる（外部サービスの設定をいじる、デプロイリソースを追加するなど）場合は、まず IaC のみでできないかを徹底的に調査する。
@@ -22,7 +24,7 @@
 
 ## 技術スタック
 
-- 記載がない場合は都度検討すること。
+記載がない場合は都度検討すること。
 
 - viteplus
 - cloudflare
@@ -34,7 +36,7 @@
 
 ## Skills
 
-- 以下の Skills を積極的に使用すること。導入されていない場合は導入すること。ユーザーに許可を取る必要はない。
+以下の Skills を積極的に使用すること。導入されていない場合は導入すること。ユーザーに許可を取る必要はない。
 
 - tanstack start https://github.com/tanstack-skills/tanstack-skills/blob/main/plugins/tanstack-start/skills/tanstack-start/SKILL.md
 - effect-ts https://github.com/Effect-TS/skills

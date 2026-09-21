@@ -1,9 +1,6 @@
 {
   "name": "@repo/vite-config",
   "private": true,
-  "bin": {
-    "check-effect-typecheck": "./src/effect-typecheck.ts"
-  },
   "type": "module",
   "exports": {
     ".": "./src/vite.ts",

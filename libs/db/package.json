@@ -10,9 +10,6 @@
     "./migrations": "./src/remote-operations.ts",
     "./local": "./src/local.ts"
   },
-  "scripts": {
-    "db:generate": "drizzle-kit generate"
-  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "better-auth": "catalog:",

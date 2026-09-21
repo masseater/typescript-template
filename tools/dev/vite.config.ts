@@ -23,11 +23,8 @@ export default defineConfig({
       stop: { cache: false, command: "./src/cli.ts stop" },
       storybook: { cache: false, command: "./src/cli.ts storybook" },
       ...lifecycle({
-        precommit: [],
         premerge: ["check:exported"],
         prepush: ["check:effect"],
-        prepr: [],
-        prerelease: [],
       }),
     },
   },
