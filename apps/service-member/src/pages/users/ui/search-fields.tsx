@@ -1,13 +1,13 @@
 import { Button, Field } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
+import { useSearchDraft } from "#pages/users/model/search-draft.ts";
 import { maximumKeywordLength } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 
 function SearchFields({ keyword }: Readonly<{ keyword: string }>): ReactElement {
-  const [draft, setDraft] = useState(keyword);
+  const [draft, setDraft] = useSearchDraft(keyword);
   const navigate = useNavigate();
   function search(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();

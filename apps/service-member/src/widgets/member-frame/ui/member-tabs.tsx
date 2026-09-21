@@ -3,8 +3,8 @@ import { MemberNavItemLink } from "./member-nav-item.tsx";
 
 import type { ReactElement } from "react";
 
-function MemberTabs(): ReactElement {
-  const items = memberNavItems(memberHasPaidPlan);
+function MemberTabs({ memberBoard }: Readonly<{ memberBoard: boolean }>): ReactElement {
+  const items = memberNavItems(memberHasPaidPlan, memberBoard);
   return (
     <nav
       aria-label="メイン"

@@ -42,7 +42,7 @@ const discard = Effect.fn("interview.discard")(function* discard(userId: string,
 
 const current = Effect.fn("interview.current")(function* current(userId: string) {
   const record = yield* findInterview(userId);
-  if (record === null) {
+  if (record === undefined) {
     const state = begin();
     yield* startInterview(userId, yield* Effect.orDie(encodeState(state)));
     return { state, version: 0 };

@@ -79,6 +79,16 @@ function tokenValue(name: string, resource: string): string {
 }
 
 function applicationResource(app: Application, release: string): ResourceInventory {
+  const flagshipBindings = [
+    plainText(appEnvKey.flagshipAccountId, accountId),
+    `FLAGS:flagship:appId=${stackName("flagship")}.App.appId`,
+    ...(app === APPLICATION.wiki
+      ? [
+          tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
+          `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
+        ]
+      : []),
+  ];
   return {
     adopt: false,
     bindings: [
@@ -88,6 +98,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText(appEnvKey.emailFrom, mailFrom),
+      ...flagshipBindings,
       plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
@@ -254,6 +265,7 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
   }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),
+    FlagshipWrite: accountToken("flagship-write", "Flagship Write"),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
   }),
   zone: declaredStack("zone", {
@@ -263,7 +275,13 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
 };
 
 const expectedStack = Effect.fn("expectedStack")(function* expectedStack(stack: StackName) {
-  return isApplication(stack) ? yield* applicationStack(stack) : staticExpected[stack];
+  if (isApplication(stack)) {
+    return yield* applicationStack(stack);
+  }
+  if (stack === "flagship") {
+    return yield* compileStack(stack);
+  }
+  return staticExpected[stack];
 });
 
 applyVerificationEnvironment();

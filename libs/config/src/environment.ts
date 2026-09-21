@@ -3,7 +3,7 @@ import { Effect, Predicate, Schema } from "effect";
 import { loopbackHosts } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
 
-import type { Ai, D1Database, SendEmail } from "@cloudflare/workers-types";
+import type { Ai, D1Database, Flagship, SendEmail } from "@cloudflare/workers-types";
 
 type AssetFetcher = {
   readonly fetch: (request: Request) => Promise<Response>;
@@ -36,6 +36,9 @@ const appEnvKey = {
   appRelease: "APP_RELEASE",
   authSecret: "AUTH_SECRET",
   emailFrom: "EMAIL_FROM",
+  flagshipAccountId: "FLAGSHIP_ACCOUNT_ID",
+  flagshipApiToken: "FLAGSHIP_API_TOKEN",
+  flagshipAppId: "FLAGSHIP_APP_ID",
   mailpitUrl: "MAILPIT_URL",
   opsEmail: "OPS_EMAIL",
   otlpAuthorization: "OTLP_AUTHORIZATION",
@@ -62,6 +65,9 @@ const Scalars = Schema.Struct({
   [appEnvKey.appRelease]: withRelease,
   [appEnvKey.authSecret]: AuthSecret,
   [appEnvKey.emailFrom]: Email,
+  [appEnvKey.flagshipAccountId]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.flagshipAppId]: Schema.optionalKey(NonEmpty),
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
   [appEnvKey.opsEmail]: Email,
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
@@ -70,10 +76,18 @@ const Scalars = Schema.Struct({
 });
 
 const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);
+const FlagshipBinding = bindingWith<Flagship>("Flagship", [
+  "getBooleanValue",
+  "getStringValue",
+  "getNumberValue",
+  "getObjectValue",
+]);
+
 const Bindings = Schema.Struct({
   ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
   DB: bindingWith<D1Database>("D1Database", ["prepare", "batch"]),
   EMAIL: Schema.optionalKey(EmailBinding),
+  FLAGS: Schema.optionalKey(FlagshipBinding),
 });
 
 const AiBindings = Schema.Struct({
@@ -151,13 +165,6 @@ const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   return AI;
 });
 
-const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(input: unknown) {
-  const config = yield* readConfig(input);
-  return { ...config, AI: yield* readAi(input) };
-});
-
-type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
-
 export {
   AuthSecret,
   Email,
@@ -169,6 +176,5 @@ export {
   readAi,
   readConfig,
   readEnvironment,
-  readWikiConfig,
 };
-export type { AppConfig, AssetFetcher, WikiConfig };
+export type { AppConfig, AssetFetcher };

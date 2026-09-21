@@ -18,6 +18,7 @@ const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.me
   "./database.ts",
   "./email.ts",
   "./error-monitor.ts",
+  "./flagship.ts",
   "./health-monitor.ts",
   "./internal-dashboard.ts",
   "./observability.ts",
@@ -48,6 +49,11 @@ describe("alchemy stacks", () => {
     expect.hasAssertions();
     expect(violationsWhenLast(onboardingStack)).toStrictEqual([...sendingStacks].toSorted());
     expect(violationsWhenLast("database")).toStrictEqual([
+      "internal-dashboard",
+      "service-admin",
+      "service-member",
+    ]);
+    expect(violationsWhenLast("flagship")).toStrictEqual([
       "internal-dashboard",
       "service-admin",
       "service-member",

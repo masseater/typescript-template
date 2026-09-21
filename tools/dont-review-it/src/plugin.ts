@@ -24,11 +24,13 @@ import { createNoClassAsMutableCell } from "./lint/oxlint/rules/mutation-and-fai
 import { noDiscardedFailure } from "./lint/oxlint/rules/mutation-and-failure/no-discarded-failure--receive-and-surface-it.ts";
 import { noEmptyCatch } from "./lint/oxlint/rules/mutation-and-failure/no-empty-catch--throw-or-handle.ts";
 import { noFloatingPromise } from "./lint/oxlint/rules/mutation-and-failure/no-floating-promise--await-the-result.ts";
+import { noHandRolledServerRead } from "./lint/oxlint/rules/mutation-and-failure/no-hand-rolled-server-read--use-tanstack-query.ts";
 import { noLoggedAndContinuedFailure } from "./lint/oxlint/rules/mutation-and-failure/no-logged-and-continued-failure--stop-or-recover.ts";
 import { noPromiseChain } from "./lint/oxlint/rules/mutation-and-failure/no-promise-chain--use-async-await.ts";
 import { noReassign } from "./lint/oxlint/rules/mutation-and-failure/no-reassign--use-spread-or-iife.ts";
 import { noReceiverMutation } from "./lint/oxlint/rules/mutation-and-failure/no-receiver-mutation--derive-new-value.ts";
 import { noSilentCatch } from "./lint/oxlint/rules/mutation-and-failure/no-silent-catch--rethrow-or-handle.ts";
+import { requireQueryOptionsInApiSegment } from "./lint/oxlint/rules/mutation-and-failure/require-query-options-in-api-segment--move-query-options-to-api.ts";
 import { noBarrelImport } from "./lint/oxlint/rules/no-barrel-import--import-from-the-owning-module.ts";
 import { noBarrelModule } from "./lint/oxlint/rules/no-barrel-module--declare-in-the-owning-module.ts";
 import { noMixedPackageSurface } from "./lint/oxlint/rules/no-mixed-package-surface--declare-one-surface.ts";
@@ -208,6 +210,7 @@ const plugin: Plugin = {
     [noFixtureOrderingAlias.name]: noFixtureOrderingAlias,
     [noFloatingPromise.name]: noFloatingPromise,
     [noHandmadeStandardIoDouble.name]: noHandmadeStandardIoDouble,
+    [noHandRolledServerRead.name]: noHandRolledServerRead,
     [noHardcodedEndpoint.name]: noHardcodedEndpoint,
     [noHardcodedProviderId.name]: noHardcodedProviderId,
     [noIdentityWrapper.name]: noIdentityWrapper,
@@ -258,6 +261,7 @@ const plugin: Plugin = {
     [requireCatalogEntry.name]: requireCatalogEntry,
     [requireItOnlyExpect.name]: requireItOnlyExpect,
     [requireMockTypeParameter.name]: requireMockTypeParameter,
+    [requireQueryOptionsInApiSegment.name]: requireQueryOptionsInApiSegment,
     [requireReExportOnlyFiles.name]: requireReExportOnlyFiles,
     [requireRegisteredFile.name]: requireRegisteredFile,
     [requireSpecDirectoryOutsideCoverage.name]: requireSpecDirectoryOutsideCoverage,

@@ -1,11 +1,13 @@
-import { CheckboxField, FormColumn, Page, StatusMessage } from "@repo/ui";
-import { useState } from "react";
+import { CheckboxField, FormColumn, Page, StatusMessage, localState } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
+const useAssistReplies = localState(false);
+const useShareUsage = localState(false);
+
 function AiPage(): ReactElement {
-  const [assistReplies, setAssistReplies] = useState(false);
-  const [shareUsage, setShareUsage] = useState(false);
+  const [assistReplies, setAssistReplies] = useAssistReplies();
+  const [shareUsage, setShareUsage] = useShareUsage();
   return (
     <Page title="AI と API">
       <StatusMessage>AI と API の設定はまだありません。既定は許可しない側です。</StatusMessage>

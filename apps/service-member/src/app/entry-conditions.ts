@@ -2,6 +2,7 @@ import { loginPath } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 
 import { loadSession } from "#entities/session/index.ts";
+import { loadMemberFlags } from "#pages/flags/index.ts";
 import { loadOnboardingStep } from "#pages/welcome/index.ts";
 
 import type { Session } from "#entities/session/index.ts";
@@ -26,7 +27,10 @@ async function enterPublicFrame(pathname: string): Promise<void> {
   }
 }
 
-async function enterMemberFrame(href: string, pathname: string): Promise<{ session: Session }> {
+async function enterMemberFrame(
+  href: string,
+  pathname: string,
+): Promise<{ memberBoard: boolean; session: Session }> {
   const session = await loadSession();
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
@@ -38,7 +42,8 @@ async function enterMemberFrame(href: string, pathname: string): Promise<{ sessi
   if (pathname.startsWith("/welcome")) {
     throw redirect({ to: "/home" });
   }
-  return { session };
+  const memberBoard = await loadMemberFlags();
+  return { memberBoard, session };
 }
 
 async function enterWelcomeFrame(

@@ -15,7 +15,14 @@ import {
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { Predicate } from "effect";
 
-import { deny, enrollmentPaths, isStrongMethod, sessionIsLive } from "./policy.ts";
+import {
+  deny,
+  enrollmentPaths,
+  isRecentlyStrong,
+  isStrongMethod,
+  sessionIsLive,
+} from "./policy.ts";
+import { emailChangeTarget } from "./verification-token.ts";
 
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
@@ -23,6 +30,8 @@ import type { Run } from "./runner.ts";
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 type SessionRecord = NonNullable<Awaited<ReturnType<typeof runSessionLookup>>>;
 
+const emailChangePath = "/change-email";
+const emailVerificationPath = "/verify-email";
 const sessionRevokingPaths = new Set([
   "/change-password",
   "/two-factor/disable",
@@ -47,13 +56,13 @@ const runSessionLookup = async function runSessionLookup({ ctx, run }: HookScope
   if (typeof token !== "string" || token === "") {
     return null;
   }
-  return run(lookupSessionByToken(token));
+  return (await run(lookupSessionByToken(token))) ?? null;
 };
 
 const currentSessionOf = async function currentSessionOf(scope: HookScope) {
   const { ctx, run } = scope;
   if (ctx.context.newSession) {
-    return run(lookupSessionByToken(ctx.context.newSession.session.token));
+    return (await run(lookupSessionByToken(ctx.context.newSession.session.token))) ?? null;
   }
   return runSessionLookup(scope);
 };
@@ -225,6 +234,9 @@ const enforceSessionPolicy = function enforceSessionPolicy(
   if (!sessionIsLive(current, audience)) {
     deny("SESSION_INVALID");
   }
+  if (ctx.path === emailChangePath && !isRecentlyStrong(current.session)) {
+    deny("STRONG_AUTH_REQUIRED");
+  }
   const input = {
     audience,
     path: ctx.path,
@@ -236,10 +248,37 @@ const enforceSessionPolicy = function enforceSessionPolicy(
   return enforceFactorChanges(input, run);
 };
 
-const createRequestHooks = function createRequestHooks(
-  run: Run,
-  audience: Application,
-): RequestHooks {
+const confirmsEmailChange = function confirmsEmailChange(
+  ctx: Readonly<Pick<HookContext, "path" | "query">>,
+): boolean {
+  const query: unknown = ctx.query;
+  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
+  return (
+    ctx.path === emailVerificationPath &&
+    typeof token === "string" &&
+    emailChangeTarget(token) !== undefined
+  );
+};
+
+const notifyEmailChange = async function notifyEmailChange(
+  scope: HookScope,
+  onEmailChangeRequested: (email: string) => Promise<void>,
+): Promise<void> {
+  const current = await currentSessionOf(scope);
+  if (current && sessionIsLive(current, scope.audience)) {
+    await onEmailChangeRequested(current.user.email);
+  }
+};
+
+const createRequestHooks = function createRequestHooks({
+  audience,
+  onEmailChangeRequested,
+  run,
+}: {
+  readonly audience: Application;
+  readonly onEmailChangeRequested: (email: string) => Promise<void>;
+  readonly run: Run;
+}): RequestHooks {
   return {
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.context.returned instanceof APIError) {
@@ -252,6 +291,9 @@ const createRequestHooks = function createRequestHooks(
       if (sessionRevokingPaths.has(ctx.path)) {
         await revokeSessionsAfterFactorChange(scope);
       }
+      if (ctx.path === emailChangePath) {
+        await notifyEmailChange(scope, onEmailChangeRequested);
+      }
     }),
     before: createAuthMiddleware(async (ctx) => {
       rejectUnsafeFields(ctx);
@@ -261,6 +303,8 @@ const createRequestHooks = function createRequestHooks(
       await verifyChallengeAudience(scope, present);
       if (present) {
         await enforceSessionPolicy(scope, current);
+      } else if (confirmsEmailChange(ctx)) {
+        deny("SESSION_REQUIRED");
       }
     }),
   };
