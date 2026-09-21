@@ -1,0 +1,7 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "install": "mise trust mise.toml && mise install && vp install",
+  "start": "vp run --filter @repo/infra-cloudflare materialize:env"
+}

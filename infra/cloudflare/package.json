@@ -7,6 +7,7 @@
     "repo-cloudflare-check-account": "./src/check-account.ts",
     "repo-cloudflare-check-stacks": "./src/check-stacks.ts",
     "repo-cloudflare-database": "./src/database-command.ts",
+    "repo-cloudflare-materialize-env": "./src/materialize-env.ts",
     "repo-cloudflare-prepare-ci-env": "./src/prepare-ci-env.ts",
     "repo-cloudflare-probe-origins": "./src/verify-origins.ts"
   },

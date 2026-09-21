@@ -126,6 +126,7 @@ const scripts = {
     "src/check-account.ts!",
     "src/bootstrap-state.ts!",
     "src/database-command.ts!",
+    "src/materialize-env.ts!",
     "src/prepare-ci-env.ts!",
     "src/verify-origins.ts!",
   ],

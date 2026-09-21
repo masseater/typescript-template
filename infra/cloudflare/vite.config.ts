@@ -23,6 +23,7 @@ export default defineConfig({
         command: "./src/cli.ts deploy all",
         dependsOn: [...stackBuilds, "verify:account"],
       },
+      "materialize:env": { cache: false, command: "./src/materialize-env.ts" },
       "prepare:ci-env": { cache: false, command: "./src/prepare-ci-env.ts" },
       preview: {
         cache: false,

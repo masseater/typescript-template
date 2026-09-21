@@ -45,6 +45,7 @@ function presentRetiredOrigins(
 
 const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecretsFile(
   environment: Readonly<Record<string, string | undefined>>,
+  destination?: string,
 ) {
   const required = deploymentKeys.map((key) => {
     const value = envValue(key, environment);
@@ -76,9 +77,11 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
       return value === undefined ? [] : [dotenvLine(key, value)];
     }),
   ];
-  const root = environment["RUNNER_TEMP"] ?? tmpdir();
-  const directory = path.join(root, "template-cloudflare");
-  const filename = path.join(directory, "cloudflare.env");
+  const filename =
+    destination === undefined || destination === ""
+      ? path.join(environment["RUNNER_TEMP"] ?? tmpdir(), "template-cloudflare", "cloudflare.env")
+      : destination;
+  const directory = path.dirname(filename);
   yield* Effect.tryPromise({
     catch: () => new PrepareCiEnvFailure({ code: "ci_env_unwritable", keys: [] }),
     try: async () => {
