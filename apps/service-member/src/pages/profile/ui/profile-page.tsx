@@ -1,32 +1,113 @@
-import { ButtonLink, formatWarekiMonth } from "@repo/ui";
+import { Button, ButtonLink, localState, useAction } from "@repo/ui";
+import { useRouter } from "@tanstack/react-router";
 
-import { MemberPage } from "#widgets/member-page/index.ts";
-import { Biography } from "./biography.tsx";
+import { followMember, unfollowMember } from "#pages/profile/api/follow.ts";
+import { blockMember, unblockMember } from "#shared/api/index.ts";
+import { ProfileLayoutRenderer } from "#shared/profile-layout/index.ts";
 import { ProfileBody } from "./profile-body.tsx";
 import { ProfileShare } from "./profile-share.tsx";
 
 import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
 
+const useFollowingOverride = localState<boolean | undefined>(undefined);
+const useBlockedOverride = localState<boolean | undefined>(undefined);
+
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
+  const router = useRouter();
+  const followAction = useAction();
+  const blockAction = useAction();
+  const [followingOverride, setFollowingOverride] = useFollowingOverride();
+  const [blockedOverride, setBlockedOverride] = useBlockedOverride();
+  const following = followingOverride ?? member.following ?? false;
+  const blocked = blockedOverride ?? member.blocked ?? false;
+
+  const toggleFollow = (): void => {
+    followAction.run(async () => {
+      if (following) {
+        await unfollowMember(member.id);
+        setFollowingOverride(false);
+      } else {
+        await followMember(member.id);
+        setFollowingOverride(true);
+      }
+      await router.invalidate();
+    });
+  };
+
+  const toggleBlock = (): void => {
+    blockAction.run(async () => {
+      if (blocked) {
+        await unblockMember(member.id);
+        setBlockedOverride(false);
+      } else {
+        await blockMember(member.id);
+        setBlockedOverride(true);
+        setFollowingOverride(false);
+      }
+      await router.invalidate();
+    });
+  };
+
+  const actions = own ? (
+    <>
+      <ButtonLink to="/settings/profile">プロフィールを編集</ButtonLink>
+      <ProfileShare memberId={member.id} privateProfile={false} />
+    </>
+  ) : blocked ? (
+    <>
+      <Button
+        disabled={blockAction.blocked}
+        onClick={toggleBlock}
+        type="button"
+        variant="secondary"
+      >
+        ブロックを解除
+      </Button>
+      {blockAction.error !== undefined && (
+        <p className="text-sm text-destructive">{blockAction.error}</p>
+      )}
+    </>
+  ) : (
+    <>
+      <div className="flex flex-wrap gap-3">
+        <Button
+          disabled={followAction.blocked}
+          onClick={toggleFollow}
+          type="button"
+          variant="secondary"
+        >
+          {following ? "フォロー中" : "フォロー"}
+        </Button>
+        <ButtonLink to="/messages/new" search={{ peer: member.id }} variant="secondary">
+          メッセージを送る
+        </ButtonLink>
+        <Button
+          disabled={blockAction.blocked}
+          onClick={toggleBlock}
+          type="button"
+          variant="secondary"
+        >
+          ブロック
+        </Button>
+      </div>
+      {followAction.error !== undefined && (
+        <p className="text-sm text-destructive">{followAction.error}</p>
+      )}
+      {blockAction.error !== undefined && (
+        <p className="text-sm text-destructive">{blockAction.error}</p>
+      )}
+    </>
+  );
+
   return (
     <ProfileBody>
-      <MemberPage
-        name={member.name}
-        nameAs="h1"
-        socialLinks={member.socialLinks}
-        joinedLabel={`${formatWarekiMonth(member.joined)}に登録`}
-        biography={<Biography own={own} text={member.profile} />}
-        actions={
-          own ? (
-            <>
-              <ButtonLink to="/settings/profile" variant="primary">
-                プロフィールを編集
-              </ButtonLink>
-              <ProfileShare memberId={member.id} privateProfile={false} />
-            </>
-          ) : undefined
-        }
+      <ProfileLayoutRenderer
+        actions={actions}
+        layout={member.profileLayout}
+        member={member}
+        own={own}
+        sheet={member.sheet}
       />
     </ProfileBody>
   );

@@ -1,6 +1,7 @@
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
 import {
-  allowAllEditors,
+  FlagEditorAccess,
+  FlagEditorRequired,
   flagshipFeatureFlagsLayer,
   memoryFeatureFlagsLayer,
 } from "@repo/feature-flags";
@@ -19,7 +20,14 @@ import type { AppServices } from "@repo/runtime";
 
 const wikiService = APPLICATION.wiki;
 
-type WikiServices = AppServices | Embedder | FeatureFlags;
+type WikiServices = AppServices | Embedder | FeatureFlags | FlagEditorAccess;
+
+const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
+  assertEditor: (user) =>
+    grantsStaffLevel(user.permission, STAFF_PERMISSION.editor)
+      ? Effect.void
+      : Effect.fail(new FlagEditorRequired()),
+});
 
 const featureFlagsLayer = (
   config: AppConfig & { readonly AI: unknown },
@@ -41,7 +49,7 @@ function wikiLayer(
           Layer.succeed(Embedder, embedder),
           configuredAppLayer(config, wikiService, routes),
           featureFlagsLayer(config),
-          allowAllEditors,
+          staffFlagEditors,
         );
       }),
     ),

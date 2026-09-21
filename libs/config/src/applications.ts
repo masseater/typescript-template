@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { ROLE, type Role } from "./identity.ts";
+
 /** @canonical-values config.application */
 export const applications = ["service-member", "service-admin", "internal-dashboard"] as const;
 export const APPLICATION = {
@@ -26,12 +28,12 @@ export const applicationReadyPaths: Readonly<Record<Application, string>> = {
   "service-member": "/login",
 };
 
-const capabilities = ["ai", "jobs", "realtime", "storage"] as const;
+const capabilities = ["billing", "jobs", "realtime", "storage", "workers-ai"] as const;
 export type Capability = (typeof capabilities)[number];
 const applicationCapabilities = {
-  "internal-dashboard": ["ai"],
+  "internal-dashboard": ["workers-ai"],
   "service-admin": [],
-  "service-member": ["ai", "jobs", "realtime", "storage"],
+  "service-member": ["billing", "jobs", "realtime", "storage", "workers-ai"],
 } as const satisfies Readonly<Record<Application, readonly Capability[]>>;
 
 export type CapabilityOf<App extends Application> = (typeof applicationCapabilities)[App][number];
@@ -39,6 +41,12 @@ export type CapabilityOf<App extends Application> = (typeof applicationCapabilit
 export const grants = (app: Application, capability: Capability): boolean => {
   const granted: readonly Capability[] = applicationCapabilities[app];
   return granted.includes(capability);
+};
+
+export const audienceRoles: Readonly<Record<Application, Role>> = {
+  "internal-dashboard": ROLE.staff,
+  "service-admin": ROLE.administrator,
+  "service-member": ROLE.member,
 };
 
 export const loopbackAddress = "127.0.0.1";

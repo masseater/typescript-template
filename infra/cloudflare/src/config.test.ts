@@ -71,6 +71,9 @@ const userBindings: AppBindings<"service-member"> = {
       status: async () => ({ status: "complete" }),
     }),
   }),
+  STRIPE_PRICE_ID: "price_test",
+  STRIPE_SECRET_KEY: "sk_test_secret_of_at_least_32_characters",
+  STRIPE_WEBHOOK_SECRET: "whsec_test_secret_of_at_least_32_ch",
   USER_INBOX: binding<DurableObjectNamespace>({
     get: (): undefined => undefined,
     idFromName: (): undefined => undefined,

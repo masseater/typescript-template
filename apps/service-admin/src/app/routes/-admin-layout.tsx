@@ -1,4 +1,4 @@
-import { loginPath, useSession } from "@repo/auth-ui";
+import { SessionUserProvider, loginPath, useSession } from "@repo/auth-ui";
 import { ROLE } from "@repo/config";
 import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
@@ -34,9 +34,11 @@ function AdminLayout(): ReactElement {
     );
   }
   return (
-    <AdminFrame email={session.user.email} name={session.user.name}>
-      <Outlet />
-    </AdminFrame>
+    <SessionUserProvider user={session.user}>
+      <AdminFrame email={session.user.email} name={session.user.name}>
+        <Outlet />
+      </AdminFrame>
+    </SessionUserProvider>
   );
 }
 

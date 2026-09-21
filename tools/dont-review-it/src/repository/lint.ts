@@ -281,6 +281,8 @@ const lintOptions = {
       files: [
         "infra/cloudflare/src/unix-permission-bits.ts",
         "tools/dev/src/unix-permission-bits.ts",
+        "apps/service-member/src/shared/photo/image-fixture.ts",
+        "apps/service-member/src/shared/photo/image.ts",
       ],
       rules: {
         "no-bitwise": LINT_SEVERITY.OFF,

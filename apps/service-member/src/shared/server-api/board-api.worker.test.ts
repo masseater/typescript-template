@@ -24,6 +24,26 @@ const decodeList = Schema.decodeUnknownEffect(BoardThreadList);
 const decodeThread = Schema.decodeUnknownEffect(BoardThreadView);
 
 type App = ReturnType<typeof boardApp>;
+type DeliveredMail = Readonly<{
+  readonly text: string;
+  readonly to: string | readonly string[];
+}>;
+
+function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
+  if (!("EMAIL" in bindings)) {
+    throw new Error("EMAIL recorder is missing");
+  }
+  const email = bindings.EMAIL;
+  if (
+    typeof email !== "object" ||
+    email === null ||
+    !("taken" in email) ||
+    typeof email.taken !== "function"
+  ) {
+    throw new Error("EMAIL recorder is missing taken()");
+  }
+  return email.taken() as Promise<readonly DeliveredMail[]>;
+}
 
 function boardApp() {
   const runtime = workerRuntime(() =>
@@ -59,7 +79,7 @@ const jsonOf = (response: Response): Effect.Effect<unknown> =>
 const verificationToken = Effect.fn("verificationToken")(function* verificationToken(
   email: string,
 ) {
-  const delivered = yield* Effect.promise(async () => env.EMAIL.taken());
+  const delivered = yield* Effect.promise(async () => deliveredMail(env));
   const mail = delivered.findLast((sent) => sent.to.includes(email));
   const link = mail?.text.split("\n").find((line) => line.startsWith("http://")) ?? "";
   return new URLSearchParams(new URL(link).hash.slice(1)).get("token") ?? "";

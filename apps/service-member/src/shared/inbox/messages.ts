@@ -1,11 +1,7 @@
+import { notificationKinds } from "@repo/config";
 import { Schema } from "effect";
 
-const NotificationKind = Schema.Literals([
-  "message",
-  "group_invite",
-  "board_reply",
-  "follow",
-] as const);
+const NotificationKind = Schema.Literals(notificationKinds);
 
 const NotificationRecord = Schema.Struct({
   createdAt: Schema.Number,

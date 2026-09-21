@@ -27,7 +27,7 @@ function getSchemaShape(): Record<string, string[]> {
 
 function runStatement(
   sql: string,
-  ...params: readonly (string | number)[]
+  ...params: readonly (string | number | null)[]
 ): Effect.Effect<D1Result, DatabaseFailure> {
   return Effect.tryPromise({
     catch: (cause) => new DatabaseFailure({ cause }),
@@ -76,5 +76,6 @@ function capturePrepares<Requirements>(
   });
 }
 
-export { bootstrapAdmin } from "./bootstrap-statement.ts";
+export { BOOTSTRAP_KIND, BootstrapKind, bootstrapAdmin } from "./bootstrap-statement.ts";
+export { addSession, addUser, auditActionsOf } from "./records-fixture.ts";
 export { EmptyTestDatabase, TestDatabase, capturePrepares, getSchemaShape, runStatement };

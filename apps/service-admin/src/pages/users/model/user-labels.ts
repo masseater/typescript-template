@@ -1,22 +1,27 @@
-import { ROLE } from "@repo/config";
+import { ACCOUNT_STATE } from "@repo/config";
 
-import { Role } from "#shared/contracts/index.ts";
+import { AccountState } from "#shared/contracts/index.ts";
 
-const roleLabels: Readonly<Record<typeof Role.Type, string>> = {
-  [ROLE.administrator]: "管理者",
-  [ROLE.member]: "一般ユーザー",
+const accountStateLabels: Readonly<Record<typeof AccountState.Type, string>> = {
+  [ACCOUNT_STATE.active]: "利用中",
+  [ACCOUNT_STATE.suspended]: "停止中",
 };
 
-const nextRoles: Readonly<Record<typeof Role.Type, typeof Role.Type>> = {
-  [ROLE.administrator]: ROLE.member,
-  [ROLE.member]: ROLE.administrator,
+const nextAccountStates: Readonly<Record<typeof AccountState.Type, typeof AccountState.Type>> = {
+  [ACCOUNT_STATE.active]: ACCOUNT_STATE.suspended,
+  [ACCOUNT_STATE.suspended]: ACCOUNT_STATE.active,
+};
+
+const stateChangeLabels: Readonly<Record<typeof AccountState.Type, string>> = {
+  [ACCOUNT_STATE.active]: "利用を停止する",
+  [ACCOUNT_STATE.suspended]: "停止を解除する",
 };
 
 const verificationLabels = { false: "未確認", true: "確認済み" } as const;
 
-const roleOptions = [
+const accountStateOptions = [
   { label: "すべて", value: "" },
-  ...Role.literals.map((role) => ({ label: roleLabels[role], value: role })),
+  ...AccountState.literals.map((state) => ({ label: accountStateLabels[state], value: state })),
 ];
 
 const verificationOptions = [
@@ -25,4 +30,11 @@ const verificationOptions = [
   { label: verificationLabels.false, value: "false" },
 ];
 
-export { nextRoles, roleLabels, roleOptions, verificationLabels, verificationOptions };
+export {
+  accountStateLabels,
+  accountStateOptions,
+  nextAccountStates,
+  stateChangeLabels,
+  verificationLabels,
+  verificationOptions,
+};

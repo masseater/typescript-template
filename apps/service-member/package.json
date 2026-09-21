@@ -8,9 +8,12 @@
     "#*": "./src/*"
   },
   "dependencies": {
+    "@better-auth/api-key": "catalog:",
+    "@better-auth/oauth-provider": "1.7.5",
     "@cloudflare/tanstack-ai": "0.2.1",
     "@effect/atom-react": "catalog:",
     "@inlang/paraglide-js": "catalog:",
+    "@modelcontextprotocol/server": "2.0.0",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
@@ -22,7 +25,8 @@
     "@tanstack/ai": "0.54.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
-    "drizzle-orm": "catalog:",
+    "better-auth": "catalog:",
+    "better-call": "1.4.0",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",

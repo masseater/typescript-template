@@ -1,6 +1,7 @@
+import { ACCOUNT_STATE } from "@repo/config";
 import { ConfirmDialog } from "@repo/ui";
 
-import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
+import { nextAccountStates, stateChangeLabels } from "#pages/users/model/user-labels.ts";
 import { useUserRowAction } from "#pages/users/model/user-row-action.ts";
 import { RowActionMenu } from "./row-action-menu.tsx";
 
@@ -13,26 +14,29 @@ function UserRowActions({
 }: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement {
   const action = useUserRowAction(user, onChanged);
   const deleting = action.confirming === "delete";
-  const nextRole = roleLabels[nextRoles[user.role]];
+  const stateChange = stateChangeLabels[user.accountState];
+  const suspending = nextAccountStates[user.accountState] === ACCOUNT_STATE.suspended;
   return (
     <>
       <RowActionMenu
         user={user}
         disabled={action.pending}
         onDelete={action.handleDelete}
-        onRoleChange={action.handleRoleChange}
+        onStateChange={action.handleStateChange}
       />
       <ConfirmDialog
         open={action.confirming !== undefined}
         onOpenChange={action.handleOpenChange}
-        title={deleting ? "ユーザーを削除しますか？" : "権限を変更しますか？"}
+        title={deleting ? "ユーザーを削除しますか？" : `${stateChange}か？`}
         description={
           deleting
             ? `${user.email} を削除します。この操作は取り消せません。`
-            : `${user.email} を${nextRole}に変更します。対象ユーザーの既存セッションは失効します。`
+            : suspending
+              ? `${user.email} の利用を停止します。停止中はログインできず、他の利用者から見えなくなります。`
+              : `${user.email} の停止を解除します。再びログインでき、他の利用者から見えるようになります。`
         }
-        confirmLabel={deleting ? "削除する" : "変更する"}
-        variant={deleting ? "danger" : "primary"}
+        confirmLabel={deleting ? "削除する" : stateChange}
+        variant={deleting || suspending ? "danger" : "primary"}
         onConfirm={action.handleConfirm}
       />
     </>

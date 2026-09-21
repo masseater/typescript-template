@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
 import { FieldKey, Reply, displayValue, fieldDefinitions, fieldKeys } from "./sheet.ts";
-import { roles, settledPhases } from "./state.ts";
+import { FIELD_STATUS, fieldStatuses, roles, settledPhases } from "./state.ts";
 
 import type { FieldName, SheetData } from "./sheet.ts";
 import type { InterviewState } from "./state.ts";
@@ -9,7 +9,7 @@ import type { InterviewState } from "./state.ts";
 const FieldView = Schema.Struct({
   key: FieldKey,
   label: Schema.String,
-  status: Schema.Literals(["unanswered", "answered", "skipped"]),
+  status: Schema.Literals(fieldStatuses),
   value: Schema.optionalKey(Schema.String),
 });
 const MessageView = Schema.Struct({
@@ -33,9 +33,13 @@ function fieldViews(sheet: SheetData, skipped: readonly FieldName[]): readonly F
     const value = displayValue(sheet, key);
     const { label } = fieldDefinitions[key];
     if (value !== undefined) {
-      return { key, label, status: "answered", value };
+      return { key, label, status: FIELD_STATUS.answered, value };
     }
-    return { key, label, status: skippedFields.has(key) ? "skipped" : "unanswered" };
+    return {
+      key,
+      label,
+      status: skippedFields.has(key) ? FIELD_STATUS.skipped : FIELD_STATUS.unanswered,
+    };
   });
 }
 
@@ -54,3 +58,4 @@ function viewOf(state: InterviewState): InterviewViewData {
 
 export { InterviewView, viewOf };
 export { Utterance } from "./state.ts";
+export type { InterviewViewData };

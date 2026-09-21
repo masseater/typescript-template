@@ -1,12 +1,23 @@
-import { APPLICATION, type Application, type Role } from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  APPLICATION,
+  ROLE,
+  STAFF_PERMISSION,
+  type AccountPermission,
+  type Application,
+  type Role,
+} from "@repo/config";
 import {
   EmptyTestDatabase,
   TestDatabase,
+  BOOTSTRAP_KIND,
   bootstrapAdmin,
   getSchemaShape,
   runStatement,
+  type BootstrapKind,
 } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
+import { makeSignature } from "better-auth/crypto";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 import { URI } from "otpauth";
@@ -16,13 +27,14 @@ import { AuthIdentifiers, type GenerateId } from "./auth-identifiers.ts";
 import { Auth } from "./auth.ts";
 import { BrowserClient, origins } from "./browser-client.ts";
 import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
+import { SessionRequired } from "./session-required.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
 import type { Database } from "@repo/db";
 import type { AuthFailure } from "./auth-failure.ts";
 
 const PASSWORD = "test-password-safe-123";
-const secret = "integration-test-secret-at-least-32-characters-long";
+const authTestSecret = "integration-test-secret-at-least-32-characters-long";
 const TotpEnrollment = Schema.Struct({
   backupCodes: Schema.Array(Schema.String),
   totpURI: Schema.String,
@@ -53,7 +65,7 @@ const authFor = (
   const layer = Auth.layer({
     audience,
     baseURL: origins[audience],
-    secret,
+    secret: authTestSecret,
     mail: { ...mailConfig, APP_ORIGIN: origins[audience] },
   });
   return Layer.build(layer).pipe(Effect.map((built) => Context.get(built, Auth)));
@@ -160,9 +172,16 @@ const registerVerified = Effect.fn("registerVerified")(function* registerVerifie
 
 const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
   email: string,
+  kind: typeof BootstrapKind.Type = BOOTSTRAP_KIND.admin,
 ) {
   yield* registerVerified(email);
-  yield* bootstrapAdmin(email);
+  yield* bootstrapAdmin(email, kind);
+});
+
+const bootstrapVerifiedStaff = Effect.fn("bootstrapVerifiedStaff")(function* bootstrapVerifiedStaff(
+  email: string,
+) {
+  yield* bootstrapVerifiedAdmin(email, BOOTSTRAP_KIND.staff);
 });
 
 const signIn = (client: BrowserClient, email: string): Effect.Effect<number> => {
@@ -279,29 +298,78 @@ const audienceInputs = Effect.fn("audienceInputs")(function* audienceInputs(audi
   return [passkey?.fields["audience"]?.input, verification?.fields["audience"]?.input];
 });
 
+const topPermission: Readonly<Record<Role, AccountPermission | null>> = {
+  [ROLE.administrator]: ADMIN_PERMISSION.owner,
+  [ROLE.member]: null,
+  [ROLE.staff]: STAFF_PERMISSION.editor,
+};
+
 const assignRoleByEmail = Effect.fn("assignRoleByEmail")(function* assignRoleByEmail(
   email: string,
   role: Role,
 ) {
-  yield* runStatement("UPDATE user SET role = ? WHERE email = ?", role, email);
+  yield* runStatement(
+    "UPDATE user SET role = ?, permission = ? WHERE email = ?",
+    role,
+    topPermission[role],
+    email,
+  );
 });
 
 const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
   userId: string,
   role: Role,
 ) {
-  yield* runStatement("UPDATE user SET role = ? WHERE id = ?", role, userId);
+  yield* runStatement(
+    "UPDATE user SET role = ?, permission = ? WHERE id = ?",
+    role,
+    topPermission[role],
+    userId,
+  );
+});
+
+const assignAdminPermissionByEmail = Effect.fn("assignAdminPermissionByEmail")(
+  function* assignAdminPermissionByEmail(email: string, permission: AccountPermission) {
+    yield* runStatement("UPDATE user SET permission = ? WHERE email = ?", permission, email);
+  },
+);
+
+const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSessionCookie(
+  token: string,
+) {
+  const { instance } = yield* Auth;
+  const options: unknown = instance.options;
+  const advanced =
+    typeof options === "object" && options !== null && "advanced" in options
+      ? options.advanced
+      : undefined;
+  const cookiePrefix =
+    typeof advanced === "object" && advanced !== null && "cookiePrefix" in advanced
+      ? advanced.cookiePrefix
+      : undefined;
+  const secret =
+    typeof options === "object" && options !== null && "secret" in options
+      ? options.secret
+      : undefined;
+  if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
+    return yield* new SessionRequired();
+  }
+  const signature = yield* Effect.promise(async () => makeSignature(token, secret));
+  return `${cookiePrefix}.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
 });
 
 export {
   AuthApps,
+  assignAdminPermissionByEmail,
   assignRoleByEmail,
   assignRoleById,
   PASSWORD,
   audienceInputs,
   audienceOnEmptyDatabase,
   authTest,
+  authTestSecret,
   bootstrapVerifiedAdmin,
+  bootstrapVerifiedStaff,
   clientOf,
   enableTotp,
   missingSchemaFields,
@@ -314,6 +382,7 @@ export {
   signIn,
   signInAgainAfterTotp,
   signInAs,
+  signedSessionCookie,
   spendSignInWindow,
   verifyEmail,
   withAuth,

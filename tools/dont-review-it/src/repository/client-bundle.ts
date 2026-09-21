@@ -14,7 +14,7 @@ import { Console, Effect } from "effect";
 import { build } from "vite-plus";
 
 const appRoot = fileURLToPath(new URL("../../../../apps/service-member/", import.meta.url));
-const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
+const probeModule = path.join(appRoot, "src/pages/public/landing/ui/hero.tsx");
 
 const clientReachable: readonly string[] = [
   "@repo/runtime/client",

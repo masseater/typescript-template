@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
-import { isLocalDevelopmentOrigin, readEnvironment } from "./index.ts";
+import { isLocalDevelopmentOrigin, readEnvironment, readStripeConfig } from "./index.ts";
 
 const localBindings = {
   APP_ORIGIN: "http://localhost:3001",
@@ -120,6 +120,11 @@ describe("readEnvironment", () => {
       { APP_ORIGIN: "not-a-url" },
       'Expected an absolute URL\n  at ["APP_ORIGIN"]',
     ],
+    [
+      "a malformed analytics measurement id",
+      { GOOGLE_ANALYTICS_MEASUREMENT_ID: "UA-123456-1" },
+      'Expected a string matching the RegExp ^G-[A-Z0-9]{1,48}$\n  at ["GOOGLE_ANALYTICS_MEASUREMENT_ID"]',
+    ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
     const it = test.extend("refusal", async () =>
       Effect.runPromise(Effect.flip(readEnvironment({ ...localBindings, ...overridden }))));
@@ -147,6 +152,129 @@ describe("an OTLP switch beside an endpoint", () => {
       MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
       OTLP_ENABLED: "true",
       OTLP_ENDPOINT: localBindings.MAILPIT_URL,
+      local: true,
+    });
+  });
+});
+
+const stripeBindings = {
+  APP_ORIGIN: "http://localhost:3001",
+  STRIPE_PRICE_ID: "price_placeholderNotReal",
+  STRIPE_SECRET_KEY: "sk_test_placeholderNotAReal",
+  STRIPE_WEBHOOK_SECRET: "whsec_placeholderNotReal",
+};
+
+describe("readStripeConfig", () => {
+  describe("test-mode keys on a local origin", () => {
+    const it = test.extend("stripeConfig", async () =>
+      Effect.runPromise(readStripeConfig(stripeBindings)));
+
+    it("is read as a test-mode configuration", ({ stripeConfig }) => {
+      expect(stripeConfig).toStrictEqual({
+        mode: "test",
+        priceId: "price_placeholderNotReal",
+        secretKey: "sk_test_placeholderNotAReal",
+        webhookSecret: "whsec_placeholderNotReal",
+      });
+    });
+  });
+
+  describe("a live key on a deployed origin", () => {
+    const it = test.extend("stripeConfig", async () =>
+      Effect.runPromise(
+        readStripeConfig({
+          ...stripeBindings,
+          APP_ORIGIN: "https://member.example.test",
+          STRIPE_SECRET_KEY: "rk_live_placeholderNotAReal",
+        }),
+      ));
+
+    it("is read as a live-mode configuration", ({ stripeConfig }) => {
+      expect(stripeConfig.mode).toBe("live");
+    });
+  });
+
+  describe.for([
+    [
+      "a live key on a local origin",
+      { STRIPE_SECRET_KEY: "sk_live_placeholderNotAReal" },
+      "Stripe live keys are restricted to deployed origins",
+    ],
+    [
+      "a secret key without a mode",
+      { STRIPE_SECRET_KEY: "sk_placeholderNotAReal" },
+      'Expected a string matching the RegExp ^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$\n  at ["STRIPE_SECRET_KEY"]',
+    ],
+    [
+      "a webhook secret without the whsec prefix",
+      { STRIPE_WEBHOOK_SECRET: "placeholderNotReal" },
+      'Expected a string matching the RegExp ^whsec_[A-Za-z0-9]+$\n  at ["STRIPE_WEBHOOK_SECRET"]',
+    ],
+    [
+      "a price id without the price prefix",
+      { STRIPE_PRICE_ID: "prod_placeholderNotReal" },
+      'Expected a string matching the RegExp ^price_[A-Za-z0-9]+$\n  at ["STRIPE_PRICE_ID"]',
+    ],
+  ] as const)("%s", ([, overridden, expectedReason]) => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(Effect.flip(readStripeConfig({ ...stripeBindings, ...overridden }))));
+
+    it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
+      expect(refusal).toStrictEqual(new ConfigurationInvalid({ reason: expectedReason }));
+    });
+  });
+
+  describe("bindings that carry no Stripe keys at all", () => {
+    const it = test.extend("refusal", async () =>
+      Effect.runPromise(Effect.flip(readStripeConfig({ APP_ORIGIN: stripeBindings.APP_ORIGIN }))));
+
+    it("are refused instead of falling back to a free-for-all", ({ refusal }) => {
+      expect(refusal).toStrictEqual(
+        new ConfigurationInvalid({ reason: 'Missing key\n  at ["STRIPE_PRICE_ID"]' }),
+      );
+    });
+  });
+});
+
+describe("an analytics measurement id beside a public origin", () => {
+  const it = test.extend("analyticsEnvironment", async () => {
+    const { MAILPIT_URL: _mailpit, ...remoteBindings } = localBindings;
+    return Effect.runPromise(
+      readEnvironment({
+        ...remoteBindings,
+        APP_ORIGIN: "https://app.example.test",
+        GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
+      }),
+    );
+  });
+
+  it("is read as it was written", ({ analyticsEnvironment }) => {
+    expect(analyticsEnvironment).toStrictEqual({
+      APP_ORIGIN: "https://app.example.test",
+      APP_RELEASE: "local",
+      AUTH_SECRET: localBindings.AUTH_SECRET,
+      EMAIL_FROM: localBindings.EMAIL_FROM,
+      GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
+      OPS_EMAIL: localBindings.OPS_EMAIL,
+      local: false,
+    });
+  });
+});
+
+describe("an analytics measurement id on localhost", () => {
+  const it = test.extend("localAnalyticsEnvironment", async () =>
+    Effect.runPromise(
+      readEnvironment({
+        ...localBindings,
+        GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-LOCALMEASURE",
+      }),
+    ));
+
+  it("still marks the environment local and keeps the id available to the reader", ({
+    localAnalyticsEnvironment,
+  }) => {
+    expect(localAnalyticsEnvironment).toMatchObject({
+      GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-LOCALMEASURE",
       local: true,
     });
   });

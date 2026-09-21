@@ -47,7 +47,7 @@ const readableCollapsedMark = (mark: string): string => {
 const useCollapsed = (
   defaultCollapsed: boolean,
 ): readonly [boolean, (update: (collapsedNow: boolean) => boolean) => void] => {
-  const slot = `${useId()}:${defaultCollapsed ? "collapsed" : "open"}`;
+  const slot = `${useId()}:${defaultCollapsed ? "collapsed" : "expanded"}`;
   return useAtom(collapsedAtom(slot));
 };
 

@@ -99,7 +99,6 @@ const scenarioEnvironment = (
   return {
     ...profiles[profile],
     LOAD_MAILPIT_ORIGIN: mailpitOrigin,
-    LOAD_MEMBER_PAGE_SIZE: "24",
     LOAD_TARGET_ORIGIN: origin,
   };
 };

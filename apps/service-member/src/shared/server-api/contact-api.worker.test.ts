@@ -26,14 +26,30 @@ const submission = {
   name: "来訪者",
 } as const;
 
-function drainMailbox(): Effect.Effect<
-  ReadonlyArray<{
-    readonly subject: string;
-    readonly text: string;
-    readonly to: string | readonly string[];
-  }>
-> {
-  return Effect.promise(async () => env.EMAIL.taken());
+type DeliveredMail = Readonly<{
+  readonly subject: string;
+  readonly text: string;
+  readonly to: string | readonly string[];
+}>;
+
+function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
+  if (!("EMAIL" in bindings)) {
+    throw new Error("EMAIL recorder is missing");
+  }
+  const email = bindings.EMAIL;
+  if (
+    typeof email !== "object" ||
+    email === null ||
+    !("taken" in email) ||
+    typeof email.taken !== "function"
+  ) {
+    throw new Error("EMAIL recorder is missing taken()");
+  }
+  return email.taken() as Promise<readonly DeliveredMail[]>;
+}
+
+function drainMailbox(): Effect.Effect<readonly DeliveredMail[]> {
+  return Effect.promise(async () => deliveredMail(env));
 }
 
 function contactApp() {

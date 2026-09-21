@@ -1,10 +1,26 @@
-import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
+import {
+  InviteRejected,
+  acceptInvitation,
+  handleAuthRequest,
+  previewInvitation,
+  verifyEmailToken,
+  verifySession,
+} from "@repo/auth";
 import { Telemetry, httpStatus, ingestBrowser } from "@repo/observability";
 import { Effect } from "effect";
 
-import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
+import {
+  EmailVerificationRequest,
+  EmailVerified,
+  HealthView,
+  InviteAcceptance,
+  InviteAccepted,
+  InvitePreview,
+  InvitePreviewQuery,
+  SessionView,
+} from "./contracts.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import { createApi, readJsonBody } from "./http.ts";
+import { createApi, readJsonBody, readSearchParams } from "./http.ts";
 
 import type { EmailVerificationFailed } from "@repo/auth";
 import type { Failure } from "./failures.ts";
@@ -23,6 +39,60 @@ function emailVerificationFailure(error: EmailVerificationFailed): Failure {
   return error.rateLimited
     ? { message: "しばらく待ってから再度お試しください。", status: httpStatus.tooManyRequests }
     : { message: "確認リンクが無効か、有効期限が切れています。", status: httpStatus.badRequest };
+}
+
+const inviteFailures: Readonly<Record<InviteRejected["reason"], Failure>> = {
+  missing: { message: "招待が無効か、有効期限が切れています。", status: httpStatus.notFound },
+  pending: { message: "このメールアドレスには有効な招待があります。", status: httpStatus.conflict },
+  registered: {
+    message: "このメールアドレスは既に登録されています。",
+    status: httpStatus.conflict,
+  },
+};
+
+function inviteFailure({ reason }: { readonly reason: InviteRejected["reason"] }): Failure {
+  return inviteFailures[reason];
+}
+
+const forbidden: Failure = {
+  message: "この操作は許可されていません。",
+  status: httpStatus.forbidden,
+};
+
+const privileged = {
+  ...unavailable,
+  AdminStrongSessionRequired: forbidden,
+  EmailDeliveryFailed: "unexpected",
+  InviteRejected: inviteFailure,
+  PermissionRequired: forbidden,
+  TargetUnavailable: {
+    message: "対象が存在しないか、操作権限が失効しています。",
+    status: httpStatus.conflict,
+  },
+} as const;
+
+const openInvite = Effect.fn("openInvite")(function* openInvite(request: Request) {
+  const { token } = yield* readSearchParams(InvitePreviewQuery, request);
+  const preview = yield* previewInvitation(token);
+  if (preview === undefined) {
+    return yield* new InviteRejected({ reason: "missing" });
+  }
+  return { email: preview.email, permission: preview.permission };
+});
+
+const acceptOpenInvite = Effect.fn("acceptOpenInvite")(function* acceptOpenInvite(
+  request: Request,
+) {
+  const acceptance = yield* readJsonBody(InviteAcceptance, request);
+  const created = yield* acceptInvitation(acceptance);
+  return { accepted: true, email: created.email } as const;
+});
+
+function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
+  const failures = { ...unavailable, InviteRejected: inviteFailure };
+  return createApi("")
+    .get("/invite", api.route(InvitePreview, openInvite, failures))
+    .post("/invite", api.route(InviteAccepted, acceptOpenInvite, failures));
 }
 
 function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
@@ -55,4 +125,4 @@ function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
     );
 }
 
-export { accountApi, sessionApi, unavailable };
+export { accountApi, inviteApi, privileged, sessionApi, unavailable };

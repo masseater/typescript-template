@@ -18,15 +18,16 @@ type MailSink = {
   readonly waitForLink: (recipient: string, prefix: string) => Promise<string>;
 };
 
+const mailLinkPattern = /https?:\/\/[^\s"'<>\\]+/gu;
+
 const findLink = (search: {
   readonly deliveries: readonly string[];
   readonly prefix: string;
   readonly recipient: string;
 }): readonly string[] => {
-  const linkPattern = /https?:\/\/[^\s"'<>\\]+/gu;
   return search.deliveries
     .filter((delivery) => delivery.includes(search.recipient))
-    .flatMap((delivery) => [...delivery.matchAll(linkPattern)].map(([link]) => link))
+    .flatMap((delivery) => [...delivery.matchAll(mailLinkPattern)].map(([link]) => link))
     .filter((link) => link.startsWith(search.prefix));
 };
 
@@ -64,5 +65,5 @@ const startMailSink = async (): Promise<MailSink> => {
   };
 };
 
-export { startMailSink };
+export { deliveryTimeout, mailLinkPattern, startMailSink };
 export type { MailSink };
