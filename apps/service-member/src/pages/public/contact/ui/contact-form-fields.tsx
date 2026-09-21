@@ -2,7 +2,7 @@ import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage } from "@repo/
 
 import { maximumContactMessageLength, maximumContactNameLength } from "#shared/contracts/index.ts";
 
-import type { ContactFormState } from "#pages/contact/model/contact-form.ts";
+import type { ContactFormState } from "#pages/public/contact/model/contact-form.ts";
 import type { ReactElement } from "react";
 
 function ContactFormFields({ form }: Readonly<{ form: ContactFormState }>): ReactElement {
