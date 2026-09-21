@@ -3,13 +3,13 @@ title: 利用者アプリの設定
 description: 通知・セキュリティ・AI・プラン・退会など、設定の各ページ
 ---
 
-設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。プロフィールの編集は [プロフィール](/pages/member-profile) が、AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。
+設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。プロフィールの編集は [プロフィール](/pages/member-profile) が、AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。規約への同意（`/settings/agreements`）では、AI インタビューの履歴の利用への同意をあとから取り消せる。取り消したときは会話の履歴を消す。
 
 ## 一覧
 
 パス: `/settings`。
 
-プロフィール・メールアドレス・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
+プロフィール・メールアドレス・通知・セキュリティ・AI インタビュー・AI と API・プランと解約・規約への同意・退会・お問い合わせを、ほかの項目と同じ見た目で並べる。「その他」や「詳細設定」の奥に置かない。
 
 ## メールアドレス
 
@@ -72,6 +72,14 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 引き止めのページを挟まない。解約のボタンは、ほかの操作と同じ大きさと色の濃さにする。
 
+## 規約への同意
+
+パス: `/settings/agreements`。実体は [信頼と安全](/data-model/trust) の AgreementAcceptance が持つ。
+
+1. 見出し「規約への同意」
+2. 未同意の版。無ければ最新に同意していることを出し、あれば版の一覧と [規約への同意](/pages/member-agreement) へのリンクを出す
+3. 同意の履歴（種類・版・同意した日）
+
 ## 退会
 
 パス: `/settings/leave`。
@@ -94,6 +102,7 @@ flowchart TD
   settings --> interview["/settings/interview"]
   settings --> ai["/settings/ai"]
   settings --> plan["/settings/plan"]
+  settings --> agreements["/settings/agreements"]
   settings --> leave["/settings/leave"]
   settings --> support["/support"]
   plan -- 有料プランを見る --> upgrade["/upgrade"]
