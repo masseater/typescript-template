@@ -1,7 +1,6 @@
 import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
-import { fieldDefinitions } from "#shared/interview/index.ts";
 import { MemberPage } from "#widgets/member-page/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
@@ -35,7 +34,7 @@ function WelcomeInterviewPage(): ReactElement {
           AI インタビュー
         </Heading>
         <p className="text-lg leading-relaxed text-foreground">
-          {fieldDefinitions.nickname.question}
+          なんて呼べばいいですか？
         </p>
         <StatusMessage variant={STATUS_VARIANT.pending}>
           登録直後の AI
