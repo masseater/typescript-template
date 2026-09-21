@@ -184,4 +184,6 @@ export {
   inquiryMessage,
 } from "./inquiry-schema.ts";
 export type { InquiryAuthorKind } from "./inquiry-schema.ts";
+export { INQUIRY_STATUS, inquiryStatuses } from "./inquiry-status.ts";
+export type { InquiryStatus } from "./inquiry-status.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

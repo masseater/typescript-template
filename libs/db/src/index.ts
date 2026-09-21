@@ -15,8 +15,10 @@ export type { DrizzleDatabase } from "./database.ts";
 export {
   AUDIT_ACTION,
   INQUIRY_AUTHOR_KIND,
+  INQUIRY_STATUS,
   auditEvent,
   inquiryAuthorKinds,
+  inquiryStatuses,
   onboardingSteps,
   schema,
 } from "./schema.ts";

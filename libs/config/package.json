@@ -8,8 +8,7 @@
     "./repository-root": "./src/repository-root.ts",
     "./paging": "./src/paging.ts",
     "./worker": "./src/worker.ts",
-    "./identity": "./src/identity.ts",
-    "./inquiry": "./src/inquiry.ts"
+    "./identity": "./src/identity.ts"
   },
   "scripts": {},
   "dependencies": {

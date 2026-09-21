@@ -1,4 +1,4 @@
-/** @canonical-values config.inquiry-status */
+/** @canonical-values db.inquiry-status */
 export const inquiryStatuses = ["open", "answered", "closed"] as const;
 export type InquiryStatus = (typeof inquiryStatuses)[number];
 export const INQUIRY_STATUS = {

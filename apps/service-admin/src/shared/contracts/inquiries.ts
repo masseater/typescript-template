@@ -1,5 +1,5 @@
 import { roles } from "@repo/config";
-import { inquiryStatuses } from "@repo/config/inquiry";
+import { inquiryStatuses } from "@repo/db/inquiry-status";
 import { Effect, Schema } from "effect";
 
 const maximumIdentifierLength = 256;

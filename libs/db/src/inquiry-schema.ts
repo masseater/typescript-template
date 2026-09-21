@@ -1,8 +1,9 @@
-import { INQUIRY_STATUS, inquiryStatuses, roles, type InquiryStatus } from "@repo/config";
+import { roles } from "@repo/config";
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "./identity-schema.ts";
+import { INQUIRY_STATUS, inquiryStatuses } from "./inquiry-status.ts";
 
 export type InquiryAuthorKind = (typeof roles)[number];
 export const INQUIRY_AUTHOR_KIND = { admin: roles[1], member: roles[0] } as const;

@@ -24,8 +24,6 @@ export {
   strongAuthenticationMethods,
 } from "./identity.ts";
 export type { AuthenticationMethod, Role, StrongAuthenticationMethod } from "./identity.ts";
-export { INQUIRY_STATUS, inquiryStatuses } from "./inquiry.ts";
-export type { InquiryStatus } from "./inquiry.ts";
 export { usageAllowanceRemains } from "./budget.ts";
 export {
   CloudflareApiToken,
