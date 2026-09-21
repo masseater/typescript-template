@@ -34,6 +34,10 @@ function monitorArtifact(unit: string): string {
   return path.join(repositoryRoot, "infra", unit, "dist", MAIN_MODULE);
 }
 
+function coreArtifact(): string {
+  return path.join(repositoryRoot, "apps", "core", "dist", MAIN_MODULE);
+}
+
 const RELEASE_LENGTH = 16;
 const STAGED_DIGESTS_KEPT = 1;
 
@@ -289,5 +293,12 @@ const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
   return artifacts;
 });
 
-export { ArtifactWrites, loadArtifacts, monitorArtifact, repositoryRoot, workerModuleGlobs };
+export {
+  ArtifactWrites,
+  coreArtifact,
+  loadArtifacts,
+  monitorArtifact,
+  repositoryRoot,
+  workerModuleGlobs,
+};
 export type { ArtifactMode };

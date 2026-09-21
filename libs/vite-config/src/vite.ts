@@ -4,6 +4,7 @@ import path from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
   applicationPorts,
+  coreEntrypoints,
   grants,
   jobsQueueBinding,
   jobsQueueName,
@@ -293,6 +294,16 @@ const toolTest: NonNullable<UserConfig["test"]> = {
 
 const noExtraPlugins: readonly PluginOption[] = [];
 
+const coreDevWorker = {
+  config: {
+    compatibility_date: workerCompatibility.date,
+    compatibility_flags: [...workerCompatibility.flags],
+    d1_databases: [localDatabase],
+    main: path.join(repositoryRoot, "apps/core/src/worker.ts"),
+    name: "template-core",
+  },
+};
+
 function appConfig(
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
@@ -307,7 +318,9 @@ function appConfig(
       privateSourceMaps(app),
       devBoundary(app),
       cloudflare({
-        config: {
+        auxiliaryWorkers: [coreDevWorker],
+        config: (config) => ({
+          ...config,
           assets: {
             binding: "ASSETS",
             run_worker_first: command !== "serve" || isPreview === true,
@@ -325,6 +338,14 @@ function appConfig(
             : {}),
           main: "./src/app/server.ts",
           name: `template-${app}`,
+          services: [
+            ...(config.services ?? []),
+            {
+              binding: "CORE",
+              entrypoint: coreEntrypoints[app],
+              service: "template-core",
+            },
+          ],
           ...(grants(app, "jobs")
             ? {
                 queues: {
@@ -343,7 +364,7 @@ function appConfig(
           ...(grants(app, "storage")
             ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
             : {}),
-        },
+        }),
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },
         viteEnvironment: { name: "ssr" },
