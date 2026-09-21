@@ -7,6 +7,7 @@ import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { auditActions, clientKinds, metricKeys, metricPeriods } from "./dashboard-literals.ts";
 import { session, user } from "./identity-schema.ts";
+import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
@@ -191,6 +192,8 @@ const schema = {
   boardThread,
   metricSnapshot,
   follow,
+  inquiry,
+  inquiryMessage,
   interview,
   invite,
   leaveRequest,
@@ -242,6 +245,15 @@ export {
 export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export {
+  INQUIRY_AUTHOR_KIND,
+  inquiry,
+  inquiryAuthorKinds,
+  inquiryMessage,
+} from "./inquiry-schema.ts";
+export type { InquiryAuthorKind } from "./inquiry-schema.ts";
+export { INQUIRY_STATUS, inquiryStatuses } from "./inquiry-status.ts";
+export type { InquiryStatus } from "./inquiry-status.ts";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";

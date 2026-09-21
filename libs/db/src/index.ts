@@ -15,8 +15,12 @@ export type { DrizzleDatabase } from "./database.ts";
 export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
 export {
   AUDIT_CHANNEL,
+  INQUIRY_AUTHOR_KIND,
+  INQUIRY_STATUS,
   NOTIFICATION_KIND,
   auditEvent,
+  inquiryAuthorKinds,
+  inquiryStatuses,
   notificationKinds,
   onboardingSteps,
   schema,
@@ -74,6 +78,30 @@ export {
   startInterview,
   storeInterview,
 } from "./interview.ts";
+export {
+  InquiryForbidden,
+  InquiryNotFound,
+  InquiryPage,
+  closeInquiry,
+  countPendingInquiries,
+  createMemberInquiry,
+  getAdminInquiry,
+  getInquiryMemberSummary,
+  getMemberInquiry,
+  listAdminInquiries,
+  listMemberInquiries,
+  replyAsAdmin,
+  replyAsMember,
+  requireInquiryResponder,
+} from "./inquiry.ts";
+export type {
+  AdminInquirySummary,
+  AdminInquiryThread,
+  InquiryMessage,
+  InquirySummary,
+  InquiryThread,
+  MemberSummary,
+} from "./inquiry.ts";
 export {
   MemberLeaveUnavailable,
   RecoveryExpired,

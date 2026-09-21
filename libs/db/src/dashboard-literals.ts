@@ -14,6 +14,7 @@ export const auditActions = [
   "staff_permission_changed",
   "staff_removed",
   "invite_accepted",
+  "inquiry_replied",
 ] as const;
 export const AUDIT_ACTION = {
   flagToggled: auditActions[0],
@@ -30,6 +31,7 @@ export const AUDIT_ACTION = {
   staffPermissionChanged: auditActions[11],
   staffRemoved: auditActions[12],
   inviteAccepted: auditActions[13],
+  inquiryReplied: auditActions[14],
 } as const;
 
 /** @canonical-values db.client-kind */

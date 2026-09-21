@@ -24,6 +24,7 @@ import { Route as AdminTermsRouteImport } from './routes/_admin/terms'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as AdminInquiriesIdRouteImport } from './routes/_admin/inquiries.$id'
 import { Route as AdminMembersIdRouteImport } from './routes/_admin/members.$id'
 import { Route as AdminTermsVersionRouteImport } from './routes/_admin/terms.$version'
 import { Route as PublicInviteTokenRouteImport } from './routes/_public/invite.$token'
@@ -101,6 +102,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminInquiriesIdRoute = AdminInquiriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminInquiriesRoute,
+} as any)
 const AdminMembersIdRoute = AdminMembersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -123,7 +129,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admins': typeof AdminAdminsRoute
-  '/inquiries': typeof AdminInquiriesRoute
+  '/inquiries': typeof AdminInquiriesRouteWithChildren
   '/members': typeof AdminMembersRouteWithChildren
   '/reports': typeof AdminReportsRoute
   '/security': typeof AdminSecurityRoute
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/inquiries/$id': typeof AdminInquiriesIdRoute
   '/members/$id': typeof AdminMembersIdRoute
   '/terms/$version': typeof AdminTermsVersionRoute
   '/invite/$token': typeof PublicInviteTokenRoute
@@ -141,7 +148,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/admins': typeof AdminAdminsRoute
-  '/inquiries': typeof AdminInquiriesRoute
+  '/inquiries': typeof AdminInquiriesRouteWithChildren
   '/members': typeof AdminMembersRouteWithChildren
   '/reports': typeof AdminReportsRoute
   '/security': typeof AdminSecurityRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
+  '/inquiries/$id': typeof AdminInquiriesIdRoute
   '/members/$id': typeof AdminMembersIdRoute
   '/terms/$version': typeof AdminTermsVersionRoute
   '/invite/$token': typeof PublicInviteTokenRoute
@@ -161,7 +169,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/_admin/admins': typeof AdminAdminsRoute
-  '/_admin/inquiries': typeof AdminInquiriesRoute
+  '/_admin/inquiries': typeof AdminInquiriesRouteWithChildren
   '/_admin/members': typeof AdminMembersRouteWithChildren
   '/_admin/reports': typeof AdminReportsRoute
   '/_admin/security': typeof AdminSecurityRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/_admin/': typeof AdminIndexRoute
+  '/_admin/inquiries/$id': typeof AdminInquiriesIdRoute
   '/_admin/members/$id': typeof AdminMembersIdRoute
   '/_admin/terms/$version': typeof AdminTermsVersionRoute
   '/_public/invite/$token': typeof PublicInviteTokenRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/api/$'
+    | '/inquiries/$id'
     | '/members/$id'
     | '/terms/$version'
     | '/invite/$token'
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify-email'
     | '/api/$'
+    | '/inquiries/$id'
     | '/members/$id'
     | '/terms/$version'
     | '/invite/$token'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/_public/verify-email'
     | '/api/$'
     | '/_admin/'
+    | '/_admin/inquiries/$id'
     | '/_admin/members/$id'
     | '/_admin/terms/$version'
     | '/_public/invite/$token'
@@ -349,6 +361,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/inquiries/$id': {
+      id: '/_admin/inquiries/$id'
+      path: '/$id'
+      fullPath: '/inquiries/$id'
+      preLoaderRoute: typeof AdminInquiriesIdRouteImport
+      parentRoute: typeof AdminInquiriesRoute
+    }
     '/_admin/members/$id': {
       id: '/_admin/members/$id'
       path: '/$id'
@@ -372,6 +391,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminInquiriesRouteChildren {
+  AdminInquiriesIdRoute: typeof AdminInquiriesIdRoute
+}
+
+const AdminInquiriesRouteChildren: AdminInquiriesRouteChildren = {
+  AdminInquiriesIdRoute: AdminInquiriesIdRoute,
+}
+
+const AdminInquiriesRouteWithChildren = AdminInquiriesRoute._addFileChildren(
+  AdminInquiriesRouteChildren,
+)
 
 interface AdminMembersRouteChildren {
   AdminMembersIdRoute: typeof AdminMembersIdRoute
@@ -399,7 +430,7 @@ const AdminTermsRouteWithChildren = AdminTermsRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
-  AdminInquiriesRoute: typeof AdminInquiriesRoute
+  AdminInquiriesRoute: typeof AdminInquiriesRouteWithChildren
   AdminMembersRoute: typeof AdminMembersRouteWithChildren
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
@@ -409,7 +440,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
-  AdminInquiriesRoute: AdminInquiriesRoute,
+  AdminInquiriesRoute: AdminInquiriesRouteWithChildren,
   AdminMembersRoute: AdminMembersRouteWithChildren,
   AdminReportsRoute: AdminReportsRoute,
   AdminSecurityRoute: AdminSecurityRoute,

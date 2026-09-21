@@ -11,7 +11,8 @@ type ListedSetting = {
     | "/settings/profile"
     | "/settings/recovery"
     | "/settings/security"
-    | "/settings/visibility";
+    | "/settings/visibility"
+    | "/support";
 };
 
 const settingsItems = [
@@ -26,6 +27,7 @@ const settingsItems = [
   { label: "規約への同意", to: "/settings/agreements" },
   { label: "データの復旧", to: "/settings/recovery" },
   { label: "退会", to: "/settings/leave" },
+  { label: "お問い合わせ", to: "/support" },
 ] as const satisfies readonly ListedSetting[];
 
 export { settingsItems };

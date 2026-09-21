@@ -5,6 +5,7 @@ import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { serveMcp } from "#shared/admin/index.ts";
 import { adminRoutes } from "./admin-api.ts";
 import { agreementApi } from "./agreement-api.ts";
+import { inquiryApi } from "./inquiry-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 
 const api = apiRoutes(runtime, reporting);
@@ -12,6 +13,7 @@ const api = apiRoutes(runtime, reporting);
 const adminApi = createApi(apiRoot)
   .use(accountApi(api))
   .use(agreementApi(api))
+  .use(inquiryApi(api))
   .use(adminRoutes(api));
 
 const adminProtocol = createApi("")

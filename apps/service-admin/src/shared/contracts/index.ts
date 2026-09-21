@@ -1,4 +1,16 @@
 export {
+  AdminInquiryList,
+  AdminInquiryThread,
+  InquiryClose,
+  InquiryListQuery,
+  InquiryMemberSummary,
+  InquiryQuery,
+  InquiryReply,
+  MemberQuery,
+  PendingCount,
+  maximumReplyLength,
+} from "./inquiries.ts";
+export {
   AdminInvitation,
   AdminInvited,
   AdminList,

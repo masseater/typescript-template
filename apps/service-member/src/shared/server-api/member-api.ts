@@ -25,6 +25,7 @@ import { leaveApi } from "./leave-api.ts";
 import { memberFailures } from "./member-failures.ts";
 import { photoApi } from "./photo-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
+import { supportApi } from "./support-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
 
 import type { Stripe } from "#shared/billing/index.ts";
@@ -44,6 +45,7 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     .use(agreementApi(api))
     .use(onboardingStepApi(api))
     .use(leaveApi(api))
+    .use(supportApi(api))
     .use(billingApi(api))
     .onBeforeHandle(consentGate(api))
     .use(interviewApi(api))

@@ -6,7 +6,6 @@ import type { LucideIcon } from "lucide-react";
 type AdminNavPath = "/admins" | "/inquiries" | "/members" | "/reports" | "/terms";
 
 type AdminNavItem = Readonly<{
-  badge?: number;
   icon: LucideIcon;
   label: string;
   requires: AdminPermission;
@@ -21,27 +20,14 @@ type AdminNavGroup = Readonly<{
 const adminNavGroups: readonly AdminNavGroup[] = [
   {
     items: [
+      { icon: UsersIcon, label: "利用者", requires: ADMIN_PERMISSION.viewer, to: "/members" },
       {
-        badge: 3,
-        icon: UsersIcon,
-        label: "利用者",
-        requires: ADMIN_PERMISSION.viewer,
-        to: "/members",
-      },
-      {
-        badge: 5,
         icon: MessageSquareIcon,
         label: "問い合わせ",
         requires: ADMIN_PERMISSION.viewer,
         to: "/inquiries",
       },
-      {
-        badge: 2,
-        icon: FlagIcon,
-        label: "通報",
-        requires: ADMIN_PERMISSION.viewer,
-        to: "/reports",
-      },
+      { icon: FlagIcon, label: "通報", requires: ADMIN_PERMISSION.viewer, to: "/reports" },
     ],
     label: "運用",
   },
