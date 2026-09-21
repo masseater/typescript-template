@@ -1,6 +1,5 @@
 import { requireSuccess } from "@repo/auth-ui";
 import { memberApiKeyReadPermissions } from "@repo/config";
-import { createIsomorphicFn } from "@tanstack/react-start";
 
 import { memberAuthClient } from "#shared/auth/index.ts";
 
@@ -18,8 +17,6 @@ type ApiKeyChoice = Readonly<{
   profileUpdate: boolean;
 }>;
 
-type AuthRequest = Readonly<{ baseURL: string; cookie: string }>;
-
 type ApiKeyRow = Readonly<{
   createdAt: Date | string;
   id: string;
@@ -36,32 +33,10 @@ function listedFrom(apiKeys: readonly ApiKeyRow[]): readonly ListedApiKey[] {
   }));
 }
 
-async function listKeys(request: AuthRequest | undefined): Promise<readonly ListedApiKey[]> {
-  const listed = requireSuccess(
-    await memberAuthClient.apiKey.list(
-      request === undefined
-        ? {}
-        : {
-            fetchOptions: {
-              baseURL: request.baseURL,
-              headers: { cookie: request.cookie },
-            },
-          },
-    ),
-  );
+async function loadApiKeys(): Promise<readonly ListedApiKey[]> {
+  const listed = requireSuccess(await memberAuthClient.apiKey.list({}));
   return listedFrom(listed.apiKeys);
 }
-
-const loadApiKeys = createIsomorphicFn()
-  .server(async (): Promise<readonly ListedApiKey[]> => {
-    const { getRequest } = await import("@tanstack/react-start/server");
-    const current = getRequest();
-    return listKeys({
-      baseURL: `${new URL(current.url).origin}/api/auth`,
-      cookie: current.headers.get("cookie") ?? "",
-    });
-  })
-  .client(async (): Promise<readonly ListedApiKey[]> => listKeys(undefined));
 
 async function createApiKey(name: string, choice: ApiKeyChoice): Promise<CreatedApiKey> {
   const profile = choice.profileUpdate

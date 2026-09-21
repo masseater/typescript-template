@@ -34,7 +34,7 @@ function DashboardLayout(): ReactElement {
   }
   return (
     <SessionUserProvider user={session.user}>
-      <DashboardFrame>
+      <DashboardFrame email={session.user.email} name={session.user.name}>
         <Outlet />
       </DashboardFrame>
     </SessionUserProvider>

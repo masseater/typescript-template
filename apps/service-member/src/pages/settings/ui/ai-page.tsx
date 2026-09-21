@@ -1,3 +1,4 @@
+import { errorMessage } from "@repo/auth-ui";
 import { MEMBER_MCP_SCOPE } from "@repo/config";
 import {
   type ActionState,
@@ -8,17 +9,16 @@ import {
   Field,
   FormColumn,
   Page,
+  STATUS_VARIANT,
   StatusMessage,
   localState,
   useAction,
 } from "@repo/ui";
-import { useRouter } from "@tanstack/react-router";
+import { useEffect, useState, type ReactElement } from "react";
 
-import { revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
+import { loadApiKeys, revokeApiKey, type ListedApiKey } from "#pages/settings/api/api-keys.ts";
 import { useApiKeyForm } from "#pages/settings/model/api-key-form.ts";
 import { scopeLabel } from "#shared/contracts/index.ts";
-
-import type { ReactElement } from "react";
 
 const useRevokeConfirming = localState(false);
 
@@ -68,11 +68,26 @@ function ApiKeyItem({
   );
 }
 
-function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactElement {
-  const router = useRouter();
+type ListedKeys =
+  | Readonly<{ keys: readonly ListedApiKey[]; status: "ready" }>
+  | Readonly<{ message: string; status: "failed" }>
+  | Readonly<{ status: "pending" }>;
+
+function AiPage(): ReactElement {
+  const [listed, setListed] = useState<ListedKeys>({ status: "pending" });
   const reload = (): void => {
-    void router.invalidate();
+    setListed({ status: "pending" });
+    void loadApiKeys()
+      .then((keys) => {
+        setListed({ keys, status: "ready" });
+      })
+      .catch((failure: unknown) => {
+        setListed({ message: errorMessage(failure), status: "failed" });
+      });
   };
+  useEffect(() => {
+    reload();
+  }, []);
   const form = useApiKeyForm(reload);
   const issuedNotice =
     form.issued === undefined
@@ -109,11 +124,15 @@ function AiPage({ keys }: Readonly<{ keys: readonly ListedApiKey[] }>): ReactEle
         </Button>
         <ActionStatus action={form.action} notice={issuedNotice} />
       </FormColumn>
-      {keys.length === 0 ? (
+      {listed.status === "pending" ? (
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
+      ) : listed.status === "failed" ? (
+        <StatusMessage variant={STATUS_VARIANT.failure}>{listed.message}</StatusMessage>
+      ) : listed.keys.length === 0 ? (
         <StatusMessage>API キーはまだありません。</StatusMessage>
       ) : (
         <ul>
-          {keys.map((entry) => (
+          {listed.keys.map((entry) => (
             <ApiKeyItem action={form.action} entry={entry} key={entry.id} onRevoked={reload} />
           ))}
         </ul>

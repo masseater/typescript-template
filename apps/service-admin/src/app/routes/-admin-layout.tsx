@@ -35,7 +35,7 @@ function AdminLayout(): ReactElement {
   }
   return (
     <SessionUserProvider user={session.user}>
-      <AdminFrame>
+      <AdminFrame email={session.user.email} name={session.user.name}>
         <Outlet />
       </AdminFrame>
     </SessionUserProvider>
