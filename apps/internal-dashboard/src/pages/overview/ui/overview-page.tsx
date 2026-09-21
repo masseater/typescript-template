@@ -1,33 +1,15 @@
-import { Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
-import { useEffect, useState } from "react";
+import { Heading, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-import { loadOverview } from "#pages/overview/api/overview.ts";
 import { metricLabel } from "#pages/overview/model/metric-label.ts";
+import { useOverview } from "#pages/overview/model/overview.ts";
 
-import type { StaffOverviewView } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
 function OverviewPage(): ReactElement {
-  const [overview, setOverview] = useState<StaffOverviewView | undefined>();
-  const [error, setError] = useState<string | undefined>();
-
-  useEffect(() => {
-    let active = true;
-    void loadOverview()
-      .then((loaded) => {
-        if (active) {
-          setOverview(loaded);
-        }
-      })
-      .catch((failure: unknown) => {
-        if (active) {
-          setError(failure instanceof Error ? failure.message : "集計を読めませんでした。");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const listing = useOverview();
+  const error = resultError(listing);
+  const overview = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
   return (
     <main className="flex flex-col gap-4 p-4">

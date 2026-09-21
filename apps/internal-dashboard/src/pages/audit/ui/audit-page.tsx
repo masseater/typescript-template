@@ -1,10 +1,17 @@
-import { Button, Field, FormColumn, Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
-import { useEffect, useState } from "react";
+import {
+  Button,
+  Field,
+  FormColumn,
+  Heading,
+  STATUS_VARIANT,
+  StatusMessage,
+  resultError,
+} from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-import { loadAuditPage } from "#pages/audit/api/audit.ts";
+import { useAuditList } from "#pages/audit/model/audit-list.ts";
 
-import type { StaffAuditPageView } from "#shared/contracts/index.ts";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement } from "react";
 
 const createdAtLabel = new Intl.DateTimeFormat("ja", {
   dateStyle: "medium",
@@ -13,56 +20,29 @@ const createdAtLabel = new Intl.DateTimeFormat("ja", {
 });
 
 function AuditPage(): ReactElement {
-  const [page, setPage] = useState<StaffAuditPageView | undefined>();
-  const [actorId, setActorId] = useState("");
-  const [targetId, setTargetId] = useState("");
-  const [action, setAction] = useState("");
-  const [error, setError] = useState<string | undefined>();
-
-  useEffect(() => {
-    let active = true;
-    void loadAuditPage({ limit: 50, offset: 0 })
-      .then((loaded) => {
-        if (active) {
-          setPage(loaded);
-        }
-      })
-      .catch((failure: unknown) => {
-        if (active) {
-          setError(failure instanceof Error ? failure.message : "監査ログを読めませんでした。");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  function handleFilter(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    setError(undefined);
-    void loadAuditPage({
-      action: action.length > 0 ? action : undefined,
-      actorId: actorId.length > 0 ? actorId : undefined,
-      limit: 50,
-      offset: 0,
-      targetId: targetId.length > 0 ? targetId : undefined,
-    })
-      .then(setPage)
-      .catch((failure: unknown) => {
-        setError(failure instanceof Error ? failure.message : "監査ログを読めませんでした。");
-      });
-  }
+  const {
+    action,
+    actorId,
+    handleActionChange,
+    handleActorIdChange,
+    handleSubmit,
+    handleTargetIdChange,
+    listing,
+    targetId,
+  } = useAuditList();
+  const error = resultError(listing);
+  const page = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
   return (
     <main className="flex flex-col gap-4 p-4">
       <Heading as="h1" size="page">
         監査ログ
       </Heading>
-      <form onSubmit={handleFilter as SubmitEventHandler<HTMLFormElement>}>
+      <form onSubmit={handleSubmit}>
         <FormColumn>
-          <Field label="操作者 ID" name="actorId" onChange={setActorId} value={actorId} />
-          <Field label="対象 ID" name="targetId" onChange={setTargetId} value={targetId} />
-          <Field label="操作" name="action" onChange={setAction} value={action} />
+          <Field label="操作者 ID" name="actorId" onChange={handleActorIdChange} value={actorId} />
+          <Field label="対象 ID" name="targetId" onChange={handleTargetIdChange} value={targetId} />
+          <Field label="操作" name="action" onChange={handleActionChange} value={action} />
           <Button type="submit">絞り込む</Button>
         </FormColumn>
       </form>
