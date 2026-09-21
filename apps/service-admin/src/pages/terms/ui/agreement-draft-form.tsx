@@ -1,10 +1,8 @@
-import { AGREEMENT_KIND, agreementKinds, type AgreementKind } from "@repo/config";
-import { Button, Field, FormColumn, Heading, SelectField, useAction } from "@repo/ui";
-import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { agreementKinds } from "@repo/config";
+import { Button, Field, FormColumn, Heading, SelectField } from "@repo/ui";
 
-import { createDraft } from "#pages/terms/api/agreement-versions.ts";
 import { agreementKindLabels } from "#pages/terms/model/agreement-labels.ts";
+import { useNewDraftForm } from "#pages/terms/model/new-draft-form.ts";
 import {
   maximumBodyLength,
   maximumSummaryLength,
@@ -19,16 +17,8 @@ const kindOptions = agreementKinds.map((kind) => ({
   value: kind,
 }));
 
-const isKind = (value: string): value is AgreementKind =>
-  agreementKinds.some((kind) => kind === value);
-
 function AgreementDraftForm(): ReactElement {
-  const navigate = useNavigate();
-  const action = useAction();
-  const [kind, setKind] = useState<AgreementKind>(AGREEMENT_KIND.terms);
-  const [version, setVersion] = useState("");
-  const [summary, setSummary] = useState("");
-  const [body, setBody] = useState("");
+  const form = useNewDraftForm();
 
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-border p-3">
@@ -39,52 +29,38 @@ function AgreementDraftForm(): ReactElement {
         <SelectField
           label="種類"
           name="kind"
-          onValueChange={(value) => {
-            if (isKind(value)) {
-              setKind(value);
-            }
-          }}
+          onValueChange={form.handleKindChange}
           options={kindOptions}
-          value={kind}
+          value={form.kind}
         />
         <Field
           label="版"
           maxLength={maximumVersionLength}
           name="version"
-          onValueChange={setVersion}
+          onValueChange={form.handleVersionChange}
           pattern={versionLabelPattern.source}
           required
-          value={version}
+          value={form.version}
         />
         <Field
           label="変更の要約"
           maxLength={maximumSummaryLength}
           name="summary"
-          onValueChange={setSummary}
-          value={summary}
+          onValueChange={form.handleSummaryChange}
+          value={form.summary}
         />
         <Field
           label="本文"
           maxLength={maximumBodyLength}
           multiline
           name="body"
-          onValueChange={setBody}
+          onValueChange={form.handleBodyChange}
           required
-          value={body}
+          value={form.body}
         />
       </FormColumn>
-      {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
-      <Button
-        disabled={action.blocked || version.trim() === "" || body.trim() === ""}
-        onClick={() => {
-          action.run(async () => {
-            const saved = await createDraft({ body, kind, summary, version });
-            await navigate({ params: { version: saved.version }, to: "/terms/$version" });
-          });
-        }}
-        type="button"
-        variant="primary"
-      >
+      {form.error !== undefined && <p className="text-sm text-destructive">{form.error}</p>}
+      <Button disabled={form.blocked} onClick={form.handleSave} type="button" variant="primary">
         草稿を保存
       </Button>
     </section>

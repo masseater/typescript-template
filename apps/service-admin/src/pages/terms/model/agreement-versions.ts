@@ -1,6 +1,8 @@
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { useEffect, useState } from "react";
+import { requestAtom, type RequestResult } from "@repo/ui";
+import { Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
 import { AgreementVersionDetail, AgreementVersionList } from "#shared/contracts/index.ts";
@@ -8,79 +10,44 @@ import { AgreementVersionDetail, AgreementVersionList } from "#shared/contracts/
 type VersionList = typeof AgreementVersionList.Type;
 type VersionDetail = typeof AgreementVersionDetail.Type;
 
-type Loaded<Value> =
-  | Readonly<{ status: "failed"; message: string }>
-  | Readonly<{ status: "loaded"; value: Value }>
-  | Readonly<{ status: "loading" }>;
+interface Loaded<Value> {
+  readonly reload: () => void;
+  readonly state: RequestResult<Value>;
+}
 
-async function fetchVersions(): Promise<Loaded<VersionList>> {
+async function fetchVersions(): Promise<VersionList> {
   try {
-    return {
-      status: "loaded",
-      value: apiData(AgreementVersionList, await adminClient().agreements.get()),
-    };
-  } catch (error) {
-    return { message: errorMessage(error), status: "failed" };
+    return apiData(AgreementVersionList, await adminClient().agreements.get());
+  } catch (failure) {
+    throw new Error(errorMessage(failure));
   }
 }
 
-async function fetchVersion(version: string): Promise<Loaded<VersionDetail>> {
+async function fetchVersion(version: string): Promise<VersionDetail> {
   try {
-    return {
-      status: "loaded",
-      value: apiData(
-        AgreementVersionDetail,
-        await adminClient().agreements.version.get({ query: { version } }),
-      ),
-    };
-  } catch (error) {
-    return { message: errorMessage(error), status: "failed" };
+    return apiData(
+      AgreementVersionDetail,
+      await adminClient().agreements.version.get({ query: { version } }),
+    );
+  } catch (failure) {
+    throw new Error(errorMessage(failure));
   }
 }
 
-interface Outcome<Value> {
-  readonly attempt: number;
-  readonly key: string;
-  readonly state: Loaded<Value>;
+const versionListAtom = requestAtom(fetchVersions);
+
+const versionDetailAtom = Atom.family((version: string) =>
+  requestAtom(async () => fetchVersion(version)),
+);
+
+function useAgreementVersions(): Loaded<VersionList> {
+  return { reload: useAtomRefresh(versionListAtom), state: useAtomValue(versionListAtom) };
 }
 
-function useLoaded<Value>(
-  key: string,
-  load: (key: string) => Promise<Loaded<Value>>,
-): Readonly<{ reload: () => void; state: Loaded<Value> }> {
-  const [attempt, setAttempt] = useState(0);
-  const [outcome, setOutcome] = useState<Outcome<Value>>();
-  useEffect(() => {
-    const controller = { active: true };
-    async function run(): Promise<void> {
-      const state = await load(key);
-      if (controller.active) {
-        setOutcome({ attempt, key, state });
-      }
-    }
-    void run();
-    return (): void => {
-      controller.active = false;
-    };
-  }, [attempt, key, load]);
-  const current = outcome?.key === key && outcome.attempt === attempt;
-  return {
-    reload: (): void => {
-      setAttempt((count) => count + 1);
-    },
-    state: current ? outcome.state : { status: "loading" },
-  };
-}
-
-function useAgreementVersions(): Readonly<{ reload: () => void; state: Loaded<VersionList> }> {
-  return useLoaded("list", fetchVersions);
-}
-
-function useAgreementVersion(
-  version: string,
-): Readonly<{ reload: () => void; state: Loaded<VersionDetail> }> {
-  return useLoaded(version, fetchVersion);
+function useAgreementVersion(version: string): Loaded<VersionDetail> {
+  const atom = versionDetailAtom(version);
+  return { reload: useAtomRefresh(atom), state: useAtomValue(atom) };
 }
 
 export { useAgreementVersion, useAgreementVersions };
-export type { Loaded, VersionDetail, VersionList };
+export type { VersionDetail, VersionList };

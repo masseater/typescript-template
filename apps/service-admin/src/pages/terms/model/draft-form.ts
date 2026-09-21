@@ -1,20 +1,28 @@
+import { useAtom } from "@effect/atom-react";
 import { useAction } from "@repo/ui";
-import { useState } from "react";
+import { Atom } from "effect/unstable/reactivity";
 
 import { publishVersion, reviseDraft } from "#pages/terms/api/agreement-versions.ts";
 
 import type { VersionDetail } from "#pages/terms/model/agreement-versions.ts";
 
-interface DraftForm {
-  readonly blocked: boolean;
+interface DraftFields {
   readonly body: string;
+  readonly summary: string;
+}
+
+interface DraftForm extends DraftFields {
+  readonly blocked: boolean;
   readonly error: string | undefined;
   readonly handleBodyChange: (value: string) => void;
   readonly handleSummaryChange: (value: string) => void;
   readonly handlePublish: () => void;
   readonly handleSave: () => void;
-  readonly summary: string;
 }
+
+const draftAtom = Atom.family((initial: Readonly<VersionDetail>) =>
+  Atom.make<DraftFields>({ body: initial.body, summary: initial.summary ?? "" }),
+);
 
 function useDraftForm(
   initial: Readonly<VersionDetail>,
@@ -23,29 +31,31 @@ function useDraftForm(
     onSaved: () => void;
   }>,
 ): DraftForm {
-  const [body, setBody] = useState(initial.body);
-  const [summary, setSummary] = useState(initial.summary ?? "");
+  const [fields, setFields] = useAtom(draftAtom(initial));
   const action = useAction();
   return {
-    blocked: action.blocked || body.trim() === "",
-    body,
+    ...fields,
+    blocked: action.blocked || fields.body.trim() === "",
     error: action.error,
-    handleBodyChange: setBody,
-    handleSummaryChange: setSummary,
+    handleBodyChange: (body): void => {
+      setFields((current) => ({ ...current, body }));
+    },
+    handleSummaryChange: (summary): void => {
+      setFields((current) => ({ ...current, summary }));
+    },
     handlePublish: (): void => {
       action.run(async () => {
-        await reviseDraft({ body, id: initial.id, summary });
+        await reviseDraft({ ...fields, id: initial.id });
         const published = await publishVersion(initial.id);
         await outcomes.onPublished(published.version);
       });
     },
     handleSave: (): void => {
       action.run(async () => {
-        await reviseDraft({ body, id: initial.id, summary });
+        await reviseDraft({ ...fields, id: initial.id });
         outcomes.onSaved();
       });
     },
-    summary,
   };
 }
 
