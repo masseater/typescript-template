@@ -6,13 +6,21 @@ import {
   epochMillis,
   fileExists,
   joinPath,
-  makeTempDirectory,
   readDirectory,
   readFileString,
   removePath,
   writeFileString,
 } from "../host.ts";
 import { runThrottle } from "./run-throttle.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly mkdtempSync: (prefix: string) => string;
+  readonly realpathSync: (location: string) => string;
+};
+
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
 
 const TRIVIAL_COMMAND = ["--", process.execPath, "-e", ""];
 
@@ -21,14 +29,14 @@ const SLOT_MARKER_PATTERN = /^slot-\d+$/u;
 describe("runThrottle", () => {
   const throttleTest = standardIoTest
     .extend("slotDirectory", ({}, { onCleanup }) => {
-      const slotArea = makeTempDirectory("throttle-run-");
+      const slotArea = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-run-"));
       onCleanup(() => {
         removePath(slotArea);
       });
       return slotArea;
     })
     .extend("stampsDirectory", ({}, { onCleanup }) => {
-      const stampsArea = makeTempDirectory("throttle-stamps-");
+      const stampsArea = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-stamps-"));
       onCleanup(() => {
         removePath(stampsArea);
       });

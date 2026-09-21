@@ -2,19 +2,14 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { waitEmitterEvent } from "../emitter-wait.ts";
-import { closeDescriptor, openWritableDescriptor, writeDescriptor } from "../host-descriptors.ts";
+import { closeDescriptor } from "../host-descriptors.ts";
 import {
   baseName,
-  changeMode,
-  delay,
   fileExists,
-  fileInfo,
   joinPath,
   makeDirectory,
-  makeTempDirectory,
   readDirectory,
   readFileString,
-  removeDirectory,
   removePath,
   writeFileString,
 } from "../host.ts";
@@ -28,6 +23,19 @@ import {
   sweepWaiters,
   tryAcquireAny,
 } from "./slots.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly chmodSync: (location: string, mode: number) => void;
+  readonly mkdtempSync: (prefix: string) => string;
+  readonly openSync: (location: string, flags: string) => number;
+  readonly rmdirSync: (location: string) => void;
+  readonly statSync: (location: string) => { readonly size: number; isFile: () => boolean };
+  readonly writeSync: (descriptor: number, written: string) => number;
+};
+
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
 
 const EXITED_PID = 999_999_999;
 
@@ -43,7 +51,7 @@ const HOLDER_SOURCE = [
 
 describe("ensureSlots", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -85,17 +93,17 @@ describe("ensureSlots", () => {
       .extend("firstSlotLockIsAPlainFileAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return fileInfo(joinPath(slotDirectory, "slot-0.lock")).isFile();
+        return nodeFs.statSync(joinPath(slotDirectory, "slot-0.lock")).isFile();
       })
       .extend("secondSlotLockIsAPlainFileAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return fileInfo(joinPath(slotDirectory, "slot-1.lock")).isFile();
+        return nodeFs.statSync(joinPath(slotDirectory, "slot-1.lock")).isFile();
       })
       .extend("thirdSlotLockIsAPlainFileAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
         ensureSlots(slotDirectory, 3);
-        return fileInfo(joinPath(slotDirectory, "slot-2.lock")).isFile();
+        return nodeFs.statSync(joinPath(slotDirectory, "slot-2.lock")).isFile();
       })
       .extend("waitersDirectoryAfterEnsuringTwice", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 3);
@@ -226,7 +234,7 @@ describe("ensureSlots", () => {
       .extend("theRefusalOfReclaimingTheLockAsADirectory", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
         try {
-          removeDirectory(joinPath(slotDirectory, "slot-0.lock"));
+          nodeFs.rmdirSync(joinPath(slotDirectory, "slot-0.lock"));
         } catch (refusal) {
           return failedWithCode(refusal, new Set(["ENOTDIR", "EPERM"]));
         }
@@ -249,7 +257,7 @@ describe("ensureSlots", () => {
 
 describe("tryAcquireAny", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -357,11 +365,9 @@ describe("tryAcquireAny", () => {
               tryAcquireAny({ slotDir: slotDirectory, limit: 1 }),
             );
             if (held) yield* Effect.promise(() => held.release());
-            const unrelatedDescriptor = openWritableDescriptor(
-              joinPath(slotDirectory, "unrelated"),
-            );
+            const unrelatedDescriptor = nodeFs.openSync(joinPath(slotDirectory, "unrelated"), "w");
             if (held) yield* Effect.promise(() => held.release());
-            const bytesWritten = writeDescriptor(unrelatedDescriptor, "still-open");
+            const bytesWritten = nodeFs.writeSync(unrelatedDescriptor, "still-open");
             closeDescriptor(unrelatedDescriptor);
             return bytesWritten;
           }),
@@ -435,7 +441,7 @@ describe("tryAcquireAny", () => {
 
 describe("slotStateFingerprint", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -444,7 +450,9 @@ describe("slotStateFingerprint", () => {
 
   describe("two slots standing free", () => {
     const it = test.extend("theFingerprintOfFreeSlots", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+      const temporarySlotDirectory = nodeFs.mkdtempSync(
+        joinPath(nodeOs.tmpdir(), "throttle-slots-"),
+      );
       onCleanup(() => {
         removePath(temporarySlotDirectory);
       });
@@ -550,7 +558,9 @@ describe("slotStateFingerprint", () => {
 
   describe("a slot marker that is not on disk", () => {
     const it = test.extend("theFingerprintOfAMissingMarker", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+      const temporarySlotDirectory = nodeFs.mkdtempSync(
+        joinPath(nodeOs.tmpdir(), "throttle-slots-"),
+      );
       onCleanup(() => {
         removePath(temporarySlotDirectory);
       });
@@ -567,7 +577,7 @@ describe("slotStateFingerprint", () => {
 
 describe("a slot whose holder is killed without releasing it", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -678,7 +688,7 @@ describe("a slot whose holder is killed without releasing it", () => {
 
 describe("sweepWaiters", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -790,7 +800,7 @@ describe("sweepWaiters", () => {
 
 describe("removeWaiter", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -814,7 +824,7 @@ describe("removeWaiter", () => {
 
 describe("enqueueWaiter", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -827,7 +837,7 @@ describe("enqueueWaiter", () => {
         Effect.gen(function* () {
           ensureSlots(slotDirectory, 1);
           const first = enqueueWaiter(slotDirectory);
-          yield* Effect.promise(() => delay(5));
+          yield* Effect.sleep("5 millis");
           const second = enqueueWaiter(slotDirectory);
           return (
             sweepWaiters(slotDirectory).join("\n") ===
@@ -848,13 +858,15 @@ describe("enqueueWaiter", () => {
 describe("a slot directory this process may not read", () => {
   describe("a fingerprint read off a directory closed to this process", () => {
     const it = test.extend("theFingerprintOfAClosedSlotDirectory", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+      const temporarySlotDirectory = nodeFs.mkdtempSync(
+        joinPath(nodeOs.tmpdir(), "throttle-slots-"),
+      );
       onCleanup(() => {
-        changeMode(temporarySlotDirectory, 0o700);
+        nodeFs.chmodSync(temporarySlotDirectory, 0o700);
         removePath(temporarySlotDirectory);
       });
       ensureSlots(temporarySlotDirectory, 1);
-      changeMode(temporarySlotDirectory, 0o000);
+      nodeFs.chmodSync(temporarySlotDirectory, 0o000);
       return slotStateFingerprint(temporarySlotDirectory, 1);
     });
 
@@ -867,13 +879,15 @@ describe("a slot directory this process may not read", () => {
 
   describe("a sweep over an entry closed to this process", () => {
     const it = test.extend("theRefusalOfAClosedWaiterEntry", ({}, { onCleanup }) => {
-      const temporarySlotDirectory = makeTempDirectory("throttle-slots-");
+      const temporarySlotDirectory = nodeFs.mkdtempSync(
+        joinPath(nodeOs.tmpdir(), "throttle-slots-"),
+      );
       onCleanup(() => {
-        changeMode(temporarySlotDirectory, 0o700);
+        nodeFs.chmodSync(temporarySlotDirectory, 0o700);
         removePath(temporarySlotDirectory);
       });
       ensureSlots(temporarySlotDirectory, 1);
-      changeMode(enqueueWaiter(temporarySlotDirectory), 0o000);
+      nodeFs.chmodSync(enqueueWaiter(temporarySlotDirectory), 0o000);
       try {
         return sweepWaiters(temporarySlotDirectory);
       } catch (refused) {

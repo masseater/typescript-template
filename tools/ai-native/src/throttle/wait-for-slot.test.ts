@@ -2,17 +2,18 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import {
-  delay,
-  epochMillis,
-  joinPath,
-  makeTempDirectory,
-  readDirectory,
-  removePath,
-  writeFileString,
-} from "../host.ts";
+import { epochMillis, joinPath, readDirectory, removePath, writeFileString } from "../host.ts";
 import { runThrottle } from "./run-throttle.ts";
 import { ensureSlots, tryAcquireAny } from "./slots.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly mkdtempSync: (prefix: string) => string;
+  readonly realpathSync: (location: string) => string;
+};
+
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
 
 const TRIVIAL_COMMAND = ["--", process.execPath, "-e", ""];
 
@@ -28,7 +29,7 @@ const EXITED_PID = 999_999_999;
 
 describe("waitForSlot", () => {
   const throttleTest = standardIoTest.extend("slotDirectory", ({}, { onCleanup }) => {
-    const temporarySlotDirectory = makeTempDirectory("throttle-wait-");
+    const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-wait-"));
     onCleanup(() => {
       removePath(temporarySlotDirectory);
     });
@@ -52,7 +53,7 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: false,
             });
-            yield* Effect.promise(() => delay(350));
+            yield* Effect.sleep("350 millis");
             yield* Effect.promise(() => hold.release());
             return yield* Effect.promise(() => pendingRun);
           }),
@@ -74,7 +75,7 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: false,
             });
-            yield* Effect.promise(() => delay(350));
+            yield* Effect.sleep("350 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
             const elapsed = epochMillis() - before;
@@ -118,9 +119,9 @@ describe("waitForSlot", () => {
               isInteractive: false,
             };
             const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(150));
+            yield* Effect.sleep("150 millis");
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
@@ -147,9 +148,9 @@ describe("waitForSlot", () => {
               isInteractive: false,
             };
             const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(150));
+            yield* Effect.sleep("150 millis");
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             writeFileString({
               location: joinPath(
                 slotDirectory,
@@ -158,7 +159,7 @@ describe("waitForSlot", () => {
               ),
               written: `${String(EXITED_PID)}\n`,
             });
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
@@ -185,11 +186,11 @@ describe("waitForSlot", () => {
               isInteractive: false,
             };
             const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(150));
+            yield* Effect.sleep("150 millis");
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             yield* Effect.promise(() => hold.release());
-            yield* Effect.promise(() => delay(150));
+            yield* Effect.sleep("150 millis");
             const waiting = readDirectory(joinPath(slotDirectory, "waiters")).map(
               (waiterFileName) => waiterFileName.split("-").at(1),
             );
@@ -215,9 +216,9 @@ describe("waitForSlot", () => {
               isInteractive: false,
             };
             const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(150));
+            yield* Effect.sleep("150 millis");
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
@@ -241,9 +242,9 @@ describe("waitForSlot", () => {
               isInteractive: false,
             };
             const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(150));
+            yield* Effect.sleep("150 millis");
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
@@ -267,9 +268,9 @@ describe("waitForSlot", () => {
               isInteractive: false,
             };
             const runA = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(150));
+            yield* Effect.sleep("150 millis");
             const runB = runThrottle(SHORT_SLEEP_COMMAND, seams);
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => runA);
             yield* Effect.promise(() => runB);
@@ -562,7 +563,7 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.promise(() => delay(350));
+            yield* Effect.sleep("350 millis");
             yield* Effect.promise(() => hold.release());
             return yield* Effect.promise(() => pendingRun);
           }),
@@ -583,7 +584,7 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.promise(() => delay(350));
+            yield* Effect.sleep("350 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
             return stderr.text().includes("\r");
@@ -605,7 +606,7 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.promise(() => delay(350));
+            yield* Effect.sleep("350 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
             return stderr.text().includes("throttle: waiting 1/1 0s");
@@ -627,7 +628,7 @@ describe("waitForSlot", () => {
               pollMs: 100,
               isInteractive: true,
             });
-            yield* Effect.promise(() => delay(350));
+            yield* Effect.sleep("350 millis");
             yield* Effect.promise(() => hold.release());
             yield* Effect.promise(() => pendingRun);
             return stderr.text().includes("0s\n");

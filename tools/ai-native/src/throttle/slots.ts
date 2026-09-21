@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+
 import {
   epochMillis,
   joinPath,
@@ -47,7 +49,7 @@ const firstFreeSlot = (configuration: AcquireConfiguration): SlotHold | null => 
 };
 
 export const tryAcquireAny = (configuration: AcquireConfiguration): Promise<SlotHold | null> =>
-  Promise.resolve(firstFreeSlot(configuration));
+  Effect.runPromise(Effect.try(() => firstFreeSlot(configuration)));
 
 const generationIdentity = (marker: string): string => {
   try {

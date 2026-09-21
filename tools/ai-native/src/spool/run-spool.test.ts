@@ -1,26 +1,41 @@
 import { standardIoTest } from "@repo/dont-review-it";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
 import {
   baseName,
-  dateFrom,
-  delay,
   fileExists,
   joinPath,
   makeDirectory,
-  makeTempDirectory,
   parentPath,
   readDirectory,
   readFileString,
   removePath,
   writeFileString,
 } from "../host.ts";
-import { PassThrough, openReadStream } from "../node-file-stream.ts";
 import { spawnChildSync } from "../node-spawn.ts";
 import { runSpool } from "./run-spool.ts";
 
-class CapturedStream extends PassThrough {
+const fileStreamApi = process.getBuiltinModule("fs") as {
+  readonly createReadStream: (location: string) => {
+    destroy: () => void;
+    pipe: (destination: unknown, options?: { end?: boolean }) => unknown;
+  };
+  readonly mkdtempSync: (prefix: string) => string;
+};
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
+const streamApi = process.getBuiltinModule("stream") as {
+  readonly PassThrough: new () => {
+    end: () => void;
+    on: (event: string, listener: (part: Buffer) => void) => unknown;
+    pipe: (destination: unknown, options?: { end?: boolean }) => unknown;
+    write: (part: string | Uint8Array) => boolean;
+  };
+};
+
+class CapturedStream extends streamApi.PassThrough {
   private captured = "";
 
   constructor() {
@@ -43,7 +58,7 @@ const SEAM_SUFFIX = "cafe0123";
 
 const SEAMED_LOG_NAME = "20260811T120000Z-node--e-cafe0123.log";
 
-const TEST_ROOT = makeTempDirectory("run-spool-test-");
+const TEST_ROOT = fileStreamApi.mkdtempSync(joinPath(nodeOs.tmpdir(), "run-spool-test-"));
 
 const SILENT_SCRIPT = "";
 
@@ -209,7 +224,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => SILENT_COMMAND_ROOT,
@@ -227,7 +242,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => SILENT_COMMAND_ROOT,
@@ -262,7 +277,7 @@ describe("runSpool", () => {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => 0,
               spoolRoot: () => ESCAPED_OUTPUT_ROOT,
@@ -289,7 +304,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
@@ -307,7 +322,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => INTERLEAVED_OUTPUT_ROOT,
@@ -350,14 +365,14 @@ describe("runSpool", () => {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => 0,
               spoolRoot: () => DELAYED_MARK_ROOT,
             });
             const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
             while (!fileExists(logPath) || !readFileString(logPath).includes("first-mark")) {
-              yield* Effect.promise(() => delay(20));
+              yield* Effect.sleep("20 millis");
             }
             const observed = readFileString(logPath);
             yield* Effect.promise(() => running);
@@ -376,14 +391,14 @@ describe("runSpool", () => {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => 0,
               spoolRoot: () => DELAYED_MARK_ROOT,
             });
             const logPath = joinPath(DELAYED_MARK_ROOT, SEAMED_LOG_NAME);
             while (!fileExists(logPath) || !readFileString(logPath).includes("first-mark")) {
-              yield* Effect.promise(() => delay(20));
+              yield* Effect.sleep("20 millis");
             }
             const settled = yield* Effect.promise(() =>
               Promise.race([running, Promise.resolve("still recording")]),
@@ -402,7 +417,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => DELAYED_MARK_ROOT,
@@ -420,7 +435,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => DELAYED_MARK_ROOT,
@@ -477,7 +492,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => FAILING_ROOT,
@@ -495,7 +510,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => FAILING_ROOT,
@@ -517,7 +532,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => FAILING_ROOT,
@@ -556,7 +571,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => THIRTY_ROWS_ROOT,
@@ -574,7 +589,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => THIRTY_ROWS_ROOT,
@@ -607,7 +622,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => PARTIAL_LINE_ROOT,
@@ -625,7 +640,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => PARTIAL_LINE_ROOT,
@@ -658,7 +673,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => SELF_KILLING_ROOT,
@@ -676,7 +691,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => SELF_KILLING_ROOT,
@@ -698,7 +713,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => SELF_KILLING_ROOT,
@@ -735,7 +750,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => MISSING_EXECUTABLE_ROOT,
@@ -753,7 +768,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => MISSING_EXECUTABLE_ROOT,
@@ -775,7 +790,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => MISSING_EXECUTABLE_ROOT,
@@ -797,7 +812,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => MISSING_EXECUTABLE_ROOT,
@@ -844,7 +859,7 @@ describe("runSpool", () => {
           stdout: process.stdout,
           stderr: process.stderr,
           isPassthrough: () => false,
-          now: () => dateFrom(SEAM_INSTANT),
+          now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
           uniqueSuffix: () => SEAM_SUFFIX,
           monotonicNow: () => 0,
           spoolRoot: () => BLOCKED_ROOT,
@@ -864,7 +879,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => BLOCKED_ROOT,
@@ -888,7 +903,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => BLOCKED_ROOT,
@@ -912,7 +927,7 @@ describe("runSpool", () => {
                 stdout: process.stdout,
                 stderr: process.stderr,
                 isPassthrough: () => false,
-                now: () => dateFrom(SEAM_INSTANT),
+                now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                 uniqueSuffix: () => SEAM_SUFFIX,
                 monotonicNow: () => 0,
                 spoolRoot: () => BLOCKED_ROOT,
@@ -963,16 +978,16 @@ describe("runSpool", () => {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => 0,
               spoolRoot: () => FIFO_ROOT,
             });
-            const reader = openReadStream(fifoPath);
+            const reader = fileStreamApi.createReadStream(fifoPath);
             const observed = new CapturedStream();
             reader.pipe(observed);
             while (!observed.text().includes("phase one")) {
-              yield* Effect.promise(() => delay(20));
+              yield* Effect.sleep("20 millis");
             }
             reader.destroy();
             writeFileString({ location: FIFO_GATE, written: "open" });
@@ -999,16 +1014,16 @@ describe("runSpool", () => {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => 0,
               spoolRoot: () => FIFO_ROOT,
             });
-            const reader = openReadStream(fifoPath);
+            const reader = fileStreamApi.createReadStream(fifoPath);
             const observed = new CapturedStream();
             reader.pipe(observed);
             while (!observed.text().includes("phase one")) {
-              yield* Effect.promise(() => delay(20));
+              yield* Effect.sleep("20 millis");
             }
             reader.destroy();
             writeFileString({ location: FIFO_GATE, written: "open" });
@@ -1036,16 +1051,16 @@ describe("runSpool", () => {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => 0,
               spoolRoot: () => FIFO_ROOT,
             });
-            const reader = openReadStream(fifoPath);
+            const reader = fileStreamApi.createReadStream(fifoPath);
             const observed = new CapturedStream();
             reader.pipe(observed);
             while (!observed.text().includes("phase one")) {
-              yield* Effect.promise(() => delay(20));
+              yield* Effect.sleep("20 millis");
             }
             reader.destroy();
             writeFileString({ location: FIFO_GATE, written: "open" });
@@ -1073,16 +1088,16 @@ describe("runSpool", () => {
               stdout: process.stdout,
               stderr: process.stderr,
               isPassthrough: () => false,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => 0,
               spoolRoot: () => FIFO_ROOT,
             });
-            const reader = openReadStream(fifoPath);
+            const reader = fileStreamApi.createReadStream(fifoPath);
             const observed = new CapturedStream();
             reader.pipe(observed);
             while (!observed.text().includes("phase one")) {
-              yield* Effect.promise(() => delay(20));
+              yield* Effect.sleep("20 millis");
             }
             reader.destroy();
             writeFileString({ location: FIFO_GATE, written: "open" });
@@ -1163,7 +1178,7 @@ describe("runSpool", () => {
               stderr: process.stderr,
               isPassthrough: () => false,
               spoolRoot: () => CONCURRENT_ROOT,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               monotonicNow: () => 0,
             });
           }),
@@ -1184,7 +1199,7 @@ describe("runSpool", () => {
                     stderr: process.stderr,
                     isPassthrough: () => false,
                     spoolRoot: () => CONCURRENT_ROOT,
-                    now: () => dateFrom(SEAM_INSTANT),
+                    now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                     monotonicNow: () => 0,
                   });
                 }),
@@ -1211,7 +1226,7 @@ describe("runSpool", () => {
                     stderr: process.stderr,
                     isPassthrough: () => false,
                     spoolRoot: () => CONCURRENT_ROOT,
-                    now: () => dateFrom(SEAM_INSTANT),
+                    now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                     monotonicNow: () => 0,
                   });
                 }),
@@ -1241,7 +1256,7 @@ describe("runSpool", () => {
                     stderr: process.stderr,
                     isPassthrough: () => false,
                     spoolRoot: () => CONCURRENT_ROOT,
-                    now: () => dateFrom(SEAM_INSTANT),
+                    now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
                     monotonicNow: () => 0,
                   });
                 }),
@@ -1325,7 +1340,7 @@ describe("runSpool", () => {
               stderr: process.stderr,
               isPassthrough: () => false,
               spoolRoot: () => ELAPSED_SECONDS_ROOT,
-              now: () => dateFrom(SEAM_INSTANT),
+              now: () => DateTime.toDate(DateTime.makeUnsafe(SEAM_INSTANT)),
               uniqueSuffix: () => SEAM_SUFFIX,
               monotonicNow: () => ticks.next().value ?? 0,
             }),

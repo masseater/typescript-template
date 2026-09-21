@@ -4,11 +4,26 @@ import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { waitChildExit } from "../emitter-wait.ts";
-import { delay, joinPath, makeTempDirectory, readDirectory, removePath } from "../host.ts";
-import { consumeText } from "../node-file-stream.ts";
+import { waitEmitterEvent } from "../emitter-wait.ts";
+import { joinPath, readDirectory, removePath } from "../host.ts";
+import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
 import { spawnChild } from "../node-spawn.ts";
 import { ensureSlots, tryAcquireAny } from "./slots.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly mkdtempSync: (prefix: string) => string;
+  readonly realpathSync: (location: string) => string;
+};
+
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
+
+type ChildExit = readonly [number | null, NodeJS.Signals | null];
+
+const streamConsumers = process.getBuiltinModule("stream/consumers") as {
+  readonly text: (readable: unknown) => Promise<string>;
+};
 
 const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
 
@@ -18,7 +33,7 @@ const TWO_STREAM_SCRIPT =
 describe("cli", () => {
   describe("a call that names no command", () => {
     const it = test.extend("theWayThrottleAnswersACallWithoutACommand", ({}, { onCleanup }) => {
-      const tmpRoot = makeTempDirectory("throttle-cli-tmp-");
+      const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
       onCleanup(() => {
         removePath(tmpRoot);
       });
@@ -31,9 +46,9 @@ describe("cli", () => {
         },
       });
       return Promise.all([
-        waitChildExit(child),
-        consumeText(child.stdout),
-        consumeText(child.stderr),
+        waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+        streamConsumers.text(child.stdout),
+        streamConsumers.text(child.stderr),
       ]);
     });
 
@@ -92,9 +107,9 @@ describe("cli", () => {
           },
         });
         return Promise.all([
-          waitChildExit(child),
-          consumeText(child.stdout),
-          consumeText(child.stderr),
+          waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+          streamConsumers.text(child.stdout),
+          streamConsumers.text(child.stderr),
         ]);
       });
 
@@ -113,7 +128,7 @@ describe("cli", () => {
 
     describe("started through the wrapper", () => {
       const it = test.extend("theWayThrottleRunsIt", ({}, { onCleanup }) => {
-        const tmpRoot = makeTempDirectory("throttle-cli-tmp-");
+        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
         onCleanup(() => {
           removePath(tmpRoot);
         });
@@ -126,9 +141,9 @@ describe("cli", () => {
           },
         });
         return Promise.all([
-          waitChildExit(child),
-          consumeText(child.stdout),
-          consumeText(child.stderr),
+          waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+          streamConsumers.text(child.stdout),
+          streamConsumers.text(child.stderr),
         ]);
       });
 
@@ -148,24 +163,23 @@ describe("cli", () => {
 
   describe("a wrapper left waiting because the only slot is held", () => {
     describe("when a SIGTERM reaches it", () => {
-      const it = test.extend("theWayAWaitingWrapperEnds", ({}, { onCleanup }) =>
-        Effect.runPromise(
+      const it = test.extend("theWayAWaitingWrapperEnds", ({}, { onCleanup }) => {
+        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
+        onCleanup(() => {
+          removePath(tmpRoot);
+        });
+        return Effect.runPromise(
           Effect.gen(function* () {
-            const tmpRoot = makeTempDirectory("throttle-cli-tmp-");
-            onCleanup(() => {
-              removePath(tmpRoot);
-            });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
             ensureSlots(slotDir, 1);
             const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
                 const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
                 if (held !== null) return held.release;
-                yield* Effect.promise(() => delay(200));
+                yield* Effect.sleep("200 millis");
                 return yield* holdTheOnlySlot();
               });
             const release = yield* holdTheOnlySlot();
-            onCleanup(release);
             const child = spawnChild({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", ""],
@@ -182,18 +196,24 @@ describe("cli", () => {
             const untilEnqueued = (): Effect.Effect<void> =>
               Effect.gen(function* () {
                 if (ownEntries().length === 1) return;
-                yield* Effect.promise(() => delay(100));
+                yield* Effect.sleep("100 millis");
                 return yield* untilEnqueued();
               });
             yield* untilEnqueued();
             child.kill("SIGTERM");
             const { stdout } = child;
             if (stdout === null) throw new Error("stdout was not piped");
-            return yield* Effect.promise(() =>
-              Promise.all([waitChildExit(child), consumeText(stdout)]),
+            const ended = yield* Effect.promise(() =>
+              Promise.all([
+                waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+                streamConsumers.text(stdout),
+              ]),
             );
+            yield* Effect.promise(() => release());
+            return ended;
           }),
-        ));
+        );
+      });
 
       it(
         "dies of the signal it was sent, having written nothing to stdout",
@@ -205,24 +225,23 @@ describe("cli", () => {
     });
 
     describe("once a SIGTERM has ended it", () => {
-      const it = test.extend("theQueueEntriesOfAKilledWrapper", ({}, { onCleanup }) =>
-        Effect.runPromise(
+      const it = test.extend("theQueueEntriesOfAKilledWrapper", ({}, { onCleanup }) => {
+        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
+        onCleanup(() => {
+          removePath(tmpRoot);
+        });
+        return Effect.runPromise(
           Effect.gen(function* () {
-            const tmpRoot = makeTempDirectory("throttle-cli-tmp-");
-            onCleanup(() => {
-              removePath(tmpRoot);
-            });
             const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
             ensureSlots(slotDir, 1);
             const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
               Effect.gen(function* () {
                 const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
                 if (held !== null) return held.release;
-                yield* Effect.promise(() => delay(200));
+                yield* Effect.sleep("200 millis");
                 return yield* holdTheOnlySlot();
               });
             const release = yield* holdTheOnlySlot();
-            onCleanup(release);
             const child = spawnChild({
               executable: process.execPath,
               handed: [CLI_PATH, "--", process.execPath, "-e", ""],
@@ -239,22 +258,27 @@ describe("cli", () => {
             const untilEnqueued = (): Effect.Effect<void> =>
               Effect.gen(function* () {
                 if (ownEntries().length === 1) return;
-                yield* Effect.promise(() => delay(100));
+                yield* Effect.sleep("100 millis");
                 return yield* untilEnqueued();
               });
             yield* untilEnqueued();
             child.kill("SIGTERM");
-            yield* Effect.promise(() => waitChildExit(child));
+            yield* Effect.promise(() =>
+              waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+            );
             const untilDrained = (): Effect.Effect<void> =>
               Effect.gen(function* () {
                 if (ownEntries().length === 0) return;
-                yield* Effect.promise(() => delay(100));
+                yield* Effect.sleep("100 millis");
                 return yield* untilDrained();
               });
             yield* untilDrained();
-            return ownEntries();
+            const drained = ownEntries();
+            yield* Effect.promise(() => release());
+            return drained;
           }),
-        ));
+        );
+      });
 
       it(
         "has taken its own entry out of the wait queue",

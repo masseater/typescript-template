@@ -4,18 +4,20 @@ import { standardIoTest } from "@repo/dont-review-it";
 import { Effect } from "effect";
 import { describe, expect, vi } from "vite-plus/test";
 
-import {
-  delay,
-  epochMillis,
-  joinPath,
-  makeTempDirectory,
-  readFileString,
-  removePath,
-} from "../host.ts";
+import { epochMillis, joinPath, readFileString, removePath } from "../host.ts";
 import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
 import { TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
 import { runWithSlot } from "./run-command.ts";
 import { runThrottle } from "./run-throttle.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly mkdtempSync: (prefix: string) => string;
+  readonly realpathSync: (location: string) => string;
+};
+
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
 
 class FakeChildProcess extends EventEmitter {
   pid: number | undefined;
@@ -58,7 +60,7 @@ const LINGERING_ARGUMENTS = ["-e", "setInterval(() => {}, 1000);"];
 
 describe("runWithSlot", () => {
   const test = standardIoTest.extend("slotDirectory", ({}, { onCleanup }) => {
-    const madeSlotDirectory = makeTempDirectory("throttle-command-");
+    const madeSlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-command-"));
     onCleanup(() => {
       removePath(madeSlotDirectory);
     });
@@ -420,7 +422,9 @@ describe("runWithSlot", () => {
     const GRANDCHILD_KILL_GRACE_MS = 100;
     const it = test
       .extend("stampsDirectory", ({}, { onCleanup }) => {
-        const madeStampsDirectory = makeTempDirectory("throttle-tree-stamps-");
+        const madeStampsDirectory = nodeFs.mkdtempSync(
+          joinPath(nodeOs.tmpdir(), "throttle-tree-stamps-"),
+        );
         onCleanup(() => {
           removePath(madeStampsDirectory);
         });
@@ -530,7 +534,7 @@ describe("runWithSlot", () => {
                 },
               ),
             );
-            yield* Effect.promise(() => delay(200));
+            yield* Effect.sleep("200 millis");
             return yield* Effect.sync(() => {
               try {
                 process.kill(Number(readFileString(pidFile).trim()), 0);

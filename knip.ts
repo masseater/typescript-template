@@ -188,10 +188,6 @@ const config = ({
       "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
-      "tools/ai-native/src/emitter-wait.ts": ["exports"],
-      "tools/ai-native/src/host-descriptors.ts": ["exports"],
-      "tools/ai-native/src/host.ts": ["exports"],
-      "tools/ai-native/src/node-file-stream.ts": ["exports"],
     },
     treatConfigHintsAsErrors: true,
     workspaces: {

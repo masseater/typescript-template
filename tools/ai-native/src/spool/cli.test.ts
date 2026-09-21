@@ -6,18 +6,28 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { waitEmitterEvent } from "../emitter-wait.ts";
 import {
-  delay,
   fileExists,
-  fileInfo,
   joinPath,
-  makeTempDirectory,
   readDirectory,
   readFileString,
-  realPath,
   removePath,
   writeFileString,
 } from "../host.ts";
 import { spawnChild, spawnChildSync } from "../node-spawn.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly chmodSync: (location: string, mode: number) => void;
+  readonly mkdtempSync: (prefix: string) => string;
+  readonly openSync: (location: string, flags: string) => number;
+  readonly realpathSync: (location: string) => string;
+  readonly rmdirSync: (location: string) => void;
+  readonly statSync: (location: string) => { readonly size: number; isFile: () => boolean };
+  readonly writeSync: (descriptor: number, written: string) => number;
+};
+
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
 
 const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
 
@@ -42,7 +52,9 @@ describe("spool cli", () => {
   describe("a wrapped command writing far more than a screenful", () => {
     const it = test
       .extend("theWorkTreeOfALargeOutput", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -88,7 +100,9 @@ describe("spool cli", () => {
         theLogLineOfALargeOutput.includes("(5000000 bytes, 50000 lines)"),
       )
       .extend("theRecordsLeftByALargeOutput", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -110,7 +124,9 @@ describe("spool cli", () => {
         return length;
       })
       .extend("theSizeOfTheRecordLeftByALargeOutput", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -127,7 +143,7 @@ describe("spool cli", () => {
         });
         const recorded = readDirectory(joinPath(workTree, ".spool")).at(0);
         if (recorded === undefined) throw new Error("the run left no record behind");
-        const { size } = fileInfo(joinPath(workTree, ".spool", recorded));
+        const { size } = nodeFs.statSync(joinPath(workTree, ".spool", recorded));
         return size;
       });
 
@@ -185,7 +201,9 @@ describe("spool cli", () => {
   describe("a wrapped command under CI", () => {
     const it = test
       .extend("theRunUnderCi", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -215,7 +233,9 @@ describe("spool cli", () => {
         theRunUnderCi.stdout.includes("spool: log:"),
       )
       .extend("theSpoolDirectoryExistsAfterARunUnderCi", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -277,7 +297,9 @@ describe("spool cli", () => {
   describe("an invocation naming no command", () => {
     const it = test
       .extend("theRunWithoutACommand", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -333,7 +355,9 @@ describe("spool cli", () => {
   describe("a wrapped command that is itself a wrapping", () => {
     const it = test
       .extend("theDoublyWrappedRun", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -370,7 +394,9 @@ describe("spool cli", () => {
         return length;
       })
       .extend("theRecordsLeftByADoublyWrappedRun", ({}, { onCleanup }) => {
-        const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+        const workTree = nodeFs.realpathSync(
+          nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+        );
         onCleanup(() => {
           removePath(workTree);
         });
@@ -519,7 +545,9 @@ describe("spool cli", () => {
       .extend("theExitCodeOfAFastWriterRun", ({}, { onCleanup }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            const workTree = nodeFs.realpathSync(
+              nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+            );
             onCleanup(() => {
               removePath(workTree);
             });
@@ -541,7 +569,9 @@ describe("spool cli", () => {
       .extend("theCountOfRecordsLeftByAFastWriter", ({}, { onCleanup }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            const workTree = nodeFs.realpathSync(
+              nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+            );
             onCleanup(() => {
               removePath(workTree);
             });
@@ -564,7 +594,9 @@ describe("spool cli", () => {
       .extend("theSizeOfTheRecordLeftByAFastWriter", ({}, { onCleanup }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            const workTree = nodeFs.realpathSync(
+              nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+            );
             onCleanup(() => {
               removePath(workTree);
             });
@@ -581,7 +613,7 @@ describe("spool cli", () => {
             yield* Effect.promise(() => waitEmitterEvent(child, "close"));
             const recorded = readDirectory(joinPath(workTree, ".spool")).at(0);
             if (recorded === undefined) throw new Error("the run left no record behind");
-            const { size } = fileInfo(joinPath(workTree, ".spool", recorded));
+            const { size } = nodeFs.statSync(joinPath(workTree, ".spool", recorded));
             return size;
           }),
         ),
@@ -589,7 +621,9 @@ describe("spool cli", () => {
       .extend("theResidentMemoryOfAFastWriter", ({}, { onCleanup }) =>
         Effect.runPromise(
           Effect.gen(function* () {
-            const workTree = realPath(makeTempDirectory("spool-cli-test-"));
+            const workTree = nodeFs.realpathSync(
+              nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "spool-cli-test-")),
+            );
             onCleanup(() => {
               removePath(workTree);
             });
@@ -617,7 +651,7 @@ describe("spool cli", () => {
             const highestUntilClosed = (highest: number): Effect.Effect<number> =>
               Effect.gen(function* () {
                 if (child.exitCode !== null || child.signalCode !== null) return highest;
-                yield* Effect.promise(() => delay(50));
+                yield* Effect.sleep("50 millis");
                 return yield* highestUntilClosed(Math.max(highest, sampledBytes()));
               });
             const [highestSampled] = yield* Effect.all(

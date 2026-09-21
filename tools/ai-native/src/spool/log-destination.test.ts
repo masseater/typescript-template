@@ -1,18 +1,21 @@
+import { DateTime } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  dateFrom,
-  joinPath,
-  makeDirectory,
-  makeTempDirectory,
-  removePath,
-  writeFileString,
-} from "../host.ts";
+import { joinPath, makeDirectory, removePath, writeFileString } from "../host.ts";
 import { commandIdOf, defaultSpoolRoot, timestampOf } from "./log-destination.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly mkdtempSync: (prefix: string) => string;
+};
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
 
 describe("defaultSpoolRoot", () => {
   describe("a start directory nested under an ancestor carrying a package manifest", () => {
-    const markedAncestorDirectory = makeTempDirectory("log-destination-marked-ancestor-");
+    const markedAncestorDirectory = nodeFs.mkdtempSync(
+      joinPath(nodeOs.tmpdir(), "log-destination-marked-ancestor-"),
+    );
 
     const it = test.extend("spoolRootOfTheNestedStart", ({}, { onCleanup }) => {
       const start = joinPath(markedAncestorDirectory, "a", "b");
@@ -35,7 +38,9 @@ describe("defaultSpoolRoot", () => {
   });
 
   describe("a start directory with no package manifest above it", () => {
-    const unmarkedStartDirectory = makeTempDirectory("log-destination-unmarked-start-");
+    const unmarkedStartDirectory = nodeFs.mkdtempSync(
+      joinPath(nodeOs.tmpdir(), "log-destination-unmarked-start-"),
+    );
 
     const it = test.extend("spoolRootOfTheUnmarkedStart", ({}, { onCleanup }) => {
       makeDirectory(unmarkedStartDirectory);
@@ -62,7 +67,7 @@ describe("defaultSpoolRoot", () => {
 describe("timestampOf", () => {
   describe("an instant carrying milliseconds", () => {
     const it = test.extend("timestampOfAnInstant", () =>
-      timestampOf(dateFrom("2026-08-12T03:04:05.678Z")));
+      timestampOf(DateTime.toDate(DateTime.makeUnsafe("2026-08-12T03:04:05.678Z"))));
 
     it("drops to seconds in the basic UTC form whose lexical order is time order", ({
       timestampOfAnInstant,

@@ -1,13 +1,13 @@
+import { DateTime } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { dateFrom } from "../host.ts";
 import { recordNameOf } from "./record-name.ts";
 
 describe("recordNameOf", () => {
   describe("a command stamped at a fixed instant with a fixed unique part", () => {
     const it = test.extend("theRecordNameOfASeamedCommand", () =>
       recordNameOf({
-        stampedInstant: dateFrom("2026-08-11T12:00:00.789Z"),
+        stampedInstant: DateTime.toDate(DateTime.makeUnsafe("2026-08-11T12:00:00.789Z")),
         command: ["node", "-e", "console.log(1)"],
         uniqueSuffix: "cafe0123",
       }));
@@ -22,7 +22,7 @@ describe("recordNameOf", () => {
   describe("a command whose identifier runs past forty characters", () => {
     const it = test.extend("theRecordNameOfALongCommand", () =>
       recordNameOf({
-        stampedInstant: dateFrom("2026-08-11T12:00:00.789Z"),
+        stampedInstant: DateTime.toDate(DateTime.makeUnsafe("2026-08-11T12:00:00.789Z")),
         command: ["node", `${"x".repeat(60)}.js`],
         uniqueSuffix: "cafe0123",
       }));

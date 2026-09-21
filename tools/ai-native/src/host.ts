@@ -1,13 +1,21 @@
 import { NodeServices } from "@effect/platform-node";
 import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
-import { Crypto, DateTime, Effect, FileSystem, Path } from "effect";
-
-const filesystem = Effect.runSync(Effect.provide(FileSystem.FileSystem, NodeServices.layer));
+import { Crypto, DateTime, Effect, Path } from "effect";
 
 const withHostPath = <Value>(pick: (hostPath: Path.Path) => Value): Value =>
   Effect.runSync(Effect.provide(Effect.map(Path.Path, pick), NodeServices.layer));
 
 const crypto = Effect.runSync(Effect.provide(Crypto.Crypto, NodeServices.layer));
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly existsSync: (location: string) => boolean;
+  readonly mkdirSync: (location: string, options: { recursive: boolean }) => void;
+  readonly readFileSync: (location: string, encoding: string) => string;
+  readonly readdirSync: (location: string) => string[];
+  readonly rmSync: (location: string, options: { force: boolean; recursive: boolean }) => void;
+  readonly appendFileSync: (location: string, written: string) => void;
+  readonly writeFileSync: (location: string, written: string) => void;
+};
 
 const joinPath = (...parts: readonly string[]): string =>
   withHostPath((hostPath) => hostPath.join(...parts));
@@ -21,93 +29,51 @@ const baseName = (location: string): string =>
 const resolvePath = (...parts: readonly string[]): string =>
   withHostPath((hostPath) => hostPath.resolve(...parts));
 
-const runFilesystem = <Value, Failure>(work: Effect.Effect<Value, Failure>): Value =>
-  Effect.runSync(Effect.orDie(work));
-
-const fileExists = (location: string): boolean => runFilesystem(filesystem.exists(location));
+const fileExists = (location: string): boolean => nodeFs.existsSync(location);
 
 const makeDirectory = (location: string): void => {
-  runFilesystem(filesystem.makeDirectory(location, { recursive: true }));
+  nodeFs.mkdirSync(location, { recursive: true });
 };
-
-const makeTempDirectory = (prefix: string): string =>
-  runFilesystem(filesystem.makeTempDirectory({ prefix }));
 
 const writeFileString = (fileWrite: {
   location: string;
   written: string;
   append?: boolean;
 }): void => {
-  runFilesystem(
-    filesystem.writeFileString(
-      fileWrite.location,
-      fileWrite.written,
-      fileWrite.append === true ? { flag: "a" } : undefined,
-    ),
-  );
+  if (fileWrite.append === true) {
+    nodeFs.appendFileSync(fileWrite.location, fileWrite.written);
+    return;
+  }
+  nodeFs.writeFileSync(fileWrite.location, fileWrite.written);
 };
 
 const readFileString = (location: string, _encoding?: string): string =>
-  runFilesystem(filesystem.readFileString(location));
+  nodeFs.readFileSync(location, "utf8");
 
-const readDirectory = (location: string): readonly string[] =>
-  runFilesystem(filesystem.readDirectory(location));
+const readDirectory = (location: string): readonly string[] => nodeFs.readdirSync(location);
 
 const removePath = (location: string): void => {
-  runFilesystem(filesystem.remove(location, { force: true, recursive: true }));
+  nodeFs.rmSync(location, { force: true, recursive: true });
 };
-
-const realPath = (location: string): string => runFilesystem(filesystem.realPath(location));
 
 const randomHex = (byteCount: number): string =>
   Buffer.from(Effect.runSync(crypto.randomBytes(byteCount).pipe(Effect.orDie))).toString("hex");
 
 const epochMillis = (): number => DateTime.toEpochMillis(DateTime.nowUnsafe());
 
-const dateFrom = (instant: string | number | Date): Date =>
-  DateTime.toDate(DateTime.makeUnsafe(instant));
-
-const wallClockDate = (): Date => dateFrom(epochMillis());
-
-const delay = (ms: number): Promise<void> => Effect.runPromise(Effect.sleep(`${ms} millis`));
-
-const nodeFs = process.getBuiltinModule("fs") as {
-  readonly chmodSync: (location: string, mode: number) => void;
-  readonly rmdirSync: (location: string) => void;
-  readonly statSync: (location: string) => { readonly size: number; isFile: () => boolean };
-};
-
-const fileInfo = (location: string): { readonly size: number; readonly isFile: () => boolean } => {
-  const recorded = nodeFs.statSync(location);
-  return { size: recorded.size, isFile: () => recorded.isFile() };
-};
-
-const changeMode = (location: string, permissionBits: number): void => {
-  nodeFs.chmodSync(location, permissionBits);
-};
-
-const removeDirectory = (location: string): void => {
-  nodeFs.rmdirSync(location);
-};
+const wallClockDate = (): Date => DateTime.toDate(DateTime.makeUnsafe(epochMillis()));
 
 export {
   baseName,
-  changeMode,
-  dateFrom,
-  delay,
   epochMillis,
   fileExists,
-  fileInfo,
   joinPath,
   makeDirectory,
-  makeTempDirectory,
   optionalSetting,
   parentPath,
   randomHex,
   readDirectory,
   readFileString,
-  realPath,
-  removeDirectory,
   removePath,
   resolvePath,
   wallClockDate,
