@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 function InquiriesPage(): ReactElement {
   return (
     <OpsPage title="問い合わせ">
-      <StatusMessage variant={STATUS_VARIANT.pending}>
+      <StatusMessage variant={STATUS_VARIANT.empty}>
         問い合わせの一覧はまだありません。
       </StatusMessage>
     </OpsPage>
