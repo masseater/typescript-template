@@ -20,17 +20,28 @@ function registerCloudflareStubs(): void {
 
 function elysiaAot(appRoot: string): Plugin {
   registerCloudflareStubs();
-  const { apply, resolveId, ...plugin } = aot(
+  const { apply, buildStart, resolveId, ...plugin } = aot(
     path.join(appRoot, "src/shared/server-api/server-app.ts"),
     {
-      production: false,
+      strip: true,
       target: "workerd",
     },
   );
   void apply;
+  let started: Promise<void> | undefined;
+  function ensureCompiled(this: unknown): Promise<void> {
+    started ??= Promise.resolve(buildStart.call(this as never));
+    return started;
+  }
   return {
     ...plugin,
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
+    async buildStart() {
+      await ensureCompiled.call(this);
+    },
+    async configureServer() {
+      await ensureCompiled.call(this);
+    },
     resolveId(id) {
       if (id === "elysia") {
         return elysiaEntry;

@@ -56,6 +56,8 @@ describe("check:dev local D1", () => {
     expect(aotSource).toMatch(/environment\.name === "ssr"/u);
     expect(aotSource).toMatch(/id === "elysia"/u);
     expect(aotSource).toMatch(/fileURLToPath\(import\.meta\.resolve\("elysia"\)\)/u);
+    expect(aotSource).toMatch(/strip: true/u);
+    expect(aotSource).toMatch(/configureServer/u);
     expect(fileURLToPath(import.meta.resolve("elysia"))).toMatch(/\/dist\/index\.mjs$/u);
   });
 });
