@@ -28,8 +28,6 @@ const sinkByLevel: Readonly<Record<LogLevel.LogLevel, keyof LogSink>> = {
   Warn: "warn",
 };
 
-const isRecord = Predicate.isObject;
-
 function messageParts(message: unknown): readonly unknown[] {
   return Array.isArray(message) ? message : [message];
 }
@@ -52,7 +50,7 @@ function withCause(message: unknown, cause: Readonly<Cause.Cause<unknown>>): unk
     return message;
   }
   const [event, attributes] = messageParts(message);
-  return [event, { ...(isRecord(attributes) ? attributes : {}), ...reported }];
+  return [event, { ...(Predicate.isObject(attributes) ? attributes : {}), ...reported }];
 }
 
 function redactedLogger(logger: Logger.Logger<unknown, void>): Logger.Logger<unknown, void> {
@@ -75,7 +73,7 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
         release: options.release,
         service: serviceLabel(options.serviceName),
         ...fiber.getRef(References.CurrentLogAnnotations),
-        ...(isRecord(attributes) ? attributes : {}),
+        ...(Predicate.isObject(attributes) ? attributes : {}),
         ...causeField(cause),
       },
       redactedField,
@@ -85,5 +83,5 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
   return Logger.layer([logger]);
 }
 
-export { isRecord, redactedLogger, serviceLabel, structuredLogs };
+export { redactedLogger, serviceLabel, structuredLogs };
 export type { LogSink, StructuredLogOptions };

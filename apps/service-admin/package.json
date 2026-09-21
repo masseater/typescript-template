@@ -4,13 +4,12 @@
   "type": "module",
   "imports": {
     "#dev-*": "./dev-*.ts",
+    "#paraglide/*": "./.paraglide/*",
     "#*": "./src/*"
   },
-  "scripts": {
-    "dev": "vp dev",
-    "preview": "vp preview"
-  },
   "dependencies": {
+    "@effect/atom-react": "catalog:",
+    "@inlang/paraglide-js": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",

@@ -1,19 +1,22 @@
 "use client";
 
+import { localState } from "@repo/ui";
 import Link from "fumadocs-core/link";
-import { useId, useState } from "react";
+import { useId } from "react";
 
 import { findGlossaryTerm } from "#shared/content/index.ts";
 import { useGlossaryTerms } from "./glossary-terms-provider.tsx";
 
 import type { ReactElement } from "react";
 
+const useOpen = localState(false);
+
 function TermLink({ label, term }: Readonly<{ label?: string; term: string }>): ReactElement {
   const terms = useGlossaryTerms();
   const entry = findGlossaryTerm(terms, term);
   const text = label ?? term;
   const tooltipId = useId();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useOpen();
   if (entry === undefined) {
     return (
       <span

@@ -1,12 +1,12 @@
-import { useAction, ActionStatus, FormColumn, useTextInput } from "@repo/ui";
-import { useState, type ReactElement } from "react";
+import { ActionStatus, FormColumn, useAction } from "@repo/ui";
 
 import { ChallengeLogin } from "./challenge-login";
 import { CredentialsForm } from "./credentials-form";
 import { PasskeyLogin } from "./passkey-login";
+import { useLoginState } from "./use-login-state";
 
+import type { ReactElement } from "react";
 import type { AuthenticatedHandler } from "./authenticated-handler";
-import type { ChallengeMode } from "./challenge-modes.ts";
 
 const goHome = (): void => {
   globalThis.location.assign("/");
@@ -15,35 +15,28 @@ const goHome = (): void => {
 const LoginForm = ({
   onAuthenticated = goHome,
 }: Readonly<{ onAuthenticated?: AuthenticatedHandler | undefined }>): ReactElement => {
-  const email = useTextInput();
-  const password = useTextInput();
-  const [challenge, setChallenge] = useState<ChallengeMode>();
+  const login = useLoginState();
   const action = useAction();
-  const restart = (): void => {
-    setChallenge(undefined);
-    email.handleChange("");
-    password.handleChange("");
-  };
   return (
     <FormColumn>
-      {challenge === undefined ? (
+      {login.challenge === undefined ? (
         <>
           <CredentialsForm
             action={action}
-            email={email}
+            email={login.email}
             onAuthenticated={onAuthenticated}
-            onChallenge={setChallenge}
-            password={password}
+            onChallenge={login.handleChallenge}
+            password={login.password}
           />
           <PasskeyLogin action={action} onAuthenticated={onAuthenticated} />
         </>
       ) : (
         <ChallengeLogin
           action={action}
-          mode={challenge}
+          mode={login.challenge}
           onAuthenticated={onAuthenticated}
-          onModeChange={setChallenge}
-          onRestart={restart}
+          onModeChange={login.handleChallenge}
+          onRestart={login.handleRestart}
         />
       )}
       <ActionStatus action={action} pendingMessage="認証を処理しています。" />

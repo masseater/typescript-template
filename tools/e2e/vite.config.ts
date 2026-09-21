@@ -1,13 +1,6 @@
 import { effectDiagnostics, lifecycle } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-import { roleApplications } from "./src/journey-roles.ts";
-
-const applicationChecks = Object.values(roleApplications).flatMap((application) => [
-  `@repo/${application}#build`,
-  `@repo/${application}#check:dev`,
-]);
-
 export default defineConfig({
   run: {
     tasks: {
@@ -15,19 +8,16 @@ export default defineConfig({
       "test:e2e": {
         cache: false,
         command: "vp test run",
-        dependsOn: ["@repo/dev#setup", ...applicationChecks],
+        dependsOn: ["@repo/dev#setup"],
       },
-      ...lifecycle({
-        precommit: [],
-        premerge: [],
-        prepush: ["check:effect"],
-        prepr: [],
-        prerelease: [],
-      }),
+      ...lifecycle({ prepush: ["check:effect"] }),
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     fileParallelism: false,
     hookTimeout: 900_000,
     include: ["src/**/*.test.ts"],

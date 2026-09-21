@@ -5,16 +5,14 @@
   "imports": {
     "#*": "./src/*"
   },
-  "scripts": {
-    "dev": "vp dev",
-    "preview": "vp preview"
-  },
   "dependencies": {
     "@better-auth/oauth-provider": "1.7.5",
+    "@effect/atom-react": "catalog:",
     "@modelcontextprotocol/server": "2.0.0",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/feature-flags": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",

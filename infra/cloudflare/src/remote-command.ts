@@ -4,7 +4,7 @@ import {
   loadRemoteMigrations,
   migrateDatabase,
   parseRemoteInput,
-  remoteExecutor,
+  remoteDatabase,
 } from "@repo/db/migrations";
 import { Effect } from "effect";
 
@@ -35,16 +35,16 @@ const planReport = (
   };
 };
 
-const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
-  { operation, target }: Readonly<RemoteInput>,
-  migrations: Migrations,
-) {
+const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
+  operation,
+  target,
+}: Readonly<RemoteInput>) {
   if (target.apiToken === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  const executor = remoteExecutor({ ...target, apiToken: target.apiToken });
+  const { apply, database } = remoteDatabase({ ...target, apiToken: target.apiToken });
   if (operation === "migrate") {
-    const applied = yield* migrateDatabase(executor, migrations);
+    const applied = yield* migrateDatabase(database, apply);
     return {
       applied,
       databaseId: target.databaseId,
@@ -55,18 +55,17 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote(
   if (target.email === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  yield* bootstrapDatabase(executor, target.email);
+  yield* bootstrapDatabase(database, target.email);
   return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
 });
 
 const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
   function* runRemoteDatabaseCommand(commandArguments: readonly string[], input: unknown) {
     const remoteInput = yield* parseRemoteInput(commandArguments, input);
-    const migrations = yield* loadRemoteMigrations();
     const report: PlanReport | Effect.Success<ReturnType<typeof executeRemote>> =
       remoteInput.execute
-        ? yield* executeRemote(remoteInput, migrations)
-        : planReport(remoteInput, migrations);
+        ? yield* executeRemote(remoteInput)
+        : planReport(remoteInput, yield* loadRemoteMigrations());
     return report;
   },
 );

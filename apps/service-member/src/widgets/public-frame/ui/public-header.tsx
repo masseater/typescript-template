@@ -2,6 +2,8 @@ import { ButtonLink, NavigationLink } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { serviceName } from "#shared/config/index.ts";
+import { m } from "#shared/i18n/index.ts";
+import { LocaleSwitch } from "#shared/ui/locale-switch.tsx";
 
 import type { ReactElement } from "react";
 
@@ -14,10 +16,11 @@ function PublicHeader(): ReactElement {
           {serviceName}
         </NavigationLink>
       </div>
-      {pathname !== "/login" && <ButtonLink to="/login">ログイン</ButtonLink>}
+      <LocaleSwitch />
+      {pathname !== "/login" && <ButtonLink to="/login">{m.login_link()}</ButtonLink>}
       {pathname !== "/signup" && (
         <ButtonLink to="/signup" variant="primary">
-          新規登録
+          {m.signup_link()}
         </ButtonLink>
       )}
     </header>

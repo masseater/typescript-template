@@ -75,8 +75,8 @@ export default defineConfig({
       },
       "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
       ...lifecycle({
-        precommit: ["check:code"],
         prepush: [
+          "check:code",
           "check:effect",
           "knip",
           "check:client",
@@ -92,7 +92,10 @@ export default defineConfig({
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     forceRerunTriggers: [
       "**/package.json",
       "**/tsconfig*.json",

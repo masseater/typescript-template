@@ -17,7 +17,7 @@ import {
   uiSharedPartFiles,
 } from "./ui-lint-settings.ts";
 
-const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts"];
+const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.paraglide/**"];
 
 const awaitingPresetPackages = [
   "apps/service-admin/**",
@@ -37,7 +37,6 @@ const awaitingPresetPackages = [
   "libs/observability/**",
   "libs/runtime/**",
   "libs/vite-config/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -46,7 +45,6 @@ const templateWorkspaces = [
   "apps/**",
   "libs/**",
   "infra/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/e2e/**",
   "tools/load/**",
@@ -58,6 +56,13 @@ const apiBoundaryFiles = [
   "apps/*/src/**/*-api.ts",
   "tools/*/src/**/*-api.ts",
   "libs/runtime/src/account.ts",
+];
+
+const authUiServerReadsAwaitingQuery = [
+  "libs/auth-ui/src/email-change-verification.tsx",
+  "libs/auth-ui/src/email-verification.tsx",
+  "libs/auth-ui/src/use-passkeys.ts",
+  "libs/auth-ui/src/use-session.ts",
 ];
 
 const lintOptions = {
@@ -125,6 +130,8 @@ const lintOptions = {
           },
         ],
         "project/annotations": LINT_SEVERITY.ERROR,
+        "project/atom-server-data": LINT_SEVERITY.ERROR,
+        "project/atom-state": LINT_SEVERITY.ERROR,
         "project/boundaries": LINT_SEVERITY.ERROR,
         "project/cross-request-state": LINT_SEVERITY.ERROR,
         "project/effect-failures": LINT_SEVERITY.ERROR,
@@ -226,6 +233,13 @@ const lintOptions = {
       },
     },
     {
+      files: authUiServerReadsAwaitingQuery,
+      rules: {
+        "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
+        "project/atom-server-data": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: reactElementTypeFiles,
       rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
     },
@@ -264,6 +278,10 @@ const lintOptions = {
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,
+    "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
+      LINT_SEVERITY.ERROR,
+      { branches: 50, functions: 50, lines: 50, statements: 50 },
+    ],
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,
       {
@@ -331,7 +349,9 @@ const lintOptions = {
 const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
   {},
   lintOptions.rules,
-  ...lintOptions.overrides.map((override) => override.rules ?? {}),
+  ...lintOptions.overrides
+    .filter((override) => override.files?.includes("libs/**") === true)
+    .map((override) => override.rules ?? {}),
 );
 
 const builtInPlugins = new Set([

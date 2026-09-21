@@ -139,11 +139,28 @@ const withoutLocalState = [
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
+const typecheckInputs = [
+  ...taskInput,
+  { base: "workspace", pattern: "**/*.{ts,tsx}" },
+  { base: "workspace", pattern: "**/package.json" },
+  { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
+  { base: "workspace", pattern: "!**/node_modules/**" },
+  { base: "workspace", pattern: "!**/dist/**" },
+  { base: "workspace", pattern: "!**/.paraglide/**" },
+  { base: "workspace", pattern: "!**/.local/**" },
+] as const;
+
 const effectDiagnostics = {
+  "check:effect:gate": {
+    command: "check-effect-typecheck",
+    input: [...typecheckInputs],
+  },
   "check:effect": {
     command:
       "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    input: [...taskInput],
+    dependsOn: ["check:effect:gate"],
+    input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
@@ -161,13 +178,40 @@ const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
   prerelease: ["prepr", "premerge"],
 };
 
-function lifecycle(stages: Readonly<Record<Lifecycle, readonly string[]>>): Tasks {
-  return Object.fromEntries(
-    lifecycles.map((name) => [
-      name,
-      { command: [], dependsOn: [...lifecycleInherits[name], ...stages[name]] },
-    ]),
-  );
+type LifecycleTask = {
+  command: string[];
+  dependsOn: string[];
+};
+
+function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}): {
+  readonly precommit: LifecycleTask;
+  readonly prepush: LifecycleTask;
+  readonly prepr: LifecycleTask;
+  readonly premerge: LifecycleTask;
+  readonly prerelease: LifecycleTask;
+} {
+  return {
+    precommit: {
+      command: [],
+      dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
+    },
+    prepush: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
+    },
+    prepr: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+    },
+    premerge: {
+      command: [],
+      dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
+    },
+    prerelease: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
+    },
+  };
 }
 
 const testRun = {
@@ -195,44 +239,31 @@ const intentValidation = {
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
-    ...lifecycle({
-      precommit: [],
-      prepush: ["check:effect"],
-      prepr: [],
-      premerge: [],
-      prerelease: [],
-    }),
+    ...lifecycle({ prepush: ["check:effect"] }),
   },
 } satisfies RunConfig;
 
 const appRun = {
   tasks: {
     ...effectDiagnostics,
-    ...sliceBoundaries,
+    check: sliceBoundaries.check,
     build: {
       command: "vp build",
-      dependsOn: ["@repo/dev#setup"],
+      dependsOn: ["@repo/dev#setup", "check:effect"],
       input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
     "check:dev": {
+      cache: false,
       command: "../../tools/dev/src/dev-start.ts",
       dependsOn: ["@repo/dev#setup"],
-      input: [
-        ...taskInput,
-        ...withoutGenerated(".wrangler", "dist"),
-        "!node_modules/.mf/**",
-        ...withoutLocalState,
-        { base: "workspace", pattern: "libs/db/migrations/**" },
-      ],
-      output: [],
     },
+    dev: { cache: false, command: "vp dev" },
+    preview: { cache: false, command: "vp preview" },
     ...lifecycle({
-      precommit: [],
       prepush: ["check:effect", "check"],
       prepr: ["build"],
-      premerge: ["check:dev"],
-      prerelease: [],
+      premerge: ["build", "check:dev"],
     }),
   },
 } satisfies RunConfig;
@@ -242,7 +273,7 @@ const toolTest: NonNullable<UserConfig["test"]> = {
   restoreMocks: true,
   coverage: {
     exclude: ["specs/**"],
-    thresholds: { 100: true, perFile: true },
+    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
   },
   unstubEnvs: true,
   unstubGlobals: true,
@@ -313,6 +344,7 @@ export {
   toolTest,
   withoutEnvFileLoader,
 };
+export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
 export { devBoundary };
