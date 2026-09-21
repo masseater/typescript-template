@@ -48,7 +48,6 @@ const workspaces = {
     entry: ["src/effect-typecheck.ts"],
   },
   "libs/monitor": {
-    ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
@@ -56,7 +55,6 @@ const workspaces = {
     entry: ["src/browser-testing.ts", "src/server-testing.ts"],
   },
   "libs/runtime": {
-    ignoreDependencies: ["cloudflare"],
     entry: ["src/*-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
@@ -125,7 +123,7 @@ const cloudflareStacks = [
 
 const application = {
   entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
-  ignoreDependencies: ["cloudflare", "steiger"],
+  ignoreDependencies: ["steiger"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
@@ -235,7 +233,6 @@ const config = ({
       },
       "libs/db": {
         entry: ["src/records-fixture.ts"],
-        ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
       "libs/db-local": {
