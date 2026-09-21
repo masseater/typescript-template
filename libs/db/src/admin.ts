@@ -309,3 +309,11 @@ export { InviteRejected } from "./invite-rejected.ts";
 export { LastAdminRequired } from "./last-admin-required.ts";
 export { PermissionRequired } from "./permission-required.ts";
 export { TargetUnavailable } from "./target-unavailable.ts";
+export {
+  dismissReport,
+  listReports,
+  readReport,
+  suspendTarget,
+  warnTarget,
+} from "./trust-admin.ts";
+export { TrustSubjectNotFound, TrustTargetUnavailable } from "./trust.ts";

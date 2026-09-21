@@ -1,9 +1,12 @@
+import { httpStatus } from "@repo/observability";
 import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
 import {
   ConversationList,
+  ConversationLookupResult,
+  ConversationOpened,
   ConversationView,
   GroupCreate,
   GroupCreated,
@@ -53,5 +56,32 @@ async function createGroup(
   };
 }
 
-export { createGroup, loadConversation, loadConversations, sendMessage };
-export type { ConversationListView, ConversationThread, GroupJoinPolicy };
+async function lookupConversation(peerId: string): Promise<string | null> {
+  const { api } = await userClient();
+  return apiData(ConversationLookupResult, await api.messages.lookup.get({ query: { peerId } }))
+    .conversationId;
+}
+
+type OpenedConversation =
+  | { readonly conversationId: string; readonly paidRequired: false }
+  | { readonly paidRequired: true };
+
+async function openConversation(recipientId: string, body: string): Promise<OpenedConversation> {
+  const { api } = await userClient();
+  const reply = await api.messages.conversations.post({ body, recipientId });
+  if (reply.error?.status === httpStatus.paymentRequired) {
+    return { paidRequired: true };
+  }
+  const opened = apiData(ConversationOpened, reply);
+  return { conversationId: opened.conversationId, paidRequired: false };
+}
+
+export {
+  createGroup,
+  loadConversation,
+  loadConversations,
+  lookupConversation,
+  openConversation,
+  sendMessage,
+};
+export type { ConversationListView, ConversationThread, GroupJoinPolicy, OpenedConversation };

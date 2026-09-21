@@ -1,17 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiPage, loadApiKeys } from "#pages/settings/index.ts";
+import { AiPage, loadApiKeys, loadMcpGrants } from "#pages/settings/index.ts";
 
 import type { ReactElement } from "react";
 
 const Route = createFileRoute("/_member/settings/ai")({
   component: AiRoute,
-  loader: async () => loadApiKeys(),
+  loader: async () => {
+    const [grants, keys] = await Promise.all([loadMcpGrants(), loadApiKeys()]);
+    return { grants, keys };
+  },
 });
 
 function AiRoute(): ReactElement {
-  const keys = Route.useLoaderData();
-  return <AiPage keys={keys} />;
+  const { grants, keys } = Route.useLoaderData();
+  return <AiPage grants={grants} keys={keys} />;
 }
 
 export { Route };

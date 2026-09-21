@@ -19,24 +19,39 @@ function ConversationPage({
   function pageLink(target: PageTarget): ReactElement {
     return <ConversationPageLink target={target} conversationId={thread.conversation.id} />;
   }
+  const conversation = thread.conversation;
   return (
     <ConversationBody>
       <div className="flex flex-col gap-1">
-        <Heading as="h2" size="section">
-          <TextLink to="/groups/$id" params={{ id: thread.conversation.group.id }}>
-            {thread.conversation.group.name}
-          </TextLink>
-        </Heading>
-        <TextLink to="/groups/$id" params={{ id: thread.conversation.group.id }}>
-          情報
-        </TextLink>
+        {conversation.kind === "direct" ? (
+          <Heading as="h2" size="section">
+            {conversation.peer.withdrawn || conversation.peer.id === null ? (
+              conversation.peer.name
+            ) : (
+              <TextLink to="/users/$id" params={{ id: conversation.peer.id }}>
+                {conversation.peer.name}
+              </TextLink>
+            )}
+          </Heading>
+        ) : (
+          <>
+            <Heading as="h2" size="section">
+              <TextLink to="/groups/$id" params={{ id: conversation.group.id }}>
+                {conversation.group.name}
+              </TextLink>
+            </Heading>
+            <TextLink to="/groups/$id" params={{ id: conversation.group.id }}>
+              情報
+            </TextLink>
+          </>
+        )}
         <TextLink to="/messages" search={{}}>
           一覧へ戻る
         </TextLink>
       </div>
       <ul className="flex flex-col gap-3">
         {thread.messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble key={message.id} kind={conversation.kind} message={message} />
         ))}
       </ul>
       {thread.total > thread.pageSize && (

@@ -63,6 +63,7 @@ async function enterMemberFrame(
 
 async function enterWelcomeFrame(
   href: string,
+  pathname: string,
 ): Promise<{ session: Session; step: OnboardingStep }> {
   const session = await loadSession();
   if (session === undefined) {
@@ -72,7 +73,6 @@ async function enterWelcomeFrame(
   if (step === "done") {
     throw redirect({ to: "/home" });
   }
-  const pathname = new URL(href).pathname;
   const offer = await loadRecoveryOffer();
   if (offer.available && pathname !== recoveryPath) {
     throw redirect({ to: recoveryPath });

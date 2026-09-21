@@ -1,9 +1,17 @@
+import { REPORT_SUBJECT } from "@repo/config";
+
+import { ReportControl } from "#shared/ui/index.ts";
+
 import type { ConversationThread } from "#pages/messages/api/messages.ts";
 import type { ReactElement } from "react";
 
 function MessageBubble({
+  kind,
   message,
-}: Readonly<{ message: ConversationThread["messages"][number] }>): ReactElement {
+}: Readonly<{
+  kind: "direct" | "group";
+  message: ConversationThread["messages"][number];
+}>): ReactElement {
   const alignment = message.mine ? "justify-end" : "justify-start";
   const tone = message.mine
     ? "bg-primary text-primary-foreground"
@@ -15,6 +23,14 @@ function MessageBubble({
           <p className="mb-1 text-xs leading-tight font-bold opacity-80">{message.sender.name}</p>
         )}
         <p className="whitespace-pre-wrap">{message.body}</p>
+        {!message.mine && (
+          <div className="mt-2">
+            <ReportControl
+              subjectId={message.id}
+              subjectKind={kind === "group" ? REPORT_SUBJECT.groupMessage : REPORT_SUBJECT.message}
+            />
+          </div>
+        )}
       </div>
     </li>
   );

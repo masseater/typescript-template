@@ -11,7 +11,7 @@ import {
 import { useRouter } from "@tanstack/react-router";
 
 import { followMember, unfollowMember } from "#pages/profile/api/follow.ts";
-import { memberPhotoUrl } from "#shared/api/index.ts";
+import { blockMember, memberPhotoUrl, unblockMember } from "#shared/api/index.ts";
 import { SocialLinks } from "#shared/social-link";
 import { Biography } from "./biography.tsx";
 import { CompanyPhoto } from "./company-photo.tsx";
@@ -22,12 +22,16 @@ import type { Member } from "#pages/profile/model/member.ts";
 import type { ReactElement } from "react";
 
 const useFollowingOverride = localState<boolean | undefined>(undefined);
+const useBlockedOverride = localState<boolean | undefined>(undefined);
 
 function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>): ReactElement {
   const router = useRouter();
   const followAction = useAction();
+  const blockAction = useAction();
   const [followingOverride, setFollowingOverride] = useFollowingOverride();
+  const [blockedOverride, setBlockedOverride] = useBlockedOverride();
   const following = followingOverride ?? member.following ?? false;
+  const blocked = blockedOverride ?? member.blocked ?? false;
 
   const toggleFollow = (): void => {
     followAction.run(async () => {
@@ -37,6 +41,20 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
       } else {
         await followMember(member.id);
         setFollowingOverride(true);
+      }
+      await router.invalidate();
+    });
+  };
+
+  const toggleBlock = (): void => {
+    blockAction.run(async () => {
+      if (blocked) {
+        await unblockMember(member.id);
+        setBlockedOverride(false);
+      } else {
+        await blockMember(member.id);
+        setBlockedOverride(true);
+        setFollowingOverride(false);
       }
       await router.invalidate();
     });
@@ -69,20 +87,31 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
       {!own && (
         <div className="flex flex-wrap gap-3">
           <Button
-            disabled={followAction.blocked}
+            disabled={followAction.blocked || blocked}
             onClick={toggleFollow}
             type="button"
             variant="secondary"
           >
             {following ? "フォロー中" : "フォロー"}
           </Button>
-          <ButtonLink to="/upgrade" variant="secondary">
+          <ButtonLink to="/messages/new" search={{ peer: member.id }} variant="secondary">
             メッセージを送る
           </ButtonLink>
+          <Button
+            disabled={blockAction.blocked}
+            onClick={toggleBlock}
+            type="button"
+            variant="secondary"
+          >
+            {blocked ? "ブロックを解除" : "ブロック"}
+          </Button>
         </div>
       )}
       {followAction.error !== undefined && (
         <p className="text-sm text-destructive">{followAction.error}</p>
+      )}
+      {blockAction.error !== undefined && (
+        <p className="text-sm text-destructive">{blockAction.error}</p>
       )}
     </ProfileBody>
   );

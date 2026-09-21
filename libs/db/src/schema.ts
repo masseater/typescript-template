@@ -10,6 +10,7 @@ import { session, user } from "./identity-schema.ts";
 import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
+import { memberMcpGrant } from "./member-mcp-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
 import {
   conversation,
@@ -30,6 +31,7 @@ import {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+import { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -210,8 +212,12 @@ const schema = {
   interview,
   invite,
   leaveRequest,
+  memberBlock,
   memberGroup,
+  memberMcpGrant,
   memberOnboarding,
+  memberReport,
+  moderationAction,
   notification,
   notificationPreference,
   withdrawnMember,
@@ -269,6 +275,8 @@ export type { InquiryAuthorKind } from "./inquiry-schema.ts";
 export { INQUIRY_STATUS, inquiryStatuses } from "./inquiry-status.ts";
 export type { InquiryStatus } from "./inquiry-status.ts";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
+export { memberMcpGrant } from "./member-mcp-schema.ts";
+export { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
 export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
 export { notification, notificationPreference } from "./notification-schema.ts";

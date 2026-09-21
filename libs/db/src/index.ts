@@ -140,3 +140,21 @@ export {
   requirePaid,
 } from "./billing.ts";
 export type { StripeEventRecord, SubscriptionRecord } from "./billing.ts";
+export {
+  TrustSubjectNotFound,
+  TrustTargetUnavailable,
+  blockBetween,
+  blockHides,
+  blockMember,
+  fileReport,
+  pairBlocked,
+  unblockMember,
+  viewerBlockedTarget,
+} from "./trust.ts";
+export {
+  dismissReport,
+  listReports,
+  readReport,
+  suspendTarget,
+  warnTarget,
+} from "./trust-admin.ts";

@@ -26,6 +26,7 @@ import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-e
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as AdminInquiriesIdRouteImport } from './routes/_admin/inquiries.$id'
 import { Route as AdminMembersIdRouteImport } from './routes/_admin/members.$id'
+import { Route as AdminReportsIdRouteImport } from './routes/_admin/reports.$id'
 import { Route as AdminTermsVersionRouteImport } from './routes/_admin/terms.$version'
 import { Route as PublicInviteTokenRouteImport } from './routes/_public/invite.$token'
 
@@ -112,6 +113,11 @@ const AdminMembersIdRoute = AdminMembersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminMembersRoute,
 } as any)
+const AdminReportsIdRoute = AdminReportsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminReportsRoute,
+} as any)
 const AdminTermsVersionRoute = AdminTermsVersionRouteImport.update({
   id: '/$version',
   path: '/$version',
@@ -131,7 +137,7 @@ export interface FileRoutesByFullPath {
   '/admins': typeof AdminAdminsRoute
   '/inquiries': typeof AdminInquiriesRouteWithChildren
   '/members': typeof AdminMembersRouteWithChildren
-  '/reports': typeof AdminReportsRoute
+  '/reports': typeof AdminReportsRouteWithChildren
   '/security': typeof AdminSecurityRoute
   '/terms': typeof AdminTermsRouteWithChildren
   '/login': typeof PublicLoginRoute
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/inquiries/$id': typeof AdminInquiriesIdRoute
   '/members/$id': typeof AdminMembersIdRoute
+  '/reports/$id': typeof AdminReportsIdRoute
   '/terms/$version': typeof AdminTermsVersionRoute
   '/invite/$token': typeof PublicInviteTokenRoute
 }
@@ -150,7 +157,7 @@ export interface FileRoutesByTo {
   '/admins': typeof AdminAdminsRoute
   '/inquiries': typeof AdminInquiriesRouteWithChildren
   '/members': typeof AdminMembersRouteWithChildren
-  '/reports': typeof AdminReportsRoute
+  '/reports': typeof AdminReportsRouteWithChildren
   '/security': typeof AdminSecurityRoute
   '/terms': typeof AdminTermsRouteWithChildren
   '/login': typeof PublicLoginRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/inquiries/$id': typeof AdminInquiriesIdRoute
   '/members/$id': typeof AdminMembersIdRoute
+  '/reports/$id': typeof AdminReportsIdRoute
   '/terms/$version': typeof AdminTermsVersionRoute
   '/invite/$token': typeof PublicInviteTokenRoute
 }
@@ -171,7 +179,7 @@ export interface FileRoutesById {
   '/_admin/admins': typeof AdminAdminsRoute
   '/_admin/inquiries': typeof AdminInquiriesRouteWithChildren
   '/_admin/members': typeof AdminMembersRouteWithChildren
-  '/_admin/reports': typeof AdminReportsRoute
+  '/_admin/reports': typeof AdminReportsRouteWithChildren
   '/_admin/security': typeof AdminSecurityRoute
   '/_admin/terms': typeof AdminTermsRouteWithChildren
   '/_public/login': typeof PublicLoginRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/_admin/': typeof AdminIndexRoute
   '/_admin/inquiries/$id': typeof AdminInquiriesIdRoute
   '/_admin/members/$id': typeof AdminMembersIdRoute
+  '/_admin/reports/$id': typeof AdminReportsIdRoute
   '/_admin/terms/$version': typeof AdminTermsVersionRoute
   '/_public/invite/$token': typeof PublicInviteTokenRoute
 }
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/inquiries/$id'
     | '/members/$id'
+    | '/reports/$id'
     | '/terms/$version'
     | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/inquiries/$id'
     | '/members/$id'
+    | '/reports/$id'
     | '/terms/$version'
     | '/invite/$token'
   id:
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/_admin/'
     | '/_admin/inquiries/$id'
     | '/_admin/members/$id'
+    | '/_admin/reports/$id'
     | '/_admin/terms/$version'
     | '/_public/invite/$token'
   fileRoutesById: FileRoutesById
@@ -375,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMembersIdRouteImport
       parentRoute: typeof AdminMembersRoute
     }
+    '/_admin/reports/$id': {
+      id: '/_admin/reports/$id'
+      path: '/$id'
+      fullPath: '/reports/$id'
+      preLoaderRoute: typeof AdminReportsIdRouteImport
+      parentRoute: typeof AdminReportsRoute
+    }
     '/_admin/terms/$version': {
       id: '/_admin/terms/$version'
       path: '/$version'
@@ -416,6 +435,18 @@ const AdminMembersRouteWithChildren = AdminMembersRoute._addFileChildren(
   AdminMembersRouteChildren,
 )
 
+interface AdminReportsRouteChildren {
+  AdminReportsIdRoute: typeof AdminReportsIdRoute
+}
+
+const AdminReportsRouteChildren: AdminReportsRouteChildren = {
+  AdminReportsIdRoute: AdminReportsIdRoute,
+}
+
+const AdminReportsRouteWithChildren = AdminReportsRoute._addFileChildren(
+  AdminReportsRouteChildren,
+)
+
 interface AdminTermsRouteChildren {
   AdminTermsVersionRoute: typeof AdminTermsVersionRoute
 }
@@ -432,7 +463,7 @@ interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminInquiriesRoute: typeof AdminInquiriesRouteWithChildren
   AdminMembersRoute: typeof AdminMembersRouteWithChildren
-  AdminReportsRoute: typeof AdminReportsRoute
+  AdminReportsRoute: typeof AdminReportsRouteWithChildren
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminTermsRoute: typeof AdminTermsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
@@ -442,7 +473,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
   AdminInquiriesRoute: AdminInquiriesRouteWithChildren,
   AdminMembersRoute: AdminMembersRouteWithChildren,
-  AdminReportsRoute: AdminReportsRoute,
+  AdminReportsRoute: AdminReportsRouteWithChildren,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminTermsRoute: AdminTermsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,

@@ -60,6 +60,7 @@ const MemberPhotoQuery = Schema.Struct({
 });
 
 const MemberView = Schema.Struct({
+  blocked: Schema.optionalKey(Schema.Boolean),
   following: Schema.optionalKey(Schema.Boolean),
   id: Schema.String,
   joined: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}$/u)),

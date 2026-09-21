@@ -1,6 +1,7 @@
 import {
   UserNotFound,
   containsKeyword,
+  pairBlocked,
   profileListed,
   profileVisibleTo,
   query,
@@ -106,6 +107,7 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
     return yield* new UserNotFound();
   }
   let following: boolean | undefined;
+  let blocked: boolean | undefined;
   if (viewerId !== memberId) {
     const [row] = yield* query((database) =>
       database
@@ -115,8 +117,17 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
         .limit(1),
     );
     following = row !== undefined;
+    blocked = yield* pairBlocked(viewerId, memberId);
   }
-  return { ...shown(member), following };
+  const base = shown(member);
+  if (following === undefined && blocked === undefined) {
+    return base;
+  }
+  return {
+    ...base,
+    ...(blocked === undefined ? {} : { blocked }),
+    ...(following === undefined ? {} : { following }),
+  };
 });
 
 const listMembers = Effect.fn("listMembers")(function* listMembers(page: {

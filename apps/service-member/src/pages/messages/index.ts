@@ -1,4 +1,5 @@
-export { loadConversation, loadConversations } from "./api/messages.ts";
+export { ComposePage } from "./ui/compose-page.tsx";
+export { loadConversation, loadConversations, lookupConversation } from "./api/messages.ts";
 export {
   InvalidMessagesSearch,
   normalizeConversationSearch,

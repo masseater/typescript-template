@@ -59,7 +59,8 @@ export {
   memberPageSize,
   memberRetentionDays,
 } from "./member.ts";
-export { InterviewView } from "#shared/interview/contracts.ts";
+export { McpGrants } from "./mcp.ts";
+export { Blocked, BlockMember, ReportCreate, ReportFiled } from "./trust.ts";
 export { FollowList, FollowMember, FollowMemberQuery, FollowState } from "./follow.ts";
 export { MemberFlags } from "./flags.ts";
 export {
@@ -79,6 +80,10 @@ export {
 export {
   ConversationList,
   ConversationListQuery,
+  ConversationLookup,
+  ConversationLookupResult,
+  ConversationOpen,
+  ConversationOpened,
   ConversationQuery,
   ConversationRead,
   ConversationView,

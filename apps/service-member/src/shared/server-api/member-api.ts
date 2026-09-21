@@ -23,11 +23,13 @@ import { flagsApi } from "./flags-api.ts";
 import { groupsApi } from "./groups-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { leaveApi } from "./leave-api.ts";
+import { mcpGrantsApi } from "./mcp-grants-api.ts";
 import { memberFailures } from "./member-failures.ts";
 import { messagingApi } from "./messaging-api.ts";
 import { photoApi } from "./photo-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
 import { supportApi } from "./support-api.ts";
+import { trustApi } from "./trust-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
 
 import type { Stripe } from "#shared/billing/index.ts";
@@ -114,7 +116,9 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
     )
     .use(boardApi(api))
     .use(groupsApi(api))
-    .use(messagingApi(api));
+    .use(messagingApi(api))
+    .use(trustApi(api))
+    .use(mcpGrantsApi(api));
 }
 
 export { memberApi };
