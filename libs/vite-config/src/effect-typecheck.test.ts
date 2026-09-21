@@ -1,6 +1,8 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawnSync } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
+import { Writable } from "node:stream";
+// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
@@ -20,6 +22,8 @@ import {
   diagnosticOf,
   effectTsgoBin,
   evaluateTypecheck,
+  exitAfterFlush,
+  exitInvokedCli,
   locateCompiler,
   isInvokedAsCli,
   maybeStart,
@@ -437,21 +441,141 @@ describe("effect typecheck gate", () => {
     const cwd = mkdtempSync(path.join(repositoryRoot, ".local", "effect-typecheck-"));
     writeFileSync(path.join(cwd, "tsconfig.json"), fixtureTsconfig);
     writeFileSync(path.join(cwd, "value.ts"), 'export const value: number = "new";\n');
+    const gate = path.join(repositoryRoot, "node_modules/.bin/check-effect-typecheck");
     try {
-      const result = spawnSync(
-        path.join(repositoryRoot, "node_modules/.bin/check-effect-typecheck"),
-        [],
-        {
-          cwd,
-          encoding: "utf8",
-          env: process.env,
-        },
-      );
+      const result = spawnSync("sh", ["-c", `${JSON.stringify(gate)} && echo SHOULD_NOT_RUN`], {
+        cwd,
+        encoding: "utf8",
+        env: process.env,
+      });
       expect(result.status).toBe(1);
-      expect(`${result.stdout}${result.stderr}`).toMatch(/error TS2322/u);
-      expect(`${result.stdout}${result.stderr}`).toMatch(/new diagnostics/u);
+      expect(`${result.stdout ?? ""}${result.stderr ?? ""}`).toMatch(/error TS2322/u);
+      expect(`${result.stdout ?? ""}${result.stderr ?? ""}`).toMatch(/new diagnostics/u);
+      expect(`${result.stdout ?? ""}${result.stderr ?? ""}`).not.toContain("SHOULD_NOT_RUN");
     } finally {
       rmSync(cwd, { force: true, recursive: true });
+    }
+  });
+
+  it("exits the process with the gate status instead of only recording it", async () => {
+    expect.hasAssertions();
+    const modulePath = fileURLToPath(new URL("./effect-typecheck.ts", import.meta.url));
+    const exited: number[] = [];
+    const record = (code: number): void => {
+      exited.push(code);
+    };
+    expect(exitInvokedCli("/tmp/not-the-cli", modulePath, () => 1, record)).toBe(false);
+    expect(exitInvokedCli(modulePath, modulePath, () => 1, record)).toBe(true);
+    expect(
+      exitInvokedCli(
+        modulePath,
+        modulePath,
+        () => {
+          throw new Error("boom");
+        },
+        record,
+      ),
+    ).toBe(true);
+    await new Promise((resolve) => {
+      setImmediate(resolve);
+    });
+    expect(exited).toStrictEqual([1, 1]);
+    process.exitCode = undefined;
+  });
+
+  it("flushes stdout before exiting so the gate report is not truncated", async () => {
+    expect.hasAssertions();
+    const exited: number[] = [];
+    const record = (code: number): void => {
+      exited.push(code);
+    };
+    const open = (): Writable =>
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      });
+    const closed = open();
+    closed.destroy();
+    exitAfterFlush(1, record, []);
+    exitAfterFlush(2, record, [closed]);
+    expect(exited).toStrictEqual([1, 2]);
+    exitAfterFlush(3, record, [open(), open()]);
+    expect(exited).toStrictEqual([1, 2]);
+    await new Promise((resolve) => {
+      setImmediate(resolve);
+    });
+    expect(exited).toStrictEqual([1, 2, 3]);
+    const script = `import { exitAfterFlush } from ${JSON.stringify(fileURLToPath(new URL("./effect-typecheck.ts", import.meta.url)))};
+process.stdout.write("A".repeat(200000));
+process.stdout.write("END");
+exitAfterFlush(1, process.exit, [process.stdout, process.stderr]);
+`;
+    const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+      encoding: "utf8",
+    });
+    expect(result.status).toBe(1);
+    expect(result.stdout ?? "").toHaveLength(200003);
+    expect(result.stdout ?? "").toEndWith("END");
+  });
+
+  it("fails the vite task when the gate fails and does not run the next command", () => {
+    expect.hasAssertions();
+    mkdirSync(path.join(repositoryRoot, ".local"), { recursive: true });
+    const fixture = mkdtempSync(path.join(repositoryRoot, ".local", "effect-typecheck-vp-"));
+    const project = mkdtempSync(path.join(tmpdir(), "effect-typecheck-vp-"));
+    writeFileSync(path.join(fixture, "tsconfig.json"), fixtureTsconfig);
+    writeFileSync(path.join(fixture, "value.ts"), 'export const value: number = "new";\n');
+    const gate = path.join(repositoryRoot, "node_modules/.bin/check-effect-typecheck");
+    const runner = path.join(project, "run-gate.mjs");
+    writeFileSync(
+      path.join(project, "package.json"),
+      `${JSON.stringify({ name: "effect-typecheck-vp", private: true, type: "module" })}\n`,
+    );
+    writeFileSync(
+      runner,
+      `import { spawnSync } from "node:child_process";
+const result = spawnSync(${JSON.stringify(gate)}, {
+  cwd: ${JSON.stringify(fixture)},
+  encoding: "utf8",
+  env: process.env,
+});
+process.stdout.write(result.stdout ?? "");
+process.stderr.write(result.stderr ?? "");
+process.exit(result.status ?? 1);
+`,
+    );
+    writeFileSync(
+      path.join(project, "vite.config.ts"),
+      `import { defineConfig } from "vite-plus";
+export default defineConfig({
+  run: {
+    tasks: {
+      "check:effect:gate": {
+        command: ${JSON.stringify(`node ${JSON.stringify(runner)}`)},
+      },
+      "check:effect": {
+        command: "echo SECOND_SHOULD_NOT_RUN",
+        dependsOn: ["check:effect:gate"],
+      },
+    },
+  },
+});
+`,
+    );
+    try {
+      const result = spawnSync("vp", ["run", "--no-cache", "check:effect"], {
+        cwd: project,
+        encoding: "utf8",
+        env: process.env,
+      });
+      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+      expect(result.status).not.toBe(0);
+      expect(output).toMatch(/typecheck gate:/u);
+      expect(output).not.toContain("SECOND_SHOULD_NOT_RUN");
+    } finally {
+      rmSync(fixture, { force: true, recursive: true });
+      rmSync(project, { force: true, recursive: true });
     }
   });
 });

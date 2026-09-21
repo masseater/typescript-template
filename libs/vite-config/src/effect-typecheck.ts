@@ -470,12 +470,19 @@ const reportCliFailure = (error: unknown): void => {
   process.stderr.write(error instanceof Error ? `${error.message}\n` : "typecheck gate failed\n");
 };
 
-const runInvokedCli = (start: () => number = startEffectTypecheckCli): void => {
+const invokedCode = (start: () => number): number => {
   try {
-    process.exitCode = start();
+    const code = start();
+    process.exitCode = code;
+    return code;
   } catch (error) {
     reportCliFailure(error);
+    return 1;
   }
+};
+
+const runInvokedCli = (start: () => number = startEffectTypecheckCli): void => {
+  invokedCode(start);
 };
 
 const maybeStart = (argv1: string | undefined, modulePath: string): boolean => {
@@ -486,7 +493,48 @@ const maybeStart = (argv1: string | undefined, modulePath: string): boolean => {
   return true;
 };
 
-maybeStart(process.argv[1], fileURLToPath(import.meta.url));
+const exitAfterFlush = (
+  code: number,
+  exit: (code: number) => void,
+  streams: readonly NodeJS.WritableStream[],
+): void => {
+  const pending: NodeJS.WritableStream[] = [];
+  for (const stream of streams) {
+    if (stream.writable) {
+      pending.push(stream);
+    }
+  }
+  if (pending.length === 0) {
+    exit(code);
+    return;
+  }
+  let remaining = pending.length;
+  const step = (): void => {
+    remaining -= 1;
+    if (remaining === 0) {
+      exit(code);
+    }
+  };
+  for (const stream of pending) {
+    stream.write("", step);
+  }
+};
+
+const exitInvokedCli = (
+  argv1: string | undefined,
+  modulePath: string,
+  start: () => number = startEffectTypecheckCli,
+  exit: (code: number) => void = process.exit,
+  streams: readonly NodeJS.WritableStream[] = [process.stdout, process.stderr],
+): boolean => {
+  if (!isInvokedAsCli(argv1, modulePath)) {
+    return false;
+  }
+  exitAfterFlush(invokedCode(start), exit, streams);
+  return true;
+};
+
+exitInvokedCli(process.argv[1], fileURLToPath(import.meta.url));
 
 export {
   binRelative,
@@ -498,6 +546,8 @@ export {
   evaluateTypecheck,
   isInvokedAsCli,
   locateCompiler,
+  exitAfterFlush,
+  exitInvokedCli,
   maybeStart,
   missingExportCodes,
   parseBaseline,
