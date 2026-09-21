@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/observability";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -22,7 +22,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   BoardMemberRequired: { message: "掲示板は会員だけが使えます。", status: httpStatus.forbidden },
   BoardThreadNotFound: { message: "スレッドが見つかりません。", status: httpStatus.notFound },
 };
