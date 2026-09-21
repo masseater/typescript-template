@@ -14,8 +14,8 @@ import { Effect, Layer, Schema } from "effect";
 import { URI } from "otpauth";
 
 import { failure, fileIo } from "./failure.ts";
-import { local, readCredentials } from "./local-environment.ts";
 import { localDatabasePlatform } from "./local-database-platform.ts";
+import { local, readCredentials } from "./local-environment.ts";
 import { assertOwnerOnly, isErrorCode, replacePrivateFile } from "./private-files.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
