@@ -8,7 +8,7 @@ import { Effect } from "effect";
 import { applications } from "./applications.ts";
 import { roles } from "./identity.ts";
 
-const repositoryRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
 const skipDirectories = new Set([
   ".git",
