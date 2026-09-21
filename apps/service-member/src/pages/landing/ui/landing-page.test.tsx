@@ -12,7 +12,9 @@ import { createElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
 
+import { FieldValidationMessageProvider } from "@repo/ui";
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
+import { fieldValidationMessages } from "#shared/i18n/index.ts";
 import { Consequences } from "./consequences.tsx";
 import { Hero } from "./hero.tsx";
 
@@ -66,7 +68,17 @@ const rendered = (locale: Locale, view: ReactElement): string => {
     history: createMemoryHistory({ initialEntries: ["/"] }),
     routeTree,
   });
-  return renderToStaticMarkup(createElement(RouterContextProvider, { children: view, router }));
+  return renderToStaticMarkup(
+    createElement(
+      RouterContextProvider,
+      { router },
+      createElement(
+        FieldValidationMessageProvider,
+        { messages: fieldValidationMessages(locale) },
+        view,
+      ),
+    ),
+  );
 };
 
 const englishCopy = {
