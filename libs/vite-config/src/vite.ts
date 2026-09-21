@@ -153,7 +153,7 @@ const typecheckInputs = [
 const effectDiagnostics = {
   "check:effect": {
     command:
-      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
+      'sh -c \'out=$("$(effect-tsgo get-exe-path)" --noEmit -p tsconfig.json 2>&1 || :); printf "%s\\n" "$out"; printf "%s\\n" "$out" | grep -q "error TS2305" && exit 1; :\' && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning',
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
