@@ -84,6 +84,12 @@
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
+    "path": "infra/budget-monitor/src/inspect.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
     "path": "infra/cloudflare/src/account-lookup.test.ts",
     "rule": "no-null",
     "grounds": "the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged",
@@ -97,8 +103,50 @@
   },
   {
     "path": "infra/cloudflare/src/alchemy-cli.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/alchemy-cli.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/alchemy-cli.ts",
     "rule": "process-boundary",
     "grounds": "the alchemy child process writes its stdout and stderr through this process, which is the boundary those streams cross",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/artifact-io.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/artifacts.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/artifacts.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/check-stacks.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/ci-env.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
     "approver": "the owner of the package that crosses this platform boundary"
   },
   {
@@ -114,16 +162,64 @@
     "approver": "the owner of the package whose test asserts this unsafe boundary"
   },
   {
+    "path": "infra/cloudflare/src/credentials.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/credentials.test.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
     "path": "infra/cloudflare/src/credentials.ts",
     "rule": "no-bitwise",
     "grounds": "Unix file modes and open flags are bit fields, so the group-and-other mask and the no-follow open flag are written with bitwise operators",
     "approver": "the owner of the package that checks Unix permission bits"
   },
   {
+    "path": "infra/cloudflare/src/credentials.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/deploy-workflow.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/deployment.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/deployment.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
     "path": "infra/cloudflare/src/inspection-fixture.ts",
     "rule": "no-null",
     "grounds": "the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged",
     "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/inventory.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/monitor.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
   },
   {
     "path": "infra/cloudflare/src/plan-confirmation.test.ts",
@@ -133,9 +229,141 @@
   },
   {
     "path": "infra/cloudflare/src/plan-confirmation.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/plan-confirmation.ts",
     "rule": "no-use-before-define",
     "grounds": "stable, stableExpression, and stableEntries call each other, so one declaration is always named first",
     "approver": "the owner of the package that hashes this plan"
+  },
+  {
+    "path": "infra/cloudflare/src/prepare-ci-env.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/prepare-ci-env.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/prepare-ci-env.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/project.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/retention.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/retention.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/source-maps.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/source-maps.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/stack-runner.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/staging.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/verify-origins.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/local/src/compose.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/local/src/compose.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/config/src/local-database-path.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/config/src/local-database-path.test.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "libs/config/src/local-database-path.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/config/src/local-database-path.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "libs/config/src/naming.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/config/src/repository-root.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/config/src/repository-root.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/config/src/responds.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
   },
   {
     "path": "libs/db/src/interview.worker.test.ts",
@@ -192,16 +420,106 @@
     "approver": "the owner of the package that crosses this JSON null boundary"
   },
   {
+    "path": "tools/dev/src/authenticate.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "tools/dev/src/browser.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "tools/dev/src/ci-runner.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/ci-runner.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/dev-start.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "tools/dev/src/lan-gateway.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/lan-gateway.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "tools/dev/src/local-environment.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
     "path": "tools/dev/src/local-environment.ts",
     "rule": "strict-void-return",
     "grounds": "promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits",
     "approver": "the owner of the package that wraps this Node callback"
   },
   {
+    "path": "tools/dev/src/observe/cli.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/observe/receiver.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/observe/source-maps.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/observe/verify.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/operator-account.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
     "path": "tools/dev/src/private-files.ts",
     "rule": "no-bitwise",
     "grounds": "group and other permission bits are masked out of the file mode to refuse a credentials file others can read",
     "approver": "the owner of the package that checks Unix permission bits"
+  },
+  {
+    "path": "tools/dev/src/setup.ts",
+    "rule": "no-process-env",
+    "grounds": "this statement reads or writes process.env at the Node process boundary",
+    "approver": "the owner of the package that crosses this process environment boundary"
+  },
+  {
+    "path": "tools/dev/src/shared-runner-credentials.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
   },
   {
     "path": "tools/dont-review-it/src/configs/oxlint.ts",
@@ -217,6 +535,12 @@
   },
   {
     "path": "tools/dont-review-it/src/repository/check-effect-typecheck.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dont-review-it/src/repository/client-bundle.ts",
     "rule": "no-nodejs-modules",
     "grounds": "this file runs in Node and calls a Node API that has no portable module",
     "approver": "the owner of the package that crosses this platform boundary"

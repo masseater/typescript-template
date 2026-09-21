@@ -1,8 +1,14 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { execFile } from "node:child_process";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { promisify } from "node:util";
 
 import {
