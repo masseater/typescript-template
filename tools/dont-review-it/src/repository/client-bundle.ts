@@ -5,12 +5,22 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { type Application, ApplicationName } from "@repo/config";
 import { serverOnlyMarkers } from "@repo/vite-config";
-import { Console, Effect } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { build } from "vite-plus";
 
-const appRoot = fileURLToPath(new URL("../../../../apps/service-member/", import.meta.url));
-const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
+const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
+
+const probeModules: Readonly<Record<Application, string>> = {
+  "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",
+  "service-admin": "src/pages/login/ui/admin-login.tsx",
+  "service-member": "src/pages/landing/ui/hero.tsx",
+};
+
+const Arguments = Schema.Struct({
+  application: ApplicationName,
+});
 
 const clientReachable: readonly string[] = [
   "@repo/runtime/client",
@@ -36,7 +46,13 @@ function denialReason(error: unknown): string {
   );
 }
 
-async function clientBuild(specifiers: readonly string[], outDirectory: string): Promise<string> {
+async function clientBuild(
+  application: Application,
+  specifiers: readonly string[],
+  outDirectory: string,
+): Promise<string> {
+  const appRoot = path.join(repositoryRoot, "apps", application);
+  const probeModule = path.join(appRoot, probeModules[application]);
   try {
     await build({
       build: { emptyOutDir: true, outDir: outDirectory },
@@ -64,6 +80,8 @@ async function clientBuild(specifiers: readonly string[], outDirectory: string):
     return "";
   } catch (error: unknown) {
     return denialReason(error);
+  } finally {
+    await rm(path.join(appRoot, "dist"), { force: true, recursive: true });
   }
 }
 
@@ -82,13 +100,14 @@ const temporaryOutput = Effect.acquireRelease(
   (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
 );
 
-function serverOnlyProblems([specifier, pattern]: readonly [string, string]): Effect.Effect<
-  readonly string[]
-> {
+function serverOnlyProblems(
+  application: Application,
+  [specifier, pattern]: readonly [string, string],
+): Effect.Effect<readonly string[]> {
   return Effect.scoped(
     temporaryOutput.pipe(
       Effect.flatMap((outDirectory) =>
-        Effect.promise(async () => clientBuild([specifier], outDirectory)),
+        Effect.promise(async () => clientBuild(application, [specifier], outDirectory)),
       ),
       Effect.map((denial) =>
         denial === pattern
@@ -99,34 +118,43 @@ function serverOnlyProblems([specifier, pattern]: readonly [string, string]): Ef
   );
 }
 
-const inspect = Effect.gen(function* inspect() {
-  const reachableDirectory = yield* temporaryOutput;
-  const reachableDenial = yield* Effect.promise(async () =>
-    clientBuild(clientReachable, reachableDirectory),
-  );
-  const markers = yield* Effect.promise(async () => bundledMarkers(reachableDirectory));
-  const denials = yield* Effect.forEach(serverOnly, serverOnlyProblems);
-  return [
-    ...(reachableDenial === ""
-      ? []
-      : [`${clientReachable.join(" ")} denied by ${reachableDenial}`]),
-    ...markers.map((marker) => `${marker} reached the client bundle`),
-    ...denials.flat(),
-  ];
-}).pipe(Effect.scoped);
+const inspect = (application: Application) =>
+  Effect.gen(function* inspect() {
+    const reachableDirectory = yield* temporaryOutput;
+    const reachableDenial = yield* Effect.promise(async () =>
+      clientBuild(application, clientReachable, reachableDirectory),
+    );
+    const markers = yield* Effect.promise(async () => bundledMarkers(reachableDirectory));
+    const denials = yield* Effect.forEach(serverOnly, (entry) =>
+      serverOnlyProblems(application, entry),
+    );
+    return [
+      ...(reachableDenial === ""
+        ? []
+        : [`${clientReachable.join(" ")} denied by ${reachableDenial}`]),
+      ...markers.map((marker) => `${marker} reached the client bundle`),
+      ...denials.flat(),
+    ];
+  }).pipe(Effect.scoped);
 
 runCli(
-  inspect.pipe(
-    Effect.flatMap((unexpected) =>
-      Console.log(
-        JSON.stringify({
-          event: "quality.client_bundle",
-          inputs: clientReachable.length + serverOnly.length,
-          ok: unexpected.length === 0,
-          unexpected,
-        }),
-      ).pipe(Effect.andThen(unexpected.length > 0 ? markFailed : Effect.void)),
-    ),
-  ),
+  Effect.gen(function* run() {
+    const arguments_ = yield* Schema.decodeUnknownEffect(Arguments)({
+      application: process.argv[2] === "--application" ? process.argv[3] : undefined,
+    });
+    const unexpected = yield* inspect(arguments_.application);
+    yield* Console.log(
+      JSON.stringify({
+        application: arguments_.application,
+        event: "quality.client_bundle",
+        inputs: clientReachable.length + serverOnly.length,
+        ok: unexpected.length === 0,
+        unexpected,
+      }),
+    );
+    if (unexpected.length > 0) {
+      yield* markFailed;
+    }
+  }),
   (cause) => causeRecord("quality.client_bundle_failed", { cause }),
 );
