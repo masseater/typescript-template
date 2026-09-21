@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
-import { configuredLintRules } from "./lint.ts";
+import { configuredLintRules, lintOptions } from "./lint.ts";
 
 const forbiddenCode = [
   [
@@ -283,6 +283,15 @@ describe("project lint rules on dependency boundaries", () => {
     expect(configuredLintRules).toMatchObject(
       Object.fromEntries(ruleNames.map((rule) => [`project/${rule}`, "error"])),
     );
+  });
+
+  it("turns atom-server-data off for auth-ui after the workspace error", () => {
+    expect.hasAssertions();
+    const severityAt = (severity: string): number =>
+      lintOptions.overrides.findIndex(
+        (override) => override.rules?.["project/atom-server-data"] === severity,
+      );
+    expect(severityAt("off")).toBeGreaterThan(severityAt("error"));
   });
 
   it.for(forbiddenCode)("rejects forbidden code in %s", ([name, code, rule]) => {
