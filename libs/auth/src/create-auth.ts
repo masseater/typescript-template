@@ -166,14 +166,13 @@ const createEmailChangeCompletedNotifier = (
   authOptions: AuthOptions,
   { origin, run }: Readonly<{ origin: string; run: Run }>,
 ): ((email: string) => Promise<void>) => {
-  return async (email) => {
-    await run(
+  return (email) =>
+    run(
       sendEmailChangeCompleted(authOptions.mail, {
         email,
         url: new URL("/settings/security", origin).href,
       }),
     );
-  };
 };
 
 const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => {

@@ -172,7 +172,7 @@ const registerVerified = Effect.fn("registerVerified")(function* registerVerifie
 
 const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
   email: string,
-  kind: typeof BootstrapKind.Type = BOOTSTRAP_KIND.admin,
+  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   yield* registerVerified(email);
   yield* bootstrapAdmin(email, kind);
@@ -354,7 +354,7 @@ const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSes
   if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
     return yield* new SessionRequired();
   }
-  const signature = yield* Effect.promise(async () => makeSignature(token, secret));
+  const signature = yield* Effect.promise(() => makeSignature(token, secret));
   return `${cookiePrefix}.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
 });
 

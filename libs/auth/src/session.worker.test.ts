@@ -192,7 +192,7 @@ describe("verifySession", () => {
   });
 
   describe("an administrator signing in to the user app", () => {
-    const it = authTest().extend("status", async ({ auth }) =>
+    const it = authTest().extend("status", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* crossOver() {
           yield* bootstrapVerifiedAdmin("admin@example.com");

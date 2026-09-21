@@ -32,7 +32,7 @@ const acceptInvitation = Effect.fn("acceptInvitation")(function* acceptInvitatio
   readonly token: string;
 }) {
   const { audience } = yield* Auth;
-  const passwordHash = yield* Effect.promise(async () => hashPassword(accepted.password));
+  const passwordHash = yield* Effect.promise(() => hashPassword(accepted.password));
   return yield* acceptInvite({
     audience,
     name: accepted.name,

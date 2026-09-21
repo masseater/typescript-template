@@ -25,7 +25,7 @@ import {
 const tokenOf = (link: URL): string => decodeURIComponent(link.pathname.split("/").at(-1) ?? "");
 
 describe("an administrator invite", () => {
-  const it = authTest().extend("outcome", async ({ auth }) =>
+  const it = authTest().extend("outcome", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* inviteAndAccept() {
         yield* bootstrapVerifiedAdmin("owner@example.com");
@@ -86,7 +86,7 @@ describe("an administrator invite", () => {
 });
 
 describe("a staff invite", () => {
-  const it = authTest().extend("outcome", async ({ auth }) =>
+  const it = authTest().extend("outcome", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* inviteStaffMember() {
         const editor = yield* wikiStaff("editor@example.com");

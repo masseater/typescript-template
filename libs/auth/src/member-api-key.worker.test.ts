@@ -1,24 +1,29 @@
 import { assert, it } from "@effect/vitest";
 import { APPLICATION, ROLE, memberApiKeyReadPermissions } from "@repo/config";
 import { query, schema } from "@repo/db";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { AuthApps, registerVerified, signInAs, withAuth } from "./testing.ts";
 
 const { apikey, user } = schema;
 
+const listedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z"));
+
 const addListedMember = (memberId: string, emailVerified = true) =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: new Date("2026-01-02T00:00:00.000Z"),
-      email: `${memberId}@example.com`,
-      emailVerified,
-      id: memberId,
-      name: memberId,
-      role: ROLE.member,
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-    });
-  });
+  query((database) =>
+    database
+      .insert(user)
+      .values({
+        createdAt: listedAt,
+        email: `${memberId}@example.com`,
+        emailVerified,
+        id: memberId,
+        name: memberId,
+        role: ROLE.member,
+        updatedAt: listedAt,
+      })
+      .then(() => undefined),
+  );
 
 const ownerOf = (email: string) =>
   Effect.gen(function* findOwner() {
