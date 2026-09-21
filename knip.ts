@@ -97,6 +97,7 @@ const workspaces = {
 };
 
 const cloudflareStacks = [
+  "src/core.ts!",
   "src/database.ts!",
   "src/flagship.ts!",
   "src/email.ts!",
@@ -175,6 +176,11 @@ const config = ({
       ...workspaces,
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
       "apps/*": app,
+      "apps/core": {
+        entry: ["src/worker.ts!"],
+        ignoreDependencies: ["cloudflare"],
+        project: ["src/**/*.ts!"],
+      },
       "apps/internal-dashboard": {
         ...app,
         project: [

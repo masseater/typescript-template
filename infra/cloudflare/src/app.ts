@@ -1,9 +1,11 @@
 import { APPLICATION, grants } from "@repo/config";
-import { Email, Worker, Workers } from "alchemy/Cloudflare";
+import { coreEntrypoints } from "@repo/core-api/entrypoints";
+import { Email, Worker, WorkerEntrypoint, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
@@ -29,11 +31,13 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
+  const core = yield* coreWorkerRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
   const shared = appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     AUTH_SECRET: secret,
+    CORE: WorkerEntrypoint(core, coreEntrypoints[target]),
     DB: database,
     EMAIL: email,
     EMAIL_FROM: config.mailFrom,

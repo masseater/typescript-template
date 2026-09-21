@@ -1,11 +1,20 @@
 import type { Application, Capability, CapabilityOf } from "@repo/config";
-import type { AIBinding, Assets, D1, Email, Flagship, InferEnv } from "alchemy/Cloudflare";
+import type {
+  AIBinding,
+  Assets,
+  D1,
+  Email,
+  Flagship,
+  InferEnv,
+  WorkerEntrypointBinding,
+} from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 
 type SharedEnv = Readonly<{
   APP_ORIGIN: string;
   APP_RELEASE: string;
   AUTH_SECRET: Redacted.Redacted;
+  CORE: WorkerEntrypointBinding;
   DB: D1.Database;
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;

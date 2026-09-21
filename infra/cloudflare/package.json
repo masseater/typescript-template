@@ -20,6 +20,7 @@
     "@repo/budget-monitor": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/core-api": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/error-monitor": "workspace:*",
     "@repo/feature-flags": "workspace:*",
