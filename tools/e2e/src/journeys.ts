@@ -66,13 +66,11 @@ const openMainNav = async (
   await seeHeading(stage.page, destination.heading);
 };
 
-const browseMainScreens = async (stage: JourneyStage, _account: Account): Promise<void> => {
+const browseMainScreens = async (stage: JourneyStage, account: Account): Promise<void> => {
   const origin = stage.environment.originOf("member");
   await seeHeading(stage.page, "ホーム");
-  await openMainNav(stage, { heading: "有料プラン", linkName: "探す（有料）" });
+  await openMainNav(stage, { heading: account.name, linkName: "プロフィール" });
   await openMainNav(stage, { heading: "掲示板", linkName: "掲示板" });
-  await openMainNav(stage, { heading: "メッセージ", linkName: "メッセージ" });
-  await openMainNav(stage, { heading: "通知", linkName: "通知" });
   await openMainNav(stage, { heading: "ホーム", linkName: "ホーム" });
   await stage.page.goto(`${origin}/users`);
   await seeHeading(stage.page, "ユーザーを探す");

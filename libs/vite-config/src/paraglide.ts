@@ -19,8 +19,8 @@ function paraglideAppPlugin(): PluginOption {
       {
         pattern: "/:path(.*)?",
         localized: [
-          ["ja", "/:path(.*)?"],
           ["en", "/en/:path(.*)?"],
+          ["ja", "/:path(.*)?"],
         ],
       },
     ],
