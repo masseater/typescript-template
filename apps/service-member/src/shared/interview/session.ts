@@ -13,23 +13,14 @@ import { Clock, Effect, Option, Schema } from "effect";
 
 import { assembleProfileLayout } from "#shared/profile-layout/assembler.ts";
 import { writeSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
-import { viewOf } from "./contracts.ts";
-import {
-  accepts,
-  advance,
-  begin,
-  clearConversation,
-  needsModel,
-  requestHistoryConsent,
-  save,
-  spoken,
-} from "./engine.ts";
+import { accepts, clearConversation, needsModel } from "./engine.ts";
+import { advance, begin, requestHistoryConsent, save, spoken, viewOf } from "./index.ts";
 import { Interviewer } from "./interviewer.ts";
 import { fieldKeys } from "./sheet.ts";
 import { State } from "./state.ts";
 import { TurnRejected } from "./turn-rejected.ts";
 
-import type { InterviewState, MemberUtterance } from "./state.ts";
+import type { InterviewState, MemberUtterance } from "./index.ts";
 import type { UnderstandingFailed } from "./understanding-failed.ts";
 import type { UnderstandingData } from "./understanding.ts";
 
