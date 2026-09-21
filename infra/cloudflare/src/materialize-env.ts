@@ -13,10 +13,7 @@ runCli(
   Effect.gen(function* program() {
     // oxlint-disable-next-line node/no-process-env
     const environment = process.env;
-    const preparation = yield* writeCiSecretsFile(
-      environment,
-      secretsFile(yield* projectName),
-    );
+    const preparation = yield* writeCiSecretsFile(environment, secretsFile(yield* projectName));
     if (preparation.status === "unconfigured") {
       console.info(JSON.stringify({ event: "cloudflare.env_unconfigured" }));
       return;
