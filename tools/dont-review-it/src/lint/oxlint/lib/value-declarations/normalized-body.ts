@@ -11,7 +11,8 @@ type Spelling = (name: string) => string;
 
 const asWritten: Spelling = (identifierName) => identifierName;
 
-const jsonTextOf: (held: unknown) => string = JSON.stringify;
+const jsonTextOf = (held: unknown): string =>
+  JSON.stringify(held, (_key, value: unknown) => (typeof value === "bigint" ? `${value}n` : value));
 
 const MEMBER_NAME_FIELDS: ReadonlySet<string> = new Set(["key", "property"]);
 

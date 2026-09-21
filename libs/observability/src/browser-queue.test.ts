@@ -2,7 +2,7 @@ import { setTimeout as wait } from "node:timers/promises";
 
 import { describe, expect, test } from "vite-plus/test";
 
-import { recordedDeliveries } from "./testing.ts";
+import { recordedDeliveries } from "./browser-testing.ts";
 
 const retryBackoffMilliseconds = 1000;
 const secondAttempt = 2;
