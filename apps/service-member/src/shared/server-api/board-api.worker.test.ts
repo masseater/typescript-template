@@ -19,12 +19,14 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
-        taken(): ReadonlyArray<{
-          readonly from: string;
-          readonly subject: string;
-          readonly text: string;
-          readonly to: readonly string[];
-        }>;
+        taken(): Promise<
+          ReadonlyArray<{
+            readonly from: string;
+            readonly subject: string;
+            readonly text: string;
+            readonly to: readonly string[];
+          }>
+        >;
       };
     }
   }
@@ -84,7 +86,7 @@ const jsonOf = (response: Response): Effect.Effect<unknown> =>
 const verificationToken = Effect.fn("verificationToken")(function* verificationToken(
   email: string,
 ) {
-  const delivered = yield* Effect.sync(() => env.EMAIL.taken());
+  const delivered = yield* Effect.promise(() => env.EMAIL.taken());
   const mail = delivered.findLast((sent) => sent.to.includes(email));
   const link = mail?.text.split("\n").find((line) => line.startsWith("http://")) ?? "";
   return new URLSearchParams(new URL(link).hash.slice(1)).get("token") ?? "";

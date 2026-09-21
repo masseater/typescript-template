@@ -18,12 +18,14 @@ declare global {
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
-        taken(): ReadonlyArray<{
-          readonly from: string;
-          readonly subject: string;
-          readonly text: string;
-          readonly to: readonly string[];
-        }>;
+        taken(): Promise<
+          ReadonlyArray<{
+            readonly from: string;
+            readonly subject: string;
+            readonly text: string;
+            readonly to: readonly string[];
+          }>
+        >;
       };
     }
   }
@@ -49,7 +51,7 @@ function drainMailbox(): Effect.Effect<
     readonly to: string | readonly string[];
   }>
 > {
-  return Effect.sync(() => env.EMAIL.taken());
+  return Effect.promise(() => env.EMAIL.taken());
 }
 
 function contactApp() {
