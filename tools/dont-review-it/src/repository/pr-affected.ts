@@ -15,17 +15,31 @@ const required = (name: "GITHUB_OUTPUT" | "PR_FILES_PATH"): string => {
   return value;
 };
 
-const dependencyNames = (manifest: {
-  readonly dependencies?: Readonly<Record<string, string>>;
-  readonly devDependencies?: Readonly<Record<string, string>>;
-}): readonly string[] =>
-  [manifest.dependencies, manifest.devDependencies].flatMap((field) =>
-    field === undefined
-      ? []
-      : Object.entries(field).flatMap(([name, version]) =>
-          version.startsWith("workspace:") ? [name] : [],
-        ),
-  );
+const dependencyFields = [
+  "dependencies",
+  "devDependencies",
+  "peerDependencies",
+  "optionalDependencies",
+] as const;
+
+type PackageManifest = Readonly<{
+  dependencies?: Readonly<Record<string, string>>;
+  devDependencies?: Readonly<Record<string, string>>;
+  name?: string;
+  optionalDependencies?: Readonly<Record<string, string>>;
+  peerDependencies?: Readonly<Record<string, string>>;
+}>;
+
+const dependencyNames = (manifest: PackageManifest): readonly string[] =>
+  dependencyFields.flatMap((field) => {
+    const declared = manifest[field];
+    if (declared === undefined) {
+      return [];
+    }
+    return Object.entries(declared).flatMap(([name, version]) =>
+      version.startsWith("workspace:") ? [name] : [],
+    );
+  });
 
 const workspacePackages = (): readonly WorkspacePackage[] =>
   workspaceRoots.flatMap((root) =>
@@ -35,11 +49,7 @@ const workspacePackages = (): readonly WorkspacePackage[] =>
       }
       const manifest = JSON.parse(
         readFileSync(path.join(repositoryRoot, root, entry.name, "package.json"), "utf8"),
-      ) as {
-        readonly name?: string;
-        readonly dependencies?: Readonly<Record<string, string>>;
-        readonly devDependencies?: Readonly<Record<string, string>>;
-      };
+      ) as PackageManifest;
       if (manifest.name === undefined) {
         throw new Error(`${root}/${entry.name} is missing a package name`);
       }
@@ -64,11 +74,18 @@ const outputLines = (): string => {
   }
   const names = affected.directories.map((directory) => {
     const workspace = packages.find((item) => item.directory === directory);
-    if (workspace === undefined) {
-      throw new Error(`${directory} is not a workspace`);
+    if (
+      workspace === undefined ||
+      !/^(?:apps|libs|infra|tools)\/[\w-]+$/u.test(directory) ||
+      !/^@repo\/[\w-]+$/u.test(workspace.name)
+    ) {
+      throw new Error(`${directory} is not a workspace filter`);
     }
     return workspace.name;
   });
+  if (names.length === 0) {
+    throw new Error("affected scope is empty");
+  }
   return `scope=subset\npaths=${affected.directories.join(" ")}\nfilters=${names.map((name) => `--filter ${name}`).join(" ")}\n`;
 };
 

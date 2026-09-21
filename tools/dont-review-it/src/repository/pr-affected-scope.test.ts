@@ -28,5 +28,29 @@ describe("affected test directories", () => {
       directories: ["libs/cli"],
       kind: "subset",
     });
+    expect(
+      affectedTests(
+        ["libs/ui/src/button.tsx"],
+        [
+          ...packages,
+          {
+            dependencies: ["@repo/service-member"],
+            directory: "apps/service-admin",
+            name: "@repo/service-admin",
+          },
+        ],
+      ),
+    ).toStrictEqual({
+      directories: ["apps/service-admin", "apps/service-member", "libs/ui"],
+      kind: "subset",
+    });
+  });
+
+  it("widens to the whole suite when any changed file is outside a workspace", () => {
+    expect.hasAssertions();
+    expect(affectedTests(["libs/ui/src/button.tsx", "vite.config.ts"], packages)).toStrictEqual({
+      kind: "all",
+    });
+    expect(affectedTests(["apps/missing/src/index.ts"], packages)).toStrictEqual({ kind: "all" });
   });
 });

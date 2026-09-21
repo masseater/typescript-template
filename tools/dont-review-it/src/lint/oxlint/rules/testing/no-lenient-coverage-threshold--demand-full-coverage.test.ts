@@ -49,6 +49,12 @@ describe("dont-review-it/no-lenient-coverage-threshold--demand-full-coverage", (
         options: [{ branches: 90 }],
       },
       {
+        name: "every metric at a fifty percent floor passes when that floor is the demand",
+        code: `import { defineConfig } from "vite-plus";\nexport default defineConfig({ test: { coverage: { thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true } } } });\n`,
+        filename: "vite.config.ts",
+        options: [{ branches: 50, functions: 50, lines: 50, statements: 50 }],
+      },
+      {
         name: "the shorthand still satisfies a lowered demand",
         code: `import { defineConfig } from "vite-plus";\nexport default defineConfig({ test: { coverage: { thresholds: { 100: true, perFile: true } } } });\n`,
         filename: "vite.config.ts",

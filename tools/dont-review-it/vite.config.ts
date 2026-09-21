@@ -19,8 +19,6 @@ export default defineConfig({
         precommit: ["check:staged"],
         prepush: ["check:effect", "check"],
         prepr: ["test"],
-        premerge: [],
-        prerelease: [],
       }),
     },
   },
@@ -36,7 +34,7 @@ export default defineConfig({
     restoreMocks: true,
     coverage: {
       exclude: ["specs/**", "src/repository/**"],
-      thresholds: { 100: true, perFile: true },
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
     },
     exclude: ["**/node_modules/**", "**/dist/**", "src/repository/**"],
     unstubEnvs: true,

@@ -237,17 +237,15 @@ describe("lifecycle entry points", () => {
     expect(lifecycleOutsideGates()).toStrictEqual([]);
   });
 
-  it("fails the pull request format gate before the recursive prepr work starts", () => {
+  it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
     expect.hasAssertions();
     expect(workflowRuns("../../../../.github/workflows/check.yml")).toStrictEqual([
-      "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' ${{ steps.affected.outputs.paths }}",
-      "vp run -w check:code",
       "vp run -r prepr",
       "vp run -w prepr",
-      "vp run ${{ steps.affected.outputs.filters }} prepr",
+      "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
+      "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
       "vp run -r premerge",
       "vp run --filter @repo/e2e test:e2e",
-      "vp run -w check:code",
       "vp run -r prepr",
     ]);
   });
@@ -286,7 +284,6 @@ describe("lifecycle contents", () => {
       "apps/service-admin#check:dev",
       "apps/service-member#check:dev",
       "infra/cloudflare#verify:account",
-      "tools/commander#check:start",
       "tools/dev#check:exported",
       "tools/dev#setup",
       "tools/dont-review-it#check:staged",
@@ -309,6 +306,7 @@ describe("lifecycle contents", () => {
       expect.arrayContaining([
         "check:code",
         "check:effect",
+        "check:effect:gate",
         "knip",
         "check:client",
         "check:imports",
@@ -317,6 +315,22 @@ describe("lifecycle contents", () => {
       ]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
+    expect(
+      configuredDirectories.filter(
+        (directory) =>
+          taskNames(directory).includes("check:effect") &&
+          !reachable(directory, ["prepush"]).includes("check:effect:gate"),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.flatMap((directory) =>
+        ["check:effect", "check:effect:gate"].flatMap((name) =>
+          taskNames(directory).includes(name)
+            ? commands(directory, name).filter((command) => command.includes("&&"))
+            : [],
+        ),
+      ),
+    ).toStrictEqual([]);
     expect(
       configuredDirectories.filter((directory) =>
         reachable(directory, ["prepush"]).includes("check"),
@@ -328,7 +342,6 @@ describe("lifecycle contents", () => {
       "libs/db",
       "tools/ai-native",
       "tools/ai-native-telemetry",
-      "tools/commander",
       "tools/dont-review-it",
     ]);
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(

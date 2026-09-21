@@ -521,7 +521,7 @@
       {
         "file": "src/shared/members/members.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -617,7 +617,7 @@
       {
         "file": "src/shared/server-api/board.ts",
         "code": "TS2345",
-        "message": "Argument of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+        "message": "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_af154f659eb6497b36cfeb7e11fef23b/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.4_@cloudflare+workers-types@5.20260916.1_@effect+sql-d1@4.0.0-rc.1_fd050749f9f91231906a95e3c701e412/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
         "count": 1
       },
       {
@@ -1189,7 +1189,7 @@
       {
         "file": "src/monitor-fixture.ts",
         "code": "TS4023",
-        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"/Users/u1/ghq/github.com/masseater/typescript-template=fix-typecheck-new-errors-fail/libs/monitor/src/index\" but cannot be named.",
+        "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
         "count": 1
       },
       {
@@ -1250,18 +1250,6 @@
         "file": "src/monitor-fixture.ts",
         "code": "TS4094",
         "message": "Property 'run' of exported anonymous class type may not be private or protected.",
-        "count": 1
-      },
-      {
-        "file": "src/vite.test.ts",
-        "code": "TS2339",
-        "message": "Property 'premerge' does not exist on type '{ \"check:effect\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; build: { ...; }; }'.",
-        "count": 1
-      },
-      {
-        "file": "src/vite.test.ts",
-        "code": "TS2339",
-        "message": "Property 'prepr' does not exist on type '{ \"check:effect\": { command: string; input: ({ readonly auto: true; } | { readonly base: \"workspace\"; readonly pattern: \"!node_modules/.modules.yaml\"; } | { readonly base: \"workspace\"; readonly pattern: \"!**/node_modules/.bin/**\"; } | ... 7 more ... | { ...; })[]; }; build: { ...; }; }'.",
         "count": 1
       }
     ],
@@ -1380,86 +1368,6 @@
         "file": "../dont-review-it/src/repository/lint.ts",
         "code": "TS2345",
         "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
-        "count": 1
-      }
-    ],
-    "tools/commander": [
-      {
-        "file": "../../libs/observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/worker.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'ExecutionContext'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/ui/src/wareki.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'Temporal'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      },
-      {
-        "file": "src/app/check-start.ts",
-        "code": "TS2379",
-        "message": "Argument of type 'Effect<unknown, never, never> | Effect<never, StartCheckFailed, never>' is not assignable to parameter of type 'Effect<number, StartCheckFailed, never>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/app/cli.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'Effect'.",
-        "count": 5
-      },
-      {
-        "file": "src/app/cli.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'Schema'.",
-        "count": 6
-      },
-      {
-        "file": "src/app/cli.ts",
-        "code": "TS2503",
-        "message": "Cannot find namespace 'Cause'.",
-        "count": 1
-      },
-      {
-        "file": "src/app/cli.ts",
-        "code": "TS2693",
-        "message": "'Console' only refers to a type, but is being used as a value here.",
-        "count": 2
-      },
-      {
-        "file": "src/pages/commander/model/view.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly chat: { readonly busy: boolean; readonly entries: readonly { readonly body: { readonly kind: \"user\"; readonly text: string; } | { readonly kind: \"commander\"; readonly text: string; } | { ...; } | { ...; }; readonly id: number; }[]; readonly queued: readonly { ...' is not assignable to parameter of type 'AsyncIterable<unknown>'.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/commander/ui/task-detail.tsx",
-        "code": "TS6133",
-        "message": "'STATUS_VARIANT' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/commander/ui/task-pane.tsx",
-        "code": "TS6133",
-        "message": "'STATUS_VARIANT' is declared but its value is never read.",
         "count": 1
       }
     ],

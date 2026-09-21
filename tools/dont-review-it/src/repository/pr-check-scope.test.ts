@@ -13,8 +13,12 @@ describe("pull request check scope", () => {
     expect(workflow).toContain("vp run -r prepr");
     expect(workflow).toContain("vp run -r premerge");
     expect(workflow).toContain("pr-affected");
+    expect(workflow).toContain("--fail-if-no-match");
     expect(workflow).not.toContain("--changed");
     expect(workflow).not.toContain("fetch-depth:");
+    expect(workflow).not.toContain("paths-ignore");
+    expect(workflow).not.toContain("paths:");
+    expect(workflow).not.toMatch(/^ {6}run: vp check$/mu);
     expect(vite).toContain('prepr: ["check:imports"]');
     expect(vite).toContain('premerge: ["test", "test:dev-server"]');
     expect(vite).toContain('"apps/**/*.test.ts"');
