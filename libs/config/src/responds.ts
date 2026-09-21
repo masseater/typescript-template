@@ -1,49 +1,58 @@
-import { Duration, Effect, Schedule } from "effect";
+import { Effect, Schedule, type Duration } from "effect";
 
 const firstSuccess = 200;
 const firstRedirect = 300;
 
-function respondedSuccessfully(status: number): boolean {
-  return status >= firstSuccess && status < firstRedirect;
-}
+const respondedSuccessfully = (httpStatus: number): boolean =>
+  httpStatus >= firstSuccess && httpStatus < firstRedirect;
 
-function waitUntilResponds<Failure>(request: {
-  readonly accept: (status: number) => boolean;
-  readonly method: "GET" | "POST";
-  readonly onStatus: (status: number) => Failure;
-  readonly onUnreachable: (error: unknown) => Failure;
-  readonly retry?: { readonly interval: Duration.Input; readonly times: number };
-  readonly timeoutMilliseconds?: number;
-  readonly url: string;
-}): Effect.Effect<number, Failure> {
+const waitUntilResponds = <Failure>(
+  probe: {
+    readonly accept: (httpStatus: number) => boolean;
+    readonly method: "GET" | "POST";
+    readonly onStatus: (httpStatus: number) => Failure;
+    readonly onUnreachable: (unreachableFailure: unknown) => Failure;
+    readonly retry?: {
+      readonly interval: `${number} ${Duration.Unit}`;
+      readonly times: number;
+    };
+    readonly timeoutMilliseconds?: number;
+    readonly url: string;
+  },
+): Effect.Effect<number, Failure> => {
   const attempt = Effect.tryPromise({
-    catch: (error) => request.onUnreachable(error),
+    catch: (unreachableFailure) => probe.onUnreachable(unreachableFailure),
     try: async () => {
-      const response = await fetch(request.url, {
-        method: request.method,
+      const fetched = await fetch(probe.url, {
+        method: probe.method,
         redirect: "manual",
-        ...(request.timeoutMilliseconds === undefined
+        ...(probe.timeoutMilliseconds === undefined
           ? {}
-          : { signal: AbortSignal.timeout(request.timeoutMilliseconds) }),
+          : { signal: AbortSignal.timeout(probe.timeoutMilliseconds) }),
       });
-      const body = response.body;
-      if (body !== null) {
-        await body.cancel();
+      const responseBody = fetched.body;
+      if (responseBody !== null) {
+        await responseBody.cancel();
       }
-      return response.status;
+      return fetched.status;
     },
   }).pipe(
-    Effect.flatMap((status) =>
-      request.accept(status) ? Effect.succeed(status) : Effect.fail(request.onStatus(status)),
+    Effect.flatMap((httpStatus) =>
+      probe.accept(httpStatus)
+        ? Effect.succeed(httpStatus)
+        : Effect.fail(probe.onStatus(httpStatus)),
     ),
   );
-  const retry = request.retry;
-  if (retry === undefined) {
+  const scheduledRetry = probe.retry;
+  if (scheduledRetry === undefined) {
     return attempt;
   }
   return attempt.pipe(
-    Effect.retry({ schedule: Schedule.spaced(retry.interval), times: retry.times }),
+    Effect.retry({
+      schedule: Schedule.spaced(scheduledRetry.interval),
+      times: scheduledRetry.times,
+    }),
   );
-}
+};
 
 export { respondedSuccessfully, waitUntilResponds };

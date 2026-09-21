@@ -1,16 +1,18 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
 import { repositoryRoot } from "./repository-root.ts";
 
-it.effect("points at the directory that holds the workspace manifest", () =>
-  Effect.gen(function* program() {
-    const manifest = yield* Effect.promise(async () =>
-      readFile(path.join(repositoryRoot, "pnpm-workspace.yaml"), "utf8"),
-    );
-    assert.include(manifest, "packages:");
-  }),
-);
+describe("repositoryRoot", () => {
+  const it = test.extend("opensWithWorkspaceKey", async () =>
+    (await readFile(path.join(repositoryRoot, "pnpm-workspace.yaml"), "utf-8")).startsWith(
+      "packages:\n",
+    ),
+  );
+
+  it("is the directory that holds the workspace manifest", ({ opensWithWorkspaceKey }) => {
+    expect(opensWithWorkspaceKey).toBe(true);
+  });
+});
