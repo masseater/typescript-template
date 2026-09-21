@@ -3,6 +3,7 @@ import {
   reportViolation,
   type LintContext,
   type Node,
+  type NodeOf,
 } from "./lint-context.ts";
 import { destructuredOrigins, origins, type Origin } from "./references.ts";
 
@@ -56,16 +57,25 @@ const aliasVisitor = (inspection: LintContext, matches: (origin: Origin) => bool
   };
 };
 
-const originVisitor = (inspection: LintContext, matches: (origin: Origin) => boolean): Visitor => {
+const originVisitor = (
+  inspection: LintContext,
+  matches: (origin: Origin) => boolean,
+  forbidsCall: (node: NodeOf<"CallExpression">) => boolean = () => false,
+): Visitor => {
   return {
     ...aliasVisitor(inspection, matches),
     CallExpression(node: Node): void {
+      if (node.type !== "CallExpression") {
+        return;
+      }
       if (
-        node.type === "CallExpression" &&
         node.callee.type !== "MemberExpression" &&
         origins(inspection, node.callee).some((origin) => matches(origin))
       ) {
         reportViolation(inspection, node.callee);
+      }
+      if (forbidsCall(node)) {
+        reportViolation(inspection, node);
       }
     },
   };

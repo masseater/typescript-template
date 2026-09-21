@@ -107,6 +107,7 @@ const cloudflareStacks = [
   "src/service-member.ts!",
   "src/service-admin.ts!",
   "src/internal-dashboard.ts!",
+  "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
 ];
@@ -160,7 +161,10 @@ const config = ({
 >): KnipConfiguration => {
   const productionOnly = (...files: readonly string[]): string[] =>
     production || strict ? [...files] : [];
-  const app = { ...application, ignore: productionOnly("src/app/routeTree.gen.ts") };
+  const app = {
+    ...application,
+    ignore: productionOnly("src/app/routeTree.gen.ts", ".paraglide/**"),
+  };
   return {
     ignoreDependencies: ["vite", "vitest"],
     ignoreIssues: {
@@ -190,6 +194,7 @@ const config = ({
       },
       "apps/service-member": {
         ...app,
+        entry: [...app.entry, "src/shared/photo/image-fixture.ts"],
         ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
       },
       "infra/budget-monitor": {

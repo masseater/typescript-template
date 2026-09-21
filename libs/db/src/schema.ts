@@ -1,10 +1,16 @@
 import { AUTHENTICATION_METHOD, ROLE, accountPermissions, applications, roles } from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
+import { apikey } from "./api-key-schema.ts";
+import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
+import { auditActions, clientKinds, metricKeys, metricPeriods } from "./dashboard-literals.ts";
 import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
+import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
   oauthAccessToken,
@@ -113,38 +119,32 @@ export const auditChannels = ["ui", "mcp"] as const;
 export type AuditChannel = (typeof auditChannels)[number];
 export const AUDIT_CHANNEL = { mcp: auditChannels[1], ui: auditChannels[0] } as const;
 
-/** @canonical-values db.audit-action */
-export const auditActions = [
-  "flag_toggled",
-  "role_changed",
-  "user_deleted",
-  "member_suspended",
-  "member_unsuspended",
-  "admin_invited",
-  "admin_permission_changed",
-  "admin_disabled",
-  "admin_enabled",
-  "staff_invited",
-  "staff_permission_changed",
-  "staff_removed",
-  "invite_accepted",
-] as const;
 export type AuditAction = (typeof auditActions)[number];
-export const AUDIT_ACTION = {
-  flagToggled: auditActions[0],
-  roleChanged: auditActions[1],
-  userDeleted: auditActions[2],
-  memberSuspended: auditActions[3],
-  memberUnsuspended: auditActions[4],
-  adminInvited: auditActions[5],
-  adminPermissionChanged: auditActions[6],
-  adminDisabled: auditActions[7],
-  adminEnabled: auditActions[8],
-  staffInvited: auditActions[9],
-  staffPermissionChanged: auditActions[10],
-  staffRemoved: auditActions[11],
-  inviteAccepted: auditActions[12],
-} as const satisfies Record<string, AuditAction>;
+export type MetricKey = (typeof metricKeys)[number];
+export type MetricPeriod = (typeof metricPeriods)[number];
+
+const metricSnapshot = sqliteTable(
+  "metric_snapshot",
+  {
+    bucket: text("bucket").notNull(),
+    clientKind: text("client_kind", { enum: clientKinds }).notNull(),
+    computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey().notNull(),
+    metric: text("metric", { enum: metricKeys }).notNull(),
+    period: text("period", { enum: metricPeriods }).notNull(),
+    value: integer("value").notNull(),
+  },
+
+  (table) => [
+    index("metric_snapshot_metric_period_bucket_idx").on(table.metric, table.period, table.bucket),
+    uniqueIndex("metric_snapshot_unique").on(
+      table.metric,
+      table.period,
+      table.bucket,
+      table.clientKind,
+    ),
+  ],
+);
 
 const auditEvent = sqliteTable(
   "audit_event",
@@ -183,13 +183,21 @@ const invite = sqliteTable(
 
 const schema = {
   account,
+  agreementAcceptance,
+  agreementVersion,
+  apikey,
   auditEvent,
   boardPost,
   boardThread,
+  metricSnapshot,
   follow,
   interview,
   invite,
+  leaveRequest,
   memberOnboarding,
+  notification,
+  notificationPreference,
+  withdrawnMember,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -199,14 +207,28 @@ const schema = {
   oauthRefreshToken,
   oauthResource,
   passkey,
+  planSubscription,
   rateLimit,
   session,
+  stripeEvent,
   twoFactor,
   user,
   verification,
 };
 
-export { account, auditEvent, invite, passkey, rateLimit, schema, twoFactor, verification };
+export {
+  account,
+  apikey,
+  auditEvent,
+  invite,
+  metricSnapshot,
+  passkey,
+  rateLimit,
+  schema,
+  twoFactor,
+  verification,
+};
+export { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 export {
   jwks,
   oauthAccessToken,
@@ -220,4 +242,9 @@ export {
 export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
+export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export { notification, notificationPreference } from "./notification-schema.ts";
+export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
+export type { NotificationKind } from "@repo/config";

@@ -5,7 +5,7 @@ import { Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer } from "@repo/runtime";
+import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
@@ -30,7 +30,11 @@ const reporting = { log: recordingSink().sink, service: APPLICATION.admin } as c
 const invitee = "newcomer@example.com";
 const inviteePassword = "invited-password-safe-123";
 
-const adminLevels: Readonly<Record<Exclude<Actor, "member" | "weak-owner">, AdminPermission>> = {
+type AdminActor = Exclude<Actor, "member" | "weak-owner">;
+
+const adminActors: readonly AdminActor[] = ["operator", "owner", "viewer"];
+
+const adminLevels: Readonly<Record<AdminActor, AdminPermission>> = {
   operator: ADMIN_PERMISSION.operator,
   owner: ADMIN_PERMISSION.owner,
   viewer: ADMIN_PERMISSION.viewer,
@@ -39,8 +43,8 @@ const adminLevels: Readonly<Record<Exclude<Actor, "member" | "weak-owner">, Admi
 const tokenOf = (actor: Actor): string => `${actor}-session-token`;
 
 const seedAccounts = Effect.gen(function* seedAccounts() {
-  for (const [actor, permission] of Object.entries(adminLevels)) {
-    yield* addUser({ permission, role: ROLE.administrator, userId: actor });
+  for (const actor of adminActors) {
+    yield* addUser({ permission: adminLevels[actor], role: ROLE.administrator, userId: actor });
     yield* addSession({ audience: APPLICATION.admin, token: tokenOf(actor), userId: actor });
   }
   yield* addSession({

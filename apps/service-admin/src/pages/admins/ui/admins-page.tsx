@@ -1,7 +1,6 @@
 import { ForbiddenNotice, useSessionUser } from "@repo/auth-ui";
 import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
-import { Button } from "@repo/ui";
-import { useState } from "react";
+import { Button, localState } from "@repo/ui";
 
 import { useAdminList } from "#pages/admins/model/admin-list.ts";
 import { OpsPage } from "#widgets/ops-page/index.ts";
@@ -10,9 +9,11 @@ import { InviteAdminForm } from "./invite-admin-form.tsx";
 
 import type { ReactElement } from "react";
 
+const useInviting = localState(false);
+
 function AdminsBoard(): ReactElement {
-  const { reload, state } = useAdminList();
-  const [inviting, setInviting] = useState(false);
+  const { listing, reload } = useAdminList();
+  const [inviting, setInviting] = useInviting();
   return (
     <>
       <div>
@@ -28,7 +29,7 @@ function AdminsBoard(): ReactElement {
         </Button>
       </div>
       {inviting ? <InviteAdminForm onInvited={reload} /> : null}
-      <AdminsTable state={state} onReload={reload} />
+      <AdminsTable listing={listing} onReload={reload} />
     </>
   );
 }

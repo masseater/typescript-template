@@ -34,7 +34,7 @@ import type { Database } from "@repo/db";
 import type { AuthFailure } from "./auth-failure.ts";
 
 const PASSWORD = "test-password-safe-123";
-const secret = "integration-test-secret-at-least-32-characters-long";
+const authTestSecret = "integration-test-secret-at-least-32-characters-long";
 const TotpEnrollment = Schema.Struct({
   backupCodes: Schema.Array(Schema.String),
   totpURI: Schema.String,
@@ -65,7 +65,7 @@ const authFor = (
   const layer = Auth.layer({
     audience,
     baseURL: origins[audience],
-    secret,
+    secret: authTestSecret,
     mail: { ...mailConfig, APP_ORIGIN: origins[audience] },
   });
   return Layer.build(layer).pipe(Effect.map((built) => Context.get(built, Auth)));
@@ -356,6 +356,7 @@ export {
   audienceInputs,
   audienceOnEmptyDatabase,
   authTest,
+  authTestSecret,
   bootstrapVerifiedAdmin,
   bootstrapVerifiedStaff,
   clientOf,

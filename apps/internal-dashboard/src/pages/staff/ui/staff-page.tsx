@@ -1,7 +1,6 @@
 import { ForbiddenNotice, useSessionUser } from "@repo/auth-ui";
 import { STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
-import { Button } from "@repo/ui";
-import { useState } from "react";
+import { Button, localState } from "@repo/ui";
 
 import { useStaffList } from "#pages/staff/model/staff-list.ts";
 import { OpsPage } from "#widgets/ops-page/index.ts";
@@ -10,9 +9,11 @@ import { StaffTable } from "./staff-table.tsx";
 
 import type { ReactElement } from "react";
 
+const useInviting = localState(false);
+
 function StaffBoard(): ReactElement {
-  const { reload, state } = useStaffList();
-  const [inviting, setInviting] = useState(false);
+  const { listing, reload } = useStaffList();
+  const [inviting, setInviting] = useInviting();
   return (
     <>
       <div>
@@ -28,7 +29,7 @@ function StaffBoard(): ReactElement {
         </Button>
       </div>
       {inviting ? <InviteStaffForm onInvited={reload} /> : null}
-      <StaffTable state={state} onReload={reload} />
+      <StaffTable listing={listing} onReload={reload} />
     </>
   );
 }

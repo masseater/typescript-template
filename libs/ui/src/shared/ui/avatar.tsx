@@ -3,7 +3,7 @@ import { cva } from "class-variance-authority";
 import type { ReactElement } from "react";
 
 const avatarVariants = cva(
-  "inline-flex shrink-0 items-center justify-center rounded-full bg-secondary font-bold text-secondary-foreground select-none",
+  "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary font-bold text-secondary-foreground select-none",
   {
     defaultVariants: { size: "medium" },
     variants: {
@@ -22,11 +22,27 @@ const initial = (displayName: string): string => {
 const Avatar = ({
   name,
   size,
-}: Readonly<{ name: string; size?: "large" | "medium" | "small" }>): ReactElement => {
+  src,
+}: Readonly<{
+  name: string;
+  size?: "large" | "medium" | "small";
+  src?: string | undefined;
+}>): ReactElement => {
+  if (src === undefined) {
+    return (
+      <span data-slot="avatar" aria-hidden="true" className={avatarVariants({ size })}>
+        {initial(name)}
+      </span>
+    );
+  }
   return (
-    <span data-slot="avatar" aria-hidden="true" className={avatarVariants({ size })}>
-      {initial(name)}
-    </span>
+    <img
+      data-slot="avatar"
+      alt=""
+      className={`${avatarVariants({ size })} object-cover`}
+      decoding="async"
+      src={src}
+    />
   );
 };
 

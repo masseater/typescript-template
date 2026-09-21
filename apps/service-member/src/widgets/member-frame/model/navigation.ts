@@ -17,7 +17,17 @@ type MemberNavItem = Readonly<{
 
 const memberHasPaidPlan = false;
 
-function memberNavItems(paid: boolean, memberBoard: boolean): readonly MemberNavItem[] {
+type NavBadges = Readonly<{
+  notifications: number;
+}>;
+
+const emptyNavBadges: NavBadges = { notifications: 0 };
+
+function memberNavItems(
+  paid: boolean,
+  memberBoard: boolean,
+  badges: NavBadges = emptyNavBadges,
+): readonly MemberNavItem[] {
   return [
     { icon: HomeIcon, id: "home", label: "ホーム", to: "/home" },
     {
@@ -38,11 +48,20 @@ function memberNavItems(paid: boolean, memberBoard: boolean): readonly MemberNav
         ]
       : []),
     { badge: 0, icon: MessageCircleIcon, id: "messages", label: "メッセージ", to: "/messages" },
-    { badge: 0, icon: BellIcon, id: "notifications", label: "通知", to: "/notifications" },
+    {
+      badge: badges.notifications,
+      icon: BellIcon,
+      id: "notifications",
+      label: "通知",
+      to: "/notifications",
+    },
   ];
 }
 
-const memberPageTitles: Readonly<Record<MemberNavPath | "/support" | "/users", string>> = {
+const memberPageTitles: Readonly<
+  Record<MemberNavPath | "/agreement" | "/support" | "/users", string>
+> = {
+  "/agreement": "規約への同意",
   "/board": "掲示板",
   "/home": "ホーム",
   "/messages": "メッセージ",
@@ -76,4 +95,4 @@ function titleForPath(pathname: string): string {
 }
 
 export { memberHasPaidPlan, memberNavItems, titleForPath };
-export type { MemberNavItem };
+export type { MemberNavItem, NavBadges };

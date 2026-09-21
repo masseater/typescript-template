@@ -9,11 +9,12 @@ import { and, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
+import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { issueInvite } from "./invite.ts";
 import { LastEditorRequired } from "./last-editor-required.ts";
 import { liveStaff, requireStaff } from "./privileged-session.ts";
-import { AUDIT_ACTION, user } from "./schema.ts";
+import { user } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
 import type { DatabaseFailure } from "./database-failure.ts";

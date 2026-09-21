@@ -36,6 +36,7 @@ const addUser = (added: {
       id: added.id,
       name: added.id,
       role: added.role ?? ROLE.member,
+      searchable: true,
       updatedAt: new Date(),
     });
   });

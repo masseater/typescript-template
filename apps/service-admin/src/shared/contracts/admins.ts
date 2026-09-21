@@ -12,7 +12,7 @@ const AdminSummary = Schema.Struct({
   email: Schema.String,
   id: Schema.String,
   name: Schema.String,
-  permission: Schema.NullOr(AdminPermission),
+  permission: Schema.optional(AdminPermission),
 });
 
 const AdminList = Schema.Array(AdminSummary);
@@ -25,7 +25,7 @@ const AdminPermissionChange = Schema.Struct({ id: Identifier, permission: AdminP
 
 const AdminPermissionChanged = Schema.Struct({
   id: Schema.String,
-  permission: Schema.NullOr(AdminPermission),
+  permission: Schema.optional(AdminPermission),
 });
 
 const AdminStateChange = Schema.Struct({ accountState: AccountState, id: Identifier });

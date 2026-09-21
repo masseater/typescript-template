@@ -1,5 +1,6 @@
 import type { Application, Capability, CapabilityOf } from "@repo/config";
-import type { AIBinding, Assets, D1, Email, Flagship, InferEnv } from "alchemy/Cloudflare";
+import type { photoBucketBinding } from "@repo/config/storage";
+import type { AIBinding, Assets, D1, Email, Flagship, InferEnv, R2 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 
 type SharedEnv = Readonly<{
@@ -17,6 +18,12 @@ type SharedEnv = Readonly<{
   OTLP_ENDPOINT?: string;
 }>;
 
+type BillingEnv = Readonly<{
+  STRIPE_PRICE_ID: Redacted.Redacted;
+  STRIPE_SECRET_KEY: Redacted.Redacted;
+  STRIPE_WEBHOOK_SECRET: Redacted.Redacted;
+}>;
+
 type WikiEnv = SharedEnv &
   Readonly<{
     FLAGSHIP_API_TOKEN: Redacted.Redacted;
@@ -25,15 +32,23 @@ type WikiEnv = SharedEnv &
 
 interface CapabilityEnv {
   readonly ai: Readonly<{ AI: AIBinding }>;
+  readonly billing: BillingEnv;
+  readonly storage: Readonly<Record<typeof photoBucketBinding, R2.Bucket>>;
 }
+
+type Intersection<Members> = (Members extends unknown ? (member: Members) => void : never) extends (
+  member: Member,
+) => void
+  ? Member
+  : never;
 
 type GrantedEnv<App extends Application> = [CapabilityOf<App>] extends [never]
   ? unknown
-  : CapabilityEnv[CapabilityOf<App>];
+  : Intersection<CapabilityEnv[CapabilityOf<App>]>;
 
 type AppEnv<App extends Application> = SharedEnv & GrantedEnv<App>;
 type DeclaredEnv = SharedEnv & Partial<CapabilityEnv[Capability]>;
 
 type AppBindings<App extends Application> = InferEnv<AppEnv<App> & Readonly<{ ASSETS: Assets }>>;
 
-export type { AppBindings, AppEnv, CapabilityEnv, DeclaredEnv, SharedEnv, WikiEnv };
+export type { AppBindings, AppEnv, BillingEnv, CapabilityEnv, DeclaredEnv, SharedEnv, WikiEnv };

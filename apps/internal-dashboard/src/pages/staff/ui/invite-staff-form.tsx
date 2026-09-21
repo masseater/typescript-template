@@ -6,10 +6,12 @@ import {
   Field,
   SelectField,
   formatWarekiDate,
+  localState,
   useAction,
+  useOptionalString,
   useTextInput,
 } from "@repo/ui";
-import { useState } from "react";
+import { Option } from "effect";
 
 import { isStaffPermission, staffPermissionOptions } from "#pages/staff/model/staff-labels.ts";
 import { wikiClient } from "#shared/api/index.ts";
@@ -17,24 +19,29 @@ import { StaffInvited } from "#shared/contracts/index.ts";
 
 import type { ReactElement, SyntheticEvent } from "react";
 
+const usePermission = localState<string>(STAFF_PERMISSION.viewer);
+
 function InviteStaffForm({ onInvited }: Readonly<{ onInvited: () => void }>): ReactElement {
   const action = useAction();
   const email = useTextInput();
-  const [permission, setPermission] = useState<string>(STAFF_PERMISSION.viewer);
-  const [notice, setNotice] = useState<string>();
+  const [permission, setPermission] = usePermission();
+  const [notice, setNotice] = useOptionalString();
   function submit(submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void {
     submitEvent.preventDefault();
     if (!isStaffPermission(permission)) {
       return;
     }
-    setNotice(undefined);
+    setNotice(Option.none());
     action.run(async () => {
+      const { api } = await wikiClient();
       const invited = apiData(
         StaffInvited,
-        await wikiClient().staff.invites.post({ email: email.value, permission }),
+        await api.staff.invites.post({ email: email.value, permission }),
       );
       setNotice(
-        `${invited.email} に招待メールを送りました。${formatWarekiDate(invited.expiresAt)} まで有効です。`,
+        Option.some(
+          `${invited.email} に招待メールを送りました。${formatWarekiDate(invited.expiresAt)} まで有効です。`,
+        ),
       );
       email.handleChange("");
       onInvited();
@@ -72,7 +79,11 @@ function InviteStaffForm({ onInvited }: Readonly<{ onInvited: () => void }>): Re
           招待メールを送る
         </Button>
       </div>
-      <ActionStatus action={action} notice={notice} pendingMessage="招待メールを送っています。" />
+      <ActionStatus
+        action={action}
+        notice={Option.getOrUndefined(notice)}
+        pendingMessage="招待メールを送っています。"
+      />
     </form>
   );
 }

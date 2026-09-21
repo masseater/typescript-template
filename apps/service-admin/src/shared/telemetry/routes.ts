@@ -4,6 +4,8 @@ export const routes = {
   "/api/admins": "admins-api",
   "/api/admins/invites": "admin-invites-api",
   "/api/admins/state": "admin-state-api",
+  "/api/agreements": "agreements-api",
+  "/api/agreements/*": "agreements-sub-api",
   "/api/auth/*": "auth",
   "/api/health": "health",
   "/api/invite": "invite-api",
@@ -18,6 +20,7 @@ export const routes = {
   "/members/*": "member-detail",
   "/reports": "reports",
   "/security": "security",
-  "/terms": "terms",
+  "/terms": "agreements",
+  "/terms/*": "agreement-version",
   "/verify-email": "verify-email",
 } as const;

@@ -25,6 +25,7 @@ import { Route as PublicLoginRouteImport } from './routes/_public/login'
 import { Route as PublicVerifyEmailRouteImport } from './routes/_public/verify-email'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as AdminMembersIdRouteImport } from './routes/_admin/members.$id'
+import { Route as AdminTermsVersionRouteImport } from './routes/_admin/terms.$version'
 import { Route as PublicInviteTokenRouteImport } from './routes/_public/invite.$token'
 
 const AdminRoute = AdminRouteImport.update({
@@ -105,6 +106,11 @@ const AdminMembersIdRoute = AdminMembersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminMembersRoute,
 } as any)
+const AdminTermsVersionRoute = AdminTermsVersionRouteImport.update({
+  id: '/$version',
+  path: '/$version',
+  getParentRoute: () => AdminTermsRoute,
+} as any)
 const PublicInviteTokenRoute = PublicInviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
@@ -121,11 +127,12 @@ export interface FileRoutesByFullPath {
   '/members': typeof AdminMembersRouteWithChildren
   '/reports': typeof AdminReportsRoute
   '/security': typeof AdminSecurityRoute
-  '/terms': typeof AdminTermsRoute
+  '/terms': typeof AdminTermsRouteWithChildren
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/members/$id': typeof AdminMembersIdRoute
+  '/terms/$version': typeof AdminTermsVersionRoute
   '/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRoutesByTo {
@@ -138,11 +145,12 @@ export interface FileRoutesByTo {
   '/members': typeof AdminMembersRouteWithChildren
   '/reports': typeof AdminReportsRoute
   '/security': typeof AdminSecurityRoute
-  '/terms': typeof AdminTermsRoute
+  '/terms': typeof AdminTermsRouteWithChildren
   '/login': typeof PublicLoginRoute
   '/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/members/$id': typeof AdminMembersIdRoute
+  '/terms/$version': typeof AdminTermsVersionRoute
   '/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRoutesById {
@@ -157,12 +165,13 @@ export interface FileRoutesById {
   '/_admin/members': typeof AdminMembersRouteWithChildren
   '/_admin/reports': typeof AdminReportsRoute
   '/_admin/security': typeof AdminSecurityRoute
-  '/_admin/terms': typeof AdminTermsRoute
+  '/_admin/terms': typeof AdminTermsRouteWithChildren
   '/_public/login': typeof PublicLoginRoute
   '/_public/verify-email': typeof PublicVerifyEmailRoute
   '/api/$': typeof ApiSplatRoute
   '/_admin/': typeof AdminIndexRoute
   '/_admin/members/$id': typeof AdminMembersIdRoute
+  '/_admin/terms/$version': typeof AdminTermsVersionRoute
   '/_public/invite/$token': typeof PublicInviteTokenRoute
 }
 export interface FileRouteTypes {
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/api/$'
     | '/members/$id'
+    | '/terms/$version'
     | '/invite/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/api/$'
     | '/members/$id'
+    | '/terms/$version'
     | '/invite/$token'
   id:
     | '__root__'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/_admin/'
     | '/_admin/members/$id'
+    | '/_admin/terms/$version'
     | '/_public/invite/$token'
   fileRoutesById: FileRoutesById
 }
@@ -344,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMembersIdRouteImport
       parentRoute: typeof AdminMembersRoute
     }
+    '/_admin/terms/$version': {
+      id: '/_admin/terms/$version'
+      path: '/$version'
+      fullPath: '/terms/$version'
+      preLoaderRoute: typeof AdminTermsVersionRouteImport
+      parentRoute: typeof AdminTermsRoute
+    }
     '/_public/invite/$token': {
       id: '/_public/invite/$token'
       path: '/invite/$token'
@@ -366,13 +385,25 @@ const AdminMembersRouteWithChildren = AdminMembersRoute._addFileChildren(
   AdminMembersRouteChildren,
 )
 
+interface AdminTermsRouteChildren {
+  AdminTermsVersionRoute: typeof AdminTermsVersionRoute
+}
+
+const AdminTermsRouteChildren: AdminTermsRouteChildren = {
+  AdminTermsVersionRoute: AdminTermsVersionRoute,
+}
+
+const AdminTermsRouteWithChildren = AdminTermsRoute._addFileChildren(
+  AdminTermsRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminInquiriesRoute: typeof AdminInquiriesRoute
   AdminMembersRoute: typeof AdminMembersRouteWithChildren
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
-  AdminTermsRoute: typeof AdminTermsRoute
+  AdminTermsRoute: typeof AdminTermsRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -382,7 +413,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMembersRoute: AdminMembersRouteWithChildren,
   AdminReportsRoute: AdminReportsRoute,
   AdminSecurityRoute: AdminSecurityRoute,
-  AdminTermsRoute: AdminTermsRoute,
+  AdminTermsRoute: AdminTermsRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 

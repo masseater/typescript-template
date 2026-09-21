@@ -1,11 +1,13 @@
-import { APPLICATION, readConfig } from "@repo/config";
+import { APPLICATION } from "@repo/config";
 import { flagshipFeatureFlagsLayer, memoryFeatureFlagsLayer } from "@repo/feature-flags";
-import { appLayer } from "@repo/runtime";
+import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
+import { Stripe } from "#shared/billing/index.ts";
 import { Interviewer } from "#shared/interview/index.ts";
+import { PhotoStore } from "#shared/photo/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
@@ -17,7 +19,7 @@ const runtime = workerRuntime(() =>
   Layer.mergeAll(
     appLayer(env, service, routes),
     Layer.unwrap(
-      readConfig(env).pipe(
+      readWorkerConfig(env).pipe(
         Effect.map((config) =>
           Layer.mergeAll(
             opsMailLayer(config),
@@ -29,6 +31,8 @@ const runtime = workerRuntime(() =>
       ),
     ),
     Interviewer.fromEnvironment(env),
+    PhotoStore.fromEnvironment(env),
+    Stripe.fromEnvironment(env),
   ),
 );
 

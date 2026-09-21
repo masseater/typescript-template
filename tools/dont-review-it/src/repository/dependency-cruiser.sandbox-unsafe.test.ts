@@ -103,6 +103,21 @@ const detected: readonly Case[] = [
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
+    "no-photo-storage-outside-photo-module",
+    { "apps/service-member/src/index.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    {
+      "apps/service-member/src/shared/server-api/photo-api.ts":
+        'export * from "@repo/config/storage";\n',
+    },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    { "libs/auth/src/index.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
     "no-testing-entry-outside-tests",
     { "libs/auth/src/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
@@ -130,14 +145,6 @@ const detected: readonly Case[] = [
       "libs/auth/src/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/index.ts": 'export * from "./helper.test.ts";\n',
     },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export type { Db } from "@repo/db";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -227,6 +234,17 @@ const accepted: readonly Case[] = [
     { "tools/dev/src/index.ts": 'export * from "@repo/db/remote";\n' },
   ],
   [
+    "no-photo-storage-outside-photo-module",
+    {
+      "apps/service-member/src/shared/photo/photo-store.ts":
+        'export * from "@repo/config/storage";\n',
+    },
+  ],
+  [
+    "no-photo-storage-outside-photo-module",
+    { "libs/vite-config/src/vite.ts": 'export * from "@repo/config/storage";\n' },
+  ],
+  [
     "no-testing-entry-outside-tests",
     { "libs/auth/src/session.test.ts": 'export * from "@repo/db/testing";\n' },
   ],
@@ -251,16 +269,6 @@ const accepted: readonly Case[] = [
     {
       "libs/auth/src/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/session.test.ts": 'export * from "./helper.test.ts";\n',
-    },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
-  ],
-  [
-    "no-wiki-to-database",
-    {
-      "apps/internal-dashboard/src/staff.worker.test.ts": 'export * from "@repo/db/testing";\n',
     },
   ],
   [
