@@ -2,30 +2,31 @@ import type { ProbeResult } from "./probe.ts";
 
 type HealthState = Readonly<Record<string, boolean>>;
 
-interface HealthDecision {
+const decideHealthAlerts = (
+  checkedHealths: readonly ProbeResult[],
+  previousHealth: HealthState,
+): {
   readonly notifications: ProbeResult[];
-  readonly state: Record<string, boolean>;
-}
-
-function decideHealthAlerts(
-  results: readonly ProbeResult[],
-  previous: HealthState,
-): HealthDecision {
-  const notifications = results.filter(
-    (result) => (previous[result.service] ?? true) !== result.healthy,
+  readonly healthByService: Record<string, boolean>;
+} => {
+  const notifications = checkedHealths.filter(
+    (checkedHealth) =>
+      (previousHealth[checkedHealth.service] ?? true) !== checkedHealth.healthy,
   );
-  const state = Object.fromEntries(results.map((result) => [result.service, result.healthy]));
-  return { notifications, state };
-}
+  const healthByService = Object.fromEntries(
+    checkedHealths.map((checkedHealth) => [checkedHealth.service, checkedHealth.healthy]),
+  );
+  return { healthByService, notifications };
+};
 
-function formatHealthMessage(notifications: readonly ProbeResult[]): string {
-  return [
+const formatHealthMessage = (notifications: readonly ProbeResult[]): string =>
+  [
     ...notifications.map(
-      (item) => `- [${item.healthy ? "復旧" : "停止"}] ${item.service} (${item.detail})`,
+      (notification) =>
+        `- [${notification.healthy ? "復旧" : "停止"}] ${notification.service} (${notification.detail})`,
     ),
     "Workers Observability で health_monitor.checked のログを確認してください。",
   ].join("\n");
-}
 
 export { decideHealthAlerts, formatHealthMessage };
 export type { HealthState };

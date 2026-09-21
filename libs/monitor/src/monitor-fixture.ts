@@ -1,3 +1,4 @@
+import { readJobs } from "@repo/config";
 import { Process, consumeJobs } from "@repo/runtime/jobs";
 import { Effect } from "effect";
 
@@ -5,8 +6,7 @@ import { MonitorFailure } from "./failure.ts";
 import { monitorWorker, type MonitorBindings } from "./index.ts";
 import { type SentMail } from "./mail-recorder.ts";
 
-import type { JobsBindings } from "@repo/config";
-import type { DurableObjectNamespace, MessageBatch } from "@cloudflare/workers-types";
+import type { DurableObjectNamespace } from "@cloudflare/workers-types";
 
 /** @canonical-values monitor.probe-outcome */
 const probeOutcomes = ["die", "fail", "notify", "succeed"] as const;
@@ -51,16 +51,24 @@ const probeMonitor = monitorWorker<MonitorBindings>({
   failure: probeFailure,
 });
 
-const ProbeMonitor = probeMonitor.Worker;
-const probeHandler = probeMonitor.handler;
-const workersHandler = {
-  ...probeHandler,
-  queue: async (batch: MessageBatch, environment: unknown): Promise<void> =>
-    consumeJobs(batch, environment as JobsBindings),
-};
-
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
+const ProbeMonitor = probeMonitor.Worker;
 export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
+const workersHandler = {
+  ...probeMonitor.handler,
+  queue: async (
+    batch: {
+      readonly messages: readonly {
+        readonly body: unknown;
+        readonly ack: () => void;
+      }[];
+    },
+    environment: unknown,
+  ): Promise<void> => {
+    const jobs = await Effect.runPromise(readJobs(environment));
+    return consumeJobs(batch, jobs);
+  },
+};
 export default workersHandler;

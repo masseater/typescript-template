@@ -1,4 +1,5 @@
-import { monitorWorker } from "@repo/monitor";
+import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
 import {
@@ -7,43 +8,44 @@ import {
   parseHealthMonitorConfig,
   type HealthMonitorEnv,
 } from "./config.ts";
-import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
+import { decideHealthAlerts, formatHealthMessage, type HealthState } from "./decision.ts";
 import { probeService } from "./probe.ts";
 
-import type { MonitorBindings } from "@repo/monitor";
-import type { HealthState } from "./decision.ts";
-
-interface Bindings extends MonitorBindings, HealthMonitorEnv {}
-
-const health = monitorWorker<Bindings>({
+const health = monitorWorker<MonitorBindings & HealthMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseHealthMonitorConfig(env);
-      const results = yield* Effect.all(
-        healthTargets(config).map((target) => probeService(target)),
+      const checkedHealths = yield* Effect.all(
+        healthTargets(config).map((healthTarget) => probeService(healthTarget)),
         {
           concurrency: "unbounded",
         },
       );
-      const previous = yield* Effect.promise(async () => ctx.storage.get<HealthState>("state"));
-      const decision = decideHealthAlerts(results, previous ?? {});
-      const down = results.filter((result) => !result.healthy).map((result) => result.service);
+      const previousHealth = yield* Effect.promise(async () =>
+        ctx.storage.get<HealthState>("state"),
+      );
+      const decision = decideHealthAlerts(checkedHealths, previousHealth ?? {});
+      const downServices = checkedHealths
+        .filter((checkedHealth) => !checkedHealth.healthy)
+        .map((checkedHealth) => checkedHealth.service);
       if (decision.notifications.length > 0) {
         yield* notify({
           subject:
-            down.length > 0
-              ? `Cloudflare Workers: ${down.join(", ")} が応答しません`
+            downServices.length > 0
+              ? `Cloudflare Workers: ${downServices.join(", ")} が応答しません`
               : "Cloudflare Workers: すべてのアプリが復旧しました",
           text: formatHealthMessage(decision.notifications),
         });
       }
-      yield* Effect.promise(async () => ctx.storage.put("state", decision.state));
+      yield* Effect.promise(async () => ctx.storage.put("state", decision.healthByService));
       return {
-        down,
+        down: downServices,
         notified: decision.notifications.length,
-        services: Object.fromEntries(results.map((result) => [result.service, result.detail])),
+        services: Object.fromEntries(
+          checkedHealths.map((checkedHealth) => [checkedHealth.service, checkedHealth.detail]),
+        ),
       };
-    }).pipe(Effect.withSpan("HealthMonitor.check"));
+    }).pipe(withSpan("HealthMonitor.check"));
   },
   event: healthMonitorWorker.event,
   failure: {

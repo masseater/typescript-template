@@ -1,38 +1,59 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
 
-import type { ProbeResult } from "./probe.ts";
+const healthy = { detail: "release_abc", healthy: true, service: "service-member" } as const;
+const down = { detail: "status_500", healthy: false, service: "service-member" } as const;
 
-const healthy: ProbeResult = { detail: "release_abc", healthy: true, service: "service-member" };
-const down: ProbeResult = { detail: "status_500", healthy: false, service: "service-member" };
-
-describe("health alerts", () => {
-  it("a first check notifies about applications that are down and stays quiet about the rest", () => {
-    expect.hasAssertions();
-    const decision = decideHealthAlerts(
+describe("first check", () => {
+  const it = test.extend("healthDecision", () =>
+    decideHealthAlerts(
       [down, { detail: "release_abc", healthy: true, service: "internal-dashboard" }],
       {},
-    );
-    expect(decision.notifications).toStrictEqual([down]);
-    expect(decision.state).toStrictEqual({ "internal-dashboard": true, "service-member": false });
-  });
+    ),
+  );
 
-  it("an application that stays down is not notified again", () => {
-    expect.hasAssertions();
-    expect(decideHealthAlerts([down], { "service-member": false }).notifications).toStrictEqual([]);
+  it("notifies about applications that are down", ({ healthDecision }) => {
+    expect(healthDecision).toStrictEqual({
+      healthByService: { "internal-dashboard": true, "service-member": false },
+      notifications: [down],
+    });
   });
+});
 
-  it("recovery is notified so the operator learns the outage ended", () => {
-    expect.hasAssertions();
-    const decision = decideHealthAlerts([healthy], { "service-member": false });
-    expect(decision.notifications).toStrictEqual([healthy]);
-    expect(decision.state).toStrictEqual({ "service-member": true });
+describe("ongoing outage", () => {
+  const it = test.extend("healthDecision", () =>
+    decideHealthAlerts([down], { "service-member": false }),
+  );
+
+  it("stays quiet", ({ healthDecision }) => {
+    expect(healthDecision).toStrictEqual({
+      healthByService: { "service-member": false },
+      notifications: [],
+    });
   });
+});
 
-  it("the message names every changed application and points at the log event", () => {
-    expect.hasAssertions();
-    expect(formatHealthMessage([down, { ...healthy, service: "internal-dashboard" }])).toBe(
+describe("recovery", () => {
+  const it = test.extend("healthDecision", () =>
+    decideHealthAlerts([healthy], { "service-member": false }),
+  );
+
+  it("notifies so the operator learns the outage ended", ({ healthDecision }) => {
+    expect(healthDecision).toStrictEqual({
+      healthByService: { "service-member": true },
+      notifications: [healthy],
+    });
+  });
+});
+
+describe("alert message", () => {
+  const it = test.extend("alertText", () =>
+    formatHealthMessage([down, { ...healthy, service: "internal-dashboard" }]),
+  );
+
+  it("names every changed application and points at the log event", ({ alertText }) => {
+    expect(alertText).toBe(
       [
         "- [停止] service-member (status_500)",
         "- [復旧] internal-dashboard (release_abc)",

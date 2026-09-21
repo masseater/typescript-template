@@ -899,6 +899,9 @@ importers:
       '@repo/monitor':
         specifier: workspace:*
         version: link:../../libs/monitor
+      '@repo/observability':
+        specifier: workspace:*
+        version: link:../../libs/observability
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -906,18 +909,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
-      '@effect/vitest':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
-      '@msw/cloudflare':
-        specifier: 'catalog:'
-        version: 0.0.1(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

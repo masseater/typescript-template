@@ -3,9 +3,19 @@ import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import type { UserConfig } from "vite-plus";
 import type { PackUserConfig } from "vite-plus/pack";
 
+const monitorWorkerTest = {
+  coverage: {
+    exclude: ["specs/**"],
+    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+  },
+  mockReset: true,
+  restoreMocks: true,
+} as const satisfies NonNullable<UserConfig["test"]>;
+
 const monitorWorkerVite = (): {
   readonly pack: PackUserConfig;
   readonly run: NonNullable<UserConfig["run"]>;
+  readonly test: NonNullable<UserConfig["test"]>;
 } => ({
   pack: {
     deps: {
@@ -29,6 +39,7 @@ const monitorWorkerVite = (): {
       }),
     },
   },
+  test: monitorWorkerTest,
 });
 
-export { monitorWorkerVite };
+export { monitorWorkerTest, monitorWorkerVite };

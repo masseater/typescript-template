@@ -33,7 +33,6 @@ const HealthMonitorEnvironment = Schema.Struct({
   [healthOriginKey[APPLICATION.user]]: HttpsOrigin,
 });
 
-type HealthMonitorConfig = typeof HealthMonitorEnvironment.Type;
 type HealthMonitorEnv = typeof HealthMonitorEnvironment.Encoded;
 
 const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
@@ -49,15 +48,21 @@ const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
   },
 );
 
-function healthTargets(config: HealthMonitorConfig): readonly {
+const healthTargets = (
+  config: typeof HealthMonitorEnvironment.Type,
+): readonly {
+  readonly healthEndpoint: string;
   readonly origin: string;
   readonly service: Application;
-}[] {
-  return applications.map((service) => ({
-    origin: config[healthOriginKey[service]],
-    service,
-  }));
-}
+}[] =>
+  applications.map((service) => {
+    const origin = config[healthOriginKey[service]];
+    return {
+      healthEndpoint: `${origin}/api/health`,
+      origin,
+      service,
+    };
+  });
 
-export { healthMonitorWorker, healthOriginKey, healthTargets, parseHealthMonitorConfig };
+export { HealthMonitorFailure, healthMonitorWorker, healthOriginKey, healthTargets, parseHealthMonitorConfig };
 export type { HealthMonitorEnv };
