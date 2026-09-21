@@ -3,17 +3,21 @@ title: TanStack Query
 description: サーバー上のデータをクライアントが保持し、再取得し、部品間で共有するライブラリ
 ---
 
-TanStack Query は、サーバー上のデータをクライアントが取得し、その鮮度を扱うライブラリである。`useState` と `fetch` を画面内で組み合わせ、同一データを複数の部品が個別に保持する方式を置き換える。
+TanStack Query は、サーバー上のデータをクライアントが取得し、その鮮度を扱うライブラリである。`useState` と `fetch` を画面の中で組むと、同じデータを複数の部品がそれぞれ保持する。Query は取得結果をキーに紐づけ、同じキーの部品がその結果を共有する。
 
-取得の時点は次のように分かれる。
+遷移時の初期データは、このキャッシュではない。[TanStack Start](/tech-stack/tanstack-start) の loader が、その URL へ遷移するときに初期データを返す。loader は表示後に結果を保持しない。
 
-- [TanStack Start](/tech-stack/tanstack-start) の loader は、URL への遷移時の初期データである。
-- [Effect](/tech-stack/effect) の Atom は、その画面が 1 回の取得結果を購読する形式である。
-- Query は、画面表示後にクライアントが保持し、再取得し、キーが一致する部品のあいだで共有するデータである。定義は `queryOptions` にまとめ、画面は `useQuery` で購読する。更新は `useMutation` である。
+一つの購読の状態も、このキャッシュではない。[Effect](/tech-stack/effect) の Atom は、成功、失敗、待機をその購読の値として表す。キーから結果を引くキャッシュは持たない。
 
-## 参照
+定義は `queryOptions` にまとめ、画面は `useQuery` で購読する。更新の手続きは `useMutation` で書く。
 
-- 公式ドキュメントは [TanStack Query](https://tanstack.com/query/latest) である。導入は [Quick Start](https://tanstack.com/query/latest/docs/framework/react/quick-start)、取得は [Queries](https://tanstack.com/query/v5/docs/framework/react/guides/queries)、更新は [Mutations](https://tanstack.com/query/latest/docs/framework/react/guides/mutations) に記載される。
-- `queryOptions` の定義は [Query Options](https://tanstack.com/query/latest/docs/framework/react/guides/query-options) にある。
-- 最小のサンプルは [Basic example](https://tanstack.com/query/latest/docs/framework/react/examples/basic) である。
-- 解説記事は [Practical React Query](https://tkdodo.eu/blog/practical-react-query) である。`queryOptions` を扱う回は [The Query Options API](https://tkdodo.eu/blog/the-query-options-api) である。
+## 参考文献
+
+- 公式 — [TanStack Query](https://tanstack.com/query/latest)
+- 公式 — [Quick Start](https://tanstack.com/query/latest/docs/framework/react/quick-start)
+- 公式 — [Queries](https://tanstack.com/query/v5/docs/framework/react/guides/queries)
+- 公式 — [Mutations](https://tanstack.com/query/latest/docs/framework/react/guides/mutations)
+- 公式 — [Query Options](https://tanstack.com/query/latest/docs/framework/react/guides/query-options)
+- サンプル — [Basic example](https://tanstack.com/query/latest/docs/framework/react/examples/basic)
+- 記事 — [Practical React Query](https://tkdodo.eu/blog/practical-react-query)
+- 記事 — [The Query Options API](https://tkdodo.eu/blog/the-query-options-api)

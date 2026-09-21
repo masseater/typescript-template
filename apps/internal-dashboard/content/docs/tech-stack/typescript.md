@@ -3,21 +3,24 @@ title: TypeScript
 description: 画面からインフラの宣言までを同一の型検査の下に置く言語
 ---
 
-TypeScript は、画面からインフラの宣言までを同一の型検査の下に置く。クライアントとサーバーは同一の型を共有し、API の形状を別の仕様として重複して持たない。
+TypeScript は、画面からインフラの宣言までを同じ型検査の対象にする。クライアントとサーバーが同じ型を参照するため、API の形を別の仕様としてもう一度書かなくてよい。
 
-次のコンパイラオプションは、欠落を暗黙に成功として扱わない。
+配列やレコードの添字に要素があることは、型だけでは決まらない。`noUncheckedIndexedAccess` を有効にすると、添字アクセスの型は `T | undefined` になり、要素の存在を別途確認しないと値として使えない。
 
-- `noUncheckedIndexedAccess` により、配列およびレコードの添字アクセスの型は `T | undefined` となる。要素の存在は型上保証されない。
-- `exactOptionalPropertyTypes` により、プロパティの省略と `undefined` の代入は区別される。
-- `verbatimModuleSyntax` により、型のみの import は `import type` とする。値として残る import と混在すると型検査は失敗する。
+プロパティを書かないことと、値として `undefined` を渡すことは別である。`exactOptionalPropertyTypes` を有効にすると、この二つは型の上でも別になり、省略可能なプロパティへ `undefined` を代入すると型検査が失敗する。
 
-外部から入力された未知の値は、型へ入れる前に Effect Schema で検証する。検証の定義は [Effect](/tech-stack/effect) に記載する。
+型だけの import を値の import と同じ構文で書くと、実行時に残る import と区別できない。`verbatimModuleSyntax` を有効にすると、型だけの import は `import type` でなければ型検査が失敗する。
 
-Effect におけるサービスの不足と、未処理のエラーは、TypeScript の型検査が検出する。エディタ上の補完と診断は `@effect/language-service` が提供する。
+外部から入った未知の値は、型として扱う前に Effect Schema で検証する。検証の定義は [Effect](/tech-stack/effect) にある。
 
-## 参照
+Effect が要求するサービスが入口で供給されていないこと、および処理していない失敗が型に残っていることは、TypeScript の型検査が検出する。エディタ上の補完と診断は `@effect/language-service` が提供する。
 
-- 公式ドキュメントは [TypeScript](https://www.typescriptlang.org/) である。言語の説明は [Handbook](https://www.typescriptlang.org/docs/handbook/intro.html) に記載される。
-- 上記のオプションは [noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html)、[exactOptionalPropertyTypes](https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html)、[verbatimModuleSyntax](https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html) に定義される。
-- ブラウザ上で型検査を実行する環境は [Playground](https://www.typescriptlang.org/play) である。
-- コンパイラ実装の解説は [Announcing TypeScript 7.0](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/) である。型の意味は従来と同一であり、実装がネイティブコードへ移行している。
+## 参考文献
+
+- 公式 — [TypeScript](https://www.typescriptlang.org/)
+- 公式 — [Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- 公式 — [noUncheckedIndexedAccess](https://www.typescriptlang.org/tsconfig/noUncheckedIndexedAccess.html)
+- 公式 — [exactOptionalPropertyTypes](https://www.typescriptlang.org/tsconfig/exactOptionalPropertyTypes.html)
+- 公式 — [verbatimModuleSyntax](https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html)
+- サンプル — [Playground](https://www.typescriptlang.org/play)
+- 記事 — [Announcing TypeScript 7.0](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)

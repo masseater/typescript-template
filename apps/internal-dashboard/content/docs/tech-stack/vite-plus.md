@@ -3,12 +3,15 @@ title: Vite+
 description: 開発サーバー、検査、テスト、依存関係のインストールを vp に統合したツールチェーン
 ---
 
-Vite+ は、Vite に検査とタスク実行を統合したツールチェーンである。コマンド名は `vp` である。開発サーバー、ビルド、テスト、lint、フォーマット、モノレポのタスクを、単一の入口から実行する。構成要素は Vite、Rolldown、Vitest、Oxlint、Oxfmt、タスクランナーである。
+Vite+ は、Vite に検査とタスク実行を加えたツールチェーンである。入口のコマンドは `vite` ではなく `vp` であり、開発サーバー、ビルド、テスト、lint、フォーマット、モノレポのタスクをここから実行する。構成は Vite、Rolldown、Vitest、Oxlint、Oxfmt、タスクランナーである。
 
-依存関係の追加は `vp install` で行う。`vp` は、対象プロジェクトのパッケージマネージャを呼び出す。
+依存を追加するコマンドは `vp install` である。このコマンドは、そのプロジェクトが使っているパッケージマネージャを起動する。
 
-## 参照
+## 参考文献
 
-- 公式ドキュメントは [Vite+](https://viteplus.dev/) である。コマンドの一覧は [Getting Started](https://viteplus.dev/guide/)、依存関係のインストールは [Installing Dependencies](https://viteplus.dev/guide/install) に記載される。
-- 既存の Vite プロジェクトを Vite+ へ移行する手順は [Migrate to Vite+](https://viteplus.dev/guide/migrate) である。
-- 解説記事は [Announcing Vite+](https://voidzero.dev/posts/announcing-vite-plus) と [Announcing Vite+ Beta](https://voidzero.dev/posts/announcing-vite-plus-beta) である。
+- 公式 — [Vite+](https://viteplus.dev/)
+- 公式 — [Getting Started](https://viteplus.dev/guide/)
+- 公式 — [Installing Dependencies](https://viteplus.dev/guide/install)
+- 公式 — [Migrate to Vite+](https://viteplus.dev/guide/migrate)
+- 記事 — [Announcing Vite+](https://voidzero.dev/posts/announcing-vite-plus)
+- 記事 — [Announcing Vite+ Beta](https://voidzero.dev/posts/announcing-vite-plus-beta)

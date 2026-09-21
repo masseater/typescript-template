@@ -3,20 +3,23 @@ title: TanStack Start
 description: URL を画面に対応させ、初期データとサーバー専用の処理を扱うフレームワーク
 ---
 
-TanStack Start は、React による画面と、その画面がサーバーで実行する処理を一体として扱うフルスタックフレームワークである。実行環境は Cloudflare Workers であり、開発時も同一の workerd 上で動作する。
+TanStack Start は、React の画面と、その画面のためにサーバーで行う処理を、一つのフレームワークとして書く。実行環境は Cloudflare Workers で、開発時も本番と同じ実行系（workerd）で動作する。
 
-ルーティングはファイルシステムに対応する。ファイル名が URL となり、名称がアンダースコアで始まる区間は URL に現れないレイアウトである。
+経路はファイルの配置から決まる。ファイル名が URL の区間になり、名前がアンダースコアで始まる区間は URL に含まれないレイアウトになる。
 
-データ取得には次の区別がある。
+loader は、その URL へ遷移するときにサーバーで実行され、画面の初期データを返す。表示が終わったあとの再取得や、部品のあいだでの共有はしない。
 
-- **loader** は、該当 URL への遷移時に実行され、画面の初期データを返す。
-- **server function** は `createServerFn` で定義する。呼び出しはクライアントから行えるが、本体はサーバーでのみ実行される。アプリケーション外部から呼び出す HTTP API とは別であり、外部向けの入口にはサーバールートを用いる。
+server function は `createServerFn` で定義する。クライアントから呼び出せるが、本体が実行されるのはサーバーだけである。呼び出しの手続きはこのアプリケーションのクライアント向けであり、外部のクライアントが HTTP として契約する API ではない。外部からの呼び出しを受けるときは、サーバールートを使う。
 
-画面表示後にクライアントがデータを保持し、再取得し、同一キーの部品間で共有する機構は [TanStack Query](/tech-stack/tanstack-query) である。loader はその代替ではない。
+表示後にクライアントがデータを保持し、再取得し、同じキーの部品のあいだで共有する機構は [TanStack Query](/tech-stack/tanstack-query) である。
 
-## 参照
+## 参考文献
 
-- 公式ドキュメントは [TanStack Start](https://tanstack.com/start/latest) である。概要は [Overview](https://tanstack.com/start/latest/docs/framework/react/overview)、server function は [Server Functions](https://tanstack.com/start/latest/docs/framework/react/guide/server-functions) に定義される。
-- Workers 上の構成は [Hosting](https://tanstack.com/start/latest/docs/framework/react/guide/hosting) と [TanStack Start · Cloudflare Workers](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/) に記載される。
-- サンプルは [start-basic-cloudflare](https://github.com/TanStack/router/tree/main/examples/react/start-basic-cloudflare) である。
-- 解説記事は [TanStack Start v1 Release Candidate](https://tanstack.com/blog/announcing-tanstack-start-v1) と [Why choose TanStack Start and Router?](https://tanstack.com/blog/why-tanstack-start-and-router) である。
+- 公式 — [TanStack Start](https://tanstack.com/start/latest)
+- 公式 — [Overview](https://tanstack.com/start/latest/docs/framework/react/overview)
+- 公式 — [Server Functions](https://tanstack.com/start/latest/docs/framework/react/guide/server-functions)
+- 公式 — [Hosting](https://tanstack.com/start/latest/docs/framework/react/guide/hosting)
+- 公式 — [TanStack Start · Cloudflare Workers](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/)
+- サンプル — [start-basic-cloudflare](https://github.com/TanStack/router/tree/main/examples/react/start-basic-cloudflare)
+- 記事 — [TanStack Start v1 Release Candidate](https://tanstack.com/blog/announcing-tanstack-start-v1)
+- 記事 — [Why choose TanStack Start and Router?](https://tanstack.com/blog/why-tanstack-start-and-router)
