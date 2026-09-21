@@ -3,13 +3,13 @@ import { cva } from "class-variance-authority";
 import type { ReactElement } from "react";
 import type { Children } from "./types";
 
-const headingVariants = cva("font-bold text-foreground", {
+const headingVariants = cva("text-foreground", {
   defaultVariants: { size: "section" },
   variants: {
     size: {
-      block: "text-base leading-tight",
-      page: "text-xl leading-tight",
-      section: "text-lg leading-tight",
+      block: "font-sans text-base leading-tight font-bold",
+      page: "font-display text-3xl leading-tight font-medium",
+      section: "font-sans text-lg leading-tight font-bold",
     },
   },
 });
