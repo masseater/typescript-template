@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { Cause, Effect } from "effect";
+import { Cause, Effect, Schema } from "effect";
 
 import { annotateLogs } from "./annotations.ts";
 import { logAt, logCause } from "./severity.ts";
@@ -38,7 +38,10 @@ it.effect("hides a secret an authentication failure puts in its attributes", () 
         eventName: "authentication.failed",
       }),
     );
-    assert.notInclude(JSON.stringify(logs.stderr), leaked);
+    assert.notInclude(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(logs.stderr),
+      leaked,
+    );
     assert.deepStrictEqual(logs.stderr, [
       {
         AUTH_SECRET: "[redacted]",
@@ -63,7 +66,10 @@ it.effect("keeps the error that broke the model readable while hiding the secret
         eventName: "interview.model_failed",
       }),
     );
-    assert.notInclude(JSON.stringify(logs.stdwarn), leaked);
+    assert.notInclude(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(logs.stdwarn),
+      leaked,
+    );
     assert.deepStrictEqual(logs.stdwarn, [
       {
         cause: "D1_ERROR: no such table: jwks (AUTH_SECRET=[redacted])",
@@ -84,7 +90,10 @@ it.effect("hides a secret an annotation carries, not only the attributes of the 
         eventName: "http.server.request",
       }).pipe(annotateLogs({ cookie: `template-user.session=${leaked}`, request_id: "abc" })),
     );
-    assert.notInclude(JSON.stringify(logs.stdout), leaked);
+    assert.notInclude(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(logs.stdout),
+      leaked,
+    );
     assert.deepStrictEqual(logs.stdout, [
       {
         cookie: "[redacted]",
@@ -105,7 +114,7 @@ it.effect("keeps the cause of a failure in the line, minus the secret it carries
   Effect.gen(function* program() {
     const logs = yield* recorded(logCause({ cause: brokenTable, eventName: "application.error" }));
     const [line] = logs.stderr;
-    const reported = JSON.stringify(line);
+    const reported = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(line);
     assert.notInclude(reported, leaked);
     assert.include(reported, "no such table: jwks");
     assert.include(reported, "error.cause");

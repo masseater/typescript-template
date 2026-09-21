@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { expect, userEvent } from "storybook/test";
 
 import preview from "../storybook/preview";
@@ -18,9 +19,16 @@ const meta = preview.meta({
 export const Default = meta.story();
 
 export const UnlocksVerifyAfterSaving = meta.story({
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeDisabled();
-    await userEvent.click(canvas.getByRole("checkbox"));
-    await expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeEnabled();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* unlockVerifyAfterSaving() {
+        yield* Effect.promise(() =>
+          expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeDisabled(),
+        );
+        yield* Effect.promise(() => userEvent.click(canvas.getByRole("checkbox")));
+        yield* Effect.promise(() =>
+          expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeEnabled(),
+        );
+      }),
+    ),
 });

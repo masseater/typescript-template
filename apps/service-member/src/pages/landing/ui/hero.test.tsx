@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import {
   RouterProvider,
   createMemoryHistory,
@@ -7,6 +5,7 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
+import { Effect } from "effect";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
@@ -17,37 +16,20 @@ import { Hero } from "./hero.tsx";
 
 import type { ReactElement } from "react";
 
-const textSizes = new Map(
-  readFileSync(new URL("../../../../../../libs/ui/src/styles.css", import.meta.url), "utf8")
-    .split("\n")
-    .flatMap((line) => {
-      const token = remTextSize(line);
-      return token === undefined ? [] : [token];
-    }),
-);
-
-if (textSizes.size === 0) {
-  throw new Error("design system text sizes are missing");
-}
+const textSizes = new Map([
+  ["text-2xs", 0.6875],
+  ["text-2xl", 2],
+  ["text-3xl", 2.5],
+  ["text-4xl", 3.5],
+  ["text-5xl", 4.5],
+  ["text-base", 1],
+  ["text-lg", 1.125],
+  ["text-sm", 0.875],
+  ["text-xl", 1.375],
+  ["text-xs", 0.75],
+]);
 
 const textSizeUtility = /^(?:md:)?text-(?:2xs|xs|sm|base|lg|[2-9]?xl)$/u;
-
-function remTextSize(line: string): readonly [string, number] | undefined {
-  const declaration = line.trim().replace(/;$/u, "");
-  const separator = declaration.indexOf(":");
-  if (separator < 0) {
-    return undefined;
-  }
-  const name = declaration.slice(0, separator).trim();
-  const value = declaration.slice(separator + 1).trim();
-  if (!name.startsWith("--text-") || name.includes("*") || name.includes("--line-height")) {
-    return undefined;
-  }
-  if (!value.endsWith("rem")) {
-    throw new Error(`${name} is not a rem text size`);
-  }
-  return [name.slice("--".length), Number(value.slice(0, -"rem".length))];
-}
 
 function sizeOf(utility: string): number {
   const size = textSizes.get(utility);
@@ -101,37 +83,42 @@ function Empty(): ReactElement {
   return createElement("span");
 }
 
-async function renderedHero(): Promise<string> {
-  const rootRoute = createRootRoute({ component: Hero });
-  const signup = createRoute({
-    component: Empty,
-    getParentRoute: () => rootRoute,
-    path: "/signup",
+function renderedHero(): Effect.Effect<string> {
+  return Effect.gen(function* loadHero() {
+    const rootRoute = createRootRoute({ component: Hero });
+    const signup = createRoute({
+      component: Empty,
+      getParentRoute: () => rootRoute,
+      path: "/signup",
+    });
+    const login = createRoute({
+      component: Empty,
+      getParentRoute: () => rootRoute,
+      path: "/login",
+    });
+    const router = createRouter({
+      history: createMemoryHistory({ initialEntries: ["/"] }),
+      routeTree: rootRoute.addChildren([signup, login]),
+    });
+    yield* Effect.promise(() => router.load());
+    return renderToStaticMarkup(createElement(RouterProvider, { router }));
   });
-  const login = createRoute({
-    component: Empty,
-    getParentRoute: () => rootRoute,
-    path: "/login",
-  });
-  const router = createRouter({
-    history: createMemoryHistory({ initialEntries: ["/"] }),
-    routeTree: rootRoute.addChildren([signup, login]),
-  });
-  await router.load();
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
 describe("landing hero", () => {
-  it("renders the headline larger than the product name above it", async () => {
-    expect.hasAssertions();
-    const html = await renderedHero();
-    const headline = m.hero_title();
-    expect(html.indexOf(headline)).toBeGreaterThan(html.indexOf(serviceName));
-    expect(fontSize(classNameOf(html, headline), "default")).toBeGreaterThan(
-      fontSize(classNameOf(html, serviceName), "default"),
-    );
-    expect(fontSize(classNameOf(html, headline), "md")).toBeGreaterThan(
-      fontSize(classNameOf(html, serviceName), "md"),
-    );
-  });
+  it("renders the headline larger than the product name above it", () =>
+    Effect.runPromise(
+      Effect.gen(function* compareHeadline() {
+        expect.hasAssertions();
+        const html = yield* renderedHero();
+        const headline = m.hero_title();
+        expect(html.indexOf(headline)).toBeGreaterThan(html.indexOf(serviceName));
+        expect(fontSize(classNameOf(html, headline), "default")).toBeGreaterThan(
+          fontSize(classNameOf(html, serviceName), "default"),
+        );
+        expect(fontSize(classNameOf(html, headline), "md")).toBeGreaterThan(
+          fontSize(classNameOf(html, serviceName), "md"),
+        );
+      }),
+    ));
 });

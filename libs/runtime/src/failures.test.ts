@@ -48,7 +48,7 @@ const answers = [
 function answer(error: unknown): Effect.Effect<readonly [number, unknown]> {
   return Effect.gen(function* program() {
     const response = yield* failureResponse({}, Cause.fail(error));
-    const body: unknown = yield* Effect.promise(async () => response.json());
+    const body: unknown = yield* Effect.promise(() => response.json());
     return [response.status, body] as const;
   });
 }
@@ -85,7 +85,7 @@ describe("failure responses", () => {
       };
       const response = yield* failureResponse(table, Cause.fail({ _tag: "Conflicted" }));
       assert.strictEqual(response.status, httpStatus.conflict);
-      assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), {
+      assert.deepStrictEqual(yield* Effect.promise(() => response.json()), {
         error: "既に登録されています。",
       });
     }),

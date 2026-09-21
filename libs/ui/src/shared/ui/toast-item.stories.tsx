@@ -1,4 +1,5 @@
 import { Toast as ToastPrimitive } from "@base-ui/react/toast";
+import { Effect } from "effect";
 import { expect, screen, userEvent, waitFor } from "storybook/test";
 
 import preview from "../../../storybook/preview";
@@ -46,10 +47,18 @@ const meta = preview.meta({
 
 export const Success = meta.story({
   parameters: { a11y: { config: { rules: [{ enabled: false, id: "aria-hidden-focus" }] } } },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
-    await expect(await screen.findByText("利用者の権限を変更しました。")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showSuccessToast() {
+        yield* Effect.promise(() =>
+          userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
+        );
+        const toast = yield* Effect.promise(() =>
+          screen.findByText("利用者の権限を変更しました。"),
+        );
+        yield* Effect.promise(() => expect(toast).toBeInTheDocument());
+      }),
+    ),
 });
 
 export const Failure = meta.story({
@@ -57,20 +66,32 @@ export const Failure = meta.story({
     toast: { id: "toast_02", title: "利用者の権限を変更できませんでした。", type: "error" },
   },
   parameters: { a11y: { config: { rules: [{ enabled: false, id: "aria-hidden-focus" }] } } },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
-    await expect(
-      await screen.findAllByText("利用者の権限を変更できませんでした。"),
-    ).not.toHaveLength(0);
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showFailureToast() {
+        yield* Effect.promise(() =>
+          userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
+        );
+        const toasts = yield* Effect.promise(() =>
+          screen.findAllByText("利用者の権限を変更できませんでした。"),
+        );
+        yield* Effect.promise(() => expect(toasts).not.toHaveLength(0));
+      }),
+    ),
 });
 
 export const Closes = meta.story({
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "通知を出す" }));
-    await userEvent.click(await screen.findByLabelText("通知を閉じる"));
-    await waitFor(async () => {
-      await expect(screen.queryByLabelText("通知を閉じる")).not.toBeInTheDocument();
-    });
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* closeToast() {
+        yield* Effect.promise(() =>
+          userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
+        );
+        const close = yield* Effect.promise(() => screen.findByLabelText("通知を閉じる"));
+        yield* Effect.promise(() => userEvent.click(close));
+        const toastHasClosed = (): Promise<void> =>
+          expect(screen.queryByLabelText("通知を閉じる")).not.toBeInTheDocument();
+        yield* Effect.promise(() => waitFor(toastHasClosed));
+      }),
+    ),
 });

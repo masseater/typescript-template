@@ -1,5 +1,6 @@
 import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
+import { FetchHttpClient, HttpBody, HttpClient } from "effect/unstable/http";
 
 import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 
@@ -23,28 +24,27 @@ type OutboundEmail = {
 const sendThroughMailpit = (
   mailpitSendUrl: string,
   outbound: OutboundEmail,
-): Effect.Effect<void, EmailDeliveryFailed> => {
-  return Effect.tryPromise({
-    catch: () => new EmailDeliveryFailed({ reason: "unreachable" }),
-    try: async (signal) =>
-      fetch(mailpitSendUrl, {
-        body: JSON.stringify({
-          From: { Email: outbound.from },
-          Subject: outbound.subject,
-          Text: outbound.text,
-          To: [{ Email: outbound.to }],
-        }),
-        headers: { "content-type": "application/json" },
-        method: "POST",
-        redirect: "manual",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(mailpitTimeoutMilliseconds)]),
-      }),
-  }).pipe(
-    Effect.flatMap((delivery) =>
-      delivery.ok ? Effect.void : Effect.fail(new EmailDeliveryFailed({ reason: "rejected" })),
-    ),
-  );
-};
+): Effect.Effect<void, EmailDeliveryFailed> =>
+  Effect.gen(function* sendMailpit() {
+    const requestPayload = yield* HttpBody.json({
+      From: { Email: outbound.from },
+      Subject: outbound.subject,
+      Text: outbound.text,
+      To: [{ Email: outbound.to }],
+    }).pipe(Effect.mapError(() => new EmailDeliveryFailed({ reason: "unreachable" })));
+    const delivery = yield* HttpClient.post(mailpitSendUrl, {
+      body: requestPayload,
+      headers: { "content-type": "application/json" },
+    }).pipe(
+      Effect.timeout(`${mailpitTimeoutMilliseconds} millis`),
+      Effect.provide(FetchHttpClient.layer),
+      Effect.provideService(FetchHttpClient.RequestInit, { redirect: "manual" }),
+      Effect.mapError(() => new EmailDeliveryFailed({ reason: "unreachable" })),
+    );
+    if (delivery.status < 200 || delivery.status >= 300) {
+      return yield* new EmailDeliveryFailed({ reason: "rejected" });
+    }
+  });
 
 type MailBinding = {
   readonly send: (email: {
@@ -64,7 +64,7 @@ const sendThroughBinding = (
   }
   return Effect.tryPromise({
     catch: () => new EmailDeliveryFailed({ reason: "rejected" }),
-    try: async () => binding.send(outbound),
+    try: () => binding.send(outbound),
   }).pipe(Effect.asVoid);
 };
 

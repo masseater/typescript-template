@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { expect, screen, userEvent, waitFor } from "storybook/test";
 
 import preview from "../../../storybook/preview";
@@ -11,16 +12,21 @@ import type { ReactElement } from "react";
 const meta = preview.meta({
   args: { children: "認証設定" },
   component: DropdownMenuLinkItem,
-  play: async ({ canvas }) => {
-    const trigger = canvas.getByRole("button", { name: "アカウント" });
-    await userEvent.click(trigger);
-    const menuItem = await screen.findByRole("menuitem", { name: "認証設定" });
-    await expect(menuItem).toHaveAttribute("href", "/");
-    await userEvent.click(menuItem);
-    await waitFor(async () => {
-      await expect(trigger).toHaveAttribute("aria-expanded", "false");
-    });
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* followMenuLink() {
+        const trigger = canvas.getByRole("button", { name: "アカウント" });
+        yield* Effect.promise(() => userEvent.click(trigger));
+        const menuItem = yield* Effect.promise(() =>
+          screen.findByRole("menuitem", { name: "認証設定" }),
+        );
+        yield* Effect.promise(() => expect(menuItem).toHaveAttribute("href", "/"));
+        yield* Effect.promise(() => userEvent.click(menuItem));
+        const menuHasCollapsed = (): Promise<void> =>
+          expect(trigger).toHaveAttribute("aria-expanded", "false");
+        yield* Effect.promise(() => waitFor(menuHasCollapsed));
+      }),
+    ),
   render: ({ children }): ReactElement => (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="アカウント">メニュー</DropdownMenuTrigger>

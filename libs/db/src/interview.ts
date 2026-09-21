@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { Clock, Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { query } from "./database.ts";
 import { InterviewConflict } from "./interview-conflict.ts";
@@ -14,7 +14,7 @@ const savedColumns = {
   version: interview.version,
 };
 
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 export const findInterview = Effect.fn("findInterview")(function* findInterview(userId: string) {
   const [savedInterview] = yield* query((database) =>

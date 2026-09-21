@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, waitFor } from "storybook/test";
 
@@ -68,29 +69,41 @@ export const TooShort = meta.story({
     type: "password",
     value: undefined,
   },
-  play: async ({ canvas, canvasElement }) => {
-    const { page, userEvent } = await import("vite-plus/test/browser/context");
-    const rendered = page.elementLocator(canvasElement);
-    await userEvent.fill(rendered.getByLabelText("パスワード（12文字以上）"), "short");
-    await userEvent.tab();
-    await waitFor(async () => {
-      await expect(canvas.getByText("文字数が足りません。")).toBeInTheDocument();
-    });
-  },
+  play: ({ canvas, canvasElement }) =>
+    Effect.runPromise(
+      Effect.gen(function* rejectShortPassword() {
+        const { page, userEvent } = yield* Effect.promise(
+          () => import("vite-plus/test/browser/context"),
+        );
+        const rendered = page.elementLocator(canvasElement);
+        yield* Effect.promise(() =>
+          userEvent.fill(rendered.getByLabelText("パスワード（12文字以上）"), "short"),
+        );
+        yield* Effect.promise(() => userEvent.tab());
+        const shortPasswordIsRejected = (): Promise<void> =>
+          expect(canvas.getByText("文字数が足りません。")).toBeInTheDocument();
+        yield* Effect.promise(() => waitFor(shortPasswordIsRejected));
+      }),
+    ),
 });
 
 export const Missing = meta.story({
   args: { label: "ユーザー名", name: "name", required: true, value: undefined },
-  play: async ({ canvas, canvasElement }) => {
-    const { page, userEvent } = await import("vite-plus/test/browser/context");
-    const rendered = page.elementLocator(canvasElement);
-    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "x");
-    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "");
-    await userEvent.tab();
-    await waitFor(async () => {
-      await expect(canvas.getByText("入力してください。")).toBeInTheDocument();
-    });
-  },
+  play: ({ canvas, canvasElement }) =>
+    Effect.runPromise(
+      Effect.gen(function* rejectEmptyName() {
+        const { page, userEvent } = yield* Effect.promise(
+          () => import("vite-plus/test/browser/context"),
+        );
+        const rendered = page.elementLocator(canvasElement);
+        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
+        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));
+        yield* Effect.promise(() => userEvent.tab());
+        const emptyNameIsRejected = (): Promise<void> =>
+          expect(canvas.getByText("入力してください。")).toBeInTheDocument();
+        yield* Effect.promise(() => waitFor(emptyNameIsRejected));
+      }),
+    ),
 });
 
 const englishFieldValidationMessages = {
@@ -110,14 +123,19 @@ const withEnglishFieldValidation = (Story: () => ReactElement): ReactElement => 
 export const EnglishMissing = meta.story({
   args: { label: "ユーザー名", name: "name", required: true, value: undefined },
   decorators: [withEnglishFieldValidation],
-  play: async ({ canvas, canvasElement }) => {
-    const { page, userEvent } = await import("vite-plus/test/browser/context");
-    const rendered = page.elementLocator(canvasElement);
-    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "x");
-    await userEvent.fill(rendered.getByLabelText("ユーザー名"), "");
-    await userEvent.tab();
-    await waitFor(async () => {
-      await expect(canvas.getByText("Enter a value.")).toBeInTheDocument();
-    });
-  },
+  play: ({ canvas, canvasElement }) =>
+    Effect.runPromise(
+      Effect.gen(function* rejectEmptyEnglishName() {
+        const { page, userEvent } = yield* Effect.promise(
+          () => import("vite-plus/test/browser/context"),
+        );
+        const rendered = page.elementLocator(canvasElement);
+        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
+        yield* Effect.promise(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));
+        yield* Effect.promise(() => userEvent.tab());
+        const emptyNameIsRejected = (): Promise<void> =>
+          expect(canvas.getByText("Enter a value.")).toBeInTheDocument();
+        yield* Effect.promise(() => waitFor(emptyNameIsRejected));
+      }),
+    ),
 });

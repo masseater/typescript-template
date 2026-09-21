@@ -1,13 +1,14 @@
-import path from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { Effect, Path } from "effect";
 
 import type { Application } from "@repo/config";
 
-const applicationRoot = (application: Application): string => {
-  return path.join(repositoryRoot, "apps", application);
-};
+const paths = Effect.runSync(Effect.provide(Path.Path, NodeServices.layer));
 
-const vitePlus = path.join(repositoryRoot, "node_modules/.bin/vp");
+const applicationRoot = (application: Application): string =>
+  paths.join(repositoryRoot, "apps", application);
+
+const vitePlus = paths.join(repositoryRoot, "node_modules/.bin/vp");
 
 export { applicationRoot, repositoryRoot, vitePlus };

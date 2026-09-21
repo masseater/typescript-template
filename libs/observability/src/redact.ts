@@ -163,4 +163,21 @@ const redactedField = (fieldName: string, fieldValue: unknown): unknown => {
     : fieldValue;
 };
 
-export { redactSecrets, redactedField };
+const appliedField = (
+  value: unknown,
+  field: (name: string, current: unknown) => unknown,
+  name = "",
+): unknown => {
+  const replaced = field(name, value);
+  if (Array.isArray(replaced)) {
+    return replaced.map((item, index) => appliedField(item, field, String(index)));
+  }
+  if (replaced !== null && typeof replaced === "object") {
+    return Object.fromEntries(
+      Object.entries(replaced).map(([key, item]) => [key, appliedField(item, field, key)]),
+    );
+  }
+  return replaced;
+};
+
+export { appliedField, redactSecrets, redactedField };

@@ -6,8 +6,7 @@ import { ProfileRoute } from "./-profile-route.tsx";
 const Route = createFileRoute("/_member/users/$id")({
   component: ProfileRoute,
   errorComponent: ProfileFailed,
-  loader: async ({ params }: Readonly<{ params: Readonly<{ id: string }> }>) =>
-    loadMember(params.id),
+  loader: ({ params }: Readonly<{ params: Readonly<{ id: string }> }>) => loadMember(params.id),
   notFoundComponent: ProfileMissing,
   pendingComponent: ProfilePending,
 });

@@ -1,7 +1,6 @@
 import { ROLE } from "@repo/config/identity";
-import { onboardingSteps, query, schema } from "@repo/db";
-import { and, desc, eq, inArray } from "drizzle-orm";
-import { Effect } from "effect";
+import { and, desc, eq, inArray, onboardingSteps, query, schema } from "@repo/db";
+import { DateTime, Effect } from "effect";
 
 const { follow, memberOnboarding, user } = schema;
 
@@ -22,7 +21,7 @@ const advanceOnboarding = Effect.fn("advanceOnboarding")(function* advanceOnboar
   userId: string,
   step: OnboardingStep,
 ) {
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .insert(memberOnboarding)

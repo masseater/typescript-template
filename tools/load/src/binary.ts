@@ -1,12 +1,22 @@
-import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
-import { chmod, mkdir, rm, stat, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { promisify } from "node:util";
-
-import { Effect, Schema } from "effect";
+import { NodeServices } from "@effect/platform-node";
+import { Crypto, Effect, FileSystem, Path, Schema } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { downloadUrl, type Release, releases, version } from "./releases.ts";
+
+const ownerOnlyDirectory = 0o700;
+const ownerOnlyFile = 0o600;
+const executableMode = 0o755;
+
+const hexOf = (digestBytes: Uint8Array): string =>
+  Array.from(digestBytes, (octet) => octet.toString(16).padStart(2, "0")).join("");
+
+const exists = (file: string): Effect.Effect<boolean> =>
+  Effect.gen(function* fileExists() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem.exists(file).pipe(Effect.orElseSucceed(() => false));
+  }).pipe(Effect.provide(NodeServices.layer));
 
 class BinaryUnavailable extends Schema.TaggedError<BinaryUnavailable>()("BinaryUnavailable", {
   reason: Schema.Literals([
@@ -18,26 +28,6 @@ class BinaryUnavailable extends Schema.TaggedError<BinaryUnavailable>()("BinaryU
   ]),
 }) {}
 
-const execFileAsync = promisify(execFile);
-const ownerOnlyDirectory = 0o700;
-const ownerOnlyFile = 0o600;
-const executableMode = 0o755;
-
-const fileIo = <Value>(
-  operation: () => Promise<Value>,
-): Effect.Effect<Value, BinaryUnavailable> => {
-  return Effect.tryPromise({
-    catch: () => new BinaryUnavailable({ reason: "file_io_failed" }),
-    try: operation,
-  });
-};
-
-const exists = (file: string): Effect.Effect<boolean> => {
-  return fileIo(async () => stat(file)).pipe(
-    Effect.match({ onFailure: () => false, onSuccess: () => true }),
-  );
-};
-
 const selectRelease = (): Effect.Effect<Release, BinaryUnavailable> => {
   const found = releases.get(`${process.platform}-${process.arch}`);
   return found === undefined
@@ -46,46 +36,93 @@ const selectRelease = (): Effect.Effect<Release, BinaryUnavailable> => {
 };
 
 const fetchArchive = Effect.fn("fetchArchive")(function* fetchArchive(release: Release) {
-  const downloaded = yield* Effect.tryPromise({
-    catch: () => new BinaryUnavailable({ reason: "download_failed" }),
-    try: async () => fetch(downloadUrl(release.archive), { redirect: "follow" }),
-  });
-  if (!downloaded.ok) {
+  const downloaded = yield* HttpClient.get(downloadUrl(release.archive)).pipe(
+    Effect.provide(FetchHttpClient.layer),
+    Effect.mapError(() => new BinaryUnavailable({ reason: "download_failed" })),
+  );
+  if (downloaded.status < 200 || downloaded.status >= 300) {
     return yield* new BinaryUnavailable({ reason: "download_failed" });
   }
-  const archived = Buffer.from(
-    yield* Effect.tryPromise({
-      catch: () => new BinaryUnavailable({ reason: "download_failed" }),
-      try: async () => downloaded.arrayBuffer(),
-    }),
+  const archived = new Uint8Array(
+    yield* downloaded.arrayBuffer.pipe(
+      Effect.mapError(() => new BinaryUnavailable({ reason: "download_failed" })),
+    ),
   );
-  return createHash("sha256").update(archived).digest("hex") === release.digest
+  const crypto = yield* Crypto.Crypto;
+  const digest = hexOf(
+    yield* crypto
+      .digest("SHA-256", archived)
+      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "archive_corrupted" }))),
+  );
+  return digest === release.digest
     ? archived
     : yield* new BinaryUnavailable({ reason: "archive_corrupted" });
 });
 
+const writeArchive = (placed: {
+  readonly archived: Uint8Array;
+  readonly directory: string;
+  readonly release: Release;
+}): Effect.Effect<string, BinaryUnavailable, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* writeReleaseArchive() {
+    const paths = yield* Path.Path;
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem
+      .remove(placed.directory, { force: true, recursive: true })
+      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+    yield* filesystem
+      .makeDirectory(placed.directory, { mode: ownerOnlyDirectory, recursive: true })
+      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+    const archive = paths.join(placed.directory, placed.release.archive);
+    yield* filesystem
+      .writeFile(archive, placed.archived, { mode: ownerOnlyFile })
+      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+    return archive;
+  });
+
+const unpackArchive = (placed: {
+  readonly archive: string;
+  readonly directory: string;
+  readonly member: string;
+}): Effect.Effect<
+  void,
+  BinaryUnavailable,
+  ChildProcessSpawner.ChildProcessSpawner | FileSystem.FileSystem | Path.Path
+> =>
+  Effect.gen(function* unpackReleaseArchive() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const extracted = yield* spawner
+      .exitCode(ChildProcess.make("tar", ["-xf", placed.archive], { cwd: placed.directory }))
+      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "extraction_failed" })));
+    if (extracted !== 0) {
+      return yield* new BinaryUnavailable({ reason: "extraction_failed" });
+    }
+    yield* filesystem
+      .remove(placed.archive, { force: true })
+      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+    yield* filesystem
+      .chmod(paths.join(placed.directory, placed.member), executableMode)
+      .pipe(Effect.mapError(() => new BinaryUnavailable({ reason: "file_io_failed" })));
+  });
+
 const extract = Effect.fn("extract")(function* extract(directory: string, release: Release) {
   const archived = yield* fetchArchive(release);
-  yield* fileIo(async () => rm(directory, { force: true, recursive: true }));
-  yield* fileIo(async () => mkdir(directory, { mode: ownerOnlyDirectory, recursive: true }));
-  const archive = path.join(directory, release.archive);
-  yield* fileIo(async () => writeFile(archive, archived, { mode: ownerOnlyFile }));
-  yield* Effect.tryPromise({
-    catch: () => new BinaryUnavailable({ reason: "extraction_failed" }),
-    try: async () => execFileAsync("tar", ["-xf", archive], { cwd: directory }),
-  });
-  yield* fileIo(async () => rm(archive, { force: true }));
-  yield* fileIo(async () => chmod(path.join(directory, release.member), executableMode));
+  const archive = yield* writeArchive({ archived, directory, release });
+  yield* unpackArchive({ archive, directory, member: release.member });
 });
 
-const installBinary = Effect.fn("installBinary")(function* installBinary(home: string) {
-  const directory = path.join(home, version);
-  const release = yield* selectRelease();
-  const binary = path.join(directory, release.member);
-  if (!(yield* exists(binary))) {
-    yield* extract(directory, release);
-  }
-  return binary;
-});
+const installBinary = (home: string): Effect.Effect<string, BinaryUnavailable> =>
+  Effect.gen(function* installMeasuredBinary() {
+    const paths = yield* Path.Path;
+    const directory = paths.join(home, version);
+    const release = yield* selectRelease();
+    const binary = paths.join(directory, release.member);
+    if (!(yield* exists(binary))) {
+      yield* extract(directory, release);
+    }
+    return binary;
+  }).pipe(Effect.provide(NodeServices.layer));
 
 export { BinaryUnavailable, exists, installBinary };

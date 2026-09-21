@@ -1,17 +1,9 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { readdirSync, readFileSync } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { fileURLToPath } from "node:url";
-
+import { NodeServices } from "@effect/platform-node";
 import { assert, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 
 import { applications } from "./applications.ts";
 import { roles } from "./identity.ts";
-
-const repositoryRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 
 const skipDirectories = new Set([
   ".git",
@@ -64,22 +56,33 @@ const forbidden = [
   "IN ('user', 'admin')",
 ] as const;
 
-function walk(directory: string, files: string[] = []): string[] {
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (skipDirectories.has(entry.name) || entry.isSymbolicLink()) {
-      continue;
+const walk = (
+  directory: string,
+): Effect.Effect<readonly string[], never, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* walkDirectory() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const files: string[] = [];
+    const entries = yield* filesystem.readDirectory(directory);
+    for (const name of entries) {
+      if (skipDirectories.has(name)) {
+        continue;
+      }
+      const full = paths.join(directory, name);
+      const info = yield* filesystem.stat(full);
+      if (info.type === "SymbolicLink") {
+        continue;
+      }
+      if (info.type === "Directory") {
+        files.push(...(yield* walk(full)));
+        continue;
+      }
+      if (info.type === "File" && textExtensions.has(paths.extname(name))) {
+        files.push(full);
+      }
     }
-    const full = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      walk(full, files);
-      continue;
-    }
-    if (entry.isFile() && textExtensions.has(path.extname(entry.name))) {
-      files.push(full);
-    }
-  }
-  return files;
-}
+    return files;
+  }).pipe(Effect.orDie);
 
 it.effect("application and role names use the service and member vocabulary", () =>
   Effect.sync(() => {
@@ -92,14 +95,20 @@ it.effect("application and role names use the service and member vocabulary", ()
 );
 
 it.effect("retired application and role spellings do not remain in authored sources", () =>
-  Effect.sync(() => {
+  Effect.gen(function* program() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const repositoryRoot = paths.resolve(
+      yield* paths.fromFileUrl(new URL(import.meta.url)),
+      "../../..",
+    );
     const hits: string[] = [];
-    for (const file of walk(repositoryRoot)) {
-      const relative = path.relative(repositoryRoot, file);
+    for (const file of yield* walk(repositoryRoot).pipe(Effect.orDie)) {
+      const relative = paths.relative(repositoryRoot, file);
       if (relative === "libs/config/src/naming.test.ts") {
         continue;
       }
-      const text = readFileSync(file, "utf8");
+      const text = yield* filesystem.readFileString(file);
       for (const needle of forbidden) {
         if (text.includes(needle)) {
           hits.push(`${relative}: ${needle}`);
@@ -107,5 +116,5 @@ it.effect("retired application and role spellings do not remain in authored sour
       }
     }
     assert.deepStrictEqual(hits, []);
-  }),
+  }).pipe(Effect.provide(NodeServices.layer)),
 );

@@ -1,4 +1,5 @@
-import { Effect, Schema } from "effect";
+import { Clock, Effect, Schema } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 interface ExportedSpan {
   readonly name: string;
@@ -62,22 +63,17 @@ function serviceName(attributes: readonly (typeof Attribute.Type)[]): string | u
 }
 
 const receiverJson = Effect.fn("receiverJson")(function* receiverJson(url: string) {
-  const response = yield* Effect.tryPromise({
-    catch: () => new ReceiverFailure({ reason: "query_failed" }),
-    try: async (signal) =>
-      fetch(url, {
-        headers: { accept: "application/json" },
-        redirect: "manual",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(receiverTimeoutMilliseconds)]),
-      }),
-  });
-  if (!response.ok) {
-    return yield* Effect.fail(new ReceiverFailure({ reason: "query_failed" }));
+  const response = yield* HttpClient.get(url, { acceptJson: true }).pipe(
+    Effect.timeout(receiverTimeoutMilliseconds),
+    Effect.provide(FetchHttpClient.layer),
+    Effect.mapError(() => new ReceiverFailure({ reason: "query_failed" })),
+  );
+  if (response.status < 200 || response.status >= 300) {
+    return yield* new ReceiverFailure({ reason: "query_failed" });
   }
-  return yield* Effect.tryPromise({
-    catch: () => new ReceiverFailure({ reason: "response_invalid" }),
-    try: async (): Promise<unknown> => response.json(),
-  });
+  return yield* response.json.pipe(
+    Effect.mapError(() => new ReceiverFailure({ reason: "response_invalid" })),
+  );
 });
 
 function decoded<Decoded extends Schema.Top & { readonly DecodingServices: never }>(
@@ -112,7 +108,7 @@ const exportedLogs = Effect.fn("exportedLogs")(function* exportedLogs(
   traceId: string,
   minutes: number,
 ) {
-  const now = Date.now();
+  const now = yield* Clock.currentTimeMillis;
   const url = new URL("/loki/api/v1/query_range", receiver.logs);
   url.searchParams.set("query", `{service_name=~".+"} | trace_id = "${traceId}"`);
   url.searchParams.set(

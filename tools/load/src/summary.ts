@@ -1,6 +1,5 @@
-import { readFile, rm } from "node:fs/promises";
-
-import { Effect, Schema } from "effect";
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem, Schema } from "effect";
 
 const Thresholds = Schema.Record(Schema.String, Schema.Boolean);
 const Metric = Schema.Struct({
@@ -61,26 +60,26 @@ const summarise = (metrics: typeof Summary.Type.metrics): Report => {
   };
 };
 
-const readSummary = (file: string): Effect.Effect<Report, unknown> => {
-  return Effect.tryPromise(async (): Promise<unknown> =>
-    JSON.parse(await readFile(file, "utf-8")),
-  ).pipe(
-    Effect.flatMap(Schema.decodeUnknownEffect(Summary)),
-    Effect.map((summary) => summarise(summary.metrics)),
-  );
-};
+const readSummary = (file: string): Effect.Effect<Report, Schema.SchemaError> =>
+  Effect.gen(function* readMeasuredSummary() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const summaryText = yield* filesystem.readFileString(file).pipe(Effect.orDie);
+    const summary = yield* Schema.decodeEffect(Schema.fromJsonString(Summary))(summaryText);
+    return summarise(summary.metrics);
+  }).pipe(Effect.provide(NodeServices.layer));
 
 class SummaryNotDiscarded extends Schema.TaggedError<SummaryNotDiscarded>()(
   "SummaryNotDiscarded",
   {},
 ) {}
 
-const discardSummary = (file: string): Effect.Effect<void, SummaryNotDiscarded> => {
-  return Effect.tryPromise({
-    catch: () => new SummaryNotDiscarded(),
-    try: async () => rm(file, { force: true }),
-  });
-};
+const discardSummary = (file: string): Effect.Effect<void, SummaryNotDiscarded> =>
+  Effect.gen(function* discardMeasuredSummary() {
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem
+      .remove(file, { force: true })
+      .pipe(Effect.mapError(() => new SummaryNotDiscarded()));
+  }).pipe(Effect.provide(NodeServices.layer));
 
 export { discardSummary, readSummary };
 export type { Report };

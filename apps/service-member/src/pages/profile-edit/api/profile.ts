@@ -6,22 +6,28 @@ import { ProfileView } from "#shared/contracts/index.ts";
 
 type Profile = typeof ProfileView.Type;
 
-async function loadProfile(): Promise<Profile> {
-  const { api } = await userClient();
-  const profile = apiDataOrNone(ProfileView, await api.profile.get(), absent.notFound);
-  if (profile === undefined) {
-    throw notFound();
-  }
-  return profile;
+function loadProfile(): Promise<Profile> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.profile.get().then((response) => {
+      const profile = apiDataOrNone(ProfileView, response, absent.notFound);
+      if (profile === undefined) {
+        throw notFound();
+      }
+      return profile;
+    }),
+  );
 }
 
-async function saveProfile(
+function saveProfile(
   name: string,
   profile: string,
   socialLinks: readonly string[],
 ): Promise<Profile> {
-  const { api } = await userClient();
-  return apiData(ProfileView, await api.profile.patch({ name, profile, socialLinks }));
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.profile
+      .patch({ name, profile, socialLinks })
+      .then((response) => apiData(ProfileView, response)),
+  );
 }
 
 export { loadProfile, saveProfile };

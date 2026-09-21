@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { expect } from "storybook/test";
 
@@ -36,18 +37,28 @@ export const Registered = meta.story({
       ),
     );
   },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("MacBook Pro")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showRegisteredPasskeys() {
+        const passkeyName = yield* Effect.promise(() => canvas.findByText("MacBook Pro"));
+        yield* Effect.promise(() => expect(passkeyName).toBeInTheDocument());
+      }),
+    ),
 });
 
 export const Empty = meta.story({
   beforeEach: ({ msw }) => {
     msw.use(http.get(listPath, () => HttpResponse.json([])));
   },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("登録されたパスキーはありません。")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showEmptyPasskeys() {
+        const emptyNotice = yield* Effect.promise(() =>
+          canvas.findByText("登録されたパスキーはありません。"),
+        );
+        yield* Effect.promise(() => expect(emptyNotice).toBeInTheDocument());
+      }),
+    ),
 });
 
 export const Failed = meta.story({
@@ -58,7 +69,11 @@ export const Failed = meta.story({
       ),
     );
   },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("alert")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showPasskeyFailure() {
+        const failureAlert = yield* Effect.promise(() => canvas.findByRole("alert"));
+        yield* Effect.promise(() => expect(failureAlert).toBeInTheDocument());
+      }),
+    ),
 });

@@ -1,9 +1,19 @@
 import { Button, Heading, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { ReactElement } from "react";
+
+function acceptAgreement(goToChoose: () => Promise<unknown>): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* accept() {
+      yield* Effect.promise(() => saveOnboardingStep("choose"));
+      yield* Effect.promise(() => goToChoose());
+    }),
+  );
+}
 
 function AgreementPage(): ReactElement {
   const navigate = useNavigate();
@@ -25,10 +35,7 @@ function AgreementPage(): ReactElement {
       <Button
         disabled={action.blocked}
         onClick={() => {
-          action.run(async () => {
-            await saveOnboardingStep("choose");
-            await navigate({ to: "/welcome/choose" });
-          });
+          action.run(() => acceptAgreement(() => navigate({ to: "/welcome/choose" })));
         }}
         type="button"
         variant="primary"

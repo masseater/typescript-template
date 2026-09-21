@@ -1,4 +1,5 @@
-import { Effect, Option, Schema } from "effect";
+import { Duration, Effect, Layer, Option, Schema } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import type { Application as HealthService } from "@repo/config";
 
@@ -13,9 +14,11 @@ interface ProbeResult {
   readonly detail: string;
 }
 
-type ProbeResponse = Readonly<Pick<Response, "json" | "ok" | "status">>;
-
 const REQUEST_TIMEOUT_MS = 10_000;
+const healthHttp = Layer.mergeAll(
+  FetchHttpClient.layer,
+  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "manual" }),
+);
 
 const HealthPayload = Schema.Struct({
   ok: Schema.Literal(true),
@@ -27,23 +30,23 @@ function probeResult(target: HealthTarget, healthy: boolean, detail: string): Pr
   return { detail, healthy, service: target.service };
 }
 
-function requestHealth(target: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> {
-  return Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
-    fetch(`${target.origin}/api/health`, {
-      headers: { accept: "application/json" },
-      redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-    }),
-  ).pipe(Effect.option);
+function requestHealth(
+  target: HealthTarget,
+): Effect.Effect<Option.Option<HttpClientResponse.HttpClientResponse>> {
+  return HttpClient.get(`${target.origin}/api/health`, {
+    headers: { accept: "application/json" },
+  }).pipe(
+    Effect.timeout(Duration.millis(REQUEST_TIMEOUT_MS)),
+    Effect.provide(healthHttp),
+    Effect.option,
+  );
 }
 
 const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   target: HealthTarget,
-  response: ProbeResponse,
+  response: HttpClientResponse.HttpClientResponse,
 ) {
-  const body = yield* Effect.tryPromise(async (): Promise<unknown> => response.json()).pipe(
-    Effect.option,
-  );
+  const body = yield* response.json.pipe(Effect.option);
   if (Option.isNone(body)) {
     return probeResult(target, false, "body_unreadable");
   }
@@ -59,7 +62,7 @@ const probeService = Effect.fn("probeService")(function* probeService(target: He
   if (Option.isNone(response)) {
     return probeResult(target, false, "unreachable");
   }
-  if (!response.value.ok) {
+  if (response.value.status < 200 || response.value.status >= 300) {
     return probeResult(target, false, `status_${response.value.status}`);
   }
   return yield* payloadResult(target, response.value);

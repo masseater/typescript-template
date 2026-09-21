@@ -1,4 +1,3 @@
-import { APPLICATION } from "@repo/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 
 const HEX_ID_LENGTH = 32;

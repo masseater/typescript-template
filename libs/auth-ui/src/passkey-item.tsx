@@ -1,5 +1,7 @@
 import { type ActionState, Button, ConfirmDialog, localState } from "@repo/ui";
+import { Effect } from "effect";
 
+import { authTask } from "./browser-http.ts";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
 
@@ -11,6 +13,18 @@ const passkeyLabel = (storedName: string | null | undefined): string => {
     ? "名前のないパスキー"
     : storedName;
 };
+
+const deleteStoredPasskey = (passkeyId: string): Effect.Effect<void> =>
+  authTask(() => authClient.passkey.deletePasskey({ id: passkeyId })).pipe(
+    Effect.map(requireSuccess),
+    Effect.tap(() =>
+      Effect.sync(() => {
+        globalThis.location.assign("/login");
+      }),
+    ),
+    Effect.asVoid,
+    Effect.orDie,
+  );
 
 const usePasskeyConfirming = localState(false);
 
@@ -25,10 +39,7 @@ const PasskeyItem = ({
   const displayedPasskeyName = passkeyLabel(passkey.name);
   const remove = (): void => {
     setConfirming(false);
-    action.run(async () => {
-      requireSuccess(await authClient.passkey.deletePasskey({ id: passkey.id }));
-      globalThis.location.assign("/login");
-    });
+    action.run(() => Effect.runPromise(deleteStoredPasskey(passkey.id)));
   };
   return (
     <li>
