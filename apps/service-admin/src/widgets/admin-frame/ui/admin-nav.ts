@@ -5,7 +5,6 @@ import type { LucideIcon } from "lucide-react";
 type AdminNavPath = "/admins" | "/inquiries" | "/members" | "/reports" | "/terms";
 
 type AdminNavItem = Readonly<{
-  badge?: number;
   icon: LucideIcon;
   label: string;
   to: AdminNavPath;

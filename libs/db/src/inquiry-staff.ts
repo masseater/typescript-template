@@ -80,8 +80,7 @@ const staffInquiryCounts = Effect.fn("staffInquiryCounts")(function* staffInquir
   const trendMap = new Map<string, InquiryDailyTrend>();
   for (const row of trendRows) {
     const existing = trendMap.get(row.day) ?? { answered: 0, closed: 0, day: row.day, open: 0 };
-    existing[row.status] = row.count;
-    trendMap.set(row.day, existing);
+    trendMap.set(row.day, { ...existing, [row.status]: row.count });
   }
   return { byStatus, trend: [...trendMap.values()] } satisfies InquiryStaffCounts;
 });

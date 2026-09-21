@@ -1,33 +1,21 @@
 import { ROLE } from "@repo/config";
 import {
-  Button,
-  Field,
-  FormColumn,
   Heading,
   NavigationLink,
   STATUS_VARIANT,
   StatusMessage,
   TextLink,
-  useAction,
+  resultError,
 } from "@repo/ui";
-import { useEffect, useState } from "react";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-import {
-  closeInquiry,
-  loadInquiries,
-  loadInquiry,
-  loadMemberSummary,
-  replyToInquiry,
-} from "#pages/inquiries/api/inquiries.ts";
+import { useInquiryList } from "#pages/inquiries/model/inquiry-list.ts";
+import { useInquiryThread } from "#pages/inquiries/model/inquiry-thread.ts";
 import { inquiryStatusLabel, isInquiryClosed } from "#pages/inquiries/model/status-label.ts";
-import { maximumBodyLength } from "#shared/contracts/index.ts";
+import { InquiryMemberSummary } from "./inquiry-member-summary.tsx";
+import { InquiryReplyForm } from "./inquiry-reply-form.tsx";
 
-import type {
-  AdminInquiryDetail,
-  AdminInquirySummary,
-  InquiryMemberSummary,
-} from "#pages/inquiries/model/inquiry.ts";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement } from "react";
 
 const createdAtLabel = new Intl.DateTimeFormat("ja", {
   dateStyle: "medium",
@@ -36,52 +24,9 @@ const createdAtLabel = new Intl.DateTimeFormat("ja", {
 });
 
 function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): ReactElement {
-  const [inquiries, setInquiries] = useState<readonly AdminInquirySummary[] | undefined>();
-  const [inquiry, setInquiry] = useState<AdminInquiryDetail | undefined>();
-  const [member, setMember] = useState<InquiryMemberSummary | undefined>();
-  const [error, setError] = useState<string | undefined>();
-  const [body, setBody] = useState("");
-  const action = useAction();
-
-  useEffect(() => {
-    let active = true;
-    void Promise.all([loadInquiries({ limit: 50, offset: 0 }), loadInquiry(inquiryId)])
-      .then(async ([list, thread]) => {
-        if (!active) {
-          return;
-        }
-        setInquiries(list.inquiries);
-        setInquiry(thread);
-        const summary = await loadMemberSummary(thread.memberId);
-        if (active) {
-          setMember(summary);
-        }
-      })
-      .catch((failure: unknown) => {
-        if (active) {
-          setError(failure instanceof Error ? failure.message : "問い合わせを読めませんでした。");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [inquiryId]);
-
-  function handleReply(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(async () => {
-      const updated = await replyToInquiry({ body, id: inquiryId });
-      setInquiry(updated);
-      setBody("");
-    });
-  }
-
-  function handleClose(): void {
-    action.run(async () => {
-      const updated = await closeInquiry(inquiryId);
-      setInquiry(updated);
-    });
-  }
+  const listing = useInquiryList();
+  const { reload, thread } = useInquiryThread(inquiryId);
+  const error = resultError(thread) ?? resultError(listing);
 
   if (error !== undefined) {
     return (
@@ -92,7 +37,7 @@ function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
     );
   }
 
-  if (inquiry === undefined || inquiries === undefined) {
+  if (!AsyncResult.isSuccess(thread) || !AsyncResult.isSuccess(listing)) {
     return (
       <main className="flex flex-col gap-4 p-4">
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
@@ -100,6 +45,8 @@ function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
     );
   }
 
+  const inquiry = thread.value;
+  const inquiries = listing.value;
   const closed = isInquiryClosed(inquiry.status);
 
   return (
@@ -150,54 +97,9 @@ function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
             </li>
           ))}
         </ul>
-        {!closed && (
-          <form onSubmit={handleReply as SubmitEventHandler<HTMLFormElement>}>
-            <FormColumn>
-              <Field
-                label="返信"
-                maxLength={maximumBodyLength}
-                multiline
-                name="body"
-                onChange={setBody}
-                required
-                value={body}
-              />
-              <div className="flex gap-2">
-                <Button disabled={action.blocked} pending={action.pending} type="submit">
-                  返信する
-                </Button>
-                <Button
-                  disabled={action.pending}
-                  onClick={handleClose}
-                  type="button"
-                  variant="outline"
-                >
-                  完了にする
-                </Button>
-              </div>
-              {action.error !== undefined && (
-                <p className="text-sm text-destructive">{action.error}</p>
-              )}
-            </FormColumn>
-          </form>
-        )}
+        {!closed && <InquiryReplyForm inquiryId={inquiryId} onChanged={reload} />}
       </section>
-      <aside aria-label="利用者の要約" className="flex flex-col gap-2 border-l border-border pl-4">
-        <Heading as="h2" size="section">
-          利用者
-        </Heading>
-        {member === undefined ? (
-          <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-        ) : (
-          <>
-            <p className="text-base leading-normal font-medium">{member.name}</p>
-            <p className="text-sm leading-normal text-muted-foreground">{member.email}</p>
-            <TextLink to="/members/$id" params={{ id: member.id }}>
-              利用者の詳細
-            </TextLink>
-          </>
-        )}
-      </aside>
+      <InquiryMemberSummary memberId={inquiry.memberId} />
     </main>
   );
 }

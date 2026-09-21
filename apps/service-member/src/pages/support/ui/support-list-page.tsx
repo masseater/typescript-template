@@ -1,23 +1,20 @@
 import {
   Button,
-  Field,
-  FormColumn,
   Heading,
   NavigationLink,
   Page,
   STATUS_VARIANT,
   StatusMessage,
-  TextLink,
-  useAction,
+  localState,
+  resultError,
 } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-import { createInquiry, loadInquiries } from "#pages/support/api/support.ts";
-import { maximumBodyLength, maximumSubjectLength } from "#shared/contracts/index.ts";
+import { useInquiryList } from "#pages/support/model/inquiry-list.ts";
+import { NewInquiryForm } from "./new-inquiry-form.tsx";
 
-import type { InquirySummary } from "#pages/support/model/inquiry.ts";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement } from "react";
 
 const updatedAtLabel = new Intl.DateTimeFormat("ja", {
   dateStyle: "medium",
@@ -25,96 +22,36 @@ const updatedAtLabel = new Intl.DateTimeFormat("ja", {
   timeZone: "UTC",
 });
 
+const useCreating = localState(false);
+
 function SupportListPage(): ReactElement {
-  const [inquiries, setInquiries] = useState<readonly InquirySummary[] | undefined>();
-  const [error, setError] = useState<string | undefined>();
-  const [creating, setCreating] = useState(false);
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const action = useAction();
+  const listing = useInquiryList();
+  const [creating, setCreating] = useCreating();
   const navigate = useNavigate();
+  const error = resultError(listing);
+  const inquiries = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
-  useEffect(() => {
-    let active = true;
-    void loadInquiries()
-      .then((list) => {
-        if (active) {
-          setInquiries(list.inquiries);
-        }
-      })
-      .catch((failure: unknown) => {
-        if (active) {
-          setError(failure instanceof Error ? failure.message : "問い合わせを読めませんでした。");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  function handleCreate(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(async () => {
-      const created = await createInquiry({ body, subject });
-      void navigate({ params: { id: created.id }, to: "/support/$id" });
-    });
+  function openForm(): void {
+    setCreating(true);
+  }
+  function closeForm(): void {
+    setCreating(false);
+  }
+  function showCreated(inquiryId: string): void {
+    void navigate({ params: { id: inquiryId }, to: "/support/$id" });
   }
 
   if (creating) {
     return (
       <Page title="お問い合わせ">
-        <form onSubmit={handleCreate as SubmitEventHandler<HTMLFormElement>}>
-          <FormColumn>
-            <Field
-              label="件名"
-              maxLength={maximumSubjectLength}
-              name="subject"
-              onChange={setSubject}
-              required
-              value={subject}
-            />
-            <Field
-              label="内容"
-              maxLength={maximumBodyLength}
-              multiline
-              name="body"
-              onChange={setBody}
-              required
-              value={body}
-            />
-            <div className="flex gap-2">
-              <Button disabled={action.blocked} pending={action.pending} type="submit">
-                送信
-              </Button>
-              <Button
-                disabled={action.pending}
-                onClick={() => {
-                  setCreating(false);
-                }}
-                type="button"
-                variant="outline"
-              >
-                戻る
-              </Button>
-            </div>
-            {action.error !== undefined && (
-              <p className="text-sm text-destructive">{action.error}</p>
-            )}
-          </FormColumn>
-        </form>
+        <NewInquiryForm onCancel={closeForm} onCreated={showCreated} />
       </Page>
     );
   }
 
   return (
     <Page title="お問い合わせ">
-      <Button
-        aria-label="新しい問い合わせ"
-        onClick={() => {
-          setCreating(true);
-        }}
-        type="button"
-      >
+      <Button aria-label="新しい問い合わせ" onClick={openForm} type="button">
         新しい問い合わせ
       </Button>
       {error !== undefined && <p className="text-sm text-destructive">{error}</p>}

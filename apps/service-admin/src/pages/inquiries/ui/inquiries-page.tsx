@@ -1,11 +1,11 @@
-import { Heading, NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
-import { useEffect, useState } from "react";
+import { useAtomValue } from "@effect/atom-react";
+import { Heading, NavigationLink, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-import { loadInquiries, loadPendingCount } from "#pages/inquiries/api/inquiries.ts";
+import { useInquiryList, useInquiryStatusFilter } from "#pages/inquiries/model/inquiry-list.ts";
 import { INQUIRY_STATUS, inquiryStatusLabel } from "#pages/inquiries/model/status-label.ts";
+import { pendingCountAtom } from "#shared/api/index.ts";
 
-import type { AdminInquirySummary } from "#pages/inquiries/model/inquiry.ts";
-import type { InquiryStatus } from "#pages/inquiries/model/status-label.ts";
 import type { ReactElement } from "react";
 
 const updatedAtLabel = new Intl.DateTimeFormat("ja", {
@@ -14,55 +14,42 @@ const updatedAtLabel = new Intl.DateTimeFormat("ja", {
   timeZone: "UTC",
 });
 
-function InquiriesPage(): ReactElement {
-  const [inquiries, setInquiries] = useState<readonly AdminInquirySummary[] | undefined>();
-  const [pendingCount, setPendingCount] = useState<number | undefined>();
-  const [status, setStatus] = useState<InquiryStatus | undefined>();
-  const [error, setError] = useState<string | undefined>();
+const statusFilters = [
+  INQUIRY_STATUS.open,
+  INQUIRY_STATUS.answered,
+  INQUIRY_STATUS.closed,
+] as const;
 
-  useEffect(() => {
-    let active = true;
-    void Promise.all([loadInquiries({ limit: 50, offset: 0, status }), loadPendingCount()])
-      .then(([list, pending]) => {
-        if (active) {
-          setInquiries(list.inquiries);
-          setPendingCount(pending);
-        }
-      })
-      .catch((failure: unknown) => {
-        if (active) {
-          setError(failure instanceof Error ? failure.message : "問い合わせを読めませんでした。");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [status]);
+function InquiriesPage(): ReactElement {
+  const { status, toggle } = useInquiryStatusFilter();
+  const listing = useInquiryList(status);
+  const pendingState = useAtomValue(pendingCountAtom);
+  const error = resultError(listing) ?? resultError(pendingState);
+  const inquiries = AsyncResult.isSuccess(listing) ? listing.value : undefined;
+  const pendingCount = AsyncResult.isSuccess(pendingState) ? pendingState.value : undefined;
 
   return (
     <main className="flex flex-col gap-4 p-4">
-      <Heading as="h1" id="inquiries-heading" size="page">
+      <Heading as="h1" size="page">
         問い合わせ
       </Heading>
       {pendingCount !== undefined && (
         <p className="text-sm leading-normal text-muted-foreground">対応待ち: {pendingCount} 件</p>
       )}
       <div className="flex flex-wrap gap-2">
-        {([INQUIRY_STATUS.open, INQUIRY_STATUS.answered, INQUIRY_STATUS.closed] as const).map(
-          (value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={status === value}
-              onClick={() => {
-                setStatus(status === value ? undefined : value);
-              }}
-              className={`rounded-md border px-3 py-1 text-sm ${status === value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
-            >
-              {inquiryStatusLabel(value)}
-            </button>
-          ),
-        )}
+        {statusFilters.map((value) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={status === value}
+            onClick={() => {
+              toggle(value);
+            }}
+            className={`rounded-md border px-3 py-1 text-sm ${status === value ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}
+          >
+            {inquiryStatusLabel(value)}
+          </button>
+        ))}
       </div>
       {error !== undefined && <p className="text-sm text-destructive">{error}</p>}
       {inquiries === undefined && error === undefined && (
@@ -74,10 +61,7 @@ function InquiriesPage(): ReactElement {
         </StatusMessage>
       )}
       {inquiries !== undefined && inquiries.length > 0 && (
-        <table
-          aria-labelledby="inquiries-heading"
-          className="w-full border-collapse text-left text-sm"
-        >
+        <table aria-label="問い合わせの一覧" className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="border-b border-border">
               <th className="p-2">件名</th>

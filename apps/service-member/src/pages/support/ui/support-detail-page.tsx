@@ -1,21 +1,10 @@
-import {
-  Button,
-  Field,
-  FormColumn,
-  Heading,
-  Page,
-  STATUS_VARIANT,
-  StatusMessage,
-  TextLink,
-  useAction,
-} from "@repo/ui";
-import { useEffect, useState } from "react";
+import { Heading, Page, STATUS_VARIANT, StatusMessage, TextLink, resultError } from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-import { loadInquiry, replyToInquiry } from "#pages/support/api/support.ts";
-import { maximumBodyLength } from "#shared/contracts/index.ts";
+import { useInquiryThread } from "#pages/support/model/inquiry-thread.ts";
+import { InquiryReplyForm } from "./inquiry-reply-form.tsx";
 
-import type { InquiryDetail } from "#pages/support/model/inquiry.ts";
-import type { ReactElement, SubmitEventHandler } from "react";
+import type { ReactElement } from "react";
 
 const createdAtLabel = new Intl.DateTimeFormat("ja", {
   dateStyle: "medium",
@@ -24,37 +13,8 @@ const createdAtLabel = new Intl.DateTimeFormat("ja", {
 });
 
 function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): ReactElement {
-  const [inquiry, setInquiry] = useState<InquiryDetail | undefined>();
-  const [error, setError] = useState<string | undefined>();
-  const [body, setBody] = useState("");
-  const action = useAction();
-
-  useEffect(() => {
-    let active = true;
-    void loadInquiry(inquiryId)
-      .then((thread) => {
-        if (active) {
-          setInquiry(thread);
-        }
-      })
-      .catch((failure: unknown) => {
-        if (active) {
-          setError(failure instanceof Error ? failure.message : "問い合わせを読めませんでした。");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [inquiryId]);
-
-  function handleReply(event: Readonly<{ preventDefault: () => void }>): void {
-    event.preventDefault();
-    action.run(async () => {
-      const updated = await replyToInquiry({ body, id: inquiryId });
-      setInquiry(updated);
-      setBody("");
-    });
-  }
+  const { reload, thread } = useInquiryThread(inquiryId);
+  const error = resultError(thread);
 
   if (error !== undefined) {
     return (
@@ -65,7 +25,7 @@ function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
     );
   }
 
-  if (inquiry === undefined) {
+  if (!AsyncResult.isSuccess(thread)) {
     return (
       <Page title="お問い合わせ">
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
@@ -73,7 +33,7 @@ function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
     );
   }
 
-  const closed = inquiry.closed;
+  const inquiry = thread.value;
 
   return (
     <Page title="お問い合わせ">
@@ -98,27 +58,7 @@ function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
           </li>
         ))}
       </ul>
-      {!closed && (
-        <form onSubmit={handleReply as SubmitEventHandler<HTMLFormElement>}>
-          <FormColumn>
-            <Field
-              label="追加の内容"
-              maxLength={maximumBodyLength}
-              multiline
-              name="body"
-              onChange={setBody}
-              required
-              value={body}
-            />
-            <Button disabled={action.blocked} pending={action.pending} type="submit">
-              送る
-            </Button>
-            {action.error !== undefined && (
-              <p className="text-sm text-destructive">{action.error}</p>
-            )}
-          </FormColumn>
-        </form>
-      )}
+      {!inquiry.closed && <InquiryReplyForm inquiryId={inquiryId} onReplied={reload} />}
     </Page>
   );
 }

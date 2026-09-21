@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect";
+import { Schema } from "effect";
 
 import { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";
 

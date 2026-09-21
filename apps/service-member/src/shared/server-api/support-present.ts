@@ -2,6 +2,7 @@ import { ROLE } from "@repo/config";
 import { INQUIRY_STATUS } from "@repo/db/inquiry-status";
 
 import type { getMemberInquiry, listMemberInquiries } from "@repo/db";
+import type { Effect } from "effect";
 
 const inquiryStatusLabels: Readonly<Record<"answered" | "closed" | "open", string>> = {
   [INQUIRY_STATUS.answered]: "対応中",
@@ -9,7 +10,10 @@ const inquiryStatusLabels: Readonly<Record<"answered" | "closed" | "open", strin
   [INQUIRY_STATUS.open]: "受付",
 };
 
-function presentSummary(inquiry: Awaited<ReturnType<typeof listMemberInquiries>>[number]) {
+type ListedInquiry = Effect.Success<ReturnType<typeof listMemberInquiries>>[number];
+type InquiryThread = Effect.Success<ReturnType<typeof getMemberInquiry>>;
+
+function presentSummary(inquiry: ListedInquiry) {
   return {
     createdAt: inquiry.createdAt,
     id: inquiry.id,
@@ -20,7 +24,7 @@ function presentSummary(inquiry: Awaited<ReturnType<typeof listMemberInquiries>>
   };
 }
 
-function presentThread(thread: Awaited<ReturnType<typeof getMemberInquiry>>) {
+function presentThread(thread: InquiryThread) {
   return {
     ...presentSummary(thread),
     closed: thread.status === INQUIRY_STATUS.closed,

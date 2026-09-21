@@ -1,7 +1,5 @@
 import { verifySession } from "@repo/auth";
 import {
-  InquiryForbidden,
-  InquiryNotFound,
   createMemberInquiry,
   getMemberInquiry,
   listMemberInquiries,

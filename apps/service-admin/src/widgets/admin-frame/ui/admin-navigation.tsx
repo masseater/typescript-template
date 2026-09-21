@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useAtomValue } from "@effect/atom-react";
+import { AsyncResult } from "effect/unstable/reactivity";
 
-import { loadPendingCount } from "#shared/api/index.ts";
+import { pendingCountAtom } from "#shared/api/index.ts";
 import { adminNavGroups } from "./admin-nav.ts";
 import { AdminNavigationItem } from "./admin-navigation-item.tsx";
 
@@ -13,25 +14,8 @@ function AdminNavigation({
   collapsed: boolean;
   onNavigate: () => void;
 }>): ReactElement {
-  const [pendingCount, setPendingCount] = useState<number | undefined>();
-
-  useEffect(() => {
-    let active = true;
-    void loadPendingCount()
-      .then((count) => {
-        if (active) {
-          setPendingCount(count);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setPendingCount(undefined);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const pendingState = useAtomValue(pendingCountAtom);
+  const pendingCount = AsyncResult.isSuccess(pendingState) ? pendingState.value : 0;
 
   return (
     <nav id="admin-navigation" aria-label="メイン" className="flex flex-1 flex-col overflow-y-auto">
@@ -47,11 +31,7 @@ function AdminNavigation({
               {group.items.map((item) => (
                 <AdminNavigationItem
                   key={item.to}
-                  badge={
-                    item.to === "/inquiries" && pendingCount !== undefined && pendingCount > 0
-                      ? pendingCount
-                      : item.badge
-                  }
+                  badge={item.to === "/inquiries" && pendingCount > 0 ? pendingCount : undefined}
                   collapsed={collapsed}
                   icon={item.icon}
                   label={item.label}
