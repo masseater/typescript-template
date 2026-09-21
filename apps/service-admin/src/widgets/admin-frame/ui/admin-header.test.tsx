@@ -13,29 +13,33 @@ import { AdminHeader } from "./admin-header.tsx";
 
 const SPACING_PX = 4;
 
+const renderHeader = async (): Promise<string> => {
+  const root = createRootRoute();
+  const index = createRoute({
+    component: () => createElement("div"),
+    getParentRoute: () => root,
+    path: "/",
+  });
+  const router = createRouter({
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+    routeTree: root.addChildren([index]),
+  });
+  await router.load();
+  return renderToStaticMarkup(
+    <RouterContextProvider router={router}>
+      <AdminHeader
+        collapsed={false}
+        navigationOpen={false}
+        onToggleCollapsed={() => undefined}
+        onToggleNavigation={() => undefined}
+      />
+    </RouterContextProvider>,
+  );
+};
+
 describe("admin header icon buttons", () => {
   const it = test.extend("theHeaderTargets", async () => {
-    const root = createRootRoute();
-    const index = createRoute({
-      component: () => createElement("div"),
-      getParentRoute: () => root,
-      path: "/",
-    });
-    const router = createRouter({
-      history: createMemoryHistory({ initialEntries: ["/"] }),
-      routeTree: root.addChildren([index]),
-    });
-    await router.load();
-    const markup = renderToStaticMarkup(
-      <RouterContextProvider router={router}>
-        <AdminHeader
-          collapsed={false}
-          navigationOpen={false}
-          onToggleCollapsed={() => undefined}
-          onToggleNavigation={() => undefined}
-        />
-      </RouterContextProvider>,
-    );
+    const markup = await renderHeader();
     return ["メニュー", "サイドバーを畳む"].map((accessibleName) => {
       const matched = new RegExp(
         `<button\\b(?=[^>]*aria-label="${accessibleName}")(?=[^>]*class="([^"]*)")[^>]*>([\\s\\S]*?)</button>`,
@@ -74,5 +78,14 @@ describe("admin header icon buttons", () => {
       { accessibleName: "メニュー", glyphPx: 20, heightPx: 24, widthPx: 24 },
       { accessibleName: "サイドバーを畳む", glyphPx: 20, heightPx: 24, widthPx: 24 },
     ]);
+  });
+});
+
+describe("管理画面のヘッダー", () => {
+  const it = test.extend("adminHeaderMarkup", async () => renderHeader());
+
+  it("検索欄を出さない", ({ adminHeaderMarkup }) => {
+    expect(adminHeaderMarkup).not.toContain("<input");
+    expect(adminHeaderMarkup).not.toContain("検索");
   });
 });

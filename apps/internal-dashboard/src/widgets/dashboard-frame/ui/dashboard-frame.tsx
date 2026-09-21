@@ -1,25 +1,28 @@
 import { AccountMenu } from "@repo/auth-ui";
 import { localState } from "@repo/ui";
+import { useState } from "react";
 
 import { DashboardHeader } from "./dashboard-header.tsx";
+import { collapsedDashboardMark, dashboardProductName } from "./dashboard-nav.ts";
 import { DashboardNavigation } from "./dashboard-navigation.tsx";
 
 import type { ReactElement, ReactNode, ReactPortal } from "react";
 
 const useNavigationOpen = localState(false);
-const useCollapsed = localState(false);
 
 function DashboardFrame({
   children,
+  defaultCollapsed = false,
   email,
   name,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
+  defaultCollapsed?: boolean;
   email: string;
   name: string;
 }>): ReactElement {
   const [navigationOpen, setNavigationOpen] = useNavigationOpen();
-  const [collapsed, setCollapsed] = useCollapsed();
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   function toggleNavigation(): void {
     setNavigationOpen((open) => !open);
   }
@@ -36,11 +39,14 @@ function DashboardFrame({
       >
         <div className={`border-b border-border py-3 ${collapsed ? "px-2 text-center" : "px-3"}`}>
           {collapsed ? (
-            <p className="text-sm leading-tight font-bold text-foreground">社</p>
+            <p className="text-sm leading-tight font-bold text-foreground">
+              <span className="sr-only">{dashboardProductName}</span>
+              <span aria-hidden="true">{collapsedDashboardMark}</span>
+            </p>
           ) : (
             <>
               <p className="text-base leading-tight font-bold text-foreground">
-                社内ダッシュボード
+                {dashboardProductName}
               </p>
               <p className="text-sm leading-tight text-muted-foreground">状況と運営</p>
             </>

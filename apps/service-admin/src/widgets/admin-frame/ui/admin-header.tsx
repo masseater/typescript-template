@@ -1,8 +1,8 @@
 import { Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
-import { MenuIcon, PanelLeftIcon, SearchIcon } from "lucide-react";
+import { MenuIcon, PanelLeftIcon } from "lucide-react";
 
-import { adminPageTitles } from "./admin-nav.ts";
+import { adminPageTitles, adminProductName } from "./admin-nav.ts";
 
 import type { ReactElement } from "react";
 
@@ -22,7 +22,7 @@ function AdminHeader({
     ? "利用者の詳細"
     : pathname in adminPageTitles
       ? adminPageTitles[pathname as keyof typeof adminPageTitles]
-      : "管理画面";
+      : adminProductName;
   return (
     <header className="flex items-center gap-2 border-b border-border px-4 py-2">
       <button
@@ -47,15 +47,6 @@ function AdminHeader({
       <nav aria-label="パンくず" className="min-w-0 truncate text-base leading-tight font-bold">
         {title}
       </nav>
-      <label className="ml-auto flex max-w-64 min-w-0 flex-1 items-center gap-2 rounded-md border border-input bg-card px-2 py-1 text-muted-foreground">
-        <Icon icon={SearchIcon} size="small" />
-        <input
-          type="search"
-          placeholder="検索"
-          disabled
-          className="min-w-0 flex-1 bg-transparent text-base leading-tight text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
-        />
-      </label>
     </header>
   );
 }
