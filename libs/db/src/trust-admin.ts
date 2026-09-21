@@ -103,7 +103,7 @@ const readReport = Effect.fn("readReport")(function* readReport(
               name: user.name,
             })
             .from(user)
-              .where(eq(user.id, row.targetMemberId))
+            .where(eq(user.id, row.targetMemberId))
             .limit(1),
         ))[0];
   const actions = yield* query((database) =>
