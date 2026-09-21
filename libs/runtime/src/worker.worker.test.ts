@@ -19,7 +19,7 @@ const ReportedLog = Schema.Record(Schema.String, Schema.String);
 const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 
-async function servedUnavailable(
+function servedUnavailable(
   layer: () => Layer.Layer<AppServices, unknown>,
   reporting: Reporting,
 ): Promise<{
@@ -28,20 +28,26 @@ async function servedUnavailable(
   readonly robots: string | null;
   readonly status: number;
 }> {
-  const worker = serveApp(
-    workerRuntime(layer),
-    () => Effect.succeed(new Response("reached the route")),
-    reporting,
+  return Effect.runPromise(
+    Effect.gen(function* servedUnavailableProgram() {
+      const worker = serveApp(
+        workerRuntime(layer),
+        () => Effect.succeed(new Response("reached the route")),
+        reporting,
+      );
+      const context = createExecutionContext();
+      const response = yield* Effect.promise(() =>
+        worker.fetch(new Request(`${fixtureOrigin}/`), {}, context),
+      );
+      yield* Effect.promise(() => waitOnExecutionContext(context));
+      return {
+        body: yield* Effect.promise(() => response.json()),
+        policy: response.headers.get("content-security-policy"),
+        robots: response.headers.get("x-robots-tag"),
+        status: response.status,
+      };
+    }),
   );
-  const context = createExecutionContext();
-  const response = await worker.fetch(new Request(`${fixtureOrigin}/`), {}, context);
-  await waitOnExecutionContext(context);
-  return {
-    body: await response.json(),
-    policy: response.headers.get("content-security-policy"),
-    robots: response.headers.get("x-robots-tag"),
-    status: response.status,
-  };
 }
 
 const brokenLayers = [
@@ -67,7 +73,7 @@ describe("a worker whose layer cannot be built", () => {
   for (const { fields, layer, tag } of brokenLayers) {
     it.effect(`answers 503 without exposing ${tag} to the client`, () =>
       Effect.gen(function* program() {
-        const response = yield* Effect.promise(async () =>
+        const response = yield* Effect.promise(() =>
           servedUnavailable(layer, { log: recordingSink().sink, service: "service-member" }),
         );
         assert.strictEqual(response.status, httpStatus.serviceUnavailable);
@@ -78,7 +84,7 @@ describe("a worker whose layer cannot be built", () => {
     it.effect(`names ${tag} as the cause of the unavailable response`, () =>
       Effect.gen(function* program() {
         const logs = recordingSink();
-        yield* Effect.promise(async () =>
+        yield* Effect.promise(() =>
           servedUnavailable(layer, { log: logs.sink, service: "service-member" }),
         );
         assert.lengthOf(logs.stderr, 1);
@@ -105,31 +111,36 @@ describe("a worker whose layer cannot be built", () => {
   }
 });
 
-async function servedDocument(url: string): Promise<Response> {
-  const worker = appServerEntry(
-    workerRuntime(() => appLayer(appEnvironment({}), "service-member", validRoutes)),
-    {
-      fetch: (rendered: Request): Response =>
-        new Response("<!DOCTYPE html>", {
-          headers: {
-            "content-type": "text/html; charset=utf-8",
-            "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
-          },
-        }),
-    },
-    { service: "service-member" },
+function servedDocument(url: string): Promise<Response> {
+  return Effect.runPromise(
+    Effect.gen(function* servedDocumentProgram() {
+      const worker = appServerEntry(
+        workerRuntime(() => appLayer(appEnvironment({}), "service-member", validRoutes)),
+        {
+          fetch: (rendered: Request): Response =>
+            new Response("<!DOCTYPE html>", {
+              headers: {
+                "content-type": "text/html; charset=utf-8",
+                "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
+              },
+            }),
+        },
+        { service: "service-member" },
+      );
+      const context = createExecutionContext();
+      const response = yield* Effect.promise(() => worker.fetch(new Request(url), {}, context));
+      yield* Effect.promise(() => waitOnExecutionContext(context));
+      return response;
+    }),
   );
-  const context = createExecutionContext();
-  const response = await worker.fetch(new Request(url), {}, context);
-  await waitOnExecutionContext(context);
-  return response;
 }
 
 describe("a worker serving a rendered document", () => {
   it.effect("names the nonce it handed the renderer and forbids everything else", () =>
     Effect.gen(function* program() {
       yield* migrated;
-      const response = yield* Effect.promise(async () => servedDocument(`${fixtureOrigin}/`));
+      const response = yield* Effect.promise(() => servedDocument(`${fixtureOrigin}/`));
+
       const directives = (response.headers.get("content-security-policy") ?? "").split("; ");
       const nonce = response.headers.get("x-rendered-nonce") ?? "";
       assert.match(nonce, /^[\w+/]{22}==$/u);
@@ -173,10 +184,9 @@ describe("a worker serving a rendered document", () => {
   it.effect("demands https for a year once the document arrived over https", () =>
     Effect.gen(function* program() {
       yield* migrated;
-      const secure = yield* Effect.promise(async () =>
-        servedDocument("https://user.example.test/"),
-      );
-      const plain = yield* Effect.promise(async () => servedDocument(`${fixtureOrigin}/`));
+      const secure = yield* Effect.promise(() => servedDocument("https://user.example.test/"));
+      const plain = yield* Effect.promise(() => servedDocument(`${fixtureOrigin}/`));
+
       assert.strictEqual(
         secure.headers.get("strict-transport-security"),
         "max-age=31536000; includeSubDomains",
@@ -187,7 +197,7 @@ describe("a worker serving a rendered document", () => {
 
   it.effect("forbids every resource and indexing when the runtime cannot answer", () =>
     Effect.gen(function* program() {
-      const response = yield* Effect.promise(async () =>
+      const response = yield* Effect.promise(() =>
         servedUnavailable(brokenLayers[0].layer, {
           log: recordingSink().sink,
           service: "service-member",
@@ -206,7 +216,7 @@ describe("a worker answering any request", () => {
     it.effect(`keeps ${path} out of search indexes`, () =>
       Effect.gen(function* program() {
         yield* migrated;
-        const response = yield* Effect.promise(async () =>
+        const response = yield* Effect.promise(() =>
           servedDocument(`https://user.example.test${path}`),
         );
         assert.strictEqual(response.headers.get("x-robots-tag"), "noindex, nofollow");

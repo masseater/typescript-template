@@ -24,7 +24,7 @@ const failures = {
 const listFlags = Effect.fn("listFlags")(function* listFlags(request: Request) {
   yield* verifySession(request.headers);
   const flags = yield* FeatureFlags;
-  const entries = yield* flags.list();
+  const entries = yield* flags.list;
   return { flags: entries };
 });
 

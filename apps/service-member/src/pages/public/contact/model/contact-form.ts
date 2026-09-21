@@ -1,4 +1,5 @@
 import { useAction, localState } from "@repo/ui";
+import { Effect } from "effect";
 
 import { submitContact } from "#pages/public/contact/api/submit-contact.ts";
 
@@ -22,15 +23,21 @@ interface ContactFormState extends ContactFields {
 
 const useFields = localState<ContactFields>({ email: "", message: "", name: "" });
 
+function sendContact(fields: ContactFields, onSent: () => void): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* submit() {
+      yield* Effect.promise(() => submitContact(fields));
+      onSent();
+    }),
+  );
+}
+
 function useContactForm(onSent: () => void): ContactFormState {
   const [fields, setFields] = useFields();
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      await submitContact(fields);
-      onSent();
-    });
+    action.run(() => sendContact(fields, onSent));
   }
   return {
     ...fields,

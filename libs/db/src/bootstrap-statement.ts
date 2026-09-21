@@ -1,6 +1,6 @@
 import { ADMIN_PERMISSION, Email, ROLE, STAFF_PERMISSION, type Role } from "@repo/config";
 import { sql, type SQL } from "drizzle-orm";
-import { Effect, Schema, Struct } from "effect";
+import { Clock, Effect, Schema, Struct } from "effect";
 
 import { DatabaseFailure } from "./database-failure.ts";
 import { query } from "./database.ts";
@@ -26,11 +26,12 @@ const BootstrappedAdmin = Schema.Struct({
 
 const bootstrapStatement = (
   email: typeof Email.Type,
-  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
+  kind: BootstrapKind,
+  updatedAt: number,
 ): SQL => {
   const { permission, role } = bootstrapRoles[kind];
   return sql`UPDATE ${user}
-    SET role = ${role}, permission = ${permission}, updated_at = ${Date.now()}
+    SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
       AND ${user.role} = ${ROLE.member}
@@ -38,10 +39,14 @@ const bootstrapStatement = (
     RETURNING id, email, role, permission`;
 };
 
-const ensureRoleStatement = (email: typeof Email.Type, kind: BootstrapKind): SQL => {
+const ensureRoleStatement = (
+  email: typeof Email.Type,
+  kind: BootstrapKind,
+  updatedAt: number,
+): SQL => {
   const { permission, role } = bootstrapRoles[kind];
   return sql`UPDATE ${user}
-    SET role = ${role}, permission = ${permission}, updated_at = ${Date.now()}
+    SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
     RETURNING id, email, role, permission`;
@@ -56,8 +61,9 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof Email.Type,
   kind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
-  const [promotedRow] = yield* query(async (database) =>
-    database.all(bootstrapStatement(email, kind)),
+  const updatedAt = yield* Clock.currentTimeMillis;
+  const [promotedRow] = yield* query((database) =>
+    database.all(bootstrapStatement(email, kind, updatedAt)),
   );
   if (promotedRow === undefined) {
     return yield* new BootstrapUnavailable();
@@ -71,8 +77,9 @@ const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   email: typeof Email.Type,
   kind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
-  const [updated] = yield* query(async (database) =>
-    database.all(ensureRoleStatement(email, kind)),
+  const updatedAt = yield* Clock.currentTimeMillis;
+  const [updated] = yield* query((database) =>
+    database.all(ensureRoleStatement(email, kind, updatedAt)),
   );
   if (updated === undefined) {
     return yield* new BootstrapUnavailable();

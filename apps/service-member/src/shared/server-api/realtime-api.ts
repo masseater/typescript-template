@@ -25,7 +25,7 @@ function realtimeApi(api: ApiRoutes<AppServices>) {
               statusText: "Upgrade Required",
             });
           }
-          return yield* Effect.promise(async () => openRealtime(env, user.id, request));
+          return yield* Effect.promise(() => openRealtime(env, user.id, request));
         }),
       failures,
     ),

@@ -8,7 +8,7 @@ const fixedNow = 1_800_000_000_000;
 
 describe("RequestEntropy", () => {
   describe("a clock moved to a fixed instant", () => {
-    const it = test.extend("time", async () =>
+    const it = test.extend("time", () =>
       Effect.runPromise(
         Effect.gen(function* readClock() {
           yield* TestClock.setTime(fixedNow);

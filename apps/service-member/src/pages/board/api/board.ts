@@ -12,32 +12,40 @@ import {
 type ThreadList = typeof BoardThreadList.Type;
 type Thread = typeof BoardThreadView.Type;
 
-async function loadThreads(page: number): Promise<ThreadList> {
-  const { api } = await userClient();
-  return apiData(BoardThreadList, await api.board.threads.get({ query: { page: String(page) } }));
-}
-
-async function loadThread(id: string, page: number): Promise<Thread> {
-  const { api } = await userClient();
-  const thread = apiDataOrNone(
-    BoardThreadView,
-    await api.board.thread.get({ query: { id, page: String(page) } }),
-    absent.notFound,
+function loadThreads(page: number): Promise<ThreadList> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.board.threads
+      .get({ query: { page: String(page) } })
+      .then((response) => apiData(BoardThreadList, response)),
   );
-  if (thread === undefined) {
-    throw notFound();
-  }
-  return thread;
 }
 
-async function openThread(title: string, body: string): Promise<string> {
-  const { api } = await userClient();
-  return apiData(BoardThreadCreated, await api.board.threads.post({ body, title })).id;
+function loadThread(id: string, page: number): Promise<Thread> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.board.thread.get({ query: { id, page: String(page) } }).then((response) => {
+      const thread = apiDataOrNone(BoardThreadView, response, absent.notFound);
+      if (thread === undefined) {
+        throw notFound();
+      }
+      return thread;
+    }),
+  );
 }
 
-async function replyToThread(threadId: string, body: string): Promise<string> {
-  const { api } = await userClient();
-  return apiData(BoardPostCreated, await api.board.posts.post({ body, threadId })).id;
+function openThread(title: string, body: string): Promise<string> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.board.threads
+      .post({ body, title })
+      .then((response) => apiData(BoardThreadCreated, response).id),
+  );
+}
+
+function replyToThread(threadId: string, body: string): Promise<string> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.board.posts
+      .post({ body, threadId })
+      .then((response) => apiData(BoardPostCreated, response).id),
+  );
 }
 
 export { loadThread, loadThreads, openThread, replyToThread };

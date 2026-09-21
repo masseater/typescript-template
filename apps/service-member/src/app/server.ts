@@ -31,8 +31,13 @@ export { Process, UserInbox };
 export default {
   ...withQueue(
     appServerEntry(runtime, startHandler, reporting, { googleAnalytics }),
-    async (batch, environment) =>
-      consumeJobs(batch, await Effect.runPromise(Effect.orDie(readJobs(environment)))),
+    (batch, environment) =>
+      Effect.runPromise(
+        Effect.gen(function* consume() {
+          const jobs = yield* readJobs(environment);
+          yield* Effect.promise(() => consumeJobs(batch, jobs));
+        }).pipe(Effect.orDie),
+      ),
   ),
   scheduled: async (
     _controller: ScheduledController,

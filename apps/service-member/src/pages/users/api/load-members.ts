@@ -12,17 +12,18 @@ class PaidPlanRequired extends Error {
   override readonly name = "PaidPlanRequired";
 }
 
-async function loadMembers(search: UsersSearch): Promise<Members> {
-  const { api } = await userClient();
+function loadMembers(search: UsersSearch): Promise<Members> {
   const query = {
     ...(search.keyword === undefined ? {} : { keyword: search.keyword }),
     page: String(search.page ?? 1),
   };
-  const reply = await api.members.get({ query });
-  if (reply.error?.status === httpStatus.paymentRequired) {
-    throw new PaidPlanRequired();
-  }
-  return apiData(MemberList, reply);
+  return Promise.resolve(userClient()).then(async ({ api }) => {
+    const reply = await api.members.get({ query });
+    if (reply.error?.status === httpStatus.paymentRequired) {
+      throw new PaidPlanRequired();
+    }
+    return apiData(MemberList, reply);
+  });
 }
 
 export { PaidPlanRequired, loadMembers };

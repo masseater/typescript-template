@@ -8,6 +8,8 @@ import {
 } from "@repo/db/migrations";
 import { Effect } from "effect";
 
+import type { RemoteFailure } from "@repo/db/migrations";
+
 type Migrations = Effect.Success<ReturnType<typeof loadRemoteMigrations>>;
 
 type RemoteInput = Effect.Success<ReturnType<typeof parseRemoteInput>>;
@@ -59,6 +61,20 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
 });
 
+type RemoteCommandResult =
+  | PlanReport
+  | {
+      readonly applied: number;
+      readonly databaseId: string;
+      readonly event: "database.remote_migrated";
+      readonly ok: true;
+    }
+  | {
+      readonly databaseId: string;
+      readonly event: "database.remote_admin_bootstrapped";
+      readonly ok: true;
+    };
+
 const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
   function* runRemoteDatabaseCommand(commandArguments: readonly string[], input: unknown) {
     const remoteInput = yield* parseRemoteInput(commandArguments, input);
@@ -68,6 +84,9 @@ const runRemoteDatabaseCommand = Effect.fn("runRemoteDatabaseCommand")(
         : planReport(remoteInput, yield* loadRemoteMigrations());
     return report;
   },
-);
+) as (
+  commandArguments: readonly string[],
+  input: unknown,
+) => Effect.Effect<RemoteCommandResult, RemoteFailure>;
 
 export { runRemoteDatabaseCommand };

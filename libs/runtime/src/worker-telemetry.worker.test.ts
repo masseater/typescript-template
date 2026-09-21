@@ -30,24 +30,35 @@ const exporting = Layer.orDie(
 function served(): Effect.Effect<Exported> {
   const seen = { logs: [] as unknown[], traces: [] as unknown[] };
   function collect(signal: "logs" | "traces"): Parameters<typeof http.post>[1] {
-    return async ({ request }) => {
-      seen[signal].push(await request.json());
-      return HttpResponse.json({});
-    };
+    return ({ request }) =>
+      request.json().then((body) => {
+        seen[signal].push(body);
+        return HttpResponse.json({});
+      });
   }
-  async function invoke(): Promise<Exported> {
-    const runtime = workerRuntime(() => exporting);
-    const worker = serveWorker(
-      runtime,
-      () => Effect.succeed(new Response(undefined, { status: noContent })),
-      { log: recordingSink().sink, service: "service-member" },
+  function invoke(): Promise<Exported> {
+    return Effect.runPromise(
+      Effect.gen(function* invokeProgram() {
+        const runtime = workerRuntime(() => exporting);
+        const worker = serveWorker(
+          runtime,
+          () => Effect.succeed(new Response(undefined, { status: noContent })),
+          { log: recordingSink().sink, service: "service-member" },
+        );
+        const context = createExecutionContext();
+        const response = yield* Effect.promise(() =>
+          worker.fetch(new Request("http://localhost/"), {}, context),
+        );
+        yield* Effect.promise(() => waitOnExecutionContext(context));
+        const exported = {
+          logs: [...seen.logs],
+          status: response.status,
+          traces: [...seen.traces],
+        };
+        yield* Effect.promise(() => runtime.dispose());
+        return exported;
+      }),
     );
-    const context = createExecutionContext();
-    const response = await worker.fetch(new Request("http://localhost/"), {}, context);
-    await waitOnExecutionContext(context);
-    const exported = { logs: [...seen.logs], status: response.status, traces: [...seen.traces] };
-    await runtime.dispose();
-    return exported;
   }
   return Effect.acquireUseRelease(
     Effect.sync(() => {

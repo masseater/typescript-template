@@ -25,28 +25,33 @@ interface ListedUsers {
   readonly users: readonly ListedUser[];
 }
 
-async function listUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers> {
-  try {
-    const { total, users } = apiData(UserList, await adminClient().users.get({ query }));
-    const listed = users.map(
-      ({ accountState, createdAt, email, emailVerified, id, name, twoFactorEnabled }) => ({
-        accountState,
-        email,
-        emailVerified,
-        id,
-        name,
-        registeredOn: formatWarekiDate(createdAt),
-        twoFactorEnabled,
-      }),
-    );
-    return { total, users: listed };
-  } catch (failure) {
-    throw new Error(errorMessage(failure));
-  }
+function listUsers(query: Readonly<Record<string, string>>): Promise<ListedUsers> {
+  return adminClient()
+    .users.get({ query })
+    .then((response) => {
+      const { total, users } = apiData(UserList, response);
+      return {
+        total,
+        users: users.map(
+          ({ accountState, createdAt, email, emailVerified, id, name, twoFactorEnabled }) => ({
+            accountState,
+            email,
+            emailVerified,
+            id,
+            name,
+            registeredOn: formatWarekiDate(createdAt),
+            twoFactorEnabled,
+          }),
+        ),
+      };
+    })
+    .catch((failure: unknown) => {
+      throw new Error(errorMessage(failure));
+    });
 }
 
 const userListAtom = Atom.family((query: Readonly<Record<string, string>>) =>
-  requestAtom(async () => listUsers(query)),
+  requestAtom(() => listUsers(query)),
 );
 
 function useUserList(

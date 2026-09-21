@@ -28,13 +28,18 @@ type AppRoute<Requirements> = (
   path: string,
 ) => Effect.Effect<Response, never, Requirements | Telemetry | Assets | CurrentRequest>;
 
-async function unavailableResponse(
+function unavailableResponse(
   request: Request,
   cause: Readonly<Cause.Cause<unknown>>,
   reporting: Reporting,
 ): Promise<Response> {
-  const failure = await Effect.runPromise(runtimeUnavailable(cause, reporting));
-  return secureResponse(request, jsonResponse({ error: failure.message }, failure.status));
+  return Effect.runPromise(
+    runtimeUnavailable(cause, reporting).pipe(
+      Effect.map((failure) =>
+        secureResponse(request, jsonResponse({ error: failure.message }, failure.status)),
+      ),
+    ),
+  );
 }
 
 function serveWorker<Requirements>(
@@ -43,17 +48,17 @@ function serveWorker<Requirements>(
   reporting: Reporting,
 ): FetchWorker {
   return {
-    fetch: async (request, _environment, context): Promise<Response> => {
+    fetch: (request, _environment, context): Promise<Response> => {
       context.waitUntil(runtime.built());
-      const exit = await runtime.runPromiseExit(observeRequest(request, route));
-      if (exit._tag === "Success") {
-        context.waitUntil(runtime.runPromise(flushTelemetry));
-      }
-      return unindexedResponse(
-        exit._tag === "Success"
-          ? exit.value
-          : await unavailableResponse(request, exit.cause, reporting),
-      );
+      return runtime.runPromiseExit(observeRequest(request, route)).then((exit) => {
+        if (exit._tag === "Success") {
+          context.waitUntil(runtime.runPromise(flushTelemetry));
+          return unindexedResponse(exit.value);
+        }
+        return unavailableResponse(request, exit.cause, reporting).then((response) =>
+          unindexedResponse(response),
+        );
+      });
     },
   };
 }
@@ -70,7 +75,7 @@ function requestPath(request: Request): string | undefined {
 function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
   return Effect.gen(function* fetchAssetProgram() {
     const assets = yield* Assets;
-    return yield* Effect.promise(async () => assets.fetch(request));
+    return yield* Effect.promise(() => assets.fetch(request));
   });
 }
 

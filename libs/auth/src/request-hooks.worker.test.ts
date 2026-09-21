@@ -23,7 +23,7 @@ import {
 describe("request hooks", () => {
   describe("an administrator session opened before TOTP enrollment", () => {
     const it = authTest()
-      .extend("scenario", async ({ auth }) =>
+      .extend("scenario", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* openWeakSession() {
             yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -35,10 +35,10 @@ describe("request hooks", () => {
           }),
         ),
       )
-      .extend("denied", async ({ auth, scenario }) =>
+      .extend("denied", ({ auth, scenario }) =>
         runWith(auth, () => scenario.old.json("/two-factor/get-totp-uri", { password: PASSWORD })),
       )
-      .extend("retrieved", async ({ auth, scenario }) =>
+      .extend("retrieved", ({ auth, scenario }) =>
         runWith(auth, () =>
           Effect.gen(function* strengthen() {
             yield* requireStatus(200, {
@@ -69,7 +69,7 @@ describe("request hooks", () => {
   describe.for([APPLICATION.admin, APPLICATION.wiki] as const)(
     "a privileged account signed in to %s with a recovery code",
     (audience) => {
-      const it = authTest().extend("denied", async ({ auth }) =>
+      const it = authTest().extend("denied", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* recover() {
             yield* bootstrapVerifiedAdmin(
@@ -101,7 +101,7 @@ describe("request hooks", () => {
 
   describe("a member with TOTP enrolled on another session", () => {
     const it = authTest()
-      .extend("scenario", async ({ auth }) =>
+      .extend("scenario", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* openOldSession() {
             yield* registerVerified("reader@example.com");
@@ -113,7 +113,7 @@ describe("request hooks", () => {
           }),
         ),
       )
-      .extend("retrieved", async ({ auth, scenario }) =>
+      .extend("retrieved", ({ auth, scenario }) =>
         runWith(auth, () => scenario.old.json("/two-factor/get-totp-uri", { password: PASSWORD })),
       );
 
@@ -127,7 +127,7 @@ describe("request hooks", () => {
 
   describe("an administrator session left weak after TOTP enrollment elsewhere", () => {
     const it = authTest()
-      .extend("old", async ({ auth }) =>
+      .extend("old", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* enrollBeside() {
             yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -140,10 +140,10 @@ describe("request hooks", () => {
           }),
         ),
       )
-      .extend("passkeyOptions", async ({ auth, old }) =>
+      .extend("passkeyOptions", ({ auth, old }) =>
         runWith(auth, () => old.json("/passkey/generate-register-options")),
       )
-      .extend("wrongCode", async ({ auth, old }) =>
+      .extend("wrongCode", ({ auth, old }) =>
         runWith(auth, () => old.status("/two-factor/verify-totp", { code: "x" })),
       );
 
@@ -160,7 +160,7 @@ describe("request hooks", () => {
   });
 
   describe("a pending TOTP challenge replayed against the admin app", () => {
-    const it = authTest().extend("transferred", async ({ auth }) =>
+    const it = authTest().extend("transferred", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* transfer() {
           yield* registerVerified("member@example.com");
@@ -185,7 +185,7 @@ describe("request hooks", () => {
   });
 
   describe("a weak staff session continuing an OAuth authorization", () => {
-    const it = authTest().extend("continued", async ({ auth }) =>
+    const it = authTest().extend("continued", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* continueWeakly() {
           const flow = yield* startAuthorization();
@@ -208,7 +208,7 @@ describe("request hooks", () => {
   });
 
   describe("an OAuth query smuggled into a wiki sign-in", () => {
-    const it = authTest().extend("smuggled", async ({ auth }) =>
+    const it = authTest().extend("smuggled", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* smuggle() {
           const flow = yield* startAuthorization();

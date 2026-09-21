@@ -48,7 +48,7 @@ function jobsApi(api: ApiRoutes<AppServices>) {
         (request) =>
           Effect.gen(function* handleRequest() {
             const id = new URL(request.url).pathname.split("/").at(-1) ?? "";
-            yield* Schema.decodeUnknownEffect(JobPayload)({ jobId: id }).pipe(
+            yield* Schema.decodeEffect(JobPayload)({ jobId: id }).pipe(
               Effect.mapError(() => ({ _tag: "InputInvalid" as const })),
             );
             const jobs = yield* readJobs(env);

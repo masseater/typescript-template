@@ -10,7 +10,6 @@ import { readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
 import { Embedder, embedWith } from "./embedder.ts";
-import { readWikiConfig, type WikiConfig } from "./wiki-config.ts";
 
 import type { AuthFailure } from "@repo/auth";
 import type { AppConfig, ConfigurationInvalid } from "@repo/config";

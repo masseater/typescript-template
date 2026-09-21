@@ -2,13 +2,7 @@ import { APPLICATION } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
-import {
-  AuthApps,
-  bootstrapVerifiedStaff,
-  clientOf,
-  enableTotp,
-  signInAs,
-} from "./auth-test-fixture.ts";
+import { bootstrapVerifiedStaff, clientOf, enableTotp, signInAs } from "./auth-test-fixture.ts";
 import { origins, type BrowserClient } from "./browser-client.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
@@ -21,7 +15,6 @@ type AuthorizationFlow = {
 const wikiOrigin = origins[APPLICATION.wiki];
 const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
-const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Registration = Schema.Struct({ client_id: Schema.String });
 
 const wikiStaff = Effect.fn("wikiStaff")(function* wikiStaff(email: string) {
@@ -32,7 +25,7 @@ const wikiStaff = Effect.fn("wikiStaff")(function* wikiStaff(email: string) {
 });
 
 const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifier: string) {
-  const digest = yield* Effect.promise(async () =>
+  const digest = yield* Effect.promise(() =>
     crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
   return Buffer.from(digest).toString("base64url");

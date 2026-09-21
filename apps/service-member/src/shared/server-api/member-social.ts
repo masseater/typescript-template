@@ -13,7 +13,7 @@ import {
   query,
   schema,
 } from "@repo/db";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { FollowSelfForbidden } from "./follow-self-forbidden.ts";
 import { notify } from "./notifications.ts";
@@ -39,7 +39,7 @@ const advanceOnboarding = Effect.fn("advanceOnboarding")(function* advanceOnboar
   userId: string,
   step: OnboardingStep,
 ) {
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .insert(memberOnboarding)

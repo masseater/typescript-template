@@ -134,7 +134,7 @@ const signIn = (email: string): Session => {
 };
 
 const setup = (): Session => {
-  const email = `load-${Date.now()}@example.test`;
+  const email = `load-${exec.vu.idInInstance}-${exec.scenario.iterationInTest}@example.test`;
   register(email);
   return signIn(email);
 };

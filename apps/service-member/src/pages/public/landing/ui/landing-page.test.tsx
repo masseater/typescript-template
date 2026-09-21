@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import { FieldValidationMessageProvider } from "@repo/ui";
 import {
   RouterContextProvider,
@@ -15,6 +12,8 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
 import { fieldValidationMessages } from "#shared/i18n/index.ts";
+import englishMessages from "../../../../../messages/en.json" with { type: "json" };
+import japaneseMessages from "../../../../../messages/ja.json" with { type: "json" };
 import { Consequences } from "./consequences.tsx";
 import { Hero } from "./hero.tsx";
 
@@ -33,22 +32,12 @@ const landingKeys = [
 
 type LandingCopy = Record<(typeof landingKeys)[number], string>;
 
-const landingCopy = (locale: Locale): LandingCopy => {
-  const parsed: unknown = JSON.parse(
-    readFileSync(
-      fileURLToPath(new URL(`../../../../../messages/${locale}.json`, import.meta.url)),
-      "utf8",
-    ),
-  );
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new Error(`${locale} messages must be a JSON object`);
-  }
-  const catalog = parsed as Record<string, unknown>;
+const landingCopy = (catalog: Record<string, unknown>): LandingCopy => {
   return Object.fromEntries(
     landingKeys.map((key) => {
       const value = catalog[key];
       if (typeof value !== "string") {
-        throw new Error(`${locale} messages must include ${key}`);
+        throw new Error(`messages must include ${key}`);
       }
       return [key, value];
     }),
@@ -132,7 +121,7 @@ function expectLanding(html: string, copy: LandingCopy): void {
 
 describe("landing in English", () => {
   const it = test
-    .extend("catalog", () => landingCopy("en"))
+    .extend("catalog", () => landingCopy(englishMessages))
     .extend("hero", () => rendered("en", createElement(Hero)))
     .extend("consequences", () => rendered("en", createElement(Consequences)));
 
@@ -158,7 +147,7 @@ describe("landing in English", () => {
 
 describe("landing in Japanese", () => {
   const it = test
-    .extend("catalog", () => landingCopy("ja"))
+    .extend("catalog", () => landingCopy(japaneseMessages))
     .extend("hero", () => rendered("ja", createElement(Hero)))
     .extend("consequences", () => rendered("ja", createElement(Consequences)));
 

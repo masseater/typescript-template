@@ -9,7 +9,7 @@ import {
   type Role,
 } from "@repo/config/identity";
 import { eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { query, type Database } from "./database.ts";
 import {
@@ -25,7 +25,7 @@ import {
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
-export const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+export const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 const topPermission: Readonly<Record<Role, AccountPermission | null>> = {
   admin: ADMIN_PERMISSION.owner,
@@ -43,21 +43,24 @@ export const addUser = (added: {
   readonly visibility?: ProfileVisibility;
 }): Effect.Effect<void, DatabaseFailure, Database> => {
   const role = added.role ?? ROLE.member;
-  return query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      ...(added.accountState === undefined ? {} : { accountState: added.accountState }),
-      createdAt: recordedAt,
-      email: `${added.userId}@example.com`,
-      emailVerified: added.emailVerified ?? true,
-      id: added.userId,
-      name: added.userId,
-      permission: added.permission ?? topPermission[role],
-      role,
-      updatedAt: recordedAt,
-      ...(added.searchable === undefined ? {} : { searchable: added.searchable }),
-      ...(added.visibility === undefined ? {} : { visibility: added.visibility }),
-    });
-  });
+  return query((database) =>
+    database
+      .insert(user)
+      .values({
+        ...(added.accountState === undefined ? {} : { accountState: added.accountState }),
+        createdAt: recordedAt,
+        email: `${added.userId}@example.com`,
+        emailVerified: added.emailVerified ?? true,
+        id: added.userId,
+        name: added.userId,
+        permission: added.permission ?? topPermission[role],
+        role,
+        updatedAt: recordedAt,
+        ...(added.searchable === undefined ? {} : { searchable: added.searchable }),
+        ...(added.visibility === undefined ? {} : { visibility: added.visibility }),
+      })
+      .then(() => undefined),
+  );
 };
 
 export const auditActionsOf = Effect.fn("auditActionsOf")(function* auditActionsOf(
@@ -79,16 +82,22 @@ export const auditActionsOf = Effect.fn("auditActionsOf")(function* auditActions
 });
 
 export const addCredential = (userId: string): Effect.Effect<void, DatabaseFailure, Database> => {
-  return query(async (database): Promise<void> => {
-    await database.insert(account).values({
-      accountId: userId,
-      createdAt: new Date(),
-      id: `credential-${userId}`,
-      password: "not-used-for-authentication-in-db-test",
-      providerId: "credential",
-      updatedAt: new Date(),
-      userId,
-    });
+  return Effect.gen(function* addCredentialProgram() {
+    const createdAt = DateTime.toDate(yield* DateTime.now);
+    yield* query((database) =>
+      database
+        .insert(account)
+        .values({
+          accountId: userId,
+          createdAt,
+          id: `credential-${userId}`,
+          password: "not-used-for-authentication-in-db-test",
+          providerId: "credential",
+          updatedAt: createdAt,
+          userId,
+        })
+        .then(() => undefined),
+    );
   });
 };
 
@@ -101,65 +110,74 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
   readonly token?: string;
 }) {
   const sessionId = crypto.randomUUID();
-  const owners = yield* query(async (database) =>
+  const owners = yield* query((database) =>
     database.select().from(user).where(eq(user.id, opened.userId)),
   );
   const securityVersion = owners.at(0)?.securityVersion ?? 0;
-  yield* query(async (database): Promise<void> => {
-    await database.insert(session).values({
-      audience: opened.audience,
-      authenticationMethod:
-        opened.strong === false
-          ? AUTHENTICATION_METHOD.password
-          : AUTHENTICATION_METHOD.passwordTotp,
-      createdAt: new Date(),
-      expiresAt: new Date(Date.now() + SESSION_LIFETIME_MS),
-      id: sessionId,
-      securityVersion,
-      token: opened.token ?? crypto.randomUUID(),
-      updatedAt: new Date(),
-      userId: opened.userId,
-    });
-  });
+  const createdAt = DateTime.toDate(yield* DateTime.now);
+  const expiresAt = DateTime.toDate(
+    DateTime.makeUnsafe(DateTime.toEpochMillis(yield* DateTime.now) + SESSION_LIFETIME_MS),
+  );
+  yield* query((database) =>
+    database
+      .insert(session)
+      .values({
+        audience: opened.audience,
+        authenticationMethod:
+          opened.strong === false
+            ? AUTHENTICATION_METHOD.password
+            : AUTHENTICATION_METHOD.passwordTotp,
+        createdAt,
+        expiresAt,
+        id: sessionId,
+        securityVersion,
+        token: opened.token ?? crypto.randomUUID(),
+        updatedAt: createdAt,
+        userId: opened.userId,
+      })
+      .then(() => undefined),
+  );
   return sessionId;
 });
 
 export const addOAuthGrant = Effect.fn("addOAuthGrant")(function* addOAuthGrant(userId: string) {
   const clientId = `client-${userId}`;
   const scopes = '["wiki:read"]';
-  yield* query(async (database): Promise<void> => {
-    await database.batch([
-      database.insert(oauthClient).values({ clientId, id: clientId, redirectUris: "[]" }),
-      database.insert(oauthRefreshToken).values({
-        clientId,
-        id: `refresh-${userId}`,
-        scopes,
-        token: `refresh-token-${userId}`,
-        userId,
-      }),
-      database.insert(oauthAccessToken).values({
-        clientId,
-        id: `access-${userId}`,
-        refreshId: `refresh-${userId}`,
-        scopes,
-        token: `access-token-${userId}`,
-        userId,
-      }),
-      database.insert(oauthConsent).values({ clientId, id: `consent-${userId}`, scopes, userId }),
-    ]);
-  });
+  yield* query((database) =>
+    database
+      .batch([
+        database.insert(oauthClient).values({ clientId, id: clientId, redirectUris: "[]" }),
+        database.insert(oauthRefreshToken).values({
+          clientId,
+          id: `refresh-${userId}`,
+          scopes,
+          token: `refresh-token-${userId}`,
+          userId,
+        }),
+        database.insert(oauthAccessToken).values({
+          clientId,
+          id: `access-${userId}`,
+          refreshId: `refresh-${userId}`,
+          scopes,
+          token: `access-token-${userId}`,
+          userId,
+        }),
+        database.insert(oauthConsent).values({ clientId, id: `consent-${userId}`, scopes, userId }),
+      ])
+      .then(() => undefined),
+  );
 });
 
 export const oauthGrantCounts = Effect.fn("oauthGrantCounts")(function* oauthGrantCounts(
   userId: string,
 ) {
-  const access = yield* query(async (database) =>
+  const access = yield* query((database) =>
     database.select().from(oauthAccessToken).where(eq(oauthAccessToken.userId, userId)),
   );
-  const refresh = yield* query(async (database) =>
+  const refresh = yield* query((database) =>
     database.select().from(oauthRefreshToken).where(eq(oauthRefreshToken.userId, userId)),
   );
-  const consent = yield* query(async (database) =>
+  const consent = yield* query((database) =>
     database.select().from(oauthConsent).where(eq(oauthConsent.userId, userId)),
   );
   return { access: access.length, consent: consent.length, refresh: refresh.length };

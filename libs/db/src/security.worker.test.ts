@@ -14,7 +14,7 @@ const runTest = <Value>(
 
 describe("findWikiReader", () => {
   describe("a verified staff member", () => {
-    const it = test.extend("wikiReader", async () =>
+    const it = test.extend("wikiReader", () =>
       runTest(
         Effect.gen(function* findStaff() {
           yield* addUser({ role: ROLE.staff, userId: "reader" });
@@ -42,7 +42,7 @@ describe("findWikiReader", () => {
     ],
     ["a user who does not exist", undefined, "missing"],
   ] as const)("%s", ([, addedUser, readerId]) => {
-    const it = test.extend("wikiReader", async () =>
+    const it = test.extend("wikiReader", () =>
       runTest(
         Effect.gen(function* findOther() {
           if (addedUser !== undefined) yield* addUser(addedUser);
@@ -56,7 +56,7 @@ describe("findWikiReader", () => {
   });
 
   describe("a staff member who was removed", () => {
-    const it = test.extend("wikiReader", async () =>
+    const it = test.extend("wikiReader", () =>
       runTest(
         Effect.gen(function* removeReader() {
           yield* addUser({ role: ROLE.staff, userId: "actor" });
@@ -75,7 +75,7 @@ describe("findWikiReader", () => {
 
 describe("OAuth grants", () => {
   describe("of a staff member who was removed", () => {
-    const it = test.extend("grantCounts", async () =>
+    const it = test.extend("grantCounts", () =>
       runTest(
         Effect.gen(function* removeGrantee() {
           yield* addUser({ role: ROLE.staff, userId: "actor" });
@@ -93,7 +93,7 @@ describe("OAuth grants", () => {
   });
 
   describe("of a user whose sessions were revoked", () => {
-    const it = test.extend("grantCounts", async () =>
+    const it = test.extend("grantCounts", () =>
       runTest(
         Effect.gen(function* revokeGrantee() {
           yield* addUser({ role: ROLE.staff, userId: "reader" });
@@ -109,7 +109,7 @@ describe("OAuth grants", () => {
   });
 
   describe("of a deleted user", () => {
-    const it = test.extend("grantCounts", async () =>
+    const it = test.extend("grantCounts", () =>
       runTest(
         Effect.gen(function* deleteGrantee() {
           yield* addUser({ role: ROLE.administrator, userId: "actor" });
@@ -132,7 +132,7 @@ describe("OAuth grants", () => {
 
 describe("revokeUserSessions", () => {
   describe("a wiki session of the revoked user", () => {
-    const it = test.extend("revokedSession", async () =>
+    const it = test.extend("revokedSession", () =>
       runTest(
         Effect.gen(function* revokeWiki() {
           yield* addUser({ role: ROLE.staff, userId: "reader" });

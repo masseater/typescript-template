@@ -1,6 +1,6 @@
 import { ROLE } from "@repo/config";
 import { and, blockBetween, count, desc, eq, isNull, not, or, query, schema, sql } from "@repo/db";
-import { Clock, Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { withdrawnAuthorName } from "#shared/contracts/board.ts";
 import { BoardMemberRequired } from "./board-member-required.ts";
@@ -57,7 +57,7 @@ const postColumns = {
   id: boardPost.id,
   storedAuthorId: boardPost.authorId,
 };
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 function shownAuthor(row: {
   readonly authorName: string | null;

@@ -3,6 +3,7 @@ import { passkey } from "@better-auth/passkey";
 import { APPLICATION, type Application } from "@repo/config";
 import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
+import { Effect } from "effect";
 
 import { adminScopes } from "./admin-scopes.ts";
 import { memberApiKeyPlugin } from "./member-api-key-options.ts";
@@ -39,19 +40,24 @@ const passkeyPlugin = ({
 }: Readonly<{ audience: Application; origin: string; run: Run }>): ReturnType<typeof passkey> => {
   return passkey({
     authentication: {
-      afterVerification: async ({
+      afterVerification: ({
         clientData,
         verification,
       }: Readonly<{
         clientData: Readonly<{ id: string }>;
         verification: Readonly<{ authenticationInfo: Readonly<{ userVerified: boolean }> }>;
-      }>) => {
-        if (!verification.authenticationInfo.userVerified) {
-          deny("PASSKEY_UV_REQUIRED");
-        }
-        const passkeyOwner = await run(findPasskeyUser(clientData.id, audience));
-        assertEligibleUser(passkeyOwner, audience);
-      },
+      }>) =>
+        Effect.runPromise(
+          Effect.gen(function* afterPasskeyVerification() {
+            if (!verification.authenticationInfo.userVerified) {
+              deny("PASSKEY_UV_REQUIRED");
+            }
+            const passkeyOwner = yield* Effect.promise(() =>
+              run(findPasskeyUser(clientData.id, audience)),
+            );
+            assertEligibleUser(passkeyOwner, audience);
+          }),
+        ),
     },
     authenticatorSelection: { userVerification: "required" },
     origin,

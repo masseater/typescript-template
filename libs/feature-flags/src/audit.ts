@@ -1,7 +1,16 @@
 import { AUDIT_ACTION, auditEvent, query } from "@repo/db";
-import { Effect } from "effect";
+import { Crypto, DateTime, Effect } from "effect";
 
 import { auditTargetForToggle, type FlagKey } from "./definitions.ts";
+
+const platformCrypto = Crypto.make({
+  digest: (algorithm, digestInput) =>
+    Effect.tryPromise(() => crypto.subtle.digest(algorithm, Uint8Array.from(digestInput))).pipe(
+      Effect.map((digestBytes) => new Uint8Array(digestBytes)),
+      Effect.orDie,
+    ),
+  randomBytes: (byteCount) => crypto.getRandomValues(new Uint8Array(byteCount)),
+});
 
 const recordFlagToggle = Effect.fn("recordFlagToggle")(function* recordFlagToggle(toggleAudit: {
   readonly actorId: string;
@@ -9,12 +18,14 @@ const recordFlagToggle = Effect.fn("recordFlagToggle")(function* recordFlagToggl
   readonly flagKey: FlagKey;
   readonly to: boolean;
 }) {
+  const createdAt = DateTime.toDate(yield* DateTime.now);
+  const auditId = yield* platformCrypto.randomUUIDv4.pipe(Effect.orDie);
   yield* query((database) =>
     database.insert(auditEvent).values({
       action: AUDIT_ACTION.flagToggled,
       actorId: toggleAudit.actorId,
-      createdAt: new Date(),
-      id: crypto.randomUUID(),
+      createdAt,
+      id: auditId,
       targetId: auditTargetForToggle({
         flagKey: toggleAudit.flagKey,
         from: toggleAudit.from,

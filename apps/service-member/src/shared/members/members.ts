@@ -14,7 +14,7 @@ import {
   schema,
   viewerBlockedTarget,
 } from "@repo/db";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
 import { baselineProfileLayout, interviewProfileLayout } from "#shared/profile-layout/index.ts";
@@ -223,10 +223,11 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
     readonly socialLinks: readonly string[];
   },
 ) {
+  const now = DateTime.toDate(yield* DateTime.now);
   const [profile] = yield* query((database) =>
     database
       .update(user)
-      .set({ ...values, updatedAt: new Date() })
+      .set({ ...values, updatedAt: now })
       .where(eq(user.id, userId))
       .returning(profileColumns),
   );

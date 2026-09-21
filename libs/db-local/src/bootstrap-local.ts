@@ -23,7 +23,7 @@ runCli(
       Effect.provide(Database.layer(env.DB)),
     );
     yield* Console.log(
-      JSON.stringify({
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
         action: "admin_bootstrap",
         permission: promoted.permission,
         role: promoted.role,

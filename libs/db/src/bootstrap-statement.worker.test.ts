@@ -14,7 +14,7 @@ const runTest = <Value>(
 
 describe("bootstrapAdmin", () => {
   describe("two verified users bootstrapped at the same time", () => {
-    const it = test.extend("administrators", async () =>
+    const it = test.extend("administrators", () =>
       runTest(
         Effect.gen(function* bootstrapBoth() {
           yield* addUser({ userId: "first" });
@@ -26,7 +26,7 @@ describe("bootstrapAdmin", () => {
             ],
             { concurrency: "unbounded" },
           );
-          return yield* query(async (database) =>
+          return yield* query((database) =>
             database.select({ count: count() }).from(user).where(eq(user.role, "admin")),
           );
         }),

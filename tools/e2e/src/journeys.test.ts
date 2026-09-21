@@ -1,3 +1,5 @@
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { journeyTest } from "./journey-browser.ts";
@@ -8,6 +10,7 @@ import {
   runOperatorJourney,
   runVerifyMemberJourney,
 } from "./journeys.ts";
+import { pageStep } from "./screens.ts";
 
 const backupCodesIssuedOnEnrollment = 10;
 const documentsReadByAnyone = 2;
@@ -16,37 +19,47 @@ const aiAgentUserAgent = "Mozilla/5.0 (compatible; Cursor/1.0) AI-Agent/playwrig
 
 describe("アプリ全体の導線", () => {
   const it = journeyTest
-    .extend("memberJourney", async ({ environment, page }) =>
-      runMemberJourney({ environment, page }),
+    .extend("memberJourney", ({ environment, page }) =>
+      Effect.runPromise(
+        runMemberJourney({ environment, page }).pipe(Effect.provide(NodeServices.layer)),
+      ),
     )
-    .extend("operatorJourney", async ({ environment, page }) =>
-      runOperatorJourney({ environment, page }),
+    .extend("operatorJourney", ({ environment, page }) =>
+      Effect.runPromise(
+        runOperatorJourney({ environment, page }).pipe(Effect.provide(NodeServices.layer)),
+      ),
     )
-    .extend("documentJourney", async ({ environment, page }) =>
-      runDocumentJourney({ environment, page }),
+    .extend("documentJourney", ({ environment, page }) =>
+      Effect.runPromise(runDocumentJourney({ environment, page })),
     )
     .extend("verifyMemberJourney", async ({ environment, page }) =>
       runVerifyMemberJourney({ environment, page }),
     )
-    .extend("robotsTags", async ({ environment, page }) =>
-      Promise.all(
-        journeyRoles.map(async (role) => {
-          const originReply = await page.request.get(environment.originOf(role));
-          return originReply.headers()["x-robots-tag"];
-        }),
+    .extend("robotsTags", ({ environment, page }) =>
+      Effect.runPromise(
+        Effect.forEach(
+          journeyRoles,
+          (role) =>
+            pageStep(() => page.request.get(environment.originOf(role))).pipe(
+              Effect.map((originReply) => originReply.headers()["x-robots-tag"]),
+            ),
+          { concurrency: "unbounded" },
+        ),
       ),
     );
 
-  it("利用者は登録から確認メール・ログイン・プロフィール更新・二要素まで辿れる", ({
+  it("利用者は登録から確認メール・ログイン・掲示板・プロフィール更新・二要素まで辿れる", ({
     memberJourney,
   }) => {
     expect(memberJourney).toStrictEqual({
       backupCodeCount: backupCodesIssuedOnEnrollment,
       landsOnTheMemberHome: true,
+      listsTheThreadOpenedEarlier: true,
       opensEveryListedSettingsItem: true,
       reachesLeaveInOneClick: true,
       reachesPlanInOneClick: true,
       showsTheBiographyWrittenEarlier: true,
+      showsTheReplyOnTheThread: true,
     });
   });
 

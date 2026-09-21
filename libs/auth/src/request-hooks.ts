@@ -12,7 +12,7 @@ import {
   revokeUserSessions,
 } from "@repo/db";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { Predicate } from "effect";
+import { DateTime, Effect, Predicate } from "effect";
 
 import {
   deny,
@@ -28,7 +28,7 @@ import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
 
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
-type SessionRecord = NonNullable<Awaited<ReturnType<typeof runSessionLookup>>>;
+type SessionRecord = NonNullable<Effect.Success<ReturnType<typeof lookupSessionByToken>>>;
 
 const emailChangePath = "/change-email";
 const emailVerificationPath = "/verify-email";
@@ -48,57 +48,64 @@ type HookScope = {
   readonly run: Run;
 };
 
-const runSessionLookup = async function runSessionLookup({ ctx, run }: HookScope) {
-  const token = await ctx.getSignedCookie(
-    ctx.context.authCookies.sessionToken.name,
-    ctx.context.secret,
+const runSessionLookup = Effect.fn("runSessionLookup")(function* runSessionLookup({
+  ctx,
+  run,
+}: HookScope) {
+  const token = yield* Effect.promise(() =>
+    ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret),
   );
   if (typeof token !== "string" || token === "") {
     return null;
   }
-  return (await run(lookupSessionByToken(token))) ?? null;
-};
+  return (yield* Effect.promise(() => run(lookupSessionByToken(token)))) ?? null;
+});
 
-const currentSessionOf = async function currentSessionOf(scope: HookScope) {
+const currentSessionOf = Effect.fn("currentSessionOf")(function* currentSessionOf(
+  scope: HookScope,
+) {
   const { ctx, run } = scope;
-  if (ctx.context.newSession) {
-    return (await run(lookupSessionByToken(ctx.context.newSession.session.token))) ?? null;
+  const created = ctx.context.newSession;
+  if (created) {
+    return (yield* Effect.promise(() => run(lookupSessionByToken(created.session.token)))) ?? null;
   }
-  return runSessionLookup(scope);
-};
+  return yield* runSessionLookup(scope);
+});
 
 const totpUpgradableMethods: ReadonlySet<string> = new Set([
   AUTHENTICATION_METHOD.password,
   AUTHENTICATION_METHOD.passwordTotp,
 ]);
 
-const markTotpSessionStrong = async function markTotpSessionStrong(
+const markTotpSessionStrong = Effect.fn("markTotpSessionStrong")(function* markTotpSessionStrong(
   scope: HookScope,
-): Promise<void> {
-  const current = await currentSessionOf(scope);
+) {
+  const current = yield* currentSessionOf(scope);
   if (
     current &&
     sessionIsLive(current, scope.audience) &&
     totpUpgradableMethods.has(current.session.authenticationMethod)
   ) {
-    await scope.run(
-      markSessionStrong({
-        audience: scope.audience,
-        method: AUTHENTICATION_METHOD.passwordTotp,
-        sessionId: current.session.id,
-      }),
+    yield* Effect.promise(() =>
+      scope.run(
+        markSessionStrong({
+          audience: scope.audience,
+          method: AUTHENTICATION_METHOD.passwordTotp,
+          sessionId: current.session.id,
+        }),
+      ),
     );
   }
-};
+});
 
-const revokeSessionsAfterFactorChange = async function revokeSessionsAfterFactorChange(
-  scope: HookScope,
-): Promise<void> {
-  const current = await currentSessionOf(scope);
-  if (current && sessionIsLive(current, scope.audience)) {
-    await scope.run(revokeUserSessions(current.user.id));
-  }
-};
+const revokeSessionsAfterFactorChange = Effect.fn("revokeSessionsAfterFactorChange")(
+  function* revokeSessionsAfterFactorChange(scope: HookScope) {
+    const current = yield* currentSessionOf(scope);
+    if (current && sessionIsLive(current, scope.audience)) {
+      yield* Effect.promise(() => scope.run(revokeUserSessions(current.user.id)));
+    }
+  },
+);
 
 const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(value: unknown): boolean {
   const url = typeof value === "string" ? URL.parse(value) : undefined;
@@ -124,7 +131,7 @@ const rejectUnsafeFields = function rejectUnsafeFields(
 ): void {
   const body: unknown = ctx.body;
   const fields = Predicate.isObject(body) ? body : {};
-  if ("trustDevice" in fields && fields.trustDevice === true) {
+  if ("trustDevice" in fields && fields["trustDevice"] === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }
   if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path)) {
@@ -136,7 +143,7 @@ const rejectUnsafeFields = function rejectUnsafeFields(
   if (
     ctx.path === "/passkey/verify-registration" &&
     "createSession" in fields &&
-    fields.createSession === true
+    fields["createSession"] === true
   ) {
     deny("REGISTRATION_SESSION_DISABLED");
   }
@@ -155,24 +162,25 @@ const challengeCookieFor = function challengeCookieFor(
   return undefined;
 };
 
-const verifyChallengeAudience = async function verifyChallengeAudience(
-  { audience, ctx, run }: HookScope,
-  signedIn: boolean,
-): Promise<void> {
-  const challengeCookie = challengeCookieFor(ctx.path, signedIn);
-  if (challengeCookie === undefined) {
-    return;
-  }
-  const cookie = ctx.context.createAuthCookie(challengeCookie);
-  const identifier = await ctx.getSignedCookie(cookie.name, ctx.context.secret);
-  if (
-    typeof identifier !== "string" ||
-    identifier === "" ||
-    !(await run(hasVerificationAudience(identifier, audience)))
-  ) {
-    deny("CHALLENGE_AUDIENCE_INVALID");
-  }
-};
+const verifyChallengeAudience = Effect.fn("verifyChallengeAudience")(
+  function* verifyChallengeAudience({ audience, ctx, run }: HookScope, signedIn: boolean) {
+    const challengeCookie = challengeCookieFor(ctx.path, signedIn);
+    if (challengeCookie === undefined) {
+      return;
+    }
+    const cookie = ctx.context.createAuthCookie(challengeCookie);
+    const identifier = yield* Effect.promise(() =>
+      ctx.getSignedCookie(cookie.name, ctx.context.secret),
+    );
+    if (
+      typeof identifier !== "string" ||
+      identifier === "" ||
+      !(yield* Effect.promise(() => run(hasVerificationAudience(identifier, audience))))
+    ) {
+      deny("CHALLENGE_AUDIENCE_INVALID");
+    }
+  },
+);
 
 type SessionPolicyInput = {
   readonly audience: Application;
@@ -208,29 +216,29 @@ const factorEnrollmentPaths = new Set([
   "/passkey/verify-registration",
 ]);
 
-const enforceFactorChanges = async function enforceFactorChanges(
+const enforceFactorChanges = Effect.fn("enforceFactorChanges")(function* enforceFactorChanges(
   { audience, path, role, strong, userId }: SessionPolicyInput,
   run: Run,
-): Promise<void> {
+) {
   if (!isPrivilegedRole(role)) {
     return;
   }
   if (
     !strong &&
     factorEnrollmentPaths.has(path) &&
-    (await run(hasEnrolledFactor(userId, audience)))
+    (yield* Effect.promise(() => run(hasEnrolledFactor(userId, audience))))
   ) {
     deny("EXISTING_FACTOR_REQUIRED");
   }
   if (factorRemovalPaths.has(path)) {
     deny("ADMIN_FACTOR_REMOVAL_DISABLED");
   }
-};
+});
 
-const enforceSessionPolicy = function enforceSessionPolicy(
+const enforceSessionPolicy = Effect.fn("enforceSessionPolicy")(function* enforceSessionPolicy(
   { audience, ctx, run }: HookScope,
   current: SessionRecord,
-): Promise<void> {
+) {
   if (!sessionIsLive(current, audience)) {
     deny("SESSION_INVALID");
   }
@@ -245,8 +253,8 @@ const enforceSessionPolicy = function enforceSessionPolicy(
     userId: current.user.id,
   };
   enforceAdminAccess(input);
-  return enforceFactorChanges(input, run);
-};
+  yield* enforceFactorChanges(input, run);
+});
 
 const queryToken = function queryToken(
   ctx: Readonly<Pick<HookContext, "query">>,
@@ -267,26 +275,28 @@ const confirmsEmailChange = function confirmsEmailChange(
   );
 };
 
-const notifyEmailChange = async function notifyEmailChange(
+const notifyEmailChange = Effect.fn("notifyEmailChange")(function* notifyEmailChange(
   scope: HookScope,
   onEmailChangeRequested: (email: string) => Promise<void>,
-): Promise<void> {
-  const current = await currentSessionOf(scope);
+) {
+  const current = yield* currentSessionOf(scope);
   if (current && sessionIsLive(current, scope.audience)) {
-    await onEmailChangeRequested(current.user.email);
+    yield* Effect.promise(() => onEmailChangeRequested(current.user.email));
   }
-};
+});
 
-const notifyEmailChangeCompleted = async function notifyEmailChangeCompleted(
-  scope: HookScope,
-  onEmailChangeCompleted: (email: string) => Promise<void>,
-): Promise<void> {
-  const token = queryToken(scope.ctx);
-  const previous = token === undefined ? undefined : emailChangePrevious(token);
-  if (previous !== undefined) {
-    await onEmailChangeCompleted(previous);
-  }
-};
+const notifyEmailChangeCompleted = Effect.fn("notifyEmailChangeCompleted")(
+  function* notifyEmailChangeCompleted(
+    scope: HookScope,
+    onEmailChangeCompleted: (email: string) => Promise<void>,
+  ) {
+    const token = queryToken(scope.ctx);
+    const previous = token === undefined ? undefined : emailChangePrevious(token);
+    if (previous !== undefined) {
+      yield* Effect.promise(() => onEmailChangeCompleted(previous));
+    }
+  },
+);
 
 const createRequestHooks = function createRequestHooks({
   audience,
@@ -300,36 +310,46 @@ const createRequestHooks = function createRequestHooks({
   readonly run: Run;
 }): RequestHooks {
   return {
-    after: createAuthMiddleware(async (ctx) => {
-      if (ctx.context.returned instanceof APIError) {
-        return;
-      }
-      const scope = { audience, ctx, run };
-      if (ctx.path === "/two-factor/verify-totp") {
-        await markTotpSessionStrong(scope);
-      }
-      if (sessionRevokingPaths.has(ctx.path)) {
-        await revokeSessionsAfterFactorChange(scope);
-      }
-      if (ctx.path === emailChangePath) {
-        await notifyEmailChange(scope, onEmailChangeRequested);
-      }
-      if (confirmsEmailChange(ctx)) {
-        await notifyEmailChangeCompleted(scope, onEmailChangeCompleted);
-      }
-    }),
-    before: createAuthMiddleware(async (ctx) => {
-      rejectUnsafeFields(ctx);
-      const scope = { audience, ctx, run };
-      const current = await runSessionLookup(scope);
-      const present = current !== null && current.session.expiresAt > new Date();
-      await verifyChallengeAudience(scope, present);
-      if (present) {
-        await enforceSessionPolicy(scope, current);
-      } else if (confirmsEmailChange(ctx)) {
-        deny("SESSION_REQUIRED");
-      }
-    }),
+    after: createAuthMiddleware((ctx) =>
+      Effect.runPromise(
+        Effect.gen(function* afterAuth() {
+          if (ctx.context.returned instanceof APIError) {
+            return;
+          }
+          const scope = { audience, ctx, run };
+          if (ctx.path === "/two-factor/verify-totp") {
+            yield* markTotpSessionStrong(scope);
+          }
+          if (sessionRevokingPaths.has(ctx.path)) {
+            yield* revokeSessionsAfterFactorChange(scope);
+          }
+          if (ctx.path === emailChangePath) {
+            yield* notifyEmailChange(scope, onEmailChangeRequested);
+          }
+          if (confirmsEmailChange(ctx)) {
+            yield* notifyEmailChangeCompleted(scope, onEmailChangeCompleted);
+          }
+        }),
+      ),
+    ),
+    before: createAuthMiddleware((ctx) =>
+      Effect.runPromise(
+        Effect.gen(function* beforeAuth() {
+          rejectUnsafeFields(ctx);
+          const scope = { audience, ctx, run };
+          const current = yield* runSessionLookup(scope);
+          const present =
+            current !== null &&
+            current.session.expiresAt.getTime() > DateTime.toEpochMillis(yield* DateTime.now);
+          yield* verifyChallengeAudience(scope, present);
+          if (present) {
+            yield* enforceSessionPolicy(scope, current);
+          } else if (confirmsEmailChange(ctx)) {
+            deny("SESSION_REQUIRED");
+          }
+        }),
+      ),
+    ),
   };
 };
 

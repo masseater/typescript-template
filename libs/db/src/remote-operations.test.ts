@@ -1,13 +1,11 @@
-import { appendFile, cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+import { NodeServices } from "@effect/platform-node";
 import { APPLICATION } from "@repo/config";
 import { EmptyTestDatabase, TestBinding, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { Effect } from "effect";
+import { DateTime, Effect, FileSystem, Layer, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
@@ -26,25 +24,38 @@ import { getSessionSecurity } from "./security.ts";
 import type { Scope } from "effect";
 
 const changedMigrations = (
-  change: (folder: string) => Promise<void>,
-): Effect.Effect<string, never, Scope.Scope> => {
-  return Effect.acquireRelease(
-    Effect.promise(async () => {
-      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
-      await cp(migrationsFolder, folder, { recursive: true });
-      await change(folder);
-      return folder;
-    }),
-    (folder) => Effect.promise(async () => rm(folder, { force: true, recursive: true })),
-  );
-};
+  change: (folder: string) => Effect.Effect<void, unknown, FileSystem.FileSystem | Path.Path>,
+): Effect.Effect<string, never, FileSystem.FileSystem | Path.Path | Scope.Scope> =>
+  Effect.gen(function* copyMigrations() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const folder = yield* filesystem.makeTempDirectoryScoped({ prefix: "template-migrations-" });
+    yield* filesystem.copy(migrationsFolder, folder);
+    yield* change(folder);
+    return folder;
+  }).pipe(Effect.orDie);
+
+const wallDate = (): Date => DateTime.toDate(DateTime.nowUnsafe());
+
+const seedUser = (seeded: {
+  readonly email: string;
+  readonly id: string;
+  readonly name: string;
+  readonly emailVerified?: boolean;
+}) => ({
+  createdAt: wallDate(),
+  email: seeded.email,
+  emailVerified: seeded.emailVerified ?? true,
+  id: seeded.id,
+  name: seeded.name,
+  updatedAt: wallDate(),
+});
 
 describe("migrateD1", () => {
   describe("a first migration of an empty database", () => {
     const it = test
-      .extend("migrationCount", async () =>
+      .extend("migrationCount", () =>
         Effect.runPromise(Effect.map(loadRemoteMigrations(), (migrations) => migrations.length)))
-      .extend("appliedCount", async () =>
+      .extend("appliedCount", () =>
         Effect.runPromise(
           Effect.gen(function* migrateOnce() {
             return yield* migrateD1(yield* TestBinding);
@@ -58,7 +69,7 @@ describe("migrateD1", () => {
   });
 
   describe("a second migration of an up to date database", () => {
-    const it = test.extend("appliedCount", async () =>
+    const it = test.extend("appliedCount", () =>
       Effect.runPromise(
         Effect.gen(function* migrateTwice() {
           const binding = yield* TestBinding;
@@ -73,21 +84,25 @@ describe("migrateD1", () => {
   });
 
   describe("a migration whose second statement fails", () => {
-    const it = test.extend("migrationFailure", async () =>
+    const it = test.extend("migrationFailure", () =>
       Effect.runPromise(
         Effect.gen(function* interrupt() {
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
-          const folder = yield* changedMigrations(async (migrations) => {
-            const interrupted = path.join(migrations, "99999999999999_interrupted");
-            await mkdir(interrupted);
-            await writeFile(
-              path.join(interrupted, "migration.sql"),
-              "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
-            );
-          });
+          const folder = yield* changedMigrations((migrations) =>
+            Effect.gen(function* writeInterrupted() {
+              const filesystem = yield* FileSystem.FileSystem;
+              const hostPath = yield* Path.Path;
+              const interrupted = hostPath.join(migrations, "99999999999999_interrupted");
+              yield* filesystem.makeDirectory(interrupted);
+              yield* filesystem.writeFileString(
+                hostPath.join(interrupted, "migration.sql"),
+                "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
+              );
+            }),
+          );
           return yield* Effect.flip(migrateD1(binding, folder));
-        }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
+        }).pipe(Effect.scoped, Effect.provide(Layer.merge(EmptyTestDatabase, NodeServices.layer))),
       ));
 
     it("fails as a query failure", { timeout: 60_000 }, ({ migrationFailure }) => {
@@ -96,26 +111,30 @@ describe("migrateD1", () => {
   });
 
   describe("the database after a migration whose second statement failed", () => {
-    const it = test.extend("interruptedTables", async () =>
+    const it = test.extend("interruptedTables", () =>
       Effect.runPromise(
         Effect.gen(function* interrupt() {
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
-          const folder = yield* changedMigrations(async (migrations) => {
-            const interrupted = path.join(migrations, "99999999999999_interrupted");
-            await mkdir(interrupted);
-            await writeFile(
-              path.join(interrupted, "migration.sql"),
-              "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
-            );
-          });
+          const folder = yield* changedMigrations((migrations) =>
+            Effect.gen(function* writeInterrupted() {
+              const filesystem = yield* FileSystem.FileSystem;
+              const hostPath = yield* Path.Path;
+              const interrupted = hostPath.join(migrations, "99999999999999_interrupted");
+              yield* filesystem.makeDirectory(interrupted);
+              yield* filesystem.writeFileString(
+                hostPath.join(interrupted, "migration.sql"),
+                "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
+              );
+            }),
+          );
           yield* Effect.exit(migrateD1(binding, folder));
           const listing = yield* runStatement(
             "SELECT name FROM sqlite_master WHERE name = ?",
             "interrupted_migration",
           );
           return listing.results;
-        }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
+        }).pipe(Effect.scoped, Effect.provide(Layer.merge(EmptyTestDatabase, NodeServices.layer))),
       ));
 
     it("keeps nothing of the failed migration", { timeout: 60_000 }, ({ interruptedTables }) => {
@@ -124,7 +143,7 @@ describe("migrateD1", () => {
   });
 
   describe("migrations whose already applied history changed", () => {
-    const it = test.extend("migrationFailure", async () =>
+    const it = test.extend("migrationFailure", () =>
       Effect.runPromise(
         Effect.gen(function* rewriteHistory() {
           const binding = yield* TestBinding;
@@ -133,11 +152,19 @@ describe("migrateD1", () => {
           if (first === undefined) {
             return new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" });
           }
-          const folder = yield* changedMigrations(async (migrations) => {
-            await appendFile(path.join(migrations, first.name, "migration.sql"), "\n");
-          });
+          const folder = yield* changedMigrations((migrations) =>
+            Effect.gen(function* appendHistory() {
+              const filesystem = yield* FileSystem.FileSystem;
+              const hostPath = yield* Path.Path;
+              yield* filesystem.writeFileString(
+                hostPath.join(migrations, first.name, "migration.sql"),
+                "\n",
+                { flag: "a" },
+              );
+            }),
+          );
           return yield* Effect.flip(migrateD1(binding, folder));
-        }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
+        }).pipe(Effect.scoped, Effect.provide(Layer.merge(EmptyTestDatabase, NodeServices.layer))),
       ));
 
     it("are refused", { timeout: 60_000 }, ({ migrationFailure }) => {
@@ -148,7 +175,7 @@ describe("migrateD1", () => {
   });
 
   describe("a database carrying application tables without a recorded history", () => {
-    const it = test.extend("migrationFailure", async () =>
+    const it = test.extend("migrationFailure", () =>
       Effect.runPromise(
         Effect.gen(function* migrateUnrecorded() {
           yield* runStatement("CREATE TABLE user (id TEXT PRIMARY KEY)");
@@ -195,28 +222,31 @@ describe("bootstrapDatabase", () => {
     ["a user who does not exist", "missing@example.test"],
     ["a second verified user after the first was promoted", "second@example.test"],
   ] as const)("%s", ([, email]) => {
-    const it = test.extend("bootstrapFailure", async () =>
+    const it = test.extend("bootstrapFailure", () =>
       Effect.runPromise(
         Effect.gen(function* bootstrapOther() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
           yield* migrateD1(binding);
-          yield* query(async (database): Promise<void> => {
-            await database.insert(user).values(
-              [
-                { id: "unverified", verified: false },
-                { id: "first", verified: true },
-                { id: "second", verified: true },
-              ].map((seeded) => ({
-                createdAt: new Date(),
-                email: `${seeded.id}@example.test`,
-                emailVerified: seeded.verified,
-                id: seeded.id,
-                name: seeded.id,
-                updatedAt: new Date(),
-              })),
-            );
-          });
+          yield* query((database) =>
+            database
+              .insert(user)
+              .values(
+                [
+                  { id: "unverified", verified: false },
+                  { id: "first", verified: true },
+                  { id: "second", verified: true },
+                ].map((seeded) =>
+                  seedUser({
+                    email: `${seeded.id}@example.test`,
+                    emailVerified: seeded.verified,
+                    id: seeded.id,
+                    name: seeded.id,
+                  }),
+                ),
+              )
+              .then(() => undefined),
+          );
           yield* bootstrapDatabase(database, "FIRST@example.test");
           return yield* Effect.flip(bootstrapDatabase(database, email));
         }).pipe(Effect.provide(EmptyTestDatabase)),
@@ -230,33 +260,43 @@ describe("bootstrapDatabase", () => {
   });
 
   describe("the session a user opened before being promoted", () => {
-    const it = test.extend("earlierSession", async () =>
+    const it = test.extend("earlierSession", () =>
       Effect.runPromise(
         Effect.gen(function* promoteFirst() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
           yield* migrateD1(binding);
-          yield* query(async (database): Promise<void> => {
-            await database.insert(user).values({
-              createdAt: new Date(),
-              email: "first@example.test",
-              emailVerified: true,
-              id: "first",
-              name: "first",
-              updatedAt: new Date(),
-            });
-            await database.insert(session).values({
-              audience: APPLICATION.user,
-              authenticationMethod: "password",
-              createdAt: new Date(),
-              expiresAt: new Date(Date.now() + 60_000),
-              id: "old-session",
-              securityVersion: 0,
-              token: "old-session-token",
-              updatedAt: new Date(),
-              userId: "first",
-            });
-          });
+          const createdAt = wallDate();
+          yield* query((database) =>
+            database
+              .insert(user)
+              .values(
+                seedUser({
+                  email: "first@example.test",
+                  id: "first",
+                  name: "first",
+                }),
+              )
+              .then(() => undefined),
+          );
+          yield* query((database) =>
+            database
+              .insert(session)
+              .values({
+                audience: APPLICATION.user,
+                authenticationMethod: "password",
+                createdAt,
+                expiresAt: DateTime.toDate(
+                  DateTime.makeUnsafe(DateTime.toEpochMillis(DateTime.nowUnsafe()) + 60_000),
+                ),
+                id: "old-session",
+                securityVersion: 0,
+                token: "old-session-token",
+                updatedAt: createdAt,
+                userId: "first",
+              })
+              .then(() => undefined),
+          );
           yield* bootstrapDatabase(database, "FIRST@example.test");
           return yield* getSessionSecurity("old-session", APPLICATION.user);
         }).pipe(Effect.provide(EmptyTestDatabase)),
@@ -268,24 +308,26 @@ describe("bootstrapDatabase", () => {
   });
 
   describe("the local bootstrap after a remote one", () => {
-    const it = test.extend("bootstrapFailure", async () =>
+    const it = test.extend("bootstrapFailure", () =>
       Effect.runPromise(
         Effect.gen(function* bootstrapAgain() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
           yield* migrateD1(binding);
-          yield* query(async (database): Promise<void> => {
-            await database.insert(user).values(
-              ["first", "second"].map((userId) => ({
-                createdAt: new Date(),
-                email: `${userId}@example.test`,
-                emailVerified: true,
-                id: userId,
-                name: userId,
-                updatedAt: new Date(),
-              })),
-            );
-          });
+          yield* query((database) =>
+            database
+              .insert(user)
+              .values(
+                ["first", "second"].map((userId) =>
+                  seedUser({
+                    email: `${userId}@example.test`,
+                    id: userId,
+                    name: userId,
+                  }),
+                ),
+              )
+              .then(() => undefined),
+          );
           yield* bootstrapDatabase(database, "first@example.test");
           return yield* Effect.flip(bootstrapAdmin("second@example.test"));
         }).pipe(Effect.provide(EmptyTestDatabase)),
@@ -302,25 +344,27 @@ describe("the last administrator guard of the migrated database", () => {
     ["a direct delete", "DELETE FROM user WHERE id = ?"],
     ["a direct demotion", "UPDATE user SET role = 'member' WHERE id = ?"],
   ] as const)("%s of the only administrator", ([, statement]) => {
-    const it = test.extend("remainingAdministrator", async () =>
+    const it = test.extend("remainingAdministrator", () =>
       Effect.runPromise(
         Effect.gen(function* removeLast() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
           yield* migrateD1(binding);
-          yield* query(async (database): Promise<void> => {
-            await database.insert(user).values({
-              createdAt: new Date(),
-              email: "first@example.test",
-              emailVerified: true,
-              id: "first",
-              name: "first",
-              updatedAt: new Date(),
-            });
-          });
+          yield* query((database) =>
+            database
+              .insert(user)
+              .values(
+                seedUser({
+                  email: "first@example.test",
+                  id: "first",
+                  name: "first",
+                }),
+              )
+              .then(() => undefined),
+          );
           yield* bootstrapDatabase(database, "first@example.test");
           yield* Effect.exit(runStatement(statement, "first"));
-          return yield* query(async (database) =>
+          return yield* query((database) =>
             database.select({ role: user.role }).from(user).where(eq(user.id, "first")),
           );
         }).pipe(Effect.provide(EmptyTestDatabase)),

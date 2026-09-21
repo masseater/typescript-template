@@ -1,12 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { execFile, type ExecFileOptions } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { chmod, lstat, mkdir, readFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
 import {
@@ -16,9 +8,11 @@ import {
   mailpitPort,
   minimumAuthSecretLength,
 } from "@repo/config";
-import { Effect, Schema } from "effect";
+import { Effect, Option, Path, Schema } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { failure, fileIo } from "./failure.ts";
+import { failure } from "./failure.ts";
+import { urlPath, withFileSystem } from "./platform.ts";
 import { assertOwnerOnly, privateDirectoryMode, replacePrivateFile } from "./private-files.ts";
 
 import type { Application } from "@repo/config";
@@ -27,23 +21,13 @@ import type { LocalCommandFailure } from "./failure.ts";
 type App = Application;
 type RouteName = App | "mailpit";
 
-const ROOT_HASH_LENGTH = 12;
-
-function execFileAsync(
-  file: string,
-  args: readonly string[],
-  options: ExecFileOptions,
-): Promise<{ stderr: string | Buffer; stdout: string | Buffer }> {
-  return new Promise((resolve, reject) => {
-    execFile(file, [...args], options, (error, stdout, stderr) => {
-      if (error !== null) {
-        reject(error);
-        return;
-      }
-      resolve({ stderr, stdout });
-    });
-  });
+interface RunOptions {
+  readonly cwd?: string;
+  readonly env?: Record<string, string | undefined>;
+  readonly timeout?: number;
 }
+
+const ROOT_HASH_LENGTH = 12;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const local = new URL("../../../.local/", import.meta.url);
@@ -89,15 +73,32 @@ function logFileUrl(name: string): URL {
 function run(
   file: string,
   args: readonly string[],
-  options: ExecFileOptions,
-): Effect.Effect<unknown, LocalCommandFailure> {
-  return Effect.tryPromise({
-    catch: () => failure("process_failed"),
-    try: async () => execFileAsync(file, args, options),
+  options: RunOptions = {},
+): Effect.Effect<unknown, LocalCommandFailure, ChildProcessSpawner.ChildProcessSpawner> {
+  return Effect.gen(function* runProgram() {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const spawned = spawner.exitCode(
+      ChildProcess.make(file, [...args], {
+        cwd: options.cwd,
+        env: options.env,
+        extendEnv: true,
+        stderr: "ignore",
+        stdin: "ignore",
+        stdout: "ignore",
+      }),
+    );
+    const exitCode = yield* (
+      options.timeout === undefined ? spawned : spawned.pipe(Effect.timeout(options.timeout))
+    ).pipe(Effect.mapError(() => failure("process_failed")));
+    if (exitCode !== 0) {
+      return yield* failure("process_failed");
+    }
   });
 }
 
-function running(session: string): Effect.Effect<boolean> {
+function running(
+  session: string,
+): Effect.Effect<boolean, never, ChildProcessSpawner.ChildProcessSpawner> {
   return run("tmux", ["-L", socket, "has-session", "-t", session], { cwd: root }).pipe(
     Effect.match({ onFailure: () => false, onSuccess: () => true }),
   );
@@ -111,25 +112,26 @@ function application(value: string | undefined): Effect.Effect<App, LocalCommand
 
 const readCredentials = Effect.fn("readCredentials")(function* readCredentials() {
   yield* assertOwnerOnly(credentialsFile);
-  const text = yield* fileIo(async () => readFile(credentialsFile, "utf-8"));
-  const json = yield* Effect.try({
-    catch: () => failure("credentials_invalid"),
-    try: (): unknown => JSON.parse(text),
-  });
-  return yield* Schema.decodeUnknownEffect(CredentialsFile)(json).pipe(
+  const path = yield* urlPath(credentialsFile);
+  const text = yield* withFileSystem((fs) => fs.readFileString(path));
+  return yield* Schema.decodeEffect(Schema.fromJsonString(CredentialsFile))(text).pipe(
     Effect.mapError(() => failure("credentials_invalid")),
   );
 });
 
 const browserSocketDirectory = Effect.fn("browserSocketDirectory")(
   function* browserSocketDirectory() {
+    const path = yield* Path.Path;
     const directory = path.join(tmpdir(), `ab-${rootHash}`);
-    yield* fileIo(async () => mkdir(directory, { mode: privateDirectoryMode, recursive: true }));
-    const entry = yield* fileIo(async () => lstat(directory));
-    if (!entry.isDirectory() || entry.uid !== process.getuid?.()) {
+    yield* withFileSystem((fs) =>
+      fs.makeDirectory(directory, { mode: privateDirectoryMode, recursive: true }),
+    );
+    const entry = yield* withFileSystem((fs) => fs.stat(directory));
+    const uid = process.getuid?.();
+    if (entry.type !== "Directory" || uid === undefined || !Option.contains(entry.uid, uid)) {
       return yield* failure("browser_socket_directory_invalid");
     }
-    yield* fileIo(async () => chmod(directory, privateDirectoryMode));
+    yield* withFileSystem((fs) => fs.chmod(directory, privateDirectoryMode));
     return directory;
   },
 );

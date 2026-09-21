@@ -1,6 +1,8 @@
 import { AUTHENTICATION_METHOD } from "@repo/config";
 import { type ActionState, type TextInput, Button, Field, FormColumn } from "@repo/ui";
+import { Effect } from "effect";
 
+import { authTask } from "./browser-http.ts";
 import { CHALLENGE_MODE, type ChallengeMode } from "./challenge-modes.ts";
 import { authClient } from "./client";
 import { requireSuccess } from "./protocol";
@@ -16,34 +18,38 @@ type CredentialsFormProps = {
   readonly onChallenge: (mode: ChallengeMode) => void;
 };
 
-const signIn = async ({
+const signIn = ({
   email,
   onAuthenticated,
   onChallenge,
   password,
-}: Omit<CredentialsFormProps, "action">): Promise<void> => {
-  const signedIn = requireSuccess(
-    await authClient.signIn.email({ email: email.value, password: password.value }),
-  );
-  password.handleChange("");
-  if ("twoFactorRedirect" in signedIn && signedIn.twoFactorRedirect === true) {
-    onChallenge(CHALLENGE_MODE.totp);
-    return;
-  }
-  if (
-    new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) === "setup"
-  ) {
-    globalThis.location.assign("/security?recovery=setup");
-    return;
-  }
-  await onAuthenticated();
-};
+}: Omit<CredentialsFormProps, "action">): Effect.Effect<void> =>
+  Effect.gen(function* signInWithPassword() {
+    const signedIn = requireSuccess(
+      yield* authTask(() =>
+        authClient.signIn.email({ email: email.value, password: password.value }),
+      ),
+    );
+    password.handleChange("");
+    if ("twoFactorRedirect" in signedIn && signedIn.twoFactorRedirect === true) {
+      onChallenge(CHALLENGE_MODE.totp);
+      return;
+    }
+    if (
+      new URLSearchParams(globalThis.location.search).get(AUTHENTICATION_METHOD.recovery) ===
+      "setup"
+    ) {
+      globalThis.location.assign("/security?recovery=setup");
+      return;
+    }
+    yield* authTask(() => Promise.resolve(onAuthenticated()));
+  });
 
 const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
   const { action, email, password } = props;
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
-    action.run(async () => signIn(props));
+    action.run(() => Effect.runPromise(signIn(props)));
   };
   return (
     <form onSubmit={submit} aria-busy={action.pending}>

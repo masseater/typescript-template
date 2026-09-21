@@ -7,8 +7,8 @@ import { readWorkerConfig } from "./bindings.ts";
 
 const model = {
   gateway: (): object => ({}),
-  models: async (): Promise<readonly []> => [],
-  run: async (): Promise<object> => ({}),
+  models: (): Promise<readonly []> => Promise.resolve([]),
+  run: (): Promise<object> => Promise.resolve({}),
 };
 
 it.effect("reads D1, the auth secret, and email from the effect-cf bindings layer", () =>

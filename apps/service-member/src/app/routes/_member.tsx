@@ -5,7 +5,7 @@ import { loadNavBadges } from "#widgets/member-frame/index.ts";
 import { MemberLayout } from "./-member-layout.tsx";
 
 const Route = createFileRoute("/_member")({
-  beforeLoad: async ({
+  beforeLoad: ({
     location,
   }: Readonly<{ location: Readonly<{ href: string; pathname: string }> }>) =>
     enterMemberFrame(location.href, location.pathname),

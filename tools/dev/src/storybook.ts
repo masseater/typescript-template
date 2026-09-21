@@ -3,9 +3,14 @@ import { Effect, Path } from "effect";
 
 import { root, run } from "./local-environment.ts";
 
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import type { LocalCommandFailure } from "./failure.ts";
 
-function storybook(): Effect.Effect<void, LocalCommandFailure, Path.Path> {
+function storybook(): Effect.Effect<
+  void,
+  LocalCommandFailure,
+  ChildProcessSpawner.ChildProcessSpawner | Path.Path
+> {
   return Effect.gen(function* storybookProgram() {
     const path = yield* Path.Path;
     yield* run(

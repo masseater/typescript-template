@@ -107,14 +107,13 @@ it.effect("reports a database it cannot check ownership of as unreadable, not as
 it.effect("does not turn a state store defect into an unreadable verdict", () =>
   Effect.gen(function* program() {
     yield* mockServer(...accountHandlers({}));
-    const outcome = yield* inspectAccount(
+    const cause = yield* inspectAccount(
       access,
       config,
       Effect.die("the state store code path is broken"),
-    ).pipe(Effect.exit);
-    assert.isTrue(outcome._tag === "Failure");
+    ).pipe(Effect.sandbox, Effect.flip);
     assert.isTrue(
-      outcome.cause.reasons.some(
+      cause.reasons.some(
         (reason) =>
           reason._tag === "Die" && reason.defect === "the state store code path is broken",
       ),
@@ -125,9 +124,11 @@ it.effect("does not turn a state store defect into an unreadable verdict", () =>
 it.effect("does not turn an interruption into an unreadable verdict", () =>
   Effect.gen(function* program() {
     yield* mockServer(...accountHandlers({}));
-    const outcome = yield* inspectAccount(access, config, Effect.interrupt).pipe(Effect.exit);
-    assert.isTrue(outcome._tag === "Failure");
-    assert.isTrue(outcome.cause.reasons.some((reason) => reason._tag === "Interrupt"));
+    const cause = yield* inspectAccount(access, config, Effect.interrupt).pipe(
+      Effect.sandbox,
+      Effect.flip,
+    );
+    assert.isTrue(cause.reasons.some((reason) => reason._tag === "Interrupt"));
   }).pipe(Effect.scoped),
 );
 

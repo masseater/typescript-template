@@ -1,13 +1,14 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { getCryptoKey } from "better-auth/crypto";
+import { Effect } from "effect";
 
 const signatureLength = 44;
 
-const sessionTokenFrom = async function sessionTokenFrom(
+const sessionTokenFrom = Effect.fn("sessionTokenFrom")(function* sessionTokenFrom(
   headers: Headers,
   cookiePrefix: string,
   secret: string,
-): Promise<string | undefined> {
+) {
   const raw = getSessionCookie(headers, { cookiePrefix });
   if (raw === null) {
     return undefined;
@@ -21,22 +22,17 @@ const sessionTokenFrom = async function sessionTokenFrom(
   if (signature.length !== signatureLength || !signature.endsWith("=")) {
     return undefined;
   }
-  try {
-    const binary = atob(signature);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-      bytes[index] = binary.charCodeAt(index);
-    }
-    const valid = await crypto.subtle.verify(
-      "HMAC",
-      await getCryptoKey(secret),
-      bytes,
-      new TextEncoder().encode(value),
-    );
-    return valid ? value : undefined;
-  } catch {
-    return undefined;
+  const binary = atob(signature);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
   }
-};
+  const valid = yield* Effect.tryPromise(() =>
+    getCryptoKey(secret).then((key) =>
+      crypto.subtle.verify("HMAC", key, bytes, new TextEncoder().encode(value)),
+    ),
+  ).pipe(Effect.orElseSucceed(() => false));
+  return valid ? value : undefined;
+});
 
 export { sessionTokenFrom };

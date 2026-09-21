@@ -1,9 +1,8 @@
-import { spawn, type ChildProcess } from "node:child_process";
-import { setTimeout as delay } from "node:timers/promises";
-
+import { Effect } from "effect";
 import { attemptAsync } from "es-toolkit";
 
 import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
+import { spawnChild } from "../node-spawn.ts";
 import { signalProcessTree, TREE_TERMINATION_SIGNAL } from "./process-tree.ts";
 import { DELAY_ENDING, settledDelay } from "./settled-delay.ts";
 import {
@@ -19,39 +18,55 @@ import type { Invocation } from "./usage.ts";
 
 const KILL_GRACE_MS = 5_000;
 
+type CommandChild = {
+  readonly pid: number | undefined;
+  once(event: "error", listener: (failure: Error) => void): unknown;
+  once(
+    event: "exit",
+    listener: (code: number | null, signal: NodeJS.Signals | null) => void,
+  ): unknown;
+};
+
 type RunCommandDependencies = {
   platform: NodeJS.Platform;
   signalTree: (input: { pid: number; signal: NodeJS.Signals }) => Error | null;
-  spawnChild: (input: { executable: string; args: readonly string[] }) => ChildProcess;
+  spawnChild: (input: { executable: string; args: readonly string[] }) => CommandChild;
   killGraceMs: number;
 };
 
-const timeoutFired = async (parameters: {
+const timeoutFired = (parameters: {
   childPid: number;
   timeoutMs: number;
   cancel: AbortSignal;
   dependencies: RunCommandDependencies;
-}): Promise<{ fired: boolean; terminationFailure: Error | null }> => {
-  const beforeTimeout = await settledDelay(parameters.timeoutMs, parameters.cancel);
-  if (beforeTimeout === DELAY_ENDING.cancelled) return { fired: false, terminationFailure: null };
-  const firstSignal =
-    parameters.dependencies.platform === "win32"
-      ? TREE_TERMINATION_SIGNAL.forced
-      : TREE_TERMINATION_SIGNAL.graceful;
-  const terminationFailure = parameters.dependencies.signalTree({
-    pid: parameters.childPid,
-    signal: firstSignal,
-  });
-  if (parameters.dependencies.platform === "win32") {
-    return { fired: true, terminationFailure };
-  }
-  await delay(parameters.dependencies.killGraceMs);
-  const forcedFailure = parameters.dependencies.signalTree({
-    pid: parameters.childPid,
-    signal: TREE_TERMINATION_SIGNAL.forced,
-  });
-  return { fired: true, terminationFailure: terminationFailure ?? forcedFailure };
-};
+}): Promise<{ fired: boolean; terminationFailure: Error | null }> =>
+  Effect.runPromise(
+    Effect.gen(function* fireTimeout() {
+      const beforeTimeout = yield* Effect.promise(() =>
+        settledDelay(parameters.timeoutMs, parameters.cancel),
+      );
+      if (beforeTimeout === DELAY_ENDING.cancelled) {
+        return { fired: false, terminationFailure: null };
+      }
+      const firstSignal =
+        parameters.dependencies.platform === "win32"
+          ? TREE_TERMINATION_SIGNAL.forced
+          : TREE_TERMINATION_SIGNAL.graceful;
+      const terminationFailure = parameters.dependencies.signalTree({
+        pid: parameters.childPid,
+        signal: firstSignal,
+      });
+      if (parameters.dependencies.platform === "win32") {
+        return { fired: true, terminationFailure };
+      }
+      yield* Effect.sleep(`${parameters.dependencies.killGraceMs} millis`);
+      const forcedFailure = parameters.dependencies.signalTree({
+        pid: parameters.childPid,
+        signal: TREE_TERMINATION_SIGNAL.forced,
+      });
+      return { fired: true, terminationFailure: terminationFailure ?? forcedFailure };
+    }),
+  );
 
 const reportTreeTerminationFailure = (failure: Error): void => {
   process.stderr.write(
@@ -69,46 +84,52 @@ type Settled =
 
 type Verdict = { settled: Settled; timedOut: boolean };
 
-const guardChild = async (input: {
+const guardChild = (input: {
   childPid: number;
   settling: Promise<Settled>;
   invocation: Invocation;
   dependencies: RunCommandDependencies;
 }): Promise<Verdict & { terminationFailure: Error | null }> => {
-  const runningHandler = makeRunningInterruptHandler({
-    childPid: input.childPid,
-    signalTree: input.dependencies.signalTree,
-    reportFailure: reportTreeTerminationFailure,
-  });
-  installInterruptHandler(runningHandler);
   const canceller = new AbortController();
-  const fired =
-    input.invocation.timeoutSec === 0
-      ? Promise.resolve({ fired: false, terminationFailure: null })
-      : timeoutFired({
-          childPid: input.childPid,
-          timeoutMs: input.invocation.timeoutSec * 1000,
-          cancel: canceller.signal,
-          dependencies: input.dependencies,
-        });
-  const settled = await input.settling;
-  canceller.abort();
-  const timeout = await fired;
-  dropInterruptHandler(runningHandler);
-  return {
-    settled,
-    timedOut: timeout.fired,
-    terminationFailure: timeout.terminationFailure,
-  };
+  return Effect.runPromise(
+    Effect.gen(function* guardRunningChild() {
+      const runningHandler = makeRunningInterruptHandler({
+        childPid: input.childPid,
+        signalTree: input.dependencies.signalTree,
+        reportFailure: reportTreeTerminationFailure,
+      });
+      installInterruptHandler(runningHandler);
+      const fired =
+        input.invocation.timeoutSec === 0
+          ? Promise.resolve({ fired: false, terminationFailure: null })
+          : timeoutFired({
+              childPid: input.childPid,
+              timeoutMs: input.invocation.timeoutSec * 1000,
+              cancel: canceller.signal,
+              dependencies: input.dependencies,
+            });
+      const settled = yield* Effect.promise(() => input.settling);
+      canceller.abort();
+      const timeout = yield* Effect.promise(() => fired);
+      dropInterruptHandler(runningHandler);
+      return {
+        settled,
+        timedOut: timeout.fired,
+        terminationFailure: timeout.terminationFailure,
+      };
+    }),
+  );
 };
 
-const releaseFailureOf = async (hold: SlotHold): Promise<unknown> => {
-  const [releaseFailure] = await attemptAsync(async () => {
-    await hold.release();
-    return true;
-  });
-  return releaseFailure;
-};
+const releaseHold = (hold: SlotHold): Promise<undefined> =>
+  Effect.runPromise(Effect.promise(() => hold.release()).pipe(Effect.as(undefined)));
+
+const releaseFailureOf = (hold: SlotHold): Promise<unknown> =>
+  Effect.runPromise(
+    Effect.promise(() => attemptAsync(() => releaseHold(hold))).pipe(
+      Effect.map(([releaseFailure]) => releaseFailure),
+    ),
+  );
 
 const reportChildEnd = (
   settled: Extract<Settled, { kind: typeof CHILD_PROCESS_EVENT.exit }>,
@@ -156,66 +177,84 @@ const reportRunEnd = (input: {
   return input.releaseFailure === null ? verdictCode : reportReleaseFailure(input.releaseFailure);
 };
 
-const settledChild = (child: ChildProcess): Promise<Settled> =>
-  new Promise((resolve) => {
-    child.once(CHILD_PROCESS_EVENT.failure, (failure) => {
-      resolve({ kind: "start-failure", failure });
-    });
-    child.once(CHILD_PROCESS_EVENT.exit, (code, signal) => {
-      resolve({ kind: CHILD_PROCESS_EVENT.exit, exitCode: code, bySignal: signal });
-    });
-  });
+const settledChild = (child: CommandChild): Promise<Settled> =>
+  Effect.runPromise(
+    Effect.callback<Settled>((resume) => {
+      child.once(CHILD_PROCESS_EVENT.failure, (failure: Error) => {
+        resume(Effect.succeed({ kind: "start-failure", failure }));
+      });
+      child.once(CHILD_PROCESS_EVENT.exit, (code: number | null, signal: NodeJS.Signals | null) => {
+        resume(
+          Effect.succeed({ kind: CHILD_PROCESS_EVENT.exit, exitCode: code, bySignal: signal }),
+        );
+      });
+    }),
+  );
 
-const spawnUnderHeldInterrupt = async (input: {
+const spawnUnderHeldInterrupt = (input: {
   invocation: Invocation;
   hold: SlotHold;
   dependencies: RunCommandDependencies;
-}): Promise<{ childPid: number; settling: Promise<Settled> }> => {
-  const held = makeHeldInterrupt({
-    release: input.hold.release,
-    onUnreleased: warnUnreleased,
-  });
-  installInterruptHandler(held.handler);
-  process.stderr.write(`throttle: run ${input.invocation.commandLine}\n`);
-  const child = input.dependencies.spawnChild({
-    executable: input.invocation.executable,
-    args: input.invocation.args,
-  });
-  const settling = settledChild(child);
-  dropInterruptHandler(held.handler);
-  held.standDown();
-  await held.settled;
-  return { childPid: child.pid ?? 0, settling };
-};
+}): Promise<{ childPid: number; settling: Promise<Settled> }> =>
+  Effect.runPromise(
+    Effect.gen(function* spawnHeld() {
+      const held = makeHeldInterrupt({
+        release: input.hold.release,
+        onUnreleased: warnUnreleased,
+      });
+      installInterruptHandler(held.handler);
+      process.stderr.write(`throttle: run ${input.invocation.commandLine}\n`);
+      const child = input.dependencies.spawnChild({
+        executable: input.invocation.executable,
+        args: input.invocation.args,
+      });
+      const settling = settledChild(child);
+      dropInterruptHandler(held.handler);
+      held.standDown();
+      yield* Effect.promise(() => held.settled);
+      return { childPid: child.pid ?? 0, settling };
+    }),
+  );
 
-export const runWithSlot = async (input: {
+export const runWithSlot = (input: {
   invocation: Invocation;
   hold: SlotHold;
   dependencies?: Partial<RunCommandDependencies>;
-}): Promise<number> => {
-  const dependencies: RunCommandDependencies = {
-    platform: input.dependencies?.platform ?? process.platform,
-    signalTree: input.dependencies?.signalTree ?? signalProcessTree,
-    spawnChild:
-      input.dependencies?.spawnChild ??
-      ((invocation) =>
-        spawn(invocation.executable, [...invocation.args], {
-          detached: true,
-          stdio: "inherit",
-        })),
-    killGraceMs: input.dependencies?.killGraceMs ?? KILL_GRACE_MS,
-  };
-  const startedCommand = await spawnUnderHeldInterrupt({
-    invocation: input.invocation,
-    hold: input.hold,
-    dependencies,
-  });
-  const verdict = await guardChild({
-    childPid: startedCommand.childPid,
-    settling: startedCommand.settling,
-    invocation: input.invocation,
-    dependencies,
-  });
-  const releaseFailure = await releaseFailureOf(input.hold);
-  return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
-};
+}): Promise<number> =>
+  Effect.runPromise(
+    Effect.gen(function* runHeldCommand() {
+      const dependencies: RunCommandDependencies = {
+        platform: input.dependencies?.platform ?? process.platform,
+        signalTree: input.dependencies?.signalTree ?? signalProcessTree,
+        spawnChild:
+          input.dependencies?.spawnChild ??
+          ((invocation) =>
+            spawnChild({
+              executable: invocation.executable,
+              handed: invocation.args,
+              spawnOptions: {
+                detached: true,
+                stdio: "inherit",
+              },
+            })),
+        killGraceMs: input.dependencies?.killGraceMs ?? KILL_GRACE_MS,
+      };
+      const startedCommand = yield* Effect.promise(() =>
+        spawnUnderHeldInterrupt({
+          invocation: input.invocation,
+          hold: input.hold,
+          dependencies,
+        }),
+      );
+      const verdict = yield* Effect.promise(() =>
+        guardChild({
+          childPid: startedCommand.childPid,
+          settling: startedCommand.settling,
+          invocation: input.invocation,
+          dependencies,
+        }),
+      );
+      const releaseFailure = yield* Effect.promise(() => releaseFailureOf(input.hold));
+      return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
+    }),
+  );

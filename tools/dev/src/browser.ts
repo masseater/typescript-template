@@ -1,3 +1,5 @@
+import { env as processEnvironment } from "node:process";
+
 import { exitWith, markFailed } from "@repo/cli";
 import { applicationOrigins, applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
@@ -53,8 +55,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
-  // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run(
     "agent-browser",
     [...args, BROWSER_AGENT_COMMAND.open, `${origin}${applicationReadyPaths[app]}`],
@@ -63,6 +64,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
       env,
     },
   );
+
   const report: BrowserReport = {
     event: "local.browser_opened",
     ok: true,
@@ -90,11 +92,11 @@ function runBrowser(
           stdout: "inherit",
         }),
       )
-      .pipe(Effect.catch(() => Effect.succeed(undefined)));
+      .pipe(Effect.orElseSucceed(() => undefined));
     if (handle === undefined) {
       return { started: false as const };
     }
-    const exitCode = yield* handle.exitCode.pipe(Effect.catch(() => Effect.succeed(null)));
+    const exitCode = yield* handle.exitCode.pipe(Effect.orElseSucceed(() => null));
     return { code: exitCode === null ? null : Number(exitCode), started: true as const };
   }).pipe(Effect.scoped);
 }

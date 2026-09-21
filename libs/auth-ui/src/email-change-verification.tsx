@@ -1,18 +1,22 @@
 import { useAtomValue } from "@effect/atom-react";
 import { StatusMessage, STATUS_VARIANT, requestAtom, resultError } from "@repo/ui";
+import { Effect } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 
+import { authTask } from "./browser-http.ts";
 import { loginPath } from "./login-redirect.ts";
 import { useSession } from "./use-session.ts";
 import { verifyEmailToken } from "./verify-email-token.ts";
 
 import type { ReactElement } from "react";
 
-const confirmationAtom = requestAtom(async () => {
-  const verified = await verifyEmailToken();
+const confirmEmailChange = Effect.gen(function* confirmChangedEmail() {
+  const verified = yield* authTask(() => verifyEmailToken());
   globalThis.history.replaceState(undefined, "", globalThis.location.pathname);
   return verified;
 });
+
+const confirmationAtom = requestAtom(() => Effect.runPromise(confirmEmailChange));
 
 const ChangeConfirmationFragment = ({
   retryHref,

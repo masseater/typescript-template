@@ -14,6 +14,24 @@ import { Effect, Layer, Schema } from "effect";
 import { BoardThreadCreated, BoardThreadList, BoardThreadView } from "#shared/contracts/index.ts";
 import { boardApi } from "./board-api.ts";
 
+declare global {
+  // oxlint-disable-next-line typescript/no-namespace
+  namespace Cloudflare {
+    interface Env {
+      readonly EMAIL: {
+        taken(): Promise<
+          ReadonlyArray<{
+            readonly from: string;
+            readonly subject: string;
+            readonly text: string;
+            readonly to: readonly string[];
+          }>
+        >;
+      };
+    }
+  }
+}
+
 const routes = { "/api/board": "board-api" };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
 const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
@@ -24,26 +42,6 @@ const decodeList = Schema.decodeUnknownEffect(BoardThreadList);
 const decodeThread = Schema.decodeUnknownEffect(BoardThreadView);
 
 type App = ReturnType<typeof boardApp>;
-type DeliveredMail = Readonly<{
-  readonly text: string;
-  readonly to: string | readonly string[];
-}>;
-
-function deliveredMail(bindings: object): Promise<readonly DeliveredMail[]> {
-  if (!("EMAIL" in bindings)) {
-    throw new Error("EMAIL recorder is missing");
-  }
-  const email = bindings.EMAIL;
-  if (
-    typeof email !== "object" ||
-    email === null ||
-    !("taken" in email) ||
-    typeof email.taken !== "function"
-  ) {
-    throw new Error("EMAIL recorder is missing taken()");
-  }
-  return email.taken() as Promise<readonly DeliveredMail[]>;
-}
 
 function boardApp() {
   const runtime = workerRuntime(() =>
@@ -58,28 +56,37 @@ function send(
   path: string,
   init: { readonly body?: unknown; readonly cookie?: string; readonly method?: "GET" | "POST" },
 ): Effect.Effect<Response> {
-  return Effect.promise(async () =>
-    app.fetch(
-      new Request(`${fixtureOrigin}${apiRoot}${path}`, {
-        body: init.body === undefined ? undefined : JSON.stringify(init.body),
-        headers: {
-          "content-type": "application/json",
-          cookie: init.cookie ?? "",
-          origin: fixtureOrigin,
-        },
-        method: init.method ?? (init.body === undefined ? "GET" : "POST"),
-      }),
-    ),
-  );
+  return Effect.gen(function* sendBoardRequest() {
+    const method = init.method ?? (init.body === undefined ? "GET" : "POST");
+    const body =
+      init.body === undefined
+        ? undefined
+        : yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(init.body);
+    return yield* Effect.promise(() =>
+      Promise.resolve(
+        app.fetch(
+          new Request(`${fixtureOrigin}${apiRoot}${path}`, {
+            headers: {
+              "content-type": "application/json",
+              cookie: init.cookie ?? "",
+              origin: fixtureOrigin,
+            },
+            method,
+            ...(body === undefined ? {} : { body }),
+          }),
+        ),
+      ),
+    );
+  }).pipe(Effect.orDie);
 }
 
 const jsonOf = (response: Response): Effect.Effect<unknown> =>
-  Effect.promise(async (): Promise<unknown> => response.json());
+  Effect.promise(() => response.json() as Promise<unknown>);
 
 const verificationToken = Effect.fn("verificationToken")(function* verificationToken(
   email: string,
 ) {
-  const delivered = yield* Effect.promise(async () => deliveredMail(env));
+  const delivered = yield* Effect.promise(() => env.EMAIL.taken());
   const mail = delivered.findLast((sent) => sent.to.includes(email));
   const link = mail?.text.split("\n").find((line) => line.startsWith("http://")) ?? "";
   return new URLSearchParams(new URL(link).hash.slice(1)).get("token") ?? "";

@@ -1,5 +1,6 @@
 import { Button, Heading, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import {
   PendingAgreementList,
@@ -10,6 +11,22 @@ import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
 import type { ReactElement } from "react";
+
+function acceptAgreement(
+  agreements: Agreements,
+  goToChoose: () => Promise<unknown>,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* accept() {
+      const pending = signupAgreementKinds(agreements.pending);
+      if (pending.length > 0) {
+        yield* Effect.promise(() => acceptAgreements(pending.map((agreement) => agreement.id)));
+      }
+      yield* Effect.promise(() => saveOnboardingStep("choose"));
+      yield* Effect.promise(() => goToChoose());
+    }),
+  );
+}
 
 function AgreementPage({ agreements }: Readonly<{ agreements: Agreements }>): ReactElement {
   const navigate = useNavigate();
@@ -29,13 +46,7 @@ function AgreementPage({ agreements }: Readonly<{ agreements: Agreements }>): Re
       <Button
         disabled={action.blocked}
         onClick={() => {
-          action.run(async () => {
-            if (pending.length > 0) {
-              await acceptAgreements(pending.map((agreement) => agreement.id));
-            }
-            await saveOnboardingStep("choose");
-            await navigate({ to: "/welcome/choose" });
-          });
+          action.run(() => acceptAgreement(agreements, () => navigate({ to: "/welcome/choose" })));
         }}
         type="button"
         variant="primary"

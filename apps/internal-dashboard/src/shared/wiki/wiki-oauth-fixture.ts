@@ -55,8 +55,8 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
     headers: { "content-type": "application/x-www-form-urlencoded" },
     method: "POST",
   });
-  const issued = yield* Effect.promise(async () => wiki.instance.handler(exchange));
-  const tokens = yield* Effect.promise(async (): Promise<unknown> => issued.json());
+  const issued = yield* Effect.promise(() => wiki.instance.handler(exchange));
+  const tokens = yield* Effect.promise(() => issued.json() as Promise<unknown>);
   return yield* Schema.decodeUnknownEffect(Tokens)(tokens);
 });
 

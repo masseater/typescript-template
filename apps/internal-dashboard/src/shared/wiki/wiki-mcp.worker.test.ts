@@ -7,7 +7,6 @@ import {
   bootstrapVerifiedStaff,
   clientOf,
   registerVerified,
-  runWith,
   signIn,
   signInAs,
 } from "@repo/auth/testing";
@@ -30,10 +29,10 @@ const tamperedSuffix = "xx";
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
   const wiki = (yield* AuthApps)[APPLICATION.wiki];
-  const response = yield* Effect.promise(async () =>
+  const response = yield* Effect.promise(() =>
     wiki.instance.handler(new Request(`${wikiOrigin}${path}`)),
   );
-  const body = yield* Effect.promise(async (): Promise<unknown> => response.json());
+  const body = yield* Effect.promise(() => response.json() as Promise<unknown>);
   return { body, status: response.status };
 });
 
@@ -47,116 +46,121 @@ const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedToken
 describe("wiki MCP authorization", () => {
   const it = authTest();
 
-  it("wiki publishes OAuth discovery for its MCP resource", async ({ auth }) => {
-    const result = await runWith(auth, () =>
-      Effect.gen(function* program() {
-        const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
-        const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
-        const challenge = yield* mcpRequest();
-        const header =
-          challenge instanceof Response ? challenge.headers.get("www-authenticate") : "";
-        return {
-          challengeStatus: responseStatus(challenge),
-          header: header ?? "",
-          resource,
-          server,
-        };
-      }),
-    );
-    expect(result.resource.status).toBe(httpStatus.ok);
-    expect(result.resource.body).toMatchObject({
-      authorization_servers: [`${wikiOrigin}/api/auth`],
-      resource: `${wikiOrigin}/mcp`,
-    });
-    expect(result.server.body).toMatchObject({
-      code_challenge_methods_supported: ["S256"],
-      issuer: `${wikiOrigin}/api/auth`,
-      registration_endpoint: `${wikiOrigin}/api/auth/oauth2/register`,
-    });
-    expect(result.challengeStatus).toBe(httpStatus.unauthorized);
-    expect(result.header).toContain(
-      `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`,
-    );
-  });
-
-  it("strong wiki staff authorizes an MCP client that can then read the wiki", async ({ auth }) => {
-    const result = await runWith(auth, () =>
-      Effect.gen(function* program() {
-        const { tokens } = yield* authorizedTokens();
-        const granted = yield* mcpRequest(tokens.access_token);
-        const token = tokens.access_token;
-        const tampered = `${token.slice(0, token.length - tamperedSuffix.length)}${tamperedSuffix}`;
-        return {
-          grantedUserId: granted instanceof Response ? "" : granted.userId,
-          tamperedStatus: responseStatus(yield* mcpRequest(tampered)),
-        };
-      }),
-    );
-    expect(result.grantedUserId).toMatch(/^.+$/u);
-    expect(result.tamperedStatus).toBe(httpStatus.unauthorized);
-  });
-
-  it("removed staff loses MCP access even with an unexpired token", async ({ auth }) => {
-    const result = await runWith(auth, () =>
-      Effect.gen(function* program() {
-        const { tokens, wiki } = yield* authorizedTokens();
-        const owner = yield* wiki.verify();
-        yield* registerVerified("second@example.com");
-        yield* assignRoleByEmail("second@example.com", ROLE.staff);
-        yield* assignRoleById(owner.user.id, ROLE.member);
-        return {
-          mcpStatus: responseStatus(yield* mcpRequest(tokens.access_token)),
-          sessionTag: yield* Effect.flip(wiki.verify()).pipe(Effect.map((error) => error._tag)),
-        };
-      }),
-    );
-    expect(result.sessionTag).toBe("SessionRequired");
-    expect(result.mcpStatus).toBe(httpStatus.forbidden);
-  });
-
-  it("weak or non-staff wiki sessions cannot grant MCP access", async ({ auth }) => {
-    const result = await runWith(auth, () =>
-      Effect.gen(function* program() {
-        const flow = yield* startAuthorization();
-        yield* bootstrapVerifiedStaff("owner@example.com");
-        const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
-        const continued = yield* weak.json("/oauth2/continue", {
-          oauth_query: flow.oauthQuery,
-          postLogin: true,
+  it("wiki publishes OAuth discovery for its MCP resource", ({ auth }) =>
+    Effect.runPromise(
+      Effect.gen(function* discoverOAuth() {
+        const result = yield* Effect.gen(function* program() {
+          const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
+          const server = yield* discovery("/.well-known/oauth-authorization-server/api/auth");
+          const challenge = yield* mcpRequest();
+          const header =
+            challenge instanceof Response ? challenge.headers.get("www-authenticate") : "";
+          return {
+            challengeStatus: responseStatus(challenge),
+            header: header ?? "",
+            resource,
+            server,
+          };
+        }).pipe(Effect.provideContext(auth));
+        expect(result.resource.status).toBe(httpStatus.ok);
+        expect(result.resource.body).toMatchObject({
+          authorization_servers: [`${wikiOrigin}/api/auth`],
+          resource: `${wikiOrigin}/mcp`,
         });
-        const smuggled = yield* (yield* clientOf(APPLICATION.wiki)).json("/sign-in/email", {
-          email: "owner@example.com",
-          oauth_query: flow.oauthQuery,
-          password: PASSWORD,
+        expect(result.server.body).toMatchObject({
+          code_challenge_methods_supported: ["S256"],
+          issuer: `${wikiOrigin}/api/auth`,
+          registration_endpoint: `${wikiOrigin}/api/auth/oauth2/register`,
         });
-        return { continued, smuggled };
+        expect(result.challengeStatus).toBe(httpStatus.unauthorized);
+        expect(result.header).toContain(
+          `resource_metadata="${wikiOrigin}/.well-known/oauth-protected-resource/mcp"`,
+        );
       }),
-    );
-    expect(result.continued).toStrictEqual({
-      body: { message: "ADMIN_MFA_REQUIRED" },
-      status: httpStatus.forbidden,
-    });
-    expect(result.smuggled).toStrictEqual({
-      body: { message: "OAUTH_QUERY_NOT_ACCEPTED" },
-      status: httpStatus.forbidden,
-    });
-  });
+    ));
 
-  it("members cannot sign in to the wiki or sign up there", async ({ auth }) => {
-    const result = await runWith(auth, () =>
-      Effect.gen(function* program() {
-        yield* registerVerified("member@example.com");
-        const member = yield* clientOf(APPLICATION.wiki);
-        const signInStatus = yield* signIn(member, "member@example.com");
-        const signUpStatus = yield* member.status("/sign-up/email", {
-          email: "new@example.com",
-          name: "new",
-          password: PASSWORD,
-        });
-        return { signInStatus, signUpStatus };
+  it("strong wiki staff authorizes an MCP client that can then read the wiki", ({ auth }) =>
+    Effect.runPromise(
+      Effect.gen(function* authorizeClient() {
+        const result = yield* Effect.gen(function* program() {
+          const { tokens } = yield* authorizedTokens();
+          const granted = yield* mcpRequest(tokens.access_token);
+          const token = tokens.access_token;
+          const tampered = `${token.slice(0, token.length - tamperedSuffix.length)}${tamperedSuffix}`;
+          return {
+            grantedUserId: granted instanceof Response ? "" : granted.userId,
+            tamperedStatus: responseStatus(yield* mcpRequest(tampered)),
+          };
+        }).pipe(Effect.provideContext(auth));
+        expect(result.grantedUserId).toMatch(/^.+$/u);
+        expect(result.tamperedStatus).toBe(httpStatus.unauthorized);
       }),
-    );
-    expect(result.signInStatus).not.toBe(httpStatus.ok);
-    expect(result.signUpStatus).not.toBe(httpStatus.ok);
-  });
+    ));
+
+  it("removed staff loses MCP access even with an unexpired token", ({ auth }) =>
+    Effect.runPromise(
+      Effect.gen(function* demoteStaff() {
+        const result = yield* Effect.gen(function* program() {
+          const { tokens, wiki } = yield* authorizedTokens();
+          const owner = yield* wiki.verify();
+          yield* registerVerified("second@example.com");
+          yield* assignRoleByEmail("second@example.com", ROLE.staff);
+          yield* assignRoleById(owner.user.id, ROLE.member);
+          return {
+            mcpStatus: responseStatus(yield* mcpRequest(tokens.access_token)),
+            sessionTag: yield* Effect.flip(wiki.verify()).pipe(Effect.map((error) => error._tag)),
+          };
+        }).pipe(Effect.provideContext(auth));
+        expect(result.sessionTag).toBe("SessionRequired");
+        expect(result.mcpStatus).toBe(httpStatus.forbidden);
+      }),
+    ));
+
+  it("weak or non-staff wiki sessions cannot grant MCP access", ({ auth }) =>
+    Effect.runPromise(
+      Effect.gen(function* refuseWeakGrant() {
+        const result = yield* Effect.gen(function* program() {
+          const flow = yield* startAuthorization();
+          yield* bootstrapVerifiedStaff("owner@example.com");
+          const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
+          const continued = yield* weak.json("/oauth2/continue", {
+            oauth_query: flow.oauthQuery,
+            postLogin: true,
+          });
+          const smuggled = yield* (yield* clientOf(APPLICATION.wiki)).json("/sign-in/email", {
+            email: "owner@example.com",
+            oauth_query: flow.oauthQuery,
+            password: PASSWORD,
+          });
+          return { continued, smuggled };
+        }).pipe(Effect.provideContext(auth));
+        expect(result.continued).toStrictEqual({
+          body: { message: "ADMIN_MFA_REQUIRED" },
+          status: httpStatus.forbidden,
+        });
+        expect(result.smuggled).toStrictEqual({
+          body: { message: "OAUTH_QUERY_NOT_ACCEPTED" },
+          status: httpStatus.forbidden,
+        });
+      }),
+    ));
+
+  it("members cannot sign in to the wiki or sign up there", ({ auth }) =>
+    Effect.runPromise(
+      Effect.gen(function* refuseMemberSignIn() {
+        const result = yield* Effect.gen(function* program() {
+          yield* registerVerified("member@example.com");
+          const member = yield* clientOf(APPLICATION.wiki);
+          const signInStatus = yield* signIn(member, "member@example.com");
+          const signUpStatus = yield* member.status("/sign-up/email", {
+            email: "new@example.com",
+            name: "new",
+            password: PASSWORD,
+          });
+          return { signInStatus, signUpStatus };
+        }).pipe(Effect.provideContext(auth));
+        expect(result.signInStatus).not.toBe(httpStatus.ok);
+        expect(result.signUpStatus).not.toBe(httpStatus.ok);
+      }),
+    ));
 });

@@ -4,7 +4,7 @@ import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { env } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
+import { DateTime, Effect, Layer } from "effect";
 
 import { advanceOnboarding, followMember, homeFeed, stepOf } from "./member-social.ts";
 import { OpsMail } from "./ops-mail.ts";
@@ -13,7 +13,7 @@ import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 const testLayer = Layer.merge(
   TestDatabase,
@@ -31,8 +31,8 @@ const addUser = (added: {
   readonly profile?: string;
   readonly visibility?: ProfileVisibility;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
+  query((database) =>
+    database.insert(user).values({
       createdAt: recordedAt,
       email: `${added.userId}@example.com`,
       emailVerified: added.emailVerified ?? true,
@@ -41,9 +41,11 @@ const addUser = (added: {
       profile: added.profile ?? "",
       role: ROLE.member,
       updatedAt: recordedAt,
+      role: ROLE.member,
+      updatedAt: recordedAt,
       visibility: added.visibility ?? PROFILE_VISIBILITY.allMembers,
-    });
-  });
+    }),
+  );
 
 it.effect("omits members the viewer does not follow", () =>
   Effect.gen(function* program() {
