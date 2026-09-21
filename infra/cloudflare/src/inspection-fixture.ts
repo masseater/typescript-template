@@ -161,7 +161,6 @@ function dnsPage(records: readonly string[], url: string): Response {
 }
 
 function scriptPage(scripts: readonly string[]): Response {
-  // oxlint-disable-next-line unicorn/no-null -- the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged
   return HttpResponse.json({ result: scripts.map((id) => ({ id })), result_info: null });
 }
 

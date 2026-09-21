@@ -305,12 +305,6 @@
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
         "count": 1
-      },
-      {
-        "file": "src/widgets/admin-frame/ui/admin-navigation.tsx",
-        "code": "TS2375",
-        "message": "Type '{ key: AdminNavPath; badge: number | undefined; collapsed: boolean; icon: LucideIcon; label: string; to: AdminNavPath; onNavigate: () => void; }' is not assignable to type 'Readonly<{ badge?: number; collapsed: boolean; icon: LucideIcon; label: string; onNavigate: () => void; to: AdminNavPath; }>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
       }
     ],
     "apps/service-member": [
@@ -438,36 +432,6 @@
         "file": "src/pages/home/api/feed.ts",
         "code": "TS6196",
         "message": "'FeedItem' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/home/ui/home-page.tsx",
-        "code": "TS2749",
-        "message": "'FeedItem' refers to a value, but is being used as a type here. Did you mean 'typeof FeedItem'?",
-        "count": 1
-      },
-      {
-        "file": "src/pages/home/ui/home-page.tsx",
-        "code": "TS6196",
-        "message": "'FeedItem' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/landing/ui/features.tsx",
-        "code": "TS2375",
-        "message": "Type '{ key: string; title: string; description: string; sketch: SketchKind; reverse: boolean | undefined; }' is not assignable to type 'Readonly<{ description: string; reverse?: boolean; sketch: SketchKind; title: string; }>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/profile-edit/ui/social-links-editor.tsx",
-        "code": "TS2307",
-        "message": "Cannot find module '#shared/social-link' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/profile/ui/profile-page.tsx",
-        "code": "TS2307",
-        "message": "Cannot find module '#shared/social-link' or its corresponding type declarations.",
         "count": 1
       },
       {
@@ -681,9 +645,15 @@
         "count": 1
       },
       {
+        "file": "src/shared/server-api/jobs-api.worker.test.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
         "file": "src/shared/server-api/member-social.ts",
         "code": "TS2345",
-        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; updatedAt: SQLiteColumn<...>; }) ...'.",
+        "message": "Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: SQLiteColumn<{ name: string; tableName: string; dataType: \"string\"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; isAutoincrement: false; ... 4 more ...; generated: undefined; }, {}>; name: SQLiteColumn<...>; profile: SQLiteColumn<...>; updat...'.",
         "count": 1
       },
       {
@@ -779,12 +749,6 @@
         "code": "TS7006",
         "message": "Parameter 'reason' implicitly has an 'any' type.",
         "count": 2
-      },
-      {
-        "file": "src/app.ts",
-        "code": "TS2375",
-        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: Redacted<string>; DB: Database; EMAIL: SendEmail; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID: string; ... 7 more ...; FLAGSHIP_APP_ID: Output<...>; } | { ...; } | DeclaredEnv' is not assignable to type 'DeclaredEnv | WikiEnv' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
       },
       {
         "file": "src/artifacts.test.ts",
@@ -1050,12 +1014,6 @@
         "file": "src/monitor-fixture.ts",
         "code": "TS4023",
         "message": "Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module \"<repo>/libs/monitor/src/index\" but cannot be named.",
-        "count": 1
-      },
-      {
-        "file": "src/monitor-fixture.ts",
-        "code": "TS4082",
-        "message": "Default export of the module has or is using private name 'MonitorHandler'.",
         "count": 1
       },
       {

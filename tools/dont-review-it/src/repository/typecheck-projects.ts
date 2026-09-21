@@ -1,6 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { existsSync, readdirSync } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 const workspaceGroups = ["apps", "libs", "infra", "tools"] as const;

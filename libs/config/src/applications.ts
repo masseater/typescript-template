@@ -26,12 +26,12 @@ export const applicationReadyPaths: Readonly<Record<Application, string>> = {
   "service-member": "/login",
 };
 
-const capabilities = ["ai", "storage"] as const;
+const capabilities = ["ai", "jobs", "realtime", "storage"] as const;
 export type Capability = (typeof capabilities)[number];
 const applicationCapabilities = {
   "internal-dashboard": ["ai"],
   "service-admin": [],
-  "service-member": ["ai", "storage"],
+  "service-member": ["ai", "jobs", "realtime", "storage"],
 } as const satisfies Readonly<Record<Application, readonly Capability[]>>;
 
 export type CapabilityOf<App extends Application> = (typeof applicationCapabilities)[App][number];

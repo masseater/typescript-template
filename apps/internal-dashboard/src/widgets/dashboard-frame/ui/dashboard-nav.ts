@@ -48,5 +48,8 @@ const dashboardPageTitles: Readonly<Record<DashboardNavPath | "/security", strin
   "/staff": "メンバー",
 };
 
-export { dashboardNavGroups, dashboardPageTitles };
-export type { DashboardNavPath };
+const dashboardProductName = "社内ダッシュボード";
+
+const collapsedDashboardMark = "社内";
+
+export { collapsedDashboardMark, dashboardNavGroups, dashboardPageTitles, dashboardProductName };

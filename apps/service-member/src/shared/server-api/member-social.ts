@@ -1,4 +1,4 @@
-import { ROLE } from "@repo/config";
+import { ROLE } from "@repo/config/identity";
 import { onboardingSteps, query, schema } from "@repo/db";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
@@ -38,6 +38,7 @@ interface FeedItem {
   readonly actorId: string;
   readonly actorName: string;
   readonly kind: "profile";
+  readonly profile: string;
   readonly updatedAt: number;
 }
 
@@ -57,6 +58,7 @@ const homeFeed = Effect.fn("homeFeed")(function* homeFeed(viewerId: string) {
       .select({
         id: user.id,
         name: user.name,
+        profile: user.profile,
         updatedAt: user.updatedAt,
       })
       .from(user)
@@ -68,6 +70,7 @@ const homeFeed = Effect.fn("homeFeed")(function* homeFeed(viewerId: string) {
     actorId: actor.id,
     actorName: actor.name,
     kind: "profile",
+    profile: actor.profile,
     updatedAt: actor.updatedAt.getTime(),
   }));
 });

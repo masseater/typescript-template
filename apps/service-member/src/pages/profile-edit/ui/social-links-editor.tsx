@@ -1,7 +1,7 @@
 import { Button, Field } from "@repo/ui";
 
 import { maximumSocialLinks } from "#shared/contracts/index.ts";
-import { SocialLinkIcon, classifySocialUrl } from "#shared/social-link";
+import { SocialLinkIcon, classifySocialUrl } from "#shared/social-link/index.ts";
 
 import type { DraftLink } from "#pages/profile-edit/model/profile-form.ts";
 import type { ReactElement } from "react";
