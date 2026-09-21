@@ -12,6 +12,7 @@ export {
   loopbackOrigin,
   mailpitOrigin,
   mailpitPort,
+  mailpitSendPath,
   storybookOrigin,
   storybookPort,
 } from "./applications.ts";
