@@ -1,4 +1,5 @@
 import { APPLICATION, grants } from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
@@ -7,6 +8,7 @@ import { workerCompatibilityOptions, workerObservability, workerSubdomain } from
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
+import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
@@ -14,9 +16,23 @@ import type { Redacted } from "effect";
 import type { DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function appEnv(target: Application, shared: SharedEnv): DeclaredEnv {
-  return grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+function appEnv(
+  target: Application,
+  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+  shared: SharedEnv,
+): Effect.Effect<DeclaredEnv> {
+  const withAi: DeclaredEnv = grants(target, "ai") ? { ...shared, AI: Workers.AI("AI") } : shared;
+  if (!grants(target, "storage")) {
+    return Effect.succeed(withAi);
+  }
+  return Effect.gen(function* withStorageBindings() {
+    const withStorage: DeclaredEnv = {
+      ...withAi,
+      [cacheNamespaceBinding]: yield* cacheNamespaceRef(),
+      [fileBucketBinding]: yield* fileBucketRef(),
+    };
+    return withStorage;
+  });
 }
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
@@ -30,7 +46,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const shared = appEnv(target, {
+  const shared: DeclaredEnv = yield* appEnv(target, {
     APP_ORIGIN: origin,
     APP_RELEASE: artifacts.release,
     AUTH_SECRET: secret,
