@@ -22,6 +22,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           clean: ${{ vars.CI_RUNNER == '' }}
+      - &stop-leftovers
+        if: vars.CI_RUNNER != ''
+        run: |
+          pkill -9 -f "${GITHUB_WORKSPACE}/node_modules/.pnpm/.*/bin/workerd " || true
+          pkill -9 -f "${GITHUB_WORKSPACE}/node_modules/.pnpm/vite-plus.*/dist/bin.js run" || true
       - &clean-workspace
         if: vars.CI_RUNNER != ''
         run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy -e .artifacts -e .spool
@@ -76,6 +81,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - *checkout
+      - *stop-leftovers
       - *clean-workspace
       - *reset-local-database
       - *browser-cache
@@ -91,6 +97,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - *checkout
+      - *stop-leftovers
       - *clean-workspace
       - *browser-cache
       - *setup
