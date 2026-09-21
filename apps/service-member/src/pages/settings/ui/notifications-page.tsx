@@ -13,7 +13,7 @@ import {
 import {
   loadNotificationPreferences,
   saveNotificationPreferences,
-} from "#pages/notifications/api/notifications.ts";
+} from "#pages/settings/api/notification-preferences.ts";
 
 import type { NotificationPreferences } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
