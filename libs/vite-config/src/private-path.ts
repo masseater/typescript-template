@@ -8,7 +8,7 @@ const applicationsExcept = (application: Application): Application[] =>
 
 const secretFileName = /^(?:\.env.*|\.dev\.vars.*|.*\.(?:pem|key))$/u;
 
-const isSecretFileName = (name: string): boolean => secretFileName.test(name);
+const isSecretFileName = (fileName: string): boolean => secretFileName.test(fileName);
 
 const privateAdminPath = (slashedPath: string, application: Application): boolean =>
   application !== APPLICATION.admin &&

@@ -1,38 +1,30 @@
-import { NodeHttpServer } from "@effect/platform-node";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
+import { randomBytes } from "node:crypto";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
+import { readFile, stat } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
+import { createServer } from "node:http";
+
 import { Auth } from "@repo/auth";
 import { APPLICATION, applicationOrigins, mailpitSendPath } from "@repo/config";
 import { Database } from "@repo/db";
+import { localDatabasePlatform } from "@repo/db-local/platform";
 import { ensureAdminRole } from "@repo/db/bootstrap";
-import { localDatabaseStore, writeLocalDatabaseConfig } from "@repo/db/local";
 import { createEmailVerificationToken } from "better-auth/api";
-import {
-  Context,
-  Crypto,
-  Effect,
-  Exit,
-  FileSystem,
-  Layer,
-  Path,
-  PlatformError,
-  Schema,
-  Scope,
-} from "effect";
-import { HttpServer, HttpServerResponse } from "effect/unstable/http";
+import { Effect, Layer, Schema } from "effect";
 import { URI } from "otpauth";
-import { getPlatformProxy } from "wrangler";
 
-import { failure } from "./failure.ts";
+import { failure, fileIo } from "./failure.ts";
 import { local, readCredentials } from "./local-environment.ts";
-import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
-import { assertOwnerOnly, replacePrivateFile } from "./private-files.ts";
+import { assertOwnerOnly, isErrorCode, replacePrivateFile } from "./private-files.ts";
 
-import type { D1Database } from "@cloudflare/workers-types";
 import type { LocalCommandFailure } from "./failure.ts";
 
 const OPERATOR_EMAIL = "local-operator@example.test";
 const OPERATOR_NAME = "Local Operator";
 const PASSWORD_BYTES = 24;
 const HTTP_OK = 200;
+const jsonIndentation = 2;
 const operatorFile = new URL("operator.json", local);
 
 const OperatorFile = Schema.Struct({
@@ -49,48 +41,33 @@ const TotpEnrollment = Schema.Struct({
   totpURI: Schema.String,
 });
 
-const MailId = Schema.Struct({ ID: Schema.String });
-
 type AuthService = Auth["Service"];
 
-const platform = Effect.acquireRelease(
-  Effect.gen(function* preparePlatform() {
-    const configPath = yield* Effect.promise(() => writeLocalDatabaseConfig());
-    return yield* Effect.promise(() =>
-      getPlatformProxy<{ DB: D1Database }>({
-        configPath,
-        envFiles: [],
-        persist: { path: localDatabaseStore() },
-        remoteBindings: false,
-      }),
-    );
-  }),
-  (proxy) => Effect.promise(() => proxy.dispose()),
-);
-
 const mailSink = Effect.acquireRelease(
-  Effect.gen(function* openMail() {
-    const scope = yield* Scope.make();
-    const built = yield* Layer.build(NodeHttpServer.layerTest).pipe(
-      Scope.provide(scope),
-      Effect.mapError(() => failure("operator_provision_failed")),
-    );
-    const server = Context.get(built, HttpServer.HttpServer);
-    yield* server
-      .serve(
-        Effect.gen(function* reply() {
-          const crypto = yield* Crypto.Crypto;
-          const id = yield* crypto.randomUUIDv4.pipe(Effect.orDie);
-          return yield* HttpServerResponse.schemaJson(MailId)({ ID: id }).pipe(Effect.orDie);
-        }),
-      )
-      .pipe(Scope.provide(scope));
-    if (server.address._tag !== "TcpAddress") {
-      return yield* failure("operator_provision_failed");
+  Effect.promise(async () => {
+    const server = createServer((_request, response) => {
+      response.writeHead(HTTP_OK, { "content-type": "application/json" });
+      response.end(JSON.stringify({ ID: crypto.randomUUID() }));
+    });
+    await new Promise<void>((resolve) => {
+      server.listen(0, "127.0.0.1", () => {
+        resolve();
+      });
+    });
+    const address = server.address();
+    if (address === null || typeof address === "string") {
+      server.close();
+      throw new Error("MAIL_SINK_UNAVAILABLE");
     }
-    return { origin: `http://127.0.0.1:${server.address.port}`, scope };
+    return { origin: `http://127.0.0.1:${address.port}`, server };
   }),
-  ({ scope }) => Scope.close(scope, Exit.succeed(undefined)).pipe(Effect.ignore),
+  ({ server }) =>
+    Effect.promise(
+      async () =>
+        new Promise<void>((resolve, reject) => {
+          server.close((error) => (error === undefined ? resolve() : reject(error)));
+        }),
+    ),
 );
 
 class CookieJar {
@@ -128,61 +105,51 @@ function authRequest(
   endpoint: string,
   body?: Readonly<Record<string, unknown>>,
 ): Effect.Effect<Response> {
-  return Effect.gen(function* authRequestProgram() {
-    const headers = jar.headers(origin);
-    headers.set("content-type", "application/json");
-    const encoded =
-      body === undefined
-        ? undefined
-        : yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(body);
-    const response = yield* Effect.promise(() =>
-      auth.instance.handler(
-        new Request(`${origin}/api/auth${endpoint}`, {
-          headers,
-          method: body === undefined ? "GET" : "POST",
-          ...(encoded === undefined ? {} : { body: encoded }),
-        }),
-      ),
+  const headers = jar.headers(origin);
+  headers.set("content-type", "application/json");
+  return Effect.promise(async () => {
+    const response = await auth.instance.handler(
+      new Request(`${origin}/api/auth${endpoint}`, {
+        headers,
+        method: body === undefined ? "GET" : "POST",
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      }),
     );
     jar.store(response);
     return response;
-  }).pipe(Effect.orDie);
+  });
 }
 
-function operatorExists(): Effect.Effect<
-  boolean,
-  LocalCommandFailure,
-  FileSystem.FileSystem | Path.Path
-> {
-  return urlPath(operatorFile).pipe(
-    Effect.flatMap((path) =>
-      FileSystem.FileSystem.pipe(
-        Effect.flatMap((fs) => fs.stat(path)),
-        Effect.as(true),
-        Effect.catchIf(
-          (error): error is PlatformError.PlatformError => isNotFound(error),
-          () => Effect.succeed(false),
-        ),
-        Effect.mapError(() => failure("file_io_failed")),
-      ),
-    ),
+function operatorExists(): Effect.Effect<boolean, LocalCommandFailure> {
+  return Effect.tryPromise({
+    catch: (cause): Readonly<{ missing: boolean }> => ({ missing: isErrorCode(cause, "ENOENT") }),
+    try: async () => stat(operatorFile),
+  }).pipe(
+    Effect.matchEffect({
+      onFailure: ({ missing }) =>
+        missing ? Effect.succeed(false) : Effect.fail(failure("file_io_failed")),
+      onSuccess: () => Effect.succeed(true),
+    }),
   );
 }
 
 const readOperator = Effect.fn("readOperator")(function* readOperator() {
   yield* assertOwnerOnly(operatorFile);
-  const path = yield* urlPath(operatorFile);
-  const text = yield* withFileSystem((fs) => fs.readFileString(path));
-  return yield* Schema.decodeEffect(Schema.fromJsonString(OperatorFile))(text).pipe(
+  const text = yield* fileIo(async () => readFile(operatorFile, "utf-8"));
+  const json = yield* Effect.try({
+    catch: () => failure("credentials_invalid"),
+    try: (): unknown => JSON.parse(text),
+  });
+  return yield* Schema.decodeUnknownEffect(OperatorFile)(json).pipe(
     Effect.mapError(() => failure("credentials_invalid")),
   );
 });
 
 const writeOperator = Effect.fn("writeOperator")(function* writeOperator(operator: Operator) {
-  const content = yield* Schema.encodeEffect(Schema.fromJsonString(OperatorFile))(operator).pipe(
-    Effect.orDie,
+  yield* replacePrivateFile(
+    operatorFile,
+    `${JSON.stringify(operator, undefined, jsonIndentation)}\n`,
   );
-  yield* replacePrivateFile(operatorFile, `${content}\n`);
 });
 
 const enrollTotp = Effect.fn("enrollTotp")(function* enrollTotp(
@@ -195,8 +162,10 @@ const enrollTotp = Effect.fn("enrollTotp")(function* enrollTotp(
   if (enabled.status !== HTTP_OK) {
     return yield* failure("operator_provision_failed");
   }
-  const enrollment = yield* Effect.promise(() => enabled.json()).pipe(
-    Effect.mapError(() => failure("operator_provision_failed")),
+  const enrollment = yield* Effect.tryPromise({
+    catch: () => failure("operator_provision_failed"),
+    try: async () => enabled.json(),
+  }).pipe(
     Effect.flatMap((body) =>
       Schema.decodeUnknownEffect(TotpEnrollment)(body).pipe(
         Effect.mapError(() => failure("operator_provision_failed")),
@@ -216,9 +185,7 @@ const createOperator = Effect.fn("createOperator")(function* createOperator(
   origin: string,
   secret: string,
 ) {
-  const crypto = yield* Crypto.Crypto;
-  const bytes = yield* crypto.randomBytes(PASSWORD_BYTES).pipe(Effect.orDie);
-  const password = Buffer.from(bytes).toString("base64url");
+  const password = randomBytes(PASSWORD_BYTES).toString("base64url");
   const jar = new CookieJar();
   const signedUp = yield* authRequest(auth, jar, origin, "/sign-up/email", {
     email: OPERATOR_EMAIL,
@@ -228,10 +195,10 @@ const createOperator = Effect.fn("createOperator")(function* createOperator(
   if (!signedUp.ok) {
     return yield* failure("operator_provision_failed");
   }
-  const token = yield* Effect.promise(() =>
-    Promise.resolve(createEmailVerificationToken(secret, OPERATOR_EMAIL)),
+  const token = yield* Effect.promise(async () =>
+    createEmailVerificationToken(secret, OPERATOR_EMAIL),
   );
-  yield* Effect.promise(() => Promise.resolve(auth.instance.api.verifyEmail({ query: { token } })));
+  yield* Effect.promise(async () => auth.instance.api.verifyEmail({ query: { token } }));
   const signedIn = yield* authRequest(auth, jar, origin, "/sign-in/email", {
     email: OPERATOR_EMAIL,
     password,
@@ -262,7 +229,7 @@ const ensureOperator = Effect.fn("ensureOperator")(function* ensureOperator() {
   return yield* Effect.scoped(
     Effect.gen(function* provision() {
       const sink = yield* mailSink;
-      const { env } = yield* platform;
+      const { env } = yield* localDatabasePlatform;
       const authLayer = Auth.layer({
         audience: APPLICATION.user,
         baseURL: origin,

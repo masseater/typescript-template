@@ -6,9 +6,11 @@ import { Cause, Console, Effect, Schema } from "effect";
 
 import { localDatabasePlatform } from "./local-platform.ts";
 
-function failed(error: string): Readonly<Record<string, unknown>> {
-  return { action: "admin_bootstrap", error, success: false };
-}
+const failed = (failureCode: string): Readonly<Record<string, unknown>> => ({
+  action: "admin_bootstrap",
+  error: failureCode,
+  success: false,
+});
 
 runCli(
   Effect.gen(function* program() {

@@ -1,18 +1,14 @@
 import { APPLICATION } from "@repo/config";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { applicationsExcept, isSecretFileName, privatePath } from "./private-path.ts";
 
 const repositoryRoot = "/repo";
 
 describe("privatePath", () => {
-  it("keeps infra, tools, secrets, and other apps off the member surface", () => {
-    expect.hasAssertions();
-    expect(applicationsExcept(APPLICATION.user)).toStrictEqual([
-      APPLICATION.admin,
-      APPLICATION.wiki,
-    ]);
-    expect(
+  const it = test
+    .extend("foreignApplications", () => applicationsExcept(APPLICATION.user))
+    .extend("privateCandidates", () =>
       [
         "infra/cloudflare/src/cli.ts",
         "tools/dev/src/cli.ts",
@@ -29,26 +25,47 @@ describe("privatePath", () => {
           repositoryRoot,
         }),
       ),
-    ).toStrictEqual([true, true, true, true, true, true, true, true]);
-  });
-
-  it("lets an app read its own sources and lets admin read the admin database module", () => {
-    expect.hasAssertions();
-    expect(
+    )
+    .extend("ownApplicationEntry", () =>
       privatePath({
         application: APPLICATION.user,
         candidatePath: `${repositoryRoot}/apps/service-member/src/entry.ts`,
         repositoryRoot,
       }),
-    ).toBe(false);
-    expect(
+    )
+    .extend("adminDatabaseModule", () =>
       privatePath({
         application: APPLICATION.admin,
         candidatePath: `${repositoryRoot}/libs/db/src/admin.ts`,
         repositoryRoot,
       }),
-    ).toBe(false);
-    expect(isSecretFileName(".dev.vars")).toBe(true);
-    expect(isSecretFileName("readme.md")).toBe(false);
+    )
+    .extend("devVarsFile", () => isSecretFileName(".dev.vars"))
+    .extend("readmeFile", () => isSecretFileName("readme.md"));
+
+  it("keeps the other applications off the member surface", ({ foreignApplications }) => {
+    expect(foreignApplications).toStrictEqual([APPLICATION.admin, APPLICATION.wiki]);
+  });
+
+  it("keeps infra, tools, secrets, and other apps off the member surface", ({
+    privateCandidates,
+  }) => {
+    expect(privateCandidates).toStrictEqual([true, true, true, true, true, true, true, true]);
+  });
+
+  it("lets an app read its own sources", ({ ownApplicationEntry }) => {
+    expect(ownApplicationEntry).toBe(false);
+  });
+
+  it("lets admin read the admin database module", ({ adminDatabaseModule }) => {
+    expect(adminDatabaseModule).toBe(false);
+  });
+
+  it("treats dev vars as a secret file", ({ devVarsFile }) => {
+    expect(devVarsFile).toBe(true);
+  });
+
+  it("leaves a readme readable", ({ readmeFile }) => {
+    expect(readmeFile).toBe(false);
   });
 });
