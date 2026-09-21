@@ -63,4 +63,4 @@ function jobsApi(api: ApiRoutes<AppServices>) {
     );
 }
 
-export { JobAccepted, JobStatusView, jobsApi };
+export { jobsApi };

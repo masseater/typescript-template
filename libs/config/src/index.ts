@@ -53,7 +53,7 @@ export {
   jobsWorkflowName,
   readJobs,
 } from "./jobs.ts";
-export type { JobResult } from "./jobs.ts";
+export type { JobResult, JobsBindings } from "./jobs.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type { AppConfig, AssetFetcher } from "./environment.ts";
 export { respondedSuccessfully, waitUntilResponds } from "./responds.ts";

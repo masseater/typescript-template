@@ -72,4 +72,4 @@ export {
   jobsWorkflowName,
   readJobs,
 };
-export type { JobQueue, JobResult, JobWorkflow, JobsBindings };
+export type { JobResult, JobsBindings };
