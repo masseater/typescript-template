@@ -9,13 +9,6 @@ const loadCommands = ["src/cli.ts!", "src/ci.ts!"];
 
 const workspaces = {
   ".": {
-    ignoreDependencies: [
-      "@effect/tsgo",
-      "@effect/language-service",
-      "@shadcn/lint",
-      "@swc/core",
-      "dependency-cruiser",
-    ],
     project: ["*.{js,ts}"],
     vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
   },
@@ -70,11 +63,6 @@ const workspaces = {
       entry: ["storybook/{manager,preview,preview-head,preview-body}.{js,jsx,mjs,ts,tsx}"],
     },
   },
-  "tools/ai-native": {
-    ignoreBinaries: ["mkfifo"],
-    ignoreDependencies: ["@tanstack/intent"],
-  },
-  "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
     entry: [
       "src/repository/dependency-cruiser.ts",
@@ -83,7 +71,7 @@ const workspaces = {
       "src/repository/lint.ts!",
       "src/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!"],
+    ignoreDependencies: ["@repo/observability!", "@shadcn/lint"],
     project: [
       "src/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
@@ -115,7 +103,6 @@ const cloudflareStacks = [
 
 const application = {
   entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
-  ignoreDependencies: ["steiger"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
@@ -156,7 +143,6 @@ const config = ({
     ignore: productionOnly("src/app/routeTree.gen.ts", ".paraglide/**"),
   };
   return {
-    ignoreDependencies: ["vite"],
     ignoreIssues: {
       "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
@@ -165,6 +151,17 @@ const config = ({
       "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
+      "infra/cloudflare/src/account-inspection.ts": ["types"],
+      "infra/cloudflare/src/account-lookup.ts": ["exports"],
+      "infra/cloudflare/src/account-read.ts": ["exports"],
+      "infra/cloudflare/src/ci-env.ts": ["types"],
+      "infra/cloudflare/src/config.ts": ["exports"],
+      "infra/cloudflare/src/credentials.ts": ["exports"],
+      "infra/cloudflare/src/deploy-token.ts": ["exports", "types"],
+      "infra/cloudflare/src/plan-confirmation.ts": ["types"],
+      "infra/cloudflare/src/secrets.ts": ["exports"],
+      "infra/cloudflare/src/stack-runner.ts": ["types"],
+      "infra/cloudflare/src/verification-fixture.ts": ["exports"],
       "libs/db/src/testing.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.ts": ["unlisted"],
       "libs/runtime/src/app-fixture.ts": ["unlisted"],
@@ -205,7 +202,6 @@ const config = ({
           "src/account-fixture.ts",
           "src/inspection-fixture.ts",
         ],
-        ignoreExportsUsedInFile: true,
         project: ["src/**/*.ts!"],
       },
       "infra/local": {
@@ -222,6 +218,7 @@ const config = ({
       },
       "libs/vite-config": {
         entry: productionOnly("src/effect-typecheck.ts!"),
+        ignoreDependencies: ["@effect/tsgo"],
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],

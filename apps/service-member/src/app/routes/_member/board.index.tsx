@@ -22,10 +22,7 @@ function requireBoardSearch(raw: unknown): BoardSearch {
   }
 }
 
-// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/board/")({
-  validateSearch: requireBoardSearch,
-  loaderDeps: ({ search }: Readonly<{ search: BoardSearch }>) => ({ page: search.page ?? 1 }),
   beforeLoad: ({
     location,
     search,
@@ -37,11 +34,13 @@ const Route = createFileRoute("/_member/board/")({
       throw redirect({ replace: true, search, to: "/board" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) =>
-    loadThreads(deps.page),
   component: BoardRoute,
   errorComponent: BoardFailed,
+  loader: async ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) =>
+    loadThreads(deps.page),
+  loaderDeps: ({ search }: Readonly<{ search: BoardSearch }>) => ({ page: search.page ?? 1 }),
   pendingComponent: BoardPending,
+  validateSearch: requireBoardSearch,
 });
 
 export { Route };

@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createHash } from "node:crypto";
 
 import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
@@ -70,7 +69,7 @@ function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
     ...Object.fromEntries(
       EXPRESSION_FIELDS.flatMap((field) => {
         const found: unknown = Reflect.get(node, field);
-        // oxlint-disable-next-line typescript/no-use-before-define
+        // oxlint-disable-next-line typescript/no-use-before-define -- stable, stableExpression, and stableEntries call each other, so one declaration is always named first
         return found === undefined ? [] : [[field, stable(found, nested)] as const];
       }),
     ),
@@ -81,7 +80,7 @@ function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
 function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
   const nested = new Set([...seen, value]);
   if (Array.isArray(value)) {
-    // oxlint-disable-next-line typescript/no-use-before-define
+    // oxlint-disable-next-line typescript/no-use-before-define -- stable, stableExpression, and stableEntries call each other, so one declaration is always named first
     return value.map((item: unknown) => stable(item, nested));
   }
   return Object.fromEntries(
@@ -89,7 +88,7 @@ function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
       .toSorted(([left]: readonly [string, unknown], [right]: readonly [string, unknown]) =>
         left.localeCompare(right),
       )
-      // oxlint-disable-next-line typescript/no-use-before-define
+      // oxlint-disable-next-line typescript/no-use-before-define -- stable, stableExpression, and stableEntries call each other, so one declaration is always named first
       .map(([key, item]: readonly [string, unknown]) => [key, stable(item, nested)] as const),
   );
 }

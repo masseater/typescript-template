@@ -1,7 +1,6 @@
 import { constants } from "node:fs";
 import { lstat, open } from "node:fs/promises";
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { parseEnv } from "node:util";
 
 import { deploymentKeys } from "@repo/observability/deployment-keys";
