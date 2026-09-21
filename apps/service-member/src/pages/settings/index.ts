@@ -1,3 +1,4 @@
+export { AgreementsPage } from "./ui/agreements-page.tsx";
 export { AiPage } from "./ui/ai-page.tsx";
 export { EmailPage } from "./ui/email-page.tsx";
 export { InterviewSettingsPage } from "./ui/interview-page.tsx";
