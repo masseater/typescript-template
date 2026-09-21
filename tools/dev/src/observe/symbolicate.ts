@@ -64,5 +64,5 @@ const resolveFrames = Effect.gen(function* resolveFrames() {
 });
 
 runCli(values.help ? help : resolveFrames, (cause) =>
-  causeRecord("observe.symbolicate_failed", cause),
+  causeRecord("observe.symbolicate_failed", { cause }),
 );

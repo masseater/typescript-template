@@ -52,5 +52,5 @@ runCli(
     yield* Console.info(JSON.stringify({ event: "local.gateway_listening", port: 443, target }));
     return yield* Effect.never;
   }).pipe(Effect.scoped),
-  (cause) => causeRecord("local.gateway_failed", cause),
+  (cause) => causeRecord("local.gateway_failed", { cause }),
 );

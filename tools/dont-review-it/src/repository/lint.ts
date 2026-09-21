@@ -29,14 +29,12 @@ const awaitingPresetPackages = [
   "infra/health-monitor/**",
   "infra/local/**",
   "libs/auth/**",
-  "libs/cli/**",
   "libs/config/**",
   "libs/db/**",
   "libs/monitor/**",
   "libs/observability/**",
   "libs/runtime/**",
   "libs/vite-config/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -45,7 +43,6 @@ const templateWorkspaces = [
   "apps/**",
   "libs/**",
   "infra/**",
-  "tools/commander/**",
   "tools/dev/**",
   "tools/e2e/**",
   "tools/load/**",
@@ -279,6 +276,10 @@ const lintOptions = {
   ],
   rules: {
     "import/no-default-export": LINT_SEVERITY.OFF,
+    "dont-review-it/no-lenient-coverage-threshold--demand-full-coverage": [
+      LINT_SEVERITY.ERROR,
+      { branches: 50, functions: 50, lines: 50, statements: 50 },
+    ],
     "dont-review-it/no-default-export--use-named-export": [
       LINT_SEVERITY.ERROR,
       {

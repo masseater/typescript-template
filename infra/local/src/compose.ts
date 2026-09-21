@@ -62,7 +62,10 @@ const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly s
 });
 
 runCli(composeArguments(action).pipe(Effect.flatMap(runCompose)), (cause) =>
-  causeRecord("local.services_command_failed", cause, {
-    remediation: "Check the Docker daemon, then retry the requested action.",
+  causeRecord("local.services_command_failed", {
+    cause,
+    fields: {
+      remediation: "Check the Docker daemon, then retry the requested action.",
+    },
   }),
 );
