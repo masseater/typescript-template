@@ -51,9 +51,6 @@ const workspaces = {
   "libs/observability": {
     entry: ["src/browser-testing.ts", "src/server-testing.ts"],
   },
-  "libs/vite-config": {
-    entry: ["src/**/*.test.ts"],
-  },
   "libs/runtime": {
     entry: ["src/*-fixture.ts"],
     project: ["src/**/*.ts!"],

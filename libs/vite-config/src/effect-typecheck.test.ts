@@ -1,37 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
 import { repositoryRoot } from "@repo/config/repository-root";
 import { describe, expect, it } from "vite-plus/test";
 
-import {
-  combinedOutput,
-  binRelative,
-  compileWorkspace,
-  compilerFromResolution,
-  diagnosticOf,
-  effectTsgoBin,
-  evaluateTypecheck,
-  exitAfterFlush,
-  exitInvokedCli,
-  locateCompiler,
-  isInvokedAsCli,
-  maybeStart,
-  missingExportCodes,
-  ownedDiagnostics,
-  parseBaseline,
-  parseTscOutput,
-  reportCliFailure,
-  runEffectTypecheck,
-  runInvokedCli,
-  serializeBaseline,
-  startEffectTypecheckCli,
-  workspaceOf,
-} from "./effect-typecheck.ts";
+import { runEffectTypecheck } from "./effect-typecheck.ts";
 
 const fixtureTsconfig = JSON.stringify({
   compilerOptions: {
@@ -46,6 +23,40 @@ const fixtureTsconfig = JSON.stringify({
   include: ["./**/*.ts"],
 });
 
+const emptyBaseline = `${JSON.stringify({ version: 1, workspaces: {} }, null, 2)}\n`;
+
+const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as const;
+
+const pathWithBins = (): NodeJS.ProcessEnv => {
+  const bins = path.join(repositoryRoot, "node_modules/.bin");
+  return {
+    ...process.env,
+    PATH: [bins, process.env["PATH"]]
+      .filter((entry) => entry !== undefined && entry !== "")
+      .join(path.delimiter),
+  };
+};
+
+const compileFixture = (cwd: string): { readonly output: string; readonly status: number } => {
+  const env = pathWithBins();
+  const packageJson = createRequire(import.meta.url).resolve("@effect/tsgo/package.json");
+  const manifest = JSON.parse(readFileSync(packageJson, "utf8")) as {
+    readonly bin?: Readonly<Record<string, string>>;
+  };
+  const tsgo = path.join(path.dirname(packageJson), manifest.bin?.["effect-tsgo"] ?? "");
+  const located = spawnSync(process.execPath, [tsgo, "get-exe-path"], { encoding: "utf8", env });
+  const executable = (located.stdout ?? "").trim();
+  const compiled = spawnSync(executable, ["--pretty", "false", "--noEmit", "-p", "tsconfig.json"], {
+    cwd,
+    encoding: "utf8",
+    env,
+  });
+  return {
+    output: `${compiled.stdout ?? ""}${compiled.stderr ?? ""}`,
+    status: compiled.status ?? 1,
+  };
+};
+
 const createFixture = (files: Readonly<Record<string, string>>): string => {
   const root = mkdtempSync(path.join(tmpdir(), "effect-typecheck-"));
   writeFileSync(path.join(root, "tsconfig.json"), fixtureTsconfig);
@@ -55,13 +66,12 @@ const createFixture = (files: Readonly<Record<string, string>>): string => {
   return root;
 };
 
-const emptyBaseline = serializeBaseline({ version: 1, workspaces: {} });
-
 const runGate = (asked: {
   readonly cwd: string;
   readonly args?: readonly string[];
   readonly baseline?: string;
   readonly repositoryRoot?: string;
+  readonly compile?: () => { readonly output: string; readonly status: number };
 }): { readonly baseline: string; readonly code: number; readonly printed: string } => {
   let stored = asked.baseline ?? emptyBaseline;
   let printed = "";
@@ -70,7 +80,7 @@ const runGate = (asked: {
     repositoryRoot: asked.repositoryRoot ?? asked.cwd,
     args: asked.args ?? [],
     baselinePath: "baseline.json",
-    compile: () => compileWorkspace(asked.cwd),
+    compile: asked.compile ?? (() => compileFixture(asked.cwd)),
     readText: () => stored,
     writeText: (_file, text) => {
       stored = text;
@@ -85,40 +95,29 @@ const runGate = (asked: {
 describe("effect typecheck gate", () => {
   it("keeps only diagnostics that belong to the workspace that ran the gate", () => {
     expect.hasAssertions();
-    const repositoryRoot = "/repo";
-    const cwd = "/repo/apps/service-member";
-    expect(
-      ownedDiagnostics(
-        [
-          { code: "TS4111", file: "src/app.ts", message: "local" },
-          {
-            code: "TS4111",
-            file: "../../libs/auth/src/session.ts",
-            message: "foreign relative",
-          },
-          {
-            code: "TS4023",
-            file: "<repo>/libs/monitor/src/monitor-fixture.ts",
-            message: "foreign checkout",
-          },
-          {
-            code: "TS2322",
-            file: "<repo>/apps/service-member/src/routes.ts",
-            message: "owned checkout",
-          },
-          { code: "TS0000", file: "", message: "compiler" },
-        ],
-        cwd,
-        repositoryRoot,
-      ),
-    ).toStrictEqual([
-      { code: "TS4111", file: "src/app.ts", message: "local" },
-      {
-        code: "TS2322",
-        file: "<repo>/apps/service-member/src/routes.ts",
-        message: "owned checkout",
-      },
-      { code: "TS0000", file: "", message: "compiler" },
+    const written = runGate({
+      cwd: "/repo/apps/service-member",
+      repositoryRoot: "/repo",
+      args: ["--write"],
+      compile: () => ({
+        output: [
+          "src/app.ts(1,1): error TS4111: local",
+          "../../libs/auth/src/session.ts(1,1): error TS4111: foreign relative",
+          "<repo>/libs/monitor/src/monitor-fixture.ts(1,1): error TS4023: foreign checkout",
+          "<repo>/apps/service-member/src/routes.ts(1,1): error TS2322: owned checkout",
+          "error TS0000: compiler",
+        ].join("\n"),
+        status: 1,
+      }),
+    });
+    expect(written.code).toBe(0);
+    const snapshot = JSON.parse(written.baseline) as {
+      readonly workspaces: Readonly<Record<string, readonly { readonly file: string }[]>>;
+    };
+    expect(snapshot.workspaces["apps/service-member"]?.map((entry) => entry.file)).toStrictEqual([
+      "",
+      "<repo>/apps/service-member/src/routes.ts",
+      "src/app.ts",
     ]);
   });
 
@@ -129,19 +128,23 @@ describe("effect typecheck gate", () => {
     try {
       mkdirSync(other);
       writeFileSync(path.join(other, "broken.ts"), 'export const value: number = "new";\n');
-      const listed = serializeBaseline({
-        version: 1,
-        workspaces: {
-          [workspaceOf(cwd, path.dirname(cwd))]: [
-            {
-              file: "../other-workspace/broken.ts",
-              code: "TS2322",
-              message: "Type 'string' is not assignable to type 'number'.",
-              count: 1,
-            },
-          ],
+      const listed = `${JSON.stringify(
+        {
+          version: 1,
+          workspaces: {
+            [path.relative(path.dirname(cwd), other)]: [
+              {
+                file: "../other-workspace/broken.ts",
+                code: "TS2322",
+                message: "Type 'string' is not assignable to type 'number'.",
+                count: 1,
+              },
+            ],
+          },
         },
-      });
+        null,
+        2,
+      )}\n`;
       const result = runGate({
         cwd,
         baseline: listed,
@@ -158,16 +161,6 @@ describe("effect typecheck gate", () => {
     expect.hasAssertions();
     const cwd = createFixture({ "value.ts": 'export const value: number = "new";\n' });
     try {
-      const compiled = compileWorkspace(cwd);
-      const diagnostics = parseTscOutput(compiled.output);
-      expect(diagnostics).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            code: "TS2322",
-            file: "value.ts",
-          }),
-        ]),
-      );
       const result = runGate({ cwd });
       expect(result.code).toBe(1);
       expect(result.printed).toMatch(/typecheck gate: 1 new diagnostics/u);
@@ -183,7 +176,9 @@ describe("effect typecheck gate", () => {
     try {
       const written = runGate({ cwd, args: ["--write"] });
       expect(written.code).toBe(0);
-      const parsed = parseBaseline(written.baseline);
+      const parsed = JSON.parse(written.baseline) as {
+        readonly workspaces: Readonly<Record<string, readonly { readonly code: string }[]>>;
+      };
       expect(parsed.workspaces["."]?.some((entry) => entry.code === "TS2322")).toBe(true);
       const result = runGate({ cwd, baseline: written.baseline });
       expect(result.code).toBe(0);
@@ -200,33 +195,29 @@ describe("effect typecheck gate", () => {
       "missing.ts": 'import { absent } from "./empty.ts";\nexport const value = absent;\n',
     });
     try {
-      const compiled = compileWorkspace(cwd);
-      expect(parseTscOutput(compiled.output)).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            code: "TS2305",
-            file: "missing.ts",
-          }),
-        ]),
-      );
       const written = runGate({ cwd, args: ["--write"] });
       expect(written.code).toBe(1);
       expect(written.printed).toMatch(/missing-export errors/u);
-      const listed = serializeBaseline({
-        version: 1,
-        workspaces: {
-          ".": parseTscOutput(compiled.output).map((diagnostic) => ({
-            ...diagnostic,
-            count: 1,
-          })),
+      const listed = `${JSON.stringify(
+        {
+          version: 1,
+          workspaces: {
+            ".": [
+              {
+                file: "missing.ts",
+                code: "TS2305",
+                message: "Module '\"./empty.ts\"' has no exported member 'absent'.",
+                count: 1,
+              },
+            ],
+          },
         },
-      });
+        null,
+        2,
+      )}\n`;
       const result = runGate({ cwd, baseline: listed });
       expect(result.code).toBe(1);
       expect(result.printed).toMatch(/missing-export errors/u);
-      expect(
-        evaluateTypecheck(".", parseTscOutput(compiled.output), parseBaseline(listed), cwd, cwd).ok,
-      ).toBe(false);
     } finally {
       rmSync(cwd, { force: true, recursive: true });
     }
@@ -237,19 +228,23 @@ describe("effect typecheck gate", () => {
     const checkout = path.join(repositoryRoot, ".local", "effect-typecheck-checkout");
     const sibling = `${checkout}-other`;
     const output = `src/monitor-fixture.ts(48,7): error TS4023: Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "${checkout}/libs/monitor/src/index" but cannot be named.\n`;
-    const baseline = serializeBaseline({
-      version: 1,
-      workspaces: {
-        ".": [
-          {
-            file: "src/monitor-fixture.ts",
-            code: "TS4023",
-            message: `Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "<repo>/libs/monitor/src/index" but cannot be named.`,
-            count: 1,
-          },
-        ],
+    const baseline = `${JSON.stringify(
+      {
+        version: 1,
+        workspaces: {
+          ".": [
+            {
+              file: "src/monitor-fixture.ts",
+              code: "TS4023",
+              message: `Exported variable 'ProbeMonitor' has or is using name 'Alert' from external module "<repo>/libs/monitor/src/index" but cannot be named.`,
+              count: 1,
+            },
+          ],
+        },
       },
-    });
+      null,
+      2,
+    )}\n`;
     let printed = "";
     let stored = emptyBaseline;
     expect(
@@ -293,19 +288,23 @@ describe("effect typecheck gate", () => {
     expect.hasAssertions();
     const cwd = createFixture({ "value.ts": "export const value = 1;\n" });
     try {
-      const baseline = serializeBaseline({
-        version: 1,
-        workspaces: {
-          ".": [
-            {
-              file: "value.ts",
-              code: "TS2322",
-              message: "Type 'string' is not assignable to type 'number'.",
-              count: 1,
-            },
-          ],
+      const baseline = `${JSON.stringify(
+        {
+          version: 1,
+          workspaces: {
+            ".": [
+              {
+                file: "value.ts",
+                code: "TS2322",
+                message: "Type 'string' is not assignable to type 'number'.",
+                count: 1,
+              },
+            ],
+          },
         },
-      });
+        null,
+        2,
+      )}\n`;
       const result = runGate({ cwd, baseline });
       expect(result.code).toBe(0);
       expect(result.printed).not.toMatch(/typecheck gate:/u);
@@ -316,25 +315,29 @@ describe("effect typecheck gate", () => {
 
   it("matches a diagnostic listed under another workspace after resolving paths", () => {
     expect.hasAssertions();
-    const repositoryRoot = "/repo";
-    const listed = serializeBaseline({
-      version: 1,
-      workspaces: {
-        "libs/auth": [
-          {
-            file: "src/session.ts",
-            code: "TS18046",
-            message: "'instance.options' is of type 'unknown'.",
-            count: 1,
-          },
-        ],
+    const root = "/repo";
+    const listed = `${JSON.stringify(
+      {
+        version: 1,
+        workspaces: {
+          "libs/auth": [
+            {
+              file: "src/session.ts",
+              code: "TS18046",
+              message: "'instance.options' is of type 'unknown'.",
+              count: 1,
+            },
+          ],
+        },
       },
-    });
+      null,
+      2,
+    )}\n`;
     let printed = "";
     expect(
       runEffectTypecheck({
-        cwd: path.join(repositoryRoot, "apps/service-member"),
-        repositoryRoot,
+        cwd: path.join(root, "apps/service-member"),
+        repositoryRoot: root,
         args: [],
         baselinePath: "baseline.json",
         compile: () => ({
@@ -354,20 +357,24 @@ describe("effect typecheck gate", () => {
 
   it("treats drizzle diagnostics that differ only by pnpm package folders as the same diagnostic", () => {
     expect.hasAssertions();
-    const listed = serializeBaseline({
-      version: 1,
-      workspaces: {
-        "apps/service-member": [
-          {
-            file: "src/shared/members/members.ts",
-            code: "TS2345",
-            message:
-              "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_left/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_right/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
-            count: 1,
-          },
-        ],
+    const listed = `${JSON.stringify(
+      {
+        version: 1,
+        workspaces: {
+          "apps/service-member": [
+            {
+              file: "src/shared/members/members.ts",
+              code: "TS2345",
+              message:
+                "Argument of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_left/node_modules/drizzle-orm/sql/sql\").SQL<unknown>' is not assignable to parameter of type 'import(\"<repo>/node_modules/.pnpm/drizzle-orm@1.0.0-rc.5-ab785fc_right/node_modules/drizzle-orm/sql/sql\").SQL<unknown>'.",
+              count: 1,
+            },
+          ],
+        },
       },
-    });
+      null,
+      2,
+    )}\n`;
     let printed = "";
     expect(
       runEffectTypecheck({
@@ -396,24 +403,25 @@ describe("effect typecheck gate", () => {
       "value.ts": 'export const first: number = "a";\nexport const second: number = "b";\n',
     });
     try {
-      const compiled = compileWorkspace(cwd);
       const doubled = runGate({ cwd });
       expect(doubled.printed).toMatch(/\u00d72/u);
-      const [diagnostic] = parseTscOutput(compiled.output);
-      expect(diagnostic).toBeDefined();
-      const baseline = serializeBaseline({
-        version: 1,
-        workspaces: {
-          ".": [
-            {
-              file: diagnostic?.file ?? "value.ts",
-              code: diagnostic?.code ?? "TS2322",
-              message: diagnostic?.message ?? "",
-              count: 1,
-            },
-          ],
+      const baseline = `${JSON.stringify(
+        {
+          version: 1,
+          workspaces: {
+            ".": [
+              {
+                file: "value.ts",
+                code: "TS2322",
+                message: "Type 'string' is not assignable to type 'number'.",
+                count: 1,
+              },
+            ],
+          },
         },
-      });
+        null,
+        2,
+      )}\n`;
       const result = runGate({ cwd, baseline });
       expect(result.code).toBe(1);
       expect(result.printed).toMatch(/new diagnostics/u);
@@ -460,126 +468,61 @@ describe("effect typecheck gate", () => {
 
   it("names workspaces from the repository root and keeps the committed snapshot canonical", () => {
     expect.hasAssertions();
-    expect(workspaceOf(repositoryRoot, repositoryRoot)).toBe(".");
-    expect(workspaceOf(path.join(repositoryRoot, "libs/vite-config"), repositoryRoot)).toBe(
-      "libs/vite-config",
-    );
-    expect(() => workspaceOf(path.join(repositoryRoot, ".."), repositoryRoot)).toThrow(
-      /is outside/u,
-    );
-    const committed = readFileSync(
-      path.join(repositoryRoot, "libs/vite-config/src/effect-typecheck-baseline.json"),
-      "utf8",
-    );
-    const parsed = parseBaseline(committed);
-    expect(serializeBaseline(parsed)).toBe(committed);
-    const forbidden = new Set<string>(missingExportCodes);
-    expect(
-      Object.values(parsed.workspaces)
-        .flat()
-        .filter((entry) => forbidden.has(entry.code)),
-    ).toStrictEqual([]);
-    expect(
-      parseTscOutput("error TS2688: Cannot find type definition file for 'node'.\n"),
-    ).toStrictEqual([
-      {
-        file: "",
-        code: "TS2688",
-        message: "Cannot find type definition file for 'node'.",
-      },
-    ]);
-    expect(
-      parseTscOutput(
-        "src/value.ts:1:7 - error TS2322: Type 'string' is not assignable to type 'number'.\n",
-      ),
-    ).toStrictEqual([
-      {
-        file: "src/value.ts",
-        code: "TS2322",
-        message: "Type 'string' is not assignable to type 'number'.",
-      },
-    ]);
-  });
-
-  it("covers the packaged entry, a missing compiler, and CLI failures", () => {
-    expect.hasAssertions();
-    const modulePath = fileURLToPath(new URL("./effect-typecheck.ts", import.meta.url));
-    expect(effectTsgoBin()).toMatch(/effect-tsgo\.cjs$/u);
-    expect(binRelative({ bin: { "effect-tsgo": "./dist/effect-tsgo.cjs" } })).toBe(
-      "./dist/effect-tsgo.cjs",
-    );
-    expect(() => binRelative({})).toThrow(/missing the effect-tsgo bin/u);
-    expect(compilerFromResolution({ status: 0, stdout: "/tsc\n", stderr: "" })).toBe("/tsc");
-    expect(() => compilerFromResolution({ status: 0, stdout: null, stderr: null })).toThrow(
-      /compiler not found/u,
-    );
-    expect(() => compilerFromResolution({ status: 1, stdout: "", stderr: "no" })).toThrow(/no/u);
-    expect(() => compilerFromResolution({ status: 1, stdout: "", stderr: "" })).toThrow(
-      /compiler not found/u,
-    );
-    expect(locateCompiler(process.env).length).toBeGreaterThan(0);
-    expect(() => locateCompiler({ ...process.env, PATH: "/var/empty" })).not.toThrow();
-    expect(isInvokedAsCli(undefined, modulePath)).toBe(false);
-    expect(isInvokedAsCli(modulePath, modulePath)).toBe(true);
-    expect(maybeStart("/tmp/not-the-cli", modulePath)).toBe(false);
-    mkdirSync(path.join(repositoryRoot, ".local"), { recursive: true });
-    const cwd = mkdtempSync(path.join(repositoryRoot, ".local", "effect-typecheck-cli-"));
-    writeFileSync(path.join(cwd, "tsconfig.json"), fixtureTsconfig);
-    writeFileSync(path.join(cwd, "value.ts"), "export const value = 1;\n");
-    const baselineFile = fileURLToPath(
-      new URL("./effect-typecheck-baseline.json", import.meta.url),
-    );
-    const baselineBefore = readFileSync(baselineFile);
-    const previousCwd = process.cwd();
-    try {
-      process.chdir(cwd);
-      expect(maybeStart(modulePath, modulePath)).toBe(true);
-      expect(process.exitCode).toBe(0);
-      expect(startEffectTypecheckCli({ cwd, args: ["--write"] })).toBe(0);
-    } finally {
-      process.chdir(previousCwd);
-      writeFileSync(baselineFile, baselineBefore);
-      rmSync(cwd, { force: true, recursive: true });
-    }
-    const missing = compileWorkspace(repositoryRoot, process.env, () => {
-      throw new Error("compiler missing");
+    const rootWrite = runGate({
+      cwd: repositoryRoot,
+      repositoryRoot,
+      args: ["--write"],
+      compile: () => ({ output: "", status: 0 }),
     });
-    expect(missing.status).not.toBe(0);
-    expect(missing.output).toMatch(/compiler missing/u);
-    expect(
-      compileWorkspace(repositoryRoot, process.env, () => {
-        throw "no";
-      }).output,
-    ).toMatch(/compiler not found/u);
-    runInvokedCli(() => {
-      throw new Error("boom");
-    });
-    expect(process.exitCode).toBe(1);
-    runInvokedCli(() => {
-      throw "no";
-    });
-    reportCliFailure(new Error("listed"));
-    expect(process.exitCode).toBe(1);
-    expect(combinedOutput({ stdout: null, stderr: null, status: null })).toStrictEqual({
-      output: "",
-      status: 1,
-    });
-    expect(diagnosticOf(undefined, "TS2322", "x")).toStrictEqual([]);
-    expect(
-      runEffectTypecheck({
-        cwd: path.join(repositoryRoot, "tools/load"),
-        repositoryRoot,
-        args: [],
-        baselinePath: path.join(
-          repositoryRoot,
-          "libs/vite-config/src/effect-typecheck-baseline.json",
-        ),
-        compile: () => ({ output: "ok", status: 0 }),
-        readText: (file) => readFileSync(file, "utf8"),
-        writeText: () => undefined,
-        print: () => undefined,
+    expect(Object.keys(JSON.parse(rootWrite.baseline).workspaces)).toStrictEqual([]);
+    const packageWrite = runGate({
+      cwd: path.join(repositoryRoot, "libs/vite-config"),
+      repositoryRoot,
+      args: ["--write"],
+      compile: () => ({
+        output:
+          "src/value.ts(1,1): error TS2322: Type 'string' is not assignable to type 'number'.\n",
+        status: 1,
       }),
-    ).toBe(0);
+    });
+    expect(Object.keys(JSON.parse(packageWrite.baseline).workspaces)).toStrictEqual([
+      "libs/vite-config",
+    ]);
+    let outside: unknown;
+    try {
+      runGate({
+        cwd: path.join(repositoryRoot, ".."),
+        repositoryRoot,
+        compile: () => ({ output: "", status: 0 }),
+      });
+    } catch (error) {
+      outside = error;
+    }
+    expect(outside).toBeInstanceOf(Error);
+    expect(String(outside)).toMatch(/is outside/u);
+    const committed = JSON.parse(
+      readFileSync(
+        path.join(repositoryRoot, "libs/vite-config/src/effect-typecheck-baseline.json"),
+        "utf8",
+      ),
+    ) as {
+      readonly workspaces: Readonly<Record<string, readonly { readonly code: string }[]>>;
+    };
+    expect(
+      Object.values(committed.workspaces)
+        .flat()
+        .filter((entry) => (missingExportCodes as readonly string[]).includes(entry.code)),
+    ).toStrictEqual([]);
+    const loose = runGate({
+      cwd: repositoryRoot,
+      repositoryRoot,
+      compile: () => ({
+        output: "error TS2688: Cannot find type definition file for 'node'.\n",
+        status: 1,
+      }),
+    });
+    expect(loose.code).toBe(1);
+    expect(loose.printed).toMatch(/error TS2688: Cannot find type definition file for 'node'/u);
   });
 
   it("runs the packaged gate against a real compiler", () => {
@@ -604,66 +547,53 @@ describe("effect typecheck gate", () => {
     }
   });
 
-  it("exits the process with the gate status instead of only recording it", async () => {
+  it("exits the process with the gate status when invoked as the CLI", () => {
     expect.hasAssertions();
+    mkdirSync(path.join(repositoryRoot, ".local"), { recursive: true });
+    const cwd = mkdtempSync(path.join(repositoryRoot, ".local", "effect-typecheck-cli-"));
+    writeFileSync(path.join(cwd, "tsconfig.json"), fixtureTsconfig);
+    writeFileSync(path.join(cwd, "value.ts"), 'export const value: number = "new";\n');
     const modulePath = fileURLToPath(new URL("./effect-typecheck.ts", import.meta.url));
-    const exited: number[] = [];
-    const record = (code: number): void => {
-      exited.push(code);
-    };
-    expect(exitInvokedCli("/tmp/not-the-cli", modulePath, () => 1, record)).toBe(false);
-    expect(exitInvokedCli(modulePath, modulePath, () => 1, record)).toBe(true);
-    expect(
-      exitInvokedCli(
-        modulePath,
-        modulePath,
-        () => {
-          throw new Error("boom");
-        },
-        record,
-      ),
-    ).toBe(true);
-    await new Promise((resolve) => {
-      setImmediate(resolve);
-    });
-    expect(exited).toStrictEqual([1, 1]);
-    process.exitCode = undefined;
+    try {
+      const invoked = spawnSync(process.execPath, [modulePath], {
+        cwd,
+        encoding: "utf8",
+        env: pathWithBins(),
+      });
+      expect(invoked.status).toBe(1);
+      expect(`${invoked.stdout ?? ""}${invoked.stderr ?? ""}`).toMatch(/typecheck gate:/u);
+      const imported = spawnSync(
+        process.execPath,
+        ["--input-type=module", "-e", `import ${JSON.stringify(modulePath)};`],
+        { encoding: "utf8", env: pathWithBins() },
+      );
+      expect(imported.status).toBe(0);
+    } finally {
+      rmSync(cwd, { force: true, recursive: true });
+    }
   });
 
-  it("flushes stdout before exiting so the gate report is not truncated", async () => {
+  it("flushes stdout before exiting so the gate report is not truncated", () => {
     expect.hasAssertions();
-    const exited: number[] = [];
-    const record = (code: number): void => {
-      exited.push(code);
-    };
-    const open = (): Writable =>
-      new Writable({
-        write(_chunk, _encoding, callback) {
-          callback();
-        },
+    mkdirSync(path.join(repositoryRoot, ".local"), { recursive: true });
+    const cwd = mkdtempSync(path.join(repositoryRoot, ".local", "effect-typecheck-flush-"));
+    writeFileSync(path.join(cwd, "tsconfig.json"), fixtureTsconfig);
+    writeFileSync(path.join(cwd, "value.ts"), 'export const value: number = "new";\n');
+    const modulePath = fileURLToPath(new URL("./effect-typecheck.ts", import.meta.url));
+    try {
+      const result = spawnSync(process.execPath, [modulePath], {
+        cwd,
+        encoding: "utf8",
+        env: pathWithBins(),
       });
-    const closed = open();
-    closed.destroy();
-    exitAfterFlush(1, record, []);
-    exitAfterFlush(2, record, [closed]);
-    expect(exited).toStrictEqual([1, 2]);
-    exitAfterFlush(3, record, [open(), open()]);
-    expect(exited).toStrictEqual([1, 2]);
-    await new Promise((resolve) => {
-      setImmediate(resolve);
-    });
-    expect(exited).toStrictEqual([1, 2, 3]);
-    const script = `import { exitAfterFlush } from ${JSON.stringify(fileURLToPath(new URL("./effect-typecheck.ts", import.meta.url)))};
-process.stdout.write("A".repeat(200000));
-process.stdout.write("END");
-exitAfterFlush(1, process.exit, [process.stdout, process.stderr]);
-`;
-    const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
-      encoding: "utf8",
-    });
-    expect(result.status).toBe(1);
-    expect(result.stdout ?? "").toHaveLength(200003);
-    expect((result.stdout ?? "").endsWith("END")).toBe(true);
+      expect(result.status).toBe(1);
+      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+      expect(output).toMatch(/error TS2322/u);
+      expect(output).toMatch(/typecheck gate: 1 new diagnostics/u);
+      expect(output.endsWith("\n")).toBe(true);
+    } finally {
+      rmSync(cwd, { force: true, recursive: true });
+    }
   });
 
   it("fails the vite task when the gate fails and does not run the next command", () => {

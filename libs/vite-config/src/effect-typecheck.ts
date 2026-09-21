@@ -606,27 +606,4 @@ const exitInvokedCli = (
 
 exitInvokedCli(process.argv[1], fileURLToPath(import.meta.url));
 
-export {
-  binRelative,
-  combinedOutput,
-  compileWorkspace,
-  compilerFromResolution,
-  diagnosticOf,
-  effectTsgoBin,
-  evaluateTypecheck,
-  isInvokedAsCli,
-  locateCompiler,
-  ownedDiagnostics,
-  exitAfterFlush,
-  exitInvokedCli,
-  maybeStart,
-  missingExportCodes,
-  parseBaseline,
-  parseTscOutput,
-  reportCliFailure,
-  runEffectTypecheck,
-  runInvokedCli,
-  serializeBaseline,
-  startEffectTypecheckCli,
-  workspaceOf,
-};
+export { runEffectTypecheck };
