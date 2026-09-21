@@ -1,9 +1,6 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { spawnSync } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createRequire } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { repositoryRoot } from "./repository-root.ts";
