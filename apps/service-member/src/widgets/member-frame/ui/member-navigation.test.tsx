@@ -1,4 +1,5 @@
 import { RegistryProvider } from "@effect/atom-react";
+import { ROLE } from "@repo/config/identity";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -19,7 +20,7 @@ const member = {
   email: "member@example.com",
   id: "member-1",
   name: "会員",
-  role: "member",
+  role: ROLE.member,
   twoFactorEnabled: false,
 } as const satisfies Session["user"];
 
