@@ -283,7 +283,6 @@ describe("lifecycle contents", () => {
       "apps/service-admin#check:dev",
       "apps/service-member#check:dev",
       "infra/cloudflare#verify:account",
-      "tools/commander#check:start",
       "tools/dev#check:exported",
       "tools/dev#setup",
       "tools/dont-review-it#check:staged",
@@ -342,7 +341,6 @@ describe("lifecycle contents", () => {
       "libs/db",
       "tools/ai-native",
       "tools/ai-native-telemetry",
-      "tools/commander",
       "tools/dont-review-it",
     ]);
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(

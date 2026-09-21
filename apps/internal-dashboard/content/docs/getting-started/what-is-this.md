@@ -22,7 +22,7 @@ Web サービスの立ち上げと継続的な開発において、次の課題�
 
 ## 含まれているもの
 
-- **4 つのアプリケーション**: 利用者向け会員アプリ、運用担当向け管理アプリ、社内向け wiki、手元で動かす司令塔アプリ（`tools/commander`）。それぞれの役割は [アプリの役割](/getting-started/applications) を参照してください。
+- **3 つのアプリケーション**: 利用者向け会員アプリ、運用担当向け管理アプリ、社内向け wiki。それぞれの役割は [アプリの役割](/getting-started/applications) を参照してください。
 - **共通パッケージ群**: 設定・DB・認証・ランタイム・UI・観測性を責務ごとに分割した `libs/`。
 - **インフラの宣言**: Cloudflare Workers、D1、Durable Objects、Workflows などをコードとして管理する Alchemy スクリプト。
 - **開発・検査の自動化**: Vite+ による高速なビルド、型検査、lint、テスト、および git hooks や GitHub Actions による品質ゲート。
