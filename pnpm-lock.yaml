@@ -1094,9 +1094,6 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
-      '@effect/vitest':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -1239,9 +1236,6 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
-      '@effect/vitest':
-        specifier: 'catalog:'
-        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(vitest@4.1.11)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
