@@ -129,6 +129,31 @@ const portableBaseline = (
   ),
 });
 
+const diagnosticBelongsToWorkspace = (
+  file: string,
+  cwd: string,
+  repositoryRoot: string,
+): boolean => {
+  if (file === "") {
+    return true;
+  }
+  const workspaceRoot = path.resolve(cwd);
+  const fromCheckout = file.startsWith(checkoutMarker)
+    ? path.resolve(repositoryRoot, file.slice(checkoutMarker.length).replace(/^\//u, ""))
+    : path.resolve(workspaceRoot, file);
+  const relative = path.relative(workspaceRoot, fromCheckout);
+  return relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+};
+
+const ownedDiagnostics = (
+  diagnostics: readonly Diagnostic[],
+  cwd: string,
+  repositoryRoot: string,
+): readonly Diagnostic[] =>
+  diagnostics.filter((diagnostic) =>
+    diagnosticBelongsToWorkspace(diagnostic.file, cwd, repositoryRoot),
+  );
+
 const fingerprintOf = (entry: Diagnostic): string =>
   JSON.stringify([entry.file, entry.code, entry.message]);
 
@@ -240,18 +265,24 @@ const evaluateTypecheck = (
   workspace: string,
   diagnostics: readonly Diagnostic[],
   baseline: TypecheckBaseline,
+  cwd: string,
+  repositoryRoot: string,
 ): TypecheckVerdict => {
   const alwaysFail = alwaysFailing(diagnostics);
   const countable = countDiagnostics(
     diagnostics.filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code)),
   );
   const expected = countDiagnostics(
-    baselinedEntries(baseline, workspace).flatMap((entry) =>
-      Array.from({ length: entry.count }, () => ({
-        file: entry.file,
-        code: entry.code,
-        message: entry.message,
-      })),
+    ownedDiagnostics(
+      baselinedEntries(baseline, workspace).flatMap((entry) =>
+        Array.from({ length: entry.count }, () => ({
+          file: entry.file,
+          code: entry.code,
+          message: entry.message,
+        })),
+      ),
+      cwd,
+      repositoryRoot,
     ),
   );
   const unexpected = difference(countable, expected);
@@ -391,8 +422,12 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
   }
   const compiled = asked.compile();
   asked.print(printedOutput(compiled.output));
-  const diagnostics = parseTscOutput(compiled.output).map((diagnostic) =>
-    portableDiagnostic(diagnostic, asked.repositoryRoot),
+  const diagnostics = ownedDiagnostics(
+    parseTscOutput(compiled.output).map((diagnostic) =>
+      portableDiagnostic(diagnostic, asked.repositoryRoot),
+    ),
+    asked.cwd,
+    asked.repositoryRoot,
   );
   if (diagnostics.length === 0 && compiled.status !== 0) {
     asked.print("typecheck gate: compiler exited without diagnostics\n");
@@ -421,7 +456,13 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
     );
     return 0;
   }
-  const verdict = evaluateTypecheck(workspace, diagnostics, baseline);
+  const verdict = evaluateTypecheck(
+    workspace,
+    diagnostics,
+    baseline,
+    asked.cwd,
+    asked.repositoryRoot,
+  );
   if (!verdict.ok) {
     asked.print(formatReport(verdict));
     return 1;
@@ -546,6 +587,8 @@ export {
   evaluateTypecheck,
   isInvokedAsCli,
   locateCompiler,
+  ownedDiagnostics,
+  diagnosticBelongsToWorkspace,
   exitAfterFlush,
   exitInvokedCli,
   maybeStart,

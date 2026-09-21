@@ -23,114 +23,6 @@
     ],
     "apps/internal-dashboard": [
       {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-test-fixture.ts",
-        "code": "TS18046",
-        "message": "'member.instance.api' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-test-fixture.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/auth/src/browser-client.ts",
-        "code": "TS2571",
-        "message": "Object is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/mail-fixture.ts",
-        "code": "TS2345",
-        "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'AuthApps' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'decodeRedirect' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/ui/src/wareki.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'Temporal'.",
-        "count": 1
-      },
-      {
         "file": "src/pages/docs/ui/docs-page.tsx",
         "code": "TS2322",
         "message": "Type 'unknown' is not assignable to type 'Root'.",
@@ -235,72 +127,6 @@
     ],
     "apps/service-admin": [
       {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/ui/src/wareki.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'Temporal'.",
-        "count": 1
-      },
-      {
         "file": "src/shared/server-api/server-app.ts",
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
@@ -314,78 +140,6 @@
       }
     ],
     "apps/service-member": [
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/ui/src/wareki.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'Temporal'.",
-        "count": 1
-      },
       {
         "file": "src/app/entry-conditions.ts",
         "code": "TS2749",
@@ -737,30 +491,6 @@
     ],
     "infra/cloudflare": [
       {
-        "file": "../../libs/monitor/src/index.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'DurableObjectNamespace'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/monitor/src/index.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'DurableObjectState'.",
-        "count": 4
-      },
-      {
-        "file": "../../libs/monitor/src/index.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'SendEmail'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
         "file": "src/account-inspection.test.ts",
         "code": "TS2339",
         "message": "Property 'cause' does not exist on type 'Exit<{ alertQuota: \"counted\" | \"free\" | Readonly<{ unreadable: readonly string[]; }>; database: \"free\" | \"owned\" | \"taken\" | Readonly<{ unreadable: readonly string[]; }>; deployToken: Readonly<...> | readonly string[]; ... 8 more ...; workersSubdomain: Readonly<...> | Presence; }, never>'.",
@@ -847,30 +577,6 @@
     ],
     "libs/auth": [
       {
-        "file": "../db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 2
-      },
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:workers' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "../observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
         "file": "src/auth-request.ts",
         "code": "TS18046",
         "message": "'instance.handler' is of type 'unknown'.",
@@ -945,12 +651,6 @@
     ],
     "libs/db": [
       {
-        "file": "../../infra/cloudflare/src/remote-command.ts",
-        "code": "TS2883",
-        "message": "The inferred type of 'runRemoteDatabaseCommand' cannot be named without a reference to 'RemoteFailure' from '../node_modules/@repo/db/src/remote-input.ts'. This is likely not portable. A type annotation is necessary.",
-        "count": 1
-      },
-      {
         "file": "src/index.ts",
         "code": "TS6133",
         "message": "'eq' is declared but its value is never read.",
@@ -966,76 +666,6 @@
         "file": "src/remote-operations.test.ts",
         "code": "TS2769",
         "message": "No overload matches this call.",
-        "count": 1
-      }
-    ],
-    "libs/db-local": [
-      {
-        "file": "../db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      }
-    ],
-    "libs/feature-flags": [
-      {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 2
-      },
-      {
-        "file": "../observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
         "count": 1
       }
     ],
@@ -1123,60 +753,6 @@
     ],
     "libs/runtime": [
       {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
-      {
         "file": "src/http-events.test.ts",
         "code": "TS2345",
         "message": "Argument of type 'AsyncGenerator<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }, void, any> | { readonly error: string; }' is not assignable to parameter of type 'AsyncIterable<FailedEvent | { readonly data: { readonly count: string; }; readonly event: \"tick\"; }>'.",
@@ -1190,60 +766,6 @@
       }
     ],
     "tools/dev": [
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/db/src/index.ts",
-        "code": "TS6133",
-        "message": "'eq' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/observability/src/request-span.ts",
-        "code": "TS2322",
-        "message": "Type 'ErrorAttributes & { readonly \"error.tag\"?: string; }' is not assignable to type 'Readonly<Record<string, string | number | boolean>>'.",
-        "count": 1
-      },
       {
         "file": "src/ci-runner.test.ts",
         "code": "TS2379",

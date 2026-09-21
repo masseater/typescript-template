@@ -28,6 +28,7 @@ import {
   isInvokedAsCli,
   maybeStart,
   missingExportCodes,
+  ownedDiagnostics,
   parseBaseline,
   parseTscOutput,
   reportCliFailure,
@@ -88,6 +89,77 @@ const runGate = (asked: {
 };
 
 describe("effect typecheck gate", () => {
+  it("keeps only diagnostics that belong to the workspace that ran the gate", () => {
+    expect.hasAssertions();
+    const repositoryRoot = "/repo";
+    const cwd = "/repo/apps/service-member";
+    expect(
+      ownedDiagnostics(
+        [
+          { code: "TS4111", file: "src/app.ts", message: "local" },
+          {
+            code: "TS4111",
+            file: "../../libs/auth/src/session.ts",
+            message: "foreign relative",
+          },
+          {
+            code: "TS4023",
+            file: "<repo>/libs/monitor/src/monitor-fixture.ts",
+            message: "foreign checkout",
+          },
+          {
+            code: "TS2322",
+            file: "<repo>/apps/service-member/src/routes.ts",
+            message: "owned checkout",
+          },
+          { code: "TS0000", file: "", message: "compiler" },
+        ],
+        cwd,
+        repositoryRoot,
+      ),
+    ).toStrictEqual([
+      { code: "TS4111", file: "src/app.ts", message: "local" },
+      {
+        code: "TS2322",
+        file: "<repo>/apps/service-member/src/routes.ts",
+        message: "owned checkout",
+      },
+      { code: "TS0000", file: "", message: "compiler" },
+    ]);
+  });
+
+  it("does not fail the gate on type errors in another workspace's sources", () => {
+    expect.hasAssertions();
+    const cwd = createFixture({ "value.ts": "export const value: number = 1;\n" });
+    const other = path.join(path.dirname(cwd), "other-workspace");
+    try {
+      mkdirSync(other);
+      writeFileSync(path.join(other, "broken.ts"), 'export const value: number = "new";\n');
+      const listed = serializeBaseline({
+        version: 1,
+        workspaces: {
+          [workspaceOf(cwd, path.dirname(cwd))]: [
+            {
+              file: "../other-workspace/broken.ts",
+              code: "TS2322",
+              message: "Type 'string' is not assignable to type 'number'.",
+              count: 1,
+            },
+          ],
+        },
+      });
+      const result = runGate({
+        cwd,
+        baseline: listed,
+        repositoryRoot: path.dirname(cwd),
+      });
+      expect(result.code).toBe(0);
+    } finally {
+      rmSync(cwd, { force: true, recursive: true });
+      rmSync(other, { force: true, recursive: true });
+    }
+  });
+
   it("fails a new assignability error that is not on the snapshot", () => {
     expect.hasAssertions();
     const cwd = createFixture({ "value.ts": 'export const value: number = "new";\n' });
@@ -159,7 +231,13 @@ describe("effect typecheck gate", () => {
       expect(result.code).toBe(1);
       expect(result.printed).toMatch(/missing-export errors/u);
       expect(
-        evaluateTypecheck(".", parseTscOutput(compiled.output), parseBaseline(listed)).ok,
+        evaluateTypecheck(
+          ".",
+          parseTscOutput(compiled.output),
+          parseBaseline(listed),
+          cwd,
+          cwd,
+        ).ok,
       ).toBe(false);
     } finally {
       rmSync(cwd, { force: true, recursive: true });
