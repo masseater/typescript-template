@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createHash } from "node:crypto";
 
 import { appEnvKey, applicationOrigins, grants, mailpitOrigin } from "@repo/config";
