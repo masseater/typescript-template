@@ -76,8 +76,8 @@ const compareCounted = (left: CountedDiagnostic, right: CountedDiagnostic): numb
 
 const countDiagnostics = (diagnostics: readonly Diagnostic[]): readonly CountedDiagnostic[] =>
   [...Map.groupBy(diagnostics, fingerprintOf).values()]
-    .flatMap((group) => {
-      const diagnostic = group[0];
+    .flatMap((matchedDiagnostics) => {
+      const diagnostic = matchedDiagnostics[0];
       return diagnostic === undefined
         ? []
         : [
@@ -85,7 +85,7 @@ const countDiagnostics = (diagnostics: readonly Diagnostic[]): readonly CountedD
               file: diagnostic.file,
               code: diagnostic.code,
               message: diagnostic.message,
-              count: group.length,
+              count: matchedDiagnostics.length,
             },
           ];
     })
