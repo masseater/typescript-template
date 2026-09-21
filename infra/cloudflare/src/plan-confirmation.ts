@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createHash } from "node:crypto";
 
 import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
@@ -242,4 +243,4 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
 });
 
 export { acceptPlan, planConfirmation, planReport, plannedStack };
-export type { PlanReport, PlannedStack };
+export type { PlannedStack };

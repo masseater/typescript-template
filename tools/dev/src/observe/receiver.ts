@@ -1,5 +1,8 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { once } from "node:events";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { text } from "node:stream/consumers";
 
 import { APPLICATION, loopbackAddress, loopbackOrigin } from "@repo/config";

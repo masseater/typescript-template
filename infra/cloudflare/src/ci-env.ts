@@ -1,5 +1,8 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { appendFile, chmod, mkdir, writeFile } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { tmpdir } from "node:os";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { deploymentKeys, optionalDeploymentKeys } from "@repo/observability/deployment-keys";
@@ -95,4 +98,3 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
 });
 
 export { PrepareCiEnvFailure, writeCiSecretsFile };
-export type { CiEnvPreparation };
