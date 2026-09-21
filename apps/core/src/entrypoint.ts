@@ -1,5 +1,6 @@
 import { createRpcFetcher } from "@repo/core-api";
 import { WorkerEntrypoint } from "cloudflare:workers";
+import { Effect } from "effect";
 
 import type * as Layer from "effect/Layer";
 import type { Rpc } from "effect/unstable/rpc";
@@ -11,12 +12,19 @@ const entrypointClass = <Rpcs extends Rpc.Any>(
   handlerLayer: (bindings: CoreBindings) => Layer.Layer<Rpc.ToHandler<Rpcs>>,
 ): new (ctx: ExecutionContext, env: CoreBindings) => WorkerEntrypoint<CoreBindings> =>
   class extends WorkerEntrypoint<CoreBindings> {
-    public override async fetch(httpRequest: Request): Promise<Response> {
+    public override fetch(httpRequest: Request): Promise<Response> {
       const rpc = createRpcFetcher(rpcContract, handlerLayer(this.env));
-      const rpcResponse = await rpc.fetch(httpRequest);
-      const rpcBytes = await rpcResponse.arrayBuffer();
-      await rpc.dispose();
-      return new Response(rpcBytes, { headers: rpcResponse.headers, status: rpcResponse.status });
+      return Effect.runPromise(
+        Effect.gen(function* serveRpc() {
+          const rpcResponse = yield* Effect.promise(() => rpc.fetch(httpRequest));
+          const rpcBytes = yield* Effect.promise(() => rpcResponse.arrayBuffer());
+          yield* Effect.promise(() => rpc.dispose());
+          return new Response(rpcBytes, {
+            headers: rpcResponse.headers,
+            status: rpcResponse.status,
+          });
+        }),
+      );
     }
   };
 

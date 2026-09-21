@@ -421,7 +421,7 @@ const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackN
   const matches = coreViolation === undefined && isDeepStrictEqual(inventory, expected);
   if (coreViolation !== undefined) {
     yield* Console.error(
-      JSON.stringify({ event: "core.public_entry", stack, violation: coreViolation }),
+      yield* encodeJson({ event: "core.public_entry", stack, violation: coreViolation }),
     );
   }
   if (!matches) {

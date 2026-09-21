@@ -22,7 +22,9 @@ interface ElysiaContext {
   readonly request: Request;
 }
 interface ElysiaStreamContext extends ElysiaContext {
-  readonly set: { readonly headers: Record<string, string | number> };
+  readonly set: {
+    readonly headers: { readonly [header: string]: string | number | string[] | undefined };
+  };
 }
 interface ServerSentEvent {
   readonly data: unknown;
@@ -181,21 +183,24 @@ class EventFeed<Encoded extends ServerSentEvent> implements EventStream<Encoded>
     this.source = events[Symbol.asyncIterator]();
   }
 
-  public async next(): Promise<IteratorResult<Encoded, void>> {
-    const step = await this.source.next();
-    if (step.done === true) {
-      return { done: true, value: undefined };
-    }
-    const frame = sse({ data: step.value.data, event: step.value.event });
-    return { done: false, value: { ...step.value, ...frame } };
+  public next(): Promise<IteratorResult<Encoded, void>> {
+    return this.source.next().then((step) => {
+      if (step.done === true) {
+        return { done: true as const, value: undefined };
+      }
+      const frame = sse({ data: step.value.data, event: step.value.event });
+      return { done: false as const, value: { ...step.value, ...frame } };
+    });
   }
 
-  public async return(): Promise<IteratorResult<Encoded, void>> {
-    await this.source.return?.();
-    return { done: true, value: undefined };
+  public return(): Promise<IteratorResult<Encoded, void>> {
+    return Promise.resolve(this.source.return?.()).then(() => ({
+      done: true as const,
+      value: undefined,
+    }));
   }
 
-  public async throw(): Promise<IteratorResult<Encoded, void>> {
+  public throw(): Promise<IteratorResult<Encoded, void>> {
     return this.return();
   }
 
@@ -203,8 +208,8 @@ class EventFeed<Encoded extends ServerSentEvent> implements EventStream<Encoded>
     return this;
   }
 
-  public async [Symbol.asyncDispose](): Promise<void> {
-    await this.return();
+  public [Symbol.asyncDispose](): Promise<void> {
+    return this.return().then(() => undefined);
   }
 }
 

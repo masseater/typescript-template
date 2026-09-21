@@ -33,7 +33,7 @@ const sharedBindings = {
   APP_RELEASE: release,
   ASSETS: binding<Service>({ fetch: (): Promise<Response> => Promise.resolve(new Response()) }),
   AUTH_SECRET: "runtime-secret-of-at-least-32-characters",
-  CORE: binding<Fetcher>({ fetch: async (): Promise<Response> => new Response() }),
+  CORE: binding<Fetcher>({ fetch: (): Promise<Response> => Promise.resolve(new Response()) }),
   DB: binding<D1Database>({
     batch: (): Promise<never[]> => Promise.resolve([]),
     prepare: (): undefined => undefined,
