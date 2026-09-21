@@ -178,7 +178,18 @@ const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
   prerelease: ["prepr", "premerge"],
 };
 
-function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}) {
+type LifecycleTask = {
+  command: string[];
+  dependsOn: string[];
+};
+
+function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}): {
+  readonly precommit: LifecycleTask;
+  readonly prepush: LifecycleTask;
+  readonly prepr: LifecycleTask;
+  readonly premerge: LifecycleTask;
+  readonly prerelease: LifecycleTask;
+} {
   return {
     precommit: {
       command: [],
@@ -188,7 +199,10 @@ function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>
       command: [],
       dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
     },
-    prepr: { command: [], dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])] },
+    prepr: {
+      command: [],
+      dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+    },
     premerge: {
       command: [],
       dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
