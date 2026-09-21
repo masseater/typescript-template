@@ -9,6 +9,7 @@ import {
   useToast,
 } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { useNewThreadForm } from "#pages/board/model/new-thread-form.ts";
 import { maximumBoardBodyLength, maximumBoardTitleLength } from "#shared/contracts/index.ts";
@@ -19,10 +20,14 @@ function NewThreadForm(): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showCreated(threadId: string): Promise<void> {
-    await router.invalidate();
-    await navigate({ params: { id: threadId }, to: "/board/$id" });
-    notify("success", "スレッドを立てました。");
+  function showCreated(threadId: string): Promise<void> {
+    return Effect.runPromise(
+      Effect.gen(function* afterCreate() {
+        yield* Effect.promise(() => router.invalidate());
+        yield* Effect.promise(() => navigate({ params: { id: threadId }, to: "/board/$id" }));
+        notify("success", "スレッドを立てました。");
+      }),
+    );
   }
   const form = useNewThreadForm(showCreated);
   return (

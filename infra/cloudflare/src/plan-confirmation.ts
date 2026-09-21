@@ -1,7 +1,6 @@
-import { createHash } from "node:crypto";
-
+import { NodeServices } from "@effect/platform-node";
 import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
-import { Effect, Predicate, Redacted } from "effect";
+import { Crypto, Effect, Predicate, Redacted } from "effect";
 
 import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
 
@@ -46,11 +45,12 @@ type PlannedStack = Pick<StackRoute.PlanSnapshot, "actions" | "resources" | "sta
   readonly props: Readonly<Record<string, unknown>>;
 };
 
+const crypto = Effect.runSync(Effect.provide(Crypto.Crypto, NodeServices.layer));
+
 function digest(value: unknown): string {
-  return createHash("sha256")
-    .update(JSON.stringify({ value }))
-    .digest("hex")
-    .slice(0, CONFIRMATION_LENGTH);
+  const encoded = new TextEncoder().encode(JSON.stringify({ value }));
+  const hash = Effect.runSync(crypto.digest("SHA-256", encoded));
+  return Buffer.from(hash).toString("hex").slice(0, CONFIRMATION_LENGTH);
 }
 
 const EXPRESSION_FIELDS = ["expr", "f", "identifier", "kind", "resourceId", "stack", "stage"];
@@ -224,20 +224,16 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   const refusals = refusedRows(planned);
   const code = refusals[0]?.code;
   if (code !== undefined) {
-    return yield* Effect.fail(
-      new CloudflareFailure({
-        code,
-        keys: refusals.filter((row) => row.code === code).map((row) => row.id),
-      }),
-    );
+    return yield* new CloudflareFailure({
+      code,
+      keys: refusals.filter((row) => row.code === code).map((row) => row.id),
+    });
   }
   if (planConfirmation(planned, approval.accountId) !== approval.confirmation) {
-    return yield* Effect.fail(
-      new CloudflareFailure({
-        code: "plan_confirmation_mismatch",
-        keys: [planned.stack.name],
-      }),
-    );
+    return yield* new CloudflareFailure({
+      code: "plan_confirmation_mismatch",
+      keys: [planned.stack.name],
+    });
   }
 });
 

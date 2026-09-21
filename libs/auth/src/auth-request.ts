@@ -14,7 +14,7 @@ function authPromise<Value>(
     const { instance } = yield* Auth;
     return yield* Effect.tryPromise({
       catch: (cause) => new AuthFailure({ cause }),
-      try: async () => run(instance),
+      try: () => run(instance),
     });
   });
 }
@@ -22,7 +22,7 @@ function authPromise<Value>(
 const handleAuthRequest = function handleAuthRequest(
   request: Request,
 ): Effect.Effect<Response, AuthFailure, Auth> {
-  return authPromise(async (instance) => instance.handler(request));
+  return authPromise((instance) => instance.handler(request));
 };
 
 const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToken(
@@ -37,7 +37,10 @@ const verifyEmailToken = Effect.fn("verifyEmailToken")(function* verifyEmailToke
   const verification = new URL("/api/auth/verify-email", baseURL);
   verification.searchParams.set("token", token);
   const response = yield* handleAuthRequest(new Request(verification, { headers, method: "GET" }));
-  yield* Effect.promise(async () => response.body?.cancel());
+  const responseBody = response.body;
+  if (responseBody !== null) {
+    yield* Effect.promise(() => responseBody.cancel());
+  }
   if (!response.ok) {
     return yield* new EmailVerificationFailed({
       rateLimited: response.status === httpStatus.tooManyRequests,

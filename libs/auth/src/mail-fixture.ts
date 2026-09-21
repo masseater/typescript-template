@@ -23,35 +23,37 @@ const MailpitMessage = Schema.Struct({
   Text: Schema.String,
   To: Schema.Array(Schema.Struct({ Email: Schema.String })),
 });
-const decodeMail = Schema.decodeUnknownPromise(MailpitMessage);
-
 class Mailbox extends Context.Service<Mailbox, Ref.Ref<readonly Delivery[]>>()(
   "@repo/auth/Mailbox",
 ) {}
 
 const receiveMail = (deliveries: Mailbox["Service"]) => {
-  return async ({
+  return ({
     request,
   }: {
     readonly request: { readonly json: () => Promise<unknown> };
-  }): Promise<Response> => {
-    const mailpitMessage = await decodeMail(await request.json());
-    const link = mailpitMessage.Text.split("\n").find((line) => line.startsWith("http://"));
-    if (
-      mailpitMessage.From.Email !== mailConfig.EMAIL_FROM ||
-      !knownSubjects.has(mailpitMessage.Subject) ||
-      link === undefined
-    ) {
-      return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: httpStatus.badRequest });
-    }
-    const delivered = mailpitMessage.To.map(({ Email }) => ({
-      link,
-      recipient: Email,
-      subject: mailpitMessage.Subject,
-    }));
-    await Effect.runPromise(Ref.update(deliveries, (earlier) => [...earlier, ...delivered]));
-    return HttpResponse.json({ ID: crypto.randomUUID() });
-  };
+  }): Promise<Response> =>
+    Effect.runPromise(
+      Effect.gen(function* receive() {
+        const requestJson = yield* Effect.promise(() => request.json());
+        const mailpitMessage = yield* Schema.decodeUnknownEffect(MailpitMessage)(requestJson);
+        const link = mailpitMessage.Text.split("\n").find((line) => line.startsWith("http://"));
+        if (
+          mailpitMessage.From.Email !== mailConfig.EMAIL_FROM ||
+          !knownSubjects.has(mailpitMessage.Subject) ||
+          link === undefined
+        ) {
+          return HttpResponse.json({ error: "INVALID_EMAIL" }, { status: httpStatus.badRequest });
+        }
+        const delivered = mailpitMessage.To.map(({ Email }) => ({
+          link,
+          recipient: Email,
+          subject: mailpitMessage.Subject,
+        }));
+        yield* Ref.update(deliveries, (earlier) => [...earlier, ...delivered]);
+        return HttpResponse.json({ ID: crypto.randomUUID() });
+      }),
+    );
 };
 
 const startNetwork = (deliveries: Mailbox["Service"]): ReturnType<typeof setupNetwork> => {

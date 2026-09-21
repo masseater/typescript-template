@@ -144,7 +144,7 @@ const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   const text = yield* withFileSystem((fs) => fs.readFileString(mapFile)).pipe(
     Effect.mapError(unreadable),
   );
-  const parsed = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Payload))(text).pipe(
+  const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Payload))(text).pipe(
     Effect.mapError(invalid),
   );
   return yield* Effect.try({

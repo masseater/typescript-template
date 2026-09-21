@@ -1,5 +1,6 @@
 import { Button, Field, FormColumn, Heading, localState, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
@@ -43,11 +44,15 @@ function WelcomeProfilePage(): ReactElement {
       <Button
         disabled={action.blocked || name.trim() === ""}
         onClick={() => {
-          action.run(async () => {
-            await saveProfile(name, profile, []);
-            await saveOnboardingStep("done");
-            await navigate({ to: "/home" });
-          });
+          action.run(() =>
+            Effect.runPromise(
+              Effect.gen(function* finishWelcome() {
+                yield* Effect.promise(() => saveProfile(name, profile, []));
+                yield* Effect.promise(() => saveOnboardingStep("done"));
+                yield* Effect.promise(() => navigate({ to: "/home" }));
+              }),
+            ),
+          );
         }}
         type="button"
         variant="primary"

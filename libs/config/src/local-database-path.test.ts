@@ -1,26 +1,28 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
+import { env as processEnvironment } from "node:process";
 
-import { describe, expect, it } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { assert, it } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 
 import { localDatabaseDirectory, localDatabaseVariable } from "./local-database-path.ts";
 
-describe("local database path", () => {
-  it("reads the persist directory from the environment at call time", async () => {
-    expect.hasAssertions();
-    const directory = await mkdtemp(path.join(tmpdir(), "template-local-database-path-"));
-    const previous = process.env[localDatabaseVariable];
+it.effect("reads the persist directory from the environment at call time", () =>
+  Effect.gen(function* program() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const directory = yield* filesystem.makeTempDirectoryScoped({
+      prefix: "template-local-database-path-",
+    });
+    const previous = processEnvironment[localDatabaseVariable];
+    processEnvironment[localDatabaseVariable] = directory;
     try {
-      process.env[localDatabaseVariable] = directory;
-      expect(localDatabaseDirectory()).toBe(path.resolve(directory));
+      assert.strictEqual(localDatabaseDirectory(), paths.resolve(directory));
     } finally {
       if (previous === undefined) {
-        delete process.env[localDatabaseVariable];
+        delete processEnvironment[localDatabaseVariable];
       } else {
-        process.env[localDatabaseVariable] = previous;
+        processEnvironment[localDatabaseVariable] = previous;
       }
-      await rm(directory, { force: true, recursive: true });
     }
-  });
-});
+  }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+);

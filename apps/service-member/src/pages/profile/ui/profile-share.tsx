@@ -6,7 +6,7 @@ import {
   localState,
   useOptionalString,
 } from "@repo/ui";
-import { Option } from "effect";
+import { Effect, Option } from "effect";
 
 import type { ReactElement } from "react";
 
@@ -23,18 +23,26 @@ function ProfileShare({
   const [feedback, setFeedback] = useOptionalString();
   const [qrOpen, setQrOpen] = useQrOpen();
 
-  const copyLink = async (): Promise<void> => {
-    await navigator.clipboard.writeText(profileUrl(memberId));
-    setFeedback(Option.some("リンクをコピーしました。"));
-  };
+  const copyLink = (): Promise<void> =>
+    Effect.runPromise(
+      Effect.gen(function* copyProfileLink() {
+        yield* Effect.promise(() => navigator.clipboard.writeText(profileUrl(memberId)));
+        setFeedback(Option.some("リンクをコピーしました。"));
+      }),
+    );
 
-  const shareNative = async (): Promise<void> => {
-    if (typeof navigator.share !== "function") {
-      setFeedback(Option.some("この端末では共有機能を使えません。"));
-      return;
-    }
-    await navigator.share({ title: "プロフィール", url: profileUrl(memberId) });
-  };
+  const shareNative = (): Promise<void> =>
+    Effect.runPromise(
+      Effect.gen(function* shareProfile() {
+        if (typeof navigator.share !== "function") {
+          setFeedback(Option.some("この端末では共有機能を使えません。"));
+          return;
+        }
+        yield* Effect.promise(() =>
+          navigator.share({ title: "プロフィール", url: profileUrl(memberId) }),
+        );
+      }),
+    );
 
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-border p-3">

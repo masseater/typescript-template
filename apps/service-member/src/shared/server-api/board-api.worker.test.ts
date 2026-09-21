@@ -54,29 +54,37 @@ function send(
   path: string,
   init: { readonly body?: unknown; readonly cookie?: string; readonly method?: "GET" | "POST" },
 ): Effect.Effect<Response> {
-  return Effect.promise(async () => {
+  return Effect.gen(function* sendBoardRequest() {
     const method = init.method ?? (init.body === undefined ? "GET" : "POST");
-    return app.fetch(
-      new Request(`${fixtureOrigin}${apiRoot}${path}`, {
-        headers: {
-          "content-type": "application/json",
-          cookie: init.cookie ?? "",
-          origin: fixtureOrigin,
-        },
-        method,
-        ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
-      }),
+    const body =
+      init.body === undefined
+        ? undefined
+        : yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(init.body);
+    return yield* Effect.promise(() =>
+      Promise.resolve(
+        app.fetch(
+          new Request(`${fixtureOrigin}${apiRoot}${path}`, {
+            headers: {
+              "content-type": "application/json",
+              cookie: init.cookie ?? "",
+              origin: fixtureOrigin,
+            },
+            method,
+            ...(body === undefined ? {} : { body }),
+          }),
+        ),
+      ),
     );
-  });
+  }).pipe(Effect.orDie);
 }
 
 const jsonOf = (response: Response): Effect.Effect<unknown> =>
-  Effect.promise(async (): Promise<unknown> => response.json());
+  Effect.promise(() => response.json() as Promise<unknown>);
 
 const verificationToken = Effect.fn("verificationToken")(function* verificationToken(
   email: string,
 ) {
-  const delivered = yield* Effect.promise(async () => env.EMAIL.taken());
+  const delivered = yield* Effect.sync(() => env.EMAIL.taken());
   const mail = delivered.findLast((sent) => sent.to.includes(email));
   const link = mail?.text.split("\n").find((line) => line.startsWith("http://")) ?? "";
   return new URLSearchParams(new URL(link).hash.slice(1)).get("token") ?? "";

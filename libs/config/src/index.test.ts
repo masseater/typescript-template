@@ -139,7 +139,7 @@ it.effect("accepts the bindings the worker declares", () =>
   }),
 );
 
-const absent = JSON.parse("null") as unknown;
+const absent = null;
 
 const brokenBindings = [
   { broken: { ASSETS: {} }, expected: "Fetcher", label: "an assets binding with no fetch" },
@@ -166,13 +166,14 @@ for (const { broken, expected, label } of brokenBindings) {
 it.effect("accepts an https origin and rejects any other scheme", () =>
   Effect.gen(function* program() {
     assert.strictEqual(
-      yield* Schema.decodeUnknownEffect(HttpsOrigin)("https://app.example.test"),
+      yield* Schema.decodeEffect(HttpsOrigin)("https://app.example.test"),
       "https://app.example.test",
     );
-    const rejected = yield* Schema.decodeUnknownEffect(HttpsOrigin)("http://localhost").pipe(
-      Effect.flip,
+    const rejected = yield* Schema.decodeEffect(HttpsOrigin)("http://localhost").pipe(Effect.flip);
+    assert.include(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(rejected),
+      "HTTPS is required",
     );
-    assert.include(JSON.stringify(rejected), "HTTPS is required");
   }),
 );
 

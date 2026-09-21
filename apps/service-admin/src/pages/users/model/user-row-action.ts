@@ -1,7 +1,7 @@
 import { useAtom } from "@effect/atom-react";
 import { apiData } from "@repo/runtime/client";
 import { localState, request, resultError, useToast } from "@repo/ui";
-import { Option } from "effect";
+import { Effect, Option } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
@@ -21,15 +21,17 @@ interface UserRowAction {
   readonly pending: boolean;
 }
 
-async function perform(user: ListedUser, operation: RowOperation): Promise<string> {
-  const { users } = adminClient();
-  if (operation === "delete") {
-    apiData(UserDeleted, await users.delete({ id: user.id }));
-    return `${user.email} を削除しました。`;
-  }
-  const role = nextRoles[user.role];
-  apiData(RoleChanged, await users.patch({ id: user.id, role }));
-  return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
+function perform(user: ListedUser, operation: RowOperation): Effect.Effect<string> {
+  return Effect.gen(function* performRowOperation() {
+    const { users } = adminClient();
+    if (operation === "delete") {
+      apiData(UserDeleted, yield* Effect.promise(() => users.delete({ id: user.id })));
+      return `${user.email} を削除しました。`;
+    }
+    const role = nextRoles[user.role];
+    apiData(RoleChanged, yield* Effect.promise(() => users.patch({ id: user.id, role })));
+    return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
+  });
 }
 
 const useRowConfirming = localState(Option.none<RowOperation>());
@@ -37,7 +39,7 @@ const useRowConfirming = localState(Option.none<RowOperation>());
 const changeAtom = Atom.family((userId: string) => {
   void userId;
   return Atom.fn(({ operation, user }: Readonly<{ operation: RowOperation; user: ListedUser }>) =>
-    request(async () => perform(user, operation)),
+    request(() => Effect.runPromise(perform(user, operation))),
   );
 });
 
@@ -56,24 +58,28 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
       setConfirming(Option.none());
     }
   }
-  async function execute(operation: RowOperation): Promise<void> {
-    const change = AsyncResult.fromExit(await run({ operation, user }));
-    if (AsyncResult.isSuccess(change)) {
-      notify("success", change.value);
-      onChanged();
-      return;
-    }
-    const failure = resultError(change);
-    if (failure !== undefined) {
-      notify("error", failure);
-    }
+  function execute(operation: RowOperation): void {
+    void Effect.runPromise(
+      Effect.gen(function* executeRowOperation() {
+        const change = AsyncResult.fromExit(yield* Effect.promise(() => run({ operation, user })));
+        if (AsyncResult.isSuccess(change)) {
+          notify("success", change.value);
+          onChanged();
+          return;
+        }
+        const failure = resultError(change);
+        if (failure !== undefined) {
+          notify("error", failure);
+        }
+      }),
+    );
   }
   function handleConfirm(): void {
     if (Option.isNone(confirming)) {
       return;
     }
     setConfirming(Option.none());
-    void execute(confirming.value);
+    execute(confirming.value);
   }
   return {
     confirming: Option.getOrUndefined(confirming),

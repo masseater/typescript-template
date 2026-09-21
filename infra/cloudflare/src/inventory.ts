@@ -1,3 +1,5 @@
+import { env as processEnvironment } from "node:process";
+
 import { Stage, inMemoryState } from "alchemy";
 import { providers } from "alchemy/Cloudflare";
 import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
@@ -130,7 +132,7 @@ function declaredValue(value: unknown): unknown {
 
 function applyVerificationEnvironment(): void {
   for (const [name, value] of Object.entries(verificationEnvironment)) {
-    process.env[name] = value;
+    processEnvironment[name] = value;
   }
 }
 
@@ -255,31 +257,31 @@ function stackProgram(module: unknown): StackProgram | undefined {
 const compileStack = Effect.fn("compileStack")(function* compileStack(stack: StackName) {
   const module: unknown = yield* Effect.tryPromise({
     catch: (cause) => inventoryFailure("stack_module_invalid", stack, cause),
-    try: async (): Promise<unknown> => import(`./${stack}.ts`),
+    try: (): Promise<unknown> => import(`./${stack}.ts`),
   });
   const program = stackProgram(module);
   if (program === undefined) {
-    return yield* Effect.fail(
-      inventoryFailure("stack_module_invalid", stack, "default export is not an Effect"),
+    return yield* inventoryFailure(
+      "stack_module_invalid",
+      stack,
+      "default export is not an Effect",
     );
   }
-  const compiled: unknown = yield* Effect.tryPromise({
-    catch: (cause) => inventoryFailure("stack_compilation_failed", stack, cause),
-    try: async () =>
-      Effect.runPromise(
-        toEffect(Effect.provideService(program, Stage, verificationSettings.prefix), {
-          providers: providers(),
-          state: inMemoryState(),
-        }).pipe(Effect.provideService(References.MinimumLogLevel, "Warn")),
-      ),
-  });
+  const compiled: unknown = yield* toEffect(
+    Effect.provideService(program, Stage, verificationSettings.prefix),
+    {
+      providers: providers(),
+      state: inMemoryState(),
+    },
+  ).pipe(
+    Effect.provideService(References.MinimumLogLevel, "Warn"),
+    Effect.mapError((cause) => inventoryFailure("stack_compilation_failed", stack, cause)),
+  );
   const shape = yield* Schema.decodeUnknownEffect(CompiledShape)(compiled).pipe(
     Effect.mapError((cause) => inventoryFailure("stack_compilation_failed", stack, cause)),
   );
   if (shape.name !== stackName(stack)) {
-    return yield* Effect.fail(
-      inventoryFailure("stack_module_invalid", stack, `stack is named ${shape.name}`),
-    );
+    return yield* inventoryFailure("stack_module_invalid", stack, `stack is named ${shape.name}`);
   }
   return inventoryOf(shape);
 });

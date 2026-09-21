@@ -5,7 +5,7 @@ import { claimMailSlot, findUser, schema, type DrizzleDatabase } from "@repo/db"
 import { logAt, logCause } from "@repo/observability";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
-import { Effect, Cause } from "effect";
+import { Clock, DateTime, Effect, Cause } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
 import {
@@ -29,22 +29,25 @@ const createDatabaseHooks = (
   return {
     session: {
       create: {
-        before: async (
+        before: (
           candidate: Readonly<Record<string, unknown> & { userId: string }>,
           hookContext: Readonly<{ path: string }> | null,
-        ) => {
-          const user = await run(findUser(candidate.userId));
-          assertEligibleUser(user, audience);
-          return {
-            data: {
-              ...candidate,
-              audience,
-              authenticatedAt: new Date(),
-              authenticationMethod: authenticationMethodFor(hookContext?.path),
-              securityVersion: user.securityVersion,
-            },
-          };
-        },
+        ) =>
+          Effect.runPromise(
+            Effect.gen(function* beforeSessionCreate() {
+              const user = yield* Effect.promise(() => run(findUser(candidate.userId)));
+              assertEligibleUser(user, audience);
+              return {
+                data: {
+                  ...candidate,
+                  audience,
+                  authenticatedAt: DateTime.toDate(yield* DateTime.now),
+                  authenticationMethod: authenticationMethodFor(hookContext?.path),
+                  securityVersion: user.securityVersion,
+                },
+              };
+            }),
+          ),
       },
     },
     user: {
@@ -95,7 +98,9 @@ const mailExistingAccount = Effect.fn("mailExistingAccount")(function* mailExist
   readonly origin: string;
   readonly user: Readonly<{ email: string; emailVerified: boolean }>;
 }) {
-  const until = new Date(Date.now() + EXISTING_ACCOUNT_NOTICE_MILLISECONDS);
+  const until = DateTime.toDate(
+    DateTime.makeUnsafe((yield* Clock.currentTimeMillis) + EXISTING_ACCOUNT_NOTICE_MILLISECONDS),
+  );
   const identifier = `existing-account-notice:${user.email}`;
   if (!(yield* claimMailSlot({ audience: authOptions.audience, identifier, until }))) {
     yield* logAt("Warn", { eventName: "authentication.existing_account_notice_throttled" });
@@ -108,7 +113,7 @@ const mailExistingAccount = Effect.fn("mailExistingAccount")(function* mailExist
     });
     return;
   }
-  const token = yield* Effect.promise(async () =>
+  const token = yield* Effect.promise(() =>
     createEmailVerificationToken(authOptions.secret, user.email),
   );
   yield* sendVerificationEmail(authOptions.mail, {
@@ -125,11 +130,11 @@ const createEmailVerification = (
     autoSignInAfterVerification: false,
     sendOnSignIn: authOptions.audience !== APPLICATION.wiki,
     sendOnSignUp: true,
-    sendVerificationEmail: async ({
+    sendVerificationEmail: ({
       user,
       token,
-    }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
-      await run(
+    }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) =>
+      run(
         emailChangeTarget(token) === undefined
           ? sendVerificationEmail(authOptions.mail, {
               email: user.email,
@@ -139,8 +144,7 @@ const createEmailVerification = (
               email: user.email,
               url: emailChangeLink(origin, token),
             }),
-      );
-    },
+      ),
   };
 };
 
@@ -148,14 +152,13 @@ const createEmailChangeNotifier = (
   authOptions: AuthOptions,
   { origin, run }: Readonly<{ origin: string; run: Run }>,
 ): ((email: string) => Promise<void>) => {
-  return async (email) => {
-    await run(
+  return (email) =>
+    run(
       sendEmailChangeNotice(authOptions.mail, {
         email,
         url: new URL("/settings/security", origin).href,
       }),
     );
-  };
 };
 
 const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => {
@@ -229,11 +232,10 @@ const createEmailAndPassword = (
     disableSignUp: authOptions.audience !== APPLICATION.user,
     enabled: true,
     minPasswordLength: MIN_PASSWORD_LENGTH,
-    onExistingUserSignUp: async ({
+    onExistingUserSignUp: ({
       user,
-    }: Readonly<{ user: Readonly<{ email: string; emailVerified: boolean }> }>) => {
-      await run(mailExistingAccount({ authOptions, origin, user }));
-    },
+    }: Readonly<{ user: Readonly<{ email: string; emailVerified: boolean }> }>) =>
+      run(mailExistingAccount({ authOptions, origin, user })),
     requireEmailVerification: true,
   };
 };

@@ -1,6 +1,7 @@
 import { loopbackHostSet } from "@repo/config";
 import { RequestId } from "@repo/observability";
 import { Effect, Predicate, Result, Schema } from "effect";
+import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 type Row = Record<string, unknown>;
 type LogEvent = Row | "unparsable" | undefined;
@@ -63,25 +64,24 @@ const queryExplorer = Effect.fn("queryExplorer")(function* queryExplorer(
   params: readonly (string | number)[] = [],
 ) {
   const origin = yield* explorerOrigin(app);
-  const response = yield* Effect.tryPromise({
-    catch: queryFailed,
-    try: async (signal) =>
-      fetch(new URL("/cdn-cgi/local/explorer/api/local/observability/query", origin), {
-        body: JSON.stringify({ params, sql }),
-        headers: { accept: "application/json", "content-type": "application/json" },
-        method: "POST",
-        redirect: "error",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(explorerTimeoutMilliseconds)]),
-      }),
-  });
-  if (!response.ok) {
+  const requestBody = yield* HttpBody.jsonSchema(
+    Schema.Struct({
+      params: Schema.Array(Schema.Union([Schema.String, Schema.Finite])),
+      sql: Schema.String,
+    }),
+  )({ params, sql }).pipe(Effect.mapError(queryFailed));
+  const response = yield* HttpClient.post(
+    new URL("/cdn-cgi/local/explorer/api/local/observability/query", origin),
+    { acceptJson: true, body: requestBody },
+  ).pipe(
+    Effect.timeout(explorerTimeoutMilliseconds),
+    Effect.provide(FetchHttpClient.layer),
+    Effect.mapError(queryFailed),
+  );
+  if (response.status < 200 || response.status >= 300) {
     return yield* queryFailed();
   }
-  const body = yield* Effect.tryPromise({
-    catch: responseInvalid,
-    try: async (): Promise<unknown> => response.json(),
-  });
-  const { result } = yield* Schema.decodeUnknownEffect(QueryResponse)(body).pipe(
+  const { result } = yield* HttpClientResponse.schemaBodyJson(QueryResponse)(response).pipe(
     Effect.mapError(responseInvalid),
   );
   return result.rows.map((row): Row =>
@@ -119,7 +119,7 @@ const requestTelemetry = Effect.fn("requestTelemetry")(function* requestTelemetr
   app: string,
   requestId: string,
 ) {
-  yield* Schema.decodeUnknownEffect(RequestId)(requestId).pipe(
+  yield* Schema.decodeEffect(RequestId)(requestId).pipe(
     Effect.mapError(() => new ExplorerFailure({ reason: "request_id_invalid" })),
   );
   const pattern = String.raw`request_id\":\"${requestId}`;

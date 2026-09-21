@@ -18,64 +18,65 @@ function privateFile(
 }
 
 describe("replacing a private file", () => {
-  it("leaves a file that already holds the content alone", async () => {
-    expect.hasAssertions();
-    const location = await Effect.runPromise(privateFile("kept").pipe(Effect.provide(layer)));
-    await Effect.runPromise(replacePrivateFile(location, "same\n").pipe(Effect.provide(layer)));
-    const written = await Effect.runPromise(
+  it("leaves a file that already holds the content alone", () =>
+    Effect.runPromise(
       Effect.gen(function* program() {
-        const path = yield* Path.Path;
-        const fs = yield* FileSystem.FileSystem;
-        const resolved = yield* path.fromFileUrl(location);
-        return yield* fs.stat(resolved);
+        expect.hasAssertions();
+        const location = yield* privateFile("kept");
+        yield* replacePrivateFile(location, "same\n");
+        const written = yield* Effect.gen(function* statWritten() {
+          const path = yield* Path.Path;
+          const fs = yield* FileSystem.FileSystem;
+          const resolved = yield* path.fromFileUrl(location);
+          return yield* fs.stat(resolved);
+        });
+        yield* replacePrivateFile(location, "same\n");
+        const revisited = yield* Effect.gen(function* statRevisited() {
+          const path = yield* Path.Path;
+          const fs = yield* FileSystem.FileSystem;
+          const resolved = yield* path.fromFileUrl(location);
+          return yield* fs.stat(resolved);
+        });
+        expect(revisited.mtime).toStrictEqual(written.mtime);
+        const content = yield* Effect.gen(function* readContent() {
+          const path = yield* Path.Path;
+          const fs = yield* FileSystem.FileSystem;
+          const resolved = yield* path.fromFileUrl(location);
+          return yield* fs.readFileString(resolved);
+        });
+        expect(content).toBe("same\n");
       }).pipe(Effect.provide(layer)),
-    );
-    await Effect.runPromise(replacePrivateFile(location, "same\n").pipe(Effect.provide(layer)));
-    const revisited = await Effect.runPromise(
-      Effect.gen(function* program() {
-        const path = yield* Path.Path;
-        const fs = yield* FileSystem.FileSystem;
-        const resolved = yield* path.fromFileUrl(location);
-        return yield* fs.stat(resolved);
-      }).pipe(Effect.provide(layer)),
-    );
-    expect(revisited.mtime).toStrictEqual(written.mtime);
-    const content = await Effect.runPromise(
-      Effect.gen(function* program() {
-        const path = yield* Path.Path;
-        const fs = yield* FileSystem.FileSystem;
-        const resolved = yield* path.fromFileUrl(location);
-        return yield* fs.readFileString(resolved);
-      }).pipe(Effect.provide(layer)),
-    );
-    expect(content).toBe("same\n");
-  });
+    ));
 
-  it("rewrites a file that holds different content", async () => {
-    expect.hasAssertions();
-    const location = await Effect.runPromise(privateFile("replaced").pipe(Effect.provide(layer)));
-    await Effect.runPromise(replacePrivateFile(location, "before\n").pipe(Effect.provide(layer)));
-    await Effect.runPromise(replacePrivateFile(location, "after\n").pipe(Effect.provide(layer)));
-    const content = await Effect.runPromise(
+  it("rewrites a file that holds different content", () =>
+    Effect.runPromise(
       Effect.gen(function* program() {
-        const path = yield* Path.Path;
-        const fs = yield* FileSystem.FileSystem;
-        const resolved = yield* path.fromFileUrl(location);
-        return yield* fs.readFileString(resolved);
+        expect.hasAssertions();
+        const location = yield* privateFile("replaced");
+        yield* replacePrivateFile(location, "before\n");
+        yield* replacePrivateFile(location, "after\n");
+        const content = yield* Effect.gen(function* readContent() {
+          const path = yield* Path.Path;
+          const fs = yield* FileSystem.FileSystem;
+          const resolved = yield* path.fromFileUrl(location);
+          return yield* fs.readFileString(resolved);
+        });
+        expect(content).toBe("after\n");
       }).pipe(Effect.provide(layer)),
-    );
-    expect(content).toBe("after\n");
-  });
+    ));
 });
 
 describe("the variables every runner shares", () => {
-  it("derives one secret and keeps the origins off the network", () => {
-    expect.hasAssertions();
-    const credentials = sharedRunnerCredentials();
-    expect(credentials).toStrictEqual(sharedRunnerCredentials());
-    expect(appVariables("service-member", credentials, "loopback")).toMatchObject({
-      APP_ORIGIN: applicationOrigins["service-member"],
-      AUTH_SECRET: credentials.authSecret,
-    });
-  });
+  it("derives one secret and keeps the origins off the network", () =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        expect.hasAssertions();
+        const credentials = yield* sharedRunnerCredentials();
+        expect(credentials).toStrictEqual(yield* sharedRunnerCredentials());
+        expect(appVariables("service-member", credentials, "loopback")).toMatchObject({
+          APP_ORIGIN: applicationOrigins["service-member"],
+          AUTH_SECRET: credentials.authSecret,
+        });
+      }).pipe(Effect.provide(layer)),
+    ));
 });

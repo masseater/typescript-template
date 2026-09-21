@@ -1,13 +1,11 @@
 #!/usr/bin/env node
-import { resolve4, resolve6 } from "node:dns/promises";
-import { request } from "node:https";
-import { URL } from "node:url";
-
 import { runCli } from "@repo/cli";
 import { applications } from "@repo/config";
-import { Console, Effect, Schema } from "effect";
+import { Console, Duration, Effect, Schema } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 import { deploymentAccess } from "./deployment-access.ts";
+import { encodeJson } from "./platform.ts";
 import { causeRecord, reportCause } from "./secrets.ts";
 
 const EVENT = "cloudflare.origin_verify_rejected";
@@ -22,91 +20,29 @@ class OriginVerifyFailure extends Schema.TaggedError<OriginVerifyFailure>()("Ori
   keys: Schema.Array(Schema.String),
 }) {}
 
-async function resolveAddress(hostname: string): Promise<string> {
-  try {
-    const [address] = await resolve4(hostname);
-    if (address !== undefined) {
-      return address;
-    }
-  } catch {
-    // Prefer A; fall through to AAAA when A is absent.
-  }
-  const [address] = await resolve6(hostname);
-  if (address === undefined) {
-    throw new Error("origin_dns_empty");
-  }
-  return address;
-}
-
-function fetchHealth(
-  origin: string,
-  signal: AbortSignal,
-): Promise<{ readonly ok: boolean; readonly json: unknown }> {
-  const target = new URL("/api/health", origin);
-  return resolveAddress(target.hostname).then(
-    async (address) =>
-      new Promise<{ readonly ok: boolean; readonly json: unknown }>((resolve, reject) => {
-        const req = request(
-          {
-            family: address.includes(":") ? 6 : 4,
-            headers: { accept: "application/json", host: target.host },
-            hostname: address,
-            method: "GET",
-            path: `${target.pathname}${target.search}`,
-            port: target.port === "" ? 443 : Number(target.port),
-            servername: target.hostname,
-            signal,
-          },
-          (response) => {
-            const chunks: Buffer[] = [];
-            response.on("data", (chunk: Buffer) => {
-              chunks.push(chunk);
-            });
-            response.on("end", () => {
-              const text = Buffer.concat(chunks).toString("utf8");
-              const status = response.statusCode ?? 0;
-              if (status < 200 || status > 299) {
-                resolve({ json: undefined, ok: false });
-                return;
-              }
-              try {
-                resolve({ json: JSON.parse(text) as unknown, ok: true });
-              } catch {
-                resolve({ json: undefined, ok: false });
-              }
-            });
-          },
-        );
-        req.on("error", reject);
-        req.end();
-      }),
-  );
-}
-
 const probeOrigin = Effect.fn("probeOrigin")(function* probeOrigin(
   service: (typeof applications)[number],
   origin: string,
 ) {
-  const response = yield* Effect.tryPromise({
-    catch: () => new OriginVerifyFailure({ code: "origin_unreachable", keys: [service] }),
-    try: async (signal) =>
-      fetchHealth(origin, AbortSignal.any([signal, AbortSignal.timeout(15_000)])),
-  });
-  if (!response.ok) {
-    return yield* Effect.fail(
-      new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] }),
-    );
+  const response = yield* HttpClient.get(new URL("/api/health", origin).href, {
+    headers: { accept: "application/json" },
+  }).pipe(
+    Effect.timeout(Duration.seconds(15)),
+    Effect.provide(FetchHttpClient.layer),
+    Effect.mapError(() => new OriginVerifyFailure({ code: "origin_unreachable", keys: [service] })),
+  );
+  if (response.status < 200 || response.status > 299) {
+    return yield* new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] });
   }
-  const health = yield* Schema.decodeUnknownEffect(HealthView)(response.json).pipe(
+  const health = yield* response.json.pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(HealthView)),
     Effect.mapError(() => new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] })),
   );
   if (health.service !== service) {
-    return yield* Effect.fail(
-      new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] }),
-    );
+    return yield* new OriginVerifyFailure({ code: "origin_unhealthy", keys: [service] });
   }
   yield* Console.info(
-    JSON.stringify({
+    yield* encodeJson({
       event: "cloudflare.origin_healthy",
       origin,
       release: health.release,

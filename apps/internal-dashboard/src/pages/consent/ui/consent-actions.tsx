@@ -1,4 +1,5 @@
 import { Button, FormColumn, STATUS_VARIANT, StatusMessage, localState, useAction } from "@repo/ui";
+import { Effect } from "effect";
 
 import { submitDecision } from "#pages/consent/api/consent.ts";
 import { serviceName } from "#shared/config/index.ts";
@@ -11,10 +12,14 @@ function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement 
   const action = useAction();
   const [decided, setDecided] = useDecided();
   function decide(accept: boolean): void {
-    action.run(async () => {
-      await submitDecision(accept);
-      setDecided(true);
-    });
+    action.run(() =>
+      Effect.runPromise(
+        Effect.gen(function* decideConsent() {
+          yield* submitDecision(accept);
+          setDecided(true);
+        }),
+      ),
+    );
   }
   function allow(): void {
     decide(true);

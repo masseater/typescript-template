@@ -8,7 +8,7 @@ import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Schema } from "effect";
 
 import { contactApi } from "./contact-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
@@ -49,7 +49,7 @@ function drainMailbox(): Effect.Effect<
     readonly to: string | readonly string[];
   }>
 > {
-  return Effect.promise(async () => env.EMAIL.taken());
+  return Effect.sync(() => env.EMAIL.taken());
 }
 
 function contactApp() {
@@ -63,22 +63,29 @@ function contactApp() {
   return createApi(apiRoot).use(contactApi(apiRoutes(runtime, reporting)));
 }
 
-async function postContact(
+function postContact(
   app: ReturnType<typeof contactApp>,
   body: unknown,
   network: Readonly<Record<string, string>> = {},
-): Promise<Response> {
-  return app.fetch(
-    new Request(`${fixtureOrigin}${apiRoot}/contact`, {
-      body: JSON.stringify(body),
-      headers: {
-        "content-type": "application/json",
-        origin: fixtureOrigin,
-        ...network,
-      },
-      method: "POST",
-    }),
-  );
+): Effect.Effect<Response> {
+  return Effect.gen(function* sendContact() {
+    const encoded = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(body);
+    return yield* Effect.promise(() =>
+      Promise.resolve(
+        app.fetch(
+          new Request(`${fixtureOrigin}${apiRoot}/contact`, {
+            body: encoded,
+            headers: {
+              "content-type": "application/json",
+              origin: fixtureOrigin,
+              ...network,
+            },
+            method: "POST",
+          }),
+        ),
+      ),
+    );
+  }).pipe(Effect.orDie);
 }
 
 it.effect("delivers a logged-out contact submission to the ops mailbox", () =>
@@ -86,7 +93,7 @@ it.effect("delivers a logged-out contact submission to the ops mailbox", () =>
     yield* migrated;
     yield* drainMailbox();
     const app = contactApp();
-    const response = yield* Effect.promise(async () => postContact(app, submission));
+    const response = yield* postContact(app, submission);
     assert.strictEqual(response.status, httpStatus.ok);
     const [delivered] = yield* drainMailbox();
     assert.isDefined(delivered);
@@ -106,9 +113,7 @@ it.effect("rejects further contact submissions after the rate limit is spent", (
     const spender = { "cf-connecting-ip": "203.0.113.40" };
     const statuses: number[] = [];
     for (let attempt = 0; attempt < contactRateLimitMax + 1; attempt += 1) {
-      statuses.push(
-        (yield* Effect.promise(async () => postContact(app, submission, spender))).status,
-      );
+      statuses.push((yield* postContact(app, submission, spender)).status);
     }
     assert.deepStrictEqual(
       statuses.slice(0, contactRateLimitMax),
@@ -116,9 +121,7 @@ it.effect("rejects further contact submissions after the rate limit is spent", (
     );
     assert.strictEqual(statuses.at(-1), httpStatus.tooManyRequests);
     assert.strictEqual(
-      (yield* Effect.promise(async () =>
-        postContact(app, submission, { "cf-connecting-ip": "203.0.113.41" }),
-      )).status,
+      (yield* postContact(app, submission, { "cf-connecting-ip": "203.0.113.41" })).status,
       httpStatus.ok,
     );
   }),

@@ -1,6 +1,16 @@
 import { Email } from "@repo/config";
 import { httpStatus } from "@repo/observability/http-status";
-import { Cause, Console, Effect, Exit, Predicate, Schema, SchemaGetter } from "effect";
+import {
+  Cause,
+  Clock,
+  Console,
+  DateTime,
+  Effect,
+  Exit,
+  Predicate,
+  Schema,
+  SchemaGetter,
+} from "effect";
 
 import { monitorBinding } from "./binding.ts";
 import { MonitorFailure } from "./failure.ts";
@@ -35,7 +45,6 @@ type MonitorSchedule = Readonly<{
 }>;
 
 const maximumAlertRecipients = 10;
-const ISO_DATE_LENGTH = 10;
 
 const UNRECOGNIZED_REASON = "unrecognized";
 const declaredFailure = Schema.Struct({
@@ -82,21 +91,21 @@ abstract class Monitor<Bindings extends MonitorBindings> {
     this.env = env;
   }
 
-  public async fetch(): Promise<Response> {
-    return this.ctx.blockConcurrencyWhile(async () => Effect.runPromise(this.run()));
+  public fetch(): Promise<Response> {
+    return this.ctx.blockConcurrencyWhile(() => Effect.runPromise(this.run()));
   }
 
   private run(): Effect.Effect<Response, MonitorFailure> {
     return this.notifier().pipe(
       Effect.flatMap((notify) => {
-        const started = Date.now();
-        return Effect.exit(this.check(notify)).pipe(
-          Effect.flatMap((outcome) =>
-            Exit.isSuccess(outcome)
-              ? this.reportSuccess(outcome.value, started)
-              : this.reportFailure(notify, started, failureReason(outcome.cause)),
-          ),
-        );
+        const monitor = this;
+        return Effect.gen(function* runCheck() {
+          const started = yield* Clock.currentTimeMillis;
+          const outcome = yield* Effect.exit(monitor.check(notify));
+          return Exit.isSuccess(outcome)
+            ? yield* monitor.reportSuccess(outcome.value, started)
+            : yield* monitor.reportFailure(notify, started, failureReason(outcome.cause));
+        });
       }),
     );
   }
@@ -108,44 +117,46 @@ abstract class Monitor<Bindings extends MonitorBindings> {
       Effect.map(
         (recipients): Notify =>
           (alert) =>
-            Effect.promise(async () =>
-              EMAIL.send({ from: recipients.ALERT_FROM, to: [...recipients.ALERT_TO], ...alert }),
+            Effect.promise(() =>
+              Promise.resolve(
+                EMAIL.send({ from: recipients.ALERT_FROM, to: [...recipients.ALERT_TO], ...alert }),
+              ),
             ),
       ),
     );
   }
 
   private reportSuccess(result: object, started: number): Effect.Effect<Response> {
-    return Effect.promise(async () => this.ctx.storage.delete("failureNotifiedDay")).pipe(
-      Effect.andThen(() =>
-        Console.log(
-          JSON.stringify({
-            event: `${this.event}.checked`,
-            ...result,
-            durationMs: Date.now() - started,
-          }),
-        ),
-      ),
-      Effect.map(() => Response.json({ ok: true, ...result })),
-    );
+    const { ctx, event } = this;
+    return Effect.gen(function* reportSuccess() {
+      yield* Effect.promise(() => ctx.storage.delete("failureNotifiedDay"));
+      const durationMs = (yield* Clock.currentTimeMillis) - started;
+      yield* Console.log(
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          event: `${event}.checked`,
+          ...result,
+          durationMs,
+        }).pipe(Effect.orDie),
+      );
+      return Response.json({ ok: true, ...result });
+    });
   }
 
   private reportFailure(notify: Notify, started: number, reason: string): Effect.Effect<Response> {
     const { ctx, event, failure } = this;
     return Effect.gen(function* reportFailure() {
+      const durationMs = (yield* Clock.currentTimeMillis) - started;
       yield* Console.error(
-        JSON.stringify({
-          durationMs: Date.now() - started,
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          durationMs,
           event: `${event}.check_failed`,
           reason,
-        }),
+        }).pipe(Effect.orDie),
       );
-      const day = new Date(started).toISOString().slice(0, ISO_DATE_LENGTH);
-      if (
-        (yield* Effect.promise(async () => ctx.storage.get<string>("failureNotifiedDay"))) !== day
-      ) {
+      const day = DateTime.formatIsoDateUtc(DateTime.makeUnsafe(started));
+      if ((yield* Effect.promise(() => ctx.storage.get<string>("failureNotifiedDay"))) !== day) {
         yield* notify(failure);
-        yield* Effect.promise(async () => ctx.storage.put("failureNotifiedDay", day));
+        yield* Effect.promise(() => ctx.storage.put("failureNotifiedDay", day));
       }
       return Response.json({ ok: false, reason }, { status: httpStatus.internalServerError });
     });
@@ -182,16 +193,18 @@ function monitorWorker<Bindings extends MonitorBindings>(definition: {
 function monitorHandler(event: string): MonitorHandler {
   return {
     fetch: () => new Response("Not found", { status: httpStatus.notFound }),
-    scheduled: async (_controller, env) => {
+    scheduled: (_controller, env) => {
       const stub = env.MONITOR.get(env.MONITOR.idFromName(event));
-      const result = await Effect.runPromise(
-        Effect.promise(async () =>
-          stub.fetch("https://monitor.internal/check", { method: "POST" }),
-        ),
+      return Effect.runPromise(
+        Effect.gen(function* scheduledCheck() {
+          const result = yield* Effect.promise(() =>
+            stub.fetch("https://monitor.internal/check", { method: "POST" }),
+          );
+          if (!result.ok) {
+            return yield* Effect.die(`${event}_schedule_failed`);
+          }
+        }),
       );
-      if (!result.ok) {
-        await Effect.runPromise(Effect.die(`${event}_schedule_failed`));
-      }
     },
   };
 }

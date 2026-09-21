@@ -1,5 +1,6 @@
 import { useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { saveOnboardingStep } from "../api/onboarding.ts";
 import { ChooseView } from "./choose-view.tsx";
@@ -11,10 +12,16 @@ function ChoosePage(): ReactElement {
   const action = useAction();
 
   const choose = (step: "interview" | "profile"): void => {
-    action.run(async () => {
-      await saveOnboardingStep(step);
-      await navigate({ to: step === "profile" ? "/welcome/profile" : "/welcome/interview" });
-    });
+    action.run(() =>
+      Effect.runPromise(
+        Effect.gen(function* choosePath() {
+          yield* Effect.promise(() => saveOnboardingStep(step));
+          yield* Effect.promise(() =>
+            navigate({ to: step === "profile" ? "/welcome/profile" : "/welcome/interview" }),
+          );
+        }),
+      ),
+    );
   };
 
   return (

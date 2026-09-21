@@ -1,5 +1,6 @@
 import { useAtom } from "@effect/atom-react";
 import { useAction } from "@repo/ui";
+import { Effect } from "effect";
 import { Atom } from "effect/unstable/reactivity";
 
 import { saveProfile } from "#pages/profile-edit/api/profile.ts";
@@ -56,10 +57,16 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      await saveProfile(fields.name, fields.profile, savedLinks(fields.socialLinks));
-      await onSaved();
-    });
+    action.run(() =>
+      Effect.runPromise(
+        Effect.gen(function* saveDraft() {
+          yield* Effect.promise(() =>
+            saveProfile(fields.name, fields.profile, savedLinks(fields.socialLinks)),
+          );
+          yield* Effect.promise(() => onSaved());
+        }),
+      ),
+    );
   }
   return {
     ...fields,

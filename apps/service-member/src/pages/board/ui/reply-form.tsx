@@ -1,5 +1,6 @@
 import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { pageSearch } from "#pages/board/model/board-search.ts";
 import { useReplyForm } from "#pages/board/model/reply-form.ts";
@@ -14,10 +15,16 @@ function ReplyForm({
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showPosted(): Promise<void> {
-    await navigate({ params: { id: threadId }, search: pageSearch(lastPage), to: "/board/$id" });
-    await router.invalidate();
-    notify("success", "投稿しました。");
+  function showPosted(): Promise<void> {
+    return Effect.runPromise(
+      Effect.gen(function* afterReply() {
+        yield* Effect.promise(() =>
+          navigate({ params: { id: threadId }, search: pageSearch(lastPage), to: "/board/$id" }),
+        );
+        yield* Effect.promise(() => router.invalidate());
+        notify("success", "投稿しました。");
+      }),
+    );
   }
   const form = useReplyForm(threadId, showPosted);
   return (

@@ -11,7 +11,11 @@ import {
 } from "./local-environment.ts";
 import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
 import { privateDirectoryMode, replacePrivateFile, writePrivateFile } from "./private-files.ts";
-import { appVariables, sharedRunnerCredentials } from "./shared-runner-credentials.ts";
+import {
+  appVariables,
+  ciCredentials,
+  sharedRunnerCredentials,
+} from "./shared-runner-credentials.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App, Credentials } from "./local-environment.ts";
@@ -25,7 +29,6 @@ interface SetupReport {
 }
 
 const authSecretBytes = 48;
-const jsonIndentation = 2;
 
 function credentialsExist(): Effect.Effect<
   boolean,
@@ -54,7 +57,9 @@ const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
         Effect.mapError(() => failure("file_io_failed")),
       );
       const authSecret = Buffer.from(bytes).toString("base64url");
-      const content = JSON.stringify({ authSecret }, undefined, jsonIndentation);
+      const content = yield* Schema.encodeEffect(
+        Schema.fromJsonString(Schema.Struct({ authSecret: Schema.String })),
+      )({ authSecret }).pipe(Effect.orDie);
       yield* writePrivateFile(credentialsFile, `${content}\n`);
     }
     return yield* readCredentials();
@@ -82,10 +87,15 @@ const rememberOrigins = Effect.fn("rememberOrigins")(function* rememberOrigins(
   );
   const credentials = { ...stored, origins };
   if (stored.origins !== origins) {
-    yield* replacePrivateFile(
-      credentialsFile,
-      `${JSON.stringify(credentials, undefined, jsonIndentation)}\n`,
-    );
+    const content = yield* Schema.encodeEffect(
+      Schema.fromJsonString(
+        Schema.Struct({
+          authSecret: Schema.String,
+          origins: OriginMode,
+        }),
+      ),
+    )(credentials).pipe(Effect.orDie);
+    yield* replacePrivateFile(credentialsFile, `${content}\n`);
   }
   return credentials;
 });
@@ -100,8 +110,9 @@ const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
     fs.makeDirectory(logsPath, { mode: privateDirectoryMode, recursive: true }),
   );
   yield* refreshBrowserConfig();
-  const credentials =
-    "CI" in process.env ? sharedRunnerCredentials() : yield* rememberOrigins(args);
+  const credentials = ciCredentials()
+    ? yield* sharedRunnerCredentials()
+    : yield* rememberOrigins(args);
   yield* Effect.forEach(applications, (app) =>
     writeAppVariables(app, credentials, credentials.origins),
   );

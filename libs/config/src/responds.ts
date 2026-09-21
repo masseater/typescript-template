@@ -1,7 +1,13 @@
-import { Duration, Effect, Schedule } from "effect";
+import { Duration, Effect, Layer, Schedule } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 const firstSuccess = 200;
 const firstRedirect = 300;
+
+const clientLayer = Layer.mergeAll(
+  FetchHttpClient.layer,
+  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "manual" }),
+);
 
 function respondedSuccessfully(status: number): boolean {
   return status >= firstSuccess && status < firstRedirect;
@@ -16,26 +22,22 @@ function waitUntilResponds<Rejected, Unreachable>(request: {
   readonly timeoutMilliseconds?: number;
   readonly url: string;
 }): Effect.Effect<number, Rejected | Unreachable> {
-  const attempt = Effect.tryPromise({
-    catch: (error) => request.onUnreachable(error),
-    try: async () => {
-      const response = await fetch(request.url, {
-        method: request.method,
-        redirect: "manual",
-        ...(request.timeoutMilliseconds === undefined
-          ? {}
-          : { signal: AbortSignal.timeout(request.timeoutMilliseconds) }),
-      });
-      const body = response.body;
-      if (body !== null) {
-        await body.cancel();
-      }
-      return response.status;
-    },
-  }).pipe(
-    Effect.flatMap((status) =>
-      request.accept(status) ? Effect.succeed(status) : Effect.fail(request.onStatus(status)),
+  const send =
+    request.method === "GET" ? HttpClient.get(request.url) : HttpClient.post(request.url);
+  const timed =
+    request.timeoutMilliseconds === undefined
+      ? send
+      : send.pipe(Effect.timeout(Duration.millis(request.timeoutMilliseconds)));
+  const attempt = timed.pipe(
+    Effect.mapError((error) => request.onUnreachable(error)),
+    Effect.flatMap((response) =>
+      response.arrayBuffer.pipe(Effect.as(response.status), Effect.orDie),
     ),
+    Effect.filterOrFail(
+      (status) => request.accept(status),
+      (status) => request.onStatus(status),
+    ),
+    Effect.provide(clientLayer),
   );
   const retry = request.retry;
   if (retry === undefined) {

@@ -942,6 +942,9 @@ importers:
 
   infra/local:
     dependencies:
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/cli':
         specifier: workspace:*
         version: link:../../libs/cli
@@ -1093,6 +1096,9 @@ importers:
 
   libs/config:
     dependencies:
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -1115,6 +1121,9 @@ importers:
 
   libs/db:
     dependencies:
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/config':
         specifier: workspace:*
         version: link:../config
@@ -1458,6 +1467,9 @@ importers:
       '@cloudflare/vite-plugin':
         specifier: 1.54.10
         version: 1.54.10(@types/node@26.6.1)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(wrangler@4.134.0(@types/node@26.6.1))
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.112(effect@4.0.0-rc.112)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@effect/tsgo':
         specifier: 0.45.0
         version: 0.45.0

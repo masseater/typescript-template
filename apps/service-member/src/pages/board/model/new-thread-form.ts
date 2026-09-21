@@ -1,4 +1,5 @@
 import { useAction, useTextInput } from "@repo/ui";
+import { Effect } from "effect";
 
 import { openThread } from "#pages/board/api/board.ts";
 
@@ -21,9 +22,14 @@ function useNewThreadForm(onCreated: (threadId: string) => Promise<void>): NewTh
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      await onCreated(await openThread(title.value, body.value));
-    });
+    action.run(() =>
+      Effect.runPromise(
+        Effect.gen(function* createThread() {
+          const threadId = yield* Effect.promise(() => openThread(title.value, body.value));
+          yield* Effect.promise(() => onCreated(threadId));
+        }),
+      ),
+    );
   }
   return {
     blocked: action.blocked,

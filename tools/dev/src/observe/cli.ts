@@ -5,7 +5,7 @@ import { causeRecord, runCli } from "@repo/cli";
 import { APPLICATION, applicationOrigins } from "@repo/config";
 import { receiverOrigin } from "@repo/local";
 import { TraceId } from "@repo/observability";
-import { Console, Effect, Schema } from "effect";
+import { Clock, Console, DateTime, Effect, Schema } from "effect";
 
 import { queryExplorer, requestTelemetry, withEvent } from "./explorer.ts";
 import { exportedTelemetry } from "./exported.ts";
@@ -66,42 +66,44 @@ function queryLogs(app: string, input: Query, since: number): Effect.Effect<unkn
 }
 
 function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
-  const since = Date.now() - input.minutes * millisecondsPerMinute;
-  if (input.command === "request") {
-    return required(input.requestId).pipe(
-      Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
-    );
-  }
-  if (input.command === "exported") {
-    return required(input.traceId).pipe(
-      Effect.flatMap((traceId) =>
-        exportedTelemetry(
-          { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
-          traceId,
-          input.minutes,
+  return Effect.gen(function* runQueryProgram() {
+    const since = (yield* Clock.currentTimeMillis) - input.minutes * millisecondsPerMinute;
+    if (input.command === "request") {
+      return yield* required(input.requestId).pipe(
+        Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
+      );
+    }
+    if (input.command === "exported") {
+      return yield* required(input.traceId).pipe(
+        Effect.flatMap((traceId) =>
+          exportedTelemetry(
+            { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
+            traceId,
+            input.minutes,
+          ),
         ),
-      ),
-    );
-  }
-  if (input.command === "trace") {
-    return required(input.traceId).pipe(
-      Effect.flatMap((traceId) =>
-        queryExplorer(
-          app,
-          "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
-          [traceId],
+      );
+    }
+    if (input.command === "trace") {
+      return yield* required(input.traceId).pipe(
+        Effect.flatMap((traceId) =>
+          queryExplorer(
+            app,
+            "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
+            [traceId],
+          ),
         ),
-      ),
-    );
-  }
-  if (input.command === "traces") {
-    return queryExplorer(
-      app,
-      "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
-      [since, input.limit],
-    );
-  }
-  return queryLogs(app, input, since);
+      );
+    }
+    if (input.command === "traces") {
+      return yield* queryExplorer(
+        app,
+        "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
+        [since, input.limit],
+      );
+    }
+    return yield* queryLogs(app, input, since);
+  });
 }
 
 const help = Console.log(
@@ -136,11 +138,21 @@ const query = Effect.fn("query")(function* query() {
     return yield* argumentsInvalid();
   }
   const data = yield* runQuery(values.app, input);
+  const observedAt = DateTime.formatIso(yield* DateTime.now);
   yield* Console.log(
-    JSON.stringify({
+    yield* Schema.encodeEffect(
+      Schema.fromJsonString(
+        Schema.Struct({
+          command: Schema.Literals(commands),
+          data: Schema.Unknown,
+          observedAt: Schema.String,
+          ok: Schema.Literal(true),
+        }),
+      ),
+    )({
       command: input.command,
       data,
-      observedAt: new Date().toISOString(),
+      observedAt,
       ok: true,
     }),
   );

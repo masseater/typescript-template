@@ -1,5 +1,6 @@
 import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { MemberPage } from "#widgets/member-page/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
@@ -11,10 +12,14 @@ function WelcomeInterviewPage(): ReactElement {
   const action = useAction();
 
   const finish = (): void => {
-    action.run(async () => {
-      await saveOnboardingStep("done");
-      await navigate({ to: "/home" });
-    });
+    action.run(() =>
+      Effect.runPromise(
+        Effect.gen(function* skipInterview() {
+          yield* Effect.promise(() => saveOnboardingStep("done"));
+          yield* Effect.promise(() => navigate({ to: "/home" }));
+        }),
+      ),
+    );
   };
 
   return (

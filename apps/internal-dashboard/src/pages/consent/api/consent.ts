@@ -1,36 +1,52 @@
 import { httpStatus } from "@repo/observability/http-status";
 import { decodeJson } from "@repo/runtime/client";
-import { Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
+import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 const Redirect = Schema.Struct({ url: Schema.String });
 
-async function loadClientName(clientId: string): Promise<string | undefined> {
-  const response = await fetch(
-    `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
-    { cache: "no-store", credentials: "same-origin" },
-  );
-  if (response.status === httpStatus.unauthorized) {
-    globalThis.location.assign(`/login${globalThis.location.search}`);
-    return undefined;
-  }
-  if (!response.ok) {
-    throw new Error("クライアントの情報を取得できませんでした。");
-  }
-  return decodeJson(ClientView, await response.json()).client_name ?? clientId;
+const browserHttp = Layer.mergeAll(
+  FetchHttpClient.layer,
+  Layer.succeed(FetchHttpClient.RequestInit, { credentials: "same-origin" }),
+);
+
+function loadClientName(clientId: string): Effect.Effect<string | undefined> {
+  return Effect.gen(function* loadName() {
+    const response = yield* HttpClient.get(
+      `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
+    ).pipe(
+      Effect.provide(browserHttp),
+      Effect.provideService(FetchHttpClient.RequestInit, {
+        cache: "no-store",
+        credentials: "same-origin",
+      }),
+    );
+    if (response.status === httpStatus.unauthorized) {
+      globalThis.location.assign(`/login${globalThis.location.search}`);
+      return undefined;
+    }
+    if (response.status < 200 || response.status >= 300) {
+      return yield* Effect.die("クライアントの情報を取得できませんでした。");
+    }
+    return (yield* HttpClientResponse.schemaBodyJson(ClientView)(response)).client_name ?? clientId;
+  }).pipe(Effect.orDie);
 }
 
-async function submitDecision(accept: boolean): Promise<void> {
-  const response = await fetch("/api/auth/oauth2/consent", {
-    body: JSON.stringify({ accept, oauth_query: globalThis.location.search.slice(1) }),
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error("連携の許可を処理できませんでした。");
-  }
-  globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
+function submitDecision(accept: boolean): Effect.Effect<void> {
+  return Effect.gen(function* sendDecision() {
+    const requestBody = yield* HttpBody.json({
+      accept,
+      oauth_query: globalThis.location.search.slice(1),
+    });
+    const response = yield* HttpClient.post("/api/auth/oauth2/consent", {
+      body: requestBody,
+    }).pipe(Effect.provide(browserHttp));
+    if (response.status < 200 || response.status >= 300) {
+      return yield* Effect.die("連携の許可を処理できませんでした。");
+    }
+    globalThis.location.assign(decodeJson(Redirect, yield* response.json).url);
+  }).pipe(Effect.orDie);
 }
 
 export { loadClientName, submitDecision };

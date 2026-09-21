@@ -1,5 +1,6 @@
 import { Field, FormColumn, Page, STATUS_VARIANT, StatusMessage, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import { ProfileEditor } from "./profile-editor.tsx";
@@ -11,10 +12,14 @@ function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElem
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showSaved(): Promise<void> {
-    await router.invalidate();
-    await navigate({ params: { id: initial.id }, to: "/users/$id" });
-    notify("success", "プロフィールを保存しました。");
+  function showSaved(): Promise<void> {
+    return Effect.runPromise(
+      Effect.gen(function* afterSave() {
+        yield* Effect.promise(() => router.invalidate());
+        yield* Effect.promise(() => navigate({ params: { id: initial.id }, to: "/users/$id" }));
+        notify("success", "プロフィールを保存しました。");
+      }),
+    );
   }
   const form = useProfileForm(initial, showSaved);
   return (

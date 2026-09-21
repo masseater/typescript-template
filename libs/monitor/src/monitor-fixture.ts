@@ -30,7 +30,7 @@ const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 const probeMonitor = monitorWorker<MonitorBindings>({
   check({ ctx }, notify) {
     return Effect.gen(function* probe() {
-      const outcome = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
+      const outcome = yield* Effect.promise(() => ctx.storage.get<Outcome>("outcome"));
       if (outcome === "fail") {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
       }

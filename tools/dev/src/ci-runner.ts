@@ -100,7 +100,7 @@ function serviceOf(
     const label = path.basename(plistFile, plistSuffix);
     return plistFile.endsWith(plistSuffix) && label !== ""
       ? { label, plistFile, root: path.resolve(root) }
-      : yield* Effect.fail(failure("ci_runner_service_invalid"));
+      : yield* failure("ci_runner_service_invalid");
   });
 }
 

@@ -23,24 +23,23 @@ const stack = Stack(
   stackOptions,
   Effect.gen(function* tokens() {
     const config = yield* Effect.orDie(settings);
-    const names = yield* Effect.all(
-      Object.entries(accountTokens).map(
-        ([resource, { permission, slug }]: readonly [
-          string,
-          (typeof accountTokens)[TokenResource],
-        ]) =>
-          ApiToken.AccountApiToken(resource, {
-            accountId: config.accountId,
-            name: `${config.prefix}-${slug}`,
-            policies: [
-              {
-                effect: "allow",
-                permissionGroups: [permission],
-                resources: { [`com.cloudflare.api.account.${config.accountId}`]: "*" },
-              },
-            ],
-          }).pipe(Effect.map((token) => token.name)),
-      ),
+    const names = yield* Effect.forEach(
+      Object.entries(accountTokens),
+      ([resource, { permission, slug }]: readonly [
+        string,
+        (typeof accountTokens)[TokenResource],
+      ]) =>
+        ApiToken.AccountApiToken(resource, {
+          accountId: config.accountId,
+          name: `${config.prefix}-${slug}`,
+          policies: [
+            {
+              effect: "allow",
+              permissionGroups: [permission],
+              resources: { [`com.cloudflare.api.account.${config.accountId}`]: "*" },
+            },
+          ],
+        }).pipe(Effect.map((token) => token.name)),
     );
     return { tokenNames: names };
   }),

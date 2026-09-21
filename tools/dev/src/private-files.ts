@@ -1,4 +1,4 @@
-import { Effect, FileSystem, Path, PlatformError, Predicate, Result } from "effect";
+import { Effect, FileSystem, Path, PlatformError, Result } from "effect";
 
 import { failure } from "./failure.ts";
 import { isAlreadyExists, urlPath, withFileSystem } from "./platform.ts";
@@ -9,10 +9,6 @@ type FileLocation = Readonly<URL>;
 const privateFileMode = 0o600;
 const privateDirectoryMode = 0o700;
 const textEncoder = new TextEncoder();
-
-function isErrorCode(error: unknown, code: string): boolean {
-  return Predicate.isObject(error) && "code" in error && error["code"] === code;
-}
 
 function withFileSystemError<A, R = never>(
   operation: (fs: FileSystem.FileSystem) => Effect.Effect<A, PlatformError.PlatformError, R>,
@@ -42,7 +38,7 @@ function unchangedPrivateFile(
       ),
     ),
     Effect.map((existing) => existing === content),
-    Effect.catch(() => Effect.succeed(false)),
+    Effect.orElseSucceed(() => false),
   );
 }
 
@@ -92,7 +88,6 @@ const writePrivateFile = Effect.fn("writePrivateFile")(function* writePrivateFil
 
 export {
   assertOwnerOnly,
-  isErrorCode,
   privateDirectoryMode,
   privateFileMode,
   replacePrivateFile,

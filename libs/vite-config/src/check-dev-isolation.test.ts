@@ -1,16 +1,17 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
 import { repositoryRoot } from "@repo/config/repository-root";
+import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { filesystem, paths } from "./host.ts";
 import { appRun } from "./vite.ts";
 
-const devStartSource = readFileSync(
-  path.join(repositoryRoot, "tools/dev/src/dev-start.ts"),
-  "utf8",
+const readText = (location: string): string =>
+  Effect.runSync(Effect.orDie(filesystem.readFileString(location)));
+
+const devStartSource = readText(paths.join(repositoryRoot, "tools/dev/src/dev-start.ts"));
+const viteSource = readText(
+  Effect.runSync(Effect.orDie(paths.fromFileUrl(new URL("./vite.ts", import.meta.url)))),
 );
-const viteSource = readFileSync(new URL("./vite.ts", import.meta.url), "utf8");
 
 describe("app build", () => {
   it("type-checks the workspace graph before Rolldown links named imports", () => {

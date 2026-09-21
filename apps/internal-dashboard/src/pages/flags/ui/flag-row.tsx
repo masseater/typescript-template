@@ -1,4 +1,5 @@
 import { CheckboxField, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
+import { Effect } from "effect";
 
 import type { FlagEntry } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
@@ -26,12 +27,18 @@ function FlagRow({
           label={entry.enabled ? "オン" : "オフ"}
           name={`flag-${entry.key}`}
           onCheckedChange={(checked) => {
-            action.run(async () => {
-              const message = await onToggle(entry.key, checked === true);
-              if (message !== undefined) {
-                throw new Error(message);
-              }
-            });
+            action.run(() =>
+              Effect.runPromise(
+                Effect.gen(function* toggleRow() {
+                  const message = yield* Effect.promise(() =>
+                    onToggle(entry.key, checked === true),
+                  );
+                  if (message !== undefined) {
+                    throw new Error(message);
+                  }
+                }),
+              ),
+            );
           }}
         />
       </div>

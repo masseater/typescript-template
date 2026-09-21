@@ -1,4 +1,4 @@
-import { Cause, Effect, Exit } from "effect";
+import { Cause, Effect, Exit, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { RequestRejected, readJson } from "./request.ts";
@@ -10,15 +10,24 @@ const headersOf = (headers: Readonly<Record<string, string>>): Headers => new He
 
 const jsonHeaders = headersOf({ "content-type": "application/json", origin });
 
-async function* bodyOf(parts: readonly string[]): AsyncGenerator<Uint8Array> {
-  for (const part of parts) {
-    yield encoder.encode(part);
-  }
+function bodyOf(parts: readonly string[]): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      for (const part of parts) {
+        controller.enqueue(encoder.encode(part));
+      }
+      controller.close();
+    },
+  });
 }
 
-async function* truncatedBody(): AsyncGenerator<Uint8Array> {
-  yield encoder.encode('{"ok":');
-  throw new Error("truncated chunked body");
+function truncatedBody(): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode('{"ok":'));
+      controller.error(new Error("truncated chunked body"));
+    },
+  });
 }
 
 const read = (incoming: {
@@ -41,12 +50,12 @@ const rejected = (
     return undefined;
   }
   const error = Cause.squash(exit.cause);
-  return error instanceof RequestRejected ? error.reason : undefined;
+  return Schema.is(RequestRejected)(error) ? error.reason : undefined;
 };
 
 describe("readJson", () => {
   describe("a body split across chunks", () => {
-    const it = test.extend("decoded", async () => read({ body: bodyOf(['{"a":', "1}"]) }));
+    const it = test.extend("decoded", () => read({ body: bodyOf(['{"a":', "1}"]) }));
 
     it("parses the joined JSON", ({ decoded }) => {
       expect(decoded).toStrictEqual(Exit.succeed({ a: 1 }));
@@ -54,7 +63,7 @@ describe("readJson", () => {
   });
 
   describe("a chunked body that ends early", () => {
-    const it = test.extend("decoded", async () => read({ body: truncatedBody() }));
+    const it = test.extend("decoded", () => read({ body: truncatedBody() }));
 
     it("dies instead of answering invalid JSON", ({ decoded }) => {
       expect(decoded._tag).toBe("Failure");
@@ -66,7 +75,7 @@ describe("readJson", () => {
   });
 
   describe("JSON that does not parse", () => {
-    const it = test.extend("decoded", async () => read({ body: bodyOf(["{"]) }));
+    const it = test.extend("decoded", () => read({ body: bodyOf(["{"]) }));
 
     it("is invalid JSON", ({ decoded }) => {
       expect(rejected(decoded)).toBe("invalid_json");
@@ -74,7 +83,7 @@ describe("readJson", () => {
   });
 
   describe("a missing body", () => {
-    const it = test.extend("decoded", async () => read({ body: null }));
+    const it = test.extend("decoded", () => read({ body: null }));
 
     it("is required", ({ decoded }) => {
       expect(rejected(decoded)).toBe("body_required");
@@ -82,7 +91,7 @@ describe("readJson", () => {
   });
 
   describe("a body past the limit while it is read", () => {
-    const it = test.extend("decoded", async () =>
+    const it = test.extend("decoded", () =>
       read({ body: bodyOf(["12345"]), headers: jsonHeaders, limit: 4 }));
 
     it("is too large", ({ decoded }) => {
@@ -112,7 +121,7 @@ describe("readJson", () => {
       "body_too_large",
     ],
   ] as const)("%s", ([, headers, reason]) => {
-    const it = test.extend("decoded", async () => read({ body: bodyOf(["{}"]), headers }));
+    const it = test.extend("decoded", () => read({ body: bodyOf(["{}"]), headers }));
 
     it("is refused before the body is read", ({ decoded }) => {
       expect(rejected(decoded)).toBe(reason);

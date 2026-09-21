@@ -1,4 +1,5 @@
 import { useAction, localState } from "@repo/ui";
+import { Effect } from "effect";
 
 import { replyToThread } from "#pages/board/api/board.ts";
 
@@ -20,11 +21,15 @@ function useReplyForm(threadId: string, onPosted: () => Promise<void>): ReplyFor
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      await replyToThread(threadId, body);
-      setBody("");
-      await onPosted();
-    });
+    action.run(() =>
+      Effect.runPromise(
+        Effect.gen(function* postReply() {
+          yield* Effect.promise(() => replyToThread(threadId, body));
+          setBody("");
+          yield* Effect.promise(() => onPosted());
+        }),
+      ),
+    );
   }
   return {
     blocked: action.blocked,

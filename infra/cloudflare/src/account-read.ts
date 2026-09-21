@@ -1,9 +1,11 @@
 import { httpStatus } from "@repo/observability";
-import { Effect, Predicate, Schema, SchemaIssue } from "effect";
+import { Duration, Effect, Predicate, Schema, SchemaIssue } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 import { CloudflareFailure } from "./config.ts";
 
 import type { StandardSchema } from "effect";
+import type { HttpClientResponse } from "effect/unstable/http";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const MISSING_REASON = `status_${httpStatus.notFound}`;
@@ -25,8 +27,8 @@ type Endpoint = Readonly<{ marker: typeof cloudflareEndpoint; path: string; shap
 type Collection = Readonly<{ filter?: Query; pageSize?: number; source: Endpoint }>;
 
 const PageInfo = Schema.Struct({
-  per_page: Schema.optional(Schema.Number),
-  total_count: Schema.optional(Schema.Number),
+  per_page: Schema.optional(Schema.Finite),
+  total_count: Schema.optional(Schema.Finite),
 });
 const Paged = Schema.Struct({
   result: Schema.Array(Schema.Unknown),
@@ -107,12 +109,15 @@ function mismatches(failure: StandardSchema.StandardSchemaV1.FailureResult): rea
   });
 }
 
-function mediaType(response: Response): string {
-  const declared = response.headers.get("content-type")?.split(";", 1)[0]?.trim();
+function mediaType(response: HttpClientResponse.HttpClientResponse): string {
+  const declared = response.headers["content-type"]?.split(";", 1)[0]?.trim();
   return declared === undefined || declared === "" ? UNDECLARED_MEDIA_TYPE : declared;
 }
 
 function requestReason(error: unknown): string {
+  if (Predicate.hasProperty(error, "_tag") && error._tag === "TimeoutError") {
+    return "timeout";
+  }
   return Predicate.hasProperty(error, "name") && error.name === "TimeoutError"
     ? "timeout"
     : "request_failed";
@@ -149,25 +154,22 @@ const fetchJson = Effect.fn("fetchJson")(function* fetchJson(
   for (const [name, value] of Object.entries(query)) {
     url.searchParams.set(name, value);
   }
-  const response = yield* Effect.tryPromise({
-    catch: (error) => unreadable(source, requestReason(error)),
-    try: async (signal) =>
-      fetch(url, {
-        headers: { authorization: `Bearer ${apiToken}` },
-        redirect: "error",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-      }),
-  });
+  const response = yield* HttpClient.get(url, {
+    headers: { authorization: `Bearer ${apiToken}` },
+  }).pipe(
+    Effect.timeout(Duration.millis(REQUEST_TIMEOUT_MS)),
+    Effect.provide(FetchHttpClient.layer),
+    Effect.mapError((error) => unreadable(source, requestReason(error))),
+  );
   if (response.status === httpStatus.notFound) {
     return { body: undefined, found: false };
   }
-  if (!response.ok) {
-    return yield* Effect.fail(unreadable(source, `status_${response.status}`));
+  if (response.status < 200 || response.status >= 300) {
+    return yield* unreadable(source, `status_${response.status}`);
   }
-  const body = yield* Effect.tryPromise({
-    catch: () => unreadable(source, DECODE_REASON, [mediaType(response)]),
-    try: async (): Promise<unknown> => response.json(),
-  });
+  const body = yield* response.json.pipe(
+    Effect.mapError(() => unreadable(source, DECODE_REASON, [mediaType(response)])),
+  );
   return { body, found: true };
 });
 
@@ -199,7 +201,7 @@ const readRequired = Effect.fn("readRequired")(function* readRequired<Shape, Enc
 ) {
   const found = yield* readResource(access, source, shape);
   if (found === undefined) {
-    return yield* Effect.fail(unreadable(source, MISSING_REASON));
+    return yield* unreadable(source, MISSING_REASON);
   }
   return found;
 });
@@ -211,11 +213,11 @@ const readList = Effect.fn("readList")(function* readList<Shape, Encoded>(
 ) {
   const reading = yield* fetchJson(access.apiToken, collection.source, listedQuery(collection));
   if (!reading.found) {
-    return yield* Effect.fail(unreadable(collection.source, MISSING_REASON));
+    return yield* unreadable(collection.source, MISSING_REASON);
   }
   const paged = yield* decodeBody(collection.source, Paged, reading.body);
   if (overflowed(paged.result.length, paged.result_info, collection)) {
-    return yield* Effect.fail(unreadable(collection.source, "truncated"));
+    return yield* unreadable(collection.source, "truncated");
   }
   return yield* decodeBody(collection.source, shape, reading.body);
 });
@@ -234,7 +236,7 @@ const readPage = Effect.fn("readPage")(function* readPage<Shape, Encoded>(
     page: String(asked.page),
   });
   if (!reading.found) {
-    return yield* Effect.fail(unreadable(asked.source, MISSING_REASON));
+    return yield* unreadable(asked.source, MISSING_REASON);
   }
   const paged = yield* decodeBody(asked.source, Paged, reading.body);
   return {
@@ -262,7 +264,7 @@ const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
   );
   const gathered = rest.reduce((rows, page) => rows + page.rows, first.rows);
   if (gathered !== first.total) {
-    return yield* Effect.fail(unreadable(collection.source, "truncated"));
+    return yield* unreadable(collection.source, "truncated");
   }
   return [first.value, ...rest.map((page) => page.value)];
 });

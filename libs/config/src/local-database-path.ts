@@ -1,11 +1,19 @@
-import path from "node:path";
+import { Config, ConfigProvider, Effect, Option, Path } from "effect";
 
+const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
 const localDatabaseVariable = "TEMPLATE_LOCAL_DATABASE";
-const repositoryDirectory = path.join(import.meta.dirname, "../../../.local/d1");
+const repositoryDirectory = paths.join(import.meta.dirname, "../../../.local/d1");
 
 const localDatabaseDirectory = (): string => {
-  const override = process.env[localDatabaseVariable];
-  return override === undefined || override === "" ? repositoryDirectory : path.resolve(override);
+  const override = Effect.runSync(
+    Config.option(Config.string(localDatabaseVariable)).pipe(
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
+    ),
+  );
+  return Option.match(override, {
+    onNone: () => repositoryDirectory,
+    onSome: (value) => (value === "" ? repositoryDirectory : paths.resolve(value)),
+  });
 };
 
 const localDatabase = {

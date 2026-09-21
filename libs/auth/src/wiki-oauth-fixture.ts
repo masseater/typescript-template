@@ -44,7 +44,7 @@ const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministr
 });
 
 const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifier: string) {
-  const digest = yield* Effect.promise(async () =>
+  const digest = yield* Effect.promise(() =>
     crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
   return Buffer.from(digest).toString("base64url");
