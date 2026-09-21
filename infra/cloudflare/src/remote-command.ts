@@ -55,7 +55,7 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   if (target.email === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  yield* bootstrapDatabase(database, target.email);
+  yield* bootstrapDatabase({ database: database, email: target.email });
   return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
 });
 

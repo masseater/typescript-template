@@ -3,6 +3,7 @@ import { check, index, integer, primaryKey, sqliteTable, text } from "drizzle-or
 
 import { user } from "./identity-schema.ts";
 
+/** @canonical-values db.onboarding-step */
 const onboardingSteps = ["agreement", "choose", "profile", "interview", "done"] as const;
 
 const memberOnboarding = sqliteTable(

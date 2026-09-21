@@ -28,7 +28,6 @@ const awaitingPresetPackages = [
   "infra/error-monitor/**",
   "infra/health-monitor/**",
   "libs/auth/**",
-  "libs/db/**",
   "libs/observability/**",
   "libs/runtime/**",
   "tools/dev/**",
@@ -201,7 +200,11 @@ const lintOptions = {
                 name: ["Ai", "DurableObjectState", "Request"],
                 package: "@cloudflare/workers-types",
               },
-              { from: "package", name: ["Column", "DrizzleD1Database"], package: "drizzle-orm" },
+              {
+                from: "package",
+                name: ["Column", "DrizzleD1Database", "SQLiteAsyncDatabase"],
+                package: "drizzle-orm",
+              },
               { from: "package", name: ["AnyElysia"], package: "elysia" },
               { from: "package", name: ["Plan", "ProgressEvent"], package: "alchemy" },
               {
@@ -274,6 +277,7 @@ const lintOptions = {
         "infra/budget-monitor/**",
         "infra/cloudflare/**",
         "libs/config/**",
+        "libs/db/src/local.ts",
         "libs/vite-config/**",
         "tools/dev/**",
         "tools/dont-review-it/src/repository/client-bundle.ts",

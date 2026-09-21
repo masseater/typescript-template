@@ -1,13 +1,14 @@
+import { query, schema } from "@repo/db";
 import { EmptyTestDatabase, TestBinding, executeD1RawBatch } from "@repo/db-local";
+import { loadRemoteMigrations } from "@repo/db/migrations";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
-import { runRemoteDatabaseCommand } from "../../../infra/cloudflare/src/remote-command.ts";
-import { query } from "./database.ts";
-import { loadRemoteMigrations } from "./remote-operations.ts";
-import { user } from "./schema.ts";
+import { runRemoteDatabaseCommand } from "./remote-command.ts";
+
+const { user } = schema;
 
 const d1Target = {
   accountId: "a".repeat(32),

@@ -49,13 +49,22 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
 const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   email: typeof Email.Type,
 ) {
-  const [updated] = yield* query(async (database) => database.all(ensureAdminStatement(email)));
-  if (updated === undefined) {
+  const [promotedAdministrator] = yield* query(async (database) =>
+    database.all(ensureAdminStatement(email)),
+  );
+  if (promotedAdministrator === undefined) {
     return yield* new BootstrapUnavailable();
   }
-  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(promotedAdministrator).pipe(
     Effect.mapError((cause) => new DatabaseFailure({ cause })),
   );
 });
 
-export { BootstrappedAdmin, Email, bootstrapAdmin, bootstrapStatement, ensureAdminRole };
+export {
+  BootstrappedAdmin,
+  BootstrapUnavailable,
+  Email,
+  bootstrapAdmin,
+  bootstrapStatement,
+  ensureAdminRole,
+};

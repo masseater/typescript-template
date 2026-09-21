@@ -3,13 +3,14 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+import { APPLICATION, AUTHENTICATION_METHOD } from "@repo/config";
 import { EmptyTestDatabase, TestBinding, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { bootstrapAdmin } from "./bootstrap-statement.ts";
+import { bootstrapAdmin, BootstrapUnavailable } from "./bootstrap-statement.ts";
 import { query } from "./database.ts";
 import { RemoteFailure } from "./remote-input.ts";
 import {
@@ -21,22 +22,6 @@ import {
 } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
-
-import type { Scope } from "effect";
-
-const changedMigrations = (
-  change: (folder: string) => Promise<void>,
-): Effect.Effect<string, never, Scope.Scope> => {
-  return Effect.acquireRelease(
-    Effect.promise(async () => {
-      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
-      await cp(migrationsFolder, folder, { recursive: true });
-      await change(folder);
-      return folder;
-    }),
-    (folder) => Effect.promise(async () => rm(folder, { force: true, recursive: true })),
-  );
-};
 
 describe("migrateD1", () => {
   describe("a first migration of an empty database", () => {
@@ -72,22 +57,26 @@ describe("migrateD1", () => {
   });
 
   describe("a migration whose second statement fails", () => {
-    const it = test.extend("migrationFailure", async () =>
-      Effect.runPromise(
+    const it = test.extend("migrationFailure", async ({}, { onCleanup }) => {
+      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
+      onCleanup(async () => {
+        await rm(folder, { force: true, recursive: true });
+      });
+      await cp(migrationsFolder, folder, { recursive: true });
+      const interrupted = path.join(folder, "99999999999999_interrupted");
+      await mkdir(interrupted);
+      await writeFile(
+        path.join(interrupted, "migration.sql"),
+        "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
+      );
+      return Effect.runPromise(
         Effect.gen(function* interrupt() {
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
-          const folder = yield* changedMigrations(async (migrations) => {
-            const interrupted = path.join(migrations, "99999999999999_interrupted");
-            await mkdir(interrupted);
-            await writeFile(
-              path.join(interrupted, "migration.sql"),
-              "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
-            );
-          });
           return yield* Effect.flip(migrateD1(binding, folder));
-        }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
-      ));
+        }).pipe(Effect.provide(EmptyTestDatabase)),
+      );
+    });
 
     it("fails as a query failure", { timeout: 60_000 }, ({ migrationFailure }) => {
       expect(migrationFailure).toStrictEqual(new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }));
@@ -95,27 +84,31 @@ describe("migrateD1", () => {
   });
 
   describe("the database after a migration whose second statement failed", () => {
-    const it = test.extend("interruptedTables", async () =>
-      Effect.runPromise(
+    const it = test.extend("interruptedTables", async ({}, { onCleanup }) => {
+      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
+      onCleanup(async () => {
+        await rm(folder, { force: true, recursive: true });
+      });
+      await cp(migrationsFolder, folder, { recursive: true });
+      const interrupted = path.join(folder, "99999999999999_interrupted");
+      await mkdir(interrupted);
+      await writeFile(
+        path.join(interrupted, "migration.sql"),
+        "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
+      );
+      return Effect.runPromise(
         Effect.gen(function* interrupt() {
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
-          const folder = yield* changedMigrations(async (migrations) => {
-            const interrupted = path.join(migrations, "99999999999999_interrupted");
-            await mkdir(interrupted);
-            await writeFile(
-              path.join(interrupted, "migration.sql"),
-              "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
-            );
-          });
           yield* Effect.exit(migrateD1(binding, folder));
           const listing = yield* runStatement(
             "SELECT name FROM sqlite_master WHERE name = ?",
             "interrupted_migration",
           );
           return listing.results;
-        }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
-      ));
+        }).pipe(Effect.provide(EmptyTestDatabase)),
+      );
+    });
 
     it("keeps nothing of the failed migration", { timeout: 60_000 }, ({ interruptedTables }) => {
       expect(interruptedTables).toStrictEqual([]);
@@ -123,8 +116,13 @@ describe("migrateD1", () => {
   });
 
   describe("migrations whose already applied history changed", () => {
-    const it = test.extend("migrationFailure", async () =>
-      Effect.runPromise(
+    const it = test.extend("migrationFailure", async ({}, { onCleanup }) => {
+      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
+      onCleanup(async () => {
+        await rm(folder, { force: true, recursive: true });
+      });
+      await cp(migrationsFolder, folder, { recursive: true });
+      return Effect.runPromise(
         Effect.gen(function* rewriteHistory() {
           const binding = yield* TestBinding;
           const [first] = yield* loadRemoteMigrations();
@@ -132,12 +130,13 @@ describe("migrateD1", () => {
           if (first === undefined) {
             return new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" });
           }
-          const folder = yield* changedMigrations(async (migrations) => {
-            await appendFile(path.join(migrations, first.name, "migration.sql"), "\n");
-          });
+          yield* Effect.promise(async () =>
+            appendFile(path.join(folder, first.name, "migration.sql"), "\n"),
+          );
           return yield* Effect.flip(migrateD1(binding, folder));
-        }).pipe(Effect.scoped, Effect.provide(EmptyTestDatabase)),
-      ));
+        }).pipe(Effect.provide(EmptyTestDatabase)),
+      );
+    });
 
     it("are refused", { timeout: 60_000 }, ({ migrationFailure }) => {
       expect(migrationFailure).toStrictEqual(
@@ -216,8 +215,8 @@ describe("bootstrapDatabase", () => {
               })),
             );
           });
-          yield* bootstrapDatabase(database, "FIRST@example.test");
-          return yield* Effect.flip(bootstrapDatabase(database, email));
+          yield* bootstrapDatabase({ database: database, email: "FIRST@example.test" });
+          return yield* Effect.flip(bootstrapDatabase({ database: database, email: email }));
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 
@@ -245,8 +244,8 @@ describe("bootstrapDatabase", () => {
               updatedAt: new Date(),
             });
             await database.insert(session).values({
-              audience: "user",
-              authenticationMethod: "password",
+              audience: APPLICATION.user,
+              authenticationMethod: AUTHENTICATION_METHOD.password,
               createdAt: new Date(),
               expiresAt: new Date(Date.now() + 60_000),
               id: "old-session",
@@ -256,13 +255,13 @@ describe("bootstrapDatabase", () => {
               userId: "first",
             });
           });
-          yield* bootstrapDatabase(database, "FIRST@example.test");
-          return yield* getSessionSecurity("old-session", "user");
+          yield* bootstrapDatabase({ database: database, email: "FIRST@example.test" });
+          return yield* getSessionSecurity("old-session", APPLICATION.user);
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 
     it("is revoked", { timeout: 60_000 }, ({ earlierSession }) => {
-      expect(earlierSession).toBeUndefined();
+      expect(earlierSession).toBe(undefined);
     });
   });
 
@@ -285,13 +284,13 @@ describe("bootstrapDatabase", () => {
               })),
             );
           });
-          yield* bootstrapDatabase(database, "first@example.test");
+          yield* bootstrapDatabase({ database: database, email: "first@example.test" });
           return yield* Effect.flip(bootstrapAdmin("second@example.test"));
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 
     it("is unavailable", { timeout: 60_000 }, ({ bootstrapFailure }) => {
-      expect(bootstrapFailure).toMatchObject({ _tag: "BootstrapUnavailable" });
+      expect(bootstrapFailure).toStrictEqual(new BootstrapUnavailable());
     });
   });
 });
@@ -317,7 +316,7 @@ describe("the last administrator guard of the migrated database", () => {
               updatedAt: new Date(),
             });
           });
-          yield* bootstrapDatabase(database, "first@example.test");
+          yield* bootstrapDatabase({ database: database, email: "first@example.test" });
           yield* Effect.exit(runStatement(statement, "first"));
           return yield* query(async (database) =>
             database.select({ role: user.role }).from(user).where(eq(user.id, "first")),

@@ -150,7 +150,6 @@ describe("inspection coverage", () => {
       "infra/error-monitor/**",
       "infra/health-monitor/**",
       "libs/auth/**",
-      "libs/db/**",
       "libs/observability/**",
       "libs/runtime/**",
       "tools/dev/**",

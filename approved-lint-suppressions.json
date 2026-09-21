@@ -138,30 +138,6 @@
     "approver": "the owner of the package that hashes this plan"
   },
   {
-    "path": "libs/db/src/interview.worker.test.ts",
-    "rule": "no-null",
-    "grounds": "savedSheet is a nullable SQL column, and null is the stored absence of a sheet",
-    "approver": "the owner of the package that crosses this SQL null boundary"
-  },
-  {
-    "path": "libs/db/src/local.ts",
-    "rule": "no-nodejs-modules",
-    "grounds": "this file runs in Node and calls a Node API that has no portable module",
-    "approver": "the owner of the package that crosses this platform boundary"
-  },
-  {
-    "path": "libs/db/src/missing-record-return.test.ts",
-    "rule": "no-nodejs-modules",
-    "grounds": "this file runs in Node and calls a Node API that has no portable module",
-    "approver": "the owner of the package that crosses this platform boundary"
-  },
-  {
-    "path": "libs/db/src/testing.ts",
-    "rule": "no-namespace",
-    "grounds": "Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding",
-    "approver": "the owner of the package that augments the Cloudflare workers env"
-  },
-  {
     "path": "tools/dev/src/applications.ts",
     "rule": "no-null",
     "grounds": "a failed readiness probe is recorded as JSON null so the status event still carries the httpStatus field",
