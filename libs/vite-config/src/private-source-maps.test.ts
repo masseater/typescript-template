@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { repositoryRoot } from "@repo/config/repository-root";
@@ -11,7 +10,7 @@ const bundleEntry = path.join(repositoryRoot, "libs/vite-config/src/source-maps.
 
 describe("failOnBrokenSourceMaps", () => {
   const it = test
-    .extend("brokenMapFailure", async () => {
+    .extend("brokenMapReportsSourceMapBroken", async () => {
       try {
         await build({
           build: {
@@ -31,7 +30,9 @@ describe("failOnBrokenSourceMaps", () => {
           ],
         });
       } catch (buildFailure: unknown) {
-        return buildFailure instanceof Error ? buildFailure.message : "unknown failure";
+        const failureText =
+          buildFailure instanceof Error ? buildFailure.message : "unknown failure";
+        return failureText.includes("SOURCEMAP_BROKEN");
       }
       throw new Error("build kept a transform that dropped the source map");
     })
@@ -46,15 +47,14 @@ describe("failOnBrokenSourceMaps", () => {
         logLevel: "silent",
         plugins: [failOnBrokenSourceMaps()],
       });
-      return Array.isArray(built)
-        ? built.some(
-            (result) => result !== null && typeof result === "object" && "output" in result,
-          )
-        : "output" in built;
+      const bundles = Array.isArray(built) ? built : [built];
+      return bundles.some((bundle) => "output" in bundle);
     });
 
-  it("fails the build when a transform drops the source map", ({ brokenMapFailure }) => {
-    expect(brokenMapFailure).toContain("SOURCEMAP_BROKEN");
+  it("fails the build when a transform drops the source map", ({
+    brokenMapReportsSourceMapBroken,
+  }) => {
+    expect(brokenMapReportsSourceMapBroken).toBe(true);
   });
 
   it("leaves a build whose transforms keep the source map alone", ({ keptMapBuild }) => {

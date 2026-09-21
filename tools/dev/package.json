@@ -12,12 +12,12 @@
   },
   "type": "module",
   "dependencies": {
-    "@cloudflare/workers-types": "catalog:",
     "@effect/platform-node": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/db-local": "workspace:*",
     "@repo/local": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/vite-config": "workspace:*",
@@ -27,8 +27,7 @@
     "otpauth": "9.5.2",
     "playwright": "catalog:",
     "portless": "0.15.6",
-    "vite-plus": "catalog:",
-    "wrangler": "catalog:"
+    "vite-plus": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
