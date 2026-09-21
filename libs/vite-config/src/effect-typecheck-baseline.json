@@ -453,24 +453,6 @@
         "count": 1
       },
       {
-        "file": "src/pages/landing/ui/landing-page.test.tsx",
-        "code": "TS2769",
-        "message": "No overload matches this call.",
-        "count": 2
-      },
-      {
-        "file": "src/pages/profile-edit/ui/social-links-editor.tsx",
-        "code": "TS2307",
-        "message": "Cannot find module '#shared/social-link' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/profile/ui/profile-page.test.tsx",
-        "code": "TS6133",
-        "message": "'ReactElement' is declared but its value is never read.",
-        "count": 1
-      },
-      {
         "file": "src/pages/welcome/api/onboarding.ts",
         "code": "TS2749",
         "message": "'OnboardingStep' refers to a value, but is being used as a type here. Did you mean 'typeof OnboardingStep'?",
@@ -480,12 +462,6 @@
         "file": "src/pages/welcome/api/onboarding.ts",
         "code": "TS6196",
         "message": "'OnboardingStep' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/pages/welcome/ui/choose-page.tsx",
-        "code": "TS2375",
-        "message": "Type '{ blocked: boolean; error: string | undefined; onInterview: () => void; onProfile: () => void; }' is not assignable to type 'Readonly<{ blocked: boolean; error?: string; onInterview: () => void; onProfile: () => void; }>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
         "count": 1
       },
       {
@@ -738,12 +714,6 @@
         "file": "src/shared/social-link/registry.ts",
         "code": "TS6196",
         "message": "'SocialNetworkId' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/widgets/member-page/ui/member-page.tsx",
-        "code": "TS2307",
-        "message": "Cannot find module '#shared/social-link' or its corresponding type declarations.",
         "count": 1
       }
     ],

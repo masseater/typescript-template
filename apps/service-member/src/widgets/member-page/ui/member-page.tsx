@@ -1,6 +1,6 @@
 import { Avatar, type UiNode } from "@repo/ui";
 
-import { SocialLinks } from "#shared/social-link";
+import { SocialLinks } from "#shared/social-link/index.ts";
 
 import type { ReactElement } from "react";
 
