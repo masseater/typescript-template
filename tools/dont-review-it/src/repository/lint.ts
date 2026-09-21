@@ -236,6 +236,24 @@ const lintOptions = {
       },
     },
     {
+      files: ["libs/vite-config/src/cloudflare-workers-loader.mjs"],
+      rules: {
+        "max-params": LINT_SEVERITY.OFF,
+        "typescript/no-unsafe-call": LINT_SEVERITY.OFF,
+        "typescript/no-unsafe-return": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/vite-config/src/cloudflare-workers-stub.mjs",
+        "libs/vite-config/src/cloudflare-workflows-stub.mjs",
+      ],
+      rules: {
+        "max-classes-per-file": LINT_SEVERITY.OFF,
+        "typescript/no-extraneous-class": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: authUiServerReadsAwaitingQuery,
       rules: {
         "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
