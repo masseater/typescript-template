@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { copyFile, lstat, mkdir } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
 import { Effect } from "effect";

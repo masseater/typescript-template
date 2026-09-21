@@ -42,7 +42,7 @@ const userApi = createApi(apiRoot)
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
           const profile = yield* getProfile(user.id);
-          if (profile === null) {
+          if (profile === undefined) {
             return yield* new UserNotFound();
           }
           return profile;

@@ -21,7 +21,6 @@ const url = `https://api.cloudflare.com/client/v4/zones/${access.accountId}/dns_
 const Rows = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
 
 function mockServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<typeof setupServer>
 ): Effect.Effect<SetupServer, never, Scope.Scope> {
   return Effect.acquireRelease(
