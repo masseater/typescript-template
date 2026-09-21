@@ -16,11 +16,11 @@ function PhotoEditor({ profile }: Readonly<{ profile: Profile }>): ReactElement 
       {photoSlots.map((slot) => (
         <PhotoSlotEditor
           key={slot}
-          initialVersion={profile.photos[slot]}
           memberId={profile.id}
           name={profile.name}
           onChanged={refresh}
           slot={slot}
+          version={profile.photos[slot]}
         />
       ))}
     </div>

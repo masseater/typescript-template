@@ -43,26 +43,26 @@ function Preview({
 }
 
 function PhotoSlotEditor({
-  initialVersion,
   memberId,
   name,
   onChanged,
   slot,
+  version,
 }: Readonly<{
-  initialVersion: string | null;
   memberId: string;
   name: string;
   onChanged: () => Promise<void>;
   slot: PhotoSlot;
+  version: string | null;
 }>): ReactElement {
-  const form = usePhotoForm(slot, initialVersion, onChanged);
+  const form = usePhotoForm(slot, onChanged);
   const label = slotLabels[slot];
   return (
     <section aria-busy={form.pending} className="flex flex-col gap-3">
       <Heading as="h2" size="section">
         {label}
       </Heading>
-      <Preview memberId={memberId} name={name} slot={slot} version={form.version} />
+      <Preview memberId={memberId} name={name} slot={slot} version={version} />
       <FileField
         accept={accept}
         disabled={form.blocked}
@@ -71,7 +71,7 @@ function PhotoSlotEditor({
         name={`${slot}-photo`}
         onFileChange={form.handleFile}
       />
-      {form.version !== null && (
+      {version !== null && (
         <div>
           <Button
             type="button"

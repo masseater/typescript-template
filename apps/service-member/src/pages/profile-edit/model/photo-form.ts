@@ -1,5 +1,4 @@
 import { useAction } from "@repo/ui";
-import { useState } from "react";
 
 import { removePhoto, uploadPhoto } from "#pages/profile-edit/api/photo.ts";
 
@@ -11,30 +10,22 @@ interface PhotoForm {
   readonly handleFile: (file: File | undefined) => void;
   readonly handleRemove: () => void;
   readonly pending: boolean;
-  readonly version: string | null;
 }
 
-function usePhotoForm(
-  slot: PhotoSlot,
-  initialVersion: string | null,
-  onChanged: () => Promise<void>,
-): PhotoForm {
-  const [version, setVersion] = useState(initialVersion);
+function usePhotoForm(slot: PhotoSlot, onChanged: () => Promise<void>): PhotoForm {
   const action = useAction();
   function handleFile(file: File | undefined): void {
     if (file === undefined) {
       return;
     }
     action.run(async () => {
-      const state = await uploadPhoto(slot, file);
-      setVersion(state.version);
+      await uploadPhoto(slot, file);
       await onChanged();
     });
   }
   function handleRemove(): void {
     action.run(async () => {
-      const state = await removePhoto(slot);
-      setVersion(state.version);
+      await removePhoto(slot);
       await onChanged();
     });
   }
@@ -44,7 +35,6 @@ function usePhotoForm(
     handleFile,
     handleRemove,
     pending: action.pending,
-    version,
   };
 }
 
