@@ -53,7 +53,6 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
-  // oxlint-disable-next-line node/no-process-env
   const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run(
     "agent-browser",

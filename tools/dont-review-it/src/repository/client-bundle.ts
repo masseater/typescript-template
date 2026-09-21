@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";

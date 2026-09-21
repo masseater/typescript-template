@@ -35,7 +35,6 @@ const health = Effect.fn("health")(function* health() {
   return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
 });
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function emailVerificationFailure(error: EmailVerificationFailed): Failure {
   return error.rateLimited
     ? { message: "しばらく待ってから再度お試しください。", status: httpStatus.tooManyRequests }
@@ -51,9 +50,8 @@ const inviteFailures: Readonly<Record<InviteRejected["reason"], Failure>> = {
   },
 };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function inviteFailure(error: InviteRejected): Failure {
-  return inviteFailures[error.reason];
+function inviteFailure({ reason }: { readonly reason: InviteRejected["reason"] }): Failure {
+  return inviteFailures[reason];
 }
 
 const forbidden: Failure = {

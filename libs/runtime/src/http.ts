@@ -47,7 +47,6 @@ interface ApiRoutes<Requirements> {
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
   readonly guard: <Failures extends Tagged>(
     handler: Handler<void, Failures, Requirements>,
@@ -300,7 +299,6 @@ function apiRoutes<Requirements>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed> {
     const open = openStream(event, handler, failures);
     return async (context): Promise<EventStream<Encoded> | Failed> => {

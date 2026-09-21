@@ -212,8 +212,7 @@ const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) 
   const [profile] = yield* query((database) =>
     database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
   );
-  // oxlint-disable-next-line unicorn/no-null
-  return profile === undefined ? null : ownProfile(profile);
+  return profile === undefined ? undefined : ownProfile(profile);
 });
 
 const updateProfile = Effect.fn("updateProfile")(function* updateProfile(

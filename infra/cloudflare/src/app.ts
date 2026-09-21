@@ -20,7 +20,6 @@ import type { SharedConfig } from "./config.ts";
 
 const appEnv = Effect.fn("appEnv")(function* appEnv(
   target: Application,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shared: SharedEnv,
   billing: BillingEnv | undefined,
 ) {

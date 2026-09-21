@@ -70,7 +70,7 @@ function shownAuthor(row: {
   if (row.withdrawnId !== null) {
     return { name: withdrawnAuthorName, withdrawn: true };
   }
-  // oxlint-disable-next-line unicorn/no-null
+  // oxlint-disable-next-line unicorn/no-null -- a removed author is SQL null, and the summary keeps that null instead of inventing a name
   return null;
 }
 

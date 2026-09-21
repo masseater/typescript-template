@@ -52,7 +52,6 @@ function request(sheet: SheetData): string {
 }
 
 function complete(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   access: ModelAccess,
   sheet: SheetData,
 ): Effect.Effect<ProfileLayoutData, LayoutFailed> {
@@ -82,7 +81,6 @@ interface AssemblerShape {
 class ProfileLayoutAssembler extends Context.Service<ProfileLayoutAssembler, AssemblerShape>()(
   "#shared/profile-layout/ProfileLayoutAssembler",
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public static layer(access?: ModelAccess): Layer.Layer<ProfileLayoutAssembler> {
     return Layer.succeed(
       ProfileLayoutAssembler,

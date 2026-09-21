@@ -1,0 +1,314 @@
+[
+  {
+    "path": "apps/internal-dashboard/src/app/routes/consent.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/internal-dashboard/src/shared/wiki/authorize-mcp.ts",
+    "rule": "no-null",
+    "grounds": "JSON-RPC requires id to be null when the error is not tied to a request id",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "apps/internal-dashboard/src/widgets/dashboard-frame/ui/dashboard-navigation-item.tsx",
+    "rule": "click-events-have-key-events",
+    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
+    "approver": "the owner of the package that renders this navigation link"
+  },
+  {
+    "path": "apps/internal-dashboard/src/widgets/dashboard-frame/ui/dashboard-navigation-item.tsx",
+    "rule": "no-static-element-interactions",
+    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
+    "approver": "the owner of the package that renders this navigation link"
+  },
+  {
+    "path": "apps/service-admin/src/app/routes/consent.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-admin/src/shared/admin/authorize-mcp.ts",
+    "rule": "no-null",
+    "grounds": "JSON-RPC requires id to be null when the error is not tied to a request id",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "apps/service-admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
+    "rule": "click-events-have-key-events",
+    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
+    "approver": "the owner of the package that renders this navigation link"
+  },
+  {
+    "path": "apps/service-admin/src/widgets/admin-frame/ui/admin-navigation-item.tsx",
+    "rule": "no-static-element-interactions",
+    "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
+    "approver": "the owner of the package that renders this navigation link"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/agreement.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/board.$id.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/board.index.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/groups.$id.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/messages.$id.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/messages.index.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/search.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/settings.plan.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/upgrade.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/users.index.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/shared/interview/interviewer.worker.test.ts",
+    "rule": "no-null",
+    "grounds": "the model JSON schema uses null for an answer field the model left empty",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "apps/service-member/src/shared/interview/session.ts",
+    "rule": "no-null",
+    "grounds": "restart clears the saved sheet by writing SQL null into the nullable savedSheet column",
+    "approver": "the owner of the package that crosses this SQL null boundary"
+  },
+  {
+    "path": "apps/service-member/src/shared/mcp/authorize-mcp.ts",
+    "rule": "no-null",
+    "grounds": "JSON-RPC requires id to be null when the error is not tied to a request id",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "apps/service-member/src/shared/photo/image-fixture.ts",
+    "rule": "no-bitwise",
+    "grounds": "JPEG segment lengths and WebP feature flags are packed bit fields, so those values are written with bitwise operators",
+    "approver": "the owner of the package that checks packed binary fields"
+  },
+  {
+    "path": "apps/service-member/src/shared/photo/image.ts",
+    "rule": "no-bitwise",
+    "grounds": "JPEG segment lengths and WebP feature flags are packed bit fields, so those values are written with bitwise operators",
+    "approver": "the owner of the package that checks packed binary fields"
+  },
+  {
+    "path": "apps/service-member/src/shared/photo/photos.ts",
+    "rule": "no-null",
+    "grounds": "the photo key column is nullable SQL, and null is the stored absence of a photo",
+    "approver": "the owner of the package that crosses this SQL null boundary"
+  },
+  {
+    "path": "apps/service-member/src/shared/server-api/board.ts",
+    "rule": "no-null",
+    "grounds": "a removed author is SQL null, and the summary keeps that null instead of inventing a name",
+    "approver": "the owner of the package that crosses this SQL null boundary"
+  },
+  {
+    "path": "apps/service-member/src/shared/server-api/board.worker.test.ts",
+    "rule": "no-null",
+    "grounds": "a removed author is SQL null, and the summary keeps that null instead of inventing a name",
+    "approver": "the owner of the package that crosses this SQL null boundary"
+  },
+  {
+    "path": "infra/budget-monitor/src/budget.worker.test.ts",
+    "rule": "no-null",
+    "grounds": "the billing API sends BilledCost as JSON null when a row has no cost, and that payload is what this test rejects",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/account-lookup.test.ts",
+    "rule": "no-null",
+    "grounds": "the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/alchemy-cli.test.ts",
+    "rule": "no-unsafe-type-assertion",
+    "grounds": "the assertion builds an alchemy command outside the allow list so the refusal under test can see it",
+    "approver": "the owner of the package whose test asserts this unsafe boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/alchemy-cli.ts",
+    "rule": "process-boundary",
+    "grounds": "the alchemy child process writes its stdout and stderr through this process, which is the boundary those streams cross",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/config.test.ts",
+    "rule": "no-unnecessary-type-parameters",
+    "grounds": "the type parameter names the Cloudflare binding a partial stub stands in for in this config test",
+    "approver": "the owner of the package whose test builds this worker binding"
+  },
+  {
+    "path": "infra/cloudflare/src/config.test.ts",
+    "rule": "no-unsafe-type-assertion",
+    "grounds": "the assertion is the cast that turns the partial stub into the Cloudflare binding this config test supplies",
+    "approver": "the owner of the package whose test asserts this unsafe boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/credentials.ts",
+    "rule": "no-bitwise",
+    "grounds": "Unix file modes and open flags are bit fields, so the group-and-other mask and the no-follow open flag are written with bitwise operators",
+    "approver": "the owner of the package that checks Unix permission bits"
+  },
+  {
+    "path": "infra/cloudflare/src/inspection-fixture.ts",
+    "rule": "no-null",
+    "grounds": "the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/plan-confirmation.test.ts",
+    "rule": "no-unsafe-type-assertion",
+    "grounds": "the assertion builds the partial alchemy plan and expression the confirmation code is tested against",
+    "approver": "the owner of the package whose test asserts this unsafe boundary"
+  },
+  {
+    "path": "infra/cloudflare/src/plan-confirmation.ts",
+    "rule": "no-use-before-define",
+    "grounds": "stable, stableExpression, and stableEntries call each other, so one declaration is always named first",
+    "approver": "the owner of the package that hashes this plan"
+  },
+  {
+    "path": "libs/db/src/interview.worker.test.ts",
+    "rule": "no-null",
+    "grounds": "savedSheet is a nullable SQL column, and null is the stored absence of a sheet",
+    "approver": "the owner of the package that crosses this SQL null boundary"
+  },
+  {
+    "path": "libs/db/src/local.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/db/src/member-profile.ts",
+    "rule": "no-null",
+    "grounds": "the photo key column is nullable SQL, and null is the stored absence of a photo",
+    "approver": "the owner of the package that crosses this SQL null boundary"
+  },
+  {
+    "path": "libs/db/src/missing-record-return.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/db/src/testing.ts",
+    "rule": "no-namespace",
+    "grounds": "Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding",
+    "approver": "the owner of the package that augments the Cloudflare workers env"
+  },
+  {
+    "path": "libs/monitor/src/mail-recorder.ts",
+    "rule": "class-methods-use-this",
+    "grounds": "WorkerEntrypoint publishes send and taken as instance RPC methods, while the recorded mail is the module array those methods share",
+    "approver": "the owner of the package that exposes this worker entrypoint"
+  },
+  {
+    "path": "libs/monitor/src/monitor-fixture.ts",
+    "rule": "no-namespace",
+    "grounds": "Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding",
+    "approver": "the owner of the package that augments the Cloudflare workers env"
+  },
+  {
+    "path": "libs/vite-config/src/check-dev-isolation.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "libs/vite-config/src/effect-typecheck.test.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dev/src/applications.ts",
+    "rule": "no-null",
+    "grounds": "a failed readiness probe is recorded as JSON null so the status event still carries the httpStatus field",
+    "approver": "the owner of the package that crosses this JSON null boundary"
+  },
+  {
+    "path": "tools/dev/src/local-environment.ts",
+    "rule": "strict-void-return",
+    "grounds": "promisify wraps execFile, whose Node callback completes with no value, and the Promise form is what this command awaits",
+    "approver": "the owner of the package that wraps this Node callback"
+  },
+  {
+    "path": "tools/dev/src/private-files.ts",
+    "rule": "no-bitwise",
+    "grounds": "group and other permission bits are masked out of the file mode to refuse a credentials file others can read",
+    "approver": "the owner of the package that checks Unix permission bits"
+  },
+  {
+    "path": "tools/dont-review-it/src/configs/oxlint.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dont-review-it/src/repository/check-effect-typecheck.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  },
+  {
+    "path": "tools/dont-review-it/src/repository/lint.ts",
+    "rule": "no-nodejs-modules",
+    "grounds": "this file runs in Node and calls a Node API that has no portable module",
+    "approver": "the owner of the package that crosses this platform boundary"
+  }
+]

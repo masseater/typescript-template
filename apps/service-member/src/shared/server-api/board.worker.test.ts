@@ -161,11 +161,11 @@ describe("threads and posts", () => {
       const threadId = yield* openThread("author", draft.title);
       yield* runStatement("DELETE FROM user WHERE id = ?", "author");
       const found = yield* findBoardThread("reader", threadId, wholePage);
-      // oxlint-disable-next-line unicorn/no-null
+      // oxlint-disable-next-line unicorn/no-null -- a removed author is SQL null, and the summary keeps that null instead of inventing a name
       assert.strictEqual(found.thread.author, null);
       assert.deepStrictEqual(
         found.posts.map((post) => [post.author, post.body]),
-        // oxlint-disable-next-line unicorn/no-null
+        // oxlint-disable-next-line unicorn/no-null -- a removed author is SQL null, and the summary keeps that null instead of inventing a name
         [[null, draft.body]],
       );
     }).pipe(Effect.provide(TestDatabase)),
@@ -206,8 +206,9 @@ describe("threads and posts", () => {
         withdrawn.posts.map((post) => post.author),
         [{ name: withdrawnAuthorName, withdrawn: true }],
       );
-      // oxlint-disable-next-line unicorn/no-null
+      // oxlint-disable-next-line unicorn/no-null -- a removed author is SQL null, and the summary keeps that null instead of inventing a name
       assert.strictEqual(deleted.thread.author, null);
+      // oxlint-disable-next-line unicorn/no-null -- a removed author is SQL null, and the summary keeps that null instead of inventing a name
       assert.deepStrictEqual(
         listed.threads.map((thread) => [thread.id, thread.author]),
         [

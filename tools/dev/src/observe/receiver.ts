@@ -1,8 +1,5 @@
-// oxlint-disable-next-line import/no-nodejs-modules
 import { once } from "node:events";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { text } from "node:stream/consumers";
 
 import { APPLICATION, loopbackAddress, loopbackOrigin } from "@repo/config";

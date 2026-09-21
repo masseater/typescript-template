@@ -128,7 +128,7 @@ function createServer(
         Effect.gen(function* program() {
           const id = yield* signedInMember;
           const profile = yield* getProfile(id);
-          if (profile === null) {
+          if (profile === undefined) {
             return yield* new MessagingMemberRequired();
           }
           return profile;

@@ -75,7 +75,7 @@ function memberApi(
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
             const profile = yield* getProfile(user.id);
-            if (profile === null) {
+            if (profile === undefined) {
               return yield* new UserNotFound();
             }
             return profile;

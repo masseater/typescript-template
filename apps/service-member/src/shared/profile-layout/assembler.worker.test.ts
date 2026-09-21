@@ -15,7 +15,6 @@ const access = { accountId: "account", apiKey: "test-token" } as const;
 const unavailable = 503;
 
 function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<Network["use"]>
 ): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(
@@ -97,8 +96,7 @@ it.effect("without access to a model the assembler reports that it is unavailabl
 it.effect("a model error is reported as a layout failure", () =>
   Effect.gen(function* program() {
     yield* withServer(
-      // oxlint-disable-next-line unicorn/no-null
-      http.post(endpoint, () => new HttpResponse(null, { status: unavailable })),
+      http.post(endpoint, () => new HttpResponse(undefined, { status: unavailable })),
     );
     const failed = yield* assemble({}).pipe(Effect.flip);
     assert.deepStrictEqual(failed.reason, "model_failed");

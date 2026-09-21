@@ -4,7 +4,7 @@ import { loadPlan } from "#pages/settings/index.ts";
 import { readCheckoutReturn } from "#shared/contracts/index.ts";
 import { PlanRoute } from "./-plan-route.tsx";
 
-// oxlint-disable-next-line eslint/sort-keys
+// oxlint-disable-next-line eslint/sort-keys -- TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference
 const Route = createFileRoute("/_member/settings/plan")({
   validateSearch: readCheckoutReturn,
   loader: loadPlan,
