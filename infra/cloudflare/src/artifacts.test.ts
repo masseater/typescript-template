@@ -256,6 +256,36 @@ it.effect("refuses server CSS that differs from its public asset", () =>
   }).pipe(Effect.scoped),
 );
 
+it.effect("does not upload matching public fonts as worker modules", () =>
+  Effect.gen(function* program() {
+    const { client, root, server } = yield* userBuild;
+    yield* run(async () => {
+      await writeFiles(client, { "fonts/heading.woff2": "font" });
+      await writeFiles(server, { "fonts/heading.woff2": "font" });
+    });
+    const artifacts = yield* load(root, "service-member");
+    assert.notInclude(
+      artifacts.modules.map((module) => module.name),
+      "fonts/heading.woff2",
+    );
+    assert.include(
+      artifacts.clientFiles.map((file) => path.relative(artifacts.clientDirectory, file)),
+      "fonts/heading.woff2",
+    );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses a server font that was never published as a public asset", () =>
+  Effect.gen(function* program() {
+    const { root, server } = yield* userBuild;
+    yield* run(async () => writeFiles(server, { "fonts/heading.woff2": "font" }));
+    assert.strictEqual(
+      yield* failureCode(root, "service-member"),
+      "server_css_without_public_asset",
+    );
+  }).pipe(Effect.scoped),
+);
+
 it.effect("never writes through a link placed in the staging directory", () =>
   Effect.gen(function* program() {
     const { root } = yield* userBuild;
