@@ -4,6 +4,7 @@ import path from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
   applicationPorts,
+  coreEntrypoints,
   grants,
   jobsQueueBinding,
   jobsQueueName,
@@ -31,6 +32,7 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { elysiaAot } from "./elysia-aot.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
 const readDevVars = async (appRoot: string): Promise<string | undefined> => {
@@ -299,6 +301,16 @@ const toolTest: NonNullable<UserConfig["test"]> = {
 
 const noExtraPlugins: readonly PluginOption[] = [];
 
+const coreDevWorker = {
+  config: {
+    compatibility_date: workerCompatibility.date,
+    compatibility_flags: [...workerCompatibility.flags],
+    d1_databases: [localDatabase],
+    main: path.join(repositoryRoot, "apps/core/src/worker.ts"),
+    name: "template-core",
+  },
+};
+
 const appConfig = (
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
@@ -312,8 +324,11 @@ const appConfig = (
       previewDevVars(appRoot),
       privateSourceMaps(app),
       devBoundary(app),
+      elysiaAot(appRoot),
       cloudflare({
-        config: {
+        auxiliaryWorkers: [coreDevWorker],
+        config: (config) => ({
+          ...config,
           assets: {
             binding: "ASSETS",
             run_worker_first: command !== "serve" || isPreview === true,
@@ -331,6 +346,14 @@ const appConfig = (
             : {}),
           main: "./src/app/server.ts",
           name: `template-${app}`,
+          services: [
+            ...(config.services ?? []),
+            {
+              binding: "CORE",
+              entrypoint: coreEntrypoints[app],
+              service: "template-core",
+            },
+          ],
           ...(grants(app, "jobs")
             ? {
                 queues: {
@@ -349,7 +372,7 @@ const appConfig = (
           ...(grants(app, "storage")
             ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
             : {}),
-        },
+        }),
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },
         viteEnvironment: { name: "ssr" },

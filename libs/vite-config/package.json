@@ -16,6 +16,7 @@
     "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "effect": "catalog:",
+    "elysia": "2.0.0-beta.16",
     "vite-plus": "catalog:"
   },
   "devDependencies": {

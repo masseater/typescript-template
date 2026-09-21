@@ -136,6 +136,26 @@ describe("appConfig", () => {
         });
       return pluginNamesOf(appConfig("service-admin")(serve).plugins ?? []);
     })
+    .extend("adminElysiaAotPlugins", () => {
+      const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
+        plugins.flatMap((plugin): readonly string[] => {
+          if (Array.isArray(plugin)) {
+            return pluginNamesOf(plugin);
+          }
+          if (
+            typeof plugin === "object" &&
+            plugin !== null &&
+            "name" in plugin &&
+            typeof plugin.name === "string"
+          ) {
+            return [plugin.name];
+          }
+          return [];
+        });
+      return pluginNamesOf(appConfig("service-admin")(serve).plugins ?? []).filter(
+        (pluginName) => pluginName === "elysia-aot",
+      );
+    })
     .extend("adminPluginsWithMarker", () => {
       const marker = { name: "app-specific" };
       const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
@@ -170,5 +190,9 @@ describe("appConfig", () => {
     adminPluginsWithMarker,
   }) => {
     expect(adminPluginsWithMarker).toStrictEqual(adminPlugins);
+  });
+
+  it("runs Elysia AOT on the admin worker graph", ({ adminElysiaAotPlugins }) => {
+    expect(adminElysiaAotPlugins).toStrictEqual(["elysia-aot"]);
   });
 });
