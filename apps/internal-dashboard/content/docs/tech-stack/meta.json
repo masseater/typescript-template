@@ -1,0 +1,13 @@
+{
+  "title": "技術スタック",
+  "pages": [
+    "index",
+    "tanstack-start",
+    "typescript",
+    "effect",
+    "tanstack-query",
+    "ui",
+    "alchemy",
+    "cloudflare"
+  ]
+}
