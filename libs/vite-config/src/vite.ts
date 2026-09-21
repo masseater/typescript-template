@@ -21,12 +21,17 @@ import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite-plus";
+import {
+  type ConfigEnv,
+  defineConfig,
+  type Plugin,
+  type PluginOption,
+  type ServerOptions,
+  type UserConfig,
+} from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
-
-import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
 
 async function readDevVars(appRoot: string): Promise<string | undefined> {
   try {
@@ -472,7 +477,7 @@ export {
   workspaceCheckImports,
   withoutEnvFileLoader,
 };
-export { runEffectTypecheck as runTypecheckGate } from "./effect-typecheck.ts";
+export { runTypecheckGate } from "./effect-typecheck.ts";
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
