@@ -124,4 +124,4 @@ function consentGate(api: ApiRoutes<AppServices>) {
   return api.guard(enforceAgreements, failures);
 }
 
-export { agreementApi, agreementRequired, consentGate };
+export { agreementApi, consentGate };

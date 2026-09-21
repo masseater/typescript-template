@@ -591,12 +591,6 @@
         "count": 1
       },
       {
-        "file": "src/shared/server-api/social-api.ts",
-        "code": "TS2345",
-        "message": "Argument of type '{ AuthFailure: \"unexpected\"; DatabaseFailure: \"unexpected\"; EmailDeliveryFailed: \"unexpected\"; FollowSelfForbidden: { readonly message: \"自分自身をフォローすることはできません。\"; readonly status: 400; }; NotificationNotFound: { readonly message: \"通知が見つかりません。\"; readonly stat...' is not assignable to parameter of type 'FailureTable<Tagged>'.",
-        "count": 1
-      },
-      {
         "file": "src/shared/social-link/registry.ts",
         "code": "TS2345",
         "message": "Argument of type 'string' is not assignable to parameter of type '\"facebook.com\" | \"fb.com\" | \"github.com\" | \"instagram.com\" | \"linkedin.com\" | \"m.facebook.com\" | \"m.youtube.com\" | \"twitter.com\" | \"www.facebook.com\" | \"www.fb.com\" | \"www.github.com\" | ... 7 more ... | \"youtube.com\"'.",
@@ -606,18 +600,6 @@
         "file": "src/shared/social-link/registry.ts",
         "code": "TS6196",
         "message": "'SocialNetworkId' is declared but never used.",
-        "count": 1
-      },
-      {
-        "file": "src/widgets/member-frame/api/badges.ts",
-        "code": "TS2749",
-        "message": "'NavBadgesView' refers to a value, but is being used as a type here. Did you mean 'typeof NavBadgesView'?",
-        "count": 1
-      },
-      {
-        "file": "src/widgets/member-frame/api/badges.ts",
-        "code": "TS6196",
-        "message": "'NavBadgesView' is declared but never used.",
         "count": 1
       }
     ],

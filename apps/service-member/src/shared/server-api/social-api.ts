@@ -19,7 +19,6 @@ import {
   OnboardingAdvance,
   OnboardingView,
 } from "#shared/contracts/index.ts";
-import { agreementRequired } from "./agreement-api.ts";
 import {
   advanceOnboarding,
   followMember,
@@ -60,7 +59,10 @@ const failures = {
 
 const onboardingFailures = {
   ...failures,
-  AgreementRequired: agreementRequired,
+  AgreementRequired: {
+    message: "最新の利用規約への同意が必要です。",
+    status: httpStatus.preconditionRequired,
+  },
 };
 
 function onboardingStepApi(api: ApiRoutes<AppServices>) {

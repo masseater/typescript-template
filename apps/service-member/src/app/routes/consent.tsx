@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Schema } from "effect";
 
-import { ConsentPage, loadClientName } from "#pages/account/consent/index.ts";
+import {
+  ConsentClientUnavailable,
+  ConsentPage,
+  loadClientName,
+} from "#pages/account/consent/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -20,8 +24,19 @@ const Route = createFileRoute("/consent")({
   loaderDeps: ({ search }: Readonly<{ search: ConsentSearch }>) => ({
     clientId: search.client_id,
   }),
-  loader: async ({ deps }: Readonly<{ deps: Readonly<{ clientId: string | undefined }> }>) =>
-    deps.clientId === undefined ? undefined : loadClientName(deps.clientId),
+  loader: async ({ deps }: Readonly<{ deps: Readonly<{ clientId: string | undefined }> }>) => {
+    if (deps.clientId === undefined) {
+      return undefined;
+    }
+    try {
+      return await loadClientName(deps.clientId);
+    } catch (error) {
+      if (error instanceof ConsentClientUnavailable) {
+        return undefined;
+      }
+      throw error;
+    }
+  },
 });
 
 function ConsentRoute(): ReactElement {

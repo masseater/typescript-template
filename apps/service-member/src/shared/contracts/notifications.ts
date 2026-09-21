@@ -23,6 +23,7 @@ const NotificationUnread = Schema.Struct({
 const NavBadges = Schema.Struct({
   notifications: Schema.Finite,
 });
+type NavBadges = typeof NavBadges.Type;
 
 const NotificationId = Schema.Struct({
   id: Schema.String.check(Schema.isLengthBetween(1, 256)),
