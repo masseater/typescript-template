@@ -13,8 +13,8 @@ import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 
 import {
-  findDirectConversation,
-  listDirectConversations,
+  findConversation,
+  listInbox,
   openDirectConversation,
   sendDirectMessage,
 } from "./messaging.ts";
@@ -105,7 +105,7 @@ describe("who may use direct messages", () => {
     Effect.gen(function* program() {
       yield* addUser({ emailVerified, role, userId });
       assert.strictEqual(
-        yield* failureTag(listDirectConversations(userId, firstPage)),
+        yield* failureTag(listInbox(userId, firstPage)),
         "MessagingMemberRequired",
       );
       assert.strictEqual(
@@ -123,8 +123,8 @@ describe("paid and free members", () => {
       yield* addUser({ userId: "free" });
       yield* makePaid("paid");
       const opened = yield* startConversation("paid", "free", greeting);
-      const forSender = yield* findDirectConversation("paid", opened.conversationId, wholePage);
-      const forRecipient = yield* findDirectConversation("free", opened.conversationId, wholePage);
+      const forSender = yield* findConversation("paid", opened.conversationId, wholePage);
+      const forRecipient = yield* findConversation("free", opened.conversationId, wholePage);
       assert.deepStrictEqual(
         forSender.messages.map((message) => [message.mine, message.body, message.sender.name]),
         [[true, greeting, "paid"]],
@@ -155,7 +155,7 @@ describe("paid and free members", () => {
       const opened = yield* startConversation("paid", "free", greeting);
       yield* TestClock.adjust("1 minute");
       yield* sendDirectMessage("free", opened.conversationId, reply);
-      const thread = yield* findDirectConversation("paid", opened.conversationId, wholePage);
+      const thread = yield* findConversation("paid", opened.conversationId, wholePage);
       assert.deepStrictEqual(
         thread.messages.map((message) => [message.mine, message.body]),
         [
@@ -177,11 +177,14 @@ describe("withdrawn senders", () => {
       yield* query(async (database) => {
         await database.delete(user).where(eq(user.id, "paid"));
       });
-      const thread = yield* findDirectConversation("free", opened.conversationId, wholePage);
+      const thread = yield* findConversation("free", opened.conversationId, wholePage);
       assert.deepStrictEqual(
         thread.messages.map((message) => message.sender),
         [{ id: null, name: withdrawnSenderLabel }],
       );
+      if (!("peer" in thread.conversation)) {
+        throw new Error("expected a direct conversation");
+      }
       assert.strictEqual(thread.conversation.peer.name, withdrawnSenderLabel);
       assert.strictEqual(thread.conversation.peer.withdrawn, true);
       assert.strictEqual(thread.conversation.peer.id, null);
@@ -197,10 +200,10 @@ describe("conversation access", () => {
       yield* addUser({ userId: "stranger" });
       yield* makePaid("paid");
       const opened = yield* startConversation("paid", "free", greeting);
-      const listed = yield* listDirectConversations("stranger", firstPage);
+      const listed = yield* listInbox("stranger", firstPage);
       assert.deepStrictEqual(listed.conversations, []);
       assert.strictEqual(
-        yield* failureTag(findDirectConversation("stranger", opened.conversationId, wholePage)),
+        yield* failureTag(findConversation("stranger", opened.conversationId, wholePage)),
         "MessagingConversationNotFound",
       );
       assert.strictEqual(
@@ -220,11 +223,11 @@ describe("conversation access", () => {
       yield* makePaid("paid");
       const opened = yield* startConversation("paid", "free", greeting);
       assert.strictEqual(
-        yield* failureTag(findDirectConversation("operator", opened.conversationId, wholePage)),
+        yield* failureTag(findConversation("operator", opened.conversationId, wholePage)),
         "MessagingMemberRequired",
       );
       assert.strictEqual(
-        yield* failureTag(findDirectConversation("staff", opened.conversationId, wholePage)),
+        yield* failureTag(findConversation("staff", opened.conversationId, wholePage)),
         "MessagingMemberRequired",
       );
     }).pipe(Effect.provide(TestDatabase)),

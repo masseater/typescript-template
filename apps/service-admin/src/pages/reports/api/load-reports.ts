@@ -1,12 +1,7 @@
 import { apiData } from "@repo/runtime/client";
 
 import { adminClient } from "#shared/api/index.ts";
-import {
-  ReportDetail,
-  ReportList,
-  ReportListQuery,
-  reportPageSize,
-} from "#shared/contracts/index.ts";
+import { ReportDetail, ReportList, ReportListQuery } from "#shared/contracts/index.ts";
 
 import type { ReportStatus } from "@repo/config";
 
@@ -32,5 +27,5 @@ async function loadReport(id: string): Promise<ReportItem> {
   return apiData(ReportDetail, await adminClient().reports.detail.get({ query: { id } }));
 }
 
-export { loadReport, loadReports, reportPageSize };
+export { loadReport, loadReports };
 export type { ReportItem, ReportSummary };

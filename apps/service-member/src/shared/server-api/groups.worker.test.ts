@@ -10,7 +10,7 @@ import { createGroup, findGroup, joinGroup, leaveGroup, renameGroup } from "./gr
 const maximumGroupMembers = 100;
 const maximumGroupsOwned = 20;
 const maximumGroupsJoined = 50;
-import { findGroupConversation, listGroupConversations, sendGroupMessage } from "./messaging.ts";
+import { findConversation, listInbox, sendConversationMessage } from "./messaging.ts";
 
 import type { Database, DatabaseFailure } from "@repo/db";
 
@@ -115,11 +115,11 @@ describe("invite-only visibility", () => {
         "GroupNotFound",
       );
       assert.strictEqual(
-        yield* failureTag(findGroupConversation("stranger", created.conversationId, wholePage)),
+        yield* failureTag(findConversation("stranger", created.conversationId, wholePage)),
         "MessagingConversationNotFound",
       );
       assert.strictEqual(
-        yield* failureTag(sendGroupMessage("stranger", created.conversationId, "侵入")),
+        yield* failureTag(sendConversationMessage("stranger", created.conversationId, "侵入")),
         "MessagingConversationNotFound",
       );
     }).pipe(Effect.provide(TestDatabase)),
@@ -142,9 +142,9 @@ describe("invite-only visibility", () => {
       yield* addUser({ userId: "owner" });
       yield* addUser({ userId: "guest" });
       const created = yield* openGroup("owner", "招待制");
-      yield* sendGroupMessage("owner", created.conversationId, "内部の話");
+      yield* sendConversationMessage("owner", created.conversationId, "内部の話");
       assert.strictEqual(
-        yield* failureTag(findGroupConversation("guest", created.conversationId, wholePage)),
+        yield* failureTag(findConversation("guest", created.conversationId, wholePage)),
         "MessagingConversationNotFound",
       );
     }).pipe(Effect.provide(TestDatabase)),
@@ -231,10 +231,10 @@ describe("ownership and posting", () => {
       const created = yield* openGroup("owner", "勉強会", GROUP_JOIN_POLICY.open);
       yield* joinGroup("guest", created.groupId);
       yield* TestClock.adjust("1 minute");
-      yield* sendGroupMessage("owner", created.conversationId, "はじめまして");
+      yield* sendConversationMessage("owner", created.conversationId, "はじめまして");
       yield* TestClock.adjust("1 minute");
-      yield* sendGroupMessage("guest", created.conversationId, "よろしく");
-      const thread = yield* findGroupConversation("guest", created.conversationId, wholePage);
+      yield* sendConversationMessage("guest", created.conversationId, "よろしく");
+      const thread = yield* findConversation("guest", created.conversationId, wholePage);
       assert.deepStrictEqual(
         thread.messages.map((message) => [message.mine, message.body]),
         [
@@ -242,9 +242,13 @@ describe("ownership and posting", () => {
           [true, "よろしく"],
         ],
       );
-      const listed = yield* listGroupConversations("guest", wholePage);
+      const listed = yield* listInbox("guest", wholePage);
       assert.strictEqual(listed.total, 1);
-      assert.strictEqual(listed.conversations[0]?.group.name, "勉強会");
+      const listedHead = listed.conversations[0];
+      if (listedHead === undefined || !("group" in listedHead)) {
+        throw new Error("expected a group conversation");
+      }
+      assert.strictEqual(listedHead.group.name, "勉強会");
     }).pipe(Effect.provide(TestDatabase)),
   );
 
@@ -255,11 +259,11 @@ describe("ownership and posting", () => {
       const created = yield* openGroup("owner", "公開グループ", GROUP_JOIN_POLICY.open);
       yield* joinGroup("guest", created.groupId);
       const hiddenBody = "ブロックされる本文";
-      yield* sendGroupMessage("guest", created.conversationId, hiddenBody);
+      yield* sendConversationMessage("guest", created.conversationId, hiddenBody);
       yield* blockMember("owner", "guest");
-      const thread = yield* findGroupConversation("owner", created.conversationId, wholePage);
+      const thread = yield* findConversation("owner", created.conversationId, wholePage);
       assert.strictEqual(JSON.stringify(thread).includes(hiddenBody), false);
-      const listed = yield* listGroupConversations("owner", { limit: 20, offset: 0 });
+      const listed = yield* listInbox("owner", { limit: 20, offset: 0 });
       assert.strictEqual(listed.conversations[0]?.lastMessagePreview.includes(hiddenBody), false);
     }).pipe(Effect.provide(TestDatabase)),
   );

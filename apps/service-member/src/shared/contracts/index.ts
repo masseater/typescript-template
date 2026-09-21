@@ -105,4 +105,3 @@ export {
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
 export { InquiryCreate, InquiryList, InquiryReply, InquiryThread } from "./support.ts";
 export { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";
-export { InterviewView } from "../interview/contracts.ts";

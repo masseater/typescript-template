@@ -62,4 +62,4 @@ async function submitDecision(accept: boolean, scopes: readonly string[]): Promi
   globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
 }
 
-export { ConsentClientUnavailable, loadClientName, submitDecision };
+export { loadClientName, submitDecision };

@@ -84,4 +84,4 @@ export {
   openConversation,
   sendMessage,
 };
-export type { ConversationListView, ConversationThread, GroupJoinPolicy, OpenedConversation };
+export type { ConversationListView, ConversationThread, GroupJoinPolicy };

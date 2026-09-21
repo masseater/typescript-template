@@ -756,16 +756,11 @@ const totalUnreadCount = Effect.fn("totalUnreadCount")(function* totalUnreadCoun
 
 export {
   findConversation,
-  findDirectConversation,
-  findGroupConversation,
-  listDirectConversations,
-  listGroupConversations,
   listInbox,
   lookupDirectConversation,
   markConversationRead,
   openDirectConversation,
   sendConversationMessage,
   sendDirectMessage,
-  sendGroupMessage,
   totalUnreadCount,
 };

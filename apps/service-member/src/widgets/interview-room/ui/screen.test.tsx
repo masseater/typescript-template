@@ -2,10 +2,11 @@ import { RegistryProvider } from "@effect/atom-react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
-import { advance, begin, requestHistoryConsent, save, viewOf } from "#shared/interview/index.ts";
+import { viewOf } from "#shared/interview/contracts.ts";
+import { advance, begin, requestHistoryConsent, save } from "#shared/interview/engine.ts";
 import { InterviewScreen } from "./screen.tsx";
 
-import type { InterviewState } from "#shared/interview/index.ts";
+import type { InterviewState } from "#shared/interview/state.ts";
 import type { ReactElement } from "react";
 
 const noop = (): void => undefined;
