@@ -15,12 +15,13 @@ const elysiaAot = (appRoot: string): Plugin => {
     strip: true,
     target: "workerd",
   });
-  void compiled.apply;
+  const { apply: _buildOnly, ...hooks } = compiled;
+  void _buildOnly;
   const start = async (): Promise<void> => {
     await compiled.buildStart();
   };
   return {
-    ...compiled,
+    ...hooks,
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
     buildStart: start,
     configureServer: start,
