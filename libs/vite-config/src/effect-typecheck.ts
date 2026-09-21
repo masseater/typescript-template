@@ -551,18 +551,6 @@ const invokedCode = (start: () => number): number => {
   }
 };
 
-const runInvokedCli = (start: () => number = startEffectTypecheckCli): void => {
-  invokedCode(start);
-};
-
-const maybeStart = (argv1: string | undefined, modulePath: string): boolean => {
-  if (!isInvokedAsCli(argv1, modulePath)) {
-    return false;
-  }
-  runInvokedCli();
-  return true;
-};
-
 const exitAfterFlush = (
   code: number,
   exit: (code: number) => void,
