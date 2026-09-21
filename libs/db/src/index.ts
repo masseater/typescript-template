@@ -29,6 +29,18 @@ export {
   revokeUserSessions,
 } from "./security.ts";
 export {
+  canViewProfile,
+  clearPhotoKeys,
+  photoKeysOf,
+  profileListed,
+  profileVisibleTo,
+  readVisibility,
+  setPhotoKey,
+  updateVisibility,
+  visiblePhotoKey,
+} from "./member-profile.ts";
+export type { PhotoKeys, VisibilitySettings } from "./member-profile.ts";
+export {
   InterviewConflict,
   InterviewLimitReached,
   countInterviewTurn,
