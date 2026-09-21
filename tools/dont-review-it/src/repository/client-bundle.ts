@@ -132,5 +132,5 @@ runCli(
       ).pipe(Effect.andThen(unexpected.length > 0 ? markFailed : Effect.void)),
     ),
   ),
-  (cause) => causeRecord("quality.client_bundle_failed", cause),
+  (cause) => causeRecord("quality.client_bundle_failed", { cause }),
 );

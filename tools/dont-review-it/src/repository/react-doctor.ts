@@ -174,5 +174,5 @@ runCli(
       ),
     ),
   ),
-  (cause) => causeRecord("quality.react_doctor_failed", cause),
+  (cause) => causeRecord("quality.react_doctor_failed", { cause }),
 );

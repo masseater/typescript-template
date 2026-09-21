@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { Console, Effect } from "effect";
 
@@ -20,11 +20,7 @@ import type { DevServices } from "./platform.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
-const firstUserArgumentIndex = 2;
-
-const operator = Effect.fn("provisionOperators")(function* provisionOperators(
-  _args: readonly string[],
-) {
+const operator = Effect.fn("operator")(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
     yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
   }
@@ -71,8 +67,11 @@ const [action = "", ...args] = process.argv.slice(firstUserArgumentIndex);
 runCli(
   selectCommand(action, args).pipe(Effect.flatMap(writeReport), Effect.provide(layer)),
   (cause) =>
-    causeRecord("local.application_command_failed", cause, {
-      remediation:
-        "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+    causeRecord("local.application_command_failed", {
+      cause,
+      fields: {
+        remediation:
+          "Check vp run --filter @repo/dev setup, vp run --filter @repo/db-local db:migrate:local, vp run --filter @repo/dev operator, local configuration permissions, build output, tmux and agent-browser doctor. Credentials are never printed.",
+      },
     }),
 );

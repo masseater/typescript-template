@@ -1799,14 +1799,6 @@
         "count": 1
       }
     ],
-    "libs/cli": [
-      {
-        "file": "../vite-config/src/request-guard.ts",
-        "code": "TS4111",
-        "message": "Property 'code' comes from an index signature, so it must be accessed with ['code'].",
-        "count": 1
-      }
-    ],
     "libs/config": [
       {
         "file": "src/naming.test.ts",
