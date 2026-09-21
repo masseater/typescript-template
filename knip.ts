@@ -216,7 +216,7 @@ const config = ({
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
-        ignoreDependencies: ["playwright"],
+        ignoreDependencies: ["agent-browser", "playwright"],
         project: ["src/**/*.ts!"],
       },
       "tools/load": {
