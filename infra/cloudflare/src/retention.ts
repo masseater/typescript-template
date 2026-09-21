@@ -1,10 +1,13 @@
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { readdir, rm, stat } from "node:fs/promises";
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import path from "node:path";
 
 import { Effect } from "effect";
 
 import { ArtifactFailure, io, isMissing } from "./artifact-io.ts";
 
+// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import type { Dirent } from "node:fs";
 
 type GenerationEntry = Readonly<Pick<Dirent, "isDirectory" | "name">>;
