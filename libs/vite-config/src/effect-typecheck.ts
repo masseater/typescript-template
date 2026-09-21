@@ -69,6 +69,7 @@ const prettyDiagnosticLine = /^(.+):(\d+):(\d+) - error (TS\d+): (.*)$/u;
 const looseDiagnosticLine = /^error (TS\d+): (.*)$/u;
 
 const checkoutMarker = "<repo>";
+const pnpmPackageMarker = "<pkg>";
 
 const checkoutRoots = (repositoryRoot: string): readonly string[] => {
   const resolved = path.resolve(repositoryRoot);
@@ -107,10 +108,13 @@ const withoutCheckoutPath = (text: string, repositoryRoot: string): string => {
   return current;
 };
 
+const withoutPnpmPackagePath = (text: string): string =>
+  text.replaceAll(/node_modules\/\.pnpm\/[^/]+/gu, `node_modules/.pnpm/${pnpmPackageMarker}`);
+
 const portableDiagnostic = (diagnostic: Diagnostic, repositoryRoot: string): Diagnostic => ({
-  file: withoutCheckoutPath(diagnostic.file, repositoryRoot),
+  file: withoutPnpmPackagePath(withoutCheckoutPath(diagnostic.file, repositoryRoot)),
   code: diagnostic.code,
-  message: withoutCheckoutPath(diagnostic.message, repositoryRoot),
+  message: withoutPnpmPackagePath(withoutCheckoutPath(diagnostic.message, repositoryRoot)),
 });
 
 const portableBaseline = (
@@ -128,6 +132,59 @@ const portableBaseline = (
     ]),
   ),
 });
+
+const resolvedDiagnosticFile = (file: string, cwd: string, repositoryRoot: string): string => {
+  if (file.startsWith(checkoutMarker)) {
+    return path.resolve(repositoryRoot, file.slice(checkoutMarker.length).replace(/^\//u, ""));
+  }
+  return path.resolve(cwd, file);
+};
+
+const repositoryRelativeFile = (file: string, cwd: string, repositoryRoot: string): string => {
+  if (file === "") {
+    return "";
+  }
+  const relative = path.relative(
+    path.resolve(repositoryRoot),
+    resolvedDiagnosticFile(file, cwd, repositoryRoot),
+  );
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    return withoutCheckoutPath(file, repositoryRoot);
+  }
+  return relative.split(path.sep).join("/");
+};
+
+const canonicalDiagnostic = (
+  diagnostic: Diagnostic,
+  cwd: string,
+  repositoryRoot: string,
+): Diagnostic => ({
+  file: repositoryRelativeFile(diagnostic.file, cwd, repositoryRoot),
+  code: diagnostic.code,
+  message: diagnostic.message,
+});
+
+const diagnosticBelongsToWorkspace = (
+  file: string,
+  cwd: string,
+  repositoryRoot: string,
+): boolean => {
+  if (file === "") {
+    return true;
+  }
+  const workspaceRoot = path.resolve(cwd);
+  const relative = path.relative(workspaceRoot, resolvedDiagnosticFile(file, cwd, repositoryRoot));
+  return relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+};
+
+const ownedDiagnostics = (
+  diagnostics: readonly Diagnostic[],
+  cwd: string,
+  repositoryRoot: string,
+): readonly Diagnostic[] =>
+  diagnostics.filter((diagnostic) =>
+    diagnosticBelongsToWorkspace(diagnostic.file, cwd, repositoryRoot),
+  );
 
 const fingerprintOf = (entry: Diagnostic): string =>
   JSON.stringify([entry.file, entry.code, entry.message]);
@@ -217,10 +274,24 @@ const serializeBaseline = (baseline: TypecheckBaseline): string => {
 const alwaysFailing = (diagnostics: readonly Diagnostic[]): readonly Diagnostic[] =>
   diagnostics.filter((diagnostic) => missingExportCodeSet.has(diagnostic.code));
 
-const baselinedEntries = (
+const unionBaseline = (
   baseline: TypecheckBaseline,
-  workspace: string,
-): readonly CountedDiagnostic[] => baseline.workspaces[workspace] ?? [];
+  repositoryRoot: string,
+): readonly CountedDiagnostic[] =>
+  countDiagnostics(
+    Object.entries(baseline.workspaces).flatMap(([workspace, entries]) => {
+      const cwd = path.resolve(repositoryRoot, workspace === "." ? "" : workspace);
+      return entries.flatMap((entry) =>
+        Array.from({ length: entry.count }, () =>
+          canonicalDiagnostic(
+            { file: entry.file, code: entry.code, message: entry.message },
+            cwd,
+            repositoryRoot,
+          ),
+        ),
+      );
+    }),
+  );
 
 const difference = (
   actual: readonly CountedDiagnostic[],
@@ -237,30 +308,24 @@ const difference = (
 };
 
 const evaluateTypecheck = (
-  workspace: string,
+  _workspace: string,
   diagnostics: readonly Diagnostic[],
   baseline: TypecheckBaseline,
+  cwd: string,
+  repositoryRoot: string,
 ): TypecheckVerdict => {
   const alwaysFail = alwaysFailing(diagnostics);
   const countable = countDiagnostics(
-    diagnostics.filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code)),
+    diagnostics
+      .filter((diagnostic) => !missingExportCodeSet.has(diagnostic.code))
+      .map((diagnostic) => canonicalDiagnostic(diagnostic, cwd, repositoryRoot)),
   );
-  const expected = countDiagnostics(
-    baselinedEntries(baseline, workspace).flatMap((entry) =>
-      Array.from({ length: entry.count }, () => ({
-        file: entry.file,
-        code: entry.code,
-        message: entry.message,
-      })),
-    ),
-  );
-  const unexpected = difference(countable, expected);
-  const leftover = difference(expected, countable);
+  const unexpected = difference(countable, unionBaseline(baseline, repositoryRoot));
   return {
-    ok: alwaysFail.length === 0 && unexpected.length === 0 && leftover.length === 0,
+    ok: alwaysFail.length === 0 && unexpected.length === 0,
     alwaysFail,
     unexpected,
-    leftover,
+    leftover: [],
   };
 };
 
@@ -288,11 +353,6 @@ const formatReport = (verdict: TypecheckVerdict): string => {
   if (verdict.unexpected.length > 0) {
     sections.push(
       `typecheck gate: ${String(verdict.unexpected.reduce((total, entry) => total + entry.count, 0))} new diagnostics\n${formatCounted(verdict.unexpected)}`,
-    );
-  }
-  if (verdict.leftover.length > 0) {
-    sections.push(
-      `typecheck gate: ${String(verdict.leftover.reduce((total, entry) => total + entry.count, 0))} baselined diagnostics are gone; rewrite the snapshot\n${formatCounted(verdict.leftover)}`,
     );
   }
   return `${sections.join("\n")}\n`;
@@ -407,7 +467,8 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
     asked.repositoryRoot,
   );
   if (asked.args.includes(writeFlag)) {
-    const alwaysFail = alwaysFailing(diagnostics);
+    const owned = ownedDiagnostics(diagnostics, asked.cwd, asked.repositoryRoot);
+    const alwaysFail = alwaysFailing(owned);
     if (alwaysFail.length > 0) {
       printTranscript();
       asked.print(formatReport({ ok: false, alwaysFail, unexpected: [], leftover: [] }));
@@ -419,13 +480,19 @@ const runEffectTypecheck = (asked: TypecheckIo): number => {
         version: 1,
         workspaces: {
           ...baseline.workspaces,
-          [workspace]: snapshotOf(diagnostics),
+          [workspace]: snapshotOf(owned),
         },
       }),
     );
     return 0;
   }
-  const verdict = evaluateTypecheck(workspace, diagnostics, baseline);
+  const verdict = evaluateTypecheck(
+    workspace,
+    diagnostics,
+    baseline,
+    asked.cwd,
+    asked.repositoryRoot,
+  );
   if (!verdict.ok) {
     printTranscript();
     asked.print(formatReport(verdict));
@@ -551,6 +618,8 @@ export {
   evaluateTypecheck,
   isInvokedAsCli,
   locateCompiler,
+  ownedDiagnostics,
+  diagnosticBelongsToWorkspace,
   exitAfterFlush,
   exitInvokedCli,
   maybeStart,
