@@ -44,6 +44,7 @@ export {
   readEnvironment,
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
+export { memberRetentionDays } from "./member-retention.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type { AppConfig, AssetFetcher } from "./environment.ts";
 export { respondedSuccessfully, waitUntilResponds } from "./responds.ts";

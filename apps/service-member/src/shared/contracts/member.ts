@@ -1,4 +1,4 @@
-import { Email } from "@repo/config";
+import { Email, memberRetentionDays } from "@repo/config";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
@@ -94,16 +94,37 @@ const ContactSubmission = Schema.Struct({
 
 const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
 
+const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
+
+const LeaveAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
+const RecoveryOfferAvailable = Schema.Struct({
+  available: Schema.Literal(true),
+  previousName: Schema.String,
+});
+
+const RecoveryOfferUnavailable = Schema.Struct({
+  available: Schema.Literal(false),
+});
+
+const RecoveryOfferView = Schema.Union([RecoveryOfferAvailable, RecoveryOfferUnavailable]);
+
+const RecoveryAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
 export {
   ContactAccepted,
   ContactSubmission,
   Identifier,
+  LeaveAccepted,
+  LeaveRequest,
   MemberList,
   MemberListQuery,
   MemberQuery,
   MemberView,
   ProfileUpdate,
   ProfileView,
+  RecoveryAccepted,
+  RecoveryOfferView,
   SearchKeyword,
   laterPage,
   maximumContactMessageLength,
@@ -114,5 +135,6 @@ export {
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
+  memberRetentionDays,
   pageNumber,
 };
