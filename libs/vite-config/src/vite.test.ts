@@ -71,7 +71,7 @@ describe("appRun", () => {
     expect(applicationRun).toStrictEqual({
       tasks: {
         ...effectDiagnostics,
-        ...sliceBoundaries,
+        check: sliceBoundaries.check,
         ...checkCode,
         ...workspaceCheckImports,
         ...testRun,

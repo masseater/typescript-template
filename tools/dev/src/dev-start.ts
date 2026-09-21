@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { env as processEnvironment } from "node:process";
+
 import { reportFailed, runCli } from "@repo/cli";
 import {
   applicationReadyPaths,
@@ -67,9 +69,9 @@ function migrateDatabase(
       ),
     );
     if (exitCode !== 0) {
-      return yield* Effect.fail(
-        new DevStartFailure({ reason: "failed to prepare database: migration failed" }),
-      );
+      return yield* new DevStartFailure({
+        reason: "failed to prepare database: migration failed",
+      });
     }
   }).pipe(Effect.scoped);
 }
@@ -86,15 +88,13 @@ const isolatedDatabase = Effect.acquireRelease(
           }),
       ),
     );
-    // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-    process.env[localDatabaseVariable] = directory;
+    processEnvironment[localDatabaseVariable] = directory;
     yield* migrateDatabase(path.join(repositoryRoot, "node_modules/.bin/vp"));
     return directory;
   }),
   (directory) =>
     Effect.gen(function* cleanupDatabase() {
-      // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-      delete process.env[localDatabaseVariable];
+      delete processEnvironment[localDatabaseVariable];
       const fs = yield* FileSystem.FileSystem;
       yield* fs.remove(directory, { force: true, recursive: true }).pipe(Effect.ignore);
     }),
@@ -103,7 +103,7 @@ const isolatedDatabase = Effect.acquireRelease(
 const devServer = Effect.acquireRelease(
   Effect.tryPromise({
     catch: (error) => new DevStartFailure({ reason: `failed to start: ${describe(error)}` }),
-    try: async () =>
+    try: () =>
       createServer({
         logLevel: "silent",
         server: { host: loopbackAddress, port: 0, strictPort: false },
@@ -113,21 +113,15 @@ const devServer = Effect.acquireRelease(
     stopDescendants.pipe(
       Effect.orDie,
       Effect.andThen(
-        Effect.promise(async () => {
-          let timer: ReturnType<typeof setTimeout> | undefined;
-          await Promise.race([
+        Effect.race(
+          Effect.promise(() =>
             server.close().then(
               () => undefined,
               () => undefined,
             ),
-            new Promise<void>((resolve) => {
-              timer = setTimeout(resolve, closeTimeoutMilliseconds);
-            }),
-          ]);
-          if (timer !== undefined) {
-            clearTimeout(timer);
-          }
-        }),
+          ),
+          Effect.sleep(closeTimeoutMilliseconds),
+        ),
       ),
     ),
 );
@@ -137,7 +131,7 @@ const listeningOrigin = isolatedDatabase.pipe(
   Effect.flatMap((server) =>
     Effect.tryPromise({
       catch: (error) => new DevStartFailure({ reason: `failed to listen: ${describe(error)}` }),
-      try: async () => server.listen(),
+      try: () => server.listen(),
     }),
   ),
   Effect.flatMap((server) => {

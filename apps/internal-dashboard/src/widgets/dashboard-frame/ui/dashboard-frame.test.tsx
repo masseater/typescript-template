@@ -7,6 +7,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
+import { Effect } from "effect";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
@@ -17,38 +18,42 @@ const SPACING_PX = 4;
 
 const paths = ["/", "/inquiries", "/audit", "/flags", "/staff", "/security", "/wiki"] as const;
 
-async function renderDashboardFrame(defaultCollapsed: boolean): Promise<string> {
-  const rootRoute = createRootRoute({
-    component: () =>
-      createElement(
-        RegistryProvider,
-        null,
-        createElement(
-          ToastProvider,
-          null,
-          createElement(DashboardFrame, {
-            children: createElement("p", null, "本文"),
-            defaultCollapsed,
-            email: "ada@example.com",
-            name: "Ada",
-          }),
+function renderDashboardFrame(defaultCollapsed: boolean): Promise<string> {
+  return Effect.runPromise(
+    Effect.gen(function* loadFrame() {
+      const rootRoute = createRootRoute({
+        component: () =>
+          createElement(
+            RegistryProvider,
+            null,
+            createElement(
+              ToastProvider,
+              null,
+              createElement(DashboardFrame, {
+                children: createElement("p", null, "本文"),
+                defaultCollapsed,
+                email: "ada@example.com",
+                name: "Ada",
+              }),
+            ),
+          ),
+      });
+      const router = createRouter({
+        history: createMemoryHistory({ initialEntries: ["/inquiries"] }),
+        routeTree: rootRoute.addChildren(
+          paths.map((path) =>
+            createRoute({
+              component: () => createElement("span"),
+              getParentRoute: () => rootRoute,
+              path,
+            }),
+          ),
         ),
-      ),
-  });
-  const router = createRouter({
-    history: createMemoryHistory({ initialEntries: ["/inquiries"] }),
-    routeTree: rootRoute.addChildren(
-      paths.map((path) =>
-        createRoute({
-          component: () => createElement("span"),
-          getParentRoute: () => rootRoute,
-          path,
-        }),
-      ),
-    ),
-  });
-  await router.load();
-  return renderToStaticMarkup(createElement(RouterProvider, { router }));
+      });
+      yield* Effect.promise(() => router.load());
+      return renderToStaticMarkup(createElement(RouterProvider, { router }));
+    }),
+  );
 }
 
 function buttonTarget(
@@ -91,8 +96,8 @@ function buttonTarget(
 
 describe("社内ダッシュボードの枠", () => {
   const it = test
-    .extend("theCollapsedFrame", async () => renderDashboardFrame(true))
-    .extend("theExpandedFrame", async () => renderDashboardFrame(false));
+    .extend("theCollapsedFrame", () => renderDashboardFrame(true))
+    .extend("theExpandedFrame", () => renderDashboardFrame(false));
 
   it("折りたたみ時の名前は社内ダッシュボードで、検索欄はない", ({ theCollapsedFrame }) => {
     expect.hasAssertions();

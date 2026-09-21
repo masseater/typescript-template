@@ -5,6 +5,7 @@ import { Console, Effect } from "effect";
 
 import { blocked, inspectAccount } from "./account-inspection.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
+import { encodeJson } from "./platform.ts";
 import { causeRecord, reportCause } from "./secrets.ts";
 
 const EVENT = "account.rejected";
@@ -16,7 +17,7 @@ runCli(
       const inspection = yield* inspectAccount(access, config, stateStore(secrets));
       const refused = blocked(inspection);
       yield* Console.log(
-        JSON.stringify({
+        yield* encodeJson({
           blocked: refused,
           checks: inspection,
           event: "account.inspected",

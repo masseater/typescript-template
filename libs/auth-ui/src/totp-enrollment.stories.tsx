@@ -1,6 +1,7 @@
+import { Effect } from "effect";
 import { expect, userEvent } from "storybook/test";
 
-import preview from "../storybook/preview";
+import preview, { playTask } from "../storybook/preview";
 import { TotpEnrollment } from "./totp-enrollment";
 
 const meta = preview.meta({
@@ -18,9 +19,16 @@ const meta = preview.meta({
 export const Default = meta.story();
 
 export const UnlocksVerifyAfterSaving = meta.story({
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeDisabled();
-    await userEvent.click(canvas.getByRole("checkbox"));
-    await expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeEnabled();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* unlockVerifyAfterSaving() {
+        yield* playTask(() =>
+          expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeDisabled(),
+        );
+        yield* playTask(() => userEvent.click(canvas.getByRole("checkbox")));
+        yield* playTask(() =>
+          expect(canvas.getByRole("button", { name: "確認して認証アプリを有効化" })).toBeEnabled(),
+        );
+      }),
+    ),
 });

@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { fetchUsage } from "./billing.ts";
@@ -24,7 +24,7 @@ const EXHAUSTED_LEVEL = 100;
 
 const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const otherAccount = "b".repeat(ACCOUNT_ID_LENGTH);
-const staleNow = new Date("2026-09-20T00:00:00Z");
+const staleNow = DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-20T00:00:00Z"));
 const rawConfig = {
   BILLING_READ_TOKEN: "test-read-only-token-not-a-secret",
   BUDGET_JPY: "5000",
@@ -44,12 +44,12 @@ const record = {
   CumulatedContractedCost: 100,
   ServiceName: "Workers",
 };
-const now = new Date("2026-09-16T00:00:00Z");
+const now = DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-16T00:00:00Z"));
 
 function usageFrom(
   input: Readonly<Record<string, unknown>>,
   accountId: string,
-  date: Date,
+  date: number,
 ): Effect.Effect<UsageSnapshot, BudgetFailure> {
   return Effect.acquireUseRelease(
     Effect.sync(() => {

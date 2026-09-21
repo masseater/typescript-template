@@ -154,15 +154,16 @@ function filterCoveredTestProjects(): Set<string> {
 function ungatedProjects(): string[] {
   const covered = filterCoveredTestProjects();
   return testProjectDirectories.filter(
-    (directory) => !reachesTest(directory, ["premerge"]) && !covered.has(directory),
+    (directory) => !reachesTest(directory, ["prepr", "premerge"]) && !covered.has(directory),
   );
 }
 
 function strayTestTasks(): string[] {
-  const allowed = new Set([...testProjectDirectories, ...workspacesWithTests()]);
   return configuredDirectories.filter(
     (directory) =>
-      directory !== "." && !allowed.has(directory) && taskNames(directory).includes("test"),
+      directory !== "." &&
+      !testProjectDirectories.includes(directory) &&
+      taskNames(directory).includes("test"),
   );
 }
 
@@ -201,18 +202,6 @@ function toolsPackagesWithTests(): string[] {
   ].toSorted();
 }
 
-function workspacesWithTests(): Set<string> {
-  const repositoryRoot = join(toolsRoot, "..");
-  return new Set(
-    workspaceDirectories.filter((directory) => {
-      if (directory === ".") {
-        return false;
-      }
-      return collectTestPackages(join(repositoryRoot, directory), directory).length > 0;
-    }),
-  );
-}
-
 function uncoveredToolTestPackages(): string[] {
   const dedicated = new Set(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, "")));
   const rootOwned = new Set(
@@ -222,7 +211,7 @@ function uncoveredToolTestPackages(): string[] {
     (directory) =>
       !dedicated.has(directory) &&
       !rootOwned.has(directory) &&
-      !reachesTest(directory, ["premerge"]),
+      !reachesTest(directory, ["prepr", "premerge"]),
   );
 }
 
@@ -312,27 +301,24 @@ describe("lifecycle contents", () => {
 
   it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
+    expect(dependencies(".", "prepush")).toContain("check:code");
     expect(reachable(".", ["prepush"])).toEqual(
-      expect.arrayContaining(["knip", "check:canonical-literal-types"]),
+      expect.arrayContaining([
+        "check:code",
+        "check:effect",
+        "knip",
+        "check:client",
+        "check:imports",
+        "check:react",
+        "check:canonical-literal-types",
+      ]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
-    expect(reachable(".", ["prepush"])).not.toContain("check:client");
-    expect(reachable(".", ["prepush"])).not.toContain("check:imports");
-    expect(reachable(".", ["prepush"])).not.toContain("check:react");
-    expect(
-      configuredDirectories.filter(
-        (directory) =>
-          taskNames(directory).includes("check:effect") &&
-          !reachable(directory, ["prepush"]).includes("check:effect:gate"),
-      ),
-    ).toStrictEqual([]);
     expect(
       configuredDirectories.flatMap((directory) =>
-        ["check:effect", "check:effect:gate"].flatMap((name) =>
-          taskNames(directory).includes(name)
-            ? commands(directory, name).filter((command) => command.includes("&&"))
-            : [],
-        ),
+        taskNames(directory).includes("check:effect")
+          ? commands(directory, "check:effect").filter((command) => command.includes("&&"))
+          : [],
       ),
     ).toStrictEqual([]);
     expect(
@@ -364,7 +350,7 @@ describe("lifecycle contents", () => {
 });
 
 describe("test ownership", () => {
-  it("every workspace vitest project runs from its own merge gate", () => {
+  it("every workspace vitest project runs from its own pull request gate", () => {
     expect.hasAssertions();
     expect(testProjectDirectories.length).toBeGreaterThan(0);
     expect(ungatedProjects()).toStrictEqual([]);
@@ -384,7 +370,7 @@ describe("test ownership", () => {
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 
-  it("keeps every tools package with tests on a vitest project or merge gate", () => {
+  it("keeps every tools package with tests on a vitest project or pull request gate", () => {
     expect.hasAssertions();
     expect(toolsPackagesWithTests().length).toBeGreaterThan(0);
     expect(uncoveredToolTestPackages()).toStrictEqual([]);

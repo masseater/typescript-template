@@ -31,32 +31,36 @@ function workerRuntime<Services, Failure>(
       runtime,
     };
   }
-  async function ready(): Promise<
+  function ready(): Promise<
     Exit.Exit<ManagedRuntime.ManagedRuntime<Services, Failure>, BuildFailure<Failure>>
   > {
     state.generation ??= start();
     const { generation } = state;
-    const exit = await generation.build;
-    if (Exit.isFailure(exit) && state.generation === generation) {
-      delete state.generation;
-    }
-    return Exit.map(exit, () => generation.runtime);
+    return generation.build.then((exit) => {
+      if (Exit.isFailure(exit) && state.generation === generation) {
+        delete state.generation;
+      }
+      return Exit.map(exit, () => generation.runtime);
+    });
   }
   return {
     built: ready,
-    dispose: async () => state.generation?.runtime.dispose(),
-    runPromise: async (effect) => {
-      const runtime = await ready();
-      return Exit.isSuccess(runtime)
-        ? runtime.value.runPromise(effect)
-        : Effect.runPromise(Exit.failCause(runtime.cause));
-    },
-    runPromiseExit: async (effect) => {
-      const runtime = await ready();
-      return Exit.isSuccess(runtime)
-        ? runtime.value.runPromiseExit(effect)
-        : Exit.failCause(runtime.cause);
-    },
+    dispose: () => state.generation?.runtime.dispose() ?? Promise.resolve(),
+    runPromise: (effect) =>
+      ready().then((runtime) =>
+        Exit.isSuccess(runtime)
+          ? runtime.value.runPromise(effect)
+          : Effect.runPromise(Exit.failCause(runtime.cause)),
+      ),
+    runPromiseExit: <Value, Error>(
+      effect: Effect.Effect<Value, Error, Services>,
+    ): Promise<Exit.Exit<Value, Error | BuildFailure<Failure>>> =>
+      ready().then((runtime): Promise<Exit.Exit<Value, Error | BuildFailure<Failure>>> => {
+        if (Exit.isSuccess(runtime)) {
+          return runtime.value.runPromiseExit(effect);
+        }
+        return Promise.resolve(Exit.failCause(runtime.cause));
+      }),
   };
 }
 

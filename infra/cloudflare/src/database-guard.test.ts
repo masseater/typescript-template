@@ -100,14 +100,13 @@ it.effect("stops instead of guessing when the state store cannot be read", () =>
 it.effect("does not treat a state store defect as an unreadable ownership check", () =>
   Effect.gen(function* program() {
     yield* mockServer(takenName);
-    const outcome = yield* assertDatabaseUnclaimed(
+    const cause = yield* assertDatabaseUnclaimed(
       access,
       target,
       Effect.die("the state store code path is broken"),
-    ).pipe(Effect.exit);
-    assert.isTrue(outcome._tag === "Failure");
+    ).pipe(Effect.sandbox, Effect.flip);
     assert.isTrue(
-      outcome.cause.reasons.some(
+      cause.reasons.some(
         (reason) =>
           reason._tag === "Die" && reason.defect === "the state store code path is broken",
       ),

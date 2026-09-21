@@ -9,7 +9,7 @@ function monitorWorkerVite() {
       },
       entry: { index: "src/worker.ts" },
       format: "esm" as const,
-      outExtensions: () => ({ js: ".js" }),
+      outExtensions: () => ({ js: ".js" as const }),
       platform: "browser" as const,
       target: "es2023" as const,
     },

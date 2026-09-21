@@ -24,12 +24,13 @@ function startIsolate(): Isolate {
   const runtime = testClockRuntime(routes);
   const app = createApi(apiRoot).use(sessionApi(apiRoutes(runtime, reporting)));
   return {
-    askHealth: Effect.promise(async () => {
-      const response = await app.fetch(new Request(`${fixtureOrigin}${apiRoot}/health`));
-      return response.status;
-    }),
-    passCacheWindow: Effect.promise(async () => runtime.runPromise(TestClock.adjust("1 minute"))),
-    stop: Effect.promise(async () => runtime.dispose()),
+    askHealth: Effect.promise(() =>
+      Promise.resolve(app.fetch(new Request(`${fixtureOrigin}${apiRoot}/health`))).then(
+        (response) => response.status,
+      ),
+    ),
+    passCacheWindow: Effect.promise(() => runtime.runPromise(TestClock.adjust("1 minute"))),
+    stop: Effect.promise(() => runtime.dispose()),
   };
 }
 

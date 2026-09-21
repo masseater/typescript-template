@@ -2,7 +2,7 @@ import { APPLICATION } from "@repo/config";
 import { ROLE, strongAuthenticationMethods } from "@repo/config/identity";
 import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
 import { session, user } from "./schema.ts";
@@ -24,7 +24,7 @@ const requireAdmin = Effect.fn("requireAdmin")(function* requireAdmin(sessionId:
 
 const liveAdmin = (database: DrizzleDatabase, sessionId: string): SQL => {
   const actor = alias(user, "actor");
-  const checkedAt = new Date();
+  const checkedAt = DateTime.toDate(DateTime.nowUnsafe());
   const liveSession = and(
     eq(session.id, sessionId),
     eq(session.audience, APPLICATION.admin),

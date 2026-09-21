@@ -17,6 +17,7 @@ import {
   deployTokenPermissions,
   missingPermissions,
 } from "./deploy-token.ts";
+import { encodeJson } from "./platform.ts";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -108,7 +109,7 @@ it.effect("names the read that failed and why, without naming the zone or the ho
       Effect.flip,
     );
     assert.deepStrictEqual(failure.keys, ["zones/{}/dns_records", `status_${FORBIDDEN_STATUS}`]);
-    const printed = JSON.stringify(describeFailure(failure, []));
+    const printed = yield* encodeJson(describeFailure(failure, []));
     for (const value of [access.accountId, verificationSettings.zoneId, hostname]) {
       assert.notInclude(printed, value);
     }

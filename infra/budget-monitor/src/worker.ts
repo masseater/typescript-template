@@ -1,5 +1,5 @@
 import { monitorWorker } from "@repo/monitor";
-import { Effect } from "effect";
+import { Clock, Effect, Schema } from "effect";
 
 import { fetchUsage } from "./billing.ts";
 import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
@@ -16,19 +16,21 @@ const budget = monitorWorker<Bindings>({
       const snapshot = yield* fetchUsage(
         config.CLOUDFLARE_ACCOUNT_ID,
         config.BILLING_READ_TOKEN,
-        new Date(),
+        yield* Clock.currentTimeMillis,
       );
       const decision = yield* evaluateBudget(snapshot, config);
-      const previous = yield* Effect.promise(async () =>
+      const previous = yield* Effect.promise(() =>
         ctx.storage.get<{ period: string; keys: string[] }>("notifications"),
       );
       const keys = previous?.period === decision.periodStart ? previous.keys : [];
       if (shouldNotify(decision, keys)) {
         yield* notify({
           subject: `Cloudflare budget: ${decision.level}% threshold`,
-          text: JSON.stringify(decision),
+          text: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(decision).pipe(
+            Effect.orDie,
+          ),
         });
-        yield* Effect.promise(async () =>
+        yield* Effect.promise(() =>
           ctx.storage.put("notifications", {
             keys: [...keys, decision.notificationKey],
             period: decision.periodStart,

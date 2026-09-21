@@ -1,16 +1,13 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { tmpdir } from "node:os";
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
-import path from "node:path";
+import { env as processEnvironment } from "node:process";
 
 import { assert, it } from "@effect/vitest";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
-import { Effect } from "effect";
+import { Effect, FileSystem } from "effect";
 
 import { verifySecretsFile } from "./credentials.ts";
 import { secretsFile } from "./deployment.ts";
+import { layer, path } from "./platform.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";
 
 import type { Scope } from "effect";
@@ -23,17 +20,22 @@ const complete = deploymentKeys
   .join("\n");
 
 function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
-  return Effect.acquireRelease(
-    Effect.promise(async () => mkdtemp(path.join(tmpdir(), "template-secrets-"))),
-    (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
-  );
+  return Effect.gen(function* makeTemporary() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const directory = yield* filesystem.makeTempDirectoryScoped({
+      directory: tmpdir(),
+      prefix: "template-secrets-",
+    });
+    return yield* filesystem.realPath(directory);
+  }).pipe(Effect.orDie, Effect.provide(layer));
 }
 
 function writeSecrets(filename: string, content: string, mode: number): Effect.Effect<void> {
-  return Effect.promise(async () => {
-    await writeFile(filename, content);
-    await chmod(filename, mode);
-  });
+  return Effect.gen(function* writeOwnerFile() {
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem.writeFileString(filename, content);
+    yield* filesystem.chmod(filename, mode);
+  }).pipe(Effect.orDie, Effect.provide(layer));
 }
 
 it.effect("accepts an owner-only file that declares every deployment input", () =>
@@ -77,7 +79,10 @@ it.effect("refuses a file reached through a symbolic link", () =>
     const real = path.join(directory, "real.env");
     const link = path.join(directory, "cloudflare.env");
     yield* writeSecrets(real, complete, OWNER_ONLY_FILE_MODE);
-    yield* Effect.promise(async () => symlink(real, link));
+    yield* Effect.gen(function* linkFile() {
+      const filesystem = yield* FileSystem.FileSystem;
+      yield* filesystem.symlink(real, link);
+    }).pipe(Effect.orDie, Effect.provide(layer));
     const failure = yield* verifySecretsFile(link).pipe(Effect.flip);
     assert.strictEqual(failure.code, "secrets_file_symlink_forbidden");
   }).pipe(Effect.scoped),
@@ -88,9 +93,12 @@ it.effect("refuses a directory reached through a symbolic link", () =>
     const directory = yield* temporaryDirectory();
     const real = path.join(directory, "real");
     const link = path.join(directory, "linked");
-    yield* Effect.promise(async () => mkdir(real));
+    yield* Effect.gen(function* linkDirectory() {
+      const filesystem = yield* FileSystem.FileSystem;
+      yield* filesystem.makeDirectory(real);
+      yield* filesystem.symlink(real, link);
+    }).pipe(Effect.orDie, Effect.provide(layer));
     yield* writeSecrets(path.join(real, "cloudflare.env"), complete, OWNER_ONLY_FILE_MODE);
-    yield* Effect.promise(async () => symlink(real, link));
     const failure = yield* verifySecretsFile(path.join(link, "cloudflare.env")).pipe(Effect.flip);
     assert.strictEqual(failure.code, "secrets_file_symlink_forbidden");
   }).pipe(Effect.scoped),
@@ -108,24 +116,19 @@ it.effect("reports a missing file instead of deploying without it", () =>
 
 it.effect("resolves the same file the staged-diff check reads", () =>
   Effect.acquireUseRelease(
-    // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-    Effect.sync(() => process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"]),
+    Effect.sync(() => processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"]),
     () =>
       Effect.sync(() => {
-        // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-        delete process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"];
+        delete processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
         assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-        process.env["TEMPLATE_CLOUDFLARE_ENV_FILE"] = "/elsewhere/cloudflare.env";
+        processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"] = "/elsewhere/cloudflare.env";
         assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
       }),
     (previous) =>
       Effect.sync(() => {
-        // oxlint-disable-next-line node/no-process-env -- this statement reads or writes process.env at the Node process boundary
-        const environment = process.env;
-        delete environment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
+        delete processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
         Object.assign(
-          environment,
+          processEnvironment,
           previous === undefined ? {} : { TEMPLATE_CLOUDFLARE_ENV_FILE: previous },
         );
       }),

@@ -1,7 +1,6 @@
 import { ROLE } from "@repo/config";
-import { query, schema } from "@repo/db";
-import { and, count, desc, eq, sql } from "drizzle-orm";
-import { Clock, Effect } from "effect";
+import { and, count, desc, eq, query, schema, sql } from "@repo/db";
+import { DateTime, Effect } from "effect";
 
 import { BoardMemberRequired } from "./board-member-required.ts";
 import { BoardThreadNotFound } from "./board-thread-not-found.ts";
@@ -50,7 +49,7 @@ const postColumns = {
   createdAt: boardPost.createdAt,
   id: boardPost.id,
 };
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 function shownAuthor(row: {
   readonly authorId: string | null;

@@ -72,13 +72,14 @@ class BrowserClient {
   }
 
   public send(outgoing: Request): Effect.Effect<Response> {
-    return Effect.promise(async () => {
-      const handled = await this.#auth.instance.handler(outgoing);
-      for (const cookie of handled.headers.getSetCookie()) {
-        this.#storeCookie(cookie);
-      }
-      return handled;
-    });
+    return Effect.promise(() =>
+      this.#auth.instance.handler(outgoing).then((handled) => {
+        for (const cookie of handled.headers.getSetCookie()) {
+          this.#storeCookie(cookie);
+        }
+        return handled;
+      }),
+    );
   }
 
   public json(
@@ -87,10 +88,9 @@ class BrowserClient {
   ): Effect.Effect<JsonReply> {
     return this.request(endpoint, jsonFields).pipe(
       Effect.flatMap((handled) =>
-        Effect.promise(async (): Promise<JsonReply> => ({
-          body: await handled.json(),
-          status: handled.status,
-        })),
+        Effect.promise(() =>
+          handled.json().then((body): JsonReply => ({ body, status: handled.status })),
+        ),
       ),
     );
   }
