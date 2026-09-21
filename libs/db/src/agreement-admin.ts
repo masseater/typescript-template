@@ -10,7 +10,11 @@ import { auditWhen } from "./audit.ts";
 import { query } from "./database.ts";
 import { AUDIT_ACTION } from "./schema.ts";
 
-const requirePublishingAdmin = requireAdmin;
+const requirePublishingAdmin = Effect.fn("requirePublishingAdmin")(function* requirePublishingAdmin(
+  sessionId: string,
+) {
+  return yield* requireAdmin(sessionId);
+});
 
 const canPublishAgreements = Effect.fn("canPublishAgreements")(function* canPublishAgreements(
   sessionId: string,
