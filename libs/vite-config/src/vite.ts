@@ -25,6 +25,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { elysiaAot } from "./elysia-aot.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
 import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
@@ -317,6 +318,7 @@ function appConfig(
       previewDevVars(appRoot),
       privateSourceMaps(app),
       devBoundary(app),
+      elysiaAot(appRoot),
       cloudflare({
         auxiliaryWorkers: [coreDevWorker],
         config: (config) => ({

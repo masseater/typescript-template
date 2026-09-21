@@ -41,6 +41,15 @@ describe("check:dev local D1", () => {
     expect(devStartSource).toMatch(/localDatabaseVariable/u);
     expect(devStartSource).toMatch(/makeTempDirectory/u);
     expect(devStartSource).toMatch(/db:migrate:local/u);
+    expect(devStartSource).toMatch(/failureBodyLimit/u);
     expect(viteSource).toMatch(/persistState: \{ path: localDatabaseDirectory\(\) \}/u);
+  });
+
+  it("hosts core as an auxiliary worker on the same local D1", () => {
+    expect.hasAssertions();
+    expect(viteSource).toMatch(/auxiliaryWorkers: \[coreDevWorker\]/u);
+    expect(viteSource).toMatch(/binding: "CORE"/u);
+    expect(viteSource).toMatch(/d1_databases: \[localDatabase\]/u);
+    expect(viteSource).toMatch(/elysiaAot\(appRoot\)/u);
   });
 });

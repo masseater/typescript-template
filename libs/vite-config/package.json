@@ -15,6 +15,7 @@
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "elysia": "2.0.0-beta.16",
     "effect": "catalog:",
     "vite-plus": "catalog:"
   },
