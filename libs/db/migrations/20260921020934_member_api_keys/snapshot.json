@@ -1,11 +1,19 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "d46a1d75-0a84-4bb7-bc97-a3de07026ef9",
-  "prevIds": ["19c6bf9b-7db4-46d0-b977-8288d59b6908"],
+  "id": "a01c03a7-21ca-42ac-ba78-20488e682e6f",
+  "prevIds": ["3400fbbb-dbd8-4895-a3c4-83080fd5fc84"],
   "ddl": [
     {
       "name": "account",
+      "entityType": "tables"
+    },
+    {
+      "name": "agreement_acceptance",
+      "entityType": "tables"
+    },
+    {
+      "name": "agreement_version",
       "entityType": "tables"
     },
     {
@@ -34,6 +42,10 @@
     },
     {
       "name": "jwks",
+      "entityType": "tables"
+    },
+    {
+      "name": "leave_request",
       "entityType": "tables"
     },
     {
@@ -90,6 +102,10 @@
     },
     {
       "name": "verification",
+      "entityType": "tables"
+    },
+    {
+      "name": "withdrawn_member",
       "entityType": "tables"
     },
     {
@@ -221,6 +237,126 @@
       "name": "user_id",
       "entityType": "columns",
       "table": "account"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "accepted_at",
+      "entityType": "columns",
+      "table": "agreement_acceptance"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "agreement_acceptance"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "version_id",
+      "entityType": "columns",
+      "table": "agreement_acceptance"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "body",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_by",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "kind",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "published_at",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "published_by",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "summary",
+      "entityType": "columns",
+      "table": "agreement_version"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "version",
+      "entityType": "columns",
+      "table": "agreement_version"
     },
     {
       "type": "text",
@@ -771,6 +907,56 @@
       "name": "public_key",
       "entityType": "columns",
       "table": "jwks"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "member_id",
+      "entityType": "columns",
+      "table": "leave_request"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "purge_at",
+      "entityType": "columns",
+      "table": "leave_request"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recovery_declined_at",
+      "entityType": "columns",
+      "table": "leave_request"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "requested_at",
+      "entityType": "columns",
+      "table": "leave_request"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "restored_at",
+      "entityType": "columns",
+      "table": "leave_request"
     },
     {
       "type": "text",
@@ -2153,6 +2339,16 @@
       "table": "two_factor"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "company_photo_key",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -2179,6 +2375,16 @@
       "default": "false",
       "generated": null,
       "name": "email_verified",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "face_photo_key",
       "entityType": "columns",
       "table": "user"
     },
@@ -2246,6 +2452,16 @@
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "searchable",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
       "default": "0",
       "generated": null,
       "name": "security_version",
@@ -2269,6 +2485,16 @@
       "default": null,
       "generated": null,
       "name": "updated_at",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'all_members'",
+      "generated": null,
+      "name": "visibility",
       "entityType": "columns",
       "table": "user"
     },
@@ -2343,6 +2569,126 @@
       "table": "verification"
     },
     {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "email",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "email_verified",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "image",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "member_id",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "profile",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "security_version",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "snapshot",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "social_links",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "two_factor_enabled",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "withdrawn_at",
+      "entityType": "columns",
+      "table": "withdrawn_member"
+    },
+    {
       "columns": ["user_id"],
       "tableTo": "user",
       "columnsTo": ["id"],
@@ -2352,6 +2698,50 @@
       "name": "fk_account_user_id_user_id_fk",
       "entityType": "fks",
       "table": "account"
+    },
+    {
+      "columns": ["user_id"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_agreement_acceptance_user_id_user_id_fk",
+      "entityType": "fks",
+      "table": "agreement_acceptance"
+    },
+    {
+      "columns": ["version_id"],
+      "tableTo": "agreement_version",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "RESTRICT",
+      "nameExplicit": false,
+      "name": "fk_agreement_acceptance_version_id_agreement_version_id_fk",
+      "entityType": "fks",
+      "table": "agreement_acceptance"
+    },
+    {
+      "columns": ["created_by"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_agreement_version_created_by_user_id_fk",
+      "entityType": "fks",
+      "table": "agreement_version"
+    },
+    {
+      "columns": ["published_by"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_agreement_version_published_by_user_id_fk",
+      "entityType": "fks",
+      "table": "agreement_version"
     },
     {
       "columns": ["author_id"],
@@ -2418,6 +2808,17 @@
       "name": "fk_interview_user_id_user_id_fk",
       "entityType": "fks",
       "table": "interview"
+    },
+    {
+      "columns": ["member_id"],
+      "tableTo": "withdrawn_member",
+      "columnsTo": ["member_id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_leave_request_member_id_withdrawn_member_member_id_fk",
+      "entityType": "fks",
+      "table": "leave_request"
     },
     {
       "columns": ["user_id"],
@@ -2596,6 +2997,13 @@
       "table": "two_factor"
     },
     {
+      "columns": ["user_id", "version_id"],
+      "nameExplicit": false,
+      "name": "agreement_acceptance_pk",
+      "entityType": "pks",
+      "table": "agreement_acceptance"
+    },
+    {
       "columns": ["follower_id", "followee_id"],
       "nameExplicit": false,
       "name": "follow_pk",
@@ -2607,6 +3015,13 @@
       "nameExplicit": false,
       "name": "account_pk",
       "table": "account",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "agreement_version_pk",
+      "table": "agreement_version",
       "entityType": "pks"
     },
     {
@@ -2649,6 +3064,13 @@
       "nameExplicit": false,
       "name": "jwks_pk",
       "table": "jwks",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["member_id"],
+      "nameExplicit": false,
+      "name": "leave_request_pk",
+      "table": "leave_request",
       "entityType": "pks"
     },
     {
@@ -2750,6 +3172,13 @@
       "entityType": "pks"
     },
     {
+      "columns": ["member_id"],
+      "nameExplicit": false,
+      "name": "withdrawn_member_pk",
+      "table": "withdrawn_member",
+      "entityType": "pks"
+    },
+    {
       "columns": [
         {
           "value": "user_id",
@@ -2762,6 +3191,38 @@
       "name": "account_user_id_idx",
       "entityType": "indexes",
       "table": "account"
+    },
+    {
+      "columns": [
+        {
+          "value": "version",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "agreement_version_version_unique",
+      "entityType": "indexes",
+      "table": "agreement_version"
+    },
+    {
+      "columns": [
+        {
+          "value": "kind",
+          "isExpression": false
+        },
+        {
+          "value": "published_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "agreement_version_kind_published_at_idx",
+      "entityType": "indexes",
+      "table": "agreement_version"
     },
     {
       "columns": [
@@ -2872,6 +3333,20 @@
       "name": "follow_followee_id_idx",
       "entityType": "indexes",
       "table": "follow"
+    },
+    {
+      "columns": [
+        {
+          "value": "purge_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "leave_request_purge_at_idx",
+      "entityType": "indexes",
+      "table": "leave_request"
     },
     {
       "columns": [
@@ -3236,6 +3711,12 @@
       "name": "verification_identifier_idx",
       "entityType": "indexes",
       "table": "verification"
+    },
+    {
+      "value": "\"kind\" IN ('terms', 'privacy')",
+      "name": "agreement_version_kind",
+      "entityType": "checks",
+      "table": "agreement_version"
     },
     {
       "value": "\"step\" IN ('agreement', 'choose', 'profile', 'interview', 'done')",

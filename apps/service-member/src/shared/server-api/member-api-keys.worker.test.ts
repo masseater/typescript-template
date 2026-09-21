@@ -31,6 +31,7 @@ const addMember = (memberId: string, emailVerified = true) =>
       name: memberId,
       profile: `${memberId}-profile`,
       role: ROLE.member,
+      searchable: true,
       updatedAt: new Date("2026-01-02T00:00:00.000Z"),
     });
   });
