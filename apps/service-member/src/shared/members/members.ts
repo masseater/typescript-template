@@ -10,6 +10,7 @@ import {
 
 import type { SheetData } from "#shared/interview/sheet.ts";
 import type { ProfileLayoutData } from "#shared/profile-layout/schema.ts";
+import type { Database, DatabaseFailure } from "@repo/db";
 
 const { user } = schema;
 
@@ -42,7 +43,11 @@ const profileColumns = {
 
 function profilePresentation(
   memberId: string,
-): Effect.Effect<Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>> {
+): Effect.Effect<
+  Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>,
+  DatabaseFailure,
+  Database
+> {
   return Effect.gen(function* program() {
     const interview = yield* findInterview(memberId);
     if (interview?.savedSheet === null || interview?.savedSheet === undefined) {
