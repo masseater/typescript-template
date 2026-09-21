@@ -84,6 +84,7 @@ ${program}
     <key>StandardErrorPath</key>
     <string>${path.join(logDirectory, "stderr.log")}</string>
 ${plistClosing}`;
+  });
 }
 
 function serviceOf(
