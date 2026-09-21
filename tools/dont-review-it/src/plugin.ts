@@ -209,6 +209,7 @@ const plugin: Plugin = {
     [noFixtureForwardSubject.name]: noFixtureForwardSubject,
     [noFixtureOrderingAlias.name]: noFixtureOrderingAlias,
     [noFloatingPromise.name]: noFloatingPromise,
+    [noHandRolledServerRead.name]: noHandRolledServerRead,
     [noHandmadeStandardIoDouble.name]: noHandmadeStandardIoDouble,
     [noHandRolledServerRead.name]: noHandRolledServerRead,
     [noHardcodedEndpoint.name]: noHardcodedEndpoint,
