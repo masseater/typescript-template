@@ -1,6 +1,6 @@
 import { apiData } from "@repo/runtime/client";
 
-import { userClient } from "#shared/api/client.ts";
+import { userClient } from "#shared/api/index.ts";
 import { InterviewView } from "#shared/interview/index.ts";
 
 import type { InterviewViewData, MemberUtterance } from "#shared/interview/index.ts";
