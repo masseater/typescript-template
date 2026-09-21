@@ -15,6 +15,9 @@ export type { DrizzleDatabase } from "./database.ts";
 export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
 export {
   AUDIT_CHANNEL,
+  CONVERSATION_KIND,
+  GROUP_JOIN_POLICY,
+  GROUP_MEMBERSHIP_ROLE,
   INQUIRY_AUTHOR_KIND,
   INQUIRY_STATUS,
   NOTIFICATION_KIND,

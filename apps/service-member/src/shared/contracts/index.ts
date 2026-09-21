@@ -63,6 +63,33 @@ export { InterviewView } from "#shared/interview/contracts.ts";
 export { FollowList, FollowMember, FollowMemberQuery, FollowState } from "./follow.ts";
 export { MemberFlags } from "./flags.ts";
 export {
+  GroupCreate,
+  GroupCreated,
+  GroupInviteRefresh,
+  GroupInviteRefreshed,
+  GroupJoin,
+  GroupJoined,
+  GroupLeave,
+  GroupLeft,
+  GroupQuery,
+  GroupRename,
+  GroupRenamed,
+  GroupView,
+} from "./groups.ts";
+export {
+  ConversationList,
+  ConversationListQuery,
+  ConversationQuery,
+  ConversationRead,
+  ConversationView,
+  MessageSend,
+  MessageSent,
+  UnreadCount,
+  maximumMessageBodyLength,
+  messagingConversationPageSize,
+  messagingMessagePageSize,
+} from "./messaging.ts";
+export {
   NavBadges,
   NotificationId,
   NotificationItem,
