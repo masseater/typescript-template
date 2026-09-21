@@ -1,7 +1,7 @@
 import { httpStatus, readJson } from "@repo/observability";
 import { Effect, Exit, Schema, Stream } from "effect";
-import { Elysia, sse, status } from "elysia";
-import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
+import { Elysia, NotFound, sse, status } from "elysia";
+import { WebStandardAdapter } from "elysia/adapter/web-standard";
 
 import { AppOrigin } from "./app-origin.ts";
 import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
@@ -10,7 +10,7 @@ import { jsonResponse } from "./responses.ts";
 
 import type { Reporting, RequestRejected } from "@repo/observability";
 import type { Cause } from "effect";
-import type { AnyElysia } from "elysia";
+import type { AnyElysia, Context } from "elysia";
 import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import type { WorkerRuntime } from "./worker-runtime.ts";
 
@@ -18,12 +18,6 @@ type Decodable = Schema.Top & { readonly DecodingServices: never };
 type Handler<Value, Failures, Requirements> = (
   request: Request,
 ) => Effect.Effect<Value, Failures, Requirements>;
-interface ElysiaContext {
-  readonly request: Request;
-}
-interface ElysiaStreamContext extends ElysiaContext {
-  readonly set: { readonly headers: Record<string, string | number> };
-}
 interface ServerSentEvent {
   readonly data: unknown;
   readonly event: string;
@@ -32,7 +26,7 @@ interface FailedEvent {
   readonly data: Readonly<{ message: string; status: FailureStatus }>;
   readonly event: "failed";
 }
-type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
+type ElysiaHandler = (context: { readonly request: Request }) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
 type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
 interface ApiRoutes<Requirements> {
@@ -41,7 +35,7 @@ interface ApiRoutes<Requirements> {
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
+  ) => (context: Context) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
@@ -50,12 +44,11 @@ interface ApiRoutes<Requirements> {
     response: Schema.Codec<Value, Encoded>,
     handler: Handler<Value, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  ) => (context: ElysiaContext) => Promise<Encoded | Failed>;
+  ) => (context: Context) => Promise<Encoded | Failed>;
 }
 
 const missingMessage = "見つかりませんでした。";
 const eventStreamType = "text/event-stream";
-const unreadBody = { unread: true } as const;
 
 function decodeInput<Contract extends Decodable>(
   schema: Contract,
@@ -86,10 +79,12 @@ function readSearchParams<Contract extends Decodable>(
 const apiRoot = "/api";
 
 function createApi<const Prefix extends string>(prefix: Prefix) {
-  return new Elysia({ adapter: CloudflareAdapter, aot: false, prefix })
-    .onParse(() => unreadBody)
-    .onError(({ code }) =>
-      code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
+  return new Elysia({ adapter: WebStandardAdapter, prefix })
+    .guard({ parse: "none" })
+    .error(({ error }) =>
+      error instanceof NotFound
+        ? status(httpStatus.notFound, { error: missingMessage })
+        : undefined,
     );
 }
 
@@ -99,10 +94,10 @@ function elysiaServer(app: AnyElysia): {
     HEAD: ElysiaHandler;
   }>;
 } {
-  async function handle(context: ElysiaContext): Promise<Response> {
+  async function handle(context: { readonly request: Request }): Promise<Response> {
     return app.fetch(context.request);
   }
-  async function handleHead(context: ElysiaContext): Promise<Response> {
+  async function handleHead(context: { readonly request: Request }): Promise<Response> {
     const { headers: asked, url } = context.request;
     const response = await app.fetch(new Request(url, { headers: asked, method: "GET" }));
     const headers = new Headers(response.headers);
@@ -239,7 +234,7 @@ function apiRoutes<Requirements>(
   reporting: Reporting,
 ): ApiRoutes<Requirements> {
   async function settle<Value>(
-    context: ElysiaContext,
+    context: Context,
     program: (request: Request) => Effect.Effect<Value, never, Requirements>,
     unavailable: (cause: Readonly<Cause.Cause<unknown>>) => Effect.Effect<Value>,
   ): Promise<Value> {
@@ -259,7 +254,7 @@ function apiRoutes<Requirements>(
     response: Schema.Codec<Value, Encoded>,
     handler: Handler<Value, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
-  ): (context: ElysiaContext) => Promise<Encoded | Failed> {
+  ): (context: Context) => Promise<Encoded | Failed> {
     return async (context): Promise<Encoded | Failed> =>
       settle(context, respondValue(response, handler, failures), (cause) =>
         unavailableStatus(cause, reporting),
@@ -270,9 +265,9 @@ function apiRoutes<Requirements>(
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed> {
+  ): (context: Context) => Promise<EventStream<Encoded | FailedEvent> | Failed> {
     const open = openStream(event, handler, failures);
-    return async (context): Promise<EventStream<Encoded> | Failed> => {
+    return async (context): Promise<EventStream<Encoded | FailedEvent> | Failed> => {
       const opened = await settle(context, open, (cause) => unavailableStatus(cause, reporting));
       if (opened instanceof EventFeed) {
         Object.assign(context.set.headers, streamHeaders);
