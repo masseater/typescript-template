@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,8 +39,20 @@ jobs:
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
-      - run: vp check
-      - run: vp run -r prepr
+      - id: affected
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_FILES_PATH: ${{ runner.temp }}/pr-files.txt
+        run: gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename' > "$PR_FILES_PATH" && vp run --filter @repo/dont-review-it pr-affected
+      - if: steps.affected.outputs.scope == 'subset'
+        run: vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' ${{ steps.affected.outputs.paths }}
+      - run: vp run -w check:code
+      - if: steps.affected.outputs.scope == 'all'
+        run: vp run -r prepr
+      - if: steps.affected.outputs.scope == 'subset'
+        run: vp run -w prepr
+      - if: steps.affected.outputs.scope == 'subset'
+        run: vp run ${{ steps.affected.outputs.filters }} prepr
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:
@@ -49,13 +62,18 @@ jobs:
   merge-queue:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - *checkout
       - *browser-cache
       - *setup
       - *vite-task-cache
       - run: vp run -r premerge
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always()
+        with:
+          path: node_modules/.vite/task-cache
+          key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
 
   e2e:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
@@ -76,7 +94,7 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
-      - run: vp check
+      - run: vp run -w check:code
       - run: vp run -r prepr
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

@@ -11,9 +11,12 @@ describe("pull request check scope", () => {
     const workflow = readFileSync(path.join(repositoryRoot, ".github/workflows/check.yml"), "utf8");
     const vite = readFileSync(path.join(repositoryRoot, "vite.config.ts"), "utf8");
     expect(workflow).toContain("vp run -r prepr");
+    expect(workflow).toContain("vp run -r premerge");
+    expect(workflow).toContain("pr-affected");
     expect(workflow).not.toContain("--changed");
     expect(workflow).not.toContain("fetch-depth:");
-    expect(vite).toContain('prepr: ["check:imports", "test"]');
+    expect(vite).toContain('prepr: ["check:imports"]');
+    expect(vite).toContain('premerge: ["test", "test:dev-server"]');
     expect(vite).toContain('"apps/**/*.test.ts"');
     expect(vite).toContain('"infra/**/*.test.ts"');
     expect(vite).toContain('"libs/**/*.test.ts"');
