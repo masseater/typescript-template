@@ -14,9 +14,9 @@ import {
   requireCurrentAgreements,
   requireSignupAgreements,
 } from "./agreement.ts";
+import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { query } from "./database.ts";
 import { addSession, addUser } from "./records-fixture.ts";
-import { AUDIT_ACTION } from "./dashboard-literals.ts";
 import { auditEvent } from "./schema.ts";
 import { TestDatabase } from "./testing.ts";
 

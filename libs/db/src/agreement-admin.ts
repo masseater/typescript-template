@@ -7,8 +7,8 @@ import { agreementVersion } from "./agreement-schema.ts";
 import { AgreementVersionTaken } from "./agreement-version-taken.ts";
 import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts";
 import { auditWhen } from "./audit.ts";
-import { query } from "./database.ts";
 import { AUDIT_ACTION } from "./dashboard-literals.ts";
+import { query } from "./database.ts";
 
 const requirePublishingAdmin = requireAdmin;
 
