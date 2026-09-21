@@ -41,6 +41,9 @@ const workspaces = {
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
   },
+  "libs/vite-config": {
+    entry: ["src/effect-typecheck.ts"],
+  },
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
