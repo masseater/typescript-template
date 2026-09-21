@@ -22,6 +22,7 @@ export {
   findPasskeyUser,
   findUser,
   findWikiReader,
+  getSessionSecurity,
   hasEnrolledFactor,
   hasVerificationAudience,
   lookupSessionByToken,
