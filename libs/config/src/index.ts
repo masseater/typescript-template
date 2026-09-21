@@ -5,6 +5,7 @@ export {
   applicationPorts,
   applicationReadyPaths,
   applications,
+  coreEntrypoints,
   grants,
   loopbackAddress,
   loopbackHostSet,

@@ -8,9 +8,9 @@ function monitorWorkerVite() {
         onlyBundle: ["effect", "@repo/monitor"],
       },
       entry: { index: "src/worker.ts" },
-      format: "esm",
+      format: "esm" as const,
       outExtensions: () => ({ js: ".js" }),
-      platform: "browser",
+      platform: "browser" as const,
       target: "es2023",
     },
     run: {
