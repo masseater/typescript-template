@@ -56,7 +56,7 @@ describe("effect diagnostics coverage", () => {
   it("fails the gate on a missing named export before the bundle", () => {
     expect.assertions(2);
     expect(effectDiagnostics["check:effect"].command).toBe(
-      'sh -c \'out=$("$(effect-tsgo get-exe-path)" --noEmit -p tsconfig.json 2>&1 || :); printf "%s\\n" "$out"; printf "%s\\n" "$out" | grep -q "error TS2305" && exit 1; :\' && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning',
+      "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
     );
     expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
   });
