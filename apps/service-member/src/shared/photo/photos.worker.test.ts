@@ -6,7 +6,6 @@ import {
   ROLE,
   maximumPhotoBytes,
 } from "@repo/config";
-import { readStorage } from "@repo/config/storage";
 import { photoKeysOf, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { FileStore } from "@repo/runtime";
@@ -19,21 +18,12 @@ import { PhotoStore } from "./photo-store.ts";
 import { deleteMemberPhotos, readPhoto, removePhoto, uploadPhoto } from "./photos.ts";
 import { readPhotoUpload } from "./upload.ts";
 
-import type { R2Bucket } from "@cloudflare/workers-types";
 import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
+import type { PhotoStorageFailed } from "./photo-storage-failed.ts";
 
 const { user } = schema;
 const origin = "http://localhost:3001";
-
-const bucket: R2Bucket = await Effect.runPromise(
-  Effect.map(readStorage(env), (found) => {
-    if (found.files === undefined) {
-      throw new TypeError("the worker test pool has no FILES bucket");
-    }
-    return found.files;
-  }),
-);
 
 const services = Layer.mergeAll(
   TestDatabase,
@@ -68,31 +58,17 @@ function addUser(
   });
 }
 
-function storedKeys(): Effect.Effect<readonly string[]> {
-  return Effect.promise(async () => {
-    const listed = await bucket.list();
-    return listed.objects.map((object: { readonly key: string }) => object.key);
-  });
-}
-
-function clearBucket(): Effect.Effect<void> {
-  return Effect.flatMap(storedKeys(), (keys) =>
-    Effect.promise(async () => {
-      await bucket.delete([...keys]);
-    }),
-  );
-}
-
-function storedBytes(key: string): Effect.Effect<Uint8Array | undefined> {
-  return Effect.promise(async () => {
-    const object = await bucket.get(key);
-    return object === null ? undefined : new Uint8Array(await object.arrayBuffer());
+function storedBytes(
+  key: string,
+): Effect.Effect<Uint8Array | undefined, PhotoStorageFailed, PhotoStore> {
+  return Effect.gen(function* readStored() {
+    const photo = yield* (yield* PhotoStore).get(key);
+    return photo === undefined ? undefined : photo.bytes;
   });
 }
 
 it.effect("stores an uploaded JPEG without its EXIF segment and serves it to the owner", () =>
   Effect.gen(function* program() {
-    yield* clearBucket();
     yield* addUser("owner");
     const state = yield* uploadPhoto("owner", PHOTO_SLOT.face, jpegWithExif);
     assert.strictEqual(state.slot, PHOTO_SLOT.face);
@@ -110,7 +86,6 @@ it.effect("stores an uploaded JPEG without its EXIF segment and serves it to the
 
 it.effect("applies the profile visibility to the photo route", () =>
   Effect.gen(function* program() {
-    yield* clearBucket();
     yield* addUser("viewer");
     yield* addUser("hidden", PROFILE_VISIBILITY.self);
     yield* addUser("open");
@@ -137,15 +112,17 @@ it.effect("applies the profile visibility to the photo route", () =>
 
 it.effect("deletes the previous object when a photo is replaced or removed", () =>
   Effect.gen(function* program() {
-    yield* clearBucket();
     yield* addUser("owner");
     const first = yield* uploadPhoto("owner", PHOTO_SLOT.face, jpegWithExif);
     const second = yield* uploadPhoto("owner", PHOTO_SLOT.face, pngWithText);
     assert.notStrictEqual(first.version, second.version);
-    assert.deepStrictEqual(yield* storedKeys(), [`photos/owner/face/${second.version ?? ""}`]);
+    const firstKey = `photos/owner/face/${first.version ?? ""}`;
+    const secondKey = `photos/owner/face/${second.version ?? ""}`;
+    assert.isUndefined(yield* storedBytes(firstKey));
+    assert.isDefined(yield* storedBytes(secondKey));
     const removed = yield* removePhoto("owner", PHOTO_SLOT.face);
     assert.deepStrictEqual(removed, { slot: PHOTO_SLOT.face, version: null });
-    assert.deepStrictEqual(yield* storedKeys(), []);
+    assert.isUndefined(yield* storedBytes(secondKey));
     assert.deepStrictEqual(yield* photoKeysOf("owner"), { company: null, face: null });
     assert.deepStrictEqual(yield* removePhoto("owner", PHOTO_SLOT.face), removed);
   }).pipe(Effect.provide(services)),
@@ -153,15 +130,19 @@ it.effect("deletes the previous object when a photo is replaced or removed", () 
 
 it.effect("deleteMemberPhotos clears both slots and their objects", () =>
   Effect.gen(function* program() {
-    yield* clearBucket();
     yield* addUser("leaver");
     yield* addUser("stayer");
-    yield* uploadPhoto("leaver", PHOTO_SLOT.face, jpegWithExif);
-    yield* uploadPhoto("leaver", PHOTO_SLOT.company, pngWithText);
+    const leaverFace = yield* uploadPhoto("leaver", PHOTO_SLOT.face, jpegWithExif);
+    const leaverCompany = yield* uploadPhoto("leaver", PHOTO_SLOT.company, pngWithText);
     const kept = yield* uploadPhoto("stayer", PHOTO_SLOT.face, jpegWithExif);
+    const leaverFaceKey = `photos/leaver/face/${leaverFace.version ?? ""}`;
+    const leaverCompanyKey = `photos/leaver/company/${leaverCompany.version ?? ""}`;
+    const stayerKey = `photos/stayer/face/${kept.version ?? ""}`;
     assert.strictEqual(yield* deleteMemberPhotos("leaver"), 2);
     assert.deepStrictEqual(yield* photoKeysOf("leaver"), { company: null, face: null });
-    assert.deepStrictEqual(yield* storedKeys(), [`photos/stayer/face/${kept.version ?? ""}`]);
+    assert.isUndefined(yield* storedBytes(leaverFaceKey));
+    assert.isUndefined(yield* storedBytes(leaverCompanyKey));
+    assert.isDefined(yield* storedBytes(stayerKey));
     assert.strictEqual(yield* deleteMemberPhotos("leaver"), 0);
     assert.strictEqual(yield* failureTag(deleteMemberPhotos("missing")), "UserNotFound");
   }).pipe(Effect.provide(services)),
@@ -169,7 +150,6 @@ it.effect("deleteMemberPhotos clears both slots and their objects", () =>
 
 it.effect("refuses files that are not images and leaves nothing behind", () =>
   Effect.gen(function* program() {
-    yield* clearBucket();
     yield* addUser("owner");
     assert.strictEqual(
       yield* failureTag(
@@ -181,7 +161,7 @@ it.effect("refuses files that are not images and leaves nothing behind", () =>
       yield* failureTag(uploadPhoto("missing", PHOTO_SLOT.face, jpegWithExif)),
       "UserNotFound",
     );
-    assert.deepStrictEqual(yield* storedKeys(), []);
+    assert.deepStrictEqual(yield* photoKeysOf("owner"), { company: null, face: null });
   }).pipe(Effect.provide(services)),
 );
 
