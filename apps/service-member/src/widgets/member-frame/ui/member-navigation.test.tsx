@@ -1,20 +1,18 @@
+import { RegistryProvider } from "@effect/atom-react";
 import { ROLE } from "@repo/config/identity";
-import { ToastProvider } from "@repo/ui";
 import {
-  RouterContextProvider,
   createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
+  RouterProvider,
 } from "@tanstack/react-router";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
 
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
-import { MemberRail } from "./member-rail.tsx";
-import { MemberTabs } from "./member-tabs.tsx";
-import { MemberTopBar } from "./member-top-bar.tsx";
+import { MemberFrame } from "./member-frame.tsx";
 
 import type { SessionView } from "@repo/auth-ui";
 
@@ -34,79 +32,105 @@ const destinations = [
 
 const absent = ["探す", "メッセージ", "通知", "有料"] as const;
 
-function markup(locale: Locale, view: "header" | "rail" | "tabs"): string {
+async function markup(locale: Locale, path: string): Promise<string> {
   overwriteGetLocale(() => locale);
-  const rootRoute = createRootRoute();
-  const routeTree = rootRoute.addChildren([
-    createRoute({ getParentRoute: () => rootRoute, path: "/" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/home" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/board" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/settings" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/support" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/users/$id" }),
-  ]);
-  const router = createRouter({
-    history: createMemoryHistory({
-      initialEntries: [view === "header" ? "/users/member-1" : "/home"],
-    }),
-    routeTree,
+  const rootRoute = createRootRoute({
+    component: () =>
+      createElement(
+        RegistryProvider,
+        null,
+        createElement(MemberFrame, {
+          children: createElement("p", null, "本文"),
+          memberBoard: true,
+          user: member,
+        }),
+      ),
   });
-  const child =
-    view === "rail"
-      ? createElement(MemberRail, { memberBoard: true, user: member })
-      : view === "tabs"
-        ? createElement(MemberTabs, { memberBoard: true, profileId: member.id })
-        : createElement(MemberTopBar, { user: member });
-  return renderToStaticMarkup(
-    createElement(RouterContextProvider, {
-      children: view === "tabs" ? child : createElement(ToastProvider, null, child),
-      router,
-    }),
-  );
+  const router = createRouter({
+    history: createMemoryHistory({ initialEntries: [path] }),
+    routeTree: rootRoute.addChildren([
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/home",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/board",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/settings",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/support",
+      }),
+      createRoute({
+        component: () => createElement("span"),
+        getParentRoute: () => rootRoute,
+        path: "/users/$id",
+      }),
+    ]),
+  });
+  await router.load();
+  return renderToStaticMarkup(createElement(RouterProvider, { router }));
 }
 
 describe("member navigation", () => {
   const it = test
-    .extend("theRail", () => markup("ja", "rail"))
-    .extend("theTabs", () => markup("ja", "tabs"))
-    .extend("thePhoneHeader", () => markup("ja", "header"))
-    .extend("theEnglishRail", () => markup("en", "rail"));
+    .extend("theFrame", async () => markup("ja", "/home"))
+    .extend("theProfileFrame", async () => markup("ja", "/users/member-1"))
+    .extend("theEnglishFrame", async () => markup("en", "/home"));
 
-  it("lists home, profile, and the board in the rail", ({ theRail }) => {
+  it("lists home, profile, and the board on the compact rail", ({ theFrame }) => {
     expect.hasAssertions();
+    expect(theFrame).toContain("md:w-32");
+    expect(theFrame).toContain("min-h-dvh bg-muted");
+    expect(theFrame).not.toContain("<input");
+    expect(theFrame).not.toContain(">ユ<");
     for (const destination of destinations) {
-      expect(theRail).toContain(`>${destination.label}<`);
-      expect(theRail).toContain(`href="${destination.path}"`);
+      expect(theFrame).toContain(`>${destination.label}<`);
+      expect(theFrame).toContain(`href="${destination.path}"`);
     }
     for (const label of absent) {
-      expect(theRail).not.toContain(label);
+      expect(theFrame).not.toContain(label);
     }
   });
 
-  it("names the phone destinations without putting their labels in one row", ({ theTabs }) => {
+  it("names the phone destinations without putting their labels in one row", ({ theFrame }) => {
     expect.hasAssertions();
+    const tabs = theFrame.slice(theFrame.indexOf("fixed inset-x-0 bottom-0"));
     for (const destination of destinations) {
-      expect(theTabs).toContain(`aria-label="${destination.label}"`);
-      expect(theTabs).not.toContain(`>${destination.label}<`);
+      expect(tabs).toContain(`aria-label="${destination.label}"`);
+      expect(tabs).not.toContain(`>${destination.label}<`);
     }
     for (const label of absent) {
-      expect(theTabs).not.toContain(label);
+      expect(tabs).not.toContain(label);
     }
   });
 
-  it("shows the product name and the current section on a phone", ({ thePhoneHeader }) => {
+  it("shows the product name and the current section on a phone", ({ theProfileFrame }) => {
     expect.hasAssertions();
-    expect(thePhoneHeader).toContain("ユーザーアプリ");
-    expect(thePhoneHeader).toContain("プロフィール");
+    expect(theProfileFrame).toContain("ユーザーアプリ");
+    expect(theProfileFrame).toContain("プロフィール");
   });
 
-  it("reads rail labels from the English catalog", ({ theEnglishRail }) => {
+  it("reads rail labels from the English catalog", ({ theEnglishFrame }) => {
     expect.hasAssertions();
     try {
-      expect(theEnglishRail).toContain(">Home<");
-      expect(theEnglishRail).toContain(">Profile<");
-      expect(theEnglishRail).toContain(">Board<");
-      expect(theEnglishRail).toContain('href="/users/member-1"');
+      expect(theEnglishFrame).toContain(">Home<");
+      expect(theEnglishFrame).toContain(">Profile<");
+      expect(theEnglishFrame).toContain(">Board<");
+      expect(theEnglishFrame).toContain('href="/users/member-1"');
     } finally {
       overwriteGetLocale(() => "ja");
     }
