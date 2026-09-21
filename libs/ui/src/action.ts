@@ -1,8 +1,11 @@
-import { useAtomValue } from "@effect/atom-react";
+import { useAtom, useAtomValue } from "@effect/atom-react";
+import { Semaphore } from "effect";
 import { Atom } from "effect/unstable/reactivity";
 import { startTransition, useId } from "react";
 
-import { makeActionQueue, type ActionQueue, type ActionQueueStatus, type Task } from "./action-queue.ts";
+import { request, resultError } from "./request";
+
+type Task = () => Promise<void>;
 
 type ActionState = {
   readonly blocked: boolean;
@@ -11,41 +14,30 @@ type ActionState = {
   readonly run: (task: Task) => void;
 };
 
-type ActionSlot = Atom.Atom<ActionQueueStatus> & {
-  readonly queue: ActionQueue;
-};
-
 const hydratedAtom = Atom.make(true).pipe(Atom.withServerValue(() => false));
 
-const actionAtom = Atom.family((slotId: string): ActionSlot => {
+const actionAtom = Atom.family((slotId: string) => {
   void slotId;
-  const queue = makeActionQueue();
-  const statusAtom = Atom.readable((get): ActionQueueStatus => {
-    get.addFinalizer(
-      queue.subscribe((status) => {
-        get.setSelf(status);
-      }),
-    );
-    return queue.status();
+  const gate = Semaphore.makeUnsafe(1);
+  return Atom.fn(({ task }: Readonly<{ task: Task }>) => gate.withPermits(1)(request(task)), {
+    concurrent: true,
   });
-  return Object.assign(statusAtom, { queue });
 });
 
 const useAction = (): ActionState => {
-  const slot = actionAtom(useId());
-  const status = useAtomValue(slot);
+  const [asyncState, perform] = useAtom(actionAtom(useId()));
   const hydrated = useAtomValue(hydratedAtom);
-  const pending = status.pending;
+  const pending = asyncState.waiting;
   const blocked = pending || !hydrated;
   const run = (task: Task): void => {
     if (!hydrated) {
       return;
     }
-    startTransition(async () => {
-      await slot.queue.run(task);
+    startTransition(() => {
+      perform({ task });
     });
   };
-  return { blocked, error: status.error, pending, run };
+  return { blocked, error: resultError(asyncState), pending, run };
 };
 
 export { useAction };

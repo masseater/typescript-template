@@ -43,5 +43,5 @@
 - elysiajs https://github.com/elysiajs/skills
 - shadcn https://ui.shadcn.com/docs/skills
 - mergify https://github.com/mergifyio/mergify-cli/blob/main/skills/mergify-stack/SKILL.md
-- modern react guidance https://github.com/adhhamdev/modern-react-guidance （async-react の議論は https://github.com/reactwg/async-react/discussions/12 。設計論は https://speakerdeck.com/uhyo/react-no-sekkeiron 。操作キューは https://zenn.dev/uhyo/articles/async-react-action-queue 。このリポジトリでは `.claude/skills/modern-react-guidance/SKILL.md`）
+- modern react guidance https://github.com/adhhamdev/modern-react-guidance （async-react の議論は https://github.com/reactwg/async-react/discussions/12 。設計論は https://speakerdeck.com/uhyo/react-no-sekkeiron 。操作キューは https://zenn.dev/uhyo/articles/async-react-action-queue 。命名は https://gist.github.com/rafaelrozon/9fd6bc9efbce3e70311b364f87b89241 。このリポジトリでは `.claude/skills/modern-react-guidance/SKILL.md`）
 - react best practices https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices （このリポジトリでは `.claude/skills/react-best-practices/SKILL.md`。async の瀑布はここを先に読む）

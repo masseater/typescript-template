@@ -1,9 +1,8 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
-import { startTransition } from "react";
+import { startTransition, type MouseEventHandler, type ReactElement } from "react";
 
 import { buttonVariants } from "./button-variants";
 
-import type { MouseEventHandler, ReactElement } from "react";
 import type { Children } from "./types";
 
 type ButtonAction = () => void | Promise<void>;
@@ -33,14 +32,14 @@ const Button = ({
       type={type}
       aria-label={ariaLabel}
       disabled={disabled}
-      onClick={(event) => {
+      onClick={(click) => {
         if (action !== undefined && type === "button") {
           startTransition(async () => {
             await action();
           });
           return;
         }
-        onClick?.(event);
+        onClick?.(click);
       }}
       className={buttonVariants({ size, variant })}
     >
