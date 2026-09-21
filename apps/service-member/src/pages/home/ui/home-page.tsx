@@ -3,8 +3,8 @@ import { requestAtom, resultError } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { loadHomeFeed } from "#pages/home/api/feed.ts";
-import { getLocale, m } from "#shared/i18n/index.ts";
-import { HomeFeed } from "./home-feed.tsx";
+import { getLocale } from "#shared/i18n/index.ts";
+import { HomeFeed, presentFeed } from "./home-feed.tsx";
 
 import type { HomeEntry, HomeFeedState } from "./home-feed.tsx";
 import type { ReactElement } from "react";
@@ -19,19 +19,6 @@ const feedAtom = requestAtom(async (): Promise<readonly HomeEntry[]> => {
     updatedAtLabel.format(new Date(updatedAt)),
   );
 });
-
-function presentFeed(
-  items: readonly { actorId: string; actorName: string; profile: string; updatedAt: number }[],
-  label: (updatedAt: number) => string,
-): readonly HomeEntry[] {
-  return items.map((item) => ({
-    actorId: item.actorId,
-    actorName: item.actorName,
-    change: item.profile === "" ? m.home_profile_empty() : item.profile,
-    key: `${item.actorId}-${item.updatedAt}`,
-    updatedAtLabel: label(item.updatedAt),
-  }));
-}
 
 function homeState(
   failure: string | undefined,
@@ -56,4 +43,4 @@ function HomePage(): ReactElement {
   return <HomeFeed state={homeState(failure, entries)} />;
 }
 
-export { HomePage, presentFeed };
+export { HomePage };
