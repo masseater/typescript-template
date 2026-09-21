@@ -52,6 +52,11 @@ const commit = async (root: string, content: string): Promise<void> => {
   await git(root, "commit", "-m", content.trim());
 };
 
+const save = async (root: string, filename: string, content: string): Promise<void> => {
+  await stage(root, filename, content);
+  await git(root, "commit", "-m", filename);
+};
+
 const conflict = async (root: string): Promise<void> => {
   await git(root, "checkout", "-b", "side");
   await commit(root, "side\n");
@@ -101,4 +106,4 @@ const withEmptyDirectory = async (scenario: Scenario): Promise<void> => {
   await withDirectory(scenario, false);
 };
 
-export { CONFLICTED_FILE, conflict, stage, withEmptyDirectory, withRepository };
+export { CONFLICTED_FILE, conflict, save, stage, withEmptyDirectory, withRepository };

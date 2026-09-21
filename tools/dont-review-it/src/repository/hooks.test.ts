@@ -310,6 +310,9 @@ describe("lifecycle contents", () => {
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
       ".#test:dev-server",
+      "apps/internal-dashboard#check:dev",
+      "apps/service-admin#check:dev",
+      "apps/service-member#check:dev",
       "infra/cloudflare#verify:account",
       "tools/commander#check:start",
       "tools/dev#check:exported",
