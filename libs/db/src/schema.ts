@@ -10,6 +10,7 @@ import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import { conversation, conversationParticipant, directMessage } from "./messaging-schema.ts";
 import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
@@ -162,6 +163,9 @@ const schema = {
   auditEvent,
   boardPost,
   boardThread,
+  conversation,
+  conversationParticipant,
+  directMessage,
   metricSnapshot,
   follow,
   interview,
@@ -211,6 +215,7 @@ export {
   oauthResource,
 } from "./oauth-schema.ts";
 export { boardPost, boardThread } from "./board-schema.ts";
+export { conversation, conversationParticipant, directMessage } from "./messaging-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";

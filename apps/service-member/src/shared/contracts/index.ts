@@ -32,6 +32,7 @@ export {
 export {
   ContactAccepted,
   ContactSubmission,
+  Identifier,
   LeaveAccepted,
   LeaveRequest,
   RecoveryAccepted,
@@ -69,3 +70,19 @@ export {
   NotificationUnread,
 } from "./notifications.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
+export {
+  ConversationList,
+  ConversationListQuery,
+  ConversationLookup,
+  ConversationLookupResult,
+  ConversationOpen,
+  ConversationOpened,
+  ConversationQuery,
+  ConversationView,
+  MessageSend,
+  MessageSent,
+  maximumMessageBodyLength,
+  maximumMessagingPage,
+  messagingConversationPageSize,
+  messagingMessagePageSize,
+} from "./messaging.ts";

@@ -23,6 +23,7 @@ import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { leaveApi } from "./leave-api.ts";
 import { memberFailures } from "./member-failures.ts";
+import { messagingApi } from "./messaging-api.ts";
 import { photoApi } from "./photo-api.ts";
 import { onboardingStepApi, socialApi } from "./social-api.ts";
 import { visibilityApi } from "./visibility-api.ts";
@@ -108,7 +109,8 @@ function memberApi(api: ApiRoutes<AppServices | Interviewer | OpsMail | PhotoSto
         failures,
       ),
     )
-    .use(boardApi(api));
+    .use(boardApi(api))
+    .use(messagingApi(api));
 }
 
 export { memberApi };

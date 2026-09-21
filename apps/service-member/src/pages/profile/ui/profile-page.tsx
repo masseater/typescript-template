@@ -76,7 +76,7 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
           >
             {following ? "フォロー中" : "フォロー"}
           </Button>
-          <ButtonLink to="/upgrade" variant="secondary">
+          <ButtonLink search={{ peer: member.id }} to="/messages" variant="secondary">
             メッセージを送る
           </ButtonLink>
         </div>
