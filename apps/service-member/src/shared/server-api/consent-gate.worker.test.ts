@@ -161,6 +161,7 @@ it.effect(
       const accepted = yield* acceptEverythingPending(browser);
       assert.deepStrictEqual(accepted.pending, []);
       assert.deepStrictEqual(accepted.accepted.map((agreement) => agreement.version).toSorted(), [
+        "interview-history-1",
         "privacy-1",
         "terms-1",
       ]);
@@ -191,6 +192,7 @@ it.effect(
 
       const reaccepted = yield* acceptEverythingPending(browser);
       assert.deepStrictEqual(reaccepted.accepted.map((agreement) => agreement.version).toSorted(), [
+        "interview-history-1",
         "privacy-1",
         "terms-1",
         "terms-2",
@@ -234,6 +236,7 @@ it.effect("does not record acceptance of a draft that is not published yet", () 
       httpStatus.notFound,
     );
     assert.deepStrictEqual((yield* pendingAgreementKinds(userId)).toSorted(), [
+      AGREEMENT_KIND.interview_history,
       AGREEMENT_KIND.privacy,
       AGREEMENT_KIND.terms,
     ]);
