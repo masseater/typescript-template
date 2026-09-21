@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { sessionOptions } from "./session.ts";
+import { sessionOptions } from "./api/session.ts";
 
 import type { SessionView as SessionData } from "./protocol.ts";
 

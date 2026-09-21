@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { passkeysKey, passkeysOptions } from "./passkeys.ts";
+import { passkeysKey, passkeysOptions } from "./api/passkeys.ts";
 import { errorMessage } from "./protocol.ts";
 
 import type { PasskeySummary } from "./mfa-types.ts";
