@@ -8,7 +8,8 @@
     "./bootstrap": "./src/bootstrap-statement.ts",
     "./testing": "./src/testing.ts",
     "./migrations": "./src/remote-operations.ts",
-    "./local": "./src/local.ts"
+    "./local": "./src/local.ts",
+    "./dashboard-literals": "./src/dashboard-literals.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate"

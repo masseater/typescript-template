@@ -1,4 +1,5 @@
 import { APPLICATION, grants } from "@repo/config";
+import { photoBucketBinding } from "@repo/config/storage";
 import { Email, Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
@@ -6,26 +7,29 @@ import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
+import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { authSecret, otlpAuthorization, settings, stripeSettings } from "./settings.ts";
+import { photoBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
+import type { R2 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
 import type { BillingEnv, DeclaredEnv, SharedEnv, WikiEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
-function appEnv(
+const appEnv = Effect.fn("appEnv")(function* appEnv(
   target: Application,
   // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shared: SharedEnv,
   billing: BillingEnv | undefined,
-): DeclaredEnv {
-  return {
-    ...shared,
-    ...(grants(target, "ai") ? { AI: Workers.AI("AI") } : {}),
-    ...(billing ?? {}),
-  };
-}
+) {
+  const ai = grants(target, "ai") ? { AI: Workers.AI("AI") } : {};
+  const storage: Partial<Record<typeof photoBucketBinding, R2.Bucket>> = grants(target, "storage")
+    ? { [photoBucketBinding]: yield* photoBucketRef() }
+    : {};
+  return { ...shared, ...ai, ...storage, ...(billing ?? {}) } satisfies DeclaredEnv;
+});
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
@@ -41,7 +45,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
-  const shared = appEnv(
+  const shared = yield* appEnv(
     target,
     {
       APP_ORIGIN: origin,
@@ -75,6 +79,8 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,
     compatibility: workerCompatibilityOptions,
+    ...(target === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
+    ...(target === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
     domain: { name: new URL(origin).hostname, zoneId: config.zoneId },
     env,
     main: artifacts.mainModule,

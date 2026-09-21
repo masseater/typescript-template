@@ -44,7 +44,7 @@ erDiagram
 - 解約は Billing Portal で `cancelAtPeriodEnd` を立て、現在期間の末に Stripe が `customer.subscription.deleted` を送った時点で `free` に戻る。引き止めの段階は持たない
 - StripeEvent は処理した Webhook の ID を持つ。同じ ID の通知が再び届いても何も変えない。古い通知が後から届いても、`updatedAt` より前の内容では上書きしない
 - Stripe の設定（`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID`）が無いと利用者アプリは起動時の設定検証で止まる。「設定が無ければ全員無料」という状態は無い。ローカル開発では test モードの鍵だけを受け付ける
-- LeaveRequest を受け付けたら MemberAccount の `status` を `left` にし、他の利用者からの参照を止める。`purgeAt` までの 30 日間だけ本人が復旧できる
+- LeaveRequest を受け付けたら、会員データを `withdrawn_member` に移し、`user` から削除する。他の利用者からの参照を止める。`purgeAt` までの 30 日間だけ本人が `/recover` で復旧できる
 - 管理者の停止（`suspended`）と退会（`left`）は別である。停止は契約を消さず、退会は契約を終える
 
 ## 画面

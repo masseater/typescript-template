@@ -13,9 +13,19 @@ erDiagram
     string id PK
     string email UK
     boolean emailVerified
-    enum status
     datetime createdAt
-    datetime leftAt
+  }
+  WithdrawnMember {
+    string memberId PK
+    string email
+    datetime withdrawnAt
+    json snapshot
+  }
+  LeaveRequest {
+    string memberId PK
+    datetime requestedAt
+    datetime purgeAt
+    datetime restoredAt
   }
   AdminAccount {
     string id PK
@@ -55,6 +65,14 @@ erDiagram
     boolean strong
     datetime expiresAt
   }
+  MemberApiKey {
+    string id PK
+    string accountId FK
+    string name
+    string prefix
+    boolean enabled
+    datetime createdAt
+  }
   Invite {
     string id PK
     string token UK
@@ -63,10 +81,13 @@ erDiagram
     datetime expiresAt
     datetime acceptedAt
   }
+  MemberAccount ||--o| LeaveRequest : may-have
+  MemberAccount ||--o| WithdrawnMember : becomes
   MemberAccount ||--o{ Credential : owns
   MemberAccount ||--o{ Passkey : owns
   MemberAccount ||--o{ TotpFactor : owns
   MemberAccount ||--o{ Session : opens
+  MemberAccount ||--o{ MemberApiKey : owns
   AdminAccount ||--o{ Credential : owns
   AdminAccount ||--o{ Passkey : owns
   AdminAccount ||--o{ TotpFactor : owns
@@ -81,12 +102,13 @@ erDiagram
 
 ## 不変条件
 
-- MemberAccount の `status` は `active` / `suspended` / `left` のどれか 1 つである。有料か無料かは [契約](/data-model/billing) の PlanSubscription が決める
+- 退会した会員は `user` に存在せず、`withdrawn_member` と `leave_request` にだけ残る。有料か無料かは [契約](/data-model/billing) の PlanSubscription が決める
 - AdminAccount の `permission` は「閲覧のみ」「操作できる」「管理者を追加できる」のどれか 1 つで、招待のときに決まる
 - StaffAccount の `permission` は「閲覧のみ」「変更できる」のどれか 1 つで、招待のときに決まる
 - Session の `audience` は、そのアカウントが入れるアプリのうち、実際に開いたアプリと一致する
 - 管理者アプリと wiki の管理操作に入れる Session は、パスキー、またはパスワードに認証アプリを重ねた認証だけを強い認証とする。バックアップコードだけの Session は強くない
 - Invite の `targetKind` は `admin` か `staff` で、受け取り側のアプリが決まる。利用者の新規登録は Invite を使わない
+- MemberApiKey は利用者アプリだけが持つ。平文は発行直後の一度だけ見せ、保存するのはハッシュだけである。無効にしたキーは直ちに使えなくなる
 
 ## 画面
 

@@ -11,7 +11,7 @@ import { APPLICATION, PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME } from "@repo/c
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
-import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Layer } from "effect";
@@ -19,8 +19,7 @@ import { HttpResponse, http } from "msw";
 import { describe, expect } from "vite-plus/test";
 
 import { Stripe } from "#shared/billing/index.ts";
-import { billingApi } from "./billing-api.ts";
-import { membersApi } from "./members-api.ts";
+import { memberApi } from "./member-api.ts";
 
 import type { BrowserClient } from "@repo/auth/testing";
 
@@ -57,7 +56,7 @@ function billingApp() {
     ),
   );
   const api = apiRoutes(runtime, reporting);
-  return createApi(apiRoot).use(billingApi(api)).use(membersApi(api));
+  return memberApi(api);
 }
 
 function call(

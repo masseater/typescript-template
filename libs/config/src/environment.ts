@@ -203,6 +203,8 @@ export {
   Email,
   HttpsOrigin,
   appEnvKey,
+  bindingWith,
+  decode,
   distinctOrigins,
   isLocalDevelopmentOrigin,
   minimumAuthSecretLength,

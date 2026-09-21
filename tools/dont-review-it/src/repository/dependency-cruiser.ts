@@ -22,6 +22,8 @@ const databaseInternal = String.raw`^libs/db(?:-local)?/src/(?:(?:remote|bootstr
 const testingEntry = String.raw`^libs/[^/]+/src/testing[^/]*\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
 const deploymentConfig = String.raw`^infra/cloudflare/src/deployment\.ts$`;
+const photoStorage = String.raw`^libs/config/src/storage\.ts$`;
+const photoStorageOwner = String.raw`^apps/service-member/src/shared/photo/|^libs/(?:config|vite-config)/src/`;
 const serverOnlyModule = String.raw`^libs/(?:${serverOnlyPackages.join("|")})/src/`;
 const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`;
 const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
@@ -95,6 +97,14 @@ const configuration: IConfiguration = {
     },
     {
       comment:
+        "写真の R2 バケットは apps/service-member/src/shared/photo だけが掴みます。写真の保存・取得・削除はそのモジュールが公開する関数を呼び、バインディングを直接読まないでください。",
+      from: { path: "^(?:apps|libs)/", pathNot: photoStorageOwner },
+      name: "no-photo-storage-outside-photo-module",
+      severity: "error",
+      to: { path: photoStorage },
+    },
+    {
+      comment:
         "本番 D1 への直接操作とローカル DB の構築です。infra/ と tools/ の運用コマンドからだけ呼んでください。",
       from: { path: "^(?:apps|libs)/", pathNot: databaseInternal },
       name: "no-database-operations-outside-tooling",
@@ -132,13 +142,6 @@ const configuration: IConfiguration = {
       name: "no-production-to-test",
       severity: "error",
       to: { path: testPattern },
-    },
-    {
-      comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
-      from: { path: "^apps/internal-dashboard/" },
-      name: "no-wiki-to-database",
-      severity: "error",
-      to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/local\.ts$` },
     },
     {
       comment:

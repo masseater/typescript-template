@@ -8,7 +8,23 @@ export { EmailVerificationFailed } from "./email-verification-failed.ts";
 export { SessionInvalid } from "./session-invalid.ts";
 export { SessionRequired } from "./session-required.ts";
 export { handleAuthRequest, verifyEmailToken } from "./auth-request.ts";
-export { sendContactEmail } from "./email.ts";
+export {
+  mailSubjects,
+  notificationMailSubjects,
+  sendContactEmail,
+  sendExistingAccountNotice,
+  sendNotificationEmail,
+  sendVerificationEmail,
+} from "./email.ts";
 export type { MailSettings } from "./email.ts";
+export type { MailSettings } from "./email.ts";
+export { ApiKeyWriteForbidden } from "./api-key-write-forbidden.ts";
+export {
+  apiKeyFromHeaders,
+  apiKeyWriteFailure,
+  verifyMemberApiKey,
+  verifySessionOrApiKey,
+  verifySessionWriter,
+} from "./member-api-key.ts";
 export { verifySession } from "./session.ts";
 export type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";

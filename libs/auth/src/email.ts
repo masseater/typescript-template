@@ -1,3 +1,4 @@
+import { NOTIFICATION_KIND } from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
@@ -158,13 +159,44 @@ const sendContactEmail = (
     to: outbound.to,
   }).pipe(withSpan("email.contact"));
 
+const notificationMailSubjects = {
+  board: "掲示板の更新があります",
+  conversationMessage: "新しいメッセージがあります",
+} as const;
+
+const sendNotificationEmail = (
+  settings: MailSettings,
+  outbound: Readonly<{
+    readonly href: string;
+    readonly kind:
+      | typeof NOTIFICATION_KIND.boardPost
+      | typeof NOTIFICATION_KIND.conversationMessage;
+    readonly to: string;
+  }>,
+): Effect.Effect<void, EmailDeliveryFailed> => {
+  const url = new URL(outbound.href, settings.APP_ORIGIN).href;
+  if (URL.parse(url)?.origin !== settings.APP_ORIGIN) {
+    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
+  }
+  const subject =
+    outbound.kind === NOTIFICATION_KIND.conversationMessage
+      ? notificationMailSubjects.conversationMessage
+      : notificationMailSubjects.board;
+  return deliver(settings, {
+    subject,
+    text: `${subject}\n\n${url}`,
+    to: outbound.to,
+  }).pipe(withSpan("email.notification"));
+};
+
 /** @internal */
-export { mailSubjects };
+export { mailSubjects, notificationMailSubjects };
 export {
   sendContactEmail,
   sendEmailChangeNotice,
   sendEmailChangeVerification,
   sendExistingAccountNotice,
+  sendNotificationEmail,
   sendVerificationEmail,
 };
 export type { MailSettings };

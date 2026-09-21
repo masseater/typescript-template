@@ -107,6 +107,7 @@ const cloudflareStacks = [
   "src/service-member.ts!",
   "src/service-admin.ts!",
   "src/internal-dashboard.ts!",
+  "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
 ];
@@ -188,6 +189,7 @@ const config = ({
       },
       "apps/service-member": {
         ...app,
+        entry: [...app.entry, "src/shared/photo/image-fixture.ts"],
         ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
       },
       "infra/budget-monitor": {
