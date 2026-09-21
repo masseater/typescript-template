@@ -5,6 +5,7 @@ import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
+import { Stripe } from "#shared/billing/index.ts";
 import { Interviewer } from "#shared/interview/index.ts";
 import { PhotoStore } from "#shared/photo/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
@@ -31,6 +32,7 @@ const runtime = workerRuntime(() =>
     ),
     Interviewer.fromEnvironment(env),
     PhotoStore.fromEnvironment(env),
+    Stripe.fromEnvironment(env),
   ),
 );
 

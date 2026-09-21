@@ -3,6 +3,7 @@ import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqli
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { apikey } from "./api-key-schema.ts";
+import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { auditActions, clientKinds, metricKeys, metricPeriods } from "./dashboard-literals.ts";
 import { session, user } from "./identity-schema.ts";
@@ -178,8 +179,10 @@ const schema = {
   oauthRefreshToken,
   oauthResource,
   passkey,
+  planSubscription,
   rateLimit,
   session,
+  stripeEvent,
   twoFactor,
   user,
   verification,
@@ -211,6 +214,7 @@ export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
+export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
 export { notification, notificationPreference } from "./notification-schema.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";

@@ -18,6 +18,12 @@ type SharedEnv = Readonly<{
   OTLP_ENDPOINT?: string;
 }>;
 
+type BillingEnv = Readonly<{
+  STRIPE_PRICE_ID: Redacted.Redacted;
+  STRIPE_SECRET_KEY: Redacted.Redacted;
+  STRIPE_WEBHOOK_SECRET: Redacted.Redacted;
+}>;
+
 type WikiEnv = SharedEnv &
   Readonly<{
     FLAGSHIP_API_TOKEN: Redacted.Redacted;
@@ -26,6 +32,7 @@ type WikiEnv = SharedEnv &
 
 interface CapabilityEnv {
   readonly ai: Readonly<{ AI: AIBinding }>;
+  readonly billing: BillingEnv;
   readonly storage: Readonly<Record<typeof photoBucketBinding, R2.Bucket>>;
 }
 
@@ -44,4 +51,4 @@ type DeclaredEnv = SharedEnv & Partial<CapabilityEnv[Capability]>;
 
 type AppBindings<App extends Application> = InferEnv<AppEnv<App> & Readonly<{ ASSETS: Assets }>>;
 
-export type { AppBindings, AppEnv, CapabilityEnv, DeclaredEnv, SharedEnv, WikiEnv };
+export type { AppBindings, AppEnv, BillingEnv, CapabilityEnv, DeclaredEnv, SharedEnv, WikiEnv };

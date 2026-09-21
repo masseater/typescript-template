@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { appEnvKey, type Application } from "@repo/config";
+import { appEnvKey, type Application, grants } from "@repo/config";
 
 import { applicationRoot } from "./repository.ts";
 
@@ -29,13 +29,20 @@ type DevVars = {
   readonly mailOrigin: string;
 };
 
-const serialize = (devVars: DevVars): string => {
+const stripeTestPlaceholders: readonly (readonly [string, string])[] = [
+  ["STRIPE_PRICE_ID", "price_e2ePlaceholderNotReal"],
+  ["STRIPE_SECRET_KEY", "sk_test_e2ePlaceholderNotAReal"],
+  ["STRIPE_WEBHOOK_SECRET", "whsec_e2ePlaceholderNotReal"],
+];
+
+const serialize = (application: Application, devVars: DevVars): string => {
   const assignments: readonly (readonly [string, string])[] = [
     [appEnvKey.appOrigin, devVars.appOrigin],
     [appEnvKey.authSecret, devVars.authSecret],
     [appEnvKey.emailFrom, "no-reply@example.test"],
     [appEnvKey.mailpitUrl, devVars.mailOrigin],
     [appEnvKey.opsEmail, "ops@example.test"],
+    ...(grants(application, "billing") ? stripeTestPlaceholders : []),
   ];
   return `${assignments.map(([variable, assigned]) => `${variable}=${JSON.stringify(assigned)}`).join("\n")}\n`;
 };
@@ -47,7 +54,7 @@ const replaceDevVars = async (
   const file = path.join(applicationRoot(application), ".dev.vars");
   const [replaced] = await presentContent(file);
   const fileMode = 0o600;
-  await writeFile(file, serialize(devVars), { mode: fileMode });
+  await writeFile(file, serialize(application, devVars), { mode: fileMode });
   return async () => {
     if (replaced === undefined) {
       await rm(file, { force: true });

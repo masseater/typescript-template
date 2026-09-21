@@ -72,4 +72,10 @@ const authSecret = Config.schema(AuthSecret, deploymentKey.authSecret).pipe(
 
 const otlpAuthorization = optional(Config.redacted(deploymentKey.otlpAuthorization));
 
-export { authSecret, otlpAuthorization, settings };
+const stripeSettings = Config.all({
+  STRIPE_PRICE_ID: Config.redacted(deploymentKey.stripePriceId),
+  STRIPE_SECRET_KEY: Config.redacted(deploymentKey.stripeSecretKey),
+  STRIPE_WEBHOOK_SECRET: Config.redacted(deploymentKey.stripeWebhookSecret),
+});
+
+export { authSecret, otlpAuthorization, settings, stripeSettings };

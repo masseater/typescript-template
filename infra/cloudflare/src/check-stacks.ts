@@ -107,6 +107,13 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
+      ...(grants(app, "billing")
+        ? [
+            `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
+            `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
+            `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
+          ]
+        : []),
       ...(grants(app, "storage")
         ? [
             `${photoBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Photos.bucketName:jurisdiction=<unresolved ApplyExpr>`,

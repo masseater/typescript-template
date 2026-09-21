@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { Auth } from "@repo/auth";
-import { APPLICATION, ROLE, memberApiKeyHeader } from "@repo/config";
+import { APPLICATION, ROLE, SUBSCRIPTION_STATUS, memberApiKeyHeader } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
@@ -13,7 +13,7 @@ import { Effect, Layer } from "effect";
 
 import { memberApi } from "./member-api.ts";
 
-const { user } = schema;
+const { planSubscription, user } = schema;
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
 const routes = {
   "/api/member": "member",
@@ -32,6 +32,17 @@ const addMember = (memberId: string, emailVerified = true) =>
       profile: `${memberId}-profile`,
       role: ROLE.member,
       searchable: true,
+      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+    });
+  });
+
+const subscribe = (memberId: string) =>
+  query(async (database): Promise<void> => {
+    await database.insert(planSubscription).values({
+      memberId,
+      status: SUBSCRIPTION_STATUS.active,
+      stripeCustomerId: `cus_${memberId}`,
+      stripeSubscriptionId: `sub_${memberId}`,
       updatedAt: new Date("2026-01-02T00:00:00.000Z"),
     });
   });
@@ -72,6 +83,7 @@ it.effect("lets API keys read allowed resources and rejects writes", () => {
   return Effect.gen(function* program() {
     yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
     yield* addMember("owner");
+    yield* subscribe("owner");
     yield* addMember("listed");
     yield* addMember("hidden", false);
     const created = yield* Effect.gen(function* issueKey() {

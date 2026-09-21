@@ -91,3 +91,15 @@ export type {
   OverviewMetrics,
   ReadOnlyDashboardStaff,
 } from "./dashboard-staff.ts";
+export { PaidPlanRequired } from "./paid-plan-required.ts";
+export {
+  attachCheckout,
+  findSubscription,
+  isPaidMember,
+  markPaymentFailed,
+  memberOfCustomer,
+  planOf,
+  recordSubscription,
+  requirePaid,
+} from "./billing.ts";
+export type { StripeEventRecord, SubscriptionRecord } from "./billing.ts";
