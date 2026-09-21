@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 function AuditPage(): ReactElement {
   return (
     <OpsPage title="監査ログ">
-      <StatusMessage variant={STATUS_VARIANT.pending}>監査ログはまだありません。</StatusMessage>
+      <StatusMessage variant={STATUS_VARIANT.empty}>監査ログはまだありません。</StatusMessage>
     </OpsPage>
   );
 }

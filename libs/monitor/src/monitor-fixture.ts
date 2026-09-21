@@ -1,15 +1,16 @@
+import { Process, consumeJobs } from "@repo/runtime/jobs";
 import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 import { monitorWorker } from "./index.ts";
 
+import type { JobsBindings } from "@repo/config";
 import type { MonitorBindings } from "./index.ts";
 import type { SentMail } from "./mail-recorder.ts";
 
 type Outcome = "die" | "fail" | "notify" | "succeed";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace -- Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding
   namespace Cloudflare {
     interface Env {
       readonly ALERT_FROM: string;
@@ -49,9 +50,15 @@ const probeMonitor = monitorWorker<MonitorBindings>({
 });
 
 const ProbeMonitor = probeMonitor.Worker;
+const probeHandler = probeMonitor.handler;
+const workersHandler = {
+  ...probeHandler,
+  queue: async (batch: MessageBatch, environment: unknown): Promise<void> =>
+    consumeJobs(batch, environment as JobsBindings),
+};
 
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
-export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
+export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
-export default probeMonitor.handler;
+export default workersHandler;

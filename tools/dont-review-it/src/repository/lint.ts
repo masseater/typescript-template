@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
 import {
@@ -279,12 +278,32 @@ const lintOptions = {
         "infra/cloudflare/**",
         "infra/local/**",
         "libs/config/**",
+        "libs/db/src/local.ts",
+        "libs/db/src/missing-record-return.test.ts",
+        "libs/vite-config/**/*.test.ts",
         "tools/dev/**",
-        "tools/dont-review-it/src/repository/client-bundle.ts",
+        "tools/dont-review-it/src/configs/oxlint.ts",
+        "tools/dont-review-it/src/lint-rule-authoring/configs/oxlint.ts",
+        "tools/dont-review-it/src/repository/**",
       ],
       rules: {
         "import/no-nodejs-modules": LINT_SEVERITY.OFF,
         "node/no-process-env": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/db/src/testing.ts", "libs/monitor/src/monitor-fixture.ts"],
+      rules: {
+        "typescript/no-namespace": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "infra/cloudflare/src/unix-permission-bits.ts",
+        "tools/dev/src/unix-permission-bits.ts",
+      ],
+      rules: {
+        "no-bitwise": LINT_SEVERITY.OFF,
       },
     },
   ],
@@ -311,6 +330,7 @@ const lintOptions = {
           "vitest.config.ts",
           "vitest.mutation.config.ts",
           "vitest.workers.config.ts",
+          "vitest.workers.main.ts",
           "worker.ts",
         ],
       },

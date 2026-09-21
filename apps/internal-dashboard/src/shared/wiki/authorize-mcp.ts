@@ -24,7 +24,6 @@ function jsonRpcError(
   headers: Readonly<Record<string, string>>,
 ): Response {
   return Response.json(
-    // oxlint-disable-next-line unicorn/no-null -- JSON-RPC requires id to be null when the error is not tied to a request id
     { error: { code: JSON_RPC_SERVER_ERROR, message }, id: null, jsonrpc: "2.0" },
     { headers: { ...headers, "cache-control": "no-store" }, status },
   );

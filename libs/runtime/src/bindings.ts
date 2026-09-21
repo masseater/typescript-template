@@ -1,4 +1,5 @@
 import { ConfigurationInvalid, readEnvironment } from "@repo/config";
+import { readStorage } from "@repo/config/storage";
 import { Config, Effect, Layer, Option, Redacted } from "effect";
 import {
   Binding,
@@ -137,7 +138,11 @@ function appLayer(
 ): Layer.Layer<AppServices, ConfigurationInvalid | AuthFailure | TelemetryInvalid> {
   return Layer.unwrap(
     readWorkerConfig(env).pipe(
-      Effect.map((config) => configuredAppLayer(config, audience, routes)),
+      Effect.flatMap((config) =>
+        Effect.map(readStorage(env), (storage) =>
+          configuredAppLayer(config, audience, routes, storage),
+        ),
+      ),
     ),
   );
 }

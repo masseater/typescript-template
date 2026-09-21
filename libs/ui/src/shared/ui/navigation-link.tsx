@@ -1,5 +1,6 @@
 import { createLink } from "@tanstack/react-router";
 import { cva } from "class-variance-authority";
+import { cn } from "cn";
 
 import type { ComponentProps, ReactElement } from "react";
 
@@ -19,11 +20,16 @@ const navigationLinkVariants = cva(
 
 const NavigationAnchor = ({
   children,
+  className,
   variant,
   ...anchor
 }: Readonly<ComponentProps<"a"> & { variant?: "brand" | "item" | "side" }>): ReactElement => {
   return (
-    <a {...anchor} data-slot="navigation-link" className={navigationLinkVariants({ variant })}>
+    <a
+      {...anchor}
+      data-slot="navigation-link"
+      className={cn(navigationLinkVariants({ variant }), className)}
+    >
       {children}
     </a>
   );
