@@ -41,6 +41,9 @@ const workspaces = {
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
   },
+  "libs/vite-config": {
+    entry: ["src/effect-typecheck.ts"],
+  },
   "libs/monitor": {
     ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
@@ -155,7 +158,7 @@ const config = ({
     ignore: productionOnly("src/app/routeTree.gen.ts", ".paraglide/**"),
   };
   return {
-    ignoreDependencies: ["vite", "vitest"],
+    ignoreDependencies: ["vite"],
     ignoreIssues: {
       "libs/ui/storybook/preview.tsx": ["unlisted"],
     },
