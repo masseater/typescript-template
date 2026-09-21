@@ -18,7 +18,7 @@ const AccountSecurity = ({
 }>): ReactElement => {
   const { clearNotice, notice, showNotice } = useNotice();
   const action = useAction();
-  const context: SettingsContext = {
+  const settings: SettingsContext = {
     action,
     onNotice: showNotice,
     onNoticeClear: clearNotice,
@@ -28,9 +28,9 @@ const AccountSecurity = ({
   return (
     <div className="flex w-full flex-col gap-4">
       <Heading>認証アプリとパスキー</Heading>
-      <TotpSettings context={context} />
+      <TotpSettings context={settings} />
       <Heading>パスキー</Heading>
-      <PasskeyRegisterForm context={context} onRegistered={() => Promise.resolve()} />
+      <PasskeyRegisterForm context={settings} onRegistered={() => Promise.resolve()} />
       <PasskeyList action={action} listError={undefined} passkeys={passkeys} />
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
     </div>
