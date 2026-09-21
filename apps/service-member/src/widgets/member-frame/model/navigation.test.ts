@@ -27,7 +27,9 @@ describe("memberNavItems", () => {
       "messages",
       "notifications",
     ]);
-    expect(memberNavItems(false, true, "member-1").find((item) => item.id === "profile")).toMatchObject({
+    expect(
+      memberNavItems(false, true, "member-1").find((item) => item.id === "profile"),
+    ).toMatchObject({
       params: { id: "member-1" },
       to: "/users/$id",
     });

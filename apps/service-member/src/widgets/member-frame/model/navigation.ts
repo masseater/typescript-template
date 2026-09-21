@@ -98,7 +98,13 @@ function memberNavItems(
           } satisfies MemberNavItem,
         ]
       : []),
-    { badge: 0, icon: MessageCircleIcon, id: "messages", label: m.title_messages(), to: "/messages" },
+    {
+      badge: 0,
+      icon: MessageCircleIcon,
+      id: "messages",
+      label: m.title_messages(),
+      to: "/messages",
+    },
     {
       badge: badges.notifications,
       icon: BellIcon,

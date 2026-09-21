@@ -67,9 +67,7 @@ function shownAuthor(row: {
   if (row.storedAuthorId !== null && row.authorName !== null) {
     return { id: row.storedAuthorId, name: row.authorName };
   }
-  return row.withdrawnId === null
-    ? null
-    : { name: withdrawnAuthorName, withdrawn: true };
+  return row.withdrawnId === null ? null : { name: withdrawnAuthorName, withdrawn: true };
 }
 
 function shownThread(row: {

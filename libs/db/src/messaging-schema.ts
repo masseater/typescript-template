@@ -1,3 +1,4 @@
+import { groupJoinPolicies } from "@repo/config";
 import {
   index,
   integer,
@@ -6,8 +7,6 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-
-import { groupJoinPolicies } from "@repo/config";
 
 import { user } from "./identity-schema.ts";
 
