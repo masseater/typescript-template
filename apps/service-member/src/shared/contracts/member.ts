@@ -1,4 +1,4 @@
-import { Email } from "@repo/config";
+import { Email, photoSlots, profileVisibilities } from "@repo/config";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 const maximumIdentifierLength = 256;
@@ -24,10 +24,15 @@ const SocialLink = Schema.String.check(
 );
 const SocialLinks = Schema.Array(SocialLink).check(Schema.isMaxLength(maximumSocialLinks));
 
+const PhotoSlot = Schema.Literals(photoSlots);
+const PhotoVersion = Schema.NullOr(Schema.String.check(Schema.isPattern(/^[0-9a-f-]{1,64}$/u)));
+const PhotoVersions = Schema.Struct({ company: PhotoVersion, face: PhotoVersion });
+
 const ProfileView = Schema.Struct({
   email: Schema.String,
   id: Schema.String,
   name: Schema.String,
+  photos: PhotoVersions,
   profile: Schema.String,
   socialLinks: SocialLinks,
 });
@@ -38,12 +43,28 @@ const ProfileUpdate = Schema.Struct({
   socialLinks: SocialLinks,
 });
 
+const VisibilityView = Schema.Struct({
+  searchable: Schema.Boolean,
+  visibility: Schema.Literals(profileVisibilities),
+});
+
+const PhotoQuery = Schema.Struct({ slot: PhotoSlot });
+
+const PhotoView = Schema.Struct({ slot: PhotoSlot, version: PhotoVersion });
+
 const MemberQuery = Schema.Struct({ id: Identifier });
+
+const MemberPhotoQuery = Schema.Struct({
+  id: Identifier,
+  slot: PhotoSlot,
+  version: Schema.optionalKey(Schema.String),
+});
 
 const MemberView = Schema.Struct({
   id: Schema.String,
   joined: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}$/u)),
   name: Schema.String,
+  photos: PhotoVersions,
   profile: Schema.String,
   socialLinks: SocialLinks,
 });
@@ -120,13 +141,17 @@ export {
   LeaveRequest,
   MemberList,
   MemberListQuery,
+  MemberPhotoQuery,
   MemberQuery,
   MemberView,
+  PhotoQuery,
+  PhotoView,
   ProfileUpdate,
   ProfileView,
   RecoveryAccepted,
   RecoveryOfferView,
   SearchKeyword,
+  VisibilityView,
   laterPage,
   maximumContactMessageLength,
   maximumContactNameLength,

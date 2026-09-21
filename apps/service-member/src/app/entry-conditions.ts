@@ -1,15 +1,19 @@
 import { loginPath } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
 
+import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
 import { loadSession } from "#entities/session/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
 import { loadRecoveryOffer } from "#pages/recovery/index.ts";
 import { loadOnboardingStep } from "#pages/welcome/index.ts";
 
+import type { Agreements } from "#entities/agreement/index.ts";
 import type { Session } from "#entities/session/index.ts";
 import type { OnboardingStep } from "#shared/contracts/index.ts";
 
 const entrances: ReadonlySet<string> = new Set(["/", "/login", "/signup"]);
+
+const agreementPath = "/agreement";
 
 const welcomePath = {
   agreement: "/welcome/agreement",
@@ -32,7 +36,7 @@ async function enterPublicFrame(pathname: string): Promise<void> {
 async function enterMemberFrame(
   href: string,
   pathname: string,
-): Promise<{ memberBoard: boolean; session: Session }> {
+): Promise<{ agreements: Agreements; memberBoard: boolean; session: Session }> {
   const session = await loadSession();
   if (session === undefined) {
     throw redirect({ href: loginPath(href) });
@@ -50,8 +54,12 @@ async function enterMemberFrame(
   if (pathname.startsWith("/welcome")) {
     throw redirect({ to: "/home" });
   }
+  const agreements = await loadAgreements();
+  if (blocksMember(agreements.pending) && pathname !== agreementPath) {
+    throw redirect({ search: { redirect: href }, to: agreementPath });
+  }
   const memberBoard = await loadMemberFlags();
-  return { memberBoard, session };
+  return { agreements, memberBoard, session };
 }
 
 async function enterWelcomeFrame(

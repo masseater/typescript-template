@@ -1,3 +1,5 @@
+export { AGREEMENT_KIND, agreementKinds, agreementPolicies } from "./agreements.ts";
+export type { AgreementKind, AgreementPolicy } from "./agreements.ts";
 export {
   APPLICATION,
   ApplicationName,
@@ -31,6 +33,18 @@ export {
   minimumCloudflareApiTokenLength,
 } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
+export {
+  PHOTO_CONTENT_TYPE,
+  PHOTO_SLOT,
+  PROFILE_VISIBILITY,
+  isPhotoContentType,
+  maximumPhotoBytes,
+  maximumPhotoMebibytes,
+  photoContentTypes,
+  photoSlots,
+  profileVisibilities,
+} from "./member-profile.ts";
+export type { PhotoContentType, PhotoSlot, ProfileVisibility } from "./member-profile.ts";
 export {
   AuthSecret,
   Email,

@@ -13,6 +13,7 @@ import {
   UserList,
   UserListQuery,
 } from "#shared/contracts/index.ts";
+import { agreementApi } from "./agreement-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 
 const api = apiRoutes(runtime, reporting);
@@ -32,6 +33,7 @@ const failures = {
 
 const adminApi = createApi(apiRoot)
   .use(accountApi(api))
+  .use(agreementApi(api))
   .get(
     "/users",
     api.route(
