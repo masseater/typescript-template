@@ -1,8 +1,8 @@
-import { coveredTestableLibraryRun } from "@repo/vite-config";
+import { testableLibraryRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  run: coveredTestableLibraryRun,
+  run: testableLibraryRun,
   test: {
     coverage: {
       exclude: ["specs/**"],
