@@ -48,6 +48,9 @@ const workspaces = {
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
+  "libs/observability": {
+    entry: ["src/browser-testing.ts", "src/server-testing.ts"],
+  },
   "libs/runtime": {
     entry: ["src/*-fixture.ts"],
     project: ["src/**/*.ts!"],

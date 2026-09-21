@@ -14,7 +14,10 @@ declare global {
     interface Env {
       readonly ALERT_FROM: string;
       readonly ALERT_TO: string;
-      readonly EMAIL: { readonly taken: () => Promise<SentMail[]> };
+      readonly EMAIL: {
+        readonly send: (message: SentMail) => void;
+        readonly taken: () => Promise<SentMail[]>;
+      };
       readonly MONITOR: DurableObjectNamespace;
     }
   }
