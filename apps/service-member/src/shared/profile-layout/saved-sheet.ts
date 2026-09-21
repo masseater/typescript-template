@@ -33,7 +33,7 @@ const encodeStored = Schema.encodeEffect(StoredSheet);
 function writeSavedSheet(
   sheet: SheetData,
   layout: ProfileLayoutData,
-): Effect.Effect<typeof StoredSheet.Type> {
+): Effect.Effect<typeof StoredSheet.Type, Schema.SchemaError> {
   return encodeStored({ layout, sheet });
 }
 

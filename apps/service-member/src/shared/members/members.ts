@@ -1,4 +1,12 @@
-import { UserNotFound, containsKeyword, findInterview, query, schema } from "@repo/db";
+import {
+  Database,
+  DatabaseFailure,
+  UserNotFound,
+  containsKeyword,
+  findInterview,
+  query,
+  schema,
+} from "@repo/db";
 import { and, count, desc, eq, or } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -42,7 +50,11 @@ const profileColumns = {
 
 function profilePresentation(
   memberId: string,
-): Effect.Effect<Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>> {
+): Effect.Effect<
+  Readonly<{ profileLayout: ProfileLayoutData; sheet: SheetData }>,
+  DatabaseFailure,
+  Database
+> {
   return Effect.gen(function* program() {
     const interview = yield* findInterview(memberId);
     if (interview?.savedSheet === null || interview?.savedSheet === undefined) {
