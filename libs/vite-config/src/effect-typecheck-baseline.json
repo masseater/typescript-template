@@ -29,42 +29,6 @@
     ],
     "apps/internal-dashboard": [
       {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-suite.ts",
-        "code": "TS18046",
-        "message": "'member.instance.api' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-suite.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/auth/src/browser-client.ts",
-        "code": "TS2571",
-        "message": "Object is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/mail-box.ts",
-        "code": "TS2307",
-        "message": "Cannot find module '@msw/cloudflare' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
         "file": "../../libs/auth/src/mail-box.ts",
         "code": "TS2345",
         "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
@@ -73,43 +37,7 @@
       {
         "file": "../../libs/auth/src/policy.ts",
         "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/auth/src/wiki-oauth.ts",
-        "code": "TS6133",
-        "message": "'AuthApps' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/wiki-oauth.ts",
-        "code": "TS6133",
-        "message": "'decodeRedirect' is declared but its value is never read.",
+        "message": "'verifiedUser' is possibly 'undefined'.",
         "count": 1
       },
       {
@@ -197,33 +125,9 @@
         "count": 1
       },
       {
-        "file": "src/shared/wiki/authorize-mcp.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
         "file": "src/shared/wiki/wiki-layer.worker.test.ts",
         "code": "TS2307",
         "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS18046",
-        "message": "'error' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS18046",
-        "message": "'wiki.instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS2307",
-        "message": "Cannot find module './wiki-oauth.ts' or its corresponding type declarations.",
         "count": 1
       },
       {
@@ -234,51 +138,15 @@
       },
       {
         "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS2375",
-        "message": "Type 'Effect<{ challengeStatus: any; header: string; resource: { body: unknown; status: any; }; server: { body: unknown; status: any; }; }, unknown, unknown>' is not assignable to type 'Effect<{ challengeStatus: any; header: string; resource: { body: unknown; status: any; }; server: { body: unknown; status: any; }; }, unknown, AuthApps | Database | Mailbox>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS2375",
-        "message": "Type 'Effect<{ continued: JsonReply; smuggled: JsonReply; }, unknown, unknown>' is not assignable to type 'Effect<{ continued: JsonReply; smuggled: JsonReply; }, unknown, AuthApps | Database | Mailbox>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS2375",
-        "message": "Type 'Effect<{ grantedUserId: any; tamperedStatus: any; }, unknown, unknown>' is not assignable to type 'Effect<{ grantedUserId: any; tamperedStatus: any; }, unknown, AuthApps | Database | Mailbox>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS2375",
-        "message": "Type 'Effect<{ mcpStatus: any; sessionTag: any; }, unknown, unknown>' is not assignable to type 'Effect<{ mcpStatus: any; sessionTag: any; }, unknown, AuthApps | Database | Mailbox>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
         "code": "TS2554",
         "message": "Expected 1-3 arguments, but got 0.",
         "count": 1
       },
       {
         "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
-        "code": "TS377004",
-        "message": "This Effect requires a service that is missing from the expected Effect context: `unknown`. effect(missingEffectContext)",
-        "count": 4
-      },
-      {
-        "file": "src/shared/wiki/wiki-mcp.worker.test.ts",
         "code": "TS7031",
         "message": "Binding element 'auth' implicitly has an 'any' type.",
         "count": 5
-      },
-      {
-        "file": "src/shared/wiki/wiki-oauth-fixture.ts",
-        "code": "TS18046",
-        "message": "'wiki.instance.handler' is of type 'unknown'.",
-        "count": 1
       },
       {
         "file": "src/shared/wiki/wiki.ts",
@@ -289,46 +157,10 @@
     ],
     "apps/service-admin": [
       {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
         "file": "../../libs/auth/src/policy.ts",
         "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
+        "message": "'verifiedUser' is possibly 'undefined'.",
         "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
       },
       {
         "file": "../../libs/runtime/src/http.ts",
@@ -351,46 +183,10 @@
     ],
     "apps/service-member": [
       {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
         "file": "../../libs/auth/src/policy.ts",
         "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
+        "message": "'verifiedUser' is possibly 'undefined'.",
         "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../../libs/auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
       },
       {
         "file": "../../libs/db/src/testing.ts",
@@ -565,87 +361,15 @@
     ],
     "libs/auth": [
       {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 2
-      },
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:workers' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/auth-test-fixture.ts",
-        "code": "TS18046",
-        "message": "'member.instance.api' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/auth-test-fixture.ts",
+        "file": "src/mail-box.ts",
         "code": "TS2345",
-        "message": "Argument of type 'unknown' is not assignable to parameter of type 'BetterAuthOptions'.",
-        "count": 2
-      },
-      {
-        "file": "src/browser-client.ts",
-        "code": "TS2571",
-        "message": "Object is of type 'unknown'.",
+        "message": "Argument of type '({ request }: { readonly request: Request; }) => Promise<Response>' is not assignable to parameter of type 'HttpResponseResolver<PathParams, DefaultBodyType, undefined>'.",
         "count": 1
       },
       {
         "file": "src/policy.ts",
         "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'AuthApps' is declared but its value is never read.",
-        "count": 1
-      },
-      {
-        "file": "src/wiki-oauth-fixture.ts",
-        "code": "TS6133",
-        "message": "'decodeRedirect' is declared but its value is never read.",
+        "message": "'verifiedUser' is possibly 'undefined'.",
         "count": 1
       }
     ],
@@ -665,46 +389,10 @@
     ],
     "libs/feature-flags": [
       {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
         "file": "../auth/src/policy.ts",
         "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
+        "message": "'verifiedUser' is possibly 'undefined'.",
         "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
       },
       {
         "file": "../db/src/testing.ts",
@@ -723,46 +411,10 @@
     ],
     "libs/runtime": [
       {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
         "file": "../auth/src/policy.ts",
         "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
+        "message": "'verifiedUser' is possibly 'undefined'.",
         "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
       },
       {
         "file": "src/http-events.test.ts",
