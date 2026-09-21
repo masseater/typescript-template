@@ -74,28 +74,22 @@ const compareCounted = (left: CountedDiagnostic, right: CountedDiagnostic): numb
   return left.message.localeCompare(right.message);
 };
 
-const countDiagnostics = (diagnostics: readonly Diagnostic[]): readonly CountedDiagnostic[] => {
-  const grouped = diagnostics.reduce<ReadonlyMap<string, CountedDiagnostic>>(
-    (countedByFingerprint, diagnostic) => {
-      const fingerprint = fingerprintOf(diagnostic);
-      const existing = countedByFingerprint.get(fingerprint);
-      return new Map([
-        ...countedByFingerprint,
-        [
-          fingerprint,
-          {
-            file: diagnostic.file,
-            code: diagnostic.code,
-            message: diagnostic.message,
-            count: (existing?.count ?? 0) + 1,
-          },
-        ],
-      ]);
-    },
-    new Map(),
-  );
-  return [...grouped.values()].toSorted(compareCounted);
-};
+const countDiagnostics = (diagnostics: readonly Diagnostic[]): readonly CountedDiagnostic[] =>
+  [...Map.groupBy(diagnostics, fingerprintOf).values()]
+    .flatMap((group) => {
+      const diagnostic = group[0];
+      return diagnostic === undefined
+        ? []
+        : [
+            {
+              file: diagnostic.file,
+              code: diagnostic.code,
+              message: diagnostic.message,
+              count: group.length,
+            },
+          ];
+    })
+    .toSorted(compareCounted);
 
 const missingExportCodes = ["TS2305", "TS2459", "TS2460", "TS2614", "TS2724"] as const;
 
