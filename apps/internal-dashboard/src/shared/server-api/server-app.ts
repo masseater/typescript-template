@@ -15,7 +15,7 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
   if (query === "") {
     return Effect.succeed(jsonResponse({ mode: "semantic", results: [] }));
   }
-  return Effect.promise(async () => import("./search.ts")).pipe(
+  return Effect.promise(() => import("./search.ts")).pipe(
     Effect.flatMap(({ searchWiki }) =>
       searchWiki(query.slice(0, maximumQueryLength)).pipe(
         Effect.map((results) => jsonResponse(results)),
