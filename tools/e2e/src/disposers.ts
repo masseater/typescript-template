@@ -30,4 +30,4 @@ const newDisposerStack = (): {
 };
 
 export { newDisposerStack };
-export type { Disposer, JourneyFailure };
+export type { Disposer };

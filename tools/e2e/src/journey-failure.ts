@@ -32,4 +32,4 @@ const failed = (reason: string, cause?: unknown): JourneyFailure =>
   });
 
 export { JourneyFailure, failed, spelled };
-export type { HostServices, Journey };
+export type { Journey };

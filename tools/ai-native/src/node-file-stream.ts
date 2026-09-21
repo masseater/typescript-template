@@ -44,4 +44,4 @@ const consumeText = (readable: unknown): Promise<string> => streamConsumers.text
 const PassThrough = streamApi.PassThrough;
 
 export { consumeText, openReadStream, openWriteStream, PassThrough };
-export type { FileWriteStream, PassThroughStream, ReadableFile };
+export type { FileWriteStream };

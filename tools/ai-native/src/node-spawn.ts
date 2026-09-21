@@ -92,4 +92,4 @@ const spawnChildSync = (launch: SpawnLaunch): SyncExit => {
 };
 
 export { spawnChild, spawnChildSync };
-export type { ChildStream, SpawnedChild, SpawnOptions, SyncExit };
+export type { SpawnedChild };

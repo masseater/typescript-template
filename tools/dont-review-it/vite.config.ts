@@ -1,3 +1,4 @@
+import { env as processEnvironment } from "node:process";
 import { fileURLToPath } from "node:url";
 
 import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
@@ -25,7 +26,7 @@ export default defineConfig({
   test: {
     experimental: {
       openTelemetry: {
-        enabled: process.env.MST_TELEMETRY !== undefined,
+        enabled: processEnvironment.MST_TELEMETRY !== undefined,
         sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
       },
     },

@@ -3,12 +3,6 @@
   "compilerOptions": {
     "lib": ["esnext", "dom"],
     "types": ["node"],
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "diagnostics": false
-      }
-    ],
     "noPropertyAccessFromIndexSignature": true,
     "noFallthroughCasesInSwitch": true,
     "erasableSyntaxOnly": true

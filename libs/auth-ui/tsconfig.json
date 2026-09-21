@@ -3,8 +3,7 @@
   "compilerOptions": {
     "types": ["vite-plus/client"],
     "jsx": "react-jsx",
-    "noPropertyAccessFromIndexSignature": true,
-    "plugins": [{ "name": "@effect/language-service", "diagnostics": false }]
+    "noPropertyAccessFromIndexSignature": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
 }

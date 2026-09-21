@@ -3,12 +3,6 @@
   "compilerOptions": {
     "lib": ["esnext"],
     "types": ["node", "@cloudflare/workers-types"],
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "diagnostics": false
-      }
-    ],
     "noPropertyAccessFromIndexSignature": true,
     "noFallthroughCasesInSwitch": true,
     "erasableSyntaxOnly": true

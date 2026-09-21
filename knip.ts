@@ -73,7 +73,6 @@ const workspaces = {
     },
   },
   "tools/ai-native": {
-    ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
@@ -86,13 +85,7 @@ const workspaces = {
       "src/repository/lint.ts!",
       "src/repository/plugin.ts!",
     ],
-    ignoreDependencies: [
-      "@tanstack/intent",
-      "@repo/config!",
-      "@repo/observability!",
-      "effect!",
-      "oxlint-tsgolint",
-    ],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
     project: [
       "src/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
