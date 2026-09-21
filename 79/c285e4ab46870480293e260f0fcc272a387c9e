@@ -1,0 +1,6 @@
+Revision history for #1036:
+
+rev 2 (rebase) 2026-09-21 06:09 UTC
+rev 1 (initial) 2026-09-21 06:09 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1036,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"df9e14c845dfbfc609d85d5637543291a2b886c9","timestamp_iso":"2026-09-21T06:09:00Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"rebase","old_sha":"df9e14c845dfbfc609d85d5637543291a2b886c9","new_sha":"79c285e4ab46870480293e260f0fcc272a387c9e","timestamp_iso":"2026-09-21T06:09:00Z","reason":"","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/df9e14c845dfbfc609d85d5637543291a2b886c9...79c285e4ab46870480293e260f0fcc272a387c9e"}]} -->
