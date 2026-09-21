@@ -4,6 +4,8 @@ import { Effect } from "effect";
 import { monitorCheckUrl } from "./binding.ts";
 import { Monitor, type Alert, type MonitorBindings, type Notify } from "./monitor-base.ts";
 
+import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
+
 const monitorHandler = (
   monitorEvent: string,
 ): {

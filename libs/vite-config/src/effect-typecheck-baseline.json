@@ -3,24 +3,6 @@
   "workspaces": {
     ".": [
       {
-        "file": "libs/monitor/src/index.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'DurableObjectNamespace'.",
-        "count": 2
-      },
-      {
-        "file": "libs/monitor/src/index.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'DurableObjectState'.",
-        "count": 4
-      },
-      {
-        "file": "libs/monitor/src/index.ts",
-        "code": "TS2304",
-        "message": "Cannot find name 'SendEmail'.",
-        "count": 1
-      },
-      {
         "file": "tools/dont-review-it/src/repository/lint.ts",
         "code": "TS2345",
         "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
