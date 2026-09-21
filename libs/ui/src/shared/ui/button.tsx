@@ -49,4 +49,3 @@ const Button = ({
 };
 
 export { Button };
-export type { ButtonAction };
