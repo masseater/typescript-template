@@ -113,6 +113,7 @@ const cloudflareStacks = [
   "src/service-member.ts!",
   "src/service-admin.ts!",
   "src/internal-dashboard.ts!",
+  "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
 ];
@@ -185,6 +186,7 @@ const config = ({
       "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
       "libs/runtime/src/app-fixture.ts": ["unlisted"],
       "libs/runtime/src/bindings.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/storage.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
