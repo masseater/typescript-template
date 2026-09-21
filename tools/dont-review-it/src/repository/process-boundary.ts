@@ -32,10 +32,10 @@ const isProcessBoundary = (origin: Origin): boolean => {
 };
 
 const processBoundaryVisitor = (inspection: LintContext): Visitor => {
-  const matches = filename(inspection).endsWith(`/${cliImplementation}`)
-    ? isProcessOutput
-    : isProcessBoundary;
-  return originVisitor(inspection, matches);
+  if (filename(inspection).endsWith(`/${cliImplementation}`)) {
+    return {};
+  }
+  return originVisitor(inspection, isProcessBoundary);
 };
 
 export { cliImplementation, processBoundaryVisitor, processMember };
