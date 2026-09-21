@@ -40,7 +40,7 @@ function ProfilePreview(): ReactElement {
           }
         />
       </div>
-      <div className="flex flex-col gap-3 border-t border-border px-5 py-5">
+      <div className="flex flex-col gap-3 border-t border-border p-5">
         <p className="text-base leading-tight font-bold text-foreground">{m.closing_title()}</p>
         <div className="flex flex-wrap items-center gap-4">
           <ButtonLink to="/signup" size="large" variant="primary">

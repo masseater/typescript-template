@@ -6,15 +6,23 @@ import { loadHomeFeed } from "#pages/home/api/feed.ts";
 import { getLocale } from "#shared/i18n/index.ts";
 import { HomeFeed, presentFeed } from "./home-feed.tsx";
 
+import type { Locale } from "#shared/i18n/index.ts";
 import type { ReactElement } from "react";
 import type { HomeEntry, HomeFeedState } from "./home-feed.tsx";
 
+const feedTimeOptions = {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "UTC",
+} as const;
+
+const feedTimeLabels: Readonly<Record<Locale, Intl.DateTimeFormat>> = {
+  en: new Intl.DateTimeFormat("en", feedTimeOptions),
+  ja: new Intl.DateTimeFormat("ja", feedTimeOptions),
+};
+
 const feedAtom = requestAtom(async (): Promise<readonly HomeEntry[]> => {
-  const updatedAtLabel = new Intl.DateTimeFormat(getLocale(), {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "UTC",
-  });
+  const updatedAtLabel = feedTimeLabels[getLocale()];
   return presentFeed(await loadHomeFeed(), (updatedAt) =>
     updatedAtLabel.format(new Date(updatedAt)),
   );
