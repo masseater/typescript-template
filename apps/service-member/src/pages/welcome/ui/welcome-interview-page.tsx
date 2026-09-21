@@ -1,7 +1,6 @@
 import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
-import { fieldDefinitions } from "#shared/interview/index.ts";
 import { MemberPage } from "#widgets/member-page/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
@@ -34,9 +33,7 @@ function WelcomeInterviewPage(): ReactElement {
         <Heading as="h1" size="page">
           AI インタビュー
         </Heading>
-        <p className="text-lg leading-relaxed text-foreground">
-          {fieldDefinitions.nickname.question}
-        </p>
+        <p className="text-lg leading-relaxed text-foreground">なんて呼べばいいですか？</p>
         <StatusMessage variant={STATUS_VARIANT.pending}>
           登録直後の AI
           インタビュー本体は、設定のインタビューと合わせて後続で接続します。いまはスキップしてホームへ進めます。
