@@ -74,7 +74,7 @@ const readBody = (bounded: {
         Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
       ),
     ),
-    Effect.catchAll((cause) =>
+    Effect.catch((cause) =>
       cause instanceof RequestRejected ? Effect.fail(cause) : Effect.die(cause),
     ),
   );
