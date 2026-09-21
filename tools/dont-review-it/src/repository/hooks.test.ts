@@ -280,6 +280,9 @@ describe("generated paths", () => {
     expect(workflows["../../../../.github/workflows/check.yml"] ?? "").toMatch(
       /rm -rf \.local\/d1/u,
     );
+    expect(workflows["../../../../.github/workflows/check.yml"] ?? "").toMatch(
+      /pkill -9 -f "\$\{GITHUB_WORKSPACE\}\/node_modules\/\.pnpm\/\.\*\/bin\/workerd /u,
+    );
     expect(workflows["../../../../.github/workflows/prerelease.yml"] ?? "").toMatch(
       /rm -rf \.local\/d1/u,
     );
@@ -310,6 +313,9 @@ describe("lifecycle contents", () => {
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
       ".#test:dev-server",
+      "apps/internal-dashboard#check:dev",
+      "apps/service-admin#check:dev",
+      "apps/service-member#check:dev",
       "infra/cloudflare#verify:account",
       "tools/commander#check:start",
       "tools/dev#check:exported",
@@ -359,6 +365,15 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
       [],
     );
+  });
+
+  it("type-checks a package before that package's bundle", () => {
+    expect.hasAssertions();
+    expect(
+      configuredDirectories
+        .filter((directory) => reachable(directory, ["prepr"]).includes("build"))
+        .filter((directory) => !dependencies(directory, "build").includes("check:effect")),
+    ).toStrictEqual([]);
   });
 });
 

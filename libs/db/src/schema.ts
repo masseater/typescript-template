@@ -11,6 +11,14 @@ import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import {
+  conversation,
+  conversationParticipant,
+  directMessage,
+  groupInvite,
+  groupMembership,
+  memberGroup,
+} from "./messaging-schema.ts";
 import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
@@ -190,13 +198,19 @@ const schema = {
   auditEvent,
   boardPost,
   boardThread,
+  conversation,
+  conversationParticipant,
+  directMessage,
   metricSnapshot,
   follow,
+  groupInvite,
+  groupMembership,
   inquiry,
   inquiryMessage,
   interview,
   invite,
   leaveRequest,
+  memberGroup,
   memberOnboarding,
   notification,
   notificationPreference,
@@ -260,3 +274,18 @@ export { follow, memberOnboarding, onboardingSteps } from "./member-social-schem
 export { notification, notificationPreference } from "./notification-schema.ts";
 export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
 export type { NotificationKind } from "@repo/config";
+export {
+  CONVERSATION_KIND,
+  GROUP_JOIN_POLICY,
+  GROUP_MEMBERSHIP_ROLE,
+  conversation,
+  conversationKinds,
+  conversationParticipant,
+  directMessage,
+  groupInvite,
+  groupJoinPolicies,
+  groupMembership,
+  groupMembershipRoles,
+  memberGroup,
+} from "./messaging-schema.ts";
+export type { ConversationKind, GroupJoinPolicy, GroupMembershipRole } from "./messaging-schema.ts";

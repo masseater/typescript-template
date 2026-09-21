@@ -21,7 +21,7 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       ...sliceBoundaries,
-      build: { command: "vp build", input: [...taskInput, "!dist"] },
+      build: { command: "vp build", dependsOn: ["check:effect"], input: [...taskInput, "!dist"] },
       "check:start": {
         cache: false,
         command: "./src/app/check-start.ts",
