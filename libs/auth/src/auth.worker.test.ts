@@ -2,7 +2,7 @@ import { APPLICATION } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { audienceOnEmptyDatabase } from "@repo/auth/testing";
+import { audienceOnEmptyDatabase } from "./testing.ts";
 
 describe("Auth.layer on a database without migrations", () => {
   const it = test

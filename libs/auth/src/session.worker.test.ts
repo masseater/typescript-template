@@ -20,11 +20,11 @@ import {
   signInAgainAfterTotp,
   signInAs,
   wikiAdministrator,
-} from "@repo/auth/testing";
+} from "./testing.ts";
 
 describe("verifySession", () => {
   describe("an administrator signed in with a password alone", () => {
-    const it = authTest
+    const it = authTest()
       .extend("client", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInPasswordOnly() {
@@ -58,7 +58,7 @@ describe("verifySession", () => {
   });
 
   describe("an administrator who verified a TOTP code on the same session", () => {
-    const it = authTest.extend("verified", async ({ auth }) =>
+    const it = authTest().extend("verified", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* enrollTotp() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -85,7 +85,7 @@ describe("verifySession", () => {
   });
 
   describe("a user whose password sign-in awaits the second factor", () => {
-    const it = authTest
+    const it = authTest()
       .extend("pending", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* awaitSecondFactor() {
@@ -142,7 +142,7 @@ describe("verifySession", () => {
   describe.for([APPLICATION.user, APPLICATION.admin] as const)(
     "an administrator signed in to %s with a recovery code",
     (audience) => {
-      const it = authTest.extend("recovery", async ({ auth }) =>
+      const it = authTest().extend("recovery", async ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* recover() {
             yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -187,7 +187,7 @@ describe("verifySession", () => {
   );
 
   describe("user app cookies replayed against the admin app", () => {
-    const it = authTest.extend("replayed", async ({ auth }) =>
+    const it = authTest().extend("replayed", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* replay() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -204,7 +204,7 @@ describe("verifySession", () => {
   });
 
   describe("a user promoted by an administrator", () => {
-    const it = authTest.extend("promoted", async ({ auth }) =>
+    const it = authTest().extend("promoted", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* promote() {
           yield* bootstrapVerifiedAdmin("owner@example.com");
@@ -230,7 +230,7 @@ describe("verifySession", () => {
   });
 
   describe("a user who posts role, audience and strength updates", () => {
-    const it = authTest.extend("selfAssigned", async ({ auth }) =>
+    const it = authTest().extend("selfAssigned", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* selfAssign() {
           yield* registerVerified("reader@example.com");
@@ -271,7 +271,7 @@ describe("verifySession", () => {
   });
 
   describe("a wiki administrator demoted to member", () => {
-    const it = authTest.extend("demoted", async ({ auth }) =>
+    const it = authTest().extend("demoted", async ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* demote() {
           const wiki = yield* wikiAdministrator("owner@example.com");

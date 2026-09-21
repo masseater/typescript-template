@@ -15,7 +15,6 @@ import {
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { Predicate } from "effect";
 
-import { emailChangePath } from "./email-change.ts";
 import {
   deny,
   enrollmentPaths,
@@ -31,6 +30,7 @@ import type { Run } from "./runner.ts";
 type RequestHooks = NonNullable<BetterAuthOptions["hooks"]>;
 type SessionRecord = NonNullable<Awaited<ReturnType<typeof runSessionLookup>>>;
 
+const emailChangePath = "/change-email";
 const emailVerificationPath = "/verify-email";
 const sessionRevokingPaths = new Set([
   "/change-password",
@@ -75,17 +75,17 @@ const totpUpgradableMethods: ReadonlySet<string> = new Set([
 const markTotpSessionStrong = async function markTotpSessionStrong(
   scope: HookScope,
 ): Promise<void> {
-  const sessionRecord = await currentSessionOf(scope);
+  const current = await currentSessionOf(scope);
   if (
-    sessionRecord &&
-    sessionIsLive(sessionRecord, scope.audience) &&
-    totpUpgradableMethods.has(sessionRecord.session.authenticationMethod)
+    current &&
+    sessionIsLive(current, scope.audience) &&
+    totpUpgradableMethods.has(current.session.authenticationMethod)
   ) {
     await scope.run(
       markSessionStrong({
         audience: scope.audience,
         method: AUTHENTICATION_METHOD.passwordTotp,
-        sessionId: sessionRecord.session.id,
+        sessionId: current.session.id,
       }),
     );
   }
@@ -94,14 +94,14 @@ const markTotpSessionStrong = async function markTotpSessionStrong(
 const revokeSessionsAfterFactorChange = async function revokeSessionsAfterFactorChange(
   scope: HookScope,
 ): Promise<void> {
-  const sessionRecord = await currentSessionOf(scope);
-  if (sessionRecord && sessionIsLive(sessionRecord, scope.audience)) {
-    await scope.run(revokeUserSessions(sessionRecord.user.id));
+  const current = await currentSessionOf(scope);
+  if (current && sessionIsLive(current, scope.audience)) {
+    await scope.run(revokeUserSessions(current.user.id));
   }
 };
 
-const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(redirectCandidate: unknown): boolean {
-  const url = typeof redirectCandidate === "string" ? URL.parse(redirectCandidate) : undefined;
+const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(value: unknown): boolean {
+  const url = typeof value === "string" ? URL.parse(value) : undefined;
   return url?.protocol === "http:" && loopbackHosts.includes(url.hostname);
 };
 
@@ -120,23 +120,23 @@ const registersLoopbackClient = function registersLoopbackClient(
 };
 
 const rejectUnsafeFields = function rejectUnsafeFields(
-  hookRequest: Readonly<Pick<HookContext, "body" | "path">>,
+  ctx: Readonly<Pick<HookContext, "body" | "path">>,
 ): void {
-  const requestBody: unknown = hookRequest.body;
-  const fields = Predicate.isObject(requestBody) ? requestBody : {};
-  if ("trustDevice" in fields && fields["trustDevice"] === true) {
+  const body: unknown = ctx.body;
+  const fields = Predicate.isObject(body) ? body : {};
+  if ("trustDevice" in fields && fields.trustDevice === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }
-  if ("oauth_query" in fields && !oauthQueryPaths.has(hookRequest.path)) {
+  if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path)) {
     deny("OAUTH_QUERY_NOT_ACCEPTED");
   }
-  if (registersLoopbackClient(hookRequest.path, fields)) {
+  if (registersLoopbackClient(ctx.path, fields)) {
     Object.assign(fields, { application_type: "native" });
   }
   if (
-    hookRequest.path === "/passkey/verify-registration" &&
+    ctx.path === "/passkey/verify-registration" &&
     "createSession" in fields &&
-    fields["createSession"] === true
+    fields.createSession === true
   ) {
     deny("REGISTRATION_SESSION_DISABLED");
   }
@@ -229,32 +229,32 @@ const enforceFactorChanges = async function enforceFactorChanges(
 
 const enforceSessionPolicy = function enforceSessionPolicy(
   { audience, ctx, run }: HookScope,
-  sessionRecord: SessionRecord,
+  current: SessionRecord,
 ): Promise<void> {
-  if (!sessionIsLive(sessionRecord, audience)) {
+  if (!sessionIsLive(current, audience)) {
     deny("SESSION_INVALID");
   }
-  if (ctx.path === emailChangePath && !isRecentlyStrong(sessionRecord.session)) {
+  if (ctx.path === emailChangePath && !isRecentlyStrong(current.session)) {
     deny("STRONG_AUTH_REQUIRED");
   }
   const input = {
     audience,
     path: ctx.path,
-    role: sessionRecord.user.role,
-    strong: isStrongMethod(sessionRecord.session.authenticationMethod),
-    userId: sessionRecord.user.id,
+    role: current.user.role,
+    strong: isStrongMethod(current.session.authenticationMethod),
+    userId: current.user.id,
   };
   enforceAdminAccess(input);
   return enforceFactorChanges(input, run);
 };
 
 const confirmsEmailChange = function confirmsEmailChange(
-  hookRequest: Readonly<Pick<HookContext, "path" | "query">>,
+  ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
-  const query: unknown = hookRequest.query;
-  const token = Predicate.isObject(query) && "token" in query ? query['token'] : undefined;
+  const query: unknown = ctx.query;
+  const token = Predicate.isObject(query) && "token" in query ? query.token : undefined;
   return (
-    hookRequest.path === emailVerificationPath &&
+    ctx.path === emailVerificationPath &&
     typeof token === "string" &&
     emailChangeTarget(token) !== undefined
   );
@@ -264,9 +264,9 @@ const notifyEmailChange = async function notifyEmailChange(
   scope: HookScope,
   onEmailChangeRequested: (email: string) => Promise<void>,
 ): Promise<void> {
-  const sessionRecord = await currentSessionOf(scope);
-  if (sessionRecord && sessionIsLive(sessionRecord, scope.audience)) {
-    await onEmailChangeRequested(sessionRecord.user.email);
+  const current = await currentSessionOf(scope);
+  if (current && sessionIsLive(current, scope.audience)) {
+    await onEmailChangeRequested(current.user.email);
   }
 };
 
@@ -298,11 +298,11 @@ const createRequestHooks = function createRequestHooks({
     before: createAuthMiddleware(async (ctx) => {
       rejectUnsafeFields(ctx);
       const scope = { audience, ctx, run };
-      const sessionRecord = await runSessionLookup(scope);
-      const present = sessionRecord !== null && sessionRecord.session.expiresAt > new Date();
+      const current = await runSessionLookup(scope);
+      const present = current !== null && current.session.expiresAt > new Date();
       await verifyChallengeAudience(scope, present);
       if (present) {
-        await enforceSessionPolicy(scope, sessionRecord);
+        await enforceSessionPolicy(scope, current);
       } else if (confirmsEmailChange(ctx)) {
         deny("SESSION_REQUIRED");
       }

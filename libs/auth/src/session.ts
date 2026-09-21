@@ -23,14 +23,14 @@ const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* req
   if (token === undefined) {
     return yield* new SessionRequired();
   }
-  const sessionRecord = yield* lookupSessionByToken(token);
-  if (sessionRecord === undefined || sessionRecord.session.expiresAt <= new Date()) {
+  const current = yield* lookupSessionByToken(token);
+  if (current === undefined || current.session.expiresAt <= new Date()) {
     return yield* new SessionRequired();
   }
-  if (!sessionIsLive(sessionRecord, audience)) {
+  if (!sessionIsLive(current, audience)) {
     return yield* new SessionInvalid();
   }
-  return sessionRecord;
+  return current;
 });
 
 const verifyAdmin = Effect.fn("verifyAdmin")(function* verifyAdmin(
@@ -51,14 +51,14 @@ const verifySessionWith = Effect.fn("verifySession")(function* verifySessionProg
   allowEnrollment: boolean,
 ) {
   const { audience } = yield* Auth;
-  const sessionRecord = yield* requireSessionSecurity(headers);
-  const strong = isStrongMethod(sessionRecord.session.authenticationMethod);
+  const current = yield* requireSessionSecurity(headers);
+  const strong = isStrongMethod(current.session.authenticationMethod);
   if (audience !== APPLICATION.user) {
-    yield* verifyAdmin(sessionRecord.user.role, strong, allowEnrollment);
+    yield* verifyAdmin(current.user.role, strong, allowEnrollment);
   }
-  const { email, id, name, role, twoFactorEnabled } = sessionRecord.user;
+  const { email, id, name, role, twoFactorEnabled } = current.user;
   return {
-    session: { id: sessionRecord.session.id },
+    session: { id: current.session.id },
     strong,
     user: { email, id, name, role, twoFactorEnabled },
   };

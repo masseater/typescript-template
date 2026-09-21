@@ -1,47 +1,34 @@
-import { describe, expect, test } from "vite-plus/test";
+import { assert, describe, it } from "@effect/vitest";
+import { Effect } from "effect";
 
 import { passkeyRpId } from "./passkey-rp-id.ts";
 
 describe("passkeyRpId", () => {
-  describe("an origin that is not nested under a project domain", () => {
-    const it = test
-      .extend("appHost", () => passkeyRpId("https://app.example.com"))
-      .extend("loopback", () => passkeyRpId("http://localhost:3001"))
-      .extend("wikiHost", () => passkeyRpId("https://wiki.example.com"));
-
-    it("keeps the host", ({ appHost }) => {
-      expect(appHost).toStrictEqual("app.example.com");
-    });
-
-    it("keeps loopback", ({ loopback }) => {
-      expect(loopback).toStrictEqual("localhost");
-    });
-
-    it("keeps a single-label wiki host", ({ wikiHost }) => {
-      expect(wikiHost).toStrictEqual("wiki.example.com");
-    });
-  });
-
-  describe("apps that sit under a project parent", () => {
-    const it = test
-      .extend("memberParent", () =>
-        passkeyRpId("https://service-member.publink.example.com"),
-      )
-      .extend("adminParent", () => passkeyRpId("https://service-admin.publink.example.com"))
-      .extend("dashboardParent", () =>
-        passkeyRpId("https://internal-dashboard.publink.example.com"),
+  it.effect("keeps the host when the origin is not nested under a project domain", () =>
+    Effect.sync(() => {
+      assert.strictEqual(
+        passkeyRpId("https://publink-app.asunarocreate.dev"),
+        "publink-app.asunarocreate.dev",
       );
+      assert.strictEqual(passkeyRpId("http://localhost:3001"), "localhost");
+      assert.strictEqual(passkeyRpId("https://wiki.example.com"), "wiki.example.com");
+    }),
+  );
 
-    it("uses the project parent for the member app", ({ memberParent }) => {
-      expect(memberParent).toStrictEqual("publink.example.com");
-    });
-
-    it("uses the project parent for the admin app", ({ adminParent }) => {
-      expect(adminParent).toStrictEqual("publink.example.com");
-    });
-
-    it("uses the project parent for the dashboard", ({ dashboardParent }) => {
-      expect(dashboardParent).toStrictEqual("publink.example.com");
-    });
-  });
+  it.effect("uses the project parent when apps sit under hoge.prefix.zone", () =>
+    Effect.sync(() => {
+      assert.strictEqual(
+        passkeyRpId("https://service-member.publink.asunarocreate.dev"),
+        "publink.asunarocreate.dev",
+      );
+      assert.strictEqual(
+        passkeyRpId("https://service-admin.publink.asunarocreate.dev"),
+        "publink.asunarocreate.dev",
+      );
+      assert.strictEqual(
+        passkeyRpId("https://internal-dashboard.publink.asunarocreate.dev"),
+        "publink.asunarocreate.dev",
+      );
+    }),
+  );
 });

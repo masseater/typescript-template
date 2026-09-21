@@ -27,18 +27,21 @@ const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const isStrongMethod = (method: string): boolean => strongMethods.has(method);
 
-const STEP_UP_MILLISECONDS = 10 * 60 * 1000;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const STEP_UP_MINUTES = 10;
+const STEP_UP_MILLISECONDS = STEP_UP_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
 
 const isRecentlyStrong = (
   sessionRecord: {
     readonly authenticatedAt: Date | null;
     readonly authenticationMethod: string;
   },
-  clockTime: Date = new Date(),
+  now: Date = new Date(),
 ): boolean =>
   isStrongMethod(sessionRecord.authenticationMethod) &&
   sessionRecord.authenticatedAt !== null &&
-  clockTime.getTime() - sessionRecord.authenticatedAt.getTime() < STEP_UP_MILLISECONDS;
+  now.getTime() - sessionRecord.authenticatedAt.getTime() < STEP_UP_MILLISECONDS;
 
 const sessionIsLive = (
   sessionRecord: {
@@ -78,8 +81,7 @@ const assertEligibleUser: <
   if (eligibleUser === undefined || !eligibleUser.emailVerified) {
     deny("VERIFIED_EMAIL_REQUIRED");
   }
-  const verifiedUser = eligibleUser;
-  if (audience !== APPLICATION.user && verifiedUser.role !== ROLE.administrator) {
+  if (audience !== APPLICATION.user && eligibleUser.role !== ROLE.administrator) {
     deny("ADMIN_REQUIRED");
   }
 };

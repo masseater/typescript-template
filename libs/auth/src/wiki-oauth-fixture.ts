@@ -3,13 +3,14 @@ import { httpStatus } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
 import {
+  AuthApps,
   PASSWORD,
   bootstrapVerifiedAdmin,
   clientOf,
   enableTotp,
   requireStatus,
   signInAs,
-} from "./auth-suite.ts";
+} from "./auth-test-fixture.ts";
 import { origins, type BrowserClient } from "./browser-client.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
@@ -22,6 +23,7 @@ type AuthorizationFlow = {
 const wikiOrigin = origins[APPLICATION.wiki];
 const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
+const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Registration = Schema.Struct({ client_id: Schema.String });
 
 const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
@@ -47,7 +49,7 @@ const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifie
   const digest = yield* Effect.promise(async () =>
     crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
-  return Buffer.from(new Uint8Array(digest)).toString("base64url");
+  return Buffer.from(digest).toString("base64url");
 });
 
 const authorizeUrl = (clientId: string, challenge: string): URL => {
@@ -87,7 +89,7 @@ const startAuthorization = Effect.fn("startAuthorization")(function* startAuthor
   const anonymous = yield* clientOf(APPLICATION.wiki);
   const clientId = yield* registerClient(anonymous);
   const verifier = Buffer.from(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES))).toString(
-    "base64url" as BufferEncoding,
+    "base64url",
   );
   const redirect = yield* anonymous.navigate(
     authorizeUrl(clientId, yield* pkceChallenge(verifier)).href,
@@ -97,5 +99,4 @@ const startAuthorization = Effect.fn("startAuthorization")(function* startAuthor
   return flow;
 });
 
-export { redirectUri, startAuthorization, wikiAdministrator, wikiOrigin };
-export type { AuthorizationFlow };
+export { startAuthorization, wikiAdministrator, wikiOrigin };

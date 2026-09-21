@@ -15,7 +15,7 @@ import { test } from "vite-plus/test";
 import { AuthIdentifiers, type GenerateId } from "./auth-identifiers.ts";
 import { Auth } from "./auth.ts";
 import { BrowserClient, origins } from "./browser-client.ts";
-import { mailConfig, mailServer, verificationLink } from "./mail-box.ts";
+import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
 import type { Database } from "@repo/db";
@@ -23,7 +23,7 @@ import type { AuthFailure } from "./auth-failure.ts";
 
 const PASSWORD = "test-password-safe-123";
 const secret = "integration-test-secret-at-least-32-characters-long";
-const AuthenticatorEnrollment = Schema.Struct({
+const TotpEnrollment = Schema.Struct({
   backupCodes: Schema.Array(Schema.String),
   totpURI: Schema.String,
 });
@@ -84,7 +84,7 @@ const provideAuth = async (
   return Effect.runPromise(Layer.buildWithScope(authTestLayer, scope));
 };
 
-const authTest = test.extend("auth", provideAuth);
+const authTest = () => test.extend("auth", provideAuth);
 
 const runWith = async <Value, Failure>(
   auth: Context.Context<AuthTestServices>,
@@ -181,7 +181,7 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application,
 
 const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: BrowserClient) {
   const enabled = yield* client.json("/two-factor/enable", { password: PASSWORD });
-  const enrollment = yield* Schema.decodeUnknownEffect(AuthenticatorEnrollment)(enabled.body);
+  const enrollment = yield* Schema.decodeUnknownEffect(TotpEnrollment)(enabled.body);
   const authenticator = URI.parse(enrollment.totpURI);
   yield* requireStatus(httpStatus.ok, {
     client,
