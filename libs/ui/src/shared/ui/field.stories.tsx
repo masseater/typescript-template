@@ -72,9 +72,7 @@ export const TooShort = meta.story({
   play: ({ canvas, canvasElement }) =>
     Effect.runPromise(
       Effect.gen(function* rejectShortPassword() {
-        const { page, userEvent } = yield* playTask(
-          () => import("vite-plus/test/browser/context"),
-        );
+        const { page, userEvent } = yield* playTask(() => import("vite-plus/test/browser/context"));
         const rendered = page.elementLocator(canvasElement);
         yield* playTask(() =>
           userEvent.fill(rendered.getByLabelText("パスワード（12文字以上）"), "short"),
@@ -92,9 +90,7 @@ export const Missing = meta.story({
   play: ({ canvas, canvasElement }) =>
     Effect.runPromise(
       Effect.gen(function* rejectEmptyName() {
-        const { page, userEvent } = yield* playTask(
-          () => import("vite-plus/test/browser/context"),
-        );
+        const { page, userEvent } = yield* playTask(() => import("vite-plus/test/browser/context"));
         const rendered = page.elementLocator(canvasElement);
         yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
         yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));
@@ -126,9 +122,7 @@ export const EnglishMissing = meta.story({
   play: ({ canvas, canvasElement }) =>
     Effect.runPromise(
       Effect.gen(function* rejectEmptyEnglishName() {
-        const { page, userEvent } = yield* playTask(
-          () => import("vite-plus/test/browser/context"),
-        );
+        const { page, userEvent } = yield* playTask(() => import("vite-plus/test/browser/context"));
         const rendered = page.elementLocator(canvasElement);
         yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), "x"));
         yield* playTask(() => userEvent.fill(rendered.getByLabelText("ユーザー名"), ""));

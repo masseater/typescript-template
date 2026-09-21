@@ -17,9 +17,7 @@ const meta = preview.meta({
       Effect.gen(function* followMenuLink() {
         const trigger = canvas.getByRole("button", { name: "アカウント" });
         yield* playTask(() => userEvent.click(trigger));
-        const menuItem = yield* playTask(() =>
-          screen.findByRole("menuitem", { name: "認証設定" }),
-        );
+        const menuItem = yield* playTask(() => screen.findByRole("menuitem", { name: "認証設定" }));
         yield* playTask(() => expect(menuItem).toHaveAttribute("href", "/"));
         yield* playTask(() => userEvent.click(menuItem));
         const menuHasCollapsed = (): Promise<void> =>

@@ -28,9 +28,7 @@ export const Selects = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* selectAdmin() {
-        yield* playTask(() =>
-          userEvent.selectOptions(canvas.getByLabelText("権限"), "admin"),
-        );
+        yield* playTask(() => userEvent.selectOptions(canvas.getByLabelText("権限"), "admin"));
         yield* playTask(() => expect(changeRole.mock.calls.at(0)?.at(0)).toBe("admin"));
       }),
     ),

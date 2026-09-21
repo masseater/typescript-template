@@ -50,12 +50,8 @@ export const Success = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* showSuccessToast() {
-        yield* playTask(() =>
-          userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
-        );
-        const toast = yield* playTask(() =>
-          screen.findByText("利用者の権限を変更しました。"),
-        );
+        yield* playTask(() => userEvent.click(canvas.getByRole("button", { name: "通知を出す" })));
+        const toast = yield* playTask(() => screen.findByText("利用者の権限を変更しました。"));
         yield* playTask(() => expect(toast).toBeInTheDocument());
       }),
     ),
@@ -69,9 +65,7 @@ export const Failure = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* showFailureToast() {
-        yield* playTask(() =>
-          userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
-        );
+        yield* playTask(() => userEvent.click(canvas.getByRole("button", { name: "通知を出す" })));
         const toasts = yield* playTask(() =>
           screen.findAllByText("利用者の権限を変更できませんでした。"),
         );
@@ -84,9 +78,7 @@ export const Closes = meta.story({
   play: ({ canvas }) =>
     Effect.runPromise(
       Effect.gen(function* closeToast() {
-        yield* playTask(() =>
-          userEvent.click(canvas.getByRole("button", { name: "通知を出す" })),
-        );
+        yield* playTask(() => userEvent.click(canvas.getByRole("button", { name: "通知を出す" })));
         const close = yield* playTask(() => screen.findByLabelText("通知を閉じる"));
         yield* playTask(() => userEvent.click(close));
         const toastHasClosed = (): Promise<void> =>

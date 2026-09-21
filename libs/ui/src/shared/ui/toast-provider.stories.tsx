@@ -41,9 +41,7 @@ export const Success = meta.story({
         yield* playTask(() =>
           userEvent.click(canvas.getByRole("button", { name: "成功の通知を出す" })),
         );
-        const toast = yield* playTask(() =>
-          screen.findByText("利用者の権限を変更しました。"),
-        );
+        const toast = yield* playTask(() => screen.findByText("利用者の権限を変更しました。"));
         yield* playTask(() => expect(toast).toBeInTheDocument());
       }),
     ),

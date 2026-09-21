@@ -46,9 +46,7 @@ export const Rejected = meta.story({
         yield* playTask(() =>
           userEvent.type(canvas.getByLabelText("パスワード"), "wrong password"),
         );
-        yield* playTask(() =>
-          userEvent.click(canvas.getByRole("button", { name: "ログイン" })),
-        );
+        yield* playTask(() => userEvent.click(canvas.getByRole("button", { name: "ログイン" })));
         const failureAlert = yield* playTask(() => canvas.findByRole("alert"));
         yield* playTask(() =>
           expect(failureAlert).toHaveTextContent("メールアドレスまたはパスワードが違います。"),
