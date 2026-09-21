@@ -8,7 +8,7 @@ import { MemberRpcs } from "./member-rpcs.ts";
 import { createRpcFetcher } from "./serve.ts";
 
 describe("makeCoreClient", () => {
-  const it = test.extend("databaseReady", async () => {
+  const it = test.extend("databaseReady", () => {
     const handlerLayer = MemberRpcs.toLayer({
       databaseReady: (): Effect.Effect<boolean, DatabaseFailure, Database> =>
         checkDatabase().pipe(Effect.as(true)),
