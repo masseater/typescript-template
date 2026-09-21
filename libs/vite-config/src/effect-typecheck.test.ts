@@ -231,13 +231,7 @@ describe("effect typecheck gate", () => {
       expect(result.code).toBe(1);
       expect(result.printed).toMatch(/missing-export errors/u);
       expect(
-        evaluateTypecheck(
-          ".",
-          parseTscOutput(compiled.output),
-          parseBaseline(listed),
-          cwd,
-          cwd,
-        ).ok,
+        evaluateTypecheck(".", parseTscOutput(compiled.output), parseBaseline(listed), cwd, cwd).ok,
       ).toBe(false);
     } finally {
       rmSync(cwd, { force: true, recursive: true });
