@@ -471,12 +471,6 @@
         "count": 1
       },
       {
-        "file": "src/pages/landing/ui/features.tsx",
-        "code": "TS2375",
-        "message": "Type '{ key: string; title: string; description: string; sketch: SketchKind; reverse: boolean | undefined; }' is not assignable to type 'Readonly<{ description: string; reverse?: boolean; sketch: SketchKind; title: string; }>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
         "file": "src/pages/profile-edit/ui/social-links-editor.tsx",
         "code": "TS2307",
         "message": "Cannot find module '#shared/social-link' or its corresponding type declarations.",
