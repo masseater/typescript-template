@@ -19,7 +19,8 @@ DROP TABLE `agreement_version`;--> statement-breakpoint
 ALTER TABLE `__new_agreement_version` RENAME TO `agreement_version`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `agreement_version_version_unique` ON `agreement_version` (`version`);--> statement-breakpoint
-CREATE INDEX `agreement_version_kind_published_at_idx` ON `agreement_version` (`kind`,`published_at`);--> statement-breakpoint
+CREATE INDEX `agreement_version_kind_published_at_idx` ON `agreement_version` (`kind`,`published_at`);
+--> statement-breakpoint
 INSERT INTO `agreement_version` (`id`, `kind`, `version`, `body`, `summary`, `created_at`, `published_at`)
 VALUES
 	('agreement-interview-history-1', 'interview_history', 'interview-history-1', '# AI インタビューの履歴の利用

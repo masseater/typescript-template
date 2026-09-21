@@ -1,8 +1,8 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "e21165d7-cb46-4e9a-b2ac-b207cd391d83",
-  "prevIds": ["cf764ec6-821c-46d8-b9c4-4b6b7143fbf3"],
+  "id": "968d05f4-59f6-44c9-88ed-d83d09922987",
+  "prevIds": ["8c72131a-d0db-4dc9-801f-a15b6ca9545d"],
   "ddl": [
     {
       "name": "account",
@@ -38,6 +38,10 @@
     },
     {
       "name": "interview",
+      "entityType": "tables"
+    },
+    {
+      "name": "invite",
       "entityType": "tables"
     },
     {
@@ -97,11 +101,19 @@
       "entityType": "tables"
     },
     {
+      "name": "plan_subscription",
+      "entityType": "tables"
+    },
+    {
       "name": "rate_limit",
       "entityType": "tables"
     },
     {
       "name": "session",
+      "entityType": "tables"
+    },
+    {
+      "name": "stripe_event",
       "entityType": "tables"
     },
     {
@@ -611,6 +623,26 @@
       "table": "audit_event"
     },
     {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'admin'",
+      "generated": null,
+      "name": "actor_kind",
+      "entityType": "columns",
+      "table": "audit_event"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'ui'",
+      "generated": null,
+      "name": "channel",
+      "entityType": "columns",
+      "table": "audit_event"
+    },
+    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -849,6 +881,96 @@
       "name": "version",
       "entityType": "columns",
       "table": "interview"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "accepted_at",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "audience",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "email",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "expires_at",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "inviter_id",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "permission",
+      "entityType": "columns",
+      "table": "invite"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "token_hash",
+      "entityType": "columns",
+      "table": "invite"
     },
     {
       "type": "text",
@@ -2314,6 +2436,76 @@
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "cancel_at_period_end",
+      "entityType": "columns",
+      "table": "plan_subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "current_period_end",
+      "entityType": "columns",
+      "table": "plan_subscription"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "member_id",
+      "entityType": "columns",
+      "table": "plan_subscription"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "status",
+      "entityType": "columns",
+      "table": "plan_subscription"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "stripe_customer_id",
+      "entityType": "columns",
+      "table": "plan_subscription"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "stripe_subscription_id",
+      "entityType": "columns",
+      "table": "plan_subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "plan_subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "count",
@@ -2472,6 +2664,36 @@
     },
     {
       "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "stripe_event"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "received_at",
+      "entityType": "columns",
+      "table": "stripe_event"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "type",
+      "entityType": "columns",
+      "table": "stripe_event"
+    },
+    {
+      "type": "text",
       "notNull": true,
       "autoincrement": false,
       "default": null,
@@ -2539,6 +2761,16 @@
       "name": "verified",
       "entityType": "columns",
       "table": "two_factor"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'active'",
+      "generated": null,
+      "name": "account_state",
+      "entityType": "columns",
+      "table": "user"
     },
     {
       "type": "text",
@@ -2617,6 +2849,16 @@
       "default": null,
       "generated": null,
       "name": "name",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "permission",
       "entityType": "columns",
       "table": "user"
     },
@@ -2946,17 +3188,6 @@
       "table": "agreement_version"
     },
     {
-      "columns": ["author_id"],
-      "tableTo": "user",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "nameExplicit": false,
-      "name": "fk_board_post_author_id_user_id_fk",
-      "entityType": "fks",
-      "table": "board_post"
-    },
-    {
       "columns": ["thread_id"],
       "tableTo": "board_thread",
       "columnsTo": ["id"],
@@ -2966,17 +3197,6 @@
       "name": "fk_board_post_thread_id_board_thread_id_fk",
       "entityType": "fks",
       "table": "board_post"
-    },
-    {
-      "columns": ["author_id"],
-      "tableTo": "user",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "nameExplicit": false,
-      "name": "fk_board_thread_author_id_user_id_fk",
-      "entityType": "fks",
-      "table": "board_thread"
     },
     {
       "columns": ["followee_id"],
@@ -3210,6 +3430,17 @@
       "table": "passkey"
     },
     {
+      "columns": ["member_id"],
+      "tableTo": "user",
+      "columnsTo": ["id"],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_plan_subscription_member_id_user_id_fk",
+      "entityType": "fks",
+      "table": "plan_subscription"
+    },
+    {
       "columns": ["user_id"],
       "tableTo": "user",
       "columnsTo": ["id"],
@@ -3292,6 +3523,13 @@
       "nameExplicit": false,
       "name": "interview_pk",
       "table": "interview",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "invite_pk",
+      "table": "invite",
       "entityType": "pks"
     },
     {
@@ -3393,6 +3631,13 @@
       "entityType": "pks"
     },
     {
+      "columns": ["member_id"],
+      "nameExplicit": false,
+      "name": "plan_subscription_pk",
+      "table": "plan_subscription",
+      "entityType": "pks"
+    },
+    {
       "columns": ["id"],
       "nameExplicit": false,
       "name": "rate_limit_pk",
@@ -3404,6 +3649,13 @@
       "nameExplicit": false,
       "name": "session_pk",
       "table": "session",
+      "entityType": "pks"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "stripe_event_pk",
+      "table": "stripe_event",
       "entityType": "pks"
     },
     {
@@ -3589,6 +3841,38 @@
       "name": "follow_followee_id_idx",
       "entityType": "indexes",
       "table": "follow"
+    },
+    {
+      "columns": [
+        {
+          "value": "token_hash",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "invite_token_hash_unique",
+      "entityType": "indexes",
+      "table": "invite"
+    },
+    {
+      "columns": [
+        {
+          "value": "audience",
+          "isExpression": false
+        },
+        {
+          "value": "email",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "invite_email_idx",
+      "entityType": "indexes",
+      "table": "invite"
     },
     {
       "columns": [
@@ -3957,6 +4241,34 @@
     {
       "columns": [
         {
+          "value": "stripe_customer_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "plan_subscription_stripe_customer_id_unique",
+      "entityType": "indexes",
+      "table": "plan_subscription"
+    },
+    {
+      "columns": [
+        {
+          "value": "stripe_subscription_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "plan_subscription_stripe_subscription_id_unique",
+      "entityType": "indexes",
+      "table": "plan_subscription"
+    },
+    {
+      "columns": [
+        {
           "value": "key",
           "isExpression": false
         }
@@ -4051,8 +4363,26 @@
       "table": "member_onboarding"
     },
     {
-      "value": "\"role\" IN ('member', 'admin')",
+      "value": "\"status\" IN ('active', 'canceled', 'incomplete', 'incomplete_expired', 'past_due', 'paused', 'trialing', 'unpaid')",
+      "name": "plan_subscription_status",
+      "entityType": "checks",
+      "table": "plan_subscription"
+    },
+    {
+      "value": "\"role\" IN ('member', 'admin', 'staff')",
       "name": "user_role",
+      "entityType": "checks",
+      "table": "user"
+    },
+    {
+      "value": "\"account_state\" IN ('active', 'suspended')",
+      "name": "user_account_state",
+      "entityType": "checks",
+      "table": "user"
+    },
+    {
+      "value": "(\"role\" = 'member' AND \"permission\" IS NULL) OR (\"role\" = 'admin' AND \"permission\" IN ('viewer', 'operator', 'owner')) OR (\"role\" = 'staff' AND \"permission\" IN ('viewer', 'editor'))",
+      "name": "user_permission",
       "entityType": "checks",
       "table": "user"
     }

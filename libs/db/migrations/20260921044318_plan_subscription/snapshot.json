@@ -1,8 +1,8 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "e98db0e0-63b7-44f4-b757-4af9510dc8bd",
-  "prevIds": ["2a2b12d6-284c-4d43-9150-7a4db26b16e1"],
+  "id": "b7b17769-249e-4af2-86fe-02d54cdbae75",
+  "prevIds": ["e9ff27ad-0fd0-42c2-9fbb-eeb63e64e5ce"],
   "ddl": [
     {
       "name": "account",
@@ -38,10 +38,6 @@
     },
     {
       "name": "interview",
-      "entityType": "tables"
-    },
-    {
-      "name": "invite",
       "entityType": "tables"
     },
     {
@@ -623,26 +619,6 @@
       "table": "audit_event"
     },
     {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "'admin'",
-      "generated": null,
-      "name": "actor_kind",
-      "entityType": "columns",
-      "table": "audit_event"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "'ui'",
-      "generated": null,
-      "name": "channel",
-      "entityType": "columns",
-      "table": "audit_event"
-    },
-    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -881,96 +857,6 @@
       "name": "version",
       "entityType": "columns",
       "table": "interview"
-    },
-    {
-      "type": "integer",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "accepted_at",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "audience",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "email",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "expires_at",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "id",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "inviter_id",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "permission",
-      "entityType": "columns",
-      "table": "invite"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "token_hash",
-      "entityType": "columns",
-      "table": "invite"
     },
     {
       "type": "text",
@@ -2763,26 +2649,6 @@
       "table": "two_factor"
     },
     {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "'active'",
-      "generated": null,
-      "name": "account_state",
-      "entityType": "columns",
-      "table": "user"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "company_photo_key",
-      "entityType": "columns",
-      "table": "user"
-    },
-    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -2818,16 +2684,6 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "face_photo_key",
-      "entityType": "columns",
-      "table": "user"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "user"
@@ -2849,16 +2705,6 @@
       "default": null,
       "generated": null,
       "name": "name",
-      "entityType": "columns",
-      "table": "user"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "permission",
       "entityType": "columns",
       "table": "user"
     },
@@ -2896,16 +2742,6 @@
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
-      "default": "false",
-      "generated": null,
-      "name": "searchable",
-      "entityType": "columns",
-      "table": "user"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
       "default": "0",
       "generated": null,
       "name": "security_version",
@@ -2929,6 +2765,36 @@
       "default": null,
       "generated": null,
       "name": "updated_at",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "company_photo_key",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "face_photo_key",
+      "entityType": "columns",
+      "table": "user"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "searchable",
       "entityType": "columns",
       "table": "user"
     },
@@ -3188,17 +3054,6 @@
       "table": "agreement_version"
     },
     {
-      "columns": ["author_id"],
-      "tableTo": "user",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "nameExplicit": false,
-      "name": "fk_board_post_author_id_user_id_fk",
-      "entityType": "fks",
-      "table": "board_post"
-    },
-    {
       "columns": ["thread_id"],
       "tableTo": "board_thread",
       "columnsTo": ["id"],
@@ -3208,17 +3063,6 @@
       "name": "fk_board_post_thread_id_board_thread_id_fk",
       "entityType": "fks",
       "table": "board_post"
-    },
-    {
-      "columns": ["author_id"],
-      "tableTo": "user",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "nameExplicit": false,
-      "name": "fk_board_thread_author_id_user_id_fk",
-      "entityType": "fks",
-      "table": "board_thread"
     },
     {
       "columns": ["followee_id"],
@@ -3550,13 +3394,6 @@
     {
       "columns": ["id"],
       "nameExplicit": false,
-      "name": "invite_pk",
-      "table": "invite",
-      "entityType": "pks"
-    },
-    {
-      "columns": ["id"],
-      "nameExplicit": false,
       "name": "jwks_pk",
       "table": "jwks",
       "entityType": "pks"
@@ -3863,38 +3700,6 @@
       "name": "follow_followee_id_idx",
       "entityType": "indexes",
       "table": "follow"
-    },
-    {
-      "columns": [
-        {
-          "value": "token_hash",
-          "isExpression": false
-        }
-      ],
-      "isUnique": true,
-      "where": null,
-      "origin": "manual",
-      "name": "invite_token_hash_unique",
-      "entityType": "indexes",
-      "table": "invite"
-    },
-    {
-      "columns": [
-        {
-          "value": "audience",
-          "isExpression": false
-        },
-        {
-          "value": "email",
-          "isExpression": false
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "origin": "manual",
-      "name": "invite_email_idx",
-      "entityType": "indexes",
-      "table": "invite"
     },
     {
       "columns": [
@@ -4373,7 +4178,7 @@
       "table": "verification"
     },
     {
-      "value": "\"kind\" IN ('terms', 'privacy', 'interview_history')",
+      "value": "\"kind\" IN ('terms', 'privacy')",
       "name": "agreement_version_kind",
       "entityType": "checks",
       "table": "agreement_version"
@@ -4391,20 +4196,8 @@
       "table": "plan_subscription"
     },
     {
-      "value": "\"role\" IN ('member', 'admin', 'staff')",
+      "value": "\"role\" IN ('member', 'admin')",
       "name": "user_role",
-      "entityType": "checks",
-      "table": "user"
-    },
-    {
-      "value": "\"account_state\" IN ('active', 'suspended')",
-      "name": "user_account_state",
-      "entityType": "checks",
-      "table": "user"
-    },
-    {
-      "value": "(\"role\" = 'member' AND \"permission\" IS NULL) OR (\"role\" = 'admin' AND \"permission\" IN ('viewer', 'operator', 'owner')) OR (\"role\" = 'staff' AND \"permission\" IN ('viewer', 'editor'))",
-      "name": "user_permission",
       "entityType": "checks",
       "table": "user"
     }

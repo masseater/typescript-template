@@ -11,6 +11,8 @@ CREATE TABLE `invite` (
 );
 --> statement-breakpoint
 ALTER TABLE `audit_event` ADD `actor_kind` text DEFAULT 'admin' NOT NULL;--> statement-breakpoint
+ALTER TABLE `user` ADD `account_state` text DEFAULT 'active' NOT NULL;--> statement-breakpoint
+ALTER TABLE `user` ADD `permission` text;--> statement-breakpoint
 DROP TRIGGER IF EXISTS `user_keep_last_admin_delete`;--> statement-breakpoint
 DROP TRIGGER IF EXISTS `user_keep_last_admin_update`;--> statement-breakpoint
 DROP TRIGGER IF EXISTS `user_role_revoke_sessions`;--> statement-breakpoint
@@ -49,7 +51,8 @@ ALTER TABLE `__new_user` RENAME TO `user`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `user_email_unique` ON `user` (`email`);--> statement-breakpoint
 CREATE UNIQUE INDEX `invite_token_hash_unique` ON `invite` (`token_hash`);--> statement-breakpoint
-CREATE INDEX `invite_email_idx` ON `invite` (`audience`,`email`);--> statement-breakpoint
+CREATE INDEX `invite_email_idx` ON `invite` (`audience`,`email`);
+--> statement-breakpoint
 CREATE TRIGGER user_keep_last_admin_delete
 BEFORE DELETE ON user
 WHEN OLD.role = 'admin' AND OLD.permission = 'owner' AND OLD.account_state = 'active'
