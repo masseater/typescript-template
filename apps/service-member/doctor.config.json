@@ -8,7 +8,7 @@
         "rules": ["socket/low-supply-chain-score"]
       },
       {
-        "files": ["src/pages/users/ui/search-fields.tsx"],
+        "files": ["src/widgets/member-search/ui/search-fields.tsx"],
         "rules": ["react-doctor/no-derived-useState"]
       }
     ]
