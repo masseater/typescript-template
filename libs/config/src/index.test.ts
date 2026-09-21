@@ -109,8 +109,7 @@ describe("readJobs", () => {
     JOBS: { send: queueMicrotask },
     PROCESS: { create: queueMicrotask, get: structuredClone },
   };
-  const it = test.extend("jobsBindings", () =>
-    Effect.runPromise(readJobs({ ...local, ...jobs })));
+  const it = test.extend("jobsBindings", () => Effect.runPromise(readJobs({ ...local, ...jobs })));
 
   it("returns the jobs queue binding", ({ jobsBindings }) => {
     expect(jobsBindings.JOBS).toStrictEqual(jobs.JOBS);

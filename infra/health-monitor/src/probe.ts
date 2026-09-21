@@ -24,6 +24,16 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
+
+const requestHealth = (healthTarget: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> =>
+  Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
+    fetch(healthTarget.healthEndpoint, {
+      headers: { accept: "application/json" },
+      redirect: "manual",
+      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+    }),
+  ).pipe(Effect.option);
+
 const observedProbe = (asked: {
   readonly healthTarget: HealthTarget;
   readonly healthy: boolean;
@@ -33,17 +43,6 @@ const observedProbe = (asked: {
   healthy: asked.healthy,
   service: asked.healthTarget.service,
 });
-
-const requestHealth = (
-  healthTarget: HealthTarget,
-): Effect.Effect<Option.Option<ProbeResponse>> =>
-  Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
-    fetch(healthTarget.healthEndpoint, {
-      headers: { accept: "application/json" },
-      redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-    }),
-  ).pipe(Effect.option);
 
 const payloadResult = Effect.fn("payloadResult")(function* payloadResult(
   healthTarget: HealthTarget,

@@ -32,8 +32,7 @@ describe("new and regressed fingerprints", () => {
         "0000000c": observedAtMs - (hoursPerDay + 1) * hour,
         "0000000d": observedAtMs - daysBeforeForgotten * hoursPerDay * hour,
       },
-    }),
-  );
+    }));
 
   it("notifies new fingerprints and fingerprints silent for a day", ({ notificationDecision }) => {
     expect(notificationDecision).toStrictEqual({
@@ -53,8 +52,7 @@ describe("recent fingerprints absent from the window", () => {
       errorGroups: [],
       observedAtMs,
       seenFingerprints: { "0000000b": recent },
-    }),
-  );
+    }));
 
   it("keeps them without notifying", ({ notificationDecision }) => {
     expect(notificationDecision).toStrictEqual({
@@ -72,8 +70,7 @@ describe("notification message", () => {
         observedAtMs,
         seenFingerprints: {},
       }).notifications,
-    ),
-  );
+    ));
 
   it("names each group for Workers Observability search", ({ alertText }) => {
     expect(alertText).toBe(
@@ -102,8 +99,7 @@ describe("missing group fields", () => {
         observedAtMs,
         seenFingerprints: { "0000000a": observedAtMs - (hoursPerDay + 1) * hour },
       }).notifications,
-    ),
-  );
+    ));
 
   it("marks absent values instead of inventing them", ({ alertText }) => {
     expect(alertText).toBe(

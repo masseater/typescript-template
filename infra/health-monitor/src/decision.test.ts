@@ -12,8 +12,7 @@ describe("first check", () => {
     decideHealthAlerts(
       [down, { detail: "release_abc", healthy: true, service: "internal-dashboard" }],
       {},
-    ),
-  );
+    ));
 
   it("notifies about applications that are down", ({ healthDecision }) => {
     expect(healthDecision).toStrictEqual({
@@ -25,8 +24,7 @@ describe("first check", () => {
 
 describe("ongoing outage", () => {
   const it = test.extend("notifications", () =>
-    decideHealthAlerts([down], { "service-member": false }).notifications,
-  );
+    decideHealthAlerts([down], { "service-member": false }).notifications);
 
   it("stays quiet", ({ notifications }) => {
     expect(notifications).toStrictEqual([]);
@@ -35,8 +33,7 @@ describe("ongoing outage", () => {
 
 describe("recovery", () => {
   const it = test.extend("healthDecision", () =>
-    decideHealthAlerts([healthy], { "service-member": false }),
-  );
+    decideHealthAlerts([healthy], { "service-member": false }));
 
   it("notifies so the operator learns the outage ended", ({ healthDecision }) => {
     expect(healthDecision).toStrictEqual({
@@ -48,8 +45,7 @@ describe("recovery", () => {
 
 describe("alert message", () => {
   const it = test.extend("message", () =>
-    formatHealthMessage([down, { ...healthy, service: "internal-dashboard" }]),
-  );
+    formatHealthMessage([down, { ...healthy, service: "internal-dashboard" }]));
 
   it("names every changed application and points at the log event", ({ message }) => {
     expect(message).toBe(

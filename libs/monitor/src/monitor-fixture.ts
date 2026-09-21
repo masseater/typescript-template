@@ -54,7 +54,6 @@ const probeMonitor = monitorWorker<MonitorBindings>({
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
 
-class ProbeMonitor extends probeMonitor.Worker {}
 
 const probeHandler = probeMonitor.handler;
 const workersHandler = {
@@ -62,6 +61,8 @@ const workersHandler = {
   queue: async (batch: MessageBatch, environment: unknown): Promise<void> =>
     consumeJobs(batch, environment as JobsBindings),
 };
+
+class ProbeMonitor extends probeMonitor.Worker {}
 
 export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
 export type { Outcome };

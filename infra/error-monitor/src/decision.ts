@@ -5,8 +5,9 @@ type Notification = ErrorGroup & {
   readonly reason: "new" | "regressed";
 };
 
-const MILLISECONDS_PER_DAY = 86_400_000;
 const FORGET_AFTER_DAYS = 7;
+const MILLISECONDS_PER_DAY = 86_400_000;
+
 const quietPeriod = MILLISECONDS_PER_DAY;
 const forgetAfter = FORGET_AFTER_DAYS * MILLISECONDS_PER_DAY;
 
@@ -32,9 +33,7 @@ const decideNotifications = (asked: {
     ...Object.entries(asked.seenFingerprints).filter(
       ([, lastSeen]: readonly [string, number]) => asked.observedAtMs - lastSeen < forgetAfter,
     ),
-    ...asked.errorGroups.map(
-      (errorGroup) => [errorGroup.fingerprint, asked.observedAtMs] as const,
-    ),
+    ...asked.errorGroups.map((errorGroup) => [errorGroup.fingerprint, asked.observedAtMs] as const),
   ]);
   return { notifications, seen: retainedSeen };
 };

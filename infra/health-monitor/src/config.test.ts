@@ -56,7 +56,10 @@ describe("shared origins", () => {
   const it = test.extend("failureCode", async () => {
     const configFailure = await Effect.runPromise(
       Effect.flip(
-        parseHealthMonitorConfig({ ...valid, INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com" }),
+        parseHealthMonitorConfig({
+          ...valid,
+          INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com",
+        }),
       ),
     );
     return configFailure.code;

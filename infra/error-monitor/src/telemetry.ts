@@ -35,10 +35,6 @@ const QueryEnvelope = Schema.Struct({
   success: Schema.Literal(true),
 });
 
-const telemetryFailure =
-  (code: ErrorMonitorFailure["code"]): (() => ErrorMonitorFailure) =>
-  () =>
-    new ErrorMonitorFailure({ code, keys: [] });
 
 const groupedError = (
   aggregateRow: typeof Aggregate.Type,
@@ -84,6 +80,11 @@ const queryBody = (queryWindow: QueryWindow, offsetBy: number): string =>
     view: "calculations",
   });
 
+const telemetryFailure =
+  (code: ErrorMonitorFailure["code"]): (() => ErrorMonitorFailure) =>
+  () =>
+    new ErrorMonitorFailure({ code, keys: [] });
+
 const queryTelemetry = (
   queryWindow: QueryWindow,
   offsetBy: number,
@@ -121,7 +122,9 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
     try: async (): Promise<unknown> => telemetryResponse.json(),
   });
   const telemetryEnvelope = yield* Schema.decodeUnknownEffect(QueryEnvelope)(telemetryPayload).pipe(
-    Effect.mapError(() => new ErrorMonitorFailure({ code: "telemetry_response_invalid", keys: [] })),
+    Effect.mapError(
+      () => new ErrorMonitorFailure({ code: "telemetry_response_invalid", keys: [] }),
+    ),
   );
   return telemetryEnvelope.result.calculations.flatMap(
     (calculationRow) => calculationRow.aggregates,
