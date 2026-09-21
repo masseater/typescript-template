@@ -1,5 +1,11 @@
 [
   {
+    "path": "apps/internal-dashboard/src/app/routes/consent.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
     "path": "apps/internal-dashboard/src/shared/wiki/authorize-mcp.ts",
     "rule": "no-null",
     "grounds": "JSON-RPC requires id to be null when the error is not tied to a request id",
@@ -28,6 +34,24 @@
     "rule": "no-static-element-interactions",
     "grounds": "NavigationLink is the keyboard-reachable link, and this click handler only closes the menu after that link activates",
     "approver": "the owner of the package that renders this navigation link"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/board.$id.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/board.index.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
+  },
+  {
+    "path": "apps/service-member/src/app/routes/_member/users.index.tsx",
+    "rule": "sort-keys",
+    "grounds": "TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference",
+    "approver": "the owner of the package that defines this route"
   },
   {
     "path": "apps/service-member/src/shared/interview/interviewer.worker.test.ts",

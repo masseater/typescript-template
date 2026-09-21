@@ -25,7 +25,10 @@ function requireThreadSearch(raw: unknown): ThreadSearch {
   }
 }
 
+// oxlint-disable-next-line eslint/sort-keys -- TanStack Start infers search and loader dependencies from the order of these route options, and alphabetical order breaks that inference
 const Route = createFileRoute("/_member/board/$id")({
+  validateSearch: requireThreadSearch,
+  loaderDeps: ({ search }: Readonly<{ search: ThreadSearch }>) => ({ page: search.page ?? 1 }),
   beforeLoad: ({
     location,
     params,
@@ -39,17 +42,15 @@ const Route = createFileRoute("/_member/board/$id")({
       throw redirect({ params, replace: true, search, to: "/board/$id" });
     }
   },
-  component: ThreadRoute,
-  errorComponent: ThreadFailed,
   loader: async ({
     deps,
     params,
   }: Readonly<{ deps: Readonly<{ page: number }>; params: ThreadParams }>) =>
     loadThread(params.id, deps.page),
-  loaderDeps: ({ search }: Readonly<{ search: ThreadSearch }>) => ({ page: search.page ?? 1 }),
+  component: ThreadRoute,
+  errorComponent: ThreadFailed,
   notFoundComponent: ThreadMissing,
   pendingComponent: ThreadPending,
-  validateSearch: requireThreadSearch,
 });
 
 export { Route };
