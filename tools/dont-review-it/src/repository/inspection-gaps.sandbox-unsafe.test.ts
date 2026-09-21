@@ -156,7 +156,6 @@ describe("inspection coverage", () => {
       "libs/monitor/**",
       "libs/observability/**",
       "libs/runtime/**",
-      "libs/vite-config/**",
       "tools/dev/**",
       "tools/dont-review-it/**",
     ]);
