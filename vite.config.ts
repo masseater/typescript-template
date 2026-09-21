@@ -40,6 +40,10 @@ export default defineConfig({
       },
       "check:code": { command: "vp check", input: [...taskInput] },
       ...effectDiagnostics,
+      "check:types": {
+        command: "dont-review-it-typecheck",
+        input: [...taskInput],
+      },
       "check:imports":
         "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
