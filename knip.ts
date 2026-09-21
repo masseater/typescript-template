@@ -111,6 +111,7 @@ const cloudflareStacks = [
   "src/service-member.ts!",
   "src/service-admin.ts!",
   "src/internal-dashboard.ts!",
+  "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
 ];
