@@ -1,5 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
+import { readStorage } from "@repo/config/storage";
 import { otlpSignalUrl } from "@repo/observability";
 import { Effect } from "effect";
 
@@ -7,7 +8,14 @@ import { parseDeploymentCommand, traceDestination, workerObservability } from ".
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
+import type {
+  Ai,
+  D1Database,
+  KVNamespace,
+  R2Bucket,
+  SendEmail,
+  Service,
+} from "@cloudflare/workers-types";
 import type { AppBindings } from "./bindings.ts";
 
 const release = "0".repeat(16);
@@ -38,6 +46,16 @@ const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
   AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
   APP_ORIGIN: settings.origins["service-member"],
+  CACHE: binding<KVNamespace>({
+    delete: async (): Promise<undefined> => undefined,
+    get: async (): Promise<null> => null,
+    put: async (): Promise<undefined> => undefined,
+  }),
+  FILES: binding<R2Bucket>({
+    delete: async (): Promise<undefined> => undefined,
+    get: async (): Promise<null> => null,
+    put: async (): Promise<null> => null,
+  }),
 };
 
 const confirmation = "0".repeat(16);
@@ -125,6 +143,10 @@ it.effect("every application reads exactly the bindings its Worker declares", ()
     assert.strictEqual(admin.APP_RELEASE, release);
     assert.isUndefined(yield* readAi(adminBindings));
     assert.isDefined(yield* readAi(userBindings));
+    assert.isUndefined((yield* readStorage(adminBindings)).files);
+    assert.isUndefined((yield* readStorage(adminBindings)).cache);
+    assert.isDefined((yield* readStorage(userBindings)).files);
+    assert.isDefined((yield* readStorage(userBindings)).cache);
     const missing = yield* readConfig({ ...userBindings, DB: undefined }).pipe(Effect.flip);
     assert.instanceOf(missing, ConfigurationInvalid);
   }),
