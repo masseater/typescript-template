@@ -1,64 +1,53 @@
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { errorMessage } from "@repo/auth-ui";
 import { apiData } from "@repo/runtime/client";
-import { useEffect, useState } from "react";
+import { localState, requestAtom, type RequestResult } from "@repo/ui";
+import { AsyncResult } from "effect/unstable/reactivity";
 
 import { wikiClient } from "#shared/api/index.ts";
 import { FlagList, FlagToggled } from "#shared/contracts/index.ts";
 
 import type { FlagEntry } from "#shared/contracts/index.ts";
 
-type FlagListState =
-  | Readonly<{ flags: readonly FlagEntry[]; status: "loaded" }>
-  | Readonly<{ message: string; status: "failed" }>
-  | Readonly<{ status: "loading" }>;
-
-async function fetchFlags(): Promise<FlagListState> {
-  try {
-    const { flags } = apiData(FlagList, await wikiClient().flags.get());
-    return { flags, status: "loaded" };
-  } catch (error) {
-    return { message: errorMessage(error), status: "failed" };
-  }
+async function fetchFlags(): Promise<readonly FlagEntry[]> {
+  const { flags } = apiData(FlagList, await wikiClient().flags.get());
+  return flags;
 }
 
+const flagsAtom = requestAtom(async () => fetchFlags());
+
+const useOverrides = localState<Readonly<Record<string, FlagEntry>>>({});
+
 function useFlagList(): Readonly<{
+  flags: readonly FlagEntry[] | undefined;
+  listing: RequestResult<readonly FlagEntry[]>;
   reload: () => void;
-  state: FlagListState;
   toggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>;
 }> {
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<FlagListState>({ status: "loading" });
+  const listing = useAtomValue(flagsAtom);
+  const reloadRemote = useAtomRefresh(flagsAtom);
+  const [overrides, setOverrides] = useOverrides();
 
-  useEffect(() => {
-    let active = true;
-    void fetchFlags().then((next) => {
-      if (active) {
-        setState(next);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [attempt]);
+  const reload = (): void => {
+    setOverrides({});
+    reloadRemote();
+  };
 
   const toggle = async (key: FlagEntry["key"], enabled: boolean): Promise<string | undefined> => {
     try {
       const updated = apiData(FlagToggled, await wikiClient().flags.patch({ enabled, key }));
-      setState((current) =>
-        current.status === "loaded"
-          ? {
-              flags: current.flags.map((entry) => (entry.key === updated.key ? updated : entry)),
-              status: "loaded",
-            }
-          : current,
-      );
+      setOverrides((current) => ({ ...current, [updated.key]: updated }));
       return undefined;
     } catch (error) {
       return errorMessage(error);
     }
   };
 
-  return { reload: () => setAttempt((value) => value + 1), state, toggle };
+  const flags = AsyncResult.isSuccess(listing)
+    ? listing.value.map((entry) => overrides[entry.key] ?? entry)
+    : undefined;
+
+  return { flags, listing, reload, toggle };
 }
 
 export { useFlagList };

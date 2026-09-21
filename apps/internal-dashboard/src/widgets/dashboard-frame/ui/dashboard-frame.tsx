@@ -1,10 +1,13 @@
 import { AccountMenu, useSessionUser } from "@repo/auth-ui";
-import { useState } from "react";
+import { localState } from "@repo/ui";
 
 import { DashboardHeader } from "./dashboard-header.tsx";
 import { DashboardNavigation } from "./dashboard-navigation.tsx";
 
 import type { ReactElement, ReactNode, ReactPortal } from "react";
+
+const useNavigationOpen = localState(false);
+const useCollapsed = localState(false);
 
 function DashboardFrame({
   children,
@@ -12,8 +15,8 @@ function DashboardFrame({
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
 }>): ReactElement {
   const { email, name } = useSessionUser();
-  const [navigationOpen, setNavigationOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useNavigationOpen();
+  const [collapsed, setCollapsed] = useCollapsed();
   function toggleNavigation(): void {
     setNavigationOpen((open) => !open);
   }

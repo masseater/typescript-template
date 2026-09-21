@@ -1,21 +1,33 @@
+import { useAtom } from "@effect/atom-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { Atom } from "effect/unstable/reactivity";
 
 import { normalizeUsersSearch } from "./users-search.ts";
 
 import type { SubmitEventHandler } from "react";
 import type { UsersSearch } from "./users-search.ts";
 
-interface UserFilterForm {
+interface FilterValues {
+  readonly keyword: string;
+  readonly status: string;
+  readonly verified: string;
+}
+
+interface UserFilterForm extends FilterValues {
   readonly handleClear: () => void;
   readonly handleKeywordChange: (value: string) => void;
   readonly handleStatusChange: (status: string) => void;
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
   readonly handleVerifiedChange: (verified: string) => void;
-  readonly keyword: string;
-  readonly status: string;
-  readonly verified: string;
 }
+
+const filterAtom = Atom.family((search: UsersSearch) =>
+  Atom.make<FilterValues>({
+    keyword: search.keyword ?? "",
+    status: search.status ?? "",
+    verified: search.verified === undefined ? "" : String(search.verified),
+  }),
+);
 
 function usersSearchFromFilters(keyword: string, status: string, verified: string): UsersSearch {
   return normalizeUsersSearch({
@@ -27,27 +39,32 @@ function usersSearchFromFilters(keyword: string, status: string, verified: strin
 
 function useUserFilterForm(search: UsersSearch): UserFilterForm {
   const navigate = useNavigate({ from: "/members" });
-  const [keyword, setKeyword] = useState(search.keyword ?? "");
-  const [status, setStatus] = useState<string>(search.status ?? "");
-  const [verified, setVerified] = useState<string>(
-    search.verified === undefined ? "" : String(search.verified),
-  );
+  const [values, setValues] = useAtom(filterAtom(search));
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    void navigate({ search: usersSearchFromFilters(keyword, status, verified) });
+    void navigate({
+      search: usersSearchFromFilters(values.keyword, values.status, values.verified),
+    });
   }
   function handleClear(): void {
     void navigate({ search: {} });
   }
+  function handleKeywordChange(keyword: string): void {
+    setValues((current) => ({ ...current, keyword }));
+  }
+  function handleStatusChange(status: string): void {
+    setValues((current) => ({ ...current, status }));
+  }
+  function handleVerifiedChange(verified: string): void {
+    setValues((current) => ({ ...current, verified }));
+  }
   return {
+    ...values,
     handleClear,
-    handleKeywordChange: setKeyword,
-    handleStatusChange: setStatus,
+    handleKeywordChange,
+    handleStatusChange,
     handleSubmit,
-    handleVerifiedChange: setVerified,
-    keyword,
-    status,
-    verified,
+    handleVerifiedChange,
   };
 }
 

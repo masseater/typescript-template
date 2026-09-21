@@ -1,5 +1,5 @@
 import { APPLICATION } from "@repo/config";
-import { appLayer } from "@repo/runtime";
+import { appLayer } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
 

@@ -11,10 +11,11 @@ import {
   STATUS_VARIANT,
   StatusMessage,
   TextLink,
+  localState,
   useAction,
   useTextInput,
 } from "@repo/ui";
-import { useState, type ReactElement, type SyntheticEvent } from "react";
+import { type ReactElement, type SyntheticEvent } from "react";
 
 import { inviteFailureOf, type Invitation } from "./invite-preview.ts";
 
@@ -92,12 +93,14 @@ const InviteForm = ({
   );
 };
 
+const useAccepted = localState(false);
+
 const InviteAcceptance = ({
   endpoint,
   invitation,
   token,
 }: Readonly<{ endpoint: string; invitation: Invitation; token: string }>): ReactElement => {
-  const [accepted, setAccepted] = useState(false);
+  const [accepted, setAccepted] = useAccepted();
   if (accepted) {
     return (
       <FormColumn>

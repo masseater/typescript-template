@@ -5,7 +5,7 @@ import { homedir, userInfo } from "node:os";
 // oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 
-import { Effect } from "effect";
+import { Effect, Predicate } from "effect";
 
 import { failure, fileIo } from "./failure.ts";
 
@@ -95,7 +95,7 @@ function serviceOf(root: string): Effect.Effect<RunnerService, LocalCommandFailu
 }
 
 function isMissing(cause: unknown): boolean {
-  return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "ENOENT";
+  return Predicate.isObject(cause) && "code" in cause && cause.code === "ENOENT";
 }
 
 function installedDocument(plistFile: string): Effect.Effect<string, LocalCommandFailure> {
