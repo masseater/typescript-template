@@ -174,4 +174,11 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-unused-style-class--delete-or-reference-it](../tools/dont-review-it/docs/lint/no-unused-style-class--delete-or-reference-it.md) | Disallow a style sheet class that no script and no markup in the repository spells, so the style sheet keeps only the classes that reach the rendered page |
 | [require-re-export-only-files--move-declaration-to-owning-module](../tools/dont-review-it/docs/lint/require-re-export-only-files--move-declaration-to-owning-module.md) | Require the files the deployment lists as re-export only to carry re-exports and nothing else, so the surface a module presents can be read off that file without opening what it forwards |
 
+## [apps/internal-dashboard/content/docs/plans/modernization.md](../apps/internal-dashboard/content/docs/plans/modernization.md)
+
+| Rule | Description |
+| --- | --- |
+| [no-hand-rolled-server-read--use-tanstack-query](../tools/dont-review-it/docs/lint/no-hand-rolled-server-read--use-tanstack-query.md) | Disallow combining useState with fetch for server data after the TanStack Query migration |
+| [require-query-options-in-api-segment--move-query-options-to-api](../tools/dont-review-it/docs/lint/require-query-options-in-api-segment--move-query-options-to-api.md) | Require queryOptions, infiniteQueryOptions, and mutationOptions factories to live in an FSD api segment |
+
 <!-- END GENERATED rules-by-guideline -->
