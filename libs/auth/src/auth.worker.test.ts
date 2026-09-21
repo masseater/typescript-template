@@ -13,7 +13,7 @@ describe("Auth.layer on a database without migrations", () => {
     expect(wikiBuild).toBe("AuthFailure");
   });
 
-  it("builds the user app, which has no OAuth provider", ({ userBuild }) => {
-    expect(userBuild).toBe(APPLICATION.user);
+  it("fails the user app while the OAuth resource store initializes", ({ userBuild }) => {
+    expect(userBuild).toBe("AuthFailure");
   });
 });

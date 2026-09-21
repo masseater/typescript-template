@@ -18,7 +18,7 @@ import { Hero } from "./hero.tsx";
 import type { ReactElement } from "react";
 
 const textSizes = new Map(
-  readFileSync(new URL("../../../../../../libs/ui/src/styles.css", import.meta.url), "utf8")
+  readFileSync(new URL("../../../../../../../libs/ui/src/styles.css", import.meta.url), "utf8")
     .split("\n")
     .flatMap((line) => {
       const token = remTextSize(line);

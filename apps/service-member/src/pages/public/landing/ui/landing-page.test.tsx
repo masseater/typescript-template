@@ -36,7 +36,7 @@ type LandingCopy = Record<(typeof landingKeys)[number], string>;
 const landingCopy = (locale: Locale): LandingCopy => {
   const parsed: unknown = JSON.parse(
     readFileSync(
-      fileURLToPath(new URL(`../../../../messages/${locale}.json`, import.meta.url)),
+      fileURLToPath(new URL(`../../../../../messages/${locale}.json`, import.meta.url)),
       "utf8",
     ),
   );

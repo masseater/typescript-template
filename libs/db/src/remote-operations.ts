@@ -32,7 +32,12 @@ type Migration = typeof MigrationFile.Type;
 const Names = Schema.Array(Schema.Tuple([Schema.String]));
 const HistoryRows = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
 const History = Schema.Array(Schema.Struct({ hash: Schema.String, name: Schema.String }));
-const BootstrappedRow = Schema.Tuple([Schema.Unknown, Schema.Unknown, Schema.Unknown]);
+const BootstrappedRow = Schema.Tuple([
+  Schema.Unknown,
+  Schema.Unknown,
+  Schema.Unknown,
+  Schema.Unknown,
+]);
 
 const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' AND name NOT LIKE '\_cf\_%' ESCAPE '\' AND name NOT IN ('__drizzle_migrations', 'd1_migrations')`;
 
@@ -225,10 +230,13 @@ const bootstrapDatabase = <Result>(
     if (rows.length !== 1 || row === undefined) {
       return yield* fail("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
     }
-    const [id, address, role] = row;
-    yield* Schema.decodeUnknownEffect(BootstrappedAdmin)({ email: address, id, role }).pipe(
-      Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
-    );
+    const [id, address, role, permission] = row;
+    yield* Schema.decodeUnknownEffect(BootstrappedAdmin)({
+      email: address,
+      id,
+      permission,
+      role,
+    }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })));
   }).pipe(Effect.withSpan("bootstrapDatabase"));
 };
 

@@ -1,5 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { APPLICATION } from "@repo/config";
+import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
@@ -17,6 +18,7 @@ const routes = {
   "/api/recovery-offer": "recovery-offer-api",
 };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 
 function leaveApp() {
   const environment = appEnvironment({});
@@ -40,6 +42,7 @@ async function postRecoveryAccept(app: ReturnType<typeof leaveApp>): Promise<Res
 
 it.effect("rejects unauthenticated recovery acceptance", () =>
   Effect.gen(function* program() {
+    yield* migrated;
     const app = leaveApp();
     const response = yield* Effect.promise(async () => postRecoveryAccept(app));
     assert.strictEqual(response.status, httpStatus.unauthorized);

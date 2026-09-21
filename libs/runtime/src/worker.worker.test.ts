@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { cspNonceHeader } from "@repo/runtime/security";
@@ -16,6 +17,7 @@ import type { AppServices } from "./index.ts";
 const validRoutes = { "/": "home" };
 const ReportedLog = Schema.Record(Schema.String, Schema.String);
 const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
+const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 
 async function servedUnavailable(
   layer: () => Layer.Layer<AppServices, unknown>,
@@ -126,6 +128,7 @@ async function servedDocument(url: string): Promise<Response> {
 describe("a worker serving a rendered document", () => {
   it.effect("names the nonce it handed the renderer and forbids everything else", () =>
     Effect.gen(function* program() {
+      yield* migrated;
       const response = yield* Effect.promise(async () => servedDocument(`${fixtureOrigin}/`));
       const directives = (response.headers.get("content-security-policy") ?? "").split("; ");
       const nonce = response.headers.get("x-rendered-nonce") ?? "";
@@ -138,6 +141,7 @@ describe("a worker serving a rendered document", () => {
 
   it.effect("allows google analytics hosts when analytics is configured", () =>
     Effect.gen(function* program() {
+      yield* migrated;
       const worker = serveApp(
         workerRuntime(() => appLayer(appEnvironment({}), "service-member", validRoutes)),
         startRoute(
@@ -168,6 +172,7 @@ describe("a worker serving a rendered document", () => {
 
   it.effect("demands https for a year once the document arrived over https", () =>
     Effect.gen(function* program() {
+      yield* migrated;
       const secure = yield* Effect.promise(async () =>
         servedDocument("https://user.example.test/"),
       );
@@ -200,6 +205,7 @@ describe("a worker answering any request", () => {
   for (const path of paths) {
     it.effect(`keeps ${path} out of search indexes`, () =>
       Effect.gen(function* program() {
+        yield* migrated;
         const response = yield* Effect.promise(async () =>
           servedDocument(`https://user.example.test${path}`),
         );

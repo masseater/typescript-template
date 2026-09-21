@@ -4,6 +4,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
 import { EmptyTestDatabase, TestBinding, runStatement } from "@repo/db-local";
+import { APPLICATION } from "@repo/config";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Effect } from "effect";
@@ -245,7 +246,7 @@ describe("bootstrapDatabase", () => {
               updatedAt: new Date(),
             });
             await database.insert(session).values({
-              audience: "user",
+              audience: APPLICATION.user,
               authenticationMethod: "password",
               createdAt: new Date(),
               expiresAt: new Date(Date.now() + 60_000),
@@ -257,7 +258,7 @@ describe("bootstrapDatabase", () => {
             });
           });
           yield* bootstrapDatabase(database, "FIRST@example.test");
-          return yield* getSessionSecurity("old-session", "user");
+          return yield* getSessionSecurity("old-session", APPLICATION.user);
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 
@@ -299,7 +300,7 @@ describe("bootstrapDatabase", () => {
 describe("the last administrator guard of the migrated database", () => {
   describe.for([
     ["a direct delete", "DELETE FROM user WHERE id = ?"],
-    ["a direct demotion", "UPDATE user SET role = 'user' WHERE id = ?"],
+    ["a direct demotion", "UPDATE user SET role = 'member' WHERE id = ?"],
   ] as const)("%s of the only administrator", ([, statement]) => {
     const it = test.extend("remainingAdministrator", async () =>
       Effect.runPromise(

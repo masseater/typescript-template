@@ -7,6 +7,7 @@ import {
   jobsWorkflowBinding,
   readJobs,
 } from "@repo/config";
+import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
@@ -31,6 +32,7 @@ const routes = {
   "/api/jobs/*": "jobs-api",
 };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
+const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
 
 function jobsApp() {
   const environment = appEnvironment();
@@ -40,6 +42,7 @@ function jobsApp() {
 
 it.effect("enqueues a job, runs the workflow steps, and reports completion", () =>
   Effect.gen(function* program() {
+    yield* migrated;
     const jobs = yield* readJobs(env);
     const app = jobsApp();
     const created = yield* Effect.promise(async () =>
