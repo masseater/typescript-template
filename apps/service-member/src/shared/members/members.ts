@@ -11,7 +11,7 @@ import { Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
 
-const { user } = schema;
+const { follow, user } = schema;
 
 type PhotoVersions = Readonly<{ company: string | null; face: string | null }>;
 
@@ -105,7 +105,18 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
   if (!member) {
     return yield* new UserNotFound();
   }
-  return shown(member);
+  let following: boolean | undefined;
+  if (viewerId !== memberId) {
+    const [row] = yield* query((database) =>
+      database
+        .select({ followeeId: follow.followeeId })
+        .from(follow)
+        .where(and(eq(follow.followerId, viewerId), eq(follow.followeeId, memberId)))
+        .limit(1),
+    );
+    following = row !== undefined;
+  }
+  return { ...shown(member), following };
 });
 
 const listMembers = Effect.fn("listMembers")(function* listMembers(page: {

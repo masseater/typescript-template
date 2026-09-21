@@ -60,6 +60,9 @@ erDiagram
     string memberId FK
     enum kind
     string subjectId
+    string actorId FK
+    string actorName
+    string title
     datetime createdAt
     datetime readAt
   }
@@ -79,7 +82,7 @@ erDiagram
 - 自分をブロックしている利用者のプロフィールは開けず、探すにも並ばない。開けないことと存在しないことは、表示から区別できない
 - FeedEvent はホームに出す材料である。いま想定する `kind` は、プロフィールの更新・掲示板への投稿・フォローの開始である。会話の中身はフィードに出さない
 - InterviewSheet は本人だけが読み書きする。他の利用者に見せるのは、保存後に MemberProfile へ写した自己紹介だけである
-- Notification は本人だけが読む。メールで送るかは NotificationPreference が決め、既定はどちらも偽である
+- Notification は本人だけが読む。`kind` は `conversation_message`・`follow`・`board_post`・`inquiry_reply` である。メールで送るかは NotificationPreference が決め、既定はどちらも偽である
 
 ## 画面
 

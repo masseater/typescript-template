@@ -2,9 +2,12 @@ import { assert, it } from "@effect/vitest";
 import { PROFILE_VISIBILITY, ROLE } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { Effect } from "effect";
+import { fixtureOrigin } from "@repo/runtime/testing";
+import { env } from "cloudflare:workers";
+import { Effect, Layer } from "effect";
 
-import { advanceOnboarding, homeFeed, stepOf } from "./member-social.ts";
+import { advanceOnboarding, followMember, homeFeed, stepOf } from "./member-social.ts";
+import { OpsMail } from "./ops-mail.ts";
 
 import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
@@ -12,13 +15,15 @@ import type { Database, DatabaseFailure } from "@repo/db";
 const { follow, user } = schema;
 const recordedAt = new Date("2026-01-01T00:00:00.000Z");
 
-const followMember = (followerId: string, followeeId: string) =>
-  query((database) =>
-    database
-      .insert(follow)
-      .values({ createdAt: recordedAt, followeeId, followerId })
-      .onConflictDoNothing(),
-  );
+const testLayer = Layer.merge(
+  TestDatabase,
+  Layer.succeed(OpsMail, {
+    APP_ORIGIN: fixtureOrigin,
+    EMAIL: env.EMAIL,
+    EMAIL_FROM: "sender@example.test",
+    OPS_EMAIL: "ops@example.test",
+  }),
+);
 
 const addUser = (added: {
   readonly userId: string;
@@ -49,16 +54,22 @@ it.effect("omits members the viewer does not follow", () =>
       feed.map((item) => item.actorId),
       ["followed"],
     );
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );
 
 it.effect("omits unverified followees from the feed", () =>
   Effect.gen(function* program() {
     yield* addUser({ userId: "viewer" });
     yield* addUser({ emailVerified: false, userId: "unverified" });
-    yield* followMember("viewer", "unverified");
+    yield* query((database) =>
+      database.insert(follow).values({
+        createdAt: recordedAt,
+        followeeId: "unverified",
+        followerId: "viewer",
+      }),
+    );
     assert.deepStrictEqual(yield* homeFeed("viewer"), []);
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );
 
 it.effect("the home feed drops followees who closed their profile", () =>
@@ -72,14 +83,14 @@ it.effect("the home feed drops followees who closed their profile", () =>
       (yield* homeFeed("viewer")).map((item) => item.actorId),
       ["open"],
     );
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );
 
 it.effect("treats missing onboarding rows as the agreement step", () =>
   Effect.gen(function* program() {
     yield* addUser({ userId: "newcomer" });
     assert.strictEqual(yield* stepOf("newcomer"), "agreement");
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );
 
 it.effect("advances and reads the saved onboarding step", () =>
@@ -87,5 +98,5 @@ it.effect("advances and reads the saved onboarding step", () =>
     yield* addUser({ userId: "newcomer" });
     yield* advanceOnboarding("newcomer", "choose");
     assert.strictEqual(yield* stepOf("newcomer"), "choose");
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );

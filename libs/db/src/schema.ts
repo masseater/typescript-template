@@ -8,6 +8,7 @@ import { session, user } from "./identity-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
   oauthAccessToken,
@@ -151,6 +152,8 @@ const schema = {
   interview,
   leaveRequest,
   memberOnboarding,
+  notification,
+  notificationPreference,
   withdrawnMember,
   jwks,
   oauthAccessToken,
@@ -185,3 +188,6 @@ export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export { notification, notificationPreference } from "./notification-schema.ts";
+export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
+export type { NotificationKind } from "@repo/config";

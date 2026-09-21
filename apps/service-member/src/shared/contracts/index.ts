@@ -51,5 +51,14 @@ export {
   memberPageSize,
   memberRetentionDays,
 } from "./member.ts";
+export { FollowList, FollowMember, FollowMemberQuery, FollowState } from "./follow.ts";
 export { MemberFlags } from "./flags.ts";
+export {
+  NavBadges,
+  NotificationId,
+  NotificationItem,
+  NotificationList,
+  NotificationPreferences,
+  NotificationUnread,
+} from "./notifications.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
