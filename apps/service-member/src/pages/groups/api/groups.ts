@@ -2,12 +2,7 @@ import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
-import {
-  GroupCreated,
-  GroupInviteRefreshed,
-  GroupJoined,
-  GroupView,
-} from "#shared/contracts/index.ts";
+import { GroupInviteRefreshed, GroupJoined, GroupView } from "#shared/contracts/index.ts";
 
 type GroupDetail = typeof GroupView.Type;
 
@@ -22,19 +17,6 @@ async function loadGroup(id: string, invite?: string): Promise<GroupDetail> {
     throw notFound();
   }
   return group;
-}
-
-async function createGroup(
-  name: string,
-  joinPolicy: "invite" | "open",
-): Promise<{ conversationId: string; groupId: string; inviteToken: string }> {
-  const { api } = await userClient();
-  const created = apiData(GroupCreated, await api.groups.create.post({ joinPolicy, name }));
-  return {
-    conversationId: created.conversationId,
-    groupId: created.groupId,
-    inviteToken: created.inviteToken,
-  };
 }
 
 async function joinGroup(id: string, invite?: string): Promise<string> {
@@ -61,5 +43,5 @@ async function refreshInvite(id: string): Promise<string> {
   return apiData(GroupInviteRefreshed, await api.groups.invite.post({ id })).inviteToken;
 }
 
-export { createGroup, joinGroup, leaveGroup, loadGroup, refreshInvite, renameGroup };
+export { joinGroup, leaveGroup, loadGroup, refreshInvite, renameGroup };
 export type { GroupDetail };

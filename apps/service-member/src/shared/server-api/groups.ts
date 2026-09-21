@@ -9,7 +9,7 @@ import {
 import { and, count, desc, eq } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
-import { mayCreateGroup } from "#shared/messaging/may-create-group.ts";
+import { mayCreateGroup } from "#shared/messaging/index.ts";
 import { GroupInviteExpired } from "./group-invite-expired.ts";
 import { GroupLimitReached } from "./group-limit-reached.ts";
 import { GroupNotFound } from "./group-not-found.ts";

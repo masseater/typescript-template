@@ -3,7 +3,7 @@ import { CONVERSATION_KIND, query, schema } from "@repo/db";
 import { and, count, desc, eq, gt, isNull, ne, or } from "drizzle-orm";
 import { Clock, Effect } from "effect";
 
-import { maySendGroupMessage } from "#shared/messaging/may-send-group-message.ts";
+import { maySendGroupMessage } from "#shared/messaging/index.ts";
 import { canReadGroupConversation, groupIdForConversation } from "./groups.ts";
 import { MessagingConversationNotFound } from "./messaging-conversation-not-found.ts";
 import { MessagingMemberRequired } from "./messaging-member-required.ts";

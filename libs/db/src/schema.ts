@@ -11,7 +11,6 @@ import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
-import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   conversation,
   conversationParticipant,
@@ -20,6 +19,7 @@ import {
   groupMembership,
   memberGroup,
 } from "./messaging-schema.ts";
+import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
   oauthAccessToken,
