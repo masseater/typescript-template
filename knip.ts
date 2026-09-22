@@ -14,7 +14,6 @@ const workspaces = {
       "@effect/tsgo",
       "@shadcn/lint",
       "@swc/core",
-      "dependency-cruiser",
       "oxlint",
       "oxlint-tsgolint",
     ],
@@ -81,7 +80,6 @@ const workspaces = {
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
     entry: [
-      "dependency-cruiser.ts",
       "src/repository/dependency-cruiser.ts",
       "doctor.config.ts",
       "src/index.ts!",
@@ -198,7 +196,7 @@ const config = ({
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
-      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
+      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
       "apps/*": app,
       "apps/core": {
         entry: ["src/worker.ts!"],
