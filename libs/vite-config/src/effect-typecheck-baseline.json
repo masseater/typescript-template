@@ -11,66 +11,6 @@
     ],
     "apps/internal-dashboard": [
       {
-        "file": "../../libs/db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/account.ts",
-        "code": "TS2345",
-        "message": "Argument of type '() => Effect<{ readonly ok: true; readonly release: string; readonly service: string; }, DatabaseFailure, DatabaseHealth | Telemetry>' is not assignable to parameter of type 'Handler<{ readonly ok: true; readonly release: string; readonly service: \"internal-dashboard\" | \"service-admin\" | \"service-member\"; }, Tagged, Requirements | AppServices>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/account.ts",
-        "code": "TS2740",
-        "message": "Type 'Tagged' is missing the following properties from type 'EmailVerificationFailed': name, message, toJSON, [NodeInspectSymbol], and 4 more.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/bindings.ts",
-        "code": "TS2739",
-        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 5 more ...; MAILPIT_SEND_URL?: string; }' is missing the following properties from type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 9 more ...; MAILPIT_SEND_URL?: string; }': ASSETS, DB",
-        "count": 2
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, unknown>' is not assignable to type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, Requirements>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'MaybePromise<Response>' is not assignable to type 'Promise<Response>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2345",
-        "message": "Argument of type '([string, string] | readonly [\"content-length\", string])[]' is not assignable to parameter of type 'HeadersInit | undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'FailureTable<Exclude<Failures, CommonFailure>>' is not assignable to parameter of type 'FailureTable<Tagged>'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/runtime/src/read-cache.ts",
-        "code": "TS2379",
-        "message": "Argument of type '{ decoded: string; settings: { readonly expirationTtl?: number; } | undefined; }' is not assignable to parameter of type '{ readonly decoded: string; readonly settings?: { readonly expirationTtl?: number; }; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
         "file": "src/shared/server-api/flags-api.ts",
         "code": "TS2345",
         "message": "Argument of type '(routeHandler: Handler<{ readonly description: string; readonly enabled: boolean; readonly key: \"member-board\"; }, Tagged, Requirements | WikiServices>, failures: FailureTable<...>) => (runtimeContext: ElysiaContext) => Promise<...>' is not assignable to parameter of type 'InlineHandler<NoInfer<IntersectIfObjectSchema<...>>, NoInfer<{ ...; } & { ...; }>, {}>'.",
@@ -87,12 +27,6 @@
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
         "count": 2
-      },
-      {
-        "file": "src/shared/wiki/wiki-layer.worker.test.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
       },
       {
         "file": "src/shared/wiki/wiki-layer.worker.test.ts",
@@ -159,66 +93,6 @@
     ],
     "apps/service-member": [
       {
-        "file": "../../libs/db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/account.ts",
-        "code": "TS2345",
-        "message": "Argument of type '() => Effect<{ readonly ok: true; readonly release: string; readonly service: string; }, DatabaseFailure, DatabaseHealth | Telemetry>' is not assignable to parameter of type 'Handler<{ readonly ok: true; readonly release: string; readonly service: \"internal-dashboard\" | \"service-admin\" | \"service-member\"; }, Tagged, Requirements | AppServices>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/account.ts",
-        "code": "TS2740",
-        "message": "Type 'Tagged' is missing the following properties from type 'EmailVerificationFailed': name, message, toJSON, [NodeInspectSymbol], and 4 more.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/bindings.ts",
-        "code": "TS2739",
-        "message": "Type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 5 more ...; MAILPIT_SEND_URL?: string; }' is missing the following properties from type '{ APP_ORIGIN: string; APP_RELEASE: string; AUTH_SECRET: string; EMAIL_FROM: string; FLAGSHIP_ACCOUNT_ID?: string; FLAGSHIP_API_TOKEN?: string; FLAGSHIP_APP_ID?: string; MAILPIT_URL?: string; ... 9 more ...; MAILPIT_SEND_URL?: string; }': ASSETS, DB",
-        "count": 2
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, unknown>' is not assignable to type '(httpRequest: Request<unknown, CfProperties<unknown>>) => Effect<Encoded | ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus>, never, Requirements>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventFeed<any> | EventStream<...>' is not assignable to type 'ElysiaCustomStatusResponse<FailureStatus, { readonly error: string; }, FailureStatus> | EventStream<Encoded>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2322",
-        "message": "Type 'MaybePromise<Response>' is not assignable to type 'Promise<Response>'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2345",
-        "message": "Argument of type '([string, string] | readonly [\"content-length\", string])[]' is not assignable to parameter of type 'HeadersInit | undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../../libs/runtime/src/http.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'FailureTable<Exclude<Failures, CommonFailure>>' is not assignable to parameter of type 'FailureTable<Tagged>'.",
-        "count": 2
-      },
-      {
-        "file": "../../libs/runtime/src/read-cache.ts",
-        "code": "TS2379",
-        "message": "Argument of type '{ decoded: string; settings: { readonly expirationTtl?: number; } | undefined; }' is not assignable to parameter of type '{ readonly decoded: string; readonly settings?: { readonly expirationTtl?: number; }; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.",
-        "count": 1
-      },
-      {
         "file": "src/app/server.ts",
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
@@ -253,24 +127,6 @@
         "code": "TS2554",
         "message": "Expected 1 arguments, but got 3.",
         "count": 1
-      },
-      {
-        "file": "src/shared/server-api/jobs-api.worker.test.ts",
-        "code": "TS18046",
-        "message": "'instance' is of type 'unknown'.",
-        "count": 4
-      },
-      {
-        "file": "src/shared/server-api/jobs-api.worker.test.ts",
-        "code": "TS18046",
-        "message": "'queueResult' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/jobs-api.worker.test.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
       }
     ],
     "infra/cloudflare": [
@@ -285,20 +141,6 @@
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
         "count": 8
-      }
-    ],
-    "libs/auth": [
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
-      },
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:workers' or its corresponding type declarations.",
-        "count": 1
       }
     ],
     "libs/db": [
@@ -433,56 +275,6 @@
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
         "count": 3
-      }
-    ],
-    "libs/feature-flags": [
-      {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.handler' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/auth-request.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/policy.ts",
-        "code": "TS18048",
-        "message": "'eligibleUser' is possibly 'undefined'.",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'createSession' comes from an index signature, so it must be accessed with ['createSession'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'token' comes from an index signature, so it must be accessed with ['token'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/request-hooks.ts",
-        "code": "TS4111",
-        "message": "Property 'trustDevice' comes from an index signature, so it must be accessed with ['trustDevice'].",
-        "count": 1
-      },
-      {
-        "file": "../auth/src/session.ts",
-        "code": "TS18046",
-        "message": "'instance.options' is of type 'unknown'.",
-        "count": 2
-      },
-      {
-        "file": "../db/src/testing.ts",
-        "code": "TS2307",
-        "message": "Cannot find module 'cloudflare:test' or its corresponding type declarations.",
-        "count": 1
       }
     ],
     "libs/observability": [
