@@ -8,7 +8,7 @@ function ProfileMissing(): ReactElement {
       <p className="text-base leading-normal">
         この利用者のプロフィールは表示できません。アドレスが正しいかを確かめてください。
       </p>
-      <TextLink to="/users">ユーザーを探す</TextLink>
+      <TextLink to="/search">探す</TextLink>
     </Page>
   );
 }

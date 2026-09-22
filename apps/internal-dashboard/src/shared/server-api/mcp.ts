@@ -6,6 +6,7 @@ import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
 
 import { source } from "#shared/content/index.ts";
 import { authorizeMcpRequest } from "#shared/wiki/index.ts";
+import { registerDashboardTools } from "./mcp-dashboard.ts";
 import { searchServer, wikiLlms } from "./search.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
@@ -17,6 +18,7 @@ function createServer(context: Context.Context<WikiServices>): McpServer {
   const server = new McpServer({ name: APPLICATION.wiki, version: mcpVersion });
   registerSearchTool(server, searchServer(context));
   registerSourceTools(server, source, wikiLlms);
+  registerDashboardTools(server, context);
   return server;
 }
 

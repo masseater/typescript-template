@@ -186,4 +186,34 @@ function save(state: Settled): Settled {
   return { ...state, messages: says(state, { role: "interviewer", text }), phase: "saved" };
 }
 
-export { accepts, advance, begin, needsModel, save, spoken };
+const historyConsentText =
+  "保存しました。会話の履歴を残して、次からのレコメンドに使ってもよいですか？";
+
+function requestHistoryConsent(state: Settled): Settled {
+  return {
+    ...state,
+    messages: says(state, { role: "interviewer", text: historyConsentText }),
+    phase: "history_consent",
+  };
+}
+
+function clearConversation(state: Settled): Settled {
+  const { sheet, skipped } = state;
+  return {
+    messages: [{ role: "interviewer", text: "保存しました。" }],
+    phase: "saved",
+    sheet,
+    skipped,
+  };
+}
+
+export {
+  accepts,
+  advance,
+  begin,
+  clearConversation,
+  needsModel,
+  requestHistoryConsent,
+  save,
+  spoken,
+};

@@ -3,6 +3,7 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { Effect } from "effect";
 
 import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
+import { PhotoEditor } from "./photo-editor.tsx";
 import { ProfileEditor } from "./profile-editor.tsx";
 
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
@@ -40,6 +41,7 @@ function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElem
       <FormColumn>
         <Field label="メールアドレス" name="email" type="email" readOnly value={initial.email} />
       </FormColumn>
+      <PhotoEditor profile={initial} />
       <ProfileEditor form={form} homeId={initial.id} />
       {form.error !== undefined && (
         <StatusMessage variant={STATUS_VARIANT.failure}>{form.error}</StatusMessage>
