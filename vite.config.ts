@@ -32,8 +32,13 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
+      "compile:paraglide": {
+        command: [],
+        dependsOn: [...paraglidePackageCompiles],
+      },
       "check:client": {
         command: "quality-check-client",
+        dependsOn: ["compile:paraglide"],
         input: [
           ...taskInput,
           "!**/dist/**",
@@ -47,13 +52,14 @@ export default defineConfig({
       ...effectDiagnostics,
       "check:types": {
         command: "dont-review-it-typecheck",
-        dependsOn: [...paraglidePackageCompiles],
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
       "check:imports":
         "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
       "check:react": {
         command: "quality-check-react",
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
@@ -63,6 +69,7 @@ export default defineConfig({
       },
       knip: {
         command: ["knip", "knip --strict"],
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
@@ -72,7 +79,7 @@ export default defineConfig({
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
-        dependsOn: [...paraglidePackageCompiles],
+        dependsOn: ["compile:paraglide"],
         input: [
           ...taskInput,
           "!coverage/**",
@@ -82,7 +89,11 @@ export default defineConfig({
         ],
         output: [],
       },
-      "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
+      "test:dev-server": {
+        cache: false,
+        command: "vp test run --project dev-server",
+        dependsOn: ["compile:paraglide"],
+      },
       ...lifecycle({
         prepush: [
           "check:code",

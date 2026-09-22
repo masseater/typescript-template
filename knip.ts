@@ -139,6 +139,7 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db-local": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+  "libs/vite-config": ["src/compile-paraglide.ts!"],
   "tools/dev": [
     "src/cli.ts!",
     "src/prepare-browser.ts!",
@@ -251,6 +252,7 @@ const config = ({
           "src/cloudflare-workers-loader.mjs",
           "src/cloudflare-workers-stub.mjs",
           "src/cloudflare-workflows-stub.mjs",
+          ...productionOnly(...scripts["libs/vite-config"]),
         ],
       },
       "tools/dev": {
