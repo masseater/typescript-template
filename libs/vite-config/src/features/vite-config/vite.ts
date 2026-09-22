@@ -77,7 +77,7 @@ const clientReachableModules = [
 ] as const;
 const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
-  ...serverOnlyPackages.map((packageDirectory) => `**/libs/${packageDirectory}/src/**`),
+  ...serverOnlyPackages.map((packageDirectory) => `**/libs/${packageDirectory}/src/features/${packageDirectory}/**`),
   "**/src/**/server-api/**",
 ];
 const clientReachableFiles: (string | RegExp)[] = [
