@@ -1,5 +1,5 @@
 import { NodeHttpServer } from "@effect/platform-node";
-import { APPLICATION, loopbackAddress, loopbackOrigin, httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus, loopbackAddress, loopbackOrigin } from "@repo/config";
 
 import { flushTelemetry, observeRequest, Telemetry, TraceId } from "@repo/observability";
 
