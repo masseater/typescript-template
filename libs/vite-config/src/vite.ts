@@ -1,4 +1,3 @@
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
@@ -74,8 +73,8 @@ const previewDevVars = (appRoot: string): Plugin => {
 };
 
 const scalarReferenceEntry = fileURLToPath(import.meta.resolve("@scalar/api-reference"));
-const scalarReferenceSource = path.join(
-  path.dirname(scalarReferenceEntry),
+const scalarReferenceSource = paths.join(
+  paths.dirname(scalarReferenceEntry),
   "browser/standalone.js",
 );
 
