@@ -99,7 +99,6 @@ const workspaces = {
 };
 
 const cloudflareStacks = [
-  "src/core.ts!",
   "src/database.ts!",
   "src/flagship.ts!",
   "src/email.ts!",
@@ -108,12 +107,10 @@ const cloudflareStacks = [
   "src/budget-monitor.ts!",
   "src/error-monitor.ts!",
   "src/health-monitor.ts!",
-  "src/service-member.ts!",
-  "src/service-admin.ts!",
-  "src/internal-dashboard.ts!",
   "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
+  "src/stack-entrypoints.ts!",
 ];
 
 const application = {
@@ -198,12 +195,13 @@ const config = ({
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
       "apps/*": app,
       "apps/core": {
-        entry: ["src/worker.ts!"],
+        entry: ["alchemy.run.ts!", "src/worker.ts!"],
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
       "apps/internal-dashboard": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: [
           "src/**/*.{ts,tsx,mdx}!",
           "src/**/*.css",
@@ -212,10 +210,12 @@ const config = ({
       },
       "apps/service-admin": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: ["src/**/*.{ts,tsx}!"],
       },
       "apps/service-member": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
@@ -246,7 +246,6 @@ const config = ({
       },
       "libs/vite-config": {
         entry: [
-          "src/cloudflare-workers-loader.mjs",
           "src/cloudflare-workers-stub.mjs",
           "src/cloudflare-workflows-stub.mjs",
           ...productionOnly(...scripts["libs/vite-config"]),

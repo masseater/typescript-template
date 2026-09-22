@@ -67,7 +67,6 @@ interface Read {
 
 const singleConsumerAllowlist: readonly string[] = [
   "subpath:@repo/auth/testing",
-  "subpath:@repo/db-local/platform",
   "subpath:@repo/runtime/contracts",
 ];
 
@@ -455,10 +454,5 @@ const repositoryWorkspaces = (): readonly WorkspaceManifest[] => [
 const repositorySingleConsumerFindings = (): readonly Finding[] =>
   singleConsumerFindings(repositoryWorkspaces(), repositorySources(repositoryRoot));
 
-export {
-  moduleSpecifiers,
-  repositorySingleConsumerFindings,
-  singleConsumerAllowlist,
-  singleConsumerFindings,
-};
+export { moduleSpecifiers, repositorySingleConsumerFindings, singleConsumerFindings };
 export type { SourceText };

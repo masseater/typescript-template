@@ -1,35 +1,31 @@
+import type { LoadHookSync, ResolveHookSync } from "node:module";
+
 const workersStub = new URL("./cloudflare-workers-stub.mjs", import.meta.url).href;
 const workflowsStub = new URL("./cloudflare-workflows-stub.mjs", import.meta.url).href;
 
-const stubUrl = (specifier) => {
-  const moduleSpecifier = String(specifier);
-  if (
-    moduleSpecifier === "cloudflare:workers" ||
-    moduleSpecifier.startsWith("cloudflare:workers")
-  ) {
+const stubUrl = (specifier: string): string | undefined => {
+  if (specifier === "cloudflare:workers" || specifier.startsWith("cloudflare:workers")) {
     return workersStub;
   }
-  if (
-    moduleSpecifier === "cloudflare:workflows" ||
-    moduleSpecifier.startsWith("cloudflare:workflows")
-  ) {
+  if (specifier === "cloudflare:workflows" || specifier.startsWith("cloudflare:workflows")) {
     return workflowsStub;
   }
   return undefined;
 };
 
-export const resolve = (specifier, resolveContext, nextResolve) => {
+const resolve: ResolveHookSync = (specifier, resolveContext, nextResolve) => {
   const url = stubUrl(specifier);
   return url === undefined ? nextResolve(specifier, resolveContext) : { shortCircuit: true, url };
 };
 
-export const load = (url, loadContext, nextLoad) => {
-  const href = String(url);
-  if (href.startsWith("cloudflare:workers")) {
+const load: LoadHookSync = (url, loadContext, nextLoad) => {
+  if (url.startsWith("cloudflare:workers")) {
     return nextLoad(workersStub, { ...loadContext, format: "module" });
   }
-  if (href.startsWith("cloudflare:workflows")) {
+  if (url.startsWith("cloudflare:workflows")) {
     return nextLoad(workflowsStub, { ...loadContext, format: "module" });
   }
   return nextLoad(url, loadContext);
 };
+
+export { load, resolve };
