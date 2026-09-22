@@ -1,10 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Option, Schema } from "effect";
 
-import { ComposePage, lookupConversation } from "#pages/messages/index.ts";
+import { ComposeRoute, lookupConversation } from "#pages/messages/index.ts";
 import { loadMember } from "#pages/profile/index.ts";
 
-import type { ReactElement } from "react";
 const ComposeSearchParams = Schema.Struct({
   peer: Schema.String.check(Schema.isLengthBetween(1, 256)),
 });
@@ -48,8 +47,4 @@ const Route = createFileRoute("/_member/messages/new")({
       }),
     ),
 });
-function ComposeRoute(): ReactElement {
-  const member = Route.useLoaderData();
-  return <ComposePage peerId={member.id} peerName={member.name} />;
-}
 export { Route };

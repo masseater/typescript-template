@@ -11,3 +11,7 @@ export { SettingsPage } from "./ui/settings-page.tsx";
 export { loadPlan } from "./api/plan.ts";
 export { VisibilityPage } from "./ui/visibility-page.tsx";
 export { loadVisibility } from "./api/visibility.ts";
+export { PlanRoute } from "./ui/plan-route.tsx";
+export { SettingsAgreementsRoute } from "./ui/settings-agreements-route.tsx";
+export { SettingsNotificationsRoute } from "./ui/settings-notifications-route.tsx";
+export { VisibilityRoute } from "./ui/visibility-route.tsx";

@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { ConversationPage } from "#pages/messages/index.ts";
+import { ConversationPage } from "./conversation-page.tsx";
 
 import type { ReactElement } from "react";
 

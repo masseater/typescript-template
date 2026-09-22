@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { GroupPage } from "#pages/groups/index.ts";
+import { GroupPage } from "./group-page.tsx";
 
 import type { ReactElement } from "react";
 

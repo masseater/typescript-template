@@ -5,11 +5,11 @@ import {
   GroupFailed,
   GroupMissing,
   GroupPending,
+  GroupRoute,
   InvalidGroupsSearch,
   loadGroup,
   normalizeGroupsSearch,
 } from "#pages/groups/index.ts";
-import { GroupRoute } from "./-group-route.tsx";
 
 import type { GroupsSearch } from "#pages/groups/index.ts";
 

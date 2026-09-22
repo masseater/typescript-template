@@ -1,9 +1,8 @@
 import { PLAN } from "@repo/config";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { UpgradeFailed, loadUpgrade } from "#pages/upgrade/index.ts";
+import { UpgradeFailed, UpgradeRoute, loadUpgrade } from "#pages/upgrade/index.ts";
 import { readCheckoutReturn } from "#shared/contracts/index.ts";
-import { UpgradeRoute } from "./-upgrade-route.tsx";
 
 import type { Upgrade } from "#pages/upgrade/index.ts";
 function loadOrLeave(): Promise<Upgrade> {

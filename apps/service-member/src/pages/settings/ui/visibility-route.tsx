@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { VisibilityPage } from "#pages/settings/index.ts";
+import { VisibilityPage } from "./visibility-page.tsx";
 
 import type { ReactElement } from "react";
 

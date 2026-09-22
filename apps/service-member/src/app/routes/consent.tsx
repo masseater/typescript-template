@@ -3,11 +3,9 @@ import { Schema } from "effect";
 
 import {
   ConsentClientUnavailable,
-  ConsentPage,
+  ConsentRoute,
   loadClientName,
 } from "#pages/account/consent/index.ts";
-
-import type { ReactElement } from "react";
 
 const searchSchema = Schema.toStandardSchemaV1(
   Schema.Struct({
@@ -36,9 +34,5 @@ const Route = createFileRoute("/consent")({
     });
   },
 });
-
-function ConsentRoute(): ReactElement {
-  return <ConsentPage client={Route.useLoaderData()} />;
-}
 
 export { Route };

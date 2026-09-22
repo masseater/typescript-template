@@ -5,3 +5,4 @@ export { GroupFailed } from "./ui/group-failed.tsx";
 export { GroupMissing } from "./ui/group-missing.tsx";
 export { GroupPage } from "./ui/group-page.tsx";
 export { GroupPending } from "./ui/group-pending.tsx";
+export { GroupRoute } from "./ui/group-route.tsx";

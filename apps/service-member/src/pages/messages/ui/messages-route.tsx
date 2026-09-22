@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { MessagesPage } from "#pages/messages/index.ts";
+import { MessagesPage } from "./messages-page.tsx";
 
 import type { ReactElement } from "react";
 

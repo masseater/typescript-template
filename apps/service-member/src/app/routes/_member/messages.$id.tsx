@@ -5,11 +5,11 @@ import {
   ConversationFailed,
   ConversationMissing,
   ConversationPending,
+  ConversationRoute,
   InvalidMessagesSearch,
   loadConversation,
   normalizeConversationSearch,
 } from "#pages/messages/index.ts";
-import { ConversationRoute } from "./-conversation-route.tsx";
 
 import type { ConversationSearch } from "#pages/messages/index.ts";
 

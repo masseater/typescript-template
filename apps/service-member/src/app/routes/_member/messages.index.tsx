@@ -5,10 +5,10 @@ import {
   InvalidMessagesSearch,
   MessagesFailed,
   MessagesPending,
+  MessagesRoute,
   loadConversations,
   normalizeMessagesSearch,
 } from "#pages/messages/index.ts";
-import { MessagesRoute } from "./-messages-route.tsx";
 
 import type { MessagesSearch } from "#pages/messages/index.ts";
 
