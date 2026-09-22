@@ -248,12 +248,16 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "libs/vite-config": {
+<<<<<<< HEAD
         entry: [
           "src/cloudflare-workers-loader.mjs",
           "src/cloudflare-workers-stub.mjs",
           "src/cloudflare-workflows-stub.mjs",
           ...productionOnly(...scripts["libs/vite-config"]),
         ],
+=======
+        entry: ["src/cloudflare-workers-stub.mjs", "src/cloudflare-workflows-stub.mjs"],
+>>>>>>> 0eb76cf1 (fix: fail Node module.register deprecation during prepare)
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
