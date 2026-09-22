@@ -1144,9 +1144,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@repo/observability':
-        specifier: workspace:*
-        version: link:../observability
       '@repo/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -1382,9 +1379,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@repo/observability':
-        specifier: workspace:*
-        version: link:../observability
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../vite-config

@@ -6,6 +6,7 @@ import {
   type AccountPermission,
   type Application,
   type Role,
+  httpStatus,
 } from "@repo/config";
 import {
   EmptyTestDatabase,
@@ -16,7 +17,6 @@ import {
   runStatement,
   type BootstrapKind,
 } from "@repo/db/testing";
-import { httpStatus } from "@repo/observability";
 import { makeSignature } from "better-auth/crypto";
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";

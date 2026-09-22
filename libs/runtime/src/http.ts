@@ -1,4 +1,5 @@
-import { httpStatus, readJson } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+import { readJson } from "@repo/observability";
 import { Effect, Exit, Schema, Stream } from "effect";
 import { Elysia, NotFound, sse, status } from "elysia";
 import { WebStandardAdapter } from "elysia/adapter/web-standard";

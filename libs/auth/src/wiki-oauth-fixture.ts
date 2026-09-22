@@ -1,5 +1,4 @@
-import { APPLICATION } from "@repo/config";
-import { httpStatus } from "@repo/observability";
+import { APPLICATION, httpStatus } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import { bootstrapVerifiedStaff, clientOf, enableTotp, signInAs } from "./auth-test-fixture.ts";
