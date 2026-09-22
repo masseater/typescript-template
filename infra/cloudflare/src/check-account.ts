@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { markFailed, runCli } from "@repo/cli";
-import { layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 
 import { blocked, inspectAccount } from "./account-inspection.ts";
+import { layer } from "./alchemist.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
 import { encodeJson } from "./platform.ts";
 import { causeRecord, reportCause } from "./secrets.ts";

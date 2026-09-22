@@ -30,8 +30,12 @@ const deploymentKeys = [
   deploymentKey.cloudflareZoneId,
   deploymentKey.appDomain,
   deploymentKey.authSecret,
+  deploymentKey.fixedCostUsd,
+  deploymentKey.jpyPerUsd,
   deploymentKey.mailFrom,
+  deploymentKey.observabilitySampling,
   deploymentKey.prefix,
+  deploymentKey.reserveUsd,
 ] as const;
 const optionalDeploymentKeys = [
   deploymentKey.otlpAuthorization,
