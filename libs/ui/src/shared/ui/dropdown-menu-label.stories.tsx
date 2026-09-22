@@ -26,10 +26,10 @@ const meta = preview.meta({
     ),
   render: ({ children }): ReactElement => (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label="利用者の操作">操作</DropdownMenuTrigger>
+      <DropdownMenuTrigger aria-label="利用者の操作">{"操作"}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel>{children}</DropdownMenuLabel>
-        <DropdownMenuItem onClick={noop}>権限を変更</DropdownMenuItem>
+        <DropdownMenuItem onClick={noop}>{"権限を変更"}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ),

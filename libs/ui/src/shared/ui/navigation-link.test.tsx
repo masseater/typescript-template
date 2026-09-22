@@ -22,7 +22,7 @@ describe("NavigationLink", () => {
       return renderToStaticMarkup(
         <RouterContextProvider router={router}>
           <NavigationLink className="px-1" to="/" variant="side">
-            ホーム
+            {"ホーム"}
           </NavigationLink>
         </RouterContextProvider>,
       );
@@ -37,7 +37,7 @@ describe("NavigationLink", () => {
       return renderToStaticMarkup(
         <RouterContextProvider router={router}>
           <NavigationLink to="/" variant="side">
-            ホーム
+            {"ホーム"}
           </NavigationLink>
         </RouterContextProvider>,
       );

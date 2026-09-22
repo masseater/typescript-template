@@ -55,7 +55,7 @@ const apiBoundaryFiles = [
 ];
 
 const authUiServerReadsAwaitingQuery = [
-  "libs/auth-ui/src/email-change-verification.tsx",
+  "libs/auth-ui/src/email-change-confirmation.tsx",
   "libs/auth-ui/src/email-verification.tsx",
   "libs/auth-ui/src/use-passkeys.ts",
   "libs/auth-ui/src/use-session.ts",
@@ -75,12 +75,7 @@ const lintOptions = {
       files: templateWorkspaces,
       plugins: ["react"],
       rules: {
-        "react/exhaustive-deps": LINT_SEVERITY.ERROR,
-        "react/forbid-component-props": LINT_SEVERITY.ERROR,
-        "react/jsx-filename-extension": [LINT_SEVERITY.ERROR, { extensions: [".tsx"] }],
-        "react/jsx-props-no-spreading": LINT_SEVERITY.ERROR,
         "react/only-export-components": [LINT_SEVERITY.ERROR, { allowExportNames: ["Route"] }],
-        "react/rules-of-hooks": LINT_SEVERITY.ERROR,
       },
     },
     {
@@ -130,6 +125,7 @@ const lintOptions = {
         "project/atom-state": LINT_SEVERITY.ERROR,
         "project/boundaries": LINT_SEVERITY.ERROR,
         "project/cross-request-state": LINT_SEVERITY.ERROR,
+        "project/effect-event-deps": LINT_SEVERITY.ERROR,
         "project/effect-failures": LINT_SEVERITY.ERROR,
         "project/effect-stack": LINT_SEVERITY.ERROR,
         "project/environment-boundary": LINT_SEVERITY.ERROR,
@@ -140,6 +136,7 @@ const lintOptions = {
         "project/no-internal-mocks": LINT_SEVERITY.ERROR,
         "project/no-manual-memoization": LINT_SEVERITY.ERROR,
         "project/process-boundary": LINT_SEVERITY.ERROR,
+        "project/react-legacy": LINT_SEVERITY.ERROR,
         "project/retired-imports": LINT_SEVERITY.ERROR,
         "project/span-mutation": LINT_SEVERITY.ERROR,
         "project/temp-directory": LINT_SEVERITY.ERROR,

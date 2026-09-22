@@ -13,12 +13,12 @@ const meta = preview.meta({
   args: {
     children: (
       <>
-        <DropdownMenuTrigger aria-label="利用者の操作">操作</DropdownMenuTrigger>
+        <DropdownMenuTrigger aria-label="利用者の操作">{"操作"}</DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuLabel>taro@example.com</DropdownMenuLabel>
-          <DropdownMenuItem onClick={noop}>権限を変更</DropdownMenuItem>
+          <DropdownMenuLabel>{"taro@example.com"}</DropdownMenuLabel>
+          <DropdownMenuItem onClick={noop}>{"権限を変更"}</DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onClick={noop}>
-            削除
+            {"削除"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </>

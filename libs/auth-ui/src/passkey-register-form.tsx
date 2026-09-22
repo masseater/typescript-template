@@ -72,7 +72,7 @@ const PasskeyRegisterForm = ({
           onValueChange={passkeyName.handleChange}
         />
         <Button type="submit" disabled={action.blocked || recoveringAdmin}>
-          パスキーを登録
+          {"パスキーを登録"}
         </Button>
       </FormColumn>
     </form>

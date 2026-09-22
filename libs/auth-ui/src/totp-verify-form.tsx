@@ -50,7 +50,7 @@ const TotpVerifyForm = ({
       <FormColumn>
         <TotpField code={code} />
         <Button type="submit" disabled={action.blocked || !saved}>
-          確認して認証アプリを有効化
+          {"確認して認証アプリを有効化"}
         </Button>
       </FormColumn>
     </form>

@@ -1,6 +1,7 @@
 import { useAtom, useAtomValue } from "@effect/atom-react";
+import { Semaphore } from "effect";
 import { Atom } from "effect/unstable/reactivity";
-import { useId } from "react";
+import { startTransition, useId } from "react";
 
 import { request, resultError } from "./request";
 
@@ -17,7 +18,10 @@ const hydratedAtom = Atom.make(true).pipe(Atom.withServerValue(() => false));
 
 const actionAtom = Atom.family((slotId: string) => {
   void slotId;
-  return Atom.fn(({ task }: Readonly<{ task: Task }>) => request(task));
+  const gate = Semaphore.makeUnsafe(1);
+  return Atom.fn(({ task }: Readonly<{ task: Task }>) => gate.withPermits(1)(request(task)), {
+    concurrent: true,
+  });
 });
 
 const useAction = (): ActionState => {
@@ -26,9 +30,12 @@ const useAction = (): ActionState => {
   const pending = asyncState.waiting;
   const blocked = pending || !hydrated;
   const run = (task: Task): void => {
-    if (!blocked) {
-      perform({ task });
+    if (!hydrated) {
+      return;
     }
+    startTransition(() => {
+      perform({ task });
+    });
   };
   return { blocked, error: resultError(asyncState), pending, run };
 };
