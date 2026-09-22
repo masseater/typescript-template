@@ -12,7 +12,6 @@
     "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
     "@inlang/paraglide-js": "catalog:",
-    "@mergifyio/vitest": "catalog:",
     "@repo/config": "workspace:*",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:",

@@ -420,6 +420,5 @@ export {
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
-export { mergifyVitest, RequiredMergifyReporter } from "./mergify-vitest.ts";
 export type { Tasks };
 export { devBoundary };

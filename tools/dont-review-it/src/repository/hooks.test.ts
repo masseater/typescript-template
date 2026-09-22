@@ -34,11 +34,6 @@ const workflows: Readonly<Record<string, string>> = import.meta.glob(
 
 const mergifyConfig = readFileSync(join(repositoryRoot, ".mergify.yml"), "utf8");
 
-const viteConfigs = {
-  "vite.config.ts": readFileSync(join(repositoryRoot, "vite.config.ts"), "utf8"),
-  "tools/e2e/vite.config.ts": readFileSync(join(repositoryRoot, "tools/e2e/vite.config.ts"), "utf8"),
-} as const;
-
 const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../pnpm-workspace.yaml",
   { eager: true, import: "default" },
@@ -423,17 +418,18 @@ describe("mergify ci insights", () => {
     expect(workflow).not.toMatch(/^\s+- run: .+\n\s+env:\n\s+MERGIFY_TOKEN:/mu);
   });
 
-  it("wires the shared Mergify reporter into every Vitest suite that uploads", () => {
+  it("probes Mergify check-job product state with the Mergify CLI", () => {
     expect.hasAssertions();
-    expect(Object.keys(viteConfigs).toSorted()).toStrictEqual([
-      "tools/e2e/vite.config.ts",
-      "vite.config.ts",
-    ]);
-    for (const source of Object.values(viteConfigs)) {
-      expect(source).toMatch(/mergifyVitest\(\)/u);
-      expect(source).not.toMatch(/new MergifyReporter\(/u);
-      expect(source).not.toMatch(/from "@mergifyio\/vitest"/u);
+    const workflow = workflows["../../../../.github/workflows/mergify-probe.yml"];
+    if (workflow === undefined) {
+      throw new Error("mergify-probe.yml is missing");
     }
+    expect(workflow).toMatch(/Mergifyio\/setup-cli@/u);
+    expect(workflow).toMatch(/mergify events/u);
+    expect(workflow).toMatch(/mergify config simulate/u);
+    expect(workflow).toMatch(/\/v1\/products\//u);
+    expect(workflow).toMatch(/ci_insights/u);
+    expect(workflow).toMatch(/MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}/u);
   });
 
   it("keeps merge-queue gates on the check jobs Mergify can see", () => {

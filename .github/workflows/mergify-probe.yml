@@ -1,0 +1,124 @@
+name: mergify-probe
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: Mergifyio/setup-cli@dc99f07e699b94b39e5495c24596372813eadcbc # v1.3.0
+        with:
+          mergify_cli_version: 2026.9.16.1
+      - name: Probe Mergify check-job / product state
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          {
+            echo "# Mergify probe"
+            echo
+            echo "- repository: \`$GITHUB_REPOSITORY\`"
+            echo "- token present: \`$([ -n "${MERGIFY_TOKEN:-}" ] && echo yes || echo no)\`"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -z "${MERGIFY_TOKEN:-}" ]; then
+            echo "MERGIFY_TOKEN secret is missing" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          mergify --version | tee -a "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Application" >> "$GITHUB_STEP_SUMMARY"
+          app_json="$(curl -fsS -H "Authorization: Bearer ${MERGIFY_TOKEN}" -H "Accept: application/json" https://api.mergify.com/v1/application)"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$app_json" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Default products" >> "$GITHUB_STEP_SUMMARY"
+          defaults_json="$(curl -fsS -H "Authorization: Bearer ${MERGIFY_TOKEN}" -H "Accept: application/json" "https://api.mergify.com/v1/default_products/${GITHUB_REPOSITORY%%/*}")"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' "$defaults_json" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Product enable/disable events (90d)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          mergify events -r "$GITHUB_REPOSITORY" --since 90d --type product.enabled --limit 50 >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          mergify events -r "$GITHUB_REPOSITORY" --since 90d --type product.disabled --limit 50 >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Queue check events for this PR (90d)" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${PR_NUMBER:-}" ]; then
+            for type in action.queue.checks_start action.queue.checks_end action.queue.checks.change action.queue.checks_not_started ci_insights.job_retried; do
+              echo "### $type" >> "$GITHUB_STEP_SUMMARY"
+              mergify events -r "$GITHUB_REPOSITORY" --pr "$PR_NUMBER" --since 90d --type "$type" --limit 20 >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+            done
+          else
+            echo "no pull request number" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Config simulate" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${PR_URL:-}" ] && [ "$PR_URL" != "https://github.com/${GITHUB_REPOSITORY}/pull/" ]; then
+            mergify config simulate "$PR_URL" >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          else
+            echo "no pull request URL" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Average CI runtime stats" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          curl -fsS -H "Authorization: Bearer ${MERGIFY_TOKEN}" -H "Accept: application/json" \
+            "https://api.mergify.com/v1/repos/${GITHUB_REPOSITORY}/stats/average_ci_runtime" \
+            >> "$GITHUB_STEP_SUMMARY" 2>&1 || echo '{"error":"average_ci_runtime failed"}' >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Ensure ci_insights product is enabled" >> "$GITHUB_STEP_SUMMARY"
+          enable_body='{"products":["ci_insights","merge_queue","workflow_automation","merge_protections"]}'
+          enable_code="$(curl -sS -o /tmp/mergify-products.json -w '%{http_code}' \
+            -X PUT \
+            -H "Authorization: Bearer ${MERGIFY_TOKEN}" \
+            -H "Accept: application/json" \
+            -H "Content-Type: application/json" \
+            -d "$enable_body" \
+            "https://api.mergify.com/v1/products/${GITHUB_REPOSITORY}")"
+          echo "- PUT /products/${GITHUB_REPOSITORY} => HTTP \`$enable_code\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/mergify-products.json >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          case "$enable_code" in
+            204|200)
+              echo "ci_insights enable request accepted" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            403)
+              echo "::warning::MERGIFY_TOKEN cannot manage products; enable CI Insights at https://dashboard.mergify.com/integrations/github if job runs are missing"
+              echo "token cannot manage products; enable CI Insights in the Mergify GitHub Integration dashboard" >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            *)
+              echo "::error::unexpected products response HTTP $enable_code"
+              echo "unexpected products response" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+              ;;
+          esac
