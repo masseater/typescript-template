@@ -231,6 +231,7 @@ describe("cloud agent environment", () => {
     });
     const install = readFileSync(join(root, ".cursor/install.sh"), "utf8");
     const start = readFileSync(join(root, ".cursor/start.sh"), "utf8");
+    expect(install).toContain("mise.run");
     expect(install).toContain("mise install");
     expect(install).toContain("seed-mergify-auth.sh");
     expect(install).toContain("vp install");
