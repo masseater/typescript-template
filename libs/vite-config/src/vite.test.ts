@@ -128,7 +128,7 @@ describe("paraglideAppRun", () => {
   const it = test.extend("localizedApplicationRun", () => paraglideAppRun("service-member"));
 
   it("compiles message catalogs before typecheck", ({ localizedApplicationRun }) => {
-    const tasks = appRun("service-member").tasks;
+    const tasks = appRun("service-member").tasks ?? {};
     expect(localizedApplicationRun).toStrictEqual({
       tasks: {
         ...tasks,
@@ -148,23 +148,33 @@ describe("paraglideAppRun", () => {
           dependsOn: ["compile:paraglide"],
         },
         "check:code": {
-          ...tasks["check:code"],
+          ...checkCode["check:code"],
           dependsOn: ["compile:paraglide"],
         },
         "check:imports": {
-          ...tasks["check:imports"],
+          ...workspaceCheckImports["check:imports"],
           dependsOn: ["compile:paraglide"],
         },
         "check:client": {
-          ...tasks["check:client"],
+          command: "quality-check-client --application service-member",
+          input: [
+            ...taskInput,
+            "!**/dist/**",
+            "!**/node_modules/.cache/**",
+            { base: "workspace", pattern: "!.local" },
+            { base: "workspace", pattern: "!.local/**" },
+          ],
+          output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
           dependsOn: ["compile:paraglide"],
         },
         "check:react": {
-          ...tasks["check:react"],
+          command: "quality-check-react --application service-member",
+          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+          output: [{ auto: true }, "!**/node_modules/.cache/**"],
           dependsOn: ["compile:paraglide"],
         },
         test: {
-          ...tasks.test,
+          ...testRun.test,
           dependsOn: ["compile:paraglide"],
         },
       },

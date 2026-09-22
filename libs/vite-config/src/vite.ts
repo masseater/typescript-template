@@ -293,13 +293,8 @@ const toolTest: NonNullable<UserConfig["test"]> = {
 
 const noExtraPlugins: readonly PluginOption[] = [];
 
-const appRun = (app: Application): RunConfig => ({
-  tasks: {
-    ...effectDiagnostics,
-    check: sliceBoundaries.check,
-    ...checkCode,
-    ...workspaceCheckImports,
-    ...testRun,
+const checkClient = (app: Application) =>
+  ({
     "check:client": {
       command: `quality-check-client --application ${app}`,
       input: [
@@ -311,11 +306,26 @@ const appRun = (app: Application): RunConfig => ({
       ],
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
+  }) satisfies Tasks;
+
+const checkReact = (app: Application) =>
+  ({
     "check:react": {
       command: `quality-check-react --application ${app}`,
       input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
       output: [{ auto: true }, "!**/node_modules/.cache/**"],
     },
+  }) satisfies Tasks;
+
+const appRun = (app: Application): RunConfig => ({
+  tasks: {
+    ...effectDiagnostics,
+    check: sliceBoundaries.check,
+    ...checkCode,
+    ...workspaceCheckImports,
+    ...testRun,
+    ...checkClient(app),
+    ...checkReact(app),
     build: {
       command: "vp build",
       dependsOn: ["@repo/dev#setup", "check:effect"],
@@ -359,43 +369,40 @@ const paraglideCompileInputs = [
   { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
 ] as const;
 
-const paraglideAppRun = (app: Application): RunConfig => {
-  const tasks = appRun(app).tasks;
-  return {
-    tasks: {
-      ...tasks,
-      "compile:paraglide": {
-        command: "../../libs/vite-config/src/compile-paraglide.ts",
-        input: [...paraglideCompileInputs],
-        output: [".paraglide/**"],
-      },
-      "check:effect": {
-        ...effectDiagnostics["check:effect"],
-        dependsOn: ["compile:paraglide"],
-      },
-      "check:code": {
-        ...tasks["check:code"],
-        dependsOn: ["compile:paraglide"],
-      },
-      "check:imports": {
-        ...tasks["check:imports"],
-        dependsOn: ["compile:paraglide"],
-      },
-      "check:client": {
-        ...tasks["check:client"],
-        dependsOn: ["compile:paraglide"],
-      },
-      "check:react": {
-        ...tasks["check:react"],
-        dependsOn: ["compile:paraglide"],
-      },
-      test: {
-        ...tasks.test,
-        dependsOn: ["compile:paraglide"],
-      },
+const paraglideAppRun = (app: Application): RunConfig => ({
+  tasks: {
+    ...(appRun(app).tasks ?? {}),
+    "compile:paraglide": {
+      command: "../../libs/vite-config/src/compile-paraglide.ts",
+      input: [...paraglideCompileInputs],
+      output: [".paraglide/**"],
     },
-  };
-};
+    "check:effect": {
+      ...effectDiagnostics["check:effect"],
+      dependsOn: ["compile:paraglide"],
+    },
+    "check:code": {
+      ...checkCode["check:code"],
+      dependsOn: ["compile:paraglide"],
+    },
+    "check:imports": {
+      ...workspaceCheckImports["check:imports"],
+      dependsOn: ["compile:paraglide"],
+    },
+    "check:client": {
+      ...checkClient(app)["check:client"],
+      dependsOn: ["compile:paraglide"],
+    },
+    "check:react": {
+      ...checkReact(app)["check:react"],
+      dependsOn: ["compile:paraglide"],
+    },
+    test: {
+      ...testRun.test,
+      dependsOn: ["compile:paraglide"],
+    },
+  },
+});
 
 const coreDevWorker = {
   config: {
