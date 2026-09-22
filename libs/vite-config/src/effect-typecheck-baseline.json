@@ -9,7 +9,6 @@
         "count": 1
       }
     ],
-    "apps/service-member": [],
     "infra/cloudflare": [
       {
         "file": "src/remote-command.test.ts",
