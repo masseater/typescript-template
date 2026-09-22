@@ -134,12 +134,12 @@ const createEmailVerification = (
       user,
       token,
     }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
-      const target = emailChangeTarget(token);
-      if (Result.isFailure(target)) {
-        return run(Effect.fail(target.failure));
+      const emailChangeDestination = emailChangeTarget(token);
+      if (Result.isFailure(emailChangeDestination)) {
+        return run(Effect.fail(emailChangeDestination.failure));
       }
       return run(
-        target.success === undefined
+        emailChangeDestination.success === undefined
           ? sendVerificationEmail(authOptions.mail, {
               email: user.email,
               url: verificationLink(origin, token),

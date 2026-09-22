@@ -115,6 +115,25 @@ const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never 
     Effect.mapError((issue) => invalid(issue.message)),
   );
 
+type EnvironmentScalars = Schema.Schema.Type<typeof Scalars>;
+
+const refuseMissingRelease = (
+  scalars: EnvironmentScalars,
+  local: boolean,
+): Effect.Effect<void, ConfigurationInvalid> =>
+  scalars.APP_RELEASE === undefined && !local
+    ? Effect.fail(invalid("APP_RELEASE is required outside local development"))
+    : Effect.void;
+
+const refuseInvalidMailpit = (
+  scalars: EnvironmentScalars,
+  local: boolean,
+): Effect.Effect<void, ConfigurationInvalid> =>
+  scalars.MAILPIT_URL !== undefined &&
+  (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
+    ? Effect.fail(invalid("Mailpit is restricted to local development"))
+    : Effect.void;
+
 const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationInvalid> => {
   const parsedOrigin = new URL(origin);
   return parsedOrigin.protocol === "https:" || loopbackHosts.includes(parsedOrigin.hostname)
@@ -122,26 +141,24 @@ const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationI
     : Effect.fail(invalid("HTTPS is required outside localhost"));
 };
 
+const enforceOtlpOrigin = (
+  scalars: EnvironmentScalars,
+): Effect.Effect<void, ConfigurationInvalid> => {
+  if (scalars.OTLP_ENDPOINT === undefined) {
+    return scalars.OTLP_ENABLED === undefined
+      ? Effect.void
+      : Effect.fail(invalid("OTLP_ENABLED needs OTLP_ENDPOINT"));
+  }
+  return requireSecureOrigin(scalars.OTLP_ENDPOINT);
+};
+
 const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(input: unknown) {
   const scalars = yield* decode(Scalars, input);
   yield* requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
-  if (scalars.APP_RELEASE === undefined && !local) {
-    return yield* invalid("APP_RELEASE is required outside local development");
-  }
-  if (
-    scalars.MAILPIT_URL !== undefined &&
-    (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
-  ) {
-    return yield* invalid("Mailpit is restricted to local development");
-  }
-  if (scalars.OTLP_ENDPOINT === undefined) {
-    if (scalars.OTLP_ENABLED !== undefined) {
-      return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
-    }
-  } else {
-    yield* requireSecureOrigin(scalars.OTLP_ENDPOINT);
-  }
+  yield* refuseMissingRelease(scalars, local);
+  yield* refuseInvalidMailpit(scalars, local);
+  yield* enforceOtlpOrigin(scalars);
   return {
     ...scalars,
     APP_RELEASE: scalars.APP_RELEASE ?? "local",

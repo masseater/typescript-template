@@ -268,8 +268,8 @@ const confirmsEmailChange = function confirmsEmailChange(
   if (hookRequest.path !== emailVerificationPath || typeof token !== "string") {
     return false;
   }
-  const target = emailChangeTarget(token);
-  return Result.isSuccess(target) && target.success !== undefined;
+  const emailChangeDestination = emailChangeTarget(token);
+  return Result.isSuccess(emailChangeDestination) && emailChangeDestination.success !== undefined;
 };
 
 const notifyEmailChange = Effect.fn("notifyEmailChange")(function* notifyEmailChange(
