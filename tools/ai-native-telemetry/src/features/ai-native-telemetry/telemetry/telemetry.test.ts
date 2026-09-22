@@ -705,7 +705,7 @@ describe("the package surface", () => {
       type: "module",
       sideEffects: false,
       exports: {
-        ".": "./src/features/ai-native-telemetry/telemetry/telemetry.ts",
+        ".": "./src/features/ai-native-telemetry/index.ts",
         "./optional-setting": "./src/features/ai-native-telemetry/telemetry/optional-setting.ts",
         "./vitest-sdk": "./src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
         "./package.json": "./package.json",
