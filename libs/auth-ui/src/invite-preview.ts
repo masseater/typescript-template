@@ -4,7 +4,6 @@ import { Result, Schema } from "effect";
 
 import { decodeJson, errorMessage } from "./protocol.ts";
 
-
 const fetchInvitationResponse = (
   fetchImpl: typeof fetch,
   endpoint: string,
