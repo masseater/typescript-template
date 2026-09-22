@@ -1,6 +1,6 @@
 import { ADMIN_PERMISSION, AUDIT_ACTION } from "@repo/config";
 import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { query, type DrizzleDatabase } from "./database.ts";
 import { InquiryForbidden } from "./inquiry-forbidden.ts";
@@ -81,7 +81,7 @@ const auditInquiryReply = (
   const auditColumns = [
     [auditEvent.action, action],
     [auditEvent.actorId, actorId],
-    [auditEvent.createdAt, Date.now()],
+    [auditEvent.createdAt, DateTime.toEpochMillis(DateTime.nowUnsafe())],
     [auditEvent.id, crypto.randomUUID()],
     [auditEvent.targetId, inquiryId],
   ] as const;
@@ -157,27 +157,29 @@ const createMemberInquiry = Effect.fn("createMemberInquiry")(function* createMem
 ) {
   const inquiryId = crypto.randomUUID();
   const messageId = crypto.randomUUID();
-  const now = new Date();
-  yield* query(async (database) => {
-    await database.batch([
-      database.insert(inquiry).values({
-        createdAt: now,
-        id: inquiryId,
-        memberId,
-        status: INQUIRY_STATUS.open,
-        subject: values.subject,
-        updatedAt: now,
-      }),
-      database.insert(inquiryMessage).values({
-        authorId: memberId,
-        authorKind: INQUIRY_AUTHOR_KIND.member,
-        body: values.body,
-        createdAt: now,
-        id: messageId,
-        inquiryId,
-      }),
-    ]);
-  });
+  const now = DateTime.toDate(yield* DateTime.now);
+  yield* query((database) =>
+    database
+      .batch([
+        database.insert(inquiry).values({
+          createdAt: now,
+          id: inquiryId,
+          memberId,
+          status: INQUIRY_STATUS.open,
+          subject: values.subject,
+          updatedAt: now,
+        }),
+        database.insert(inquiryMessage).values({
+          authorId: memberId,
+          authorKind: INQUIRY_AUTHOR_KIND.member,
+          body: values.body,
+          createdAt: now,
+          id: messageId,
+          inquiryId,
+        }),
+      ])
+      .then(() => undefined),
+  );
   return yield* getMemberInquiry(memberId, inquiryId);
 });
 
@@ -190,23 +192,25 @@ const replyAsMember = Effect.fn("replyAsMember")(function* replyAsMember(
   if (thread.status === INQUIRY_STATUS.closed) {
     return yield* new InquiryForbidden();
   }
-  const now = new Date();
-  yield* query(async (database) => {
-    await database.batch([
-      database.insert(inquiryMessage).values({
-        authorId: memberId,
-        authorKind: INQUIRY_AUTHOR_KIND.member,
-        body,
-        createdAt: now,
-        id: crypto.randomUUID(),
-        inquiryId,
-      }),
-      database
-        .update(inquiry)
-        .set({ updatedAt: now })
-        .where(and(eq(inquiry.id, inquiryId), eq(inquiry.memberId, memberId))),
-    ]);
-  });
+  const now = DateTime.toDate(yield* DateTime.now);
+  yield* query((database) =>
+    database
+      .batch([
+        database.insert(inquiryMessage).values({
+          authorId: memberId,
+          authorKind: INQUIRY_AUTHOR_KIND.member,
+          body,
+          createdAt: now,
+          id: crypto.randomUUID(),
+          inquiryId,
+        }),
+        database
+          .update(inquiry)
+          .set({ updatedAt: now })
+          .where(and(eq(inquiry.id, inquiryId), eq(inquiry.memberId, memberId))),
+      ])
+      .then(() => undefined),
+  );
   return yield* getMemberInquiry(memberId, inquiryId);
 });
 
@@ -317,30 +321,32 @@ const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin(
   if (existing.status === INQUIRY_STATUS.closed) {
     return yield* new InquiryForbidden();
   }
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   const change = {
     action: AUDIT_ACTION.inquiryReplied,
     actorId: actor.user.id,
     inquiryId,
     sessionId,
   } as const;
-  yield* query(async (database) => {
-    await database.batch([
-      database.run(auditInquiryReply(database, change)),
-      database.insert(inquiryMessage).values({
-        authorId: actor.user.id,
-        authorKind: INQUIRY_AUTHOR_KIND.admin,
-        body,
-        createdAt: now,
-        id: crypto.randomUUID(),
-        inquiryId,
-      }),
-      database
-        .update(inquiry)
-        .set({ status: INQUIRY_STATUS.answered, updatedAt: now })
-        .where(eq(inquiry.id, inquiryId)),
-    ]);
-  });
+  yield* query((database) =>
+    database
+      .batch([
+        database.run(auditInquiryReply(database, change)),
+        database.insert(inquiryMessage).values({
+          authorId: actor.user.id,
+          authorKind: INQUIRY_AUTHOR_KIND.admin,
+          body,
+          createdAt: now,
+          id: crypto.randomUUID(),
+          inquiryId,
+        }),
+        database
+          .update(inquiry)
+          .set({ status: INQUIRY_STATUS.answered, updatedAt: now })
+          .where(eq(inquiry.id, inquiryId)),
+      ])
+      .then(() => undefined),
+  );
   return yield* getAdminInquiry(sessionId, inquiryId);
 });
 
@@ -349,7 +355,7 @@ const closeInquiry = Effect.fn("closeInquiry")(function* closeInquiry(
   inquiryId: string,
 ) {
   yield* requireInquiryResponder(sessionId);
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   const [closed] = yield* query((database) =>
     database
       .update(inquiry)

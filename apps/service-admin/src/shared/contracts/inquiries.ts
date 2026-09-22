@@ -14,9 +14,9 @@ function pageNumber(
   fallback: number,
   minimum: number,
   maximum: number,
-): Schema.withDecodingDefaultKey<Schema.NumberFromString> {
+): Schema.withDecodingDefaultKey<Schema.FiniteFromString> {
   const range = Schema.isBetween({ maximum, minimum });
-  const bounded = Schema.NumberFromString.check(Schema.isInt(), range);
+  const bounded = Schema.FiniteFromString.check(Schema.isInt(), range);
   const fallbackText = Effect.succeed(String(fallback));
   return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
 }

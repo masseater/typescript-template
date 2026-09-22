@@ -7,11 +7,11 @@ import { loadInquiry, loadMemberSummary } from "#pages/inquiries/api/inquiries.t
 import type { AdminInquiryDetail, InquiryMemberSummary } from "./inquiry.ts";
 
 const inquiryThreadAtom = Atom.family((inquiryId: string) =>
-  requestAtom(async () => loadInquiry(inquiryId)),
+  requestAtom(() => loadInquiry(inquiryId)),
 );
 
 const memberSummaryAtom = Atom.family((memberId: string) =>
-  requestAtom(async () => loadMemberSummary(memberId)),
+  requestAtom(() => loadMemberSummary(memberId)),
 );
 
 function useInquiryThread(

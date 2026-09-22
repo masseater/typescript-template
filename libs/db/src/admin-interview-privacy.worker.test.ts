@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { APPLICATION, ROLE } from "@repo/config";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { listAgreementVersions, listUsers, readAgreementVersion } from "./admin.ts";
 import { startInterview } from "./interview.ts";
@@ -25,7 +25,8 @@ it.effect("admin user listing never exposes interview conversation content", () 
     });
     const sessionId = yield* adminSession("admin");
     const listed = yield* listUsers(sessionId, { limit: 20, offset: 0 });
-    assert.isFalse(JSON.stringify(listed).includes(conversationToken));
+    const serialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(listed);
+    assert.isFalse(serialized.includes(conversationToken));
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -40,12 +41,13 @@ it.effect("admin agreement reads never expose interview conversation content", (
     });
     const sessionId = yield* adminSession("admin");
     const listed = yield* listAgreementVersions(sessionId);
-    const serialized = JSON.stringify(listed);
+    const serialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(listed);
     assert.isFalse(serialized.includes(conversationToken));
     const [version] = listed.versions;
     if (version !== undefined) {
       const read = yield* readAgreementVersion(sessionId, version.version);
-      assert.isFalse(JSON.stringify(read).includes(conversationToken));
+      const readSerialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(read);
+      assert.isFalse(readSerialized.includes(conversationToken));
     }
   }).pipe(Effect.provide(TestDatabase)),
 );

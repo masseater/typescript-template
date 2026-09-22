@@ -1,6 +1,6 @@
 import { ROLE, memberRetentionDays } from "@repo/config";
 import { and, desc, eq, gt, inArray, isNull, lte } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { query } from "./database.ts";
@@ -17,7 +17,7 @@ const MemberSnapshot = Schema.Struct({
   agreements: Schema.optionalKey(
     Schema.Array(
       Schema.Struct({
-        acceptedAt: Schema.Number,
+        acceptedAt: Schema.Finite,
         versionId: Schema.String,
       }),
     ),
@@ -29,15 +29,15 @@ const MemberSnapshot = Schema.Struct({
       day: Schema.String,
       savedSheet: Schema.Unknown,
       state: Schema.Unknown,
-      turns: Schema.Number,
-      updatedAt: Schema.Number,
-      version: Schema.Number,
+      turns: Schema.Finite,
+      updatedAt: Schema.Finite,
+      version: Schema.Finite,
     }),
   ),
   onboarding: Schema.optionalKey(
     Schema.Struct({
       step: Schema.Literals(onboardingSteps),
-      updatedAt: Schema.Number,
+      updatedAt: Schema.Finite,
     }),
   ),
 });
@@ -124,25 +124,27 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
   memberId: string,
   snapshot: typeof MemberSnapshot.Type,
 ) {
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   const onboarding = snapshot.onboarding;
   if (onboarding !== undefined) {
+    const onboardingUpdatedAt = DateTime.toDate(DateTime.makeUnsafe(onboarding.updatedAt));
     yield* query((database) =>
       database
         .insert(memberOnboarding)
         .values({
           step: onboarding.step,
-          updatedAt: new Date(onboarding.updatedAt),
+          updatedAt: onboardingUpdatedAt,
           userId: memberId,
         })
         .onConflictDoUpdate({
-          set: { step: onboarding.step, updatedAt: new Date(onboarding.updatedAt) },
+          set: { step: onboarding.step, updatedAt: onboardingUpdatedAt },
           target: memberOnboarding.userId,
         }),
     );
   }
   const savedInterview = snapshot.interview;
   if (savedInterview !== undefined) {
+    const interviewUpdatedAt = DateTime.toDate(DateTime.makeUnsafe(savedInterview.updatedAt));
     yield* query((database) =>
       database
         .insert(interview)
@@ -151,7 +153,7 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
           savedSheet: savedInterview.savedSheet,
           state: savedInterview.state,
           turns: savedInterview.turns,
-          updatedAt: new Date(savedInterview.updatedAt),
+          updatedAt: interviewUpdatedAt,
           userId: memberId,
           version: savedInterview.version,
         })
@@ -161,7 +163,7 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
             savedSheet: savedInterview.savedSheet,
             state: savedInterview.state,
             turns: savedInterview.turns,
-            updatedAt: new Date(savedInterview.updatedAt),
+            updatedAt: interviewUpdatedAt,
             version: savedInterview.version,
           },
           target: interview.userId,
@@ -198,7 +200,7 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
   const acceptanceRows = keptAgreements
     .filter((row) => liveVersions.has(row.versionId))
     .map((row) => ({
-      acceptedAt: new Date(row.acceptedAt),
+      acceptedAt: DateTime.toDate(DateTime.makeUnsafe(row.acceptedAt)),
       userId: memberId,
       versionId: row.versionId,
     }));
@@ -212,7 +214,7 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
 const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryOffer(
   memberId: string,
 ) {
-  const checkedAt = new Date();
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [member] = yield* query((database) =>
     database
       .select({ email: user.email, emailVerified: user.emailVerified })
@@ -239,7 +241,7 @@ const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryO
 });
 
 const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
-  const checkedAt = new Date();
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [member] = yield* query((database) =>
     database
       .select({
@@ -274,9 +276,9 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
     Effect.tapError(() => Effect.log(`member_leave.snapshot_invalid member=${withdrawn.memberId}`)),
     Effect.mapError(() => new RecoveryUnavailable()),
   );
-  const restoredAt = new Date();
-  yield* query(async (database) => {
-    await database
+  const restoredAt = DateTime.toDate(yield* DateTime.now);
+  yield* query((database) =>
+    database
       .update(user)
       .set({
         image: withdrawn.image,
@@ -285,23 +287,26 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
         socialLinks: withdrawn.socialLinks,
         updatedAt: restoredAt,
       })
-      .where(eq(user.id, memberId));
-  });
+      .where(eq(user.id, memberId))
+      .then(() => undefined),
+  );
   yield* restoreSnapshot(memberId, snapshot);
-  yield* query(async (database) => {
-    await database.batch([
-      database
-        .update(leaveRequest)
-        .set({ restoredAt })
-        .where(eq(leaveRequest.memberId, withdrawn.memberId)),
-      database.delete(withdrawnMember).where(eq(withdrawnMember.memberId, withdrawn.memberId)),
-    ]);
-  });
+  yield* query((database) =>
+    database
+      .batch([
+        database
+          .update(leaveRequest)
+          .set({ restoredAt })
+          .where(eq(leaveRequest.memberId, withdrawn.memberId)),
+        database.delete(withdrawnMember).where(eq(withdrawnMember.memberId, withdrawn.memberId)),
+      ])
+      .then(() => undefined),
+  );
   return { memberId, restoredAt };
 });
 
 const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(memberId: string) {
-  const checkedAt = new Date();
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [member] = yield* query((database) =>
     database
       .select({ email: user.email, emailVerified: user.emailVerified, role: user.role })
@@ -327,7 +332,7 @@ const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(m
   if (pending === undefined) {
     return yield* new RecoveryExpired();
   }
-  const declinedAt = new Date();
+  const declinedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .update(leaveRequest)
@@ -355,33 +360,35 @@ const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
     yield* query((database) => database.delete(user).where(eq(user.id, memberId)));
     return { immediate: true as const };
   }
-  const withdrawnAt = new Date();
-  const purgeAt = new Date(withdrawnAt.getTime() + retentionMilliseconds);
+  const withdrawnAt = DateTime.toDate(yield* DateTime.now);
+  const purgeAt = DateTime.toDate(DateTime.makeUnsafe(withdrawnAt.getTime() + retentionMilliseconds));
   const snapshot = yield* loadSnapshot(memberId);
-  yield* query(async (database) => {
-    await database.batch([
-      database.insert(withdrawnMember).values({
-        createdAt: member.createdAt,
-        email: member.email,
-        emailVerified: member.emailVerified,
-        image: member.image,
-        memberId,
-        name: member.name,
-        profile: member.profile,
-        securityVersion: member.securityVersion,
-        snapshot,
-        socialLinks: member.socialLinks,
-        twoFactorEnabled: member.twoFactorEnabled,
-        withdrawnAt,
-      }),
-      database.insert(leaveRequest).values({
-        memberId,
-        purgeAt,
-        requestedAt: withdrawnAt,
-      }),
-      database.delete(user).where(eq(user.id, memberId)),
-    ]);
-  });
+  yield* query((database) =>
+    database
+      .batch([
+        database.insert(withdrawnMember).values({
+          createdAt: member.createdAt,
+          email: member.email,
+          emailVerified: member.emailVerified,
+          image: member.image,
+          memberId,
+          name: member.name,
+          profile: member.profile,
+          securityVersion: member.securityVersion,
+          snapshot,
+          socialLinks: member.socialLinks,
+          twoFactorEnabled: member.twoFactorEnabled,
+          withdrawnAt,
+        }),
+        database.insert(leaveRequest).values({
+          memberId,
+          purgeAt,
+          requestedAt: withdrawnAt,
+        }),
+        database.delete(user).where(eq(user.id, memberId)),
+      ])
+      .then(() => undefined),
+  );
   return { immediate: false as const, purgeAt };
 });
 
@@ -397,12 +404,14 @@ const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
     if (memberIds.length === 0) {
       return { count: 0, memberIds: [] as readonly string[] };
     }
-    yield* query(async (database) => {
-      await database.batch([
-        database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
-        database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
-      ]);
-    });
+    yield* query((database) =>
+      database
+        .batch([
+          database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
+          database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
+        ])
+        .then(() => undefined),
+    );
     return { count: memberIds.length, memberIds };
   },
 );

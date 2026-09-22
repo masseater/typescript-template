@@ -17,10 +17,10 @@ const Summary = Schema.String.check(Schema.isLengthBetween(0, maximumSummaryLeng
 const Body = Schema.String.check(Schema.isLengthBetween(1, maximumBodyLength));
 
 const AgreementVersionSummary = Schema.Struct({
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   id: Schema.String,
   kind: AgreementKind,
-  publishedAt: Schema.NullOr(Schema.Number),
+  publishedAt: Schema.NullOr(Schema.Finite),
   summary: Schema.NullOr(Schema.String),
   version: Schema.String,
 });

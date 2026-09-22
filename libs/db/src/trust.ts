@@ -1,6 +1,6 @@
 import { ACCOUNT_STATE, REPORT_STATUS, REPORT_SUBJECT, ROLE } from "@repo/config";
 import { and, eq, or, sql, type SQL } from "drizzle-orm";
-import { Clock, Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { boardPost } from "./board-schema.ts";
 import { query } from "./database.ts";
@@ -26,7 +26,7 @@ class TrustTargetUnavailable extends Schema.TaggedError<TrustTargetUnavailable>(
   {},
 ) {}
 
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 const activeMember = and(
   eq(user.role, ROLE.member),
   eq(user.emailVerified, true),

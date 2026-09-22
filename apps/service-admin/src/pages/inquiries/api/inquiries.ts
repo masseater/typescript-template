@@ -9,31 +9,38 @@ import {
   InquiryReply,
 } from "#shared/contracts/index.ts";
 
-async function loadInquiries(
+function loadInquiries(
   query: typeof InquiryListQuery.Type,
 ): Promise<typeof AdminInquiryList.Type> {
-  return apiData(AdminInquiryList, await adminClient().inquiries.get({ query }));
+  return adminClient()
+    .inquiries.get({ query })
+    .then((response) => apiData(AdminInquiryList, response));
 }
 
-async function loadInquiry(id: string): Promise<typeof AdminInquiryThread.Type> {
-  return apiData(AdminInquiryThread, await adminClient().inquiries.detail.get({ query: { id } }));
+function loadInquiry(id: string): Promise<typeof AdminInquiryThread.Type> {
+  return adminClient()
+    .inquiries.detail.get({ query: { id } })
+    .then((response) => apiData(AdminInquiryThread, response));
 }
 
-async function loadMemberSummary(memberId: string): Promise<typeof InquiryMemberSummary.Type> {
-  return apiData(
-    InquiryMemberSummary,
-    await adminClient().inquiries.member.get({ query: { id: memberId } }),
-  );
+function loadMemberSummary(memberId: string): Promise<typeof InquiryMemberSummary.Type> {
+  return adminClient()
+    .inquiries.member.get({ query: { id: memberId } })
+    .then((response) => apiData(InquiryMemberSummary, response));
 }
 
-async function replyToInquiry(
+function replyToInquiry(
   values: typeof InquiryReply.Type,
 ): Promise<typeof AdminInquiryThread.Type> {
-  return apiData(AdminInquiryThread, await adminClient().inquiries.reply.post(values));
+  return adminClient()
+    .inquiries.reply.post(values)
+    .then((response) => apiData(AdminInquiryThread, response));
 }
 
-async function closeInquiry(id: string): Promise<typeof AdminInquiryThread.Type> {
-  return apiData(AdminInquiryThread, await adminClient().inquiries.close.post({ id }));
+function closeInquiry(id: string): Promise<typeof AdminInquiryThread.Type> {
+  return adminClient()
+    .inquiries.close.post({ id })
+    .then((response) => apiData(AdminInquiryThread, response));
 }
 
 export { closeInquiry, loadInquiry, loadInquiries, loadMemberSummary, replyToInquiry };

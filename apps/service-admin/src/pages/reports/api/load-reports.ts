@@ -8,23 +8,24 @@ import type { ReportStatus } from "@repo/config";
 type ReportSummary = (typeof ReportList.Type)["reports"][number];
 type ReportItem = typeof ReportDetail.Type;
 
-async function loadReports(page: {
+function loadReports(page: {
   readonly page: number;
   readonly status?: ReportStatus;
 }): Promise<typeof ReportList.Type> {
-  return apiData(
-    ReportList,
-    await adminClient().reports.get({
+  return adminClient()
+    .reports.get({
       query: {
         page: page.page,
         ...(page.status === undefined ? {} : { status: page.status }),
       } satisfies typeof ReportListQuery.Type,
-    }),
-  );
+    })
+    .then((response) => apiData(ReportList, response));
 }
 
-async function loadReport(id: string): Promise<ReportItem> {
-  return apiData(ReportDetail, await adminClient().reports.detail.get({ query: { id } }));
+function loadReport(id: string): Promise<ReportItem> {
+  return adminClient()
+    .reports.detail.get({ query: { id } })
+    .then((response) => apiData(ReportDetail, response));
 }
 
 export { loadReport, loadReports };

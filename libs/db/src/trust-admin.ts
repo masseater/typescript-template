@@ -9,7 +9,7 @@ import {
 } from "@repo/config";
 import { count, desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { Clock, Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { auditWhenTargeted } from "./audit.ts";
 import { query } from "./database.ts";
@@ -21,7 +21,7 @@ import { TrustSubjectNotFound, TrustTargetUnavailable } from "./trust.ts";
 
 const targetUser = alias(user, "report_target");
 const reporterUser = alias(user, "report_reporter");
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 function matchesStatus(status: ReportStatus | undefined) {
   return status === undefined ? undefined : eq(memberReport.status, status);
@@ -157,7 +157,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget(
   const now = yield* clockDate;
   const accountState = suspended ? ACCOUNT_STATE.suspended : ACCOUNT_STATE.active;
   const action = suspended ? AUDIT_ACTION.memberSuspended : AUDIT_ACTION.memberUnsuspended;
-  const [, updated] = yield* query(async (database) => {
+  const [, updated] = yield* query((database) => {
     const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
     const audit = database.run(
       auditWhenTargeted(

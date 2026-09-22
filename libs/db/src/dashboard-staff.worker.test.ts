@@ -9,7 +9,7 @@ import {
   auditActions,
 } from "@repo/config";
 import { and, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { dashboardStaff } from "./dashboard-staff.ts";
 import { query } from "./database.ts";
@@ -24,9 +24,10 @@ const seedMembers = Effect.gen(function* seedMembersProgram() {
   yield* addUser({ role: ROLE.administrator, userId: "admin-a" });
 });
 
-const seedAudit = Effect.gen(function* seedAuditProgram() {
-  yield* query(async (database) => {
-    await database.insert(auditEvent).values([
+const seedAudit = query((database) =>
+  database
+    .insert(auditEvent)
+    .values([
       {
         action: AUDIT_ACTION.roleChanged,
         actorId: "admin-a",
@@ -37,13 +38,13 @@ const seedAudit = Effect.gen(function* seedAuditProgram() {
       {
         action: AUDIT_ACTION.userDeleted,
         actorId: "admin-a",
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
+        createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
         id: "audit-delete",
         targetId: "member-b",
       },
-    ]);
-  });
-});
+    ])
+    .then(() => undefined),
+);
 
 it.effect("aggregates member counts into daily and weekly buckets", () =>
   Effect.gen(function* program() {
@@ -69,17 +70,20 @@ it.effect("aggregates member counts into daily and weekly buckets", () =>
 it.effect("returns empty trends for buckets outside the requested range", () =>
   Effect.gen(function* program() {
     yield* seedMembers;
-    yield* query(async (database) => {
-      await database.insert(metricSnapshot).values({
-        bucket: "1999-01-01",
-        clientKind: CLIENT_KIND.total,
-        computedAt: new Date("1999-01-01T00:00:00.000Z"),
-        id: "old-snapshot",
-        metric: METRIC_KEY.memberCount,
-        period: "daily",
-        value: 99,
-      });
-    });
+    yield* query((database) =>
+      database
+        .insert(metricSnapshot)
+        .values({
+          bucket: "1999-01-01",
+          clientKind: CLIENT_KIND.total,
+          computedAt: DateTime.toDate(DateTime.makeUnsafe("1999-01-01T00:00:00.000Z")),
+          id: "old-snapshot",
+          metric: METRIC_KEY.memberCount,
+          period: "daily",
+          value: 99,
+        })
+        .then(() => undefined),
+    );
     const trend = yield* dashboardStaff.metricTrend({
       days: 7,
       metric: METRIC_KEY.memberCount,
@@ -122,15 +126,18 @@ it.effect("renders every audit action literal without hard-coding the list", () 
   Effect.gen(function* program() {
     yield* seedMembers;
     for (const action of auditActions) {
-      yield* query(async (database) => {
-        await database.insert(auditEvent).values({
-          action,
-          actorId: "admin-a",
-          createdAt: recordedAt,
-          id: `audit-${action}`,
-          targetId: "member-a",
-        });
-      });
+      yield* query((database) =>
+        database
+          .insert(auditEvent)
+          .values({
+            action,
+            actorId: "admin-a",
+            createdAt: recordedAt,
+            id: `audit-${action}`,
+            targetId: "member-a",
+          })
+          .then(() => undefined),
+      );
     }
     const listed = yield* dashboardStaff.auditEvents({ limit: 20, offset: 0 });
     const actions = new Set(listed.events.map((event) => event.action));
@@ -144,7 +151,7 @@ it.effect("does not return personal identifiers in overview aggregates", () =>
   Effect.gen(function* program() {
     yield* addUser({ userId: "member-a" });
     const overview = yield* dashboardStaff.overviewWithoutPii();
-    const serialized = JSON.stringify(overview);
+    const serialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(overview);
     assert.notInclude(serialized, "member-a@example.com");
     assert.notInclude(serialized, '"name"');
   }).pipe(Effect.provide(TestDatabase)),
@@ -153,36 +160,39 @@ it.effect("does not return personal identifiers in overview aggregates", () =>
 it.effect("classifies wiki sessions by user agent when refreshing snapshots", () =>
   Effect.gen(function* program() {
     yield* addUser({ userId: "staff" });
-    yield* query(async (database) => {
-      await database.insert(session).values([
-        {
-          audience: APPLICATION.wiki,
-          authenticationMethod: "password_totp",
-          createdAt: recordedAt,
-          expiresAt: new Date("2027-01-01T00:00:00.000Z"),
-          id: "session-human",
-          securityVersion: 0,
-          token: "token-human",
-          updatedAt: recordedAt,
-          userAgent: "Mozilla/5.0",
-          userId: "staff",
-        },
-        {
-          audience: APPLICATION.wiki,
-          authenticationMethod: "password_totp",
-          createdAt: recordedAt,
-          expiresAt: new Date("2027-01-01T00:00:00.000Z"),
-          id: "session-ai",
-          securityVersion: 0,
-          token: "token-ai",
-          updatedAt: recordedAt,
-          userAgent: "Cursor/1.0",
-          userId: "staff",
-        },
-      ]);
-    });
+    yield* query((database) =>
+      database
+        .insert(session)
+        .values([
+          {
+            audience: APPLICATION.wiki,
+            authenticationMethod: "password_totp",
+            createdAt: recordedAt,
+            expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
+            id: "session-human",
+            securityVersion: 0,
+            token: "token-human",
+            updatedAt: recordedAt,
+            userAgent: "Mozilla/5.0",
+            userId: "staff",
+          },
+          {
+            audience: APPLICATION.wiki,
+            authenticationMethod: "password_totp",
+            createdAt: recordedAt,
+            expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
+            id: "session-ai",
+            securityVersion: 0,
+            token: "token-ai",
+            updatedAt: recordedAt,
+            userAgent: "Cursor/1.0",
+            userId: "staff",
+          },
+        ])
+        .then(() => undefined),
+    );
     yield* refreshMetricSnapshots();
-    const today = bucketFor(METRIC_PERIOD.daily, new Date());
+    const today = bucketFor(METRIC_PERIOD.daily, DateTime.toDate(DateTime.nowUnsafe()));
     const wikiSnapshots = yield* query((database) =>
       database
         .select()
@@ -203,7 +213,7 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
 
 it("formats daily buckets as UTC dates", () => {
   assert.strictEqual(
-    bucketFor(METRIC_PERIOD.daily, new Date("2026-03-15T12:34:56.000Z")),
+    bucketFor(METRIC_PERIOD.daily, DateTime.toDate(DateTime.makeUnsafe("2026-03-15T12:34:56.000Z"))),
     "2026-03-15",
   );
 });

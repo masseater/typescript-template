@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { SUBSCRIPTION_STATUS } from "@repo/config";
-import { Effect, Layer } from "effect";
+import { DateTime, Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 
 import {
@@ -37,7 +37,7 @@ const countEvents = Effect.map(
   },
 );
 
-const monthLater = new Date("2026-10-20T00:00:00.000Z");
+const monthLater = DateTime.toDate(DateTime.makeUnsafe("2026-10-20T00:00:00.000Z"));
 
 function active(
   memberId: string,
@@ -55,7 +55,7 @@ function active(
 }
 
 function event(id: string, createdAt: string, type = "customer.subscription.updated") {
-  return { createdAt: new Date(createdAt), id, type };
+  return { createdAt: DateTime.toDate(DateTime.makeUnsafe(createdAt)), id, type };
 }
 
 it.effect("a member without a subscription is free and is refused paid features", () =>
@@ -76,7 +76,7 @@ it.effect("a member without a subscription is free and is refused paid features"
 it.effect("an active subscription inside its period makes the member paid", () =>
   Effect.gen(function* program() {
     yield* addMember("alice");
-    yield* TestClock.setTime(new Date("2026-09-20T00:00:00.000Z").getTime());
+    yield* TestClock.setTime(DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")));
     const outcome = yield* recordSubscription(
       event("evt_1", "2026-09-20T00:00:00.000Z"),
       active("alice"),

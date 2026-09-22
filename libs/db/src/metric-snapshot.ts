@@ -7,7 +7,7 @@ import {
   metricPeriods,
 } from "@repo/config";
 import { count, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, clientKindOf, type ClientKind } from "./client-kind.ts";
 import { query } from "./database.ts";
@@ -16,12 +16,14 @@ import { metricSnapshot, session, user, type MetricKey, type MetricPeriod } from
 const dailyBucket = (instant: Date): string => instant.toISOString().slice(0, 10);
 
 const weeklyBucket = (instant: Date): string => {
-  const utc = new Date(
-    Date.UTC(instant.getUTCFullYear(), instant.getUTCMonth(), instant.getUTCDate()),
+  const utc = DateTime.toDate(
+    DateTime.makeUnsafe(
+      Date.UTC(instant.getUTCFullYear(), instant.getUTCMonth(), instant.getUTCDate()),
+    ),
   );
   const day = utc.getUTCDay() || 7;
   utc.setUTCDate(utc.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+  const yearStart = DateTime.toDate(DateTime.makeUnsafe(Date.UTC(utc.getUTCFullYear(), 0, 1)));
   const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
   return `${utc.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 };
@@ -79,7 +81,7 @@ const currentSnapshotValues = Effect.fn("currentSnapshotValues")(function* curre
 
 const refreshMetricSnapshots = Effect.fn("refreshMetricSnapshots")(
   function* refreshMetricSnapshots() {
-    const computedAt = new Date();
+    const computedAt = DateTime.toDate(yield* DateTime.now);
     const values = yield* currentSnapshotValues();
     for (const period of metricPeriods) {
       const bucket = bucketFor(period, computedAt);

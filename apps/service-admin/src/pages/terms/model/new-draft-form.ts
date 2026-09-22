@@ -48,10 +48,11 @@ function useNewDraftForm(): NewDraftForm {
       }
     },
     handleSave: (): void => {
-      action.run(async () => {
-        const saved = await createDraft(fields);
-        await navigate({ params: { version: saved.version }, to: "/terms/$version" });
-      });
+      action.run(() =>
+        createDraft(fields).then((saved) =>
+          navigate({ params: { version: saved.version }, to: "/terms/$version" }),
+        ),
+      );
     },
     handleSummaryChange: (summary): void => {
       setFields((current) => ({ ...current, summary }));

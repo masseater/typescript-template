@@ -5,20 +5,26 @@ import { AgreementPublished, AgreementVersionSaved } from "#shared/contracts/ind
 
 import type { AgreementDraft, AgreementDraftRevision } from "#shared/contracts/index.ts";
 
-async function createDraft(
+function createDraft(
   draft: typeof AgreementDraft.Type,
 ): Promise<typeof AgreementVersionSaved.Type> {
-  return apiData(AgreementVersionSaved, await adminClient().agreements.post(draft));
+  return adminClient()
+    .agreements.post(draft)
+    .then((response) => apiData(AgreementVersionSaved, response));
 }
 
-async function reviseDraft(
+function reviseDraft(
   revision: typeof AgreementDraftRevision.Type,
 ): Promise<typeof AgreementVersionSaved.Type> {
-  return apiData(AgreementVersionSaved, await adminClient().agreements.patch(revision));
+  return adminClient()
+    .agreements.patch(revision)
+    .then((response) => apiData(AgreementVersionSaved, response));
 }
 
-async function publishVersion(id: string): Promise<typeof AgreementPublished.Type> {
-  return apiData(AgreementPublished, await adminClient().agreements.publish.post({ id }));
+function publishVersion(id: string): Promise<typeof AgreementPublished.Type> {
+  return adminClient()
+    .agreements.publish.post({ id })
+    .then((response) => apiData(AgreementPublished, response));
 }
 
 export { createDraft, publishVersion, reviseDraft };

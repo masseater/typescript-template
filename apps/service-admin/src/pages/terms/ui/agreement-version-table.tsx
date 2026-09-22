@@ -9,6 +9,7 @@ import {
   formatWarekiDate,
 } from "@repo/ui";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
+import { DateTime } from "effect";
 
 import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
 
@@ -50,7 +51,9 @@ const versionTableColumns = columnHelper.columns([
   columnHelper.accessor("publishedAt", {
     cell: (cellContext) => {
       const publishedAt = cellContext.getValue();
-      return publishedAt === null ? "—" : formatWarekiDate(new Date(publishedAt));
+      return publishedAt === null
+        ? "—"
+        : formatWarekiDate(DateTime.toDate(DateTime.makeUnsafe(publishedAt)));
     },
     header: "公開日",
     id: "publishedOn",

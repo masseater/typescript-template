@@ -6,7 +6,7 @@ import {
   type Application,
 } from "@repo/config";
 import { and, eq, gt, isNull, type SQL } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { auditRow, type AuditEntry } from "./audit.ts";
 import { query } from "./database.ts";
@@ -24,10 +24,11 @@ const INVITE_LIFETIME_MS =
   INVITE_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
 
 const hashInviteToken = (rawToken: string): Effect.Effect<string> =>
-  Effect.promise(async () => {
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken));
-    return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  });
+  Effect.promise(() =>
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken)).then((digest) =>
+      [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+    ),
+  );
 
 const freshToken = (): string => `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll("-", "");
 
@@ -59,11 +60,12 @@ const previewInvite = Effect.fn("previewInvite")(function* previewInvite(
   audience: Application,
 ) {
   const tokenHash = yield* hashInviteToken(rawToken);
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [open] = yield* query((database) =>
     database
       .select({ email: invite.email, id: invite.id, permission: invite.permission })
       .from(invite)
-      .where(and(eq(invite.tokenHash, tokenHash), openInvite(audience, new Date())))
+      .where(and(eq(invite.tokenHash, tokenHash), openInvite(audience, checkedAt)))
       .limit(1),
   );
   return open;
@@ -77,11 +79,16 @@ const issueInvite = Effect.fn("issueInvite")(function* issueInvite(draft: {
   readonly permission: AccountPermission;
 }) {
   const email = draft.email.trim().toLowerCase();
-  const expiresAt = new Date(Date.now() + (draft.lifetimeMilliseconds ?? INVITE_LIFETIME_MS));
+  const nowInstant = yield* DateTime.now;
+  const now = DateTime.toDate(nowInstant);
+  const expiresAt = DateTime.toDate(
+    DateTime.makeUnsafe(
+      DateTime.toEpochMillis(nowInstant) + (draft.lifetimeMilliseconds ?? INVITE_LIFETIME_MS),
+    ),
+  );
   if ((yield* findRegistered(email)) !== undefined) {
     return yield* new InviteRejected({ reason: "registered" });
   }
-  const now = new Date();
   const [pending] = yield* query((database) =>
     database
       .select({ id: invite.id })
@@ -95,21 +102,23 @@ const issueInvite = Effect.fn("issueInvite")(function* issueInvite(draft: {
   const rawToken = freshToken();
   const tokenHash = yield* hashInviteToken(rawToken);
   const inviteId = crypto.randomUUID();
-  yield* query(async (database): Promise<void> => {
-    await database.batch([
-      database.insert(invite).values({
-        audience: draft.audience,
-        createdAt: now,
-        email,
-        expiresAt,
-        id: inviteId,
-        inviterId: draft.audit.actorId,
-        permission: draft.permission,
-        tokenHash,
-      }),
-      database.insert(auditEvent).values(auditRow({ ...draft.audit, targetId: inviteId })),
-    ]);
-  });
+  yield* query((database) =>
+    database
+      .batch([
+        database.insert(invite).values({
+          audience: draft.audience,
+          createdAt: now,
+          email,
+          expiresAt,
+          id: inviteId,
+          inviterId: draft.audit.actorId,
+          permission: draft.permission,
+          tokenHash,
+        }),
+        database.insert(auditEvent).values(auditRow({ ...draft.audit, targetId: inviteId })),
+      ])
+      .then(() => undefined),
+  );
   return { email, expiresAt, id: inviteId, token: rawToken };
 });
 
@@ -127,41 +136,43 @@ const acceptInvite = Effect.fn("acceptInvite")(function* acceptInvite(accepted: 
     return yield* new InviteRejected({ reason: "registered" });
   }
   const userId = crypto.randomUUID();
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   const role = audienceRoles[accepted.audience];
-  yield* query(async (database): Promise<void> => {
-    await database.batch([
-      database.update(invite).set({ acceptedAt: now }).where(eq(invite.id, open.id)),
-      database.insert(user).values({
-        accountState: ACCOUNT_STATE.active,
-        createdAt: now,
-        email: open.email,
-        emailVerified: true,
-        id: userId,
-        name: accepted.name,
-        permission: open.permission,
-        role,
-        updatedAt: now,
-      }),
-      database.insert(account).values({
-        accountId: userId,
-        createdAt: now,
-        id: crypto.randomUUID(),
-        password: accepted.passwordHash,
-        providerId: "credential",
-        updatedAt: now,
-        userId,
-      }),
-      database.insert(auditEvent).values(
-        auditRow({
-          action: AUDIT_ACTION.inviteAccepted,
-          actorId: userId,
-          actorKind: role,
-          targetId: open.id,
+  yield* query((database) =>
+    database
+      .batch([
+        database.update(invite).set({ acceptedAt: now }).where(eq(invite.id, open.id)),
+        database.insert(user).values({
+          accountState: ACCOUNT_STATE.active,
+          createdAt: now,
+          email: open.email,
+          emailVerified: true,
+          id: userId,
+          name: accepted.name,
+          permission: open.permission,
+          role,
+          updatedAt: now,
         }),
-      ),
-    ]);
-  }).pipe(rejectConsumed);
+        database.insert(account).values({
+          accountId: userId,
+          createdAt: now,
+          id: crypto.randomUUID(),
+          password: accepted.passwordHash,
+          providerId: "credential",
+          updatedAt: now,
+          userId,
+        }),
+        database.insert(auditEvent).values(
+          auditRow({
+            action: AUDIT_ACTION.inviteAccepted,
+            actorId: userId,
+            actorKind: role,
+            targetId: open.id,
+          }),
+        ),
+      ])
+      .then(() => undefined),
+  ).pipe(rejectConsumed);
   return { email: open.email, permission: open.permission, role, userId };
 });
 

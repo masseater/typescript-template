@@ -15,29 +15,28 @@ interface Loaded<Value> {
   readonly state: RequestResult<Value>;
 }
 
-async function fetchVersions(): Promise<VersionList> {
-  try {
-    return apiData(AgreementVersionList, await adminClient().agreements.get());
-  } catch (failure) {
-    throw new Error(errorMessage(failure));
-  }
+function fetchVersions(): Promise<VersionList> {
+  return adminClient()
+    .agreements.get()
+    .then((response) => apiData(AgreementVersionList, response))
+    .catch((failure: unknown) => {
+      throw new Error(errorMessage(failure));
+    });
 }
 
-async function fetchVersion(version: string): Promise<VersionDetail> {
-  try {
-    return apiData(
-      AgreementVersionDetail,
-      await adminClient().agreements.version.get({ query: { version } }),
-    );
-  } catch (failure) {
-    throw new Error(errorMessage(failure));
-  }
+function fetchVersion(version: string): Promise<VersionDetail> {
+  return adminClient()
+    .agreements.version.get({ query: { version } })
+    .then((response) => apiData(AgreementVersionDetail, response))
+    .catch((failure: unknown) => {
+      throw new Error(errorMessage(failure));
+    });
 }
 
 const versionListAtom = requestAtom(fetchVersions);
 
 const versionDetailAtom = Atom.family((version: string) =>
-  requestAtom(async () => fetchVersion(version)),
+  requestAtom(() => fetchVersion(version)),
 );
 
 function useAgreementVersions(): Loaded<VersionList> {

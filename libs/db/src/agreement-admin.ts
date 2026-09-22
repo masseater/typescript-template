@@ -1,6 +1,6 @@
 import { ADMIN_PERMISSION, AUDIT_ACTION, type AgreementKind } from "@repo/config";
 import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { agreementVersion } from "./agreement-schema.ts";
 import { AgreementVersionTaken } from "./agreement-version-taken.ts";
@@ -81,12 +81,13 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
     readonly version: string;
   }) {
     const actor = yield* requireAdmin(draft.sessionId);
+    const createdAt = DateTime.toDate(yield* DateTime.now);
     const [created] = yield* query((database) =>
       database
         .insert(agreementVersion)
         .values({
           body: draft.body,
-          createdAt: new Date(),
+          createdAt,
           createdBy: actor.user.id,
           id: crypto.randomUUID(),
           kind: draft.kind,
@@ -131,13 +132,13 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     readonly sessionId: string;
   }) {
     const actor = yield* requirePublishingAdmin(published.sessionId);
-    const publishedAt = new Date();
+    const publishedAt = DateTime.toDate(yield* DateTime.now);
     const change = {
       action: AUDIT_ACTION.agreementPublished,
       actorId: actor.user.id,
       targetId: published.id,
     } as const;
-    const [, publishedVersions] = yield* query(async (database) => {
+    const [, publishedVersions] = yield* query((database) => {
       const unpublishedDraft = and(
         eq(agreementVersion.id, published.id),
         isNull(agreementVersion.publishedAt),

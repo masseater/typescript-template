@@ -8,18 +8,35 @@ import { serviceName } from "#shared/config/index.ts";
 import type { ReactElement } from "react";
 
 const Redirect = Schema.Struct({ url: Schema.String });
+const ConsentBody = Schema.Struct({
+  accept: Schema.Boolean,
+  oauth_query: Schema.String,
+});
+const encodeConsentBody = Schema.encodePromise(Schema.fromJsonString(ConsentBody));
 
-async function submitDecision(accept: boolean): Promise<void> {
-  const response = await fetch("/api/auth/oauth2/consent", {
-    body: JSON.stringify({ accept, oauth_query: globalThis.location.search.slice(1) }),
+function postConsent(fetchImpl: typeof fetch, body: string): Promise<Response> {
+  return fetchImpl("/api/auth/oauth2/consent", {
+    body,
     credentials: "same-origin",
     headers: { "content-type": "application/json" },
     method: "POST",
   });
-  if (!response.ok) {
-    throw new Error("連携の許可を処理できませんでした。");
-  }
-  globalThis.location.assign(decodeJson(Redirect, await response.json()).url);
+}
+
+function submitDecision(accept: boolean): Promise<void> {
+  return encodeConsentBody({
+    accept,
+    oauth_query: globalThis.location.search.slice(1),
+  }).then((body) =>
+    postConsent(fetch, body).then((response) => {
+      if (!response.ok) {
+        throw new Error("連携の許可を処理できませんでした。");
+      }
+      return response.json().then((payload) => {
+        globalThis.location.assign(decodeJson(Redirect, payload).url);
+      });
+    }),
+  );
 }
 
 function ConsentActions({
@@ -27,21 +44,19 @@ function ConsentActions({
   onError,
 }: Readonly<{ client: string; onError: (message: string) => void }>): ReactElement {
   const [pending, setPending] = useState(false);
-  async function decide(accept: boolean): Promise<void> {
+  function decide(accept: boolean): void {
     setPending(true);
     onError("");
-    try {
-      await submitDecision(accept);
-    } catch (error) {
+    void submitDecision(accept).catch((error: unknown) => {
       onError(error instanceof Error ? error.message : String(error));
       setPending(false);
-    }
+    });
   }
   function allow(): void {
-    void decide(true);
+    decide(true);
   }
   function deny(): void {
-    void decide(false);
+    decide(false);
   }
   return (
     <FormColumn>

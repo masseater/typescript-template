@@ -1,6 +1,6 @@
 import { PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, paidStatuses } from "@repo/config";
 import { and, eq, lte } from "drizzle-orm";
-import { Clock, Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { query } from "./database.ts";
@@ -32,7 +32,7 @@ interface PlanView {
   readonly status: SubscriptionStatus | undefined;
 }
 
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 const subscriptionColumns = {
   cancelAtPeriodEnd: planSubscription.cancelAtPeriodEnd,

@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { APPLICATION, ROLE } from "@repo/config";
-import { Effect } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { getMember, listUsers } from "./admin.ts";
 import { dashboardStaff } from "./dashboard-staff.ts";
@@ -20,39 +20,46 @@ const adminSession = Effect.fn("adminSession")(function* adminSession(userId: st
 const seedSecret = Effect.fn("seedSecret")(function* seedSecret() {
   yield* addUser({ userId: "sender" });
   yield* addUser({ userId: "recipient" });
-  const now = new Date("2026-09-20T00:00:00.000Z");
-  yield* query(async (database) => {
-    await database.insert(conversation).values({
-      directKey: "recipient:sender",
-      id: "thread",
-      kind: CONVERSATION_KIND.direct,
-      lastMessageAt: now,
-    });
-    await database.insert(conversationParticipant).values([
-      {
-        conversationId: "thread",
-        id: "part-sender",
-        joinedAt: now,
-        memberId: "sender",
-        memberName: "sender",
-      },
-      {
-        conversationId: "thread",
-        id: "part-recipient",
-        joinedAt: now,
-        memberId: "recipient",
-        memberName: "recipient",
-      },
-    ]);
-    await database.insert(directMessage).values({
-      body: secretBody,
-      conversationId: "thread",
-      createdAt: now,
-      id: "message",
-      senderId: "sender",
-      senderName: "sender",
-    });
-  });
+  const now = DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z"));
+  yield* query((database) =>
+    database
+      .insert(conversation)
+      .values({
+        directKey: "recipient:sender",
+        id: "thread",
+        kind: CONVERSATION_KIND.direct,
+        lastMessageAt: now,
+      })
+      .then(() =>
+        database.insert(conversationParticipant).values([
+          {
+            conversationId: "thread",
+            id: "part-sender",
+            joinedAt: now,
+            memberId: "sender",
+            memberName: "sender",
+          },
+          {
+            conversationId: "thread",
+            id: "part-recipient",
+            joinedAt: now,
+            memberId: "recipient",
+            memberName: "recipient",
+          },
+        ]),
+      )
+      .then(() =>
+        database.insert(directMessage).values({
+          body: secretBody,
+          conversationId: "thread",
+          createdAt: now,
+          id: "message",
+          senderId: "sender",
+          senderName: "sender",
+        }),
+      )
+      .then(() => undefined),
+  );
 });
 
 it.effect("admin and staff reads never include direct message bodies", () =>
@@ -63,7 +70,12 @@ it.effect("admin and staff reads never include direct message bodies", () =>
     const member = yield* getMember(sessionId, "sender");
     const overview = yield* dashboardStaff.overviewWithoutPii();
     const audit = yield* dashboardStaff.auditEvents({ limit: 20, offset: 0 });
-    const serialized = JSON.stringify({ audit, listed, member, overview });
+    const serialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+      audit,
+      listed,
+      member,
+      overview,
+    });
     assert.isFalse(serialized.includes(secretBody));
   }).pipe(Effect.provide(TestDatabase)),
 );

@@ -1,6 +1,6 @@
 import { APPLICATION, ROLE } from "@repo/config";
 import { count, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
@@ -33,37 +33,43 @@ const addMember = (added: {
   readonly name?: string;
   readonly profile?: string;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: new Date("2026-01-01T00:00:00.000Z"),
-      email: added.email,
-      emailVerified: true,
-      id: added.userId,
-      name: added.name ?? added.userId,
-      profile: added.profile ?? "",
-      role: ROLE.member,
-      socialLinks: [],
-      updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-    });
-  });
+  query((database) =>
+    database
+      .insert(user)
+      .values({
+        createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z")),
+        email: added.email,
+        emailVerified: true,
+        id: added.userId,
+        name: added.name ?? added.userId,
+        profile: added.profile ?? "",
+        role: ROLE.member,
+        socialLinks: [],
+        updatedAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z")),
+      })
+      .then(() => undefined),
+  );
 
 const countWithdrawnMember = (memberId: string) =>
-  query(async (database) => {
-    const [row] = await database
+  query((database) =>
+    database
       .select({ count: count() })
       .from(withdrawnMember)
-      .where(eq(withdrawnMember.memberId, memberId));
-    return row?.count ?? 0;
-  });
+      .where(eq(withdrawnMember.memberId, memberId))
+      .then((rows) => {
+        const [row] = rows;
+        return row?.count ?? 0;
+      }),
+  );
 
 const countLiveSessions = (memberId: string) =>
-  query(async (database) => {
-    const sessions = await database
+  query((database) =>
+    database
       .select({ id: session.id })
       .from(session)
-      .where(eq(session.userId, memberId));
-    return sessions.length;
-  });
+      .where(eq(session.userId, memberId))
+      .then((sessions) => sessions.length),
+  );
 
 const getMember = (memberId: string) =>
   Effect.gen(function* loadMember() {
@@ -79,7 +85,7 @@ const getMember = (memberId: string) =>
 
 describe("withdrawMember", () => {
   describe("a member who leaves with retention", () => {
-    const it = test.extend("leftMember", async () =>
+    const it = test.extend("leftMember", () =>
       runTest(
         Effect.gen(function* leaveMember() {
           yield* addUser({ userId: "leaver" });
@@ -110,7 +116,7 @@ describe("withdrawMember", () => {
   });
 
   describe("a member who leaves with immediate deletion", () => {
-    const it = test.extend("deletedMember", async () =>
+    const it = test.extend("deletedMember", () =>
       runTest(
         Effect.gen(function* deleteMember() {
           yield* addUser({ userId: "gone" });
@@ -131,7 +137,7 @@ describe("withdrawMember", () => {
 
 describe("findRecoveryOffer", () => {
   describe("a new member with the same verified email as a withdrawn snapshot", () => {
-    const it = test.extend("offer", async () =>
+    const it = test.extend("offer", () =>
       runTest(
         Effect.gen(function* loadOffer() {
           yield* addMember({
@@ -152,7 +158,7 @@ describe("findRecoveryOffer", () => {
   });
 
   describe("two withdrawn snapshots for the same email", () => {
-    const it = test.extend("offer", async () =>
+    const it = test.extend("offer", () =>
       runTest(
         Effect.gen(function* loadOffer() {
           yield* addMember({
@@ -170,7 +176,7 @@ describe("findRecoveryOffer", () => {
           yield* query((database) =>
             database
               .update(withdrawnMember)
-              .set({ withdrawnAt: new Date("2020-01-01T00:00:00.000Z") })
+              .set({ withdrawnAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
               .where(eq(withdrawnMember.memberId, "older")),
           );
           yield* addMember({ email: "returning@example.com", userId: "newcomer" });
@@ -184,7 +190,7 @@ describe("findRecoveryOffer", () => {
   });
 
   describe("a member with a different email", () => {
-    const it = test.extend("offer", async () =>
+    const it = test.extend("offer", () =>
       runTest(
         Effect.gen(function* loadOffer() {
           yield* addMember({ email: "former@example.com", userId: "former" });
@@ -200,7 +206,7 @@ describe("findRecoveryOffer", () => {
   });
 
   describe("an expired withdrawn snapshot", () => {
-    const it = test.extend("offer", async () =>
+    const it = test.extend("offer", () =>
       runTest(
         Effect.gen(function* loadOffer() {
           yield* addMember({ email: "returning@example.com", userId: "former" });
@@ -208,7 +214,7 @@ describe("findRecoveryOffer", () => {
           yield* query((database) =>
             database
               .update(leaveRequestTable)
-              .set({ purgeAt: new Date("2020-01-01T00:00:00.000Z") })
+              .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
               .where(eq(leaveRequestTable.memberId, "former")),
           );
           yield* addMember({ email: "returning@example.com", userId: "newcomer" });
@@ -222,7 +228,7 @@ describe("findRecoveryOffer", () => {
   });
 
   describe("a purged withdrawn snapshot", () => {
-    const it = test.extend("offer", async () =>
+    const it = test.extend("offer", () =>
       runTest(
         Effect.gen(function* loadOffer() {
           yield* addMember({ email: "returning@example.com", userId: "former" });
@@ -230,10 +236,10 @@ describe("findRecoveryOffer", () => {
           yield* query((database) =>
             database
               .update(leaveRequestTable)
-              .set({ purgeAt: new Date("2020-01-01T00:00:00.000Z") })
+              .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
               .where(eq(leaveRequestTable.memberId, "former")),
           );
-          yield* purgeExpiredWithdrawnMembers(new Date("2026-01-02T00:00:00.000Z"));
+          yield* purgeExpiredWithdrawnMembers(DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")));
           yield* addMember({ email: "returning@example.com", userId: "newcomer" });
           return yield* findRecoveryOffer("newcomer");
         }),
@@ -247,7 +253,7 @@ describe("findRecoveryOffer", () => {
 
 describe("acceptRecovery", () => {
   describe("within the retention window", () => {
-    const it = test.extend("restoredMember", async () =>
+    const it = test.extend("restoredMember", () =>
       runTest(
         Effect.gen(function* restoreMember() {
           yield* addMember({
@@ -277,10 +283,10 @@ describe("acceptRecovery", () => {
   });
 
   describe("consent recorded before withdrawal", () => {
-    const it = test.extend("restoredConsent", async () =>
+    const it = test.extend("restoredConsent", () =>
       runTest(
         Effect.gen(function* restoreConsent() {
-          const acceptedAt = new Date("2026-02-01T00:00:00.000Z");
+          const acceptedAt = DateTime.toDate(DateTime.makeUnsafe("2026-02-01T00:00:00.000Z"));
           yield* addMember({ email: "returning@example.com", userId: "former" });
           yield* query((database) =>
             database.insert(agreementAcceptance).values([
@@ -324,7 +330,7 @@ describe("acceptRecovery", () => {
 
 describe("declineRecovery", () => {
   describe("within the retention window", () => {
-    const it = test.extend("declinedMember", async () =>
+    const it = test.extend("declinedMember", () =>
       runTest(
         Effect.gen(function* declineMember() {
           yield* addMember({ email: "returning@example.com", userId: "former" });
@@ -347,7 +353,7 @@ describe("declineRecovery", () => {
 
 describe("purgeExpiredWithdrawnMembers", () => {
   describe("after the retention window", () => {
-    const it = test.extend("purgedMember", async () =>
+    const it = test.extend("purgedMember", () =>
       runTest(
         Effect.gen(function* purgeMember() {
           yield* addUser({ userId: "expired" });
@@ -355,10 +361,10 @@ describe("purgeExpiredWithdrawnMembers", () => {
           yield* query((database) =>
             database
               .update(leaveRequestTable)
-              .set({ purgeAt: new Date("2020-01-01T00:00:00.000Z") })
+              .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
               .where(eq(leaveRequestTable.memberId, "expired")),
           );
-          const purged = yield* purgeExpiredWithdrawnMembers(new Date("2026-01-02T00:00:00.000Z"));
+          const purged = yield* purgeExpiredWithdrawnMembers(DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")));
           return {
             purged,
             withdrawn: yield* countWithdrawnMember("expired"),
@@ -376,7 +382,7 @@ describe("purgeExpiredWithdrawnMembers", () => {
 
 describe("countLiveSessions", () => {
   describe("a member whose sessions were revoked on leave", () => {
-    const it = test.extend("sessionCount", async () =>
+    const it = test.extend("sessionCount", () =>
       runTest(
         Effect.gen(function* countSessions() {
           yield* addUser({ role: ROLE.member, userId: "leaver" });

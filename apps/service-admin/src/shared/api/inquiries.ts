@@ -4,8 +4,10 @@ import { requestAtom } from "@repo/ui";
 import { PendingCount } from "#shared/contracts/index.ts";
 import { adminClient } from "./client.ts";
 
-async function loadPendingCount(): Promise<number> {
-  return apiData(PendingCount, await adminClient().inquiries["pending-count"].get()).count;
+function loadPendingCount(): Promise<number> {
+  return adminClient()
+    .inquiries["pending-count"].get()
+    .then((response) => apiData(PendingCount, response).count);
 }
 
 const pendingCountAtom = requestAtom(loadPendingCount);

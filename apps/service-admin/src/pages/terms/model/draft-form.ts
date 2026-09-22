@@ -44,17 +44,18 @@ function useDraftForm(
       setFields((current) => ({ ...current, summary }));
     },
     handlePublish: (): void => {
-      action.run(async () => {
-        await reviseDraft({ ...fields, id: initial.id });
-        const published = await publishVersion(initial.id);
-        await outcomes.onPublished(published.version);
-      });
+      action.run(() =>
+        reviseDraft({ ...fields, id: initial.id })
+          .then(() => publishVersion(initial.id))
+          .then((published) => outcomes.onPublished(published.version)),
+      );
     },
     handleSave: (): void => {
-      action.run(async () => {
-        await reviseDraft({ ...fields, id: initial.id });
-        outcomes.onSaved();
-      });
+      action.run(() =>
+        reviseDraft({ ...fields, id: initial.id }).then(() => {
+          outcomes.onSaved();
+        }),
+      );
     },
   };
 }

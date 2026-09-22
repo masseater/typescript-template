@@ -1,6 +1,6 @@
 import { type InquiryStatus } from "@repo/config";
 import { asc, count, desc, eq, gte, sql } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { query } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
@@ -63,7 +63,7 @@ const staffInquiryCounts = Effect.fn("staffInquiryCounts")(function* staffInquir
   for (const row of rows) {
     byStatus[row.status] = row.count;
   }
-  const since = new Date();
+  const since = DateTime.toDate(yield* DateTime.now);
   since.setUTCDate(since.getUTCDate() - 30);
   since.setUTCHours(0, 0, 0, 0);
   const trendRows = yield* query((database) =>

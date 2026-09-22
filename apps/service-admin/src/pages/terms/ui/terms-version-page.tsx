@@ -7,6 +7,7 @@ import {
   formatWarekiDate,
   resultError,
 } from "@repo/ui";
+import { DateTime } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
@@ -22,7 +23,9 @@ function PublishedBody({ version }: Readonly<{ version: VersionDetail }>): React
     <>
       <p className="text-sm text-muted-foreground">
         公開日:{" "}
-        {version.publishedAt === null ? "—" : formatWarekiDate(new Date(version.publishedAt))}
+        {version.publishedAt === null
+          ? "—"
+          : formatWarekiDate(DateTime.toDate(DateTime.makeUnsafe(version.publishedAt)))}
       </p>
       {version.summary !== null && version.summary !== "" && (
         <p className="text-sm">{version.summary}</p>

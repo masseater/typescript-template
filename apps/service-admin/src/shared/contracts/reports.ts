@@ -4,8 +4,8 @@ import { Effect, Schema } from "effect";
 const maximumReportPage = 1_000_000;
 const reportPageSize = 20;
 
-function pageNumber(fallback: number): Schema.withDecodingDefaultKey<Schema.NumberFromString> {
-  const bounded = Schema.NumberFromString.check(
+function pageNumber(fallback: number): Schema.withDecodingDefaultKey<Schema.FiniteFromString> {
+  const bounded = Schema.FiniteFromString.check(
     Schema.isInt(),
     Schema.isBetween({ maximum: maximumReportPage, minimum: 1 }),
   );
@@ -18,7 +18,7 @@ const ReportListQuery = Schema.Struct({
 });
 
 const ReportSummary = Schema.Struct({
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   id: Schema.String,
   reason: Schema.Literals(reportReasons),
   reporterName: Schema.NullOr(Schema.String),
@@ -37,7 +37,7 @@ const ReportQuery = Schema.Struct({
 });
 
 const ModerationRecord = Schema.Struct({
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   id: Schema.String,
   kind: Schema.Literals(moderationKinds),
 });
@@ -45,7 +45,7 @@ const ModerationRecord = Schema.Struct({
 const ReportDetail = Schema.Struct({
   actions: Schema.Array(ModerationRecord),
   body: Schema.String,
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   id: Schema.String,
   reason: Schema.Literals(reportReasons),
   reporterId: Schema.NullOr(Schema.String),

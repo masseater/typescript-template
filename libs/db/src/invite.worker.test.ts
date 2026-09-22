@@ -32,7 +32,7 @@ const accepted = { name: "Invited", passwordHash: "hashed", rawToken: "" } as co
 
 describe("an admin invite", () => {
   describe("accepted once", () => {
-    const it = test.extend("outcome", async () =>
+    const it = test.extend("outcome", () =>
       runTest(
         Effect.gen(function* acceptOnce() {
           const sessionId = yield* ownerSession();
@@ -100,7 +100,7 @@ describe("an admin invite", () => {
   });
 
   describe("accepted on the wrong application", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* wrongAudience() {
           const sessionId = yield* ownerSession();
@@ -123,7 +123,7 @@ describe("an admin invite", () => {
   });
 
   describe("for a registered email", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* registered() {
           yield* addUser({ userId: "member" });
@@ -142,7 +142,7 @@ describe("an admin invite", () => {
   });
 
   describe("issued twice for the same email", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* pending() {
           const sessionId = yield* ownerSession();
@@ -165,7 +165,7 @@ describe("an admin invite", () => {
   });
 
   describe("with an unknown token", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(acceptInvite({ ...accepted, audience: APPLICATION.admin, rawToken: "unknown" })));
 
     it("is rejected", ({ tag }) => {
@@ -174,7 +174,7 @@ describe("an admin invite", () => {
   });
 
   describe("that expired", () => {
-    const it = test.extend("preview", async () =>
+    const it = test.extend("preview", () =>
       runTest(
         Effect.gen(function* expired() {
           const invite = yield* issueInvite({
@@ -196,7 +196,7 @@ describe("an admin invite", () => {
 
 describe("a staff invite", () => {
   describe("accepted", () => {
-    const it = test.extend("outcome", async () =>
+    const it = test.extend("outcome", () =>
       runTest(
         Effect.gen(function* acceptStaff() {
           yield* addUser({ role: ROLE.staff, userId: "editor" });

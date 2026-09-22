@@ -35,19 +35,20 @@ function InviteAdminForm({ onInvited }: Readonly<{ onInvited: () => void }>): Re
       return;
     }
     setNotice(Option.none());
-    action.run(async () => {
-      const invited = apiData(
-        AdminInvited,
-        await adminClient().admins.invites.post({ email: email.value, permission }),
-      );
-      setNotice(
-        Option.some(
-          `${invited.email} に招待メールを送りました。${formatWarekiDate(invited.expiresAt)} まで有効です。`,
-        ),
-      );
-      email.handleChange("");
-      onInvited();
-    });
+    action.run(() =>
+      adminClient()
+        .admins.invites.post({ email: email.value, permission })
+        .then((response) => {
+          const invited = apiData(AdminInvited, response);
+          setNotice(
+            Option.some(
+              `${invited.email} に招待メールを送りました。${formatWarekiDate(invited.expiresAt)} まで有効です。`,
+            ),
+          );
+          email.handleChange("");
+          onInvited();
+        }),
+    );
   }
   return (
     <form

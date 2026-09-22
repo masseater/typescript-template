@@ -56,7 +56,7 @@ function bearerToken(authorization: string): Option.Option<string> {
     : Option.none();
 }
 
-async function fetchJwks(
+function fetchJwks(
   instance: Readonly<Pick<BetterAuthInstance, "handler">>,
   origin: string,
 ): ReturnType<typeof decodeJwks> {
@@ -64,13 +64,14 @@ async function fetchJwks(
   if (typeof handler !== "function") {
     return Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));
   }
-  const response: unknown = await handler(new Request(`${origin}/api/auth/jwks`));
-  if (!(response instanceof Response)) {
-    return Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));
-  }
-  return response.ok
-    ? decodeJwks(await response.json())
-    : Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));
+  return Promise.resolve(handler(new Request(`${origin}/api/auth/jwks`))).then((response) => {
+    if (!(response instanceof Response)) {
+      return Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));
+    }
+    return response.ok
+      ? response.json().then((body) => decodeJwks(body))
+      : Promise.reject(new Error("ADMIN_JWKS_UNAVAILABLE"));
+  });
 }
 
 function verifiedClaims(
@@ -80,10 +81,10 @@ function verifiedClaims(
 ): Effect.Effect<TokenClaims, APIError> {
   return Effect.tryPromise({
     catch: () => unauthorized("ACCESS_TOKEN_INVALID"),
-    try: async () =>
+    try: () =>
       verifyJwsAccessToken(token, {
         jwksCacheKey: instance,
-        jwksFetch: async () => fetchJwks(instance, origin),
+        jwksFetch: () => fetchJwks(instance, origin),
         verifyOptions: { audience: `${origin}/mcp`, issuer: `${origin}/api/auth` },
       }),
   });

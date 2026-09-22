@@ -1,7 +1,7 @@
 import { useAtom } from "@effect/atom-react";
 import { apiData } from "@repo/runtime/client";
-import { STATUS_VARIANT, localState, request, resultError, useToast } from "@repo/ui";
-import { Option } from "effect";
+import { localState, request, resultError, useToast } from "@repo/ui";
+import { Effect, Exit, Option } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
@@ -27,22 +27,28 @@ interface AdminRowAction {
   readonly pending: boolean;
 }
 
-async function perform(admin: ListedAdmin, operation: RowOperation): Promise<string> {
-  const { admins } = adminClient();
-  if (operation.kind === "permission") {
+function perform(admin: ListedAdmin, operation: RowOperation): Effect.Effect<string> {
+  return Effect.gen(function* performRowOperation() {
+    const { admins } = adminClient();
+    if (operation.kind === "permission") {
+      const changed = apiData(
+        AdminPermissionChanged,
+        yield* Effect.promise(() =>
+          admins.patch({ id: admin.id, permission: operation.permission }),
+        ),
+      );
+      const label =
+        changed.permission === undefined ? "未設定" : adminPermissionLabels[changed.permission];
+      return `${admin.email} の権限を「${label}」にしました。`;
+    }
     const changed = apiData(
-      AdminPermissionChanged,
-      await admins.patch({ id: admin.id, permission: operation.permission }),
+      AdminStateChanged,
+      yield* Effect.promise(() =>
+        admins.state.patch({ accountState: operation.accountState, id: admin.id }),
+      ),
     );
-    const label =
-      changed.permission === undefined ? "未設定" : adminPermissionLabels[changed.permission];
-    return `${admin.email} の権限を「${label}」にしました。`;
-  }
-  const changed = apiData(
-    AdminStateChanged,
-    await admins.state.patch({ accountState: operation.accountState, id: admin.id }),
-  );
-  return `${admin.email} を${adminStateLabels[changed.accountState]}にしました。`;
+    return `${admin.email} を${adminStateLabels[changed.accountState]}にしました。`;
+  });
 }
 
 const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
@@ -54,9 +60,34 @@ const changeAtom = Atom.family((adminId: string) => {
   void adminId;
   return Atom.fn(
     ({ admin, operation }: Readonly<{ admin: ListedAdmin; operation: RowOperation }>) =>
-      request(async () => perform(admin, operation)),
+      request(() => Effect.runPromise(perform(admin, operation))),
   );
 });
+
+function executeChange(
+  run: (
+    input: Readonly<{ admin: ListedAdmin; operation: RowOperation }>,
+  ) => Promise<Exit.Exit<string, unknown>>,
+  notify: (kind: "success" | "error", message: string) => void,
+  onChanged: () => void,
+  admin: ListedAdmin,
+  operation: RowOperation,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* executeRowOperation() {
+      const change = AsyncResult.fromExit(yield* Effect.promise(() => run({ admin, operation })));
+      if (AsyncResult.isSuccess(change)) {
+        notify("success", change.value);
+        onChanged();
+        return;
+      }
+      const failure = resultError(change);
+      if (failure !== undefined) {
+        notify("error", failure);
+      }
+    }),
+  );
+}
 
 function useAdminRowAction(admin: ListedAdmin, onChanged: () => void): AdminRowAction {
   const notify = useToast();
@@ -75,24 +106,15 @@ function useAdminRowAction(admin: ListedAdmin, onChanged: () => void): AdminRowA
       setConfirming(Option.none());
     }
   }
-  async function execute(operation: RowOperation): Promise<void> {
-    const change = AsyncResult.fromExit(await run({ admin, operation }));
-    if (AsyncResult.isSuccess(change)) {
-      notify(STATUS_VARIANT.success, change.value);
-      onChanged();
-      return;
-    }
-    const failure = resultError(change);
-    if (failure !== undefined) {
-      notify(STATUS_VARIANT.failure, failure);
-    }
+  function execute(operation: RowOperation): void {
+    void executeChange(run, notify, onChanged, admin, operation);
   }
   function handleConfirm(): void {
     if (Option.isNone(confirming)) {
       return;
     }
     setConfirming(Option.none());
-    void execute(confirming.value);
+    execute(confirming.value);
   }
   return {
     confirming: Option.getOrUndefined(confirming),

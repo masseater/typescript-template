@@ -11,10 +11,11 @@ import type { InquiryStatus } from "./status-label.ts";
 const listPageSize = 50;
 
 const inquiryListAtom = Atom.family((status: InquiryStatus | "") =>
-  requestAtom(async (): Promise<readonly AdminInquirySummary[]> => {
+  requestAtom((): Promise<readonly AdminInquirySummary[]> => {
     const query = { limit: listPageSize, offset: 0 } as const;
-    const list = await loadInquiries(status === "" ? query : { ...query, status });
-    return list.inquiries;
+    return loadInquiries(status === "" ? query : { ...query, status }).then(
+      (list) => list.inquiries,
+    );
   }),
 );
 

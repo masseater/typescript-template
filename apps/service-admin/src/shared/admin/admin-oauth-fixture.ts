@@ -23,6 +23,7 @@ class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData")<
 const redirectUri = "http://127.0.0.1:43124/callback";
 const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Tokens = Schema.Struct({ access_token: Schema.String });
+const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 function responseStatus(value: unknown): number | undefined {
   return value instanceof Response ? value.status : undefined;
@@ -62,17 +63,18 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
     headers: { "content-type": "application/x-www-form-urlencoded" },
     method: "POST",
   });
-  const issued: unknown = yield* Effect.promise(async () => {
+  const issued: unknown = yield* Effect.promise(() => {
     const handler = admin.instance.handler;
     if (typeof handler !== "function") {
       return Promise.reject(new Error("ADMIN_HANDLER_UNAVAILABLE"));
     }
-    return handler(exchange);
+    return Promise.resolve(handler(exchange));
   });
   if (!(issued instanceof Response)) {
     return yield* Effect.die("ADMIN_HANDLER_UNAVAILABLE");
   }
-  const tokens = yield* Effect.promise(async (): Promise<unknown> => issued.json());
+  const text = yield* Effect.promise(() => issued.text());
+  const tokens = yield* Schema.decodeEffect(JsonUnknown)(text);
   return yield* Schema.decodeUnknownEffect(Tokens)(tokens);
 });
 
@@ -90,11 +92,13 @@ const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(
   token: string,
   body?: unknown,
 ) {
+  const encoded =
+    body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(body);
   const incoming = new Request(`${adminOrigin}/mcp`, {
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    ...(encoded === undefined ? {} : { body: encoded }),
     headers: {
       accept: "application/json, text/event-stream",
-      ...(body === undefined ? {} : { "content-type": "application/json" }),
+      ...(encoded === undefined ? {} : { "content-type": "application/json" }),
       authorization: `Bearer ${token}`,
     },
     method: "POST",
@@ -104,15 +108,15 @@ const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(
 
 const parseMcpBody = Effect.fn("parseMcpBody")(function* parseMcpBody(response: Response) {
   const contentType = response.headers.get("content-type") ?? "";
+  const text = yield* Effect.promise(() => response.text());
   if (contentType.includes("application/json")) {
-    return yield* Effect.promise(async (): Promise<unknown> => response.json());
+    return yield* Schema.decodeEffect(JsonUnknown)(text);
   }
-  const text = yield* Effect.promise(async () => response.text());
   const dataLine = text.split("\n").find((line) => line.startsWith("data: "));
   if (dataLine === undefined) {
     return yield* new McpResponseMissingData();
   }
-  return JSON.parse(dataLine.slice("data: ".length)) as unknown;
+  return yield* Schema.decodeEffect(JsonUnknown)(dataLine.slice("data: ".length));
 });
 
 const callTool = Effect.fn("callTool")(function* callTool(

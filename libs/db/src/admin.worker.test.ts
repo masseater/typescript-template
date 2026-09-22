@@ -40,7 +40,7 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(
 
 describe("admin permission levels", () => {
   describe("a viewer", () => {
-    const it = test.extend("outcome", async () =>
+    const it = test.extend("outcome", () =>
       runTest(
         Effect.gen(function* viewerActs() {
           yield* addUser({ userId: "member" });
@@ -94,7 +94,7 @@ describe("admin permission levels", () => {
   });
 
   describe("a viewer suspending a member", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* viewerSuspends() {
           yield* addUser({ userId: "member" });
@@ -113,7 +113,7 @@ describe("admin permission levels", () => {
   });
 
   describe("an operator", () => {
-    const it = test.extend("outcome", async () =>
+    const it = test.extend("outcome", () =>
       runTest(
         Effect.gen(function* operatorActs() {
           yield* addUser({ userId: "member" });
@@ -164,7 +164,7 @@ describe("admin permission levels", () => {
   });
 
   describe("an owner", () => {
-    const it = test.extend("outcome", async () =>
+    const it = test.extend("outcome", () =>
       runTest(
         Effect.gen(function* ownerActs() {
           yield* addUser({
@@ -208,7 +208,7 @@ describe("admin permission levels", () => {
   });
 
   describe("an owner disabling themselves", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* selfDisable() {
           const sessionId = yield* signInAs(ADMIN_PERMISSION.owner);
@@ -226,7 +226,7 @@ describe("admin permission levels", () => {
   });
 
   describe("the last owner demoting themselves", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* lastOwner() {
           const sessionId = yield* signInAs(ADMIN_PERMISSION.owner);
@@ -244,7 +244,7 @@ describe("admin permission levels", () => {
   });
 
   describe("a member session", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* memberActs() {
           yield* addUser({ userId: "member" });
@@ -261,7 +261,7 @@ describe("admin permission levels", () => {
 
 describe("member suspension", () => {
   describe("a suspended member", () => {
-    const it = test.extend("outcome", async () =>
+    const it = test.extend("outcome", () =>
       runTest(
         Effect.gen(function* suspendMember() {
           yield* addUser({ userId: "member" });
@@ -311,7 +311,7 @@ describe("member suspension", () => {
   });
 
   describe("suspending an administrator through the member operation", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* suspendAdmin() {
           yield* addUser({ role: ROLE.administrator, userId: "other" });

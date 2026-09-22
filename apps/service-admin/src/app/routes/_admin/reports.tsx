@@ -9,7 +9,7 @@ import type { ReactElement } from "react";
 
 const searchSchema = Schema.toStandardSchemaV1(
   Schema.Struct({
-    page: Schema.optionalKey(Schema.NumberFromString),
+    page: Schema.optionalKey(Schema.FiniteFromString),
     status: Schema.optionalKey(Schema.Literals(reportStatuses)),
   }),
 );
@@ -31,7 +31,7 @@ const Route = createFileRoute("/_admin/reports")({
     page: search.page ?? 1,
     ...(search.status === undefined ? {} : { status: search.status }),
   }),
-  loader: async ({ deps }: Readonly<{ deps: ReportsDeps }>) =>
+  loader: ({ deps }: Readonly<{ deps: ReportsDeps }>) =>
     loadReports({
       page: deps.page,
       ...(deps.status === undefined ? {} : { status: deps.status }),

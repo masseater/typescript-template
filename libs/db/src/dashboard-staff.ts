@@ -7,7 +7,7 @@ import {
   metricPeriods,
 } from "@repo/config";
 import { and, count, desc, eq, gte, lte } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, type ClientKind } from "./client-kind.ts";
 import { query } from "./database.ts";
@@ -106,9 +106,9 @@ const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(
   queryInput: typeof TrendQuery.Type,
 ) {
   const days = queryInput.days ?? DEFAULT_TREND_DAYS;
-  const until = new Date();
+  const until = DateTime.toDate(yield* DateTime.now);
   until.setUTCHours(0, 0, 0, 0);
-  const since = new Date(until);
+  const since = DateTime.toDate(DateTime.makeUnsafe(until.getTime()));
   since.setUTCDate(since.getUTCDate() - days);
   const sinceBucket = bucketFor(queryInput.period, since);
   const untilBucket = bucketFor(queryInput.period, until);

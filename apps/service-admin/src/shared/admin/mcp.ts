@@ -63,10 +63,6 @@ const AdminPermissionChange = Schema.toStandardJSONSchemaV1(
   ),
 );
 
-const toolText = (value: unknown): { content: [{ type: "text"; text: string }] } => ({
-  content: [{ text: JSON.stringify(value), type: "text" }],
-});
-
 const toolFailure = (
   message: string,
 ): { content: [{ type: "text"; text: string }]; isError: true } => ({
@@ -79,9 +75,23 @@ const runTool =
   <Value>(
     program: Effect.Effect<Value, unknown, AppServices>,
   ): Promise<{ content: [{ type: "text"; text: string }]; isError?: true }> =>
-    runAdmin(program)
-      .then(toolText)
-      .catch((failure: { readonly _tag?: string }) => {
+    runAdmin(
+      program.pipe(
+        Effect.flatMap((value) =>
+          Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(
+            Effect.map(
+              (text): { content: [{ type: "text"; text: string }] } => ({
+                content: [{ text, type: "text" }],
+              }),
+            ),
+            Effect.orDie,
+          ),
+        ),
+      ),
+    ).catch(
+      (
+        failure: { readonly _tag?: string },
+      ): { content: [{ type: "text"; text: string }]; isError: true } => {
         if (failure?._tag === "PermissionRequired") {
           return toolFailure("permission_required");
         }
@@ -95,7 +105,8 @@ const runTool =
           return toolFailure("invite_rejected");
         }
         return toolFailure("operation_failed");
-      });
+      },
+    );
 
 function createServer(
   actor: AdminMcpActor,
@@ -112,7 +123,7 @@ function createServer(
       description: "Search and list service members visible to the signed-in administrator.",
       inputSchema: MemberFilters,
     },
-    async (filters) =>
+    (filters) =>
       run(
         listUsers(sessionId, {
           ...(filters.accountState === undefined ? {} : { accountState: filters.accountState }),
@@ -130,7 +141,7 @@ function createServer(
       description: "Load one member record when the administrator may view that member.",
       inputSchema: MemberId,
     },
-    async ({ memberId }) => run(getMember(sessionId, memberId)),
+    ({ memberId }) => run(getMember(sessionId, memberId)),
   );
 
   server.registerTool(
@@ -139,7 +150,7 @@ function createServer(
       description: "Suspend a member account. Requires operator permission or higher.",
       inputSchema: MemberId,
     },
-    async ({ memberId }) =>
+    ({ memberId }) =>
       run(
         setMemberState({
           accountState: ACCOUNT_STATE.suspended,
@@ -156,7 +167,7 @@ function createServer(
       description: "Restore a suspended member account. Requires operator permission or higher.",
       inputSchema: MemberId,
     },
-    async ({ memberId }) =>
+    ({ memberId }) =>
       run(
         setMemberState({
           accountState: ACCOUNT_STATE.active,
@@ -173,7 +184,7 @@ function createServer(
       description: "Permanently delete a member account. Requires operator permission or higher.",
       inputSchema: MemberId,
     },
-    async ({ memberId }) => run(deleteUser(sessionId, memberId, channel)),
+    ({ memberId }) => run(deleteUser(sessionId, memberId, channel)),
   );
 
   server.registerTool(
@@ -181,7 +192,7 @@ function createServer(
     {
       description: "List administrator accounts. Requires owner permission.",
     },
-    async () => run(listAdmins(sessionId)),
+    () => run(listAdmins(sessionId)),
   );
 
   server.registerTool(
@@ -190,7 +201,7 @@ function createServer(
       description: "Invite a new administrator by email. Requires owner permission.",
       inputSchema: AdminInvitation,
     },
-    async ({ email, permission }) =>
+    ({ email, permission }) =>
       run(
         inviteAdmin({ channel, email, permission: permission as AdminPermission, sessionId }).pipe(
           Effect.flatMap((issued) =>
@@ -208,7 +219,7 @@ function createServer(
       description: "Change another administrator's permission tier. Requires owner permission.",
       inputSchema: AdminPermissionChange,
     },
-    async ({ adminId, permission }) =>
+    ({ adminId, permission }) =>
       run(
         setAdminPermission({
           adminId,
@@ -225,7 +236,7 @@ function createServer(
       description: "Disable another administrator account. Requires owner permission.",
       inputSchema: AdminId,
     },
-    async ({ adminId }) =>
+    ({ adminId }) =>
       run(
         setAdminState({
           accountState: ACCOUNT_STATE.suspended,
@@ -242,7 +253,7 @@ function createServer(
       description: "Re-enable a disabled administrator account. Requires owner permission.",
       inputSchema: AdminId,
     },
-    async ({ adminId }) =>
+    ({ adminId }) =>
       run(
         setAdminState({
           accountState: ACCOUNT_STATE.active,
@@ -265,9 +276,9 @@ const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
   const context = yield* Effect.context<AppServices>();
   const runAdmin = <Value, Failure>(
     program: Effect.Effect<Value, Failure, AppServices>,
-  ): Promise<Value> => Effect.runPromise(program.pipe(Effect.provideContext(context)));
+  ): Promise<Value> => Effect.runPromiseWith(context)(program);
   const handler = createMcpHandler(() => createServer(authorized, runAdmin));
-  const response = yield* Effect.promise(async () => handler.fetch(request));
+  const response = yield* Effect.promise(() => handler.fetch(request));
   return secureResponse(request, response);
 });
 

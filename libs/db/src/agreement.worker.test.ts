@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, AUDIT_ACTION, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import {
   createAgreementDraft,
@@ -24,7 +24,7 @@ import { addSession, addUser } from "./records-fixture.ts";
 import { auditEvent } from "./schema.ts";
 import { TestDatabase } from "./testing.ts";
 
-const acceptedAt = new Date("2026-02-01T00:00:00.000Z");
+const acceptedAt = DateTime.toDate(DateTime.makeUnsafe("2026-02-01T00:00:00.000Z"));
 
 const clearVersions = query((database) => database.delete(agreementVersion));
 

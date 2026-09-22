@@ -42,7 +42,7 @@ describe("staff permission levels", () => {
     ["removing", (sessionId: string) => removeStaff(sessionId, "editor")],
     ["listing", (sessionId: string) => listStaff(sessionId)],
   ] as const)("a viewer %s", ([, operate]) => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* viewerWrites() {
           yield* addUser({ role: ROLE.staff, userId: "editor" });
@@ -57,7 +57,7 @@ describe("staff permission levels", () => {
   });
 
   describe("an editor", () => {
-    const it = test.extend("outcome", async () =>
+    const it = test.extend("outcome", () =>
       runTest(
         Effect.gen(function* editorActs() {
           yield* addUser({
@@ -103,7 +103,7 @@ describe("staff permission levels", () => {
   });
 
   describe("an editor removing themselves", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* selfRemove() {
           const sessionId = yield* signInAs(STAFF_PERMISSION.editor);
@@ -117,7 +117,7 @@ describe("staff permission levels", () => {
   });
 
   describe("the last editor demoting themselves", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* lastEditor() {
           const sessionId = yield* signInAs(STAFF_PERMISSION.editor);
@@ -135,7 +135,7 @@ describe("staff permission levels", () => {
   });
 
   describe("an administrator session on the wiki", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* adminActs() {
           yield* addUser({ role: ROLE.administrator, userId: "admin" });
@@ -150,7 +150,7 @@ describe("staff permission levels", () => {
   });
 
   describe("removing a member through the staff operation", () => {
-    const it = test.extend("tag", async () =>
+    const it = test.extend("tag", () =>
       failureTag(
         Effect.gen(function* removeMember() {
           yield* addUser({ userId: "member" });

@@ -7,7 +7,7 @@ import {
   type StaffPermission,
 } from "@repo/config";
 import { and, desc, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
 import { query } from "./database.ts";
@@ -82,7 +82,8 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
   }) {
     const { permission, sessionId, staffId } = change;
     const actor = yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
-    const [, changedStaff] = yield* query(async (database) => {
+    const updatedAt = DateTime.toDate(yield* DateTime.now);
+    const [, changedStaff] = yield* query((database) => {
       const live = liveStaff(database, sessionId, STAFF_PERMISSION.editor);
       const audit = database.run(
         auditWhenTargeted(
@@ -93,7 +94,7 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
       );
       const transition = database
         .update(user)
-        .set({ permission, updatedAt: new Date() })
+        .set({ permission, updatedAt })
         .where(and(eq(user.id, staffId), eq(user.role, ROLE.staff), live))
         .returning({ id: user.id, permission: user.permission });
       return database.batch([audit, transition] as const);
@@ -114,7 +115,7 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
   if (actor.user.id === staffId) {
     return yield* new TargetUnavailable();
   }
-  const [, removedStaff] = yield* query(async (database) => {
+  const [, removedStaff] = yield* query((database) => {
     const live = liveStaff(database, sessionId, STAFF_PERMISSION.editor);
     const audit = database.run(
       auditWhenTargeted(

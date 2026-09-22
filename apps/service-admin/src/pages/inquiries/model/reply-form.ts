@@ -20,17 +20,19 @@ function useReplyForm(inquiryId: string, onChanged: () => void): ReplyForm {
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      await replyToInquiry({ body, id: inquiryId });
-      setBody("");
-      onChanged();
-    });
+    action.run(() =>
+      replyToInquiry({ body, id: inquiryId }).then(() => {
+        setBody("");
+        onChanged();
+      }),
+    );
   }
   function handleClose(): void {
-    action.run(async () => {
-      await closeInquiry(inquiryId);
-      onChanged();
-    });
+    action.run(() =>
+      closeInquiry(inquiryId).then(() => {
+        onChanged();
+      }),
+    );
   }
   return {
     blocked: action.blocked,

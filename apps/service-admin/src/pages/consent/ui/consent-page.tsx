@@ -12,19 +12,27 @@ import type { ReactElement } from "react";
 const consentRoute = getRouteApi("/consent");
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 
-async function loadClientName(clientId: string): Promise<string | undefined> {
-  const response = await fetch(
+function getPublicClient(
+  fetchImpl: typeof fetch,
+  clientId: string,
+): Promise<Response> {
+  return fetchImpl(
     `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
     { cache: "no-store", credentials: "same-origin" },
   );
-  if (response.status === 401) {
-    globalThis.location.assign(`/login${globalThis.location.search}`);
-    return undefined;
-  }
-  if (!response.ok) {
-    throw new Error("クライアントの情報を取得できませんでした。");
-  }
-  return decodeJson(ClientView, await response.json()).client_name ?? clientId;
+}
+
+function loadClientName(clientId: string): Promise<string | undefined> {
+  return getPublicClient(fetch, clientId).then((response) => {
+    if (response.status === 401) {
+      globalThis.location.assign(`/login${globalThis.location.search}`);
+      return undefined;
+    }
+    if (!response.ok) {
+      throw new Error("クライアントの情報を取得できませんでした。");
+    }
+    return response.json().then((payload) => decodeJson(ClientView, payload).client_name ?? clientId);
+  });
 }
 
 function messageOf(cause: unknown): string {
@@ -38,20 +46,21 @@ function useClientName(
   const [client, setClient] = useState<string>();
   useEffect(() => {
     const state = { active: true };
-    async function load(id: string): Promise<void> {
-      try {
-        const name = await loadClientName(id);
-        if (state.active) {
-          setClient(name);
-        }
-      } catch (error) {
-        if (state.active) {
-          onError(messageOf(error));
-        }
-      }
+    function load(id: string): void {
+      void loadClientName(id)
+        .then((name) => {
+          if (state.active) {
+            setClient(name);
+          }
+        })
+        .catch((error: unknown) => {
+          if (state.active) {
+            onError(messageOf(error));
+          }
+        });
     }
     if (clientId !== undefined) {
-      void load(clientId);
+      load(clientId);
     }
     return (): void => {
       state.active = false;

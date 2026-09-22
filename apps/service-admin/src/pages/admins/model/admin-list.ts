@@ -17,19 +17,22 @@ interface ListedAdmin {
   readonly registeredOn: string;
 }
 
-async function listAdmins(): Promise<readonly ListedAdmin[]> {
-  try {
-    const admins = apiData(AdminList, await adminClient().admins.get());
-    return admins.map(({ createdAt, ...admin }) => ({
-      ...admin,
-      registeredOn: formatWarekiDate(createdAt),
-    }));
-  } catch (failure) {
-    throw new Error(errorMessage(failure));
-  }
+function listAdmins(): Promise<readonly ListedAdmin[]> {
+  return adminClient()
+    .admins.get()
+    .then((response) => {
+      const admins = apiData(AdminList, response);
+      return admins.map(({ createdAt, ...admin }) => ({
+        ...admin,
+        registeredOn: formatWarekiDate(createdAt),
+      }));
+    })
+    .catch((failure: unknown) => {
+      throw new Error(errorMessage(failure));
+    });
 }
 
-const adminListAtom = requestAtom(async () => listAdmins());
+const adminListAtom = requestAtom(() => listAdmins());
 
 function useAdminList(): Readonly<{
   listing: RequestResult<readonly ListedAdmin[]>;

@@ -29,6 +29,7 @@ type Call = Readonly<{
 const reporting = { log: recordingSink().sink, service: APPLICATION.admin } as const;
 const invitee = "newcomer@example.com";
 const inviteePassword = "invited-password-safe-123";
+const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 type DeliveredMail = Readonly<{
   readonly text: string;
@@ -85,25 +86,33 @@ function adminApp() {
   );
   const app = createApi(apiRoot).use(adminRoutes(apiRoutes(runtime, reporting)));
   const cookieOf = (actor: Actor): Effect.Effect<string> =>
-    Effect.promise(async () => runtime.runPromise(signedSessionCookie(tokenOf(actor))));
+    Effect.promise(() => runtime.runPromise(signedSessionCookie(tokenOf(actor))));
   const send = (call: Call, cookie?: string): Effect.Effect<Response> =>
-    Effect.promise(async () =>
-      app.fetch(
-        new Request(`${fixtureOrigin}${apiRoot}${call.path}`, {
-          ...(call.body === undefined ? {} : { body: JSON.stringify(call.body) }),
-          headers: {
-            "content-type": "application/json",
-            origin: fixtureOrigin,
-            ...(cookie === undefined ? {} : { cookie }),
-          },
-          method: call.method,
-        }),
-      ),
-    );
+    Effect.gen(function* sendCall() {
+      const body =
+        call.body === undefined
+          ? undefined
+          : yield* Schema.encodeEffect(JsonUnknown)(call.body);
+      return yield* Effect.promise(() =>
+        Promise.resolve(
+          app.fetch(
+            new Request(`${fixtureOrigin}${apiRoot}${call.path}`, {
+              ...(body === undefined ? {} : { body }),
+              headers: {
+                "content-type": "application/json",
+                origin: fixtureOrigin,
+                ...(cookie === undefined ? {} : { cookie }),
+              },
+              method: call.method,
+            }),
+          ),
+        ),
+      );
+    }).pipe(Effect.orDie);
   const as = Effect.fn("as")(function* as(actor: Actor, call: Call) {
     return yield* send(call, yield* cookieOf(actor));
   });
-  return { as, send, stop: Effect.promise(async () => runtime.dispose()) };
+  return { as, send, stop: Effect.promise(() => runtime.dispose()) };
 }
 
 const memberSuspension: Call = {
@@ -203,13 +212,16 @@ const inviteTokenOf = (text: string): string => {
 };
 
 const readJson = (response: Response): Effect.Effect<unknown> =>
-  Effect.promise(async (): Promise<unknown> => response.json());
+  Effect.gen(function* readResponseJson() {
+    const text = yield* Effect.promise(() => response.text());
+    return yield* Schema.decodeEffect(JsonUnknown)(text);
+  }).pipe(Effect.orDie);
 
 describe("admin invitation through the API", () => {
   it.effect("creates the account once from the mailed link and burns the token", () =>
     Effect.gen(function* program() {
       yield* seedAccounts;
-      yield* Effect.promise(async () => deliveredMail(env));
+      yield* Effect.promise(() => deliveredMail(env));
       const app = adminApp();
       const invited = yield* app.as("owner", {
         body: { email: invitee, permission: ADMIN_PERMISSION.operator },
@@ -217,7 +229,7 @@ describe("admin invitation through the API", () => {
         path: "/admins/invites",
       });
       assert.strictEqual(invited.status, httpStatus.ok);
-      const [mail] = yield* Effect.promise(async () => deliveredMail(env));
+      const [mail] = yield* Effect.promise(() => deliveredMail(env));
       assert.isDefined(mail);
       assert.strictEqual(mail.to, invitee);
       const token = inviteTokenOf(mail.text);

@@ -11,10 +11,10 @@ import { AUDIT_ACTION, CONVERSATION_KIND, fileReport, query, schema } from "@rep
 import { dismissReport, listReports, readReport, suspendTarget } from "@repo/db/admin";
 import { TestDatabase, addSession, addUser } from "@repo/db/testing";
 import { eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 const { auditEvent, conversation, conversationParticipant, directMessage, user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 const secret = "これは通報されていない本文です。";
 const reported = "これは通報された本文です。";
 
@@ -27,48 +27,55 @@ it.effect("shows an administrator only the reported message, then records a susp
       audience: APPLICATION.admin,
       userId: "operator",
     });
-    yield* query(async (database) => {
-      await database.insert(conversation).values({
-        directKey: "author:reporter",
-        id: "thread",
-        kind: CONVERSATION_KIND.direct,
-        lastMessageAt: recordedAt,
-      });
-      await database.insert(conversationParticipant).values([
-        {
-          conversationId: "thread",
-          id: "part-reporter",
-          joinedAt: recordedAt,
-          memberId: "reporter",
-          memberName: "reporter",
-        },
-        {
-          conversationId: "thread",
-          id: "part-author",
-          joinedAt: recordedAt,
-          memberId: "author",
-          memberName: "author",
-        },
-      ]);
-      await database.insert(directMessage).values([
-        {
-          body: secret,
-          conversationId: "thread",
-          createdAt: recordedAt,
-          id: "secret-message",
-          senderId: "author",
-          senderName: "author",
-        },
-        {
-          body: reported,
-          conversationId: "thread",
-          createdAt: new Date(recordedAt.getTime() + 1),
-          id: "reported-message",
-          senderId: "author",
-          senderName: "author",
-        },
-      ]);
-    });
+    yield* query((database) =>
+      database
+        .insert(conversation)
+        .values({
+          directKey: "author:reporter",
+          id: "thread",
+          kind: CONVERSATION_KIND.direct,
+          lastMessageAt: recordedAt,
+        })
+        .then(() =>
+          database.insert(conversationParticipant).values([
+            {
+              conversationId: "thread",
+              id: "part-reporter",
+              joinedAt: recordedAt,
+              memberId: "reporter",
+              memberName: "reporter",
+            },
+            {
+              conversationId: "thread",
+              id: "part-author",
+              joinedAt: recordedAt,
+              memberId: "author",
+              memberName: "author",
+            },
+          ]),
+        )
+        .then(() =>
+          database.insert(directMessage).values([
+            {
+              body: secret,
+              conversationId: "thread",
+              createdAt: recordedAt,
+              id: "secret-message",
+              senderId: "author",
+              senderName: "author",
+            },
+            {
+              body: reported,
+              conversationId: "thread",
+              createdAt: DateTime.toDate(DateTime.makeUnsafe(recordedAt.getTime() + 1)),
+              id: "reported-message",
+              senderId: "author",
+              senderName: "author",
+            },
+          ]),
+        )
+        .then(() => undefined),
+    );
     const filed = yield* fileReport(
       "reporter",
       { id: "reported-message", kind: REPORT_SUBJECT.message },
@@ -76,7 +83,10 @@ it.effect("shows an administrator only the reported message, then records a susp
     );
     const listed = yield* listReports(sessionId, { limit: 20, offset: 0 });
     const detail = yield* readReport(sessionId, filed.id);
-    const visible = JSON.stringify({ detail, listed });
+    const visible = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+      detail,
+      listed,
+    });
     assert.strictEqual(detail.body, reported);
     assert.strictEqual(detail.status, REPORT_STATUS.open);
     assert.notInclude(visible, secret);

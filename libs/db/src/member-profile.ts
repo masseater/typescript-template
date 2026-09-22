@@ -1,6 +1,6 @@
 import { ACCOUNT_STATE, PHOTO_SLOT, PROFILE_VISIBILITY, ROLE } from "@repo/config";
 import { and, eq, not, or } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { query } from "./database.ts";
 import { user } from "./identity-schema.ts";
@@ -58,10 +58,11 @@ const updateVisibility = Effect.fn("updateVisibility")(function* updateVisibilit
   userId: string,
   values: VisibilitySettings,
 ) {
+  const updatedAt = DateTime.toDate(yield* DateTime.now);
   const [row] = yield* query((database) =>
     database
       .update(user)
-      .set({ ...values, updatedAt: new Date() })
+      .set({ ...values, updatedAt })
       .where(eq(user.id, userId))
       .returning(visibilityColumns),
   );

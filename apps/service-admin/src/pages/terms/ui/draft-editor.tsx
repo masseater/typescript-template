@@ -18,9 +18,9 @@ function DraftEditor({
   const notify = useToast();
   const [confirming, setConfirming] = usePublishConfirming();
   const form = useDraftForm(version, {
-    onPublished: async (published) => {
+    onPublished: (published) => {
       notify("success", `${published} を公開しました。`);
-      await navigate({ search: {}, to: "/terms" });
+      return navigate({ search: {}, to: "/terms" });
     },
     onSaved: () => {
       notify("success", "草稿を保存しました。");

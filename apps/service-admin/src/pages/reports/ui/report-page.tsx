@@ -26,10 +26,7 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
   const router = useRouter();
   const action = useAction();
   function run(task: () => Promise<unknown>): void {
-    action.run(async () => {
-      await task();
-      await router.invalidate();
-    });
+    action.run(() => task().then(() => router.invalidate()));
   }
   return (
     <OpsPage title="通報">
@@ -65,12 +62,13 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
         <Button
           disabled={action.blocked || report.targetMemberId === null}
           onClick={() => {
-            run(async () => {
-              apiData(
-                ReportActionResult,
-                await adminClient().reports.suspend.post({ id: report.id }),
-              );
-            });
+            run(() =>
+              adminClient()
+                .reports.suspend.post({ id: report.id })
+                .then((response) => {
+                  apiData(ReportActionResult, response);
+                }),
+            );
           }}
           type="button"
         >
@@ -80,12 +78,13 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
           <Button
             disabled={action.blocked || report.targetMemberId === null}
             onClick={() => {
-              run(async () => {
-                apiData(
-                  ReportActionResult,
-                  await adminClient().reports.unsuspend.post({ id: report.id }),
-                );
-              });
+              run(() =>
+                adminClient()
+                  .reports.unsuspend.post({ id: report.id })
+                  .then((response) => {
+                    apiData(ReportActionResult, response);
+                  }),
+              );
             }}
             type="button"
             variant="secondary"
@@ -96,9 +95,13 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
         <Button
           disabled={action.blocked}
           onClick={() => {
-            run(async () => {
-              apiData(ReportActionResult, await adminClient().reports.warn.post({ id: report.id }));
-            });
+            run(() =>
+              adminClient()
+                .reports.warn.post({ id: report.id })
+                .then((response) => {
+                  apiData(ReportActionResult, response);
+                }),
+            );
           }}
           type="button"
           variant="secondary"
@@ -108,12 +111,13 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
         <Button
           disabled={action.blocked}
           onClick={() => {
-            run(async () => {
-              apiData(
-                ReportActionResult,
-                await adminClient().reports.dismiss.post({ id: report.id }),
-              );
-            });
+            run(() =>
+              adminClient()
+                .reports.dismiss.post({ id: report.id })
+                .then((response) => {
+                  apiData(ReportActionResult, response);
+                }),
+            );
           }}
           type="button"
           variant="secondary"

@@ -1,4 +1,5 @@
 import { exists, sql, type SQL } from "drizzle-orm";
+import { DateTime } from "effect";
 
 import { AUDIT_CHANNEL, auditEvent, user, type AuditAction, type AuditChannel } from "./schema.ts";
 
@@ -24,7 +25,7 @@ const auditRow = (entry: AuditEntry): typeof auditEvent.$inferInsert => ({
   actorId: entry.actorId,
   actorKind: entry.actorKind,
   channel: entry.channel ?? AUDIT_CHANNEL.ui,
-  createdAt: new Date(),
+  createdAt: DateTime.toDate(DateTime.nowUnsafe()),
   id: crypto.randomUUID(),
   targetId: entry.targetId,
 });
@@ -49,7 +50,7 @@ const auditWhen = (change: AuditedChange, targeted: SQL): SQL =>
     [
       [auditEvent.action, change.action],
       [auditEvent.actorId, change.actorId],
-      [auditEvent.createdAt, Date.now()],
+      [auditEvent.createdAt, DateTime.toEpochMillis(DateTime.nowUnsafe())],
       [auditEvent.id, crypto.randomUUID()],
       [auditEvent.targetId, change.targetId],
     ],
@@ -67,7 +68,7 @@ const auditWhenTargeted = (database: DrizzleDatabase, entry: AuditEntry, actorIs
       [auditEvent.actorId, entry.actorId],
       [auditEvent.actorKind, entry.actorKind],
       [auditEvent.channel, entry.channel ?? AUDIT_CHANNEL.ui],
-      [auditEvent.createdAt, Date.now()],
+      [auditEvent.createdAt, DateTime.toEpochMillis(DateTime.nowUnsafe())],
       [auditEvent.id, crypto.randomUUID()],
       [auditEvent.targetId, entry.targetId],
     ],

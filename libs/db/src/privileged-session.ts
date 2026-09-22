@@ -15,7 +15,7 @@ import {
 } from "@repo/config";
 import { and, eq, exists, gt, inArray, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { AdminStrongSessionRequired } from "./admin-strong-session-required.ts";
 import { PermissionRequired } from "./permission-required.ts";
@@ -75,7 +75,7 @@ const liveActor = (
   required: AccountPermission,
 ): SQL => {
   const actor = alias(user, "actor");
-  const checkedAt = new Date();
+  const checkedAt = DateTime.toDate(DateTime.nowUnsafe());
   const liveSession = and(
     eq(session.id, sessionId),
     eq(session.audience, privilege.audience),
