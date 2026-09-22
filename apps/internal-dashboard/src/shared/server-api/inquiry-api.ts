@@ -1,5 +1,5 @@
-import { inquiryStaff } from "@repo/db/inquiry-staff";
 import { httpStatus } from "@repo/config";
+import { inquiryStaff } from "@repo/db/inquiry-staff";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
@@ -24,12 +24,12 @@ function inquiryApi(api: ApiRoutes<WikiServices>) {
   return createApi("")
     .get(
       "/inquiries/counts",
-      ...api.route({ response: StaffInquiryCounts }, () => inquiryStaff.inquiryCounts(), failures),
+      api.route(StaffInquiryCounts, () => inquiryStaff.inquiryCounts(), failures),
     )
     .get(
       "/inquiries/member",
-      ...api.route(
-        { response: StaffInquiryList },
+      api.route(
+        StaffInquiryList,
         (request) =>
           Effect.gen(function* handle() {
             const { id } = yield* readSearchParams(MemberQuery, request);
@@ -41,8 +41,8 @@ function inquiryApi(api: ApiRoutes<WikiServices>) {
     )
     .get(
       "/inquiries/detail",
-      ...api.route(
-        { response: StaffInquiryThread },
+      api.route(
+        StaffInquiryThread,
         (request) =>
           Effect.gen(function* handle() {
             const { id } = yield* readSearchParams(InquiryQuery, request);

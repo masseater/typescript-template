@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
-import { blockMember, fileReport, unblockMember } from "@repo/db";
 import { httpStatus } from "@repo/config";
+import { blockMember, fileReport, unblockMember } from "@repo/db";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
@@ -26,8 +26,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
   return createApi("/trust")
     .put(
       "/block",
-      ...api.route(
-        { response: Blocked },
+      api.route(
+        Blocked,
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -40,8 +40,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
     )
     .delete(
       "/block",
-      ...api.route(
-        { response: Blocked },
+      api.route(
+        Blocked,
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -54,8 +54,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/report",
-      ...api.route(
-        { response: ReportFiled },
+      api.route(
+        ReportFiled,
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

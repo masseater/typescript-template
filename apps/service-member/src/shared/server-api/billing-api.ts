@@ -1,5 +1,6 @@
 import { verifySession } from "@repo/auth";
-import { PLAN, httpStatus } from "@repo/config";
+import { PLAN } from "@repo/config";
+import { httpStatus } from "@repo/config";
 import { PaidPlanRequired, findSubscription, planOf } from "@repo/db";
 import { sessionFailures } from "@repo/runtime/account";
 import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";
@@ -90,10 +91,10 @@ const webhook = Effect.fn("billing.api.webhook")(function* webhook(request: Requ
 });
 function billingApi(api: ApiRoutes<AppServices | Stripe>) {
   return createApi("")
-    .get("/billing/plan", ...api.route({ response: PlanView }, plan, failures))
-    .get("/billing/offer", ...api.route({ response: OfferView }, offer, failures))
-    .post("/billing/checkout", ...api.route({ response: HostedPage }, checkout, failures))
-    .post("/billing/portal", ...api.route({ response: HostedPage }, portal, failures))
-    .post("/billing/webhook", ...api.route({ response: WebhookReceipt }, webhook, failures));
+    .get("/billing/plan", api.route(PlanView, plan, failures))
+    .get("/billing/offer", api.route(OfferView, offer, failures))
+    .post("/billing/checkout", api.route(HostedPage, checkout, failures))
+    .post("/billing/portal", api.route(HostedPage, portal, failures))
+    .post("/billing/webhook", api.route(WebhookReceipt, webhook, failures));
 }
 export { billingApi };

@@ -1,5 +1,6 @@
 import { verifySession } from "@repo/auth";
-import { AGREEMENT_KIND, agreementPolicies, httpStatus } from "@repo/config";
+import { AGREEMENT_KIND, agreementPolicies } from "@repo/config";
+import { httpStatus } from "@repo/config";
 import {
   AgreementVersionUnavailable,
   AgreementWithdrawalUnavailable,
@@ -107,13 +108,10 @@ const withdraw = Effect.fn("agreements.withdraw")(function* withdraw(request: Re
 
 function agreementApi(api: ApiRoutes<AppServices>) {
   return createApi("")
-    .get("/agreements", ...api.route({ response: AgreementsView }, listCurrent, failures))
-    .post("/agreements/accept", ...api.route({ response: AgreementsView }, accept, failures))
-    .get(
-      "/agreements/published",
-      ...api.route({ response: PublishedAgreementView }, published, failures),
-    )
-    .post("/agreements/withdraw", ...api.route({ response: AgreementsView }, withdraw, failures));
+    .get("/agreements", api.route(AgreementsView, listCurrent, failures))
+    .post("/agreements/accept", api.route(AgreementsView, accept, failures))
+    .get("/agreements/published", api.route(PublishedAgreementView, published, failures))
+    .post("/agreements/withdraw", api.route(AgreementsView, withdraw, failures));
 }
 
 const consentExempt = (request: Request): boolean => {
