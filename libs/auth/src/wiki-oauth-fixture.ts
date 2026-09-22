@@ -21,7 +21,6 @@ type AuthorizationFlow = {
 const wikiOrigin = origins[APPLICATION.wiki];
 const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
-const _decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Registration = Schema.Struct({ client_id: Schema.String });
 
 const wikiStaff = Effect.fn("wikiStaff")(function* wikiStaff(email: string) {

@@ -311,7 +311,7 @@ const assignRoleByEmail = Effect.fn("assignRoleByEmail")(function* assignRoleByE
   yield* runStatement(
     "UPDATE user SET role = ?, permission = ? WHERE email = ?",
     role,
-    topPermission[role],
+    topPermission[role] ?? "",
     email,
   );
 });
@@ -323,7 +323,7 @@ const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
   yield* runStatement(
     "UPDATE user SET role = ?, permission = ? WHERE id = ?",
     role,
-    topPermission[role],
+    topPermission[role] ?? "",
     userId,
   );
 });
