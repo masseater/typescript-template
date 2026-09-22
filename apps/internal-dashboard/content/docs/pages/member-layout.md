@@ -121,7 +121,7 @@ flowchart TD
 
 ## 遷移図
 
-入口から登録まで。
+始めから登録まで。
 
 ```mermaid
 flowchart TD
