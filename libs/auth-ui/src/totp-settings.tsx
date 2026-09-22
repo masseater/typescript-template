@@ -29,7 +29,9 @@ const TotpSettings = ({ context }: Readonly<{ context: SettingsContext }>): Reac
           : "認証アプリは未設定です。"}
       </StatusMessage>
       <p className="text-sm text-muted-foreground">
-        設定用のリンクとバックアップコードは秘密情報です。ログやチャットに貼らず、安全な場所に保管してください。
+        {
+          "設定用のリンクとバックアップコードは秘密情報です。ログやチャットに貼らず、安全な場所に保管してください。"
+        }
       </p>
       <TotpPasswordForm context={context} enrolling={Option.isSome(enrollment)} onEnroll={enroll} />
       {Option.isSome(enrollment) && (

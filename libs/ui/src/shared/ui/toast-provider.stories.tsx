@@ -20,10 +20,10 @@ const ToastTrigger = (): ReactElement => {
   return (
     <div className="flex gap-2">
       <Button type="button" variant="primary" onClick={success}>
-        成功の通知を出す
+        {"成功の通知を出す"}
       </Button>
       <Button type="button" variant="danger" onClick={failure}>
-        失敗の通知を出す
+        {"失敗の通知を出す"}
       </Button>
     </div>
   );

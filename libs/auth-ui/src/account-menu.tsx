@@ -63,13 +63,13 @@ const AccountMenu = (
         {identity ? (
           <>
             <DropdownMenuLabel>{props.email}</DropdownMenuLabel>
-            <DropdownMenuLinkItem to="/security">セキュリティ</DropdownMenuLinkItem>
+            <DropdownMenuLinkItem to="/security">{"セキュリティ"}</DropdownMenuLinkItem>
           </>
         ) : (
           props.items
         )}
         <DropdownMenuItem disabled={action.blocked} onClick={signOut}>
-          ログアウト
+          {"ログアウト"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

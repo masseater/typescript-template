@@ -26,7 +26,7 @@ const PasskeyLogin = ({
     <>
       <Separator label="または" />
       <Button type="button" disabled={action.blocked} onClick={signIn}>
-        パスキーでログイン
+        {"パスキーでログイン"}
       </Button>
     </>
   );

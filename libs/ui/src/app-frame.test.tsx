@@ -38,7 +38,7 @@ describe("app frame", () => {
             <AppFrame
               collapsedMark="管理"
               defaultCollapsed
-              footer={() => <button type="button">アカウント</button>}
+              footer={() => <button type="button">{"アカウント"}</button>}
               navigationId="app-navigation"
               productName="管理画面"
               sections={[
@@ -57,7 +57,7 @@ describe("app frame", () => {
               subtitle="運用コンソール"
               title="利用者の一覧"
             >
-              <p>本文</p>
+              <p>{"本文"}</p>
             </AppFrame>
           </RouterContextProvider>
         </RegistryProvider>,
@@ -68,8 +68,8 @@ describe("app frame", () => {
             <AppFrame
               collapsedMark="社内"
               defaultCollapsed
-              footer={() => <button type="button">アカウント</button>}
-              headerActions={<a href="https://example.com/">分析</a>}
+              footer={() => <button type="button">{"アカウント"}</button>}
+              headerActions={<a href="https://example.com/">{"分析"}</a>}
               navigationId="app-navigation"
               productName="社内ダッシュボード"
               sections={[
@@ -88,7 +88,7 @@ describe("app frame", () => {
               subtitle="状況と運営"
               title="問い合わせ"
             >
-              <p>本文</p>
+              <p>{"本文"}</p>
             </AppFrame>
           </RouterContextProvider>
         </RegistryProvider>,
@@ -136,7 +136,7 @@ describe("app frame", () => {
           <RouterContextProvider router={router}>
             <AppFrame
               collapsedMark="管理"
-              footer={() => <button type="button">アカウント</button>}
+              footer={() => <button type="button">{"アカウント"}</button>}
               navigationId="app-navigation"
               productName="管理画面"
               sections={[
@@ -155,7 +155,7 @@ describe("app frame", () => {
               subtitle="運用コンソール"
               title="利用者の一覧"
             >
-              <p>本文</p>
+              <p>{"本文"}</p>
             </AppFrame>
           </RouterContextProvider>
         </RegistryProvider>,
@@ -218,8 +218,8 @@ describe("app frame", () => {
               bottomTabs
               collapsedMark="ユーザー"
               density="compact"
-              footer={() => <button type="button">アカウント</button>}
-              headerLeading={<span>会員メニュー</span>}
+              footer={() => <button type="button">{"アカウント"}</button>}
+              headerLeading={<span>{"会員メニュー"}</span>}
               homeTo="/home"
               navigationId="app-navigation"
               productName="ユーザーアプリ"
@@ -239,7 +239,7 @@ describe("app frame", () => {
               ]}
               title="ホーム"
             >
-              <p>本文</p>
+              <p>{"本文"}</p>
             </AppFrame>
           </RouterContextProvider>
         </RegistryProvider>,
@@ -275,7 +275,7 @@ describe("app frame", () => {
             <RouterContextProvider router={router}>
               <AppFrame
                 collapsedMark="管"
-                footer={() => <button type="button">アカウント</button>}
+                footer={() => <button type="button">{"アカウント"}</button>}
                 navigationId="app-navigation"
                 productName="管理画面"
                 sections={[
@@ -292,7 +292,7 @@ describe("app frame", () => {
                 ]}
                 title="利用者の一覧"
               >
-                <p>本文</p>
+                <p>{"本文"}</p>
               </AppFrame>
             </RouterContextProvider>
           </RegistryProvider>,
