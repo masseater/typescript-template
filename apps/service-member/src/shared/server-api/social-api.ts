@@ -69,7 +69,7 @@ function onboardingStepApi(api: ApiRoutes<AppServices>) {
   return createApi("").get(
     "/onboarding",
     ...api.route(
-        { response: OnboardingView },
+      { response: OnboardingView },
       (request) =>
         Effect.gen(function* handle() {
           const { user } = yield* verifySession(request.headers);
