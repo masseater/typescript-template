@@ -8,7 +8,6 @@ import {
   effectDiagnostics,
   effectRun,
   lifecycle,
-  paraglideAppRun,
   sliceBoundaries,
   taskInput,
   testRun,
@@ -119,64 +118,6 @@ describe("appRun", () => {
           prepr: ["build"],
           premerge: ["test", "check:dev"],
         }),
-      },
-    });
-  });
-});
-
-describe("paraglideAppRun", () => {
-  const it = test.extend("localizedApplicationRun", () => paraglideAppRun("service-member"));
-
-  it("compiles message catalogs before typecheck", ({ localizedApplicationRun }) => {
-    const tasks = appRun("service-member").tasks ?? {};
-    expect(localizedApplicationRun).toStrictEqual({
-      tasks: {
-        ...tasks,
-        "compile:paraglide": {
-          command: "../../libs/vite-config/src/compile-paraglide.ts",
-          input: [
-            ...taskInput,
-            "messages/**",
-            "project.inlang/**",
-            { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-            { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
-          ],
-          output: [".paraglide/**"],
-        },
-        "check:effect": {
-          ...effectDiagnostics["check:effect"],
-          dependsOn: ["compile:paraglide"],
-        },
-        "check:code": {
-          ...checkCode["check:code"],
-          dependsOn: ["compile:paraglide"],
-        },
-        "check:imports": {
-          ...workspaceCheckImports["check:imports"],
-          dependsOn: ["compile:paraglide"],
-        },
-        "check:client": {
-          command: "quality-check-client --application service-member",
-          input: [
-            ...taskInput,
-            "!**/dist/**",
-            "!**/node_modules/.cache/**",
-            { base: "workspace", pattern: "!.local" },
-            { base: "workspace", pattern: "!.local/**" },
-          ],
-          output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-          dependsOn: ["compile:paraglide"],
-        },
-        "check:react": {
-          command: "quality-check-react --application service-member",
-          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
-          output: [{ auto: true }, "!**/node_modules/.cache/**"],
-          dependsOn: ["compile:paraglide"],
-        },
-        test: {
-          ...testRun.test,
-          dependsOn: ["compile:paraglide"],
-        },
       },
     });
   });

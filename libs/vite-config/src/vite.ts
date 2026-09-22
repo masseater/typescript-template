@@ -1,21 +1,5 @@
-import { cloudflare } from "@cloudflare/vite-plugin";
-import {
-  applicationPorts,
-  coreEntrypoints,
-  grants,
-  jobsQueueBinding,
-  jobsQueueName,
-  jobsWorkflowBinding,
-  jobsWorkflowClass,
-  jobsWorkflowName,
-  loopbackAddress,
-  type Application,
-} from "@repo/config";
-import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
-import { localUserInbox, userInboxClassName } from "@repo/config/realtime";
+import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
-import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
-import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -29,6 +13,7 @@ import {
   type UserConfig,
 } from "vite-plus";
 
+import { cloudflareAppPlugin } from "./cloudflare-app.ts";
 import { devBoundary } from "./dev-boundary.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
@@ -279,21 +264,28 @@ const coveredTestableLibraryRun = {
   },
 } satisfies RunConfig;
 
-const toolTest: NonNullable<UserConfig["test"]> = {
-  mockReset: true,
-  restoreMocks: true,
-  coverage: {
-    exclude: ["specs/**"],
-    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
-  },
-  testTimeout: 30_000,
-  unstubEnvs: true,
-  unstubGlobals: true,
-};
+const workspaceParaglideCompile = {
+  command: "./libs/vite-config/src/compile-workspace-paraglide.ts",
+  input: [
+    ...taskInput,
+    { base: "workspace", pattern: "apps/*/messages/**" },
+    { base: "workspace", pattern: "apps/*/project.inlang/**" },
+    { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
+    { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
+    { base: "workspace", pattern: "libs/vite-config/src/compile-workspace-paraglide.ts" },
+  ],
+  output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
+} satisfies NonNullable<Tasks[string]>;
 
-const noExtraPlugins: readonly PluginOption[] = [];
+const paraglideCompileInputs = [
+  ...taskInput,
+  "messages/**",
+  "project.inlang/**",
+  { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
+  { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
+] as const;
 
-const checkClient = (app: Application) =>
+const checkClient = (app: Application): Tasks =>
   ({
     "check:client": {
       command: `quality-check-client --application ${app}`,
@@ -308,7 +300,7 @@ const checkClient = (app: Application) =>
     },
   }) satisfies Tasks;
 
-const checkReact = (app: Application) =>
+const checkReact = (app: Application): Tasks =>
   ({
     "check:react": {
       command: `quality-check-react --application ${app}`,
@@ -348,30 +340,9 @@ const appRun = (app: Application): RunConfig => ({
   },
 });
 
-const workspaceParaglideCompile = {
-  command: "./libs/vite-config/src/compile-workspace-paraglide.ts",
-  input: [
-    ...taskInput,
-    { base: "workspace", pattern: "apps/*/messages/**" },
-    { base: "workspace", pattern: "apps/*/project.inlang/**" },
-    { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-    { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
-    { base: "workspace", pattern: "libs/vite-config/src/compile-workspace-paraglide.ts" },
-  ],
-  output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
-} satisfies NonNullable<Tasks[string]>;
-
-const paraglideCompileInputs = [
-  ...taskInput,
-  "messages/**",
-  "project.inlang/**",
-  { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-  { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
-] as const;
-
 const paraglideAppRun = (app: Application): RunConfig => ({
   tasks: {
-    ...(appRun(app).tasks ?? {}),
+    ...appRun(app).tasks,
     "compile:paraglide": {
       command: "../../libs/vite-config/src/compile-paraglide.ts",
       input: [...paraglideCompileInputs],
@@ -381,20 +352,12 @@ const paraglideAppRun = (app: Application): RunConfig => ({
       ...effectDiagnostics["check:effect"],
       dependsOn: ["compile:paraglide"],
     },
-    "check:code": {
-      ...checkCode["check:code"],
-      dependsOn: ["compile:paraglide"],
-    },
     "check:imports": {
       ...workspaceCheckImports["check:imports"],
       dependsOn: ["compile:paraglide"],
     },
-    "check:client": {
-      ...checkClient(app)["check:client"],
-      dependsOn: ["compile:paraglide"],
-    },
-    "check:react": {
-      ...checkReact(app)["check:react"],
+    "check:code": {
+      ...checkCode["check:code"],
       dependsOn: ["compile:paraglide"],
     },
     test: {
@@ -404,22 +367,13 @@ const paraglideAppRun = (app: Application): RunConfig => ({
   },
 });
 
-const coreDevWorker = {
-  config: {
-    compatibility_date: workerCompatibility.date,
-    compatibility_flags: [...workerCompatibility.flags],
-    d1_databases: [localDatabase],
-    main: paths.join(repositoryRoot, "apps/core/src/worker.ts"),
-    name: "template-core",
-  },
-};
+const noExtraPlugins: readonly PluginOption[] = [];
 
 const appConfig = (
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
 ): ((env: Readonly<ConfigEnv>) => UserConfig) => {
   const appRoot = paths.join(repositoryRoot, "apps", app);
-  const realtime = grants(app, "realtime");
   return ({ command, isPreview, mode }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
     plugins: [
@@ -429,62 +383,7 @@ const appConfig = (
       devBoundary(app),
       elysiaAot(appRoot),
       elysiaWorkerdJit(),
-      ...(mode === "test"
-        ? []
-        : [
-            cloudflare({
-              auxiliaryWorkers: [coreDevWorker],
-              config: (config) => ({
-                ...config,
-                assets: {
-                  binding: "ASSETS",
-                  run_worker_first: command !== "serve" || isPreview === true,
-                },
-                compatibility_date: workerCompatibility.date,
-                compatibility_flags: [...workerCompatibility.flags],
-                d1_databases: [localDatabase],
-                ...(realtime
-                  ? {
-                      durable_objects: {
-                        bindings: [localUserInbox],
-                      },
-                      migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
-                    }
-                  : {}),
-                main: "./src/app/server.ts",
-                name: `template-${app}`,
-                services: [
-                  ...(config.services ?? []),
-                  {
-                    binding: "CORE",
-                    entrypoint: coreEntrypoints[app],
-                    service: "template-core",
-                  },
-                ],
-                ...(grants(app, "jobs")
-                  ? {
-                      queues: {
-                        consumers: [{ queue: jobsQueueName }],
-                        producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
-                      },
-                      workflows: [
-                        {
-                          binding: jobsWorkflowBinding,
-                          class_name: jobsWorkflowClass,
-                          name: jobsWorkflowName,
-                        },
-                      ],
-                    }
-                  : {}),
-                ...(grants(app, "storage")
-                  ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
-                  : {}),
-              }),
-              inspectorPort: false,
-              persistState: { path: localDatabaseDirectory() },
-              viteEnvironment: { name: "ssr" },
-            }),
-          ]),
+      ...(mode === "test" ? [] : [cloudflareAppPlugin(app, { command, isPreview })]),
       ...plugins,
       tailwindcss(),
       ...withoutEnvFileLoader(tanstackStart(startOptions)),
@@ -523,10 +422,10 @@ export {
   testCoverageRun,
   testableLibraryRun,
   testRun,
-  toolTest,
   workspaceCheckImports,
   withoutEnvFileLoader,
 };
+export { toolTest } from "./tool-test.ts";
 export { paths } from "./host.ts";
 export { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
