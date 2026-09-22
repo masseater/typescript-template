@@ -67,22 +67,28 @@ const attachObservabilityCapture = (
   };
 };
 
-const readSession = async (
+const readSession = (
   page: Page,
   sessionUrl: string,
-): Promise<{ readonly sessionToken: string | undefined; readonly userId: string | undefined }> => {
-  const sessionHttpReply = await page.request.get(sessionUrl);
-  if (!sessionHttpReply.ok()) {
-    return { sessionToken: undefined, userId: undefined };
-  }
-  const sessionJson = await decodeSessionBody(await sessionHttpReply.json());
-  const sessionOrigin = new URL(sessionUrl).origin;
-  const cookies = await page.context().cookies(sessionOrigin);
-  const sessionCookie = cookies.find((cookie) => cookie.name.endsWith(".session_token"));
-  return {
-    sessionToken: sessionCookie?.value,
-    userId: sessionJson.user?.id,
-  };
-};
+): Effect.Effect<{
+  readonly sessionToken: string | undefined;
+  readonly userId: string | undefined;
+}> =>
+  Effect.gen(function* loadSession() {
+    const sessionHttpReply = yield* Effect.promise(() => page.request.get(sessionUrl));
+    if (!sessionHttpReply.ok()) {
+      return { sessionToken: undefined, userId: undefined };
+    }
+    const sessionJson = yield* Effect.promise(() =>
+      sessionHttpReply.json().then((sessionRaw) => decodeSessionBody(sessionRaw)),
+    );
+    const sessionOrigin = new URL(sessionUrl).origin;
+    const cookies = yield* Effect.promise(() => page.context().cookies(sessionOrigin));
+    const sessionCookie = cookies.find((cookie) => cookie.name.endsWith(".session_token"));
+    return {
+      sessionToken: sessionCookie?.value,
+      userId: sessionJson.user?.id,
+    };
+  });
 
 export { attachObservabilityCapture, readSession };

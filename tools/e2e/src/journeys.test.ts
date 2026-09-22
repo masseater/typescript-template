@@ -32,8 +32,10 @@ describe("アプリ全体の導線", () => {
     .extend("documentJourney", ({ environment, page }) =>
       Effect.runPromise(runDocumentJourney({ environment, page })),
     )
-    .extend("verifyMemberJourney", async ({ environment, page }) =>
-      runVerifyMemberJourney({ environment, page }),
+    .extend("verifyMemberJourney", ({ environment, page }) =>
+      Effect.runPromise(
+        runVerifyMemberJourney({ environment, page }).pipe(Effect.provide(NodeServices.layer)),
+      ),
     )
     .extend("robotsTags", ({ environment, page }) =>
       Effect.runPromise(

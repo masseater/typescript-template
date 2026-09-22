@@ -1,5 +1,5 @@
 import { APPLICATION, applicationOrigins, mailpitOrigin } from "@repo/config";
-import { Effect, Schema } from "effect";
+import { Config, ConfigProvider, Effect, Option, Schema } from "effect";
 
 import { failure, type VerifyCommandFailure } from "./failure.ts";
 
@@ -18,10 +18,18 @@ type ResolvedVerifyEnvironment = {
   readonly wikiOrigin: string;
 };
 
+const readOptionalEnv = (name: string): string | undefined =>
+  Effect.runSync(
+    Config.option(Config.string(name)).pipe(
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
+      Effect.map(Option.getOrUndefined),
+    ),
+  );
+
 const resolveLocalVerifyEnvironment = (
   environment: VerifyEnvironmentName,
 ): ResolvedVerifyEnvironment => {
-  const mailpit = process.env.MAILPIT_URL ?? mailpitOrigin;
+  const mailpit = readOptionalEnv("MAILPIT_URL") ?? mailpitOrigin;
   return {
     adminOrigin: applicationOrigins[APPLICATION.admin],
     environment,
@@ -31,19 +39,19 @@ const resolveLocalVerifyEnvironment = (
   };
 };
 
+const requiredEnv = (name: string): Effect.Effect<string, VerifyCommandFailure> => {
+  const configuredOrigin = readOptionalEnv(name);
+  if (configuredOrigin === undefined || configuredOrigin === "") {
+    return failure("credentials_invalid");
+  }
+  return Effect.succeed(configuredOrigin);
+};
+
 const resolveDeployedOrigins = Effect.fn("resolveDeployedOrigins")(
   function* resolveDeployedOrigins() {
-    const requiredOrigin = (
-      configuredOrigin: string | undefined,
-    ): Effect.Effect<string, VerifyCommandFailure> => {
-      if (configuredOrigin === undefined || configuredOrigin === "") {
-        return Effect.fail(failure("credentials_invalid"));
-      }
-      return Effect.succeed(configuredOrigin);
-    };
-    const memberOrigin = yield* requiredOrigin(process.env.SERVICE_MEMBER_ORIGIN);
-    const adminOrigin = yield* requiredOrigin(process.env.SERVICE_ADMIN_ORIGIN);
-    const wikiOrigin = yield* requiredOrigin(process.env.INTERNAL_DASHBOARD_ORIGIN);
+    const memberOrigin = yield* requiredEnv("SERVICE_MEMBER_ORIGIN");
+    const adminOrigin = yield* requiredEnv("SERVICE_ADMIN_ORIGIN");
+    const wikiOrigin = yield* requiredEnv("INTERNAL_DASHBOARD_ORIGIN");
     return { adminOrigin, memberOrigin, wikiOrigin };
   },
 );
@@ -57,15 +65,7 @@ const resolveStagingVerifyEnvironment = Effect.fn("resolveStagingVerifyEnvironme
       readonly wikiOrigin: string;
     },
   ) {
-    const requiredOrigin = (
-      configuredOrigin: string | undefined,
-    ): Effect.Effect<string, VerifyCommandFailure> => {
-      if (configuredOrigin === undefined || configuredOrigin === "") {
-        return Effect.fail(failure("credentials_invalid"));
-      }
-      return Effect.succeed(configuredOrigin);
-    };
-    const mailpit = yield* requiredOrigin(process.env.MAILPIT_URL);
+    const mailpit = yield* requiredEnv("MAILPIT_URL");
     return {
       ...origins,
       environment,
@@ -83,15 +83,7 @@ const resolveProductionVerifyEnvironment = Effect.fn("resolveProductionVerifyEnv
       readonly wikiOrigin: string;
     },
   ) {
-    const requiredOrigin = (
-      configuredOrigin: string | undefined,
-    ): Effect.Effect<string, VerifyCommandFailure> => {
-      if (configuredOrigin === undefined || configuredOrigin === "") {
-        return Effect.fail(failure("credentials_invalid"));
-      }
-      return Effect.succeed(configuredOrigin);
-    };
-    const mailboxUrl = yield* requiredOrigin(process.env.AI_MAILBOX_URL);
+    const mailboxUrl = yield* requiredEnv("AI_MAILBOX_URL");
     return {
       ...origins,
       environment,

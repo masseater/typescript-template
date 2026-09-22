@@ -2,6 +2,7 @@
 
 import { parseArgs } from "node:util";
 
+import { NodeServices } from "@effect/platform-node";
 import { causeRecord, runCli } from "@repo/cli";
 import { ROLE } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
@@ -27,7 +28,7 @@ const program = Effect.gen(function* routeVerify() {
   );
   const resolved = yield* resolveVerifyEnvironment(environment);
   return yield* verifyMember(resolved);
-});
+}).pipe(Effect.provide(NodeServices.layer));
 
 runCli(program.pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), (cause) =>
   causeRecord("verify.failed", {

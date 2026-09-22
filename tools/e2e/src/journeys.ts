@@ -397,31 +397,36 @@ const assertVerifyMemberObservability = (verified: {
   }
 };
 
-const runVerifyMemberJourney = async (
+const runVerifyMemberJourney = (
   stage: JourneyStage,
-): Promise<{
-  readonly browserUserAgent: string;
-  readonly enrolledTotp: true;
-  readonly observabilityRecorded: true;
-  readonly passkeyRegistered: true;
-  readonly sessionEstablished: true;
-  readonly userAgent: string;
-}> => {
-  const origin = stage.environment.originOf("member");
-  const verified = await runVerifyMember({
-    mail: stage.environment.mail,
-    origin,
-    page: stage.page,
+): Effect.Effect<
+  {
+    readonly browserUserAgent: string;
+    readonly enrolledTotp: true;
+    readonly observabilityRecorded: true;
+    readonly passkeyRegistered: true;
+    readonly sessionEstablished: true;
+    readonly userAgent: string;
+  },
+  JourneyFailure,
+  Crypto.Crypto
+> =>
+  Effect.gen(function* verifyMemberThroughApps() {
+    const origin = stage.environment.originOf("member");
+    const verified = yield* runVerifyMember({
+      mail: stage.environment.mail,
+      origin,
+      page: stage.page,
+    });
+    assertVerifyMemberObservability(verified);
+    return {
+      browserUserAgent: agentUserAgent,
+      enrolledTotp: true as const,
+      observabilityRecorded: true as const,
+      passkeyRegistered: true as const,
+      sessionEstablished: true as const,
+      userAgent: agentUserAgent,
+    };
   });
-  assertVerifyMemberObservability(verified);
-  return {
-    browserUserAgent: agentUserAgent,
-    enrolledTotp: true,
-    observabilityRecorded: true,
-    passkeyRegistered: true,
-    sessionEstablished: true,
-    userAgent: agentUserAgent,
-  };
-};
 
 export { runDocumentJourney, runMemberJourney, runOperatorJourney, runVerifyMemberJourney };

@@ -136,12 +136,15 @@ const signOut = (page: Page, origin: string): Effect.Effect<void, JourneyFailure
 
 const passkeyLoginButton = "パスキーでログイン";
 
-const signInWithPasskey = async (visit: Visit): Promise<void> => {
-  await visit.page.goto(`${visit.origin}/login`);
-  await Effect.runPromise(readyButton(visit.page, passkeyLoginButton));
-  await Effect.runPromise(press(visit.page, passkeyLoginButton));
-  await visit.page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout });
-};
+const signInWithPasskey = (visit: Visit): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* signInViaPasskey() {
+    yield* pageStep(() => visit.page.goto(`${visit.origin}/login`));
+    yield* readyButton(visit.page, passkeyLoginButton);
+    yield* press(visit.page, passkeyLoginButton);
+    yield* pageStep(() =>
+      visit.page.waitForURL(`${visit.origin}${homePattern}`, { timeout: appearanceTimeout }),
+    );
+  });
 
 const waitForPasskeyRegistration = (visit: Visit): ReturnType<Page["waitForResponse"]> =>
   visit.page.waitForResponse(
@@ -155,43 +158,63 @@ const waitForPasskeyOptions = (visit: Visit): ReturnType<Page["waitForResponse"]
     { timeout: appearanceTimeout },
   );
 
-const assertPasskeyHttpOk = async (
+const assertPasskeyHttpOk = (
   httpExchange: Awaited<ReturnType<typeof waitForPasskeyOptions>>,
   failureLabel: string,
-): Promise<void> => {
-  if (!httpExchange.ok()) {
-    throw new Error(`${failureLabel} ${httpExchange.status()} ${await httpExchange.text()}`);
-  }
-};
+): Effect.Effect<void, JourneyFailure> =>
+  httpExchange.ok()
+    ? Effect.void
+    : pageStep(() =>
+        httpExchange.text().then((body) => {
+          throw new Error(`${failureLabel} ${httpExchange.status()} ${body}`);
+        }),
+      ).pipe(Effect.asVoid);
 
-const submitPasskeyRegistration = async (visit: Visit, passkeyLabel: string): Promise<void> => {
-  const generateOptionsHttpReply = waitForPasskeyOptions(visit);
-  const verifyRegistrationHttpReply = waitForPasskeyRegistration(visit);
-  await Effect.runPromise(press(visit.page, "パスキーを登録"));
-  await assertPasskeyHttpOk(await generateOptionsHttpReply, "PASSKEY_OPTIONS_FAILED");
-  await assertPasskeyHttpOk(await verifyRegistrationHttpReply, "PASSKEY_REGISTRATION_FAILED");
-  await Effect.runPromise(seeText(visit.page, passkeyLabel));
-};
-
-const registerPasskey = async (visit: Visit, passkeyLabel: string): Promise<void> => {
-  await visit.page.goto(`${visit.origin}/settings/security`);
-  await Effect.runPromise(readyButton(visit.page, "パスキーを登録"));
-  await Effect.runPromise(fill(visit.page, { fieldLabel: "パスキーの名前", typed: passkeyLabel }));
-  await submitPasskeyRegistration(visit, passkeyLabel);
-};
-
-const updateProfile = async (
+const submitPasskeyRegistration = (
   visit: Visit,
-): Promise<{ readonly biography: string; readonly profilePath: string }> => {
-  const biography = `verify ${crypto.randomUUID()}`;
-  await visit.page.goto(`${visit.origin}/settings/profile`);
-  await Effect.runPromise(seeHeading(visit.page, "プロフィールの編集"));
-  await Effect.runPromise(readyButton(visit.page, "保存"));
-  await Effect.runPromise(fill(visit.page, { fieldLabel: "自己紹介", typed: biography }));
-  await Effect.runPromise(press(visit.page, "保存"));
-  await visit.page.waitForURL(`${visit.origin}/users/*`, { timeout: appearanceTimeout });
-  return { biography, profilePath: new URL(visit.page.url()).pathname };
-};
+  passkeyLabel: string,
+): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* submitPasskey() {
+    const generateOptionsHttpReply = waitForPasskeyOptions(visit);
+    const verifyRegistrationHttpReply = waitForPasskeyRegistration(visit);
+    yield* press(visit.page, "パスキーを登録");
+    yield* assertPasskeyHttpOk(
+      yield* pageStep(() => generateOptionsHttpReply),
+      "PASSKEY_OPTIONS_FAILED",
+    );
+    yield* assertPasskeyHttpOk(
+      yield* pageStep(() => verifyRegistrationHttpReply),
+      "PASSKEY_REGISTRATION_FAILED",
+    );
+    yield* seeText(visit.page, passkeyLabel);
+  });
+
+const registerPasskey = (
+  visit: Visit,
+  passkeyLabel: string,
+): Effect.Effect<void, JourneyFailure> =>
+  Effect.gen(function* registerVisitPasskey() {
+    yield* pageStep(() => visit.page.goto(`${visit.origin}/settings/security`));
+    yield* readyButton(visit.page, "パスキーを登録");
+    yield* fill(visit.page, { fieldLabel: "パスキーの名前", typed: passkeyLabel });
+    yield* submitPasskeyRegistration(visit, passkeyLabel);
+  });
+
+const updateProfile = (
+  visit: Visit,
+): Effect.Effect<{ readonly biography: string; readonly profilePath: string }, JourneyFailure> =>
+  Effect.gen(function* saveVisitProfile() {
+    const biography = `verify ${crypto.randomUUID()}`;
+    yield* pageStep(() => visit.page.goto(`${visit.origin}/settings/profile`));
+    yield* seeHeading(visit.page, "プロフィールの編集");
+    yield* readyButton(visit.page, "保存");
+    yield* fill(visit.page, { fieldLabel: "自己紹介", typed: biography });
+    yield* press(visit.page, "保存");
+    yield* pageStep(() =>
+      visit.page.waitForURL(`${visit.origin}/users/*`, { timeout: appearanceTimeout }),
+    );
+    return { biography, profilePath: new URL(visit.page.url()).pathname };
+  });
 
 export {
   answerTotpChallenge,

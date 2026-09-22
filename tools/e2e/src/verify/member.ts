@@ -23,7 +23,7 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
   }
   const browser = yield* Effect.tryPromise({
     catch: () => failure("browser_start_failed"),
-    try: async () =>
+    try: () =>
       chromium.launch({
         args: ["--disable-dev-shm-usage", "--enable-features=WebAuthentication"],
       }),
@@ -31,7 +31,7 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
   const headers = browserHeaders();
   const browserSession = yield* Effect.tryPromise({
     catch: () => failure("browser_start_failed"),
-    try: async () =>
+    try: () =>
       browser.newContext({
         extraHTTPHeaders: headers,
         locale: "ja-JP",
@@ -40,27 +40,19 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
   });
   const page = yield* Effect.tryPromise({
     catch: () => failure("browser_start_failed"),
-    try: async () => {
-      const openedPage = await browserSession.newPage();
-      await enableVirtualAuthenticator(openedPage);
-      return openedPage;
-    },
+    try: () =>
+      browserSession.newPage().then((openedPage) =>
+        enableVirtualAuthenticator(openedPage).then(() => openedPage),
+      ),
   });
-  const verified = yield* Effect.tryPromise({
-    catch: () => failure("browser_authentication_failed"),
-    try: async () =>
-      runVerifyMember({
-        mail,
-        origin: resolved.memberOrigin,
-        page,
-      }),
-  });
+  const verified = yield* runVerifyMember({
+    mail,
+    origin: resolved.memberOrigin,
+    page,
+  }).pipe(Effect.mapError(() => failure("browser_authentication_failed")));
   yield* Effect.tryPromise({
     catch: () => failure("browser_start_failed"),
-    try: async () => {
-      await browserSession.close();
-      await browser.close();
-    },
+    try: () => browserSession.close().then(() => browser.close()),
   });
   return {
     environment: resolved.environment,

@@ -1,3 +1,6 @@
+import { Effect } from "effect";
+
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { deliveryTimeout, mailLinkPattern } from "./mail.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
@@ -24,55 +27,54 @@ const parseMailboxDeliveries = (mailboxJson: unknown): readonly MailboxDelivery[
   return mailboxJson.filter(isMailboxDelivery);
 };
 
-const readMailboxDeliveries = async (
+const readMailboxDeliveries = (
   mailboxHttpReply: Response,
   recipient: string,
-): Promise<readonly MailboxDelivery[]> =>
-  (async (): Promise<readonly MailboxDelivery[]> => {
-    try {
-      const mailboxJson = await mailboxHttpReply.json();
-      const mailboxDeliveries = parseMailboxDeliveries(mailboxJson);
-      return mailboxDeliveries.filter((mailboxDelivery) => mailboxDelivery.recipient === recipient);
-    } catch (parseFailure) {
-      if (parseFailure instanceof Error) {
-        return [];
-      }
-      throw parseFailure;
-    }
-  })();
+): Effect.Effect<readonly MailboxDelivery[]> =>
+  Effect.tryPromise(() => mailboxHttpReply.json()).pipe(
+    Effect.map((mailboxJson) =>
+      parseMailboxDeliveries(mailboxJson).filter(
+        (mailboxDelivery) => mailboxDelivery.recipient === recipient,
+      ),
+    ),
+    Effect.orElseSucceed(() => []),
+  );
 
-const fetchMailboxDeliveries = async (
+const fetchMailboxDeliveries = (
+  fetchImpl: typeof fetch,
   deliveriesUrl: string,
   recipient: string,
-): Promise<readonly MailboxDelivery[]> => {
-  const mailboxHttpReply = await fetch(deliveriesUrl);
-  if (!mailboxHttpReply.ok) {
-    return [];
-  }
-  return readMailboxDeliveries(mailboxHttpReply, recipient);
-};
+): Effect.Effect<readonly MailboxDelivery[], JourneyFailure> =>
+  Effect.gen(function* loadMailboxDeliveries() {
+    const mailboxHttpReply = yield* Effect.tryPromise({
+      catch: (cause) => failed("VERIFY_VERIFICATION_MAIL_NOT_DELIVERED", cause),
+      try: (signal) => fetchImpl(deliveriesUrl, { signal }),
+    });
+    if (!mailboxHttpReply.ok) {
+      return [];
+    }
+    return yield* readMailboxDeliveries(mailboxHttpReply, recipient);
+  });
 
-const waitForMailboxLink = async (linkSearch: {
+const waitForMailboxLink = (linkSearch: {
   readonly deliveriesUrl: string;
   readonly prefix: string;
   readonly recipient: string;
-}): Promise<string> => {
-  const link = await until({
-    attempt: async () => {
-      const mailboxDeliveries = await fetchMailboxDeliveries(
-        linkSearch.deliveriesUrl,
-        linkSearch.recipient,
-      );
-      return mailboxDeliveries
-        .flatMap((mailboxDelivery) =>
-          [...mailboxDelivery.link.matchAll(mailLinkPattern)].map(([matched]) => matched),
-        )
-        .find((matched) => matched.startsWith(linkSearch.prefix));
-    },
+}): Effect.Effect<string, JourneyFailure> =>
+  until({
+    attempt: () =>
+      fetchMailboxDeliveries(fetch, linkSearch.deliveriesUrl, linkSearch.recipient).pipe(
+        Effect.map((mailboxDeliveries) =>
+          mailboxDeliveries
+            .flatMap((mailboxDelivery) =>
+              [...mailboxDelivery.link.matchAll(mailLinkPattern)].map(([matched]) => matched),
+            )
+            .find((matched) => matched.startsWith(linkSearch.prefix)),
+        ),
+        Effect.orElseSucceed(() => undefined),
+      ),
     deadline: deadlineIn(deliveryTimeout),
     reason: "VERIFY_VERIFICATION_MAIL_NOT_DELIVERED",
   });
-  return link;
-};
 
 export { waitForMailboxLink };
