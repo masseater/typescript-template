@@ -32,6 +32,7 @@ import {
 import { devBoundary } from "./dev-boundary.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
+import { lifecycle } from "./lifecycle.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
 const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
@@ -194,53 +195,6 @@ const effectDiagnostics = {
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
-
-const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
-type Lifecycle = (typeof lifecycles)[number];
-
-const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
-  precommit: [],
-  prepush: ["precommit"],
-  prepr: ["prepush"],
-  premerge: [],
-  prerelease: ["prepr", "premerge"],
-};
-
-type LifecycleTask = {
-  command: string[];
-  dependsOn: string[];
-};
-
-const lifecycle = (
-  stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {},
-): {
-  readonly precommit: LifecycleTask;
-  readonly prepush: LifecycleTask;
-  readonly prepr: LifecycleTask;
-  readonly premerge: LifecycleTask;
-  readonly prerelease: LifecycleTask;
-} => ({
-  precommit: {
-    command: [],
-    dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
-  },
-  prepush: {
-    command: [],
-    dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
-  },
-  prepr: {
-    command: [],
-    dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
-  },
-  premerge: {
-    command: [],
-    dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
-  },
-  prerelease: {
-    command: [],
-    dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
-  },
-});
 
 const checkCode = {
   "check:code": {
@@ -487,9 +441,6 @@ export {
   effectRun,
   inspectedLibraryRun,
   intentValidation,
-  lifecycle,
-  lifecycleInherits,
-  lifecycles,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
@@ -506,6 +457,7 @@ export {
   withoutEnvFileLoader,
 };
 export { paths } from "./host.ts";
+export { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
