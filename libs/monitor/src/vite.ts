@@ -4,7 +4,7 @@ function monitorWorkerVite() {
   return {
     pack: {
       deps: {
-        alwaysBundle: ["effect", "@repo/monitor"],
+        alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
         onlyBundle: ["effect", "@repo/monitor"],
       },
       entry: { index: "src/worker.ts" },
