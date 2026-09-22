@@ -7,7 +7,7 @@ const load = {
 };
 const loadCommands = ["src/features/load/cli.ts!", "src/features/load/ci.ts!"];
 
-const modularFeaturePublicApi = ["src/features/*/index.ts", "src/features/*/index.tsx"] as const;
+const modularFeaturePublicApi = ["src/features/*/index.ts"] as const;
 
 const workspaces = {
   ".": {
