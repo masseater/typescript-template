@@ -40,9 +40,7 @@ function depcruise(workspace: string): Effect.Effect<number> {
       console.error(output);
       return 1;
     }
-    const formatted = yield* Effect.tryPromise(() =>
-      format(output, { outputType: "err-long" }),
-    );
+    const formatted = yield* Effect.tryPromise(() => format(output, { outputType: "err-long" }));
     if (typeof formatted.output === "string" && formatted.output.length > 0) {
       console.error(formatted.output);
     }
