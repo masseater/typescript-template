@@ -23,7 +23,7 @@ import {
 
 import type { Page } from "playwright";
 import type { JourneyEnvironment } from "./environment.ts";
-import type { JourneyFailure } from "./journey-failure.ts";
+import { JourneyFailure } from "./journey-failure.ts";
 
 const saveAndOpenHome = (page: Page, origin: string): Effect.Effect<void, JourneyFailure> =>
   Effect.all(
@@ -348,7 +348,15 @@ const runOperatorJourney = (
 const readDocument = (stage: JourneyStage, url: string): Effect.Effect<void, JourneyFailure> =>
   Effect.gen(function* openDocument() {
     yield* pageStep(() => stage.page.goto(url));
+    yield* pageStep(() =>
+      stage.page.waitForURL((opened) => opened.pathname.startsWith("/wiki"), {
+        timeout: appearanceTimeout,
+      }),
+    );
     yield* seeAnyHeading(stage.page);
+    if (!new URL(stage.page.url()).pathname.startsWith("/wiki")) {
+      return yield* Effect.fail(new JourneyFailure({ reason: "E2E_WIKI_NOT_STATIC" }));
+    }
   });
 
 const runDocumentJourney = (

@@ -4,6 +4,7 @@ import { Option } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { denied, sessionPresence } from "./access-decision.ts";
+import { isPublic } from "./access-public.ts";
 
 describe("wiki access after session verify", () => {
   it("keeps MFA enrollment as signed-in so denial sends to /security", () => {
@@ -30,5 +31,13 @@ describe("wiki access after session verify", () => {
     const path = "/security";
     const allowed = Option.isSome(current) && (current.value.strong || path === "/security");
     expect(allowed).toBe(true);
+  });
+
+  it("serves wiki paths without a session", () => {
+    expect.hasAssertions();
+    expect(isPublic("/wiki")).toBe(true);
+    expect(isPublic("/wiki/getting-started/what-is-this")).toBe(true);
+    expect(isPublic("/")).toBe(false);
+    expect(isPublic("/staff")).toBe(false);
   });
 });

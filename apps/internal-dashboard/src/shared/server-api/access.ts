@@ -2,6 +2,7 @@ import { verifySession } from "@repo/auth";
 import { Effect, Option } from "effect";
 
 import { denied, sessionPresence } from "./access-decision.ts";
+import { isPublic } from "./access-public.ts";
 
 type SessionEffect = ReturnType<typeof verifySession>;
 type SessionServices = Effect.Services<SessionEffect>;
@@ -9,21 +10,6 @@ type SessionUnavailable = Exclude<
   Effect.Error<SessionEffect>,
   { readonly _tag: "AdminMfaRequired" | "AdminRequired" | "SessionInvalid" | "SessionRequired" }
 >;
-
-const publicPaths: ReadonlySet<string> = new Set([
-  "/login",
-  "/consent",
-  "/mcp",
-  "/api/telemetry",
-  "/api/health",
-  "/api/session",
-]);
-
-function isPublic(path: string): boolean {
-  return (
-    publicPaths.has(path) || path.startsWith("/api/auth/") || path.startsWith("/.well-known/oauth-")
-  );
-}
 
 function currentSession(
   request: Request,
@@ -40,7 +26,7 @@ function currentSession(
 }
 
 const guardAccess = Effect.fn("guardAccess")(function* guardAccess(request: Request, path: string) {
-  if (isPublic(path)) {
+  if (isPublic(path) || (path.startsWith("/_serverFn/") && request.method === "GET")) {
     return Option.none<Response>();
   }
   const current = yield* currentSession(request);
@@ -49,3 +35,4 @@ const guardAccess = Effect.fn("guardAccess")(function* guardAccess(request: Requ
 });
 
 export { guardAccess };
+export { isPublic } from "./access-public.ts";
