@@ -4,11 +4,11 @@ import { Schema } from "effect";
 import {
   BoardFailed,
   BoardPending,
+  BoardRoute,
   InvalidBoardSearch,
   loadThreads,
   normalizeBoardSearch,
 } from "#pages/board/index.ts";
-import { BoardRoute } from "./-board-route.tsx";
 
 import type { BoardSearch } from "#pages/board/index.ts";
 

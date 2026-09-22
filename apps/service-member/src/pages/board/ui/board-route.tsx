@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { BoardPage } from "#pages/board/index.ts";
+import { BoardPage } from "./board-page.tsx";
 
 import type { ReactElement } from "react";
 
