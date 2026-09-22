@@ -30,9 +30,9 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { effectDiagnostics, effectTsgoNoEmit, effectTypecheckInputs } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
-import { effectDiagnostics, effectTsgoNoEmit, effectTypecheckInputs } from "./effect-tsgo.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
 const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>

@@ -5,10 +5,7 @@ export default defineConfig({
   run: {
     tasks: {
       "check:effect": {
-        command: [
-          effectTsgoNoEmit("tsconfig.json"),
-          effectTsgoNoEmit("scenarios/tsconfig.json"),
-        ],
+        command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
         input: effectDiagnostics["check:effect"].input,
       },
       ci: {

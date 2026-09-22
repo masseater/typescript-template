@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./effect-typecheck": "./src/effect-typecheck.ts",
     "./local-database-path": "./src/local-database-path.ts",
     "./realtime": "./src/realtime.ts",
     "./repository-root": "./src/repository-root.ts",

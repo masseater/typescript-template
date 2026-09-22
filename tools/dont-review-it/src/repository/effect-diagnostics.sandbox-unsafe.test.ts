@@ -175,7 +175,9 @@ describe("effect diagnostics coverage", () => {
         .toSorted(),
     );
     expect(
-      typecheckProjects(repositoryRoot).filter((project) => !effectCheckedProjects.includes(project)),
+      typecheckProjects(repositoryRoot).filter(
+        (project) => !effectCheckedProjects.includes(project),
+      ),
     ).toStrictEqual([]);
   });
 
