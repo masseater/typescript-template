@@ -54,10 +54,10 @@ const restart = Effect.fn("interview.api.restart")(function* restart(request: Re
 
 function interviewApi(api: ApiRoutes<AppServices | Interviewer>) {
   return createApi("")
-    .get("/interview", api.route(InterviewView, open, failures))
-    .post("/interview/turns", api.route(InterviewView, turn, failures))
-    .post("/interview/sheet", api.route(InterviewView, saveSheet, failures))
-    .post("/interview/restart", api.route(InterviewView, restart, failures));
+    .get("/interview", api.route(InterviewView)(open, failures))
+    .post("/interview/turns", api.route(InterviewView)(turn, failures))
+    .post("/interview/sheet", api.route(InterviewView)(saveSheet, failures))
+    .post("/interview/restart", api.route(InterviewView)(restart, failures));
 }
 
 export { interviewApi };

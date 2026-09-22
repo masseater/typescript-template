@@ -1,4 +1,5 @@
-import { monitorWorker } from "@repo/monitor";
+import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
 import { Effect } from "effect";
 
 import {
@@ -7,24 +8,24 @@ import {
   parseHealthMonitorConfig,
   type HealthMonitorEnv,
 } from "./config.ts";
-import { decideHealthAlerts, formatHealthMessage } from "./decision.ts";
+import { decideHealthAlerts, formatHealthMessage, type HealthState } from "./decision.ts";
 import { probeService } from "./probe.ts";
 
-import type { MonitorBindings } from "@repo/monitor";
-import type { HealthState } from "./decision.ts";
-
-interface Bindings extends MonitorBindings, HealthMonitorEnv {}
-
-const health = monitorWorker<Bindings>({
+const health = monitorWorker<MonitorBindings & HealthMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
-      const config = yield* parseHealthMonitorConfig(env);
-      const results = yield* Effect.forEach(healthTargets(config), probeService, {
-        concurrency: "unbounded",
-      });
-      const previous = yield* Effect.promise(() => ctx.storage.get<HealthState>("state"));
-      const decision = decideHealthAlerts(results, previous ?? {});
-      const down = results.filter((result) => !result.healthy).map((result) => result.service);
+      const acceptedConfig = yield* parseHealthMonitorConfig(env);
+      const healthProbes = yield* Effect.all(
+        healthTargets(acceptedConfig).map((healthTarget) => probeService(healthTarget)),
+        {
+          concurrency: "unbounded",
+        },
+      );
+      const priorState = yield* Effect.promise(async () => ctx.storage.get<HealthState>("state"));
+      const decision = decideHealthAlerts(healthProbes, priorState ?? {});
+      const down = healthProbes
+        .filter((healthProbe) => !healthProbe.healthy)
+        .map((healthProbe) => healthProbe.service);
       if (decision.notifications.length > 0) {
         yield* notify({
           subject:
@@ -34,15 +35,16 @@ const health = monitorWorker<Bindings>({
           text: formatHealthMessage(decision.notifications),
         });
       }
-      yield* Effect.promise(() => ctx.storage.put("state", decision.state));
+      yield* Effect.promise(async () => ctx.storage.put("state", decision.state));
       return {
         down,
         notified: decision.notifications.length,
-        services: Object.fromEntries(results.map((result) => [result.service, result.detail])),
+        services: Object.fromEntries(
+          healthProbes.map((healthProbe) => [healthProbe.service, healthProbe.detail]),
+        ),
       };
-    }).pipe(Effect.withSpan("HealthMonitor.check"));
+    }).pipe(withSpan("HealthMonitor.check"));
   },
-  className: healthMonitorWorker.className,
   event: healthMonitorWorker.event,
   failure: {
     subject: "Cloudflare Workers health monitoring failed",
@@ -50,7 +52,7 @@ const health = monitorWorker<Bindings>({
   },
 });
 
-const HealthMonitor = health.Worker;
+class HealthMonitor extends health.Worker {}
 
 export { HealthMonitor };
 export default health.handler;

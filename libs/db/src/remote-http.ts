@@ -1,24 +1,20 @@
-import { drizzle } from "drizzle-orm/sqlite-proxy";
+import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import { migrate } from "drizzle-orm/sqlite-proxy/migrator";
-import { Effect, Layer, Schema } from "effect";
-import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
+import { Effect, Schema } from "effect";
 
 import { RemoteFailure } from "./remote-input.ts";
 
 import type { MigrationConfig } from "drizzle-orm/migrator";
 import type { SQLiteExecuteMethod } from "drizzle-orm/sqlite-core";
-import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 
-interface RemoteQuery {
-  readonly params: readonly (string | number | null)[];
-  readonly sql: string;
-}
-
-interface DatabaseExecutor {
+type DatabaseExecutor = {
   readonly batch: (
-    queries: readonly RemoteQuery[],
+    queries: readonly {
+      readonly params: readonly (string | number | null)[];
+      readonly sql: string;
+    }[],
   ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
-}
+};
 
 const D1_API_TIMEOUT_MS = 30_000;
 const StatementRows = Schema.Struct({
@@ -29,47 +25,45 @@ const QueryResponse = Schema.Struct({
   result: Schema.Array(StatementRows),
   success: Schema.Literal(true),
 });
-const RawRows = Schema.Array(Schema.Array(Schema.Unknown));
-const RawResponse = Schema.Struct({
+const D1RawQueryResponse = Schema.Struct({
   result: Schema.Array(
     Schema.Struct({
-      results: Schema.Struct({ rows: RawRows }),
+      results: Schema.Struct({ rows: Schema.Array(Schema.Array(Schema.Unknown)) }),
       success: Schema.Literal(true),
     }),
   ),
   success: Schema.Literal(true),
 });
 
-const queryFailed = (): RemoteFailure => {
-  return new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
-};
+const queryFailed = (): RemoteFailure => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" });
 
-const d1Http = Layer.merge(
-  FetchHttpClient.layer,
-  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "error" }),
-);
-
-const readJson = (
-  endpoint: string,
-  apiToken: string,
-  body: unknown,
-): Effect.Effect<unknown, RemoteFailure> => {
+const readJson = (d1Request: {
+  readonly endpoint: string;
+  readonly apiToken: string;
+  readonly payload: unknown;
+}): Effect.Effect<unknown, RemoteFailure> => {
   return Effect.gen(function* responseBody() {
-    const requestPayload = yield* HttpBody.json(body).pipe(Effect.mapError(queryFailed));
-    const d1Response = yield* HttpClient.post(endpoint, {
-      body: requestPayload,
-      headers: { authorization: `Bearer ${apiToken}`, "content-type": "application/json" },
-    }).pipe(
-      Effect.timeout(`${D1_API_TIMEOUT_MS} millis`),
-      Effect.provide(d1Http),
-      Effect.mapError(queryFailed),
-    );
-    if (d1Response.status < 200 || d1Response.status >= 300) {
+    const d1Response = yield* Effect.tryPromise({
+      catch: queryFailed,
+      try: async (signal) =>
+        fetch(d1Request.endpoint, {
+          body: JSON.stringify(d1Request.payload),
+          headers: {
+            authorization: `Bearer ${d1Request.apiToken}`,
+            "content-type": "application/json",
+          },
+          method: "POST",
+          redirect: "error",
+          signal: AbortSignal.any([signal, AbortSignal.timeout(D1_API_TIMEOUT_MS)]),
+        }),
+    });
+    if (!d1Response.ok) {
       return yield* queryFailed();
     }
-    return yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(d1Response).pipe(
-      Effect.mapError(queryFailed),
-    );
+    return yield* Effect.tryPromise({
+      catch: queryFailed,
+      try: async (): Promise<unknown> => d1Response.json(),
+    });
   });
 };
 
@@ -86,7 +80,11 @@ const remoteExecutor = ({
   return {
     batch: (queries) =>
       Effect.gen(function* batch() {
-        const responseJson = yield* readJson(endpoint, apiToken, { batch: queries });
+        const responseJson = yield* readJson({
+          apiToken,
+          endpoint,
+          payload: { batch: queries },
+        });
         const decoded = yield* Schema.decodeUnknownEffect(QueryResponse)(responseJson).pipe(
           Effect.mapError(queryFailed),
         );
@@ -98,21 +96,31 @@ const remoteExecutor = ({
   };
 };
 
-const postRaw = (
-  endpoint: string,
-  apiToken: string,
-  batch: readonly { readonly params?: readonly unknown[]; readonly sql: string }[],
-): Effect.Effect<readonly (typeof RawRows.Type)[], RemoteFailure> =>
-  Effect.gen(function* request() {
-    const responseJson = yield* readJson(endpoint, apiToken, { batch });
-    const { result } = yield* Schema.decodeUnknownEffect(RawResponse)(responseJson).pipe(
-      Effect.mapError(queryFailed),
-    );
-    if (result.length !== batch.length) {
-      return yield* queryFailed();
-    }
-    return result.map((item) => item.results.rows);
-  });
+const postRaw = (d1RawBatch: {
+  readonly endpoint: string;
+  readonly apiToken: string;
+  readonly batch: readonly {
+    readonly params?: readonly unknown[];
+    readonly sql: string;
+  }[];
+}): Promise<readonly (readonly (readonly unknown[])[])[]> => {
+  return Effect.runPromise(
+    Effect.gen(function* rawQuery() {
+      const responseJson = yield* readJson({
+        apiToken: d1RawBatch.apiToken,
+        endpoint: d1RawBatch.endpoint,
+        payload: { batch: d1RawBatch.batch },
+      });
+      const { result } = yield* Schema.decodeUnknownEffect(D1RawQueryResponse)(responseJson).pipe(
+        Effect.mapError(queryFailed),
+      );
+      if (result.length !== d1RawBatch.batch.length) {
+        return yield* queryFailed();
+      }
+      return result.map((rawStatement) => rawStatement.results.rows);
+    }),
+  );
+};
 
 const remoteDatabase = ({
   accountId,
@@ -127,34 +135,35 @@ const remoteDatabase = ({
   readonly database: SqliteRemoteDatabase;
 } => {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/raw`;
-  const run = (
-    sql: string,
-    params: readonly unknown[],
-    method: SQLiteExecuteMethod,
-  ): Promise<{ rows: unknown[] }> =>
-    Effect.runPromise(
-      Effect.gen(function* runRaw() {
-        const [rows = []] = yield* postRaw(endpoint, apiToken, [{ params, sql }]);
-        const [firstRow] = rows;
-        return { rows: method === "get" ? [...(firstRow ?? [])] : [...rows] };
-      }),
-    );
-  const database = drizzle(run);
+  const run = async (query: {
+    readonly sql: string;
+    readonly params: readonly unknown[];
+    readonly method: SQLiteExecuteMethod;
+  }): Promise<{ rows: unknown[] }> => {
+    const [resultRows = []] = await postRaw({
+      apiToken,
+      batch: [{ params: query.params, sql: query.sql }],
+      endpoint,
+    });
+    const [firstRow] = resultRows;
+    return { rows: query.method === "get" ? [...(firstRow ?? [])] : [...resultRows] };
+  };
+  const database = drizzle((...query: readonly [string, readonly unknown[], SQLiteExecuteMethod]) =>
+    run({ method: query[2], params: query[1], sql: query[0] }),
+  );
   return {
-    apply: (config) =>
+    apply: async (config) =>
       migrate(
         database,
-        (queries) => {
+        async (queries) => {
           if (queries.length === 0) {
-            return Promise.resolve();
+            return;
           }
-          return Effect.runPromise(
-            postRaw(
-              endpoint,
-              apiToken,
-              queries.map((sql) => ({ sql })),
-            ).pipe(Effect.asVoid),
-          );
+          await postRaw({
+            apiToken,
+            batch: queries.map((sql) => ({ sql })),
+            endpoint,
+          });
         },
         config,
       ),

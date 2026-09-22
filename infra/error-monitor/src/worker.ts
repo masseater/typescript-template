@@ -1,41 +1,48 @@
-import { monitorWorker } from "@repo/monitor";
-import { Clock, Effect } from "effect";
+import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
+import { Effect } from "effect";
 
-import { errorMonitorWorker, parseErrorMonitorConfig, type ErrorMonitorEnv } from "./config.ts";
-import { decideNotifications, formatMessage } from "./decision.ts";
+import {
+  errorMonitorWorker,
+  observabilityQueryEndpoint,
+  parseErrorMonitorConfig,
+  type ErrorMonitorEnv,
+} from "./config.ts";
+import { decideNotifications, formatMessage, type SeenFingerprints } from "./decision.ts";
 import { fetchErrorGroups } from "./telemetry.ts";
-
-import type { MonitorBindings } from "@repo/monitor";
-import type { SeenFingerprints } from "./decision.ts";
-
-interface Bindings extends MonitorBindings, ErrorMonitorEnv {}
 
 const LOOKBACK_MS = 900_000;
 
-const errorMonitor = monitorWorker<Bindings>({
+const errorMonitor = monitorWorker<MonitorBindings & ErrorMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseErrorMonitorConfig(env);
-      const now = yield* Clock.currentTimeMillis;
+      const observedAtMs = Date.now();
       const { dropped, groups } = yield* fetchErrorGroups({
         accountId: config.CLOUDFLARE_ACCOUNT_ID,
-        from: now - LOOKBACK_MS,
-        to: now,
+        from: observedAtMs - LOOKBACK_MS,
+        queryEndpoint: observabilityQueryEndpoint(config.CLOUDFLARE_ACCOUNT_ID),
+        to: observedAtMs,
         token: config.OBSERVABILITY_TOKEN,
       });
-      const seen = yield* Effect.promise(() => ctx.storage.get<SeenFingerprints>("seen"));
-      const decision = decideNotifications(groups, seen ?? {}, now);
+      const seenFingerprints = yield* Effect.promise(async () =>
+        ctx.storage.get<SeenFingerprints>("seen"),
+      );
+      const decision = decideNotifications({
+        errorGroups: groups,
+        observedAtMs,
+        seenFingerprints: seenFingerprints ?? {},
+      });
       if (decision.notifications.length > 0) {
         yield* notify({
           subject: `Cloudflare Workers: ${decision.notifications.length} new or regressed errors`,
           text: formatMessage(decision.notifications),
         });
       }
-      yield* Effect.promise(() => ctx.storage.put("seen", decision.seen));
+      yield* Effect.promise(async () => ctx.storage.put("seen", decision.seen));
       return { dropped, groups: groups.length, notified: decision.notifications.length };
-    }).pipe(Effect.withSpan("ErrorMonitor.check"));
+    }).pipe(withSpan("ErrorMonitor.check"));
   },
-  className: errorMonitorWorker.className,
   event: errorMonitorWorker.event,
   failure: {
     subject: "Cloudflare Workers error monitoring failed",
@@ -43,7 +50,7 @@ const errorMonitor = monitorWorker<Bindings>({
   },
 });
 
-const ErrorMonitor = errorMonitor.Worker;
+class ErrorMonitor extends errorMonitor.Worker {}
 
 export { ErrorMonitor };
 export default errorMonitor.handler;

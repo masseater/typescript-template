@@ -1,4 +1,3 @@
-import { DateTime, Effect, Fiber, Schedule, Schema } from "effect";
 import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
 
 import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
@@ -17,29 +16,29 @@ import {
   type Correlation,
 } from "./protocol.ts";
 import { stoppableVitals, type VitalMetric } from "./vital-reporting.ts";
-
 const flushIntervalMilliseconds = 3000;
 const exportTimeoutMilliseconds = 5000;
-
 const elapsedSince = (startedAt: number): number =>
   Math.min(performance.now() - startedAt, maximumMeasurement);
-
 type FetchInstrumentation = {
   readonly endpoint: string;
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
   readonly send: typeof fetch;
 };
-
 const outgoingSpan = (
   outgoing: Request,
 ): {
-  readonly span: { readonly spanId: string; readonly start: number; readonly traceId: string };
+  readonly span: {
+    readonly spanId: string;
+    readonly start: number;
+    readonly traceId: string;
+  };
   readonly traced: Request;
 } => {
   const span = {
     spanId: randomHex(spanIdBytes),
-    start: DateTime.toEpochMillis(DateTime.nowUnsafe()),
+    start: Date.now(),
     traceId: randomHex(traceIdBytes),
   };
   const traced = new Request(outgoing, {
@@ -47,50 +46,46 @@ const outgoingSpan = (
   });
   return { span, traced };
 };
-
-const tracedFetch = (instrumentation: FetchInstrumentation, outgoing: Request): Promise<Response> =>
-  Effect.runPromise(
-    Effect.gen(function* tracedFetchProgram() {
-      const startedAt = performance.now();
-      const { span, traced } = outgoingSpan(outgoing);
-      const fallbackRequestId = crypto.randomUUID();
-      const recordAnswer = (answered: {
-        readonly requestId: string;
-        readonly status: number;
-      }): void => {
-        instrumentation.queue.enqueue({
-          ...span,
-          ...answered,
-          duration: elapsedSince(startedAt),
-          kind: "http",
-          method: httpMethod(outgoing.method),
-          name: "http.client.request",
-          route: routeLabel(new URL(outgoing.url).pathname, instrumentation.routes),
-          value: 0,
-        });
-      };
-      return yield* Effect.tryPromise(() => instrumentation.send(traced)).pipe(
-        Effect.tap((received) =>
-          Effect.sync(() => {
-            recordAnswer({
-              requestId:
-                [received.headers.get("x-request-id")].find(isRequestId) ?? fallbackRequestId,
-              status: received.status,
-            });
-          }),
-        ),
-        Effect.tapError(() =>
-          Effect.sync(() => {
-            recordAnswer({ requestId: fallbackRequestId, status: 0 });
-          }),
-        ),
-      );
-    }),
-  );
-
+const tracedFetch = async (
+  instrumentation: FetchInstrumentation,
+  outgoing: Request,
+): Promise<Response> => {
+  const startedAt = performance.now();
+  const { span, traced } = outgoingSpan(outgoing);
+  const fallbackRequestId = crypto.randomUUID();
+  const recordAnswer = (answered: {
+    readonly requestId: string;
+    readonly status: number;
+  }): void => {
+    instrumentation.queue.enqueue({
+      ...span,
+      ...answered,
+      duration: elapsedSince(startedAt),
+      kind: "http",
+      method: httpMethod(outgoing.method),
+      name: "http.client.request",
+      route: routeLabel(new URL(outgoing.url).pathname, instrumentation.routes),
+      value: 0,
+    });
+  };
+  try {
+    const received = await instrumentation.send(traced);
+    recordAnswer({
+      requestId: [received.headers.get("x-request-id")].find(isRequestId) ?? fallbackRequestId,
+      status: received.status,
+    });
+    return received;
+  } catch (unsent) {
+    recordAnswer({ requestId: fallbackRequestId, status: 0 });
+    throw unsent;
+  }
+};
 const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
   const originalFetch = globalThis.fetch;
-  const instrumentedFetch = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const instrumentedFetch = async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
     const url = new URL(
       input instanceof Request ? input.url : String(input),
       globalThis.location.href,
@@ -107,27 +102,32 @@ const patchFetch = (instrumentation: FetchInstrumentation): (() => void) => {
     }
   };
 };
-
 type Recorder = {
   readonly documentContext: Correlation;
   readonly queue: EventQueue;
   readonly routes: Readonly<Record<string, string>>;
 };
-
 const documentFields = (
   recorder: Recorder,
-): Omit<Extract<BrowserEvent, { kind: "vital" }>, "kind" | "name" | "value"> => {
+): Omit<
+  Extract<
+    BrowserEvent,
+    {
+      kind: "vital";
+    }
+  >,
+  "kind" | "name" | "value"
+> => {
   return {
     ...recorder.documentContext,
     duration: 0,
     method: httpMethod("GET"),
     route: routeLabel(globalThis.location.pathname, recorder.routes),
     spanId: randomHex(spanIdBytes),
-    start: DateTime.toEpochMillis(DateTime.nowUnsafe()),
+    start: Date.now(),
     status: 0,
   };
 };
-
 const recordException = (
   recorder: Recorder,
   exception: {
@@ -146,7 +146,6 @@ const recordException = (
   });
   recorder.queue.flushInBackground();
 };
-
 const listen = (recorder: Recorder): (() => void) => {
   const { queue } = recorder;
   const rejectionListener = (rejection: Readonly<Pick<PromiseRejectionEvent, "reason">>): void => {
@@ -174,7 +173,6 @@ const listen = (recorder: Recorder): (() => void) => {
     document.removeEventListener("visibilitychange", visibilityListener);
   };
 };
-
 const observeVitals = (recorder: Recorder): (() => void) => {
   const vitals = stoppableVitals((metric: VitalMetric): void => {
     recorder.queue.enqueue({
@@ -192,38 +190,32 @@ const observeVitals = (recorder: Recorder): (() => void) => {
   onTTFB(vitals.report);
   return vitals.stop;
 };
-
 const batchSender =
   (exporter: { readonly endpoint: string; readonly send: typeof fetch }) =>
-  (batch: readonly BrowserEvent[]): Promise<void> =>
-    Effect.runPromise(
-      Effect.gen(function* sendBatch() {
-        const body = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(batch);
-        const delivery = yield* Effect.tryPromise(() =>
-          exporter.send(exporter.endpoint, {
-            body,
-            credentials: "same-origin",
-            headers: { "content-type": "application/json" },
-            keepalive: true,
-            method: "POST",
-            mode: "same-origin",
-            redirect: "error",
-            signal: AbortSignal.timeout(exportTimeoutMilliseconds),
-          }),
-        );
-        if (!delivery.ok) {
-          return yield* Effect.die(`Browser telemetry rejected (${String(delivery.status)})`);
-        }
-      }),
-    );
-
+  async (batch: readonly BrowserEvent[]): Promise<void> => {
+    const delivery = await exporter.send(exporter.endpoint, {
+      body: JSON.stringify(batch),
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      keepalive: true,
+      method: "POST",
+      mode: "same-origin",
+      redirect: "error",
+      signal: AbortSignal.timeout(exportTimeoutMilliseconds),
+    });
+    if (!delivery.ok) {
+      throw new Error(`Browser telemetry rejected (${String(delivery.status)})`);
+    }
+  };
 export const initBrowserTelemetry = ({
   endpoint,
   routes,
 }: {
   readonly endpoint: "/api/telemetry";
   readonly routes: Readonly<Record<string, string>>;
-}): { readonly dispose: () => void } => {
+}): {
+  readonly dispose: () => void;
+} => {
   if (!isRoutes(routes)) {
     throw new Error(routeMessage);
   }
@@ -241,18 +233,13 @@ export const initBrowserTelemetry = ({
   const restoreFetch = patchFetch({ endpoint, queue, routes, send });
   const stopListening = listen(recorder);
   const stopObservingVitals = observeVitals(recorder);
-  const flushFiber = Effect.runFork(
-    Effect.repeat(
-      Effect.sync(() => {
-        queue.flushInBackground();
-      }),
-      Schedule.spaced(`${flushIntervalMilliseconds} millis`),
-    ),
-  );
+  const flushTimer = globalThis.setInterval(() => {
+    queue.flushInBackground();
+  }, flushIntervalMilliseconds);
   return {
     dispose: () => {
       queue.close();
-      Effect.runFork(Fiber.interrupt(flushFiber));
+      globalThis.clearInterval(flushTimer);
       restoreFetch();
       stopListening();
       stopObservingVitals();

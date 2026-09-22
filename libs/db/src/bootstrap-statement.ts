@@ -1,6 +1,6 @@
 import { Email, ROLE } from "@repo/config";
 import { sql, type SQL } from "drizzle-orm";
-import { Clock, Effect, Schema, Struct } from "effect";
+import { Effect, Schema, Struct } from "effect";
 
 import { DatabaseFailure } from "./database-failure.ts";
 import { query } from "./database.ts";
@@ -12,18 +12,18 @@ const BootstrappedAdmin = Schema.Struct({
   role: Schema.Literal(ROLE.administrator),
 });
 
-const bootstrapStatement = (email: typeof Email.Type, updatedAt: number): SQL => {
+const bootstrapStatement = (email: typeof Email.Type): SQL => {
   return sql`UPDATE ${user}
-    SET role = ${ROLE.administrator}, updated_at = ${updatedAt}
+    SET role = ${ROLE.administrator}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
       AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${ROLE.administrator})
     RETURNING id, email, role`;
 };
 
-const ensureAdminStatement = (email: typeof Email.Type, updatedAt: number): SQL => {
+const ensureAdminStatement = (email: typeof Email.Type): SQL => {
   return sql`UPDATE ${user}
-    SET role = ${ROLE.administrator}, updated_at = ${updatedAt}
+    SET role = ${ROLE.administrator}, updated_at = ${Date.now()}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
     RETURNING id, email, role`;
@@ -37,10 +37,7 @@ class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
 const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof Email.Type,
 ) {
-  const updatedAt = yield* Clock.currentTimeMillis;
-  const [promotedRow] = yield* query((database) =>
-    database.all(bootstrapStatement(email, updatedAt)),
-  );
+  const [promotedRow] = yield* query(async (database) => database.all(bootstrapStatement(email)));
   if (promotedRow === undefined) {
     return yield* new BootstrapUnavailable();
   }
@@ -52,16 +49,22 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
 const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   email: typeof Email.Type,
 ) {
-  const updatedAt = yield* Clock.currentTimeMillis;
-  const [updated] = yield* query((database) =>
-    database.all(ensureAdminStatement(email, updatedAt)),
+  const [promotedAdministrator] = yield* query(async (database) =>
+    database.all(ensureAdminStatement(email)),
   );
-  if (updated === undefined) {
+  if (promotedAdministrator === undefined) {
     return yield* new BootstrapUnavailable();
   }
-  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(promotedAdministrator).pipe(
     Effect.mapError((cause) => new DatabaseFailure({ cause })),
   );
 });
 
-export { BootstrappedAdmin, Email, bootstrapAdmin, bootstrapStatement, ensureAdminRole };
+export {
+  BootstrappedAdmin,
+  BootstrapUnavailable,
+  Email,
+  bootstrapAdmin,
+  bootstrapStatement,
+  ensureAdminRole,
+};

@@ -1,58 +1,61 @@
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
+import { ApplicationName } from "@repo/config";
 import { Telemetry, httpStatus, ingestBrowser } from "@repo/observability";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import { createApi, readJsonBody } from "./http.ts";
+import { createApi, readJsonBody, type ApiRoutes } from "./http.ts";
 
-import type { EmailVerificationFailed } from "@repo/auth";
 import type { Failure } from "./failures.ts";
-import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
-
 const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;
-
 const health = Effect.fn("health")(function* health() {
   yield* (yield* DatabaseHealth).check;
   const telemetry = yield* Telemetry;
-  return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
+  const service = yield* Effect.orDie(
+    Schema.decodeUnknownEffect(ApplicationName)(telemetry.serviceName),
+  );
+  return { ok: true as const, release: telemetry.release, service };
 });
-
-function emailVerificationFailure(error: EmailVerificationFailed): Failure {
-  return error.rateLimited
+const emailVerificationFailure = (caughtError: unknown): Failure => {
+  const rateLimited =
+    typeof caughtError === "object" &&
+    caughtError !== null &&
+    "rateLimited" in caughtError &&
+    caughtError.rateLimited === true;
+  return rateLimited
     ? { message: "しばらく待ってから再度お試しください。", status: httpStatus.tooManyRequests }
     : { message: "確認リンクが無効か、有効期限が切れています。", status: httpStatus.badRequest };
-}
-
-function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
+};
+const sessionApi = <Requirements = never>(api: ApiRoutes<AppServices | Requirements>) => {
   return createApi("")
     .all("/auth/*", api.raw(handleAuthRequest, unavailable))
     .post("/telemetry", api.raw(ingestBrowser, {}))
-    .get("/health", api.route(HealthView, health, unavailable))
+    .get("/health", api.route(HealthView)(health, unavailable))
     .get(
       "/session",
-      api.route(SessionView, (request) => verifySession(request.headers, true), unavailable),
+      api.route(SessionView)(
+        (httpRequest) => verifySession(httpRequest.headers, true),
+        unavailable,
+      ),
     );
-}
-
-function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
+};
+const accountApi = <Requirements = never>(api: ApiRoutes<AppServices | Requirements>) => {
   return createApi("")
     .use(sessionApi(api))
     .post(
       "/verify-email",
-      api.route(
-        EmailVerified,
-        (request) =>
-          readJsonBody(EmailVerificationRequest, request).pipe(
-            Effect.flatMap(({ token }) => verifyEmailToken(token, request.headers)),
+      api.route(EmailVerified)(
+        (httpRequest) =>
+          readJsonBody(EmailVerificationRequest, httpRequest).pipe(
+            Effect.flatMap(({ token }) => verifyEmailToken(token, httpRequest.headers)),
           ),
         {
           ...unavailable,
-          EmailVerificationFailed: (error) => emailVerificationFailure(error),
+          EmailVerificationFailed: (caughtError) => emailVerificationFailure(caughtError),
         },
       ),
     );
-}
-
+};
 export { accountApi, sessionApi, unavailable };

@@ -31,8 +31,7 @@ function boardApi(api: ApiRoutes<AppServices>) {
   return createApi("/board")
     .get(
       "/threads",
-      api.route(
-        BoardThreadList,
+      api.route(BoardThreadList)(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -48,8 +47,7 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/threads",
-      api.route(
-        BoardThreadCreated,
+      api.route(BoardThreadCreated)(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -61,8 +59,7 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/thread",
-      api.route(
-        BoardThreadView,
+      api.route(BoardThreadView)(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -78,8 +75,7 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/posts",
-      api.route(
-        BoardPostCreated,
+      api.route(BoardPostCreated)(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

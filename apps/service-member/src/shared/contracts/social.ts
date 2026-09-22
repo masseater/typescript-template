@@ -1,6 +1,5 @@
+import { onboardingSteps } from "@repo/db";
 import { Schema } from "effect";
-
-const onboardingSteps = ["agreement", "choose", "profile", "interview", "done"] as const;
 
 const OnboardingStep = Schema.Literals(onboardingSteps);
 type OnboardingStep = typeof OnboardingStep.Type;

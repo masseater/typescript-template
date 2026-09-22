@@ -1,5 +1,6 @@
 import { CloudflareId } from "@repo/config";
 import { DateTime, Effect, Schema } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
 import { BudgetFailure, fail } from "./config.ts";
 
@@ -7,13 +8,13 @@ const MILLISECONDS_PER_HOUR = 3_600_000;
 const FUTURE_CHARGE_TOLERANCE_HOURS = 24;
 const MAX_DATA_AGE_HOURS = 48;
 const isCloudflareId = Schema.is(CloudflareId);
-const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
+const encodeUsageKey = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
-const Timestamp = Schema.String.check(
+const IsoTimestamp = Schema.String.check(
   Schema.makeFilter(
-    (value: string) =>
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u.test(value) &&
-      !Number.isNaN(Date.parse(value)),
+    (isoText: string) =>
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u.test(isoText) &&
+      !Number.isNaN(Date.parse(isoText)),
   ),
 );
 const Cost = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
@@ -22,10 +23,10 @@ const UsageRow = Schema.Struct({
   BilledCost: Cost,
   BillingAccountId: Schema.String,
   BillingCurrency: Schema.Literal("USD"),
-  BillingPeriodStart: Timestamp,
+  BillingPeriodStart: IsoTimestamp,
   ChargeCategory: Schema.Literal("Usage"),
-  ChargePeriodEnd: Timestamp,
-  ChargePeriodStart: Timestamp,
+  ChargePeriodEnd: IsoTimestamp,
+  ChargePeriodStart: IsoTimestamp,
   ServiceName: Schema.String.check(Schema.isMinLength(1)),
   SubscriptionId: OptionalIdentifier,
   ZoneId: OptionalIdentifier,
@@ -35,136 +36,139 @@ const UsageEnvelope = Schema.Struct({
   success: Schema.Literal(true),
 });
 
+type UsageSnapshot = {
+  readonly periodStart: string;
+  readonly measuredThrough: string;
+  readonly usageUsd: number;
+  readonly records: number;
+};
+
+type RowExpectation = {
+  readonly accountId: string;
+  readonly periodStart: string;
+  readonly observedAt: number;
+};
+
+const billableUsageEndpoint = (accountId: string): string =>
+  `https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`;
+
 type UsageRecord = typeof UsageRow.Type;
 
-interface UsageSnapshot {
-  periodStart: string;
-  measuredThrough: string;
-  usageUsd: number;
-  records: number;
-}
-
-interface RowExpectation {
-  accountId: string;
-  periodStart: string;
-  now: number;
-}
-
-function billingPeriodStart(rows: readonly UsageRecord[]): Effect.Effect<string, BudgetFailure> {
-  const starts = new Set(rows.map((item) => item.BillingPeriodStart));
+const billingPeriodStart = (
+  usageRows: readonly UsageRecord[],
+): Effect.Effect<string, BudgetFailure> => {
+  const starts = new Set(usageRows.map((usageRow) => usageRow.BillingPeriodStart));
   const [periodStart] = starts;
   return starts.size === 1 && periodStart !== undefined
     ? Effect.succeed(periodStart)
     : fail("billing_period_ambiguous");
-}
+};
 
-function rowFailure(
-  item: UsageRecord,
+const rowFailure = (
+  usageRow: UsageRecord,
   expectation: Readonly<RowExpectation>,
-): BudgetFailure["code"] | undefined {
-  if (item.BillingAccountId !== expectation.accountId) {
+): BudgetFailure["code"] | undefined => {
+  if (usageRow.BillingAccountId !== expectation.accountId) {
     return "billing_account_mismatch";
   }
-  const start = Date.parse(item.ChargePeriodStart);
-  const end = Date.parse(item.ChargePeriodEnd);
+  const chargeStart = Date.parse(usageRow.ChargePeriodStart);
+  const chargeEnd = Date.parse(usageRow.ChargePeriodEnd);
   const outOfPeriod =
-    start < Date.parse(expectation.periodStart) ||
-    end <= start ||
-    start > expectation.now ||
-    end > expectation.now + FUTURE_CHARGE_TOLERANCE_HOURS * MILLISECONDS_PER_HOUR;
+    chargeStart < Date.parse(expectation.periodStart) ||
+    chargeEnd <= chargeStart ||
+    chargeStart > expectation.observedAt ||
+    chargeEnd > expectation.observedAt + FUTURE_CHARGE_TOLERANCE_HOURS * MILLISECONDS_PER_HOUR;
   return outOfPeriod ? "billing_dates_invalid" : undefined;
-}
+};
 
-function hasDuplicateRows(rows: readonly UsageRecord[]): Effect.Effect<boolean> {
-  return Effect.forEach(rows, (item) =>
-    encodeJson([
-      item.SubscriptionId,
-      item.ZoneId,
-      item.ServiceName,
-      item.ChargePeriodStart,
-      item.ChargePeriodEnd,
+const hasDuplicateRows = (usageRows: readonly UsageRecord[]): Effect.Effect<boolean> =>
+  Effect.forEach(usageRows, (usageRow) =>
+    encodeUsageKey([
+      usageRow.SubscriptionId,
+      usageRow.ZoneId,
+      usageRow.ServiceName,
+      usageRow.ChargePeriodStart,
+      usageRow.ChargePeriodEnd,
     ]).pipe(Effect.orDie),
-  ).pipe(Effect.map((keys) => new Set(keys).size !== rows.length));
-}
+  ).pipe(Effect.map((encodedRowKeys) => new Set(encodedRowKeys).size !== usageRows.length));
 
-function latestChargeEnd(
-  rows: readonly UsageRecord[],
-  now: number,
-): Effect.Effect<number, BudgetFailure> {
-  const latest = Math.max(...rows.map((item) => Date.parse(item.ChargePeriodEnd)));
-  return now - latest > MAX_DATA_AGE_HOURS * MILLISECONDS_PER_HOUR
+const latestChargeEnd = (asked: {
+  readonly usageRows: readonly UsageRecord[];
+  readonly observedAt: number;
+}): Effect.Effect<number, BudgetFailure> => {
+  const latest = Math.max(
+    ...asked.usageRows.map((usageRow) => Date.parse(usageRow.ChargePeriodEnd)),
+  );
+  return asked.observedAt - latest > MAX_DATA_AGE_HOURS * MILLISECONDS_PER_HOUR
     ? fail("billing_data_stale")
     : Effect.succeed(latest);
-}
+};
 
-function totalCost(rows: readonly UsageRecord[]): Effect.Effect<number, BudgetFailure> {
-  const total = rows.reduce((sum, item) => sum + item.BilledCost, 0);
-  return Number.isFinite(total) ? Effect.succeed(total) : fail("billing_cost_invalid");
-}
+const totalCost = (usageRows: readonly UsageRecord[]): Effect.Effect<number, BudgetFailure> => {
+  const usageTotal = usageRows.reduce((sum, usageRow) => sum + usageRow.BilledCost, 0);
+  return Number.isFinite(usageTotal) ? Effect.succeed(usageTotal) : fail("billing_cost_invalid");
+};
 
-const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(
-  input: unknown,
-  accountId: string,
-  now: number,
-) {
-  const { result: rows } = yield* Schema.decodeUnknownEffect(UsageEnvelope)(input).pipe(
-    Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })),
-  );
-  const periodStart = yield* billingPeriodStart(rows);
-  const invalid = rows
-    .map((item) => rowFailure(item, { accountId, now, periodStart }))
+const summarizeUsage = Effect.fn("summarizeUsage")(function* summarizeUsage(asked: {
+  readonly accountId: string;
+  readonly observedAt: number;
+  readonly payload: unknown;
+}) {
+  const { result: usageRows } = yield* Schema.decodeUnknownEffect(UsageEnvelope)(
+    asked.payload,
+  ).pipe(Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })));
+  const periodStart = yield* billingPeriodStart(usageRows);
+  const invalid = usageRows
+    .map((usageRow) =>
+      rowFailure(usageRow, {
+        accountId: asked.accountId,
+        observedAt: asked.observedAt,
+        periodStart,
+      }),
+    )
     .find((code) => code !== undefined);
   if (invalid !== undefined) {
     return yield* fail(invalid);
   }
-  if (yield* hasDuplicateRows(rows)) {
+  if (yield* hasDuplicateRows(usageRows)) {
     return yield* fail("billing_duplicate_record");
   }
   const snapshot: UsageSnapshot = {
-    measuredThrough: DateTime.formatIso(DateTime.makeUnsafe(yield* latestChargeEnd(rows, now))),
+    measuredThrough: DateTime.formatIso(
+      DateTime.makeUnsafe(yield* latestChargeEnd({ observedAt: asked.observedAt, usageRows })),
+    ),
     periodStart,
-    records: rows.length,
-    usageUsd: yield* totalCost(rows),
+    records: usageRows.length,
+    usageUsd: yield* totalCost(usageRows),
   };
   return snapshot;
 });
 
-function httpFailed(): BudgetFailure {
-  return new BudgetFailure({ code: "billing_http_failed" });
-}
+const httpFailed = (): BudgetFailure => new BudgetFailure({ code: "billing_http_failed" });
 
-const requestUsage = (
-  fetchImpl: typeof fetch,
-  accountId: string,
-  token: string,
-): Effect.Effect<Response, BudgetFailure> =>
-  Effect.tryPromise({
-    catch: httpFailed,
-    try: (signal) =>
-      fetchImpl(`https://api.cloudflare.com/client/v4/accounts/${accountId}/billable-usage`, {
-        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
-        redirect: "manual",
-        signal,
-      }),
-  });
-
-const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(
-  accountId: string,
-  token: string,
-  now: number,
-) {
-  if (!isCloudflareId(accountId)) {
+const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(asked: {
+  readonly accountId: string;
+  readonly observedAt: number;
+  readonly token: string;
+}) {
+  if (!isCloudflareId(asked.accountId)) {
     return yield* fail("billing_account_invalid");
   }
-  const response = yield* requestUsage(fetch, accountId, token);
-  if (!response.ok) {
+  const billingResponse = yield* HttpClient.get(billableUsageEndpoint(asked.accountId), {
+    headers: { Accept: "application/json", Authorization: `Bearer ${asked.token}` },
+  }).pipe(Effect.provide(FetchHttpClient.layer), Effect.mapError(httpFailed));
+  if (billingResponse.status < 200 || billingResponse.status >= 300) {
     return yield* fail("billing_http_failed");
   }
-  const body = yield* Effect.tryPromise(() => response.json()).pipe(
-    Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })),
-  );
-  return yield* summarizeUsage(body, accountId, now);
+  const billingPayload = yield* HttpClientResponse.schemaBodyJson(Schema.Unknown)(
+    billingResponse,
+  ).pipe(Effect.mapError(() => new BudgetFailure({ code: "billing_response_invalid" })));
+  return yield* summarizeUsage({
+    accountId: asked.accountId,
+    observedAt: asked.observedAt,
+    payload: billingPayload,
+  });
 });
 
-export { fetchUsage };
+export { billableUsageEndpoint, fetchUsage };
 export type { UsageSnapshot };
