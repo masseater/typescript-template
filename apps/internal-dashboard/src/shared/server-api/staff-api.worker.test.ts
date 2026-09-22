@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { signedSessionCookie } from "@repo/auth/testing";
-import { APPLICATION, ROLE, STAFF_PERMISSION } from "@repo/config";
-import { httpStatus } from "@repo/config";
+import { APPLICATION, ROLE, STAFF_PERMISSION, httpStatus } from "@repo/config";
 import { AUDIT_CHANNEL, Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
 import { FLAG_KEY } from "@repo/feature-flags";

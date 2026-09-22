@@ -24,12 +24,12 @@ function inquiryApi(api: ApiRoutes<WikiServices>) {
   return createApi("")
     .get(
       "/inquiries/counts",
-      ...api.route({ response: StaffInquiryCounts }, () => inquiryStaff.inquiryCounts(), failures),
+      api.route(StaffInquiryCounts, () => inquiryStaff.inquiryCounts(), failures),
     )
     .get(
       "/inquiries/member",
-      ...api.route(
-        { response: StaffInquiryList },
+      api.route(
+        StaffInquiryList,
         (request) =>
           Effect.gen(function* handle() {
             const { id } = yield* readSearchParams(MemberQuery, request);
@@ -41,8 +41,8 @@ function inquiryApi(api: ApiRoutes<WikiServices>) {
     )
     .get(
       "/inquiries/detail",
-      ...api.route(
-        { response: StaffInquiryThread },
+      api.route(
+        StaffInquiryThread,
         (request) =>
           Effect.gen(function* handle() {
             const { id } = yield* readSearchParams(InquiryQuery, request);

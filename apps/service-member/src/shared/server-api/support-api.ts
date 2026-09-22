@@ -32,8 +32,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/support",
-      ...api.route(
-        { response: InquiryList },
+      api.route(
+        InquiryList,
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -45,8 +45,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/support/detail",
-      ...api.route(
-        { response: InquiryThread },
+      api.route(
+        InquiryThread,
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -58,8 +58,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/support",
-      ...api.route(
-        { response: InquiryThread },
+      api.route(
+        InquiryThread,
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -71,8 +71,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/support/reply",
-      ...api.route(
-        { response: InquiryThread },
+      api.route(
+        InquiryThread,
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

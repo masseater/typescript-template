@@ -1,6 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, ROLE } from "@repo/config";
-import { httpStatus } from "@repo/config";
+import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, ROLE, httpStatus } from "@repo/config";
 import { AgreementRequired, pendingAgreementKinds, requireCurrentAgreements } from "@repo/db";
 import { createAgreementDraft, publishAgreementVersion } from "@repo/db/admin";
 import { TestDatabase, runStatement } from "@repo/db/testing";
