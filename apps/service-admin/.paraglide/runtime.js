@@ -1,7 +1,6 @@
 /* eslint-disable */
 
-/** @type {any} */
-const URLPattern = {}
+import "@inlang/paraglide-js/urlpattern-polyfill";
 
 /**
  * The project's base locale.
@@ -57,15 +56,15 @@ export const routeStrategies = [];
  */
 export const urlPatterns = [
   {
-    "pattern": ":protocol://:domain(.*)::port?/:path(.*)?",
+    "pattern": "/:path(.*)?",
     "localized": [
       [
         "en",
-        ":protocol://:domain(.*)::port?/en/:path(.*)?"
+        "/en/:path(.*)?"
       ],
       [
         "ja",
-        ":protocol://:domain(.*)::port?/:path(.*)?"
+        "/:path(.*)?"
       ]
     ]
   }
@@ -129,7 +128,7 @@ const TREE_SHAKE_COOKIE_STRATEGY_USED = true;
 const TREE_SHAKE_URL_STRATEGY_USED = true;
 const TREE_SHAKE_GLOBAL_VARIABLE_STRATEGY_USED = false;
 const TREE_SHAKE_PREFERRED_LANGUAGE_STRATEGY_USED = true;
-const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = true;
+const TREE_SHAKE_DEFAULT_URL_PATTERN_USED = false;
 const TREE_SHAKE_LOCAL_STORAGE_STRATEGY_USED = false;
 
 /** @type {any} */ (globalThis).__paraglide =
