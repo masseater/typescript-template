@@ -1,4 +1,5 @@
 import {
+  InviteAcceptance as InviteAcceptanceBody,
   maximumNameLength,
   maximumPasswordLength,
   minimumPasswordLength,
@@ -15,24 +16,36 @@ import {
   useAction,
   useTextInput,
 } from "@repo/ui";
+import { Schema } from "effect";
 import { type ReactElement, type SyntheticEvent } from "react";
 
 import { inviteFailureOf, type Invitation } from "./invite-preview.ts";
 
-const acceptInvite = async (
-  endpoint: string,
-  acceptance: Readonly<{ name: string; password: string; token: string }>,
-): Promise<void> => {
-  const served = await fetch(endpoint, {
-    body: JSON.stringify(acceptance),
+const encodeAcceptance = Schema.encodePromise(Schema.fromJsonString(InviteAcceptanceBody));
+
+function postInvite(fetchImpl: typeof fetch, endpoint: string, body: string): Promise<Response> {
+  return fetchImpl(endpoint, {
+    body,
     credentials: "same-origin",
     headers: { "content-type": "application/json" },
     method: "POST",
   });
-  if (!served.ok) {
-    throw new Error(await inviteFailureOf(served, "招待を受け付けられませんでした。"));
-  }
-};
+}
+
+const acceptInvite = (
+  endpoint: string,
+  acceptance: Readonly<{ name: string; password: string; token: string }>,
+): Promise<void> =>
+  encodeAcceptance(acceptance).then((body) =>
+    postInvite(fetch, endpoint, body).then((served) => {
+      if (served.ok) {
+        return;
+      }
+      return inviteFailureOf(served, "招待を受け付けられませんでした。").then((message) => {
+        throw new Error(message);
+      });
+    }),
+  );
 
 const InviteForm = ({
   email,
@@ -50,14 +63,13 @@ const InviteForm = ({
   const password = useTextInput();
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
-    action.run(async () => {
-      await acceptInvite(endpoint, {
+    action.run(() =>
+      acceptInvite(endpoint, {
         name: displayName.value,
         password: password.value,
         token,
-      });
-      onAccepted();
-    });
+      }).then(onAccepted),
+    );
   };
   return (
     <form onSubmit={submit} aria-busy={action.pending} aria-label="招待を受ける">
