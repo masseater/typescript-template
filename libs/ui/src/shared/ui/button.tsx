@@ -1,7 +1,7 @@
-import { Button as ButtonPrimitive } from "@base-ui/react/button";
-import { startTransition, type MouseEventHandler, type ReactElement } from "react";
+import { Button as BaseButton, type ButtonProps as BaseButtonProps } from "baseui/button";
+import { startTransition, type ReactElement } from "react";
 
-import { buttonVariants } from "./button-variants";
+import { kindByVariant, sizeBySize } from "./button-kinds";
 
 import type { Children } from "./types";
 
@@ -9,40 +9,87 @@ const Button = ({
   "aria-label": ariaLabel,
   action,
   children,
-  disabled,
+  disabled = false,
   onClick,
-  size,
+  size = "medium",
   type,
-  variant,
+  variant = "secondary",
 }: Children &
   Readonly<{
     "aria-label"?: string;
     action?: () => void | Promise<void>;
     disabled?: boolean;
-    onClick?: MouseEventHandler;
+    onClick?: BaseButtonProps["onClick"];
     size?: "medium" | "small";
     type: "button" | "submit";
     variant?: "danger" | "primary" | "secondary";
   }>): ReactElement => {
+  const buttonKind = kindByVariant[variant];
+  const buttonSize = sizeBySize[size];
+  const handleClick: BaseButtonProps["onClick"] = (click) => {
+    if (action !== undefined && type === "button") {
+      startTransition(() => {
+        void action();
+      });
+      return;
+    }
+    onClick?.(click);
+  };
+  const clickHandler =
+    action === undefined && onClick === undefined ? undefined : handleClick;
+  if (clickHandler === undefined) {
+    if (ariaLabel === undefined) {
+      return (
+        <BaseButton
+          data-slot="button"
+          type={type}
+          disabled={disabled}
+          kind={buttonKind}
+          size={buttonSize}
+        >
+          {children}
+        </BaseButton>
+      );
+    }
+    return (
+      <BaseButton
+        data-slot="button"
+        type={type}
+        aria-label={ariaLabel}
+        disabled={disabled}
+        kind={buttonKind}
+        size={buttonSize}
+      >
+        {children}
+      </BaseButton>
+    );
+  }
+  if (ariaLabel === undefined) {
+    return (
+      <BaseButton
+        data-slot="button"
+        type={type}
+        disabled={disabled}
+        kind={buttonKind}
+        size={buttonSize}
+        onClick={clickHandler}
+      >
+        {children}
+      </BaseButton>
+    );
+  }
   return (
-    <ButtonPrimitive
+    <BaseButton
       data-slot="button"
       type={type}
       aria-label={ariaLabel}
       disabled={disabled}
-      onClick={(click) => {
-        if (action !== undefined && type === "button") {
-          startTransition(() => {
-            void action();
-          });
-          return;
-        }
-        onClick?.(click);
-      }}
-      className={buttonVariants({ size, variant })}
+      kind={buttonKind}
+      size={buttonSize}
+      onClick={clickHandler}
     >
       {children}
-    </ButtonPrimitive>
+    </BaseButton>
   );
 };
 
