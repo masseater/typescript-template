@@ -342,7 +342,6 @@ const coreDevWorker = {
 const appConfig = (
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
-  run: RunConfig = appRun,
 ): ((env: Readonly<ConfigEnv>) => UserConfig) => {
   const appRoot = paths.join(repositoryRoot, "apps", app);
   const realtime = grants(app, "realtime");
@@ -413,7 +412,7 @@ const appConfig = (
       reactCompiler(),
     ],
     preview: appServer(app),
-    run,
+    run: appRun,
     server: appServer(app),
   });
 };

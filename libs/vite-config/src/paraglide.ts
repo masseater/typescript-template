@@ -4,6 +4,6 @@ import { paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.
 
 import type { PluginOption } from "vite-plus";
 
-const paraglideAppPlugin = (): PluginOption => paraglideVitePlugin(paraglideCompileOptions);
+const paraglideAppPlugin = (): PluginOption => paraglideVitePlugin(paraglideCompileOptions());
 
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy };

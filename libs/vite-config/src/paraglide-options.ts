@@ -1,15 +1,15 @@
-type AppLocale = "en" | "ja";
+import type { CompilerOptions } from "@inlang/paraglide-js";
 
 const paraglideStrategy = ["url", "cookie", "preferredLanguage", "baseLocale"] as const;
 
-const paraglideCompileOptions = {
+const paraglideCompileOptions = (): CompilerOptions => ({
   cookieName: "PARAGLIDE_LOCALE",
   emitGitIgnore: true,
   emitPrettierIgnore: false,
   emitReadme: false,
   emitTsDeclarations: true,
   outdir: "./.paraglide",
-  outputStructure: "message-modules" as const,
+  outputStructure: "message-modules",
   project: "./project.inlang",
   strategy: [...paraglideStrategy],
   urlPatterns: [
@@ -18,9 +18,9 @@ const paraglideCompileOptions = {
       localized: [
         ["en", "/en/:path(.*)?"],
         ["ja", "/:path(.*)?"],
-      ] satisfies Array<[AppLocale, string]>,
+      ],
     },
   ],
-};
+});
 
 export { paraglideCompileOptions, paraglideStrategy };
