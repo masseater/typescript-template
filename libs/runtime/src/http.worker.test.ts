@@ -1,4 +1,5 @@
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+
 import { describe, expect, it } from "vite-plus/test";
 
 import { apiRoot, createApi } from "./http.ts";

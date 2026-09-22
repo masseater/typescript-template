@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect/atom-react";
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { requestAtom, resultError } from "@repo/ui";
 import { Effect } from "effect";
 import { AsyncResult } from "effect/unstable/reactivity";

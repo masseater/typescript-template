@@ -9,7 +9,7 @@ import {
   identifierPattern,
   type ErrorAttributes,
 } from "./errors.ts";
-import { httpStatus } from "./http-status.ts";
+import { httpStatus } from "@repo/config";
 import { httpMethod, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
 import { logAt, statusSeverity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";

@@ -12,7 +12,7 @@ import {
   OtlpTracer,
 } from "effect/unstable/observability";
 
-import { httpStatus } from "./http-status.ts";
+import { httpStatus } from "@repo/config";
 import { logAt } from "./severity.ts";
 import { redactedLogger } from "./structured-logs.ts";
 

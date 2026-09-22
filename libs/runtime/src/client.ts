@@ -1,5 +1,6 @@
 import { treaty } from "@elysia/eden";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+
 import { Result, Schema } from "effect";
 
 import { ErrorBody } from "./contracts.ts";

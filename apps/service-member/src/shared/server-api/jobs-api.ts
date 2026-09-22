@@ -1,5 +1,5 @@
-import { JobPayload, readJobs } from "@repo/config";
-import { httpStatus } from "@repo/observability";
+import { JobPayload, readJobs, httpStatus } from "@repo/config";
+
 import { unavailable } from "@repo/runtime/account";
 import { createApi } from "@repo/runtime/http";
 import { enqueueJob, jobStatus } from "@repo/runtime/jobs";

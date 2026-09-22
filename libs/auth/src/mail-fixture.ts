@@ -1,6 +1,6 @@
 import { setupNetwork } from "@msw/cloudflare";
-import { mailpitOrigin, mailpitSendPath } from "@repo/config";
-import { httpStatus } from "@repo/observability";
+import { mailpitOrigin, mailpitSendPath, httpStatus } from "@repo/config";
+
 import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 

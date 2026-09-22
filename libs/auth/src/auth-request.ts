@@ -1,4 +1,5 @@
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+
 import { Effect } from "effect";
 
 import { AuthFailure } from "./auth-failure.ts";

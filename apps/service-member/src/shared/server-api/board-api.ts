@@ -1,5 +1,6 @@
 import { verifySession } from "@repo/auth";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";

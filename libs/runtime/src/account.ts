@@ -1,5 +1,7 @@
 import { handleAuthRequest, verifyEmailToken, verifySession } from "@repo/auth";
-import { Telemetry, httpStatus, ingestBrowser } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+import { Telemetry, ingestBrowser } from "@repo/observability";
+
 import { Effect } from "effect";
 
 import { EmailVerificationRequest, EmailVerified, HealthView, SessionView } from "./contracts.ts";

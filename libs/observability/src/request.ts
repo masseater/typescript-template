@@ -1,6 +1,6 @@
 import { Chunk, Effect, Option, Schema, Stream } from "effect";
 
-import { httpStatus } from "./http-status.ts";
+import { httpStatus } from "@repo/config";
 
 export type JsonRequest = {
   readonly body: Readonly<AsyncIterable<Uint8Array>> | null;

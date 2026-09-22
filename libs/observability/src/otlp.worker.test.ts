@@ -4,7 +4,7 @@ import { Cause, Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { annotateSpan, withSpan } from "./annotations.ts";
-import { httpStatus } from "./http-status.ts";
+import { httpStatus } from "@repo/config";
 import { Telemetry, flushTelemetry, observeRequest } from "./server.ts";
 import { logAt, logCause } from "./severity.ts";
 

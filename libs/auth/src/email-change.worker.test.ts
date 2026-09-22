@@ -1,6 +1,7 @@
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
+
 import { runStatement } from "@repo/db/testing";
-import { httpStatus } from "@repo/observability";
+
 import { Clock, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 

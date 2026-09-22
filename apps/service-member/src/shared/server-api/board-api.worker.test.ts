@@ -1,7 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
+
 import { TestDatabase, runStatement } from "@repo/db/testing";
-import { httpStatus } from "@repo/observability";
+
 import { recordingSink } from "@repo/observability/testing";
 import { accountApi } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
