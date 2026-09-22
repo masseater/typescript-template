@@ -14,6 +14,7 @@ import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
+import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
 import { retiredImportGuidance } from "./retired-packages.ts";
@@ -279,6 +280,12 @@ const projectPlugin = definePlugin({
         "effect を使うファイルでは throw と try/catch を使えません。失敗は Schema.TaggedError で型に載せ、Effect.fail・Effect.try・Effect.tryPromise・Result.try で扱ってください。better-auth のフックが要求する APIError だけは throw できます。",
       ),
     },
+    "effect-event-deps": {
+      create: effectEventDependencyVisitor,
+      meta: metadata(
+        "useEffectEvent が返す関数を useEffect や useLayoutEffect の依存配列に入れてはいけません。依存配列から外し、Effect の本体でその関数を呼んでください。",
+      ),
+    },
     "effect-stack": {
       create: effectStackVisitor,
       meta: metadata(
@@ -331,6 +338,12 @@ const projectPlugin = definePlugin({
       create: processBoundaryVisitor,
       meta: metadata(
         `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console か @repo/cli の cliStdout / cliStderr、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.stdout・process.stderr・process.exitCode・NodeRuntime.runMain を参照できるのは ${cliImplementation} だけです。`,
+      ),
+    },
+    "react-legacy": {
+      create: reactLegacyVisitor,
+      meta: metadata(
+        "React 19 で外した書き方は使えません。forwardRef と createFactory は ref を通常の props にした関数へ、Context.Provider は <Context value={...}> へ、文字列の ref は要素を指す ref へ、defaultProps は引数の既定値へ、propTypes は TypeScript へ置き換えてください。react-dom の render・hydrate・findDOMNode・unmountComponentAtNode と react-dom/server の renderToNodeStream・renderToStaticNodeStream は createRoot と hydrateRoot に置き換え、react-test-renderer は Testing Library に置き換えてください。",
       ),
     },
     "retired-imports": {
