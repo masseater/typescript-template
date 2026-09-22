@@ -2,10 +2,9 @@ import { reportStatuses } from "@repo/config";
 import { createFileRoute } from "@tanstack/react-router";
 import { Schema } from "effect";
 
-import { ReportsPage, loadReports } from "#pages/reports/index.ts";
+import { ReportsRoute, loadReports } from "#pages/reports/index.ts";
 
 import type { ReportStatus } from "@repo/config";
-import type { ReactElement } from "react";
 
 const searchSchema = Schema.toStandardSchemaV1(
   Schema.Struct({
@@ -37,11 +36,5 @@ const Route = createFileRoute("/_admin/reports")({
       ...(deps.status === undefined ? {} : { status: deps.status }),
     }),
 });
-
-function ReportsRoute(): ReactElement {
-  const listing = Route.useLoaderData();
-  const search = Route.useSearch();
-  return <ReportsPage reports={listing.reports} status={search.status} />;
-}
 
 export { Route };

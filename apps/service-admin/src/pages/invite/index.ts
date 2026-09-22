@@ -1,1 +1,2 @@
-export { InvitePage } from "./ui/invite-page.tsx";
+export { InvitePending } from "./ui/invite-pending.tsx";
+export { InviteRoute } from "./ui/invite-route.tsx";

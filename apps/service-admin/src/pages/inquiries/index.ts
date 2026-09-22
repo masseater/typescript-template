@@ -1,2 +1,2 @@
-export { InquiryDetailPage } from "./ui/inquiry-detail-page.tsx";
+export { InquiryDetailRoute } from "./ui/inquiry-detail-route.tsx";
 export { InquiriesPage } from "./ui/inquiries-page.tsx";
