@@ -1,5 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { AGREEMENT_KIND, agreementPolicies } from "@repo/config";
+import { httpStatus } from "@repo/config";
 import {
   AgreementVersionUnavailable,
   AgreementWithdrawalUnavailable,
@@ -10,7 +11,6 @@ import {
   requireCurrentAgreements,
   withdrawAgreementKind,
 } from "@repo/db";
-import { httpStatus } from "@repo/config";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect, DateTime } from "effect";
