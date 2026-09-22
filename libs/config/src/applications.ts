@@ -76,3 +76,5 @@ const MAILPIT_PORT = 8025;
 export const mailpitPort = MAILPIT_PORT;
 export const mailpitOrigin = loopbackOrigin(MAILPIT_PORT);
 export const mailpitSendPath = "/api/v1/send";
+
+export const scalarReferencePath = "/assets/scalar-api-reference.js";

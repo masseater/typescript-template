@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -31,7 +31,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   GroupInviteExpired: {
     message: "招待リンクの期限が切れています。",
     status: httpStatus.forbidden,
@@ -51,8 +51,8 @@ function groupsApi(api: ApiRoutes<AppServices>) {
   return createApi("/groups")
     .get(
       "/view",
-      api.route(
-        GroupView,
+      ...api.route(
+        { response: GroupView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -64,8 +64,8 @@ function groupsApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/create",
-      api.route(
-        GroupCreated,
+      ...api.route(
+        { response: GroupCreated },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -82,8 +82,8 @@ function groupsApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/join",
-      api.route(
-        GroupJoined,
+      ...api.route(
+        { response: GroupJoined },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -95,8 +95,8 @@ function groupsApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/leave",
-      api.route(
-        GroupLeft,
+      ...api.route(
+        { response: GroupLeft },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -109,8 +109,8 @@ function groupsApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/rename",
-      api.route(
-        GroupRenamed,
+      ...api.route(
+        { response: GroupRenamed },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -123,8 +123,8 @@ function groupsApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/invite",
-      api.route(
-        GroupInviteRefreshed,
+      ...api.route(
+        { response: GroupInviteRefreshed },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

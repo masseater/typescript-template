@@ -18,7 +18,6 @@ function NewInquiryForm({
           maxLength={maximumSubjectLength}
           name="subject"
           onValueChange={form.handleSubjectChange}
-          required
           value={form.subject}
         />
         <Field
@@ -27,7 +26,6 @@ function NewInquiryForm({
           multiline
           name="body"
           onValueChange={form.handleBodyChange}
-          required
           value={form.body}
         />
         <div className="flex gap-2">

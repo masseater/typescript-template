@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { blockMember, fileReport, unblockMember } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -11,7 +11,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   TrustSubjectNotFound: {
     message: "通報する対象が見つかりません。",
     status: httpStatus.notFound,
@@ -26,8 +26,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
   return createApi("/trust")
     .put(
       "/block",
-      api.route(
-        Blocked,
+      ...api.route(
+        { response: Blocked },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -40,8 +40,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
     )
     .delete(
       "/block",
-      api.route(
-        Blocked,
+      ...api.route(
+        { response: Blocked },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -54,8 +54,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/report",
-      api.route(
-        ReportFiled,
+      ...api.route(
+        { response: ReportFiled },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

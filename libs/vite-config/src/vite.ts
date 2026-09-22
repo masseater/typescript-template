@@ -19,6 +19,7 @@ import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
 import { lifecycle } from "./lifecycle.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
+import { scalarReference } from "./scalar-reference.ts";
 
 const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
   filesystem.readFileString(paths.join(appRoot, ".dev.vars")).pipe(
@@ -380,6 +381,7 @@ const appConfig = (
       failOnBrokenSourceMaps(),
       previewDevVars(appRoot),
       privateSourceMaps(app),
+      scalarReference(),
       devBoundary(app),
       elysiaAot(appRoot),
       elysiaWorkerdJit(),
@@ -430,5 +432,6 @@ export { paths } from "./host.ts";
 export { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
+export { readScalarReference, scalarReference } from "./scalar-reference.ts";
 export type { Tasks };
 export { devBoundary };

@@ -73,5 +73,4 @@ export {
   maximumBodyLength,
   maximumSummaryLength,
   maximumVersionLength,
-  versionLabelPattern,
 };

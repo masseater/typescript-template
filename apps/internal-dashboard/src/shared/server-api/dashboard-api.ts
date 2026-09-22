@@ -1,5 +1,5 @@
 import { dashboardStaff } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -14,18 +14,18 @@ import {
 import type { WikiServices } from "#shared/wiki/index.ts";
 import type { ApiRoutes } from "@repo/runtime/http";
 
-const failures = { ...unavailable };
+const failures = { ...sessionFailures };
 
 function dashboardApi(api: ApiRoutes<WikiServices>) {
   return createApi("")
     .get(
       "/overview",
-      api.route(StaffOverview, () => dashboardStaff.overview(), failures),
+      ...api.route({ response: StaffOverview }, () => dashboardStaff.overview(), failures),
     )
     .get(
       "/metrics/trend",
-      api.route(
-        MetricTrend,
+      ...api.route(
+        { response: MetricTrend },
         (request) =>
           Effect.gen(function* handle() {
             const query = yield* readSearchParams(TrendQuery, request);
@@ -36,8 +36,8 @@ function dashboardApi(api: ApiRoutes<WikiServices>) {
     )
     .get(
       "/audit",
-      api.route(
-        StaffAuditPage,
+      ...api.route(
+        { response: StaffAuditPage },
         (request) =>
           Effect.gen(function* handle() {
             const page = yield* readSearchParams(AuditPageQuery, request);

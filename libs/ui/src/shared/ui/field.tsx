@@ -24,12 +24,14 @@ const messageForValidity = (
 
 const Field = ({
   autoComplete,
+  error,
   inputMode,
   label,
   maxLength,
   minLength,
   multiline,
   name,
+  onBlur,
   onValueChange,
   pattern,
   readOnly,
@@ -48,7 +50,9 @@ const Field = ({
       | "off"
       | "one-time-code"
       | "username";
+    error?: string | undefined;
     label: string;
+    onBlur?: () => void;
     onValueChange?: (nextValue: string) => void;
   }
 > &
@@ -58,6 +62,7 @@ const Field = ({
   >): ReactElement => {
   const validationMessages = useFieldValidationMessages();
   const [constraintMessage, setConstraintMessage] = useConstraintMessage();
+  const shownError = error ?? constraintMessage;
   const syncConstraintMessage = (validity: globalThis.ValidityState): void => {
     setConstraintMessage(messageForValidity(validity, validationMessages));
   };
@@ -74,6 +79,7 @@ const Field = ({
         className={`block field-sizing-content min-h-16 ${controlClassName}`}
         onBlur={(blur) => {
           syncConstraintMessage(blur.currentTarget.validity);
+          onBlur?.();
         }}
         onChange={(change) => {
           onValueChange?.(change.currentTarget.value);
@@ -95,6 +101,7 @@ const Field = ({
         className={`inline-block leading-none ${controlClassName}`}
         onBlur={(blur) => {
           syncConstraintMessage(blur.currentTarget.validity);
+          onBlur?.();
         }}
         onChange={(change) => {
           onValueChange?.(change.currentTarget.value);
@@ -106,9 +113,7 @@ const Field = ({
       <FormControl
         label={<span className={labelClassName}>{label}</span>}
         error={
-          constraintMessage === undefined ? null : (
-            <span className={errorClassName}>{constraintMessage}</span>
-          )
+          shownError === undefined ? null : <span className={errorClassName}>{shownError}</span>
         }
       >
         {control}
