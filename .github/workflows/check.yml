@@ -18,6 +18,8 @@ jobs:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: &runner ubuntu-latest
     timeout-minutes: 15
+    env:
+      MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
     steps:
       - &checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,21 +48,15 @@ jobs:
         run: gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[] | .filename, .previous_filename // empty' > "$PR_FILES_PATH" && vp run --filter @repo/dont-review-it pr-affected
       - if: steps.affected.outputs.scope == 'all'
         run: vp run -r prepr
-        env:
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
       - if: steps.affected.outputs.scope == 'subset'
         run: vp run -w prepr
-        env:
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
       - if: steps.affected.outputs.scope == 'subset'
         env:
           AFFECTED_FILTERS: ${{ steps.affected.outputs.filters }}
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
         run: vp run --fail-if-no-match $AFFECTED_FILTERS prepr
       - if: steps.affected.outputs.scope == 'subset'
         env:
           AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
         run: vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
@@ -72,14 +68,15 @@ jobs:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
     timeout-minutes: 30
+    env:
+      MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+      VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"
     steps:
       - *checkout
       - *browser-cache
       - *setup
       - *vite-task-cache
       - run: vp run -r premerge
-        env:
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:
@@ -90,26 +87,27 @@ jobs:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
     timeout-minutes: 15
+    env:
+      MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+      VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"
     steps:
       - *checkout
       - *browser-cache
       - *setup
       - *vite-task-cache
       - run: vp run --filter @repo/e2e test:e2e
-        env:
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
 
   cache:
     if: github.event_name == 'push'
     runs-on: *runner
     timeout-minutes: 15
+    env:
+      MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
     steps:
       - *checkout
       - *browser-cache
       - *setup
       - run: vp run -r prepr
-        env:
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache

@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,6 +20,8 @@ import {
 } from "./tasks.ts";
 import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
 
+const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
+
 const hooks: Readonly<Record<string, string>> = import.meta.glob("../../../../.vite-hooks/pre-*", {
   eager: true,
   import: "default",
@@ -29,6 +31,13 @@ const workflows: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../.github/workflows/*.yml",
   { eager: true, import: "default" },
 );
+
+const mergifyConfig = readFileSync(join(repositoryRoot, ".mergify.yml"), "utf8");
+
+const viteConfigs = {
+  "vite.config.ts": readFileSync(join(repositoryRoot, "vite.config.ts"), "utf8"),
+  "tools/e2e/vite.config.ts": readFileSync(join(repositoryRoot, "tools/e2e/vite.config.ts"), "utf8"),
+} as const;
 
 const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../pnpm-workspace.yaml",
@@ -389,5 +398,51 @@ describe("on-demand gate escapes", () => {
   it("keeps the on-demand allowlist frozen so new escapes need an explicit test change", () => {
     expect.hasAssertions();
     expect([...onDemandGateEntries].toSorted()).toStrictEqual([...frozenOnDemandGateEntries]);
+  });
+});
+
+describe("mergify ci insights", () => {
+  it("keeps MERGIFY_TOKEN on every check job and enables reduced merge-queue reruns", () => {
+    expect.hasAssertions();
+    const workflow = workflows["../../../../.github/workflows/check.yml"];
+    if (workflow === undefined) {
+      throw new Error("check.yml is missing");
+    }
+    expect(workflow).toMatch(
+      /^ {2}check:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}$/mu,
+    );
+    expect(workflow).toMatch(
+      /^ {2}merge-queue:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}\n {6}VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"$/mu,
+    );
+    expect(workflow).toMatch(
+      /^ {2}e2e:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}\n {6}VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"$/mu,
+    );
+    expect(workflow).toMatch(
+      /^ {2}cache:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}$/mu,
+    );
+    expect(workflow).not.toMatch(/^\s+- run: .+\n\s+env:\n\s+MERGIFY_TOKEN:/mu);
+  });
+
+  it("wires the shared Mergify reporter into every Vitest suite that uploads", () => {
+    expect.hasAssertions();
+    expect(Object.keys(viteConfigs).toSorted()).toStrictEqual([
+      "tools/e2e/vite.config.ts",
+      "vite.config.ts",
+    ]);
+    for (const source of Object.values(viteConfigs)) {
+      expect(source).toMatch(/mergifyVitest\(\)/u);
+      expect(source).not.toMatch(/new MergifyReporter\(/u);
+      expect(source).not.toMatch(/from "@mergifyio\/vitest"/u);
+    }
+  });
+
+  it("keeps merge-queue gates on the check jobs Mergify can see", () => {
+    expect.hasAssertions();
+    expect(mergifyConfig).toMatch(/check-success = check/u);
+    expect(mergifyConfig).toMatch(/check-success = merge-queue/u);
+    expect(mergifyConfig).toMatch(/check-success = e2e/u);
+    expect(mergifyConfig).toMatch(/mode: isolated/u);
+    expect(mergifyConfig).toMatch(/max_parallel_checks: 5/u);
+    expect(mergifyConfig).toMatch(/checks_timeout: 45 min/u);
   });
 });

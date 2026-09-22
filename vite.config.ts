@@ -1,4 +1,3 @@
-import { MergifyReporter } from "@mergifyio/vitest";
 import {
   dedicatedToolVitestProjects,
   devServerTests,
@@ -9,7 +8,7 @@ import {
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle, mergifyVitest, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -143,7 +142,7 @@ export default defineConfig({
       ...dedicatedToolVitestProjects,
     ],
     mockReset: true,
-    reporters: ["default", new MergifyReporter()],
+    ...mergifyVitest(),
     restoreMocks: true,
     testTimeout: 30_000,
   },
