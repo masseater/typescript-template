@@ -1,5 +1,5 @@
-import { Email } from "@repo/config";
-import { httpStatus } from "@repo/config";
+import { Email, httpStatus } from "@repo/config";
+
 import {
   Cause,
   Clock,
