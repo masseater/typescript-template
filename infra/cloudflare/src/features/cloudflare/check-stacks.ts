@@ -29,7 +29,7 @@ import {
   applyVerificationEnvironment,
   bindsSendEmail,
   compileStack,
-  describeCause,
+  describeInventoryCause,
 } from "./inventory.ts";
 import { encodeJson } from "./platform.ts";
 import {
@@ -460,5 +460,5 @@ runCli(
       }),
     ),
   ),
-  (cause) => ({ detail: describeCause(Cause.squash(cause)), event: "stacks.invalid" }),
+  (cause) => ({ detail: describeInventoryCause(Cause.squash(cause)), event: "stacks.invalid" }),
 );

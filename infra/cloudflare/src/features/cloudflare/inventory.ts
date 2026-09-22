@@ -34,7 +34,7 @@ class InventoryFailure extends Schema.TaggedError<InventoryFailure>()("Inventory
   stack: Schema.String,
 }) {}
 
-function describeCause(cause: unknown): string {
+function describeInventoryCause(cause: unknown): string {
   if (typeof cause === "string") {
     return cause;
   }
@@ -50,7 +50,7 @@ function inventoryFailure(
   stack: string,
   cause: unknown,
 ): InventoryFailure {
-  return new InventoryFailure({ code, detail: describeCause(cause), stack });
+  return new InventoryFailure({ code, detail: describeInventoryCause(cause), stack });
 }
 
 const BindingEntry = Schema.Struct({
@@ -291,5 +291,5 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
   return inventoryOf(shape);
 });
 
-export { applyVerificationEnvironment, bindsSendEmail, compileStack, describeCause };
+export { applyVerificationEnvironment, bindsSendEmail, compileStack, describeInventoryCause };
 export type { StackInventory };
