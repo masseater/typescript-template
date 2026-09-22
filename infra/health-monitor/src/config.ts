@@ -47,5 +47,5 @@ function healthTargets(config: HealthMonitorConfig): readonly {
   }));
 }
 
-export { healthMonitorWorker, healthOriginKey, healthTargets, parseHealthMonitorConfig };
+export { healthMonitorWorker, healthTargets, parseHealthMonitorConfig };
 export type { HealthMonitorEnv };

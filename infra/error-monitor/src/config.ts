@@ -29,5 +29,5 @@ function parseErrorMonitorConfig(
   );
 }
 
-export { ErrorMonitorFailure, errorMonitorEnv, errorMonitorWorker, parseErrorMonitorConfig };
+export { ErrorMonitorFailure, errorMonitorWorker, parseErrorMonitorConfig };
 export type { ErrorMonitorEnv };

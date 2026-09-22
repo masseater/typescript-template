@@ -60,5 +60,5 @@ const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetCo
   return config;
 });
 
-export { BudgetFailure, budgetMonitorEnv, budgetMonitorWorker, fail, parseBudgetConfig };
+export { BudgetFailure, budgetMonitorWorker, fail, parseBudgetConfig };
 export type { BudgetConfig, BudgetMonitorEnv };
