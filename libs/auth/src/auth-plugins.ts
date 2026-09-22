@@ -6,6 +6,7 @@ import { jwt, twoFactor } from "better-auth/plugins";
 import { Effect } from "effect";
 
 import { memberApiKeyPlugin } from "./member-api-key-options.ts";
+import { adminScopes } from "./admin-scopes.ts";
 import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";
@@ -79,6 +80,22 @@ const wikiAuthorizationServer = (origin: string): AuthPlugin[] => {
   ];
 };
 
+const adminAuthorizationServer = (origin: string): AuthPlugin[] => {
+  return [
+    jwt({ disableSettingJwtHeader: true }),
+    mcp({
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      clientRegistrationAllowedScopes: [...adminScopes],
+      clientRegistrationDefaultScopes: [...adminScopes],
+      consentPage: "/consent",
+      loginPage: "/login",
+      resource: `${origin}/mcp`,
+      scopes: [...adminScopes],
+    }),
+  ];
+};
+
 const authPlugins = ({
   audience,
   origin,
@@ -90,6 +107,7 @@ const authPlugins = ({
     passkeyPlugin({ audience, origin, run }),
     ...(audience === APPLICATION.user ? [memberApiKeyPlugin()] : []),
     ...(audience === APPLICATION.wiki ? wikiAuthorizationServer(origin) : []),
+    ...(audience === APPLICATION.admin ? adminAuthorizationServer(origin) : []),
   ];
 };
 

@@ -13,13 +13,14 @@ export { DatabaseFailure } from "./database-failure.ts";
 export type { DrizzleDatabase } from "./database.ts";
 export { AUDIT_ACTION, auditActions } from "./dashboard-literals.ts";
 export {
+  AUDIT_CHANNEL,
   NOTIFICATION_KIND,
   auditEvent,
   notificationKinds,
   onboardingSteps,
   schema,
 } from "./schema.ts";
-export type { NotificationKind } from "./schema.ts";
+export type { AuditChannel, NotificationKind } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";

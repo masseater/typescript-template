@@ -1,3 +1,4 @@
+export { adminScopes } from "./admin-scopes.ts";
 export { findWikiReader } from "@repo/db";
 export { AdminMfaRequired } from "./admin-mfa-required.ts";
 export { AdminRequired } from "./admin-required.ts";

@@ -328,6 +328,12 @@ const assignRoleById = Effect.fn("assignRoleById")(function* assignRoleById(
   );
 });
 
+const assignAdminPermissionByEmail = Effect.fn("assignAdminPermissionByEmail")(
+  function* assignAdminPermissionByEmail(email: string, permission: AccountPermission) {
+    yield* runStatement("UPDATE user SET permission = ? WHERE email = ?", permission, email);
+  },
+);
+
 const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSessionCookie(
   token: string,
 ) {
@@ -343,6 +349,7 @@ const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSes
 
 export {
   AuthApps,
+  assignAdminPermissionByEmail,
   assignRoleByEmail,
   assignRoleById,
   PASSWORD,
