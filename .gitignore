@@ -4,6 +4,7 @@ dist/
 .wrangler/
 .tanstack/
 .vite/
+.paraglide/
 .local-agents/
 .local/
 .env
