@@ -59,6 +59,136 @@ const designTokens: Readonly<Record<string, string>> = {
 
 const untouchedTokens = ["--spacing"] as const;
 
+const designMdPath = (): string => {
+  return path.resolve(import.meta.dirname, "../../DESIGN.md");
+};
+
+const designMdColorSources: Readonly<Record<string, string>> = {
+  accent: "--grey-6",
+  "accent-foreground": "--grey-100",
+  background: "--grey-5",
+  border: "--grey-20",
+  chalk: "--white",
+  destructive: "--danger-darken",
+  "destructive-foreground": "--white",
+  "destructive-hover": "--danger-darkest",
+  "disabled-foreground": "--grey-30",
+  foreground: "--grey-100",
+  ink: "--grey-100",
+  input: "--grey-20",
+  muted: "--grey-7",
+  "muted-foreground": "--grey-65",
+  paper: "--grey-5",
+  primary: "--main",
+  "primary-foreground": "--white",
+  "primary-hover": "--main-darken",
+  ring: "--grey-100",
+  secondary: "--grey-9",
+  "secondary-foreground": "--grey-100",
+  "secondary-hover": "--grey-9-darken",
+  success: "--green",
+  surface: "--white",
+  "surface-hover": "--white-darken",
+  warning: "--warning-yellow",
+  "warning-foreground": "--grey-100",
+  "warning-hover": "--warning-yellow-darken",
+};
+
+const designMdRoundedSources: Readonly<Record<string, string>> = {
+  lg: "--radius-lg",
+  md: "--radius-md",
+  sm: "--radius-sm",
+};
+
+const designMdFontFaces: Readonly<Record<string, string>> = {
+  display: "Shippori Mincho",
+  sans: "Zen Kaku Gothic New",
+};
+
+const frontmatterBlock = (markdown: string): string => {
+  if (!markdown.startsWith("---\n")) {
+    throw new Error("DESIGN.md is missing YAML front matter");
+  }
+  const end = markdown.indexOf("\n---\n", 4);
+  if (end === -1) {
+    throw new Error("DESIGN.md front matter is not closed");
+  }
+  return markdown.slice(4, end);
+};
+
+const scalarMap = (block: string, section: string): Map<string, string> => {
+  const found = new Map<string, string>();
+  const sectionPattern = new RegExp(`^${section}:\\n(?<body>(?:[ \\t].*(?:\\n|$))+)`, "mu");
+  const body = sectionPattern.exec(block)?.groups?.body;
+  if (body === undefined) {
+    return found;
+  }
+  for (const line of body.split("\n")) {
+    const match = /^[ \t]{2}(?<name>[\w-]+):\s*(?:"(?<quoted>[^"]+)"|(?<bare>[^\s#]+))\s*$/u.exec(
+      line,
+    );
+    const { name, quoted, bare } = match?.groups ?? {};
+    if (name !== undefined) {
+      found.set(name, quoted ?? bare ?? "");
+    }
+  }
+  return found;
+};
+
+const typographyFamilies = (block: string): string[] => {
+  const sectionPattern = /^typography:\n(?<body>(?:[ \t].*(?:\n|$))+)/mu;
+  const body = sectionPattern.exec(block)?.groups?.body ?? "";
+  const families: string[] = [];
+  for (const match of body.matchAll(/^\s+fontFamily:\s*(?<family>.+?)\s*$/gmu)) {
+    const family = match.groups?.family;
+    if (family !== undefined) {
+      families.push(family);
+    }
+  }
+  return families;
+};
+
+const designMdSource = (): string => {
+  return readFileSync(designMdPath(), "utf-8");
+};
+
+const designMdViolations = (markdown: string, css: string): string[] => {
+  const block = frontmatterBlock(markdown);
+  const colors = scalarMap(block, "colors");
+  const rounded = scalarMap(block, "rounded");
+  const declared = declarations(css);
+  const violations: string[] = [];
+
+  for (const [token, source] of Object.entries(designMdColorSources)) {
+    const expected = resolvedDeclaration(declared, source);
+    const actual = colors.get(token);
+    if (actual !== expected) {
+      violations.push(
+        `DESIGN.md colors.${token} は ${expected} である必要があります（現在: ${actual ?? "未定義"}）。`,
+      );
+    }
+  }
+
+  for (const [token, source] of Object.entries(designMdRoundedSources)) {
+    const expected = resolvedDeclaration(declared, source);
+    const actual = rounded.get(token);
+    if (actual !== expected) {
+      violations.push(
+        `DESIGN.md rounded.${token} は ${expected} である必要があります（現在: ${actual ?? "未定義"}）。`,
+      );
+    }
+  }
+
+  const families = typographyFamilies(block);
+  for (const [role, face] of Object.entries(designMdFontFaces)) {
+    if (!families.includes(face)) {
+      violations.push(`DESIGN.md typography に ${role} 用の ${face} がありません。`);
+    }
+  }
+
+  return violations;
+};
+
 const declarationPattern = /(?<name>--[\w-]+)\s*:\s*(?<value>[^;}]+)[;}]/gu;
 const colorSchemePattern = /color-scheme:\s*(?<scheme>[\w-]+)/u;
 const variablePattern = /^var\((?<name>--[\w-]+)\)$/u;
@@ -383,6 +513,9 @@ export {
   colorSchemeProbe,
   indexedComponents,
   coverageViolations,
+  designMdPath,
+  designMdSource,
+  designMdViolations,
   designSystemComponents,
   declarations,
   designSystemProbe,

@@ -17,6 +17,9 @@ import {
   colorSchemeProbe,
   coverageViolations,
   declarations,
+  designMdPath,
+  designMdSource,
+  designMdViolations,
   designSystemComponents,
   designSystemProbe,
   designTokens,
@@ -88,6 +91,20 @@ describe("design token table", () => {
   it("keeps every ported token at the design token table value", () => {
     expect.hasAssertions();
     expect(tokenViolations(stylesheetSource())).toStrictEqual([]);
+  });
+
+  it("keeps DESIGN.md front matter aligned with the stylesheet tokens", () => {
+    expect.hasAssertions();
+    expect(designMdPath()).toMatch(/DESIGN\.md$/u);
+    expect(designMdViolations(designMdSource(), stylesheetSource())).toStrictEqual([]);
+  });
+
+  it("reports a DESIGN.md colour that drifts from the stylesheet", () => {
+    expect.hasAssertions();
+    const drifted = designMdSource().replace('primary: "#9a3412"', 'primary: "#000000"');
+    expect(designMdViolations(drifted, stylesheetSource())).toContainEqual(
+      expect.stringContaining("colors.primary"),
+    );
   });
 
   it.for(Object.keys(designTokens))(
