@@ -9,17 +9,16 @@ import { readWorkflowDocuments } from "./workflow-files.ts";
 
 describe("readWorkflowDocuments", () => {
   describe("a repository that has no workflow directory", () => {
-    const it = test.extend("documents", () =>
-      readWorkflowDocuments({
-        repositoryRoot: join(
-          mkdtempSync(join(tmpdir(), "dont-review-it-workflow-files-")),
-          "absent",
-        ),
-        config: defaultWorkflowChecksConfig,
-      }));
-
-    it("reads nothing at all", ({ documents }) => {
-      expect(documents).toStrictEqual([]);
+    test("fails instead of treating the missing tree as an empty scan", () => {
+      expect(() =>
+        readWorkflowDocuments({
+          repositoryRoot: join(
+            mkdtempSync(join(tmpdir(), "dont-review-it-workflow-files-")),
+            "absent",
+          ),
+          config: defaultWorkflowChecksConfig,
+        }),
+      ).toThrow(/ENOENT|no such file or directory/i);
     });
   });
 

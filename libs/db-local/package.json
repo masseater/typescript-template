@@ -7,8 +7,7 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/testing-node.ts",
-    "./platform": "./src/local-platform.ts"
+    ".": "./src/testing-node.ts"
   },
   "dependencies": {
     "@repo/cli": "workspace:*",
