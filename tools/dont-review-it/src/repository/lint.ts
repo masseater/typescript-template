@@ -531,6 +531,14 @@ const lintOptions = {
         ],
       },
     },
+
+    {
+      files: ["libs/db/src/local-platform.test.ts"],
+      rules: {
+        "dont-review-it/no-detached-test-file--move-beside-source": LINT_SEVERITY.OFF,
+        "dont-review-it/require-it-only-expect--move-setup-into-fixture": LINT_SEVERITY.OFF,
+      },
+    },
     {
       files: ["libs/db/src/testing.ts", "libs/monitor/src/monitor-fixture.ts"],
       rules: {
