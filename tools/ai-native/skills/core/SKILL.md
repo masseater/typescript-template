@@ -1,7 +1,7 @@
 ---
 name: core
 description: >
-  Wrap heavy commands with @repo/ai-native: `throttle` caps simultaneous executions per host and namespace and can kill a process tree on `--timeout`, `spool` diverts a child's merged output into a `.spool/` log file and prints a fixed-size summary in its place, `unabridged` is a Claude Code PreToolUse hook that denies `head` and `tail` at a command position, and `@repo/ai-native-telemetry` starts one OpenTelemetry provider per process. Load when wiring an entry point with these wrappers, when a wrapped command waits for a slot or looks hung, when you need the full log behind a spool summary line, when a Bash call was denied for slicing its output, or when a workspace has to declare its own measurement through `MST_TELEMETRY` and `OTEL_EXPORTER_OTLP_ENDPOINT`.
+  Wrap heavy commands with @repo/ai-native: `throttle` caps simultaneous executions per host and namespace and can kill a process tree on `--timeout`, `spool` diverts a child's merged output into a `.spool/` log file and prints a fixed-size summary in its place, `unabridged` is a Claude Code PreToolUse hook that denies `head` and `tail` at a command position, `sync-base` is a Claude Code SessionStart / UserPromptSubmit / Stop hook that instructs catching up when an open pull request is behind its base, and `@repo/ai-native-telemetry` starts one OpenTelemetry provider per process. Load when wiring an entry point with these wrappers, when a wrapped command waits for a slot or looks hung, when you need the full log behind a spool summary line, when a Bash call was denied for slicing its output, when a pull request fell behind its base, or when a workspace has to declare its own measurement through `MST_TELEMETRY` and `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
 metadata:
   type: core
@@ -11,20 +11,21 @@ sources:
   - "masseater/mst:tools/ai-native/src/throttle/usage.ts"
   - "masseater/mst:tools/ai-native/src/spool/run-spool.ts"
   - "masseater/mst:tools/ai-native/src/unabridged/find-slicing-commands.ts"
+  - "masseater/mst:tools/ai-native/src/sync-base/decision.ts"
   - "masseater/mst:tools/ai-native-telemetry/src/telemetry/telemetry.ts"
   - "masseater/mst:tools/ai-native/AGENTS.md"
 ---
 
-# @repo/ai-native — throttle, spool, and unabridged
+# @repo/ai-native — throttle, spool, unabridged, and sync-base
 
-Two finite resources break when several agents and humans run heavy commands on one machine. The host's CPU, memory, and disk bandwidth are the first; `throttle` bounds them by capping how many wrapped commands run at once. The caller's context window is the second; `spool` bounds it by writing the child's output to a file and returning a fixed-size summary in its place, and `unabridged` closes the other side of it by refusing the commands that read a slice instead of the whole record.
+Two finite resources break when several agents and humans run heavy commands on one machine. The host's CPU, memory, and disk bandwidth are the first; `throttle` bounds them by capping how many wrapped commands run at once. The caller's context window is the second; `spool` bounds it by writing the child's output to a file and returning a fixed-size summary in its place, and `unabridged` closes the other side of it by refusing the commands that read a slice instead of the whole record. A third failure mode is a pull request whose base moved while the agent kept working: `sync-base` closes that by injecting an instruction to catch up whenever GitHub reports the head as `BEHIND`.
 
 Both wrappers read their own options first, then `--`, then the command. Everything after `--` is passed through untouched.
 
 ## requires
 
 - **A local filesystem for the slot area.** `throttle` puts its slots in the operating system's temporary directory and relies on OS file locks to release them when a holder exits. NFS and SMB do not provide that contract, so a slot area on a network filesystem lets two runs hold the same slot while both report success.
-- **Claude Code, for `unabridged` only.** It is a `PreToolUse` hook, not a wrapper: it reads a hook payload on stdin and writes a decision on stdout. Invoked from a terminal with no payload it exits with `Unexpected end of JSON input`, which is the hook contract working, not a broken install.
+- **Claude Code, for `unabridged` and `sync-base`.** Both are hooks, not wrappers: each reads a hook payload on stdin and writes a decision on stdout. Invoked from a terminal with no payload either exits with `Unexpected end of JSON input`, which is the hook contract working, not a broken install. `sync-base` also needs `gh` on `PATH` and a repository where the current branch may have an open pull request.
 - **A reachable sink, whenever `MST_TELEMETRY` is set.** Telemetry is off unless that variable is defined, and an export failure sets `process.exitCode = 1` and writes the reason to stderr. A command that succeeded still reports failure when the sink is down, so unset the variable rather than leaving it pointed at nothing.
 
 ## Setup
@@ -76,6 +77,20 @@ The limit is shared by every `throttle` on this host and namespace, and it defau
 ```
 
 The hook denies the tool call when `head` or `tail` stands at a command position: the first word, or the word after `|`, `||`, `&&`, `|&`, `;`, `;;`, `&`, `(`, or `<(`. Leading directories are ignored, so `/usr/bin/tail` counts. Words in other positions are left alone — `git rev-parse HEAD`, `echo 'tail'`, `cat headers.txt`, and `vp test > tail` all pass. A passing call produces no output at all.
+
+### Instruct catching up when a pull request is behind its base
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "sync-base" }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "sync-base" }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "sync-base" }] }]
+  }
+}
+```
+
+The hook calls `gh pr view --json number,url,baseRefName,mergeStateStatus` in the payload's `cwd`. When that pull request's `mergeStateStatus` is `BEHIND`, it returns `hookSpecificOutput.additionalContext` naming the pull request, its base, and how to bring the latest base in (`git fetch` plus rebase/merge, or `mergify stack sync`). Any other status, a missing pull request, or a failed `gh` call produces no output. Where `sync-base` is not on `PATH`, `vp exec sync-base` reaches it.
 
 ### Start the provider once, at the process entry
 
