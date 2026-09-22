@@ -1,27 +1,16 @@
 #!/usr/bin/env node
 // oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFileSync } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { cruise, format } from "dependency-cruiser";
 import { Effect } from "effect";
 
-const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
-const packageRoot = fileURLToPath(new URL("../..", import.meta.url));
-const configPath = "tools/dont-review-it/src/repository/dependency-cruiser.ts";
+import configuration from "./dependency-cruiser.ts";
 
-function depcruiseBin(): string {
-  const dependencyCruiserRoot = path.join(packageRoot, "node_modules", "dependency-cruiser");
-  const pkg = JSON.parse(
-    readFileSync(path.join(dependencyCruiserRoot, "package.json"), "utf8"),
-  ) as { bin: { depcruise: string } };
-  return path.join(dependencyCruiserRoot, pkg.bin.depcruise);
-}
+const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 
 function workspaceFromCwd(): string {
   const relative = path.relative(repositoryRoot, process.cwd());
@@ -34,22 +23,30 @@ function workspaceFromCwd(): string {
 }
 
 function depcruise(workspace: string): Effect.Effect<number> {
-  return Effect.callback((resume) => {
-    const child = spawn(
-      process.execPath,
-      [depcruiseBin(), "--config", configPath, "--output-type", "err-long", workspace],
-      { cwd: repositoryRoot, stdio: "inherit" },
+  return Effect.gen(function* run() {
+    const { output } = yield* Effect.tryPromise(() =>
+      cruise(
+        [workspace],
+        {
+          ...configuration.options,
+          baseDir: repositoryRoot,
+          ruleSet: { forbidden: configuration.forbidden },
+          validate: true,
+        },
+        configuration.options?.enhancedResolveOptions,
+      ),
     );
-    child.once("error", (error) => {
-      resume(Effect.die(error));
-    });
-    child.once("close", (code, signal) => {
-      if (signal !== null) {
-        resume(Effect.die(new Error(`depcruise exited from signal ${signal}`)));
-        return;
-      }
-      resume(Effect.succeed(code ?? 1));
-    });
+    if (typeof output === "string") {
+      console.error(output);
+      return 1;
+    }
+    const formatted = yield* Effect.tryPromise(() =>
+      format(output, { outputType: "err-long" }),
+    );
+    if (typeof formatted.output === "string" && formatted.output.length > 0) {
+      console.error(formatted.output);
+    }
+    return formatted.exitCode;
   });
 }
 
