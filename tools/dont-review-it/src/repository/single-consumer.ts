@@ -449,9 +449,5 @@ const repositoryWorkspaces = (): readonly WorkspaceManifest[] => [
 const repositorySingleConsumerFindings = (): readonly Finding[] =>
   singleConsumerFindings(repositoryWorkspaces(), repositorySources(repositoryRoot));
 
-export {
-  moduleSpecifiers,
-  repositorySingleConsumerFindings,
-  singleConsumerFindings,
-};
+export { moduleSpecifiers, repositorySingleConsumerFindings, singleConsumerFindings };
 export type { SourceText };
