@@ -1,4 +1,5 @@
-import { flushTelemetry, httpStatus, observeRequest } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+import { flushTelemetry, observeRequest } from "@repo/observability";
 import { cspNonceHeader } from "@repo/runtime/security";
 import { Effect, Result } from "effect";
 

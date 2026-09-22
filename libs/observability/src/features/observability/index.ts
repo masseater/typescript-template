@@ -6,7 +6,6 @@ export * from "./current-request.ts";
 export * from "./deployment-keys.ts";
 export * from "./errors.ts";
 export * from "./events.ts";
-export * from "./http-status.ts";
 export * from "./ingress.ts";
 export * from "./otlp.ts";
 export * from "./protocol.ts";
