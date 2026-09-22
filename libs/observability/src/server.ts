@@ -6,7 +6,6 @@ export { Telemetry } from "./telemetry.ts";
 export { flushTelemetry, otlpSignalUrl } from "./otlp.ts";
 export type { TelemetryFlusher } from "./otlp.ts";
 export { TelemetryInvalid } from "./telemetry-invalid.ts";
-export { httpStatus } from "./http-status.ts";
 export { ingestBrowser } from "./ingress.ts";
 export { observeRequest, reportFailure } from "./request-span.ts";
 export { logAt, logCause, statusSeverity } from "./severity.ts";
