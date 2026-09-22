@@ -841,6 +841,9 @@ importers:
       '@repo/monitor':
         specifier: workspace:*
         version: link:../../libs/monitor
+      '@repo/observability':
+        specifier: workspace:*
+        version: link:../../libs/observability
       alchemy:
         specifier: 'catalog:'
         version: 2.0.0-beta.77(@effect/platform-node@4.0.0-rc.112(effect@4.0.0-rc.112))(@types/node@26.6.1)(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@0.3.2(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(drizzle-kit@1.0.0-rc.5-ab785fc)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(effect@4.0.0-rc.112))(effect@4.0.0-rc.112)(typescript@7.0.2)(vitest@4.1.11)(ws@8.21.3)
