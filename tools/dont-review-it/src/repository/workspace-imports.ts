@@ -2,6 +2,8 @@
 // oxlint-disable-next-line import/no-nodejs-modules
 import { spawn } from "node:child_process";
 // oxlint-disable-next-line import/no-nodejs-modules
+import { readFileSync } from "node:fs";
+// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
 // oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
@@ -10,7 +12,16 @@ import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Effect } from "effect";
 
 const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
+const packageRoot = fileURLToPath(new URL("../..", import.meta.url));
 const configPath = "tools/dont-review-it/src/repository/dependency-cruiser.ts";
+
+function depcruiseBin(): string {
+  const dependencyCruiserRoot = path.join(packageRoot, "node_modules", "dependency-cruiser");
+  const pkg = JSON.parse(
+    readFileSync(path.join(dependencyCruiserRoot, "package.json"), "utf8"),
+  ) as { bin: { depcruise: string } };
+  return path.join(dependencyCruiserRoot, pkg.bin.depcruise);
+}
 
 function workspaceFromCwd(): string {
   const relative = path.relative(repositoryRoot, process.cwd());
@@ -25,8 +36,8 @@ function workspaceFromCwd(): string {
 function depcruise(workspace: string): Effect.Effect<number> {
   return Effect.callback((resume) => {
     const child = spawn(
-      "depcruise",
-      ["--config", configPath, "--output-type", "err-long", workspace],
+      process.execPath,
+      [depcruiseBin(), "--config", configPath, "--output-type", "err-long", workspace],
       { cwd: repositoryRoot, stdio: "inherit" },
     );
     child.once("error", (error) => {
