@@ -1,5 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Telemetry, httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
+import { Telemetry } from "@repo/observability";
 import { cspNonceHeader, strictTransportSecurity } from "@repo/runtime/security";
 import { Effect, Layer, Schema } from "effect";
 
