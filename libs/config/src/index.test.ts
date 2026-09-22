@@ -216,6 +216,7 @@ describe("mail delivery", () => {
         ...withoutMailpit,
         ...withoutEmail,
         APP_ORIGIN: "https://app.example.test",
+        APP_RELEASE: "1.2.3",
       }).pipe(Effect.flip),
     ));
 
