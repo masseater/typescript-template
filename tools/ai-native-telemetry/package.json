@@ -17,9 +17,9 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/telemetry/telemetry.ts",
-    "./optional-setting": "./src/telemetry/optional-setting.ts",
-    "./vitest-sdk": "./src/telemetry/vitest-sdk.ts",
+    ".": "./src/features/ai-native-telemetry/telemetry/telemetry.ts",
+    "./optional-setting": "./src/features/ai-native-telemetry/telemetry/optional-setting.ts",
+    "./vitest-sdk": "./src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {

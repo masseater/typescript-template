@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./config": "./src/config.ts"
+    "./config": "./src/features/error-monitor/config.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

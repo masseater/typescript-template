@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/features/auth-ui/index.ts"
   },
   "dependencies": {
     "@better-auth/passkey": "catalog:",

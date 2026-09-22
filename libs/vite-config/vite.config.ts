@@ -1,6 +1,6 @@
 import { defineConfig } from "vite-plus";
 
-import { effectRun } from "./src/vite.ts";
+import { effectRun } from "./src/features/vite-config/vite.ts";
 
 export default defineConfig({
   run: effectRun,

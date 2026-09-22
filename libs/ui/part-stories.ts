@@ -18,7 +18,7 @@ interface ExportedStory {
 
 const storySuffix = ".stories.tsx";
 
-const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob("./src/**/*.stories.tsx");
+const storyFiles: Readonly<Record<string, unknown>> = import.meta.glob("./src/features/ui/**/*.stories.tsx");
 
 const storyName = (part: string): string => {
   return part.replace(/\.tsx$/u, storySuffix);

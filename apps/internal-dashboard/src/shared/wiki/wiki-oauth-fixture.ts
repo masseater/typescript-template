@@ -7,10 +7,10 @@ import {
   startAuthorization,
   wikiAdministrator,
   wikiOrigin,
-} from "../../../../../libs/auth/src/testing.ts";
+} from "../../../../../libs/auth/src/features/auth/testing.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-import type { BrowserClient } from "../../../../../libs/auth/src/testing.ts";
+import type { BrowserClient } from "../../../../../libs/auth/src/features/auth/testing.ts";
 
 type AuthorizationFlow = {
   readonly clientId: string;

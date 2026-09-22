@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./vite": "./src/vite.ts"
+    ".": "./src/features/monitor/index.ts",
+    "./vite": "./src/features/monitor/vite.ts"
   },
   "scripts": {},
   "dependencies": {

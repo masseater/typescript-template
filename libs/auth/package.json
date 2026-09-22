@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/features/auth/index.ts"
   },
   "scripts": {},
   "dependencies": {

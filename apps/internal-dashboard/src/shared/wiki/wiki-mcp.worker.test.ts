@@ -14,7 +14,7 @@ import {
   registerVerified,
   signIn,
   signInAs,
-} from "../../../../../libs/auth/src/testing.ts";
+} from "../../../../../libs/auth/src/features/auth/testing.ts";
 import {
   exchangeCode,
   grantAuthorization,

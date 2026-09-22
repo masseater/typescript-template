@@ -1,3 +1,4 @@
+import { modularBoundaries } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 const typecheckInput = [
@@ -20,8 +21,9 @@ export default defineConfig({
         command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
         input: [...typecheckInput],
       },
+      ...modularBoundaries,
       precommit: { command: [], dependsOn: [] },
-      prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
+      prepush: { command: [], dependsOn: ["precommit", "check:effect", "check:modular"] },
       prepr: { command: [], dependsOn: ["prepush"] },
       premerge: { command: [], dependsOn: [] },
       prerelease: { command: [], dependsOn: ["prepr", "premerge"] },
