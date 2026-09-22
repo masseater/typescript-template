@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import { APPLICATION } from "@repo/config";
-import { Telemetry, httpStatus } from "@repo/observability";
+import { APPLICATION, httpStatus } from "@repo/config";
+import { Telemetry } from "@repo/observability";
 import { Effect, Layer, Schema } from "effect";
 
 import { AppOrigin, apiDocs, apiRoot, apiRoutes, createApi } from "./http.ts";
