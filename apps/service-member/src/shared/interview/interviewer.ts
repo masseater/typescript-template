@@ -6,7 +6,7 @@ import { Context, Effect, Layer, Schema } from "effect";
 
 import { fieldDefinitions, fieldKeys } from "./sheet.ts";
 import { UnderstandingFailed } from "./understanding-failed.ts";
-import { Understanding } from "./understanding.ts";
+import { Understanding, understandByRules } from "./understanding.ts";
 
 import type { ConfigurationInvalid } from "@repo/config";
 import type { InterviewState } from "./state.ts";
@@ -23,11 +23,16 @@ const modelOptions = {
   temperature: 0.3,
 };
 
+interface InterviewReading {
+  readonly source: "model" | "rules";
+  readonly understanding: UnderstandingData;
+}
+
 interface InterviewerShape {
   readonly understand: (
     state: InterviewState,
     utterance: string,
-  ) => Effect.Effect<UnderstandingData, UnderstandingFailed>;
+  ) => Effect.Effect<InterviewReading, UnderstandingFailed>;
 }
 
 const ModelOutput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(Understanding));
@@ -90,8 +95,15 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
       Interviewer.of({
         understand: (state, utterance) =>
           access === undefined
-            ? Effect.fail(new UnderstandingFailed({ reason: "unavailable" }))
-            : complete(access, state, utterance),
+            ? Effect.succeed({
+                source: "rules" as const,
+                understanding: understandByRules(state, utterance),
+              })
+            : complete(access, state, utterance).pipe(
+                Effect.map(
+                  (understanding): InterviewReading => ({ source: "model", understanding }),
+                ),
+              ),
       }),
     );
   }
@@ -106,3 +118,4 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
 }
 
 export { Interviewer };
+export type { InterviewReading };
