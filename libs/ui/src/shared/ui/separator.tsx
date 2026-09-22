@@ -1,15 +1,42 @@
-import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
+import { useStyletron } from "baseui";
 
 import type { ReactElement } from "react";
 
 const Separator = ({ label }: Readonly<{ label: string }>): ReactElement => {
+  const [css, theme] = useStyletron();
   return (
-    <SeparatorPrimitive
+    <div
       data-slot="separator"
-      className="flex w-full items-center gap-2 text-sm leading-normal text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border"
+      className={css({
+        alignItems: "center",
+        color: theme.colors.contentSecondary,
+        display: "flex",
+        fontSize: theme.sizing.scale550,
+        gap: theme.sizing.scale300,
+        lineHeight: theme.sizing.scale700,
+        width: "100%",
+      })}
     >
-      {label}
-    </SeparatorPrimitive>
+      <hr
+        className={css({
+          backgroundColor: theme.colors.borderOpaque,
+          border: "none",
+          flex: 1,
+          height: "1px",
+          margin: 0,
+        })}
+      />
+      <span>{label}</span>
+      <hr
+        className={css({
+          backgroundColor: theme.colors.borderOpaque,
+          border: "none",
+          flex: 1,
+          height: "1px",
+          margin: 0,
+        })}
+      />
+    </div>
   );
 };
 
