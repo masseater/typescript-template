@@ -4,7 +4,7 @@ description: Claude Code の hook を cc-hooks-ts で書くときに守ること
 
 # hook の書き方
 
-このパッケージの `unabridged` は Claude Code の `PreToolUse` hook である。hook を足すとき、または `unabridged` を変えるときに守る。
+このパッケージの `unabridged` は Claude Code の `PreToolUse` hook、`sync-base` は `SessionStart` / `UserPromptSubmit` / `Stop` hook である。hook を足すとき、またはこれらを変えるときに守る。
 
 ## ツール名の門
 

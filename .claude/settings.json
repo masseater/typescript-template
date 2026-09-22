@@ -11,5 +11,37 @@
       "Bash(pnpx alchemy*)",
       "Bash(bunx alchemy*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vp exec sync-base"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vp exec sync-base"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vp exec sync-base"
+          }
+        ]
+      }
+    ]
   }
 }
