@@ -1,11 +1,15 @@
+export { AgreementsPage } from "./ui/agreements-page.tsx";
 export { AiPage } from "./ui/ai-page.tsx";
 export { EmailRoute } from "./ui/email-route.tsx";
 export { InterviewSettingsPage } from "./ui/interview-page.tsx";
 export { LeavePage } from "./ui/leave-page.tsx";
 export { loadNotificationPreferences } from "./api/notification-preferences.ts";
+export { NotificationsPage } from "./ui/notifications-page.tsx";
+export { PlanPage } from "./ui/plan-page.tsx";
 export { SecuritySettingsPage } from "./ui/security-settings-page.tsx";
 export { SettingsPage } from "./ui/settings-page.tsx";
 export { loadPlan } from "./api/plan.ts";
+export { VisibilityPage } from "./ui/visibility-page.tsx";
 export { loadVisibility } from "./api/visibility.ts";
 export { PlanRoute } from "./ui/plan-route.tsx";
 export { SettingsAgreementsRoute } from "./ui/settings-agreements-route.tsx";
