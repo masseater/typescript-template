@@ -25,11 +25,6 @@ import {
   writeWaiterEntry,
 } from "./slots.ts";
 
-const enqueueWaiter = (slotDir: string): string => {
-  const waiterPath = reserveWaiterPath(slotDir);
-  writeWaiterEntry(waiterPath);
-  return waiterPath;
-};
 const nodeFs = process.getBuiltinModule("fs") as {
   readonly chmodSync: (location: string, mode: number) => void;
   readonly mkdtempSync: (prefix: string) => string;
@@ -706,7 +701,7 @@ describe("sweepWaiters", () => {
       .extend("theSurvivorsBesideTheOwnWaiterEntry", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
         const waiters = joinPath(slotDirectory, "waiters");
-        enqueueWaiter(slotDirectory);
+        writeWaiterEntry(reserveWaiterPath(slotDirectory));
         writeFileString({
           location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
           written: "not a pid\n",
@@ -725,7 +720,8 @@ describe("sweepWaiters", () => {
       .extend("theOwnWaiterEntryIsTheLastSurvivor", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
         const waiters = joinPath(slotDirectory, "waiters");
-        const ownEntry = enqueueWaiter(slotDirectory);
+        const ownEntry = reserveWaiterPath(slotDirectory);
+        writeWaiterEntry(ownEntry);
         writeFileString({
           location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
           written: "not a pid\n",
@@ -744,7 +740,7 @@ describe("sweepWaiters", () => {
       .extend("theWaitersLeftOnDiskThatSweepingDidNotKeep", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
         const waiters = joinPath(slotDirectory, "waiters");
-        enqueueWaiter(slotDirectory);
+        writeWaiterEntry(reserveWaiterPath(slotDirectory));
         writeFileString({
           location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
           written: "not a pid\n",
@@ -766,7 +762,7 @@ describe("sweepWaiters", () => {
       .extend("theSurvivorsSweepingKeptThatAreGoneFromDisk", ({ slotDirectory }) => {
         ensureSlots(slotDirectory, 1);
         const waiters = joinPath(slotDirectory, "waiters");
-        enqueueWaiter(slotDirectory);
+        writeWaiterEntry(reserveWaiterPath(slotDirectory));
         writeFileString({
           location: joinPath(waiters, "0000000000001-broken-aaaaaaaa"),
           written: "not a pid\n",
@@ -816,7 +812,8 @@ describe("removeWaiter", () => {
   describe("an entry removed twice", () => {
     const it = slotTest.extend("theWaitersLeftAfterRemovingTwice", ({ slotDirectory }) => {
       ensureSlots(slotDirectory, 1);
-      const waiterEntry = enqueueWaiter(slotDirectory);
+      const waiterEntry = reserveWaiterPath(slotDirectory);
+      writeWaiterEntry(waiterEntry);
       removeWaiter(waiterEntry);
       removeWaiter(waiterEntry);
       return readDirectory(joinPath(slotDirectory, "waiters"));
@@ -828,7 +825,7 @@ describe("removeWaiter", () => {
   });
 });
 
-describe("enqueueWaiter", () => {
+describe("reserveWaiterPath with writeWaiterEntry", () => {
   const slotTest = test.extend("slotDirectory", ({}, { onCleanup }) => {
     const temporarySlotDirectory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-slots-"));
     onCleanup(() => {
@@ -837,26 +834,26 @@ describe("enqueueWaiter", () => {
     return temporarySlotDirectory;
   });
 
-  describe("two entries enqueued in turn", () => {
-    const it = slotTest.extend("theSurvivorsOfTwoWaitersEnqueuedInTurn", ({ slotDirectory }) =>
+  describe("two entries written in turn", () => {
+    const it = slotTest.extend("theSurvivorsOfTwoWaitersWrittenInTurn", ({ slotDirectory }) =>
       Effect.runPromise(
         Effect.gen(function* () {
           ensureSlots(slotDirectory, 1);
-          const first = enqueueWaiter(slotDirectory);
+          const first = reserveWaiterPath(slotDirectory);
+          writeWaiterEntry(first);
           yield* Effect.sleep("5 millis");
-          const second = enqueueWaiter(slotDirectory);
+          const second = reserveWaiterPath(slotDirectory);
+          writeWaiterEntry(second);
           return (
             sweepWaiters(slotDirectory).join("\n") ===
-            [first, second].map((enqueuedWaiter) => baseName(enqueuedWaiter)).join("\n")
+            [first, second].map((writtenWaiter) => baseName(writtenWaiter)).join("\n")
           );
         }),
       ),
     );
 
-    it("names them so they sort by creation order", ({
-      theSurvivorsOfTwoWaitersEnqueuedInTurn,
-    }) => {
-      expect(theSurvivorsOfTwoWaitersEnqueuedInTurn).toBe(true);
+    it("names them so they sort by creation order", ({ theSurvivorsOfTwoWaitersWrittenInTurn }) => {
+      expect(theSurvivorsOfTwoWaitersWrittenInTurn).toBe(true);
     });
   });
 });
@@ -893,7 +890,9 @@ describe("a slot directory this process may not read", () => {
         removePath(temporarySlotDirectory);
       });
       ensureSlots(temporarySlotDirectory, 1);
-      nodeFs.chmodSync(enqueueWaiter(temporarySlotDirectory), 0o000);
+      const closedWaiter = reserveWaiterPath(temporarySlotDirectory);
+      writeWaiterEntry(closedWaiter);
+      nodeFs.chmodSync(closedWaiter, 0o000);
       try {
         return sweepWaiters(temporarySlotDirectory);
       } catch (refused) {
