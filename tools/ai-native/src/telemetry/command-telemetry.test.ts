@@ -803,7 +803,7 @@ describe("the package surface", () => {
       name: "@repo/ai-native",
       version: "0.0.0",
       description:
-        "Command wrappers that keep parallel heavy commands within the host's capacity and their output out of the caller's context window.",
+        "Command wrappers that keep parallel heavy commands within the host's capacity and their output out of the caller's context window, plus Claude Code hooks that refuse sliced reads and instruct catching up a pull request that fell behind its base.",
       keywords: ["tanstack-intent"],
       license: "MIT",
       repository: {
@@ -813,6 +813,7 @@ describe("the package surface", () => {
       },
       bin: {
         spool: "./src/spool/cli.ts",
+        "sync-base": "./src/sync-base/cli.ts",
         throttle: "./src/throttle/cli.ts",
         unabridged: "./src/unabridged/cli.ts",
       },
@@ -823,6 +824,7 @@ describe("the package surface", () => {
       publishConfig: {
         bin: {
           spool: "./dist/spool/cli.mjs",
+          "sync-base": "./dist/sync-base/cli.mjs",
           throttle: "./dist/throttle/cli.mjs",
           unabridged: "./dist/unabridged/cli.mjs",
         },
