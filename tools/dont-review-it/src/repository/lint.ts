@@ -231,15 +231,12 @@ const lintOptions = {
       rules: {
         "max-lines": LINT_SEVERITY.OFF,
         "project/effect-stack": LINT_SEVERITY.OFF,
-        "typescript/no-deprecated": LINT_SEVERITY.OFF,
       },
     },
     {
-      files: ["libs/vite-config/src/cloudflare-workers-loader.mjs"],
+      files: ["libs/vite-config/src/cloudflare-workers-loader.ts"],
       rules: {
         "max-params": LINT_SEVERITY.OFF,
-        "typescript/no-unsafe-call": LINT_SEVERITY.OFF,
-        "typescript/no-unsafe-return": LINT_SEVERITY.OFF,
       },
     },
     {

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && vp run --filter @repo/dev prepare-browser && effect-tsgo patch --typescript --oxlint"
+    "prepare": "bash -c 'export NODE_OPTIONS=--throw-deprecation; vp config --no-agent && vp run --filter @repo/dev prepare-browser && effect-tsgo patch --typescript --oxlint'"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
