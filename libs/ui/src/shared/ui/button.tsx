@@ -17,15 +17,14 @@ type ButtonModel = Children &
   }>;
 
 const clickHandlerFor = (
-  action: ButtonModel["action"],
-  type: ButtonModel["type"],
-  onClick: ButtonModel["onClick"],
+  model: Pick<ButtonModel, "action" | "onClick" | "type">,
 ): BaseButtonProps["onClick"] | undefined => {
+  const { action, onClick, type: buttonType } = model;
   if (action === undefined && onClick === undefined) {
     return undefined;
   }
   return (click) => {
-    if (action !== undefined && type === "button") {
+    if (action !== undefined && buttonType === "button") {
       startTransition(() => {
         void action();
       });
@@ -47,8 +46,21 @@ const Button = ({
 }: ButtonModel): ReactElement => {
   const buttonKind = kindByVariant[variant];
   const buttonSize = sizeBySize[size];
-  const clickHandler = clickHandlerFor(action, type, onClick);
-  if (clickHandler === undefined && ariaLabel === undefined) {
+  const clickHandler = clickHandlerFor({ action, onClick, type });
+  if (ariaLabel === undefined) {
+    if (clickHandler === undefined) {
+      return (
+        <BaseButton
+          data-slot="button"
+          type={type}
+          disabled={disabled}
+          kind={buttonKind}
+          size={buttonSize}
+        >
+          {children}
+        </BaseButton>
+      );
+    }
     return (
       <BaseButton
         data-slot="button"
@@ -56,6 +68,7 @@ const Button = ({
         disabled={disabled}
         kind={buttonKind}
         size={buttonSize}
+        onClick={clickHandler}
       >
         {children}
       </BaseButton>
@@ -70,20 +83,6 @@ const Button = ({
         disabled={disabled}
         kind={buttonKind}
         size={buttonSize}
-      >
-        {children}
-      </BaseButton>
-    );
-  }
-  if (ariaLabel === undefined) {
-    return (
-      <BaseButton
-        data-slot="button"
-        type={type}
-        disabled={disabled}
-        kind={buttonKind}
-        size={buttonSize}
-        onClick={clickHandler}
       >
         {children}
       </BaseButton>
