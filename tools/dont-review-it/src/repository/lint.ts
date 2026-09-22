@@ -238,6 +238,7 @@ const lintOptions = {
       files: [
         "libs/db/src/security.ts",
         "libs/db/src/remote-http.test.ts",
+        "libs/db/src/local-platform.test.ts",
         "libs/db/src/identity-schema.ts",
         "infra/budget-monitor/src/decision.ts",
         "infra/error-monitor/src/telemetry.ts",
