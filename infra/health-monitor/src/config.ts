@@ -33,31 +33,45 @@ const HealthMonitorEnvironment = Schema.Struct({
   [healthOriginKey[APPLICATION.user]]: HttpsOrigin,
 });
 
-type HealthMonitorConfig = typeof HealthMonitorEnvironment.Type;
 type HealthMonitorEnv = typeof HealthMonitorEnvironment.Encoded;
 
 const parseHealthMonitorConfig = Effect.fn("parseHealthMonitorConfig")(
   function* parseHealthMonitorConfig(input: unknown) {
-    const config = yield* Schema.decodeUnknownEffect(HealthMonitorEnvironment)(input).pipe(
+    const acceptedConfig = yield* Schema.decodeUnknownEffect(HealthMonitorEnvironment)(input).pipe(
       Effect.mapError(() => new HealthMonitorFailure({ code: "health_monitor_config_invalid" })),
     );
-    const origins = applications.map((service) => config[healthOriginKey[service]]);
+    const origins = applications.map((serviceName) => acceptedConfig[healthOriginKey[serviceName]]);
     if (!distinctOrigins(origins)) {
       return yield* new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" });
     }
-    return config;
+    return acceptedConfig;
   },
 );
 
-function healthTargets(config: HealthMonitorConfig): readonly {
+const healthEndpointFor = (origin: string): string => `${origin}/api/health`;
+
+const healthTargets = (
+  acceptedConfig: typeof HealthMonitorEnvironment.Type,
+): readonly {
+  readonly healthEndpoint: string;
   readonly origin: string;
   readonly service: Application;
-}[] {
-  return applications.map((service) => ({
-    origin: config[healthOriginKey[service]],
-    service,
-  }));
-}
+}[] =>
+  applications.map((serviceName) => {
+    const origin = acceptedConfig[healthOriginKey[serviceName]];
+    return {
+      healthEndpoint: healthEndpointFor(origin),
+      origin,
+      service: serviceName,
+    };
+  });
 
-export { healthMonitorWorker, healthOriginKey, healthTargets, parseHealthMonitorConfig };
+export {
+  HealthMonitorFailure,
+  healthEndpointFor,
+  healthMonitorWorker,
+  healthOriginKey,
+  healthTargets,
+  parseHealthMonitorConfig,
+};
 export type { HealthMonitorEnv };

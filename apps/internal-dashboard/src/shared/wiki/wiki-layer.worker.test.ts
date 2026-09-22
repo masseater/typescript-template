@@ -24,11 +24,11 @@ function servedUnavailable(
   readonly status: number;
 }> {
   return Effect.gen(function* fetchUnavailable() {
-    const worker = serveApp(
-      workerRuntime(layer),
-      () => Effect.succeed(new Response("reached the route")),
+    const worker = serveApp({
+      runtime: workerRuntime(layer),
+      route: () => Effect.succeed(new Response("reached the route")),
       reporting,
-    );
+    });
     const context = createExecutionContext();
     const response = yield* Effect.promise(() =>
       worker.fetch(new Request("http://localhost:3001/"), {}, context),

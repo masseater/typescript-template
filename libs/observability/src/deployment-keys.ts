@@ -16,14 +16,12 @@ const deploymentKey = {
   prefix: "TEMPLATE_PREFIX",
   reserveUsd: "TEMPLATE_RESERVE_USD",
 } as const;
-
 const budgetKeys = [
   deploymentKey.budgetJpy,
   deploymentKey.fixedCostUsd,
   deploymentKey.jpyPerUsd,
   deploymentKey.reserveUsd,
 ] as const;
-
 const deploymentKeys = [
   deploymentKey.alertEmail,
   deploymentKey.budgetJpy,
@@ -35,16 +33,13 @@ const deploymentKeys = [
   deploymentKey.mailFrom,
   deploymentKey.prefix,
 ] as const;
-
 const optionalDeploymentKeys = [
   deploymentKey.otlpAuthorization,
   deploymentKey.otlpEnabled,
   deploymentKey.otlpEndpoint,
 ] as const;
-
 const privateDeploymentKeys: readonly string[] = [
-  ...deploymentKeys.filter((key) => !budgetKeys.some((budget) => budget === key)),
+  ...deploymentKeys.filter((settingName) => !budgetKeys.some((budget) => budget === settingName)),
   ...optionalDeploymentKeys,
 ];
-
 export { deploymentKey, deploymentKeys, optionalDeploymentKeys, privateDeploymentKeys };

@@ -1,60 +1,59 @@
-import { Duration, Effect, Schedule } from "effect";
+import { Effect, Layer, Schedule, type Duration } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 const firstSuccess = 200;
 const firstRedirect = 300;
 
-function respondedSuccessfully(status: number): boolean {
-  return status >= firstSuccess && status < firstRedirect;
-}
+const respondedSuccessfully = (httpStatus: number): boolean =>
+  httpStatus >= firstSuccess && httpStatus < firstRedirect;
 
-function waitUntilResponds<Rejected, Unreachable>(request: {
-  readonly accept: (status: number) => boolean;
+const probeHttp = Layer.mergeAll(
+  FetchHttpClient.layer,
+  Layer.succeed(FetchHttpClient.RequestInit, { redirect: "manual" }),
+);
+
+const waitUntilResponds = <Failure>(probe: {
+  readonly accept: (httpStatus: number) => boolean;
   readonly method: "GET" | "POST";
-  readonly onStatus: (status: number) => Rejected;
-  readonly onUnreachable: (error: unknown) => Unreachable;
-  readonly retry?: { readonly interval: Duration.Input; readonly times: number };
+  readonly onStatus: (httpStatus: number) => Failure;
+  readonly onUnreachable: (unreachableFailure: unknown) => Failure;
+  readonly retry?: {
+    readonly interval: `${number} ${Duration.Unit}`;
+    readonly times: number;
+  };
   readonly timeoutMilliseconds?: number;
   readonly url: string;
-}): Effect.Effect<number, Rejected | Unreachable> {
-  return waitUntilRespondsWith(fetch, request);
-}
-
-function waitUntilRespondsWith<Rejected, Unreachable>(
-  fetchImpl: typeof fetch,
-  request: {
-    readonly accept: (status: number) => boolean;
-    readonly method: "GET" | "POST";
-    readonly onStatus: (status: number) => Rejected;
-    readonly onUnreachable: (error: unknown) => Unreachable;
-    readonly retry?: { readonly interval: Duration.Input; readonly times: number };
-    readonly timeoutMilliseconds?: number;
-    readonly url: string;
-  },
-): Effect.Effect<number, Rejected | Unreachable> {
-  const attempt = Effect.tryPromise({
-    catch: (error) => request.onUnreachable(error),
-    try: (signal) =>
-      fetchImpl(request.url, {
-        method: request.method,
-        redirect: "manual",
-        signal:
-          request.timeoutMilliseconds === undefined
-            ? signal
-            : AbortSignal.timeout(request.timeoutMilliseconds),
-      }).then((response) => response.arrayBuffer().then(() => response.status)),
+}): Effect.Effect<number, Failure> => {
+  const attempt = Effect.gen(function* probeOnce() {
+    const httpProbe =
+      probe.method === "POST" ? HttpClient.post(probe.url) : HttpClient.get(probe.url);
+    const httpResponse = yield* httpProbe.pipe(
+      Effect.timeout(
+        probe.timeoutMilliseconds === undefined
+          ? "30 seconds"
+          : `${probe.timeoutMilliseconds} millis`,
+      ),
+      Effect.provide(probeHttp),
+      Effect.mapError((unreachableFailure) => probe.onUnreachable(unreachableFailure)),
+    );
+    yield* httpResponse.arrayBuffer.pipe(Effect.ignore);
+    return httpResponse.status;
   }).pipe(
     Effect.filterOrFail(
-      (status) => request.accept(status),
-      (status) => request.onStatus(status),
+      (httpStatus) => probe.accept(httpStatus),
+      (httpStatus) => probe.onStatus(httpStatus),
     ),
   );
-  const retry = request.retry;
-  if (retry === undefined) {
+  const scheduledRetry = probe.retry;
+  if (scheduledRetry === undefined) {
     return attempt;
   }
   return attempt.pipe(
-    Effect.retry({ schedule: Schedule.spaced(retry.interval), times: retry.times }),
+    Effect.retry({
+      schedule: Schedule.spaced(scheduledRetry.interval),
+      times: scheduledRetry.times,
+    }),
   );
-}
+};
 
 export { respondedSuccessfully, waitUntilResponds };

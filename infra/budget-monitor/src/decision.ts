@@ -1,55 +1,48 @@
 import { Effect, Schema } from "effect";
 
-import { fail } from "./config.ts";
+import { fail, type BudgetConfig } from "./config.ts";
 
 import type { UsageSnapshot } from "./billing.ts";
-import type { BudgetConfig } from "./config.ts";
 
-const NO_ALERT_LEVEL = 0;
-const WARNING_LEVEL = 80;
-const EXHAUSTED_LEVEL = 100;
-const WARNING_RATIO = 0.8;
-const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
+type BudgetDecision = {
+  readonly periodStart: string;
+  readonly usageUsd: number;
+  readonly allowanceUsd: number;
+  readonly estimatedTotalJpy: number;
+  readonly level: 0 | 80 | 100;
+  readonly notificationKey: string;
+};
 
-interface BudgetDecision {
-  periodStart: string;
-  usageUsd: number;
-  allowanceUsd: number;
-  estimatedTotalJpy: number;
-  level: typeof NO_ALERT_LEVEL | typeof WARNING_LEVEL | typeof EXHAUSTED_LEVEL;
-  notificationKey: string;
-}
+const noAlertLevel = 0;
+const warningLevel = 80;
+const exhaustedLevel = 100;
+const warningRatio = 0.8;
 
-function alertLevel(ratio: number): BudgetDecision["level"] {
-  if (ratio >= 1) {
-    return EXHAUSTED_LEVEL;
-  }
-  if (ratio >= WARNING_RATIO) {
-    return WARNING_LEVEL;
-  }
-  return NO_ALERT_LEVEL;
-}
+const allowanceUsd = (config: Readonly<BudgetConfig>): number =>
+  config.BUDGET_JPY / config.JPY_PER_USD - config.FIXED_COST_USD - config.RESERVE_USD;
+
+const alertLevel = (usageRatio: number): BudgetDecision["level"] =>
+  usageRatio >= 1 ? exhaustedLevel : usageRatio >= warningRatio ? warningLevel : noAlertLevel;
 
 const evaluateBudget = Effect.fn("evaluateBudget")(function* evaluateBudget(
   snapshot: Readonly<UsageSnapshot>,
   config: Readonly<BudgetConfig>,
 ) {
-  const allowanceUsd =
-    config.BUDGET_JPY / config.JPY_PER_USD - config.FIXED_COST_USD - config.RESERVE_USD;
+  const allowance = allowanceUsd(config);
   if (
-    !Number.isFinite(allowanceUsd) ||
-    allowanceUsd <= 0 ||
+    !Number.isFinite(allowance) ||
+    allowance <= 0 ||
     !Number.isFinite(snapshot.usageUsd) ||
     snapshot.usageUsd < 0
   ) {
     return yield* fail("budget_input_invalid");
   }
-  const level = alertLevel(snapshot.usageUsd / allowanceUsd);
-  const decision: BudgetDecision = {
-    allowanceUsd,
+  const level = alertLevel(snapshot.usageUsd / allowance);
+  return {
+    allowanceUsd: allowance,
     estimatedTotalJpy: (snapshot.usageUsd + config.FIXED_COST_USD) * config.JPY_PER_USD,
     level,
-    notificationKey: yield* encodeJson([
+    notificationKey: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
       snapshot.periodStart,
       config.BUDGET_JPY,
       config.JPY_PER_USD,
@@ -60,14 +53,13 @@ const evaluateBudget = Effect.fn("evaluateBudget")(function* evaluateBudget(
     periodStart: snapshot.periodStart,
     usageUsd: snapshot.usageUsd,
   };
-  return decision;
 });
 
-function shouldNotify(
+const shouldNotify = (
   decision: Readonly<BudgetDecision>,
   notifiedKeys: readonly string[],
-): boolean {
-  return decision.level !== NO_ALERT_LEVEL && !notifiedKeys.includes(decision.notificationKey);
-}
+): boolean => {
+  return decision.level !== 0 && !notifiedKeys.includes(decision.notificationKey);
+};
 
 export { evaluateBudget, shouldNotify };

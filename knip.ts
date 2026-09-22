@@ -11,7 +11,6 @@ const workspaces = {
   ".": {
     ignoreDependencies: [
       "@effect/language-service",
-      "@effect/tsgo",
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
@@ -27,11 +26,9 @@ const workspaces = {
     },
   },
   "infra/error-monitor": {
-    entry: ["src/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "infra/health-monitor": {
-    entry: ["src/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
@@ -39,7 +36,6 @@ const workspaces = {
       "src/auth-test-fixture.ts",
       "src/browser-client.ts",
       "src/mail-fixture.ts",
-      "src/testing.ts",
       "src/unexpected-status.ts",
       "src/wiki-oauth-fixture.ts",
     ],
@@ -195,6 +191,7 @@ const config = ({
       "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
+      "libs/vite-config/src/effect-typecheck.ts": ["exports"],
     },
     treatConfigHintsAsErrors: true,
     workspaces: {

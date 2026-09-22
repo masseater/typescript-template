@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { runCli } from "@repo/cli";
 import { applications } from "@repo/config";
+import { HealthView } from "@repo/runtime/contracts";
 import { Console, Duration, Effect, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
@@ -9,12 +10,6 @@ import { encodeJson } from "./platform.ts";
 import { causeRecord, reportCause } from "./secrets.ts";
 
 const EVENT = "cloudflare.origin_verify_rejected";
-const HealthView = Schema.Struct({
-  ok: Schema.Literal(true),
-  release: Schema.String,
-  service: Schema.Literals(applications),
-});
-
 class OriginVerifyFailure extends Schema.TaggedError<OriginVerifyFailure>()("OriginVerifyFailure", {
   code: Schema.Literals(["origin_unreachable", "origin_unhealthy"]),
   keys: Schema.Array(Schema.String),

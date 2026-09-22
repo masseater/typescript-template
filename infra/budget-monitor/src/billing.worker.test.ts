@@ -16,14 +16,14 @@ const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/billable-usage`;
 const measuredAt = DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-16T00:00:00Z"));
 
-function withServer(
-  ...handlers: Parameters<Network["use"]>
-): Effect.Effect<Network, never, Scope.Scope> {
+const withServer = (
+  ...routeHandlers: Parameters<Network["use"]>
+): Effect.Effect<Network, never, Scope.Scope> => {
   return Effect.acquireRelease(
     Effect.sync(() => {
       const network = setupNetwork();
       network.configure({ onUnhandledFrame: "error" });
-      network.use(...handlers);
+      network.use(...routeHandlers);
       network.enable();
       return network;
     }),
@@ -32,7 +32,7 @@ function withServer(
         network.disable();
       }),
   );
-}
+};
 
 it.effect("fetches the official V1 endpoint using bearer authentication", () =>
   Effect.gen(function* program() {
@@ -58,7 +58,11 @@ it.effect("fetches the official V1 endpoint using bearer authentication", () =>
         });
       }),
     );
-    const usage = yield* fetchUsage(account, "test-token", measuredAt);
+    const usage = yield* fetchUsage({
+      accountId: account,
+      observedAt: measuredAt,
+      token: "test-token",
+    });
     assert.strictEqual(usage.usageUsd, BILLED_COST_USD);
   }).pipe(Effect.scoped),
 );
@@ -70,9 +74,11 @@ it.effect("does not return zero usage or expose response bodies on authorization
         HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
       ),
     );
-    const failure = yield* fetchUsage(account, "test-token", yield* Clock.currentTimeMillis).pipe(
-      Effect.flip,
-    );
+    const failure = yield* fetchUsage({
+      accountId: account,
+      observedAt: yield* Clock.currentTimeMillis,
+      token: "test-token",
+    }).pipe(Effect.flip);
     assert.strictEqual(failure.code, "billing_http_failed");
     assert.notInclude(
       yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
