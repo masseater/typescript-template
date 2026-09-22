@@ -291,6 +291,34 @@ const appRun = {
   },
 } satisfies RunConfig;
 
+const paraglideCompileInputs = [
+  ...taskInput,
+  "messages/**",
+  "project.inlang/**",
+  { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
+  { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
+] as const;
+
+const paraglideAppRun = {
+  tasks: {
+    ...appRun.tasks,
+    "compile:paraglide": {
+      command: "../../libs/vite-config/src/compile-paraglide.ts",
+      input: [...paraglideCompileInputs],
+      output: [".paraglide/**"],
+    },
+    "check:effect": {
+      ...effectDiagnostics["check:effect"],
+      dependsOn: ["compile:paraglide"],
+    },
+  },
+} satisfies RunConfig;
+
+const paraglidePackageCompiles = [
+  "@repo/service-member#compile:paraglide",
+  "@repo/service-admin#compile:paraglide",
+] as const;
+
 const toolTest: NonNullable<UserConfig["test"]> = {
   mockReset: true,
   restoreMocks: true,
@@ -405,6 +433,8 @@ export {
   lifecycle,
   lifecycleInherits,
   lifecycles,
+  paraglideAppRun,
+  paraglidePackageCompiles,
   previewDevVars,
   reactCompiler,
   serverOnlyMarkers,
@@ -418,7 +448,7 @@ export {
   withoutEnvFileLoader,
 };
 export { paths } from "./host.ts";
-export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
+export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
 export { devBoundary };
