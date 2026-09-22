@@ -17,7 +17,7 @@ const ShowToasts = (): ReactElement => {
   };
   return (
     <Button type="button" variant="primary" onClick={show}>
-      通知を 2 件出す
+      {"通知を 2 件出す"}
     </Button>
   );
 };

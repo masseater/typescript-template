@@ -32,10 +32,10 @@ const MFASettings = ({ session }: Readonly<{ session: SessionView }>): ReactElem
   };
   return (
     <div className="flex w-full flex-col gap-4">
-      <Heading>認証アプリとパスキー</Heading>
+      <Heading>{"認証アプリとパスキー"}</Heading>
       <RecoveryNotice recovery={recovery} role={session.user.role} />
       <TotpSettings context={settingsContext} />
-      <Heading>パスキー</Heading>
+      <Heading>{"パスキー"}</Heading>
       <PasskeySettings context={settingsContext} />
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
     </div>

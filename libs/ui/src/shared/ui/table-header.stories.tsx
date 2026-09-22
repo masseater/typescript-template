@@ -19,8 +19,8 @@ export const Default = meta.story({
   args: {
     children: (
       <TableRow>
-        <TableHead>ユーザー名</TableHead>
-        <TableHead>権限</TableHead>
+        <TableHead>{"ユーザー名"}</TableHead>
+        <TableHead>{"権限"}</TableHead>
       </TableRow>
     ),
   },

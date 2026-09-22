@@ -19,10 +19,12 @@ const EmailVerification = (): ReactElement => {
   }, [verified]);
   return verified === false ? (
     <StatusMessage variant={STATUS_VARIANT.failure}>
-      確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。
+      {"確認リンクが無効か、有効期限が切れています。ログインして確認メールを再送してください。"}
     </StatusMessage>
   ) : (
-    <StatusMessage variant={STATUS_VARIANT.pending}>メールアドレスを確認しています。</StatusMessage>
+    <StatusMessage variant={STATUS_VARIANT.pending}>
+      {"メールアドレスを確認しています。"}
+    </StatusMessage>
   );
 };
 
