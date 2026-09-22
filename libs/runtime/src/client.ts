@@ -61,10 +61,11 @@ const apiDataOrNone = <Contract extends Decodable>(
 ): Contract["Type"] | undefined => {
   return answered.error?.status === absent.unauthorized ? undefined : apiData(contract, answered);
 };
-const apiDataOrNoneFor = <Contract extends Decodable>(
-  absentStatus: (typeof absent)[keyof typeof absent],
-) => {
-  return (contract: Contract, answered: ApiReply): Contract["Type"] | undefined => {
+const apiDataOrNoneFor = (absentStatus: (typeof absent)[keyof typeof absent]) => {
+  return <Contract extends Decodable>(
+    contract: Contract,
+    answered: ApiReply,
+  ): Contract["Type"] | undefined => {
     return answered.error?.status === absentStatus ? undefined : apiData(contract, answered);
   };
 };
