@@ -9,6 +9,564 @@
         "count": 1
       }
     ],
+    "apps/internal-dashboard": [
+      {
+        "file": "../../libs/ui/src/baseweb-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/baseweb-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-react' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/baseweb-theme.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button-kinds.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button-link.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'click' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/checkbox.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/checkbox' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/checkbox.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'change' implicitly has an 'any' type.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/confirm-dialog.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/confirm-dialog.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/modal' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-item.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-link-item.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-trigger.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/popover' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/form-control' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/form-control' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/select' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'change' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/separator.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/toast-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/toast' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/use-toast.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/toast' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-engine.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-engine-monolithic' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-sheets.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-engine-monolithic' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-sheets.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'sheet' implicitly has an 'any' type.",
+        "count": 2
+      }
+    ],
+    "apps/service-admin": [
+      {
+        "file": "../../libs/ui/src/baseweb-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/baseweb-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-react' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/baseweb-theme.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button-kinds.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button-link.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'click' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/checkbox.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/checkbox' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/checkbox.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'change' implicitly has an 'any' type.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/confirm-dialog.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/confirm-dialog.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/modal' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-item.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-link-item.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-trigger.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/popover' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/form-control' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/form-control' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/select' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'change' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/separator.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/toast-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/toast' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/use-toast.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/toast' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-engine.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-engine-monolithic' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-sheets.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-engine-monolithic' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-sheets.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'sheet' implicitly has an 'any' type.",
+        "count": 2
+      },
+      {
+        "file": "src/app/server.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/server.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/field-validation-messages.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/messages.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/field-validation-messages.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/index.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/messages.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/index.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/ui/locale-switch.tsx",
+        "code": "TS2366",
+        "message": "Function lacks ending return statement and return type does not include 'undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/ui/locale-switch.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'locale' implicitly has an 'any' type.",
+        "count": 1
+      }
+    ],
+    "apps/service-member": [
+      {
+        "file": "../../libs/ui/src/baseweb-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/baseweb-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-react' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/baseweb-theme.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button-kinds.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button-link.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/button.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'click' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/checkbox.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/checkbox' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/checkbox.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'change' implicitly has an 'any' type.",
+        "count": 2
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/confirm-dialog.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/button' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/confirm-dialog.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/modal' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-item.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-link-item.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/dropdown-menu-trigger.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/popover' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/form-control' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/form-control' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/select' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/select-field.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'change' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/separator.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/toast-provider.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/toast' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/shared/ui/use-toast.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'baseui/toast' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-engine.ts",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-engine-monolithic' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-sheets.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module 'styletron-engine-monolithic' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "../../libs/ui/src/styletron-sheets.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'sheet' implicitly has an 'any' type.",
+        "count": 2
+      },
+      {
+        "file": "src/app/server.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/server.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/home/ui/home-feed.test.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/home/ui/home-page.tsx",
+        "code": "TS18048",
+        "message": "'updatedAtLabel' is possibly 'undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/landing/ui/landing-page.test.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/pages/landing/ui/profile-preview.test.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/field-validation-messages.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/messages.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/field-validation-messages.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/index.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/messages.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/i18n/index.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/ui/locale-switch.tsx",
+        "code": "TS2366",
+        "message": "Function lacks ending return statement and return type does not include 'undefined'.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/ui/locale-switch.tsx",
+        "code": "TS7006",
+        "message": "Parameter 'locale' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "src/widgets/member-frame/model/navigation.test.ts",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      },
+      {
+        "file": "src/widgets/member-frame/ui/member-navigation.test.tsx",
+        "code": "TS2307",
+        "message": "Cannot find module '#paraglide/runtime.js' or its corresponding type declarations.",
+        "count": 1
+      }
+    ],
     "infra/cloudflare": [
       {
         "file": "src/remote-command.test.ts",
