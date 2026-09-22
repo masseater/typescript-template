@@ -5,7 +5,7 @@ import { denyReasonFor } from "./message.ts";
 
 describe("unabridged hook", () => {
   describe("出力を tail で切り落とす Bash コマンド", () => {
-    const it = test.extend("decisionForASlicedCommand", async () =>
+    const it = test.extend("decisionForASlicedCommand", () =>
       hook.run({
         input: {
           cwd: "/repo",
@@ -50,7 +50,7 @@ describe("unabridged hook", () => {
   });
 
   describe("出力を切り落とさない Bash コマンド", () => {
-    const it = test.extend("decisionForAWholeCommand", async () =>
+    const it = test.extend("decisionForAWholeCommand", () =>
       hook.run({
         input: {
           cwd: "/repo",

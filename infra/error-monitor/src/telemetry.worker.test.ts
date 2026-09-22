@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { fetchErrorGroups } from "./telemetry.ts";
@@ -66,7 +66,6 @@ const queryResult = {
 };
 
 function withServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<Network["use"]>
 ): Effect.Effect<Network, never, Scope.Scope> {
   return Effect.acquireRelease(
@@ -84,15 +83,16 @@ function withServer(
   );
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function recordQuery(requests: unknown[]): Effect.Effect<Network, never, Scope.Scope> {
   return withServer(
-    http.post(endpoint, async ({ request }) => {
+    http.post(endpoint, ({ request }) => {
       if (request.headers.get("authorization") !== `Bearer ${token}`) {
         return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
       }
-      requests.push(await request.json());
-      return HttpResponse.json(queryResult);
+      return request.json().then((body) => {
+        requests.push(body);
+        return HttpResponse.json(queryResult);
+      });
     }),
   );
 }
@@ -115,7 +115,10 @@ it.effect("groups fingerprinted error logs through the Workers Observability que
         },
       ],
     });
-    assert.notInclude(JSON.stringify(result), "private@example.com");
+    assert.notInclude(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(result),
+      "private@example.com",
+    );
     const [body] = requests;
     assert.deepInclude(body, {
       chartType: "aggregate",
@@ -154,37 +157,38 @@ it.effect("pages grouped results past the query limit instead of treating them a
   Effect.gen(function* program() {
     const requests: AskedQuery[] = [];
     yield* withServer(
-      http.post<RequestParams, AskedQuery>(endpoint, async ({ request }) => {
-        const body = await request.json();
-        requests.push(body);
-        const start = body.offsetBy;
-        const pageSize = body.limit;
-        return HttpResponse.json({
-          ...queryResult,
-          result: {
-            ...queryResult.result,
-            calculations: [
-              {
-                aggregates: Array.from(
-                  { length: start === 0 ? pageSize : 1 },
-                  (_unused, index) => ({
-                    ...fingerprintedAggregate,
-                    groups: [
-                      {
-                        key: "error.fingerprint",
-                        value: (start + index).toString(16).padStart(8, "0"),
-                      },
-                      { key: "error.tag", value: "Overflow" },
-                    ],
-                  }),
-                ),
-                calculation: "count",
-                series: [],
-              },
-            ],
-          },
-        });
-      }),
+      http.post<RequestParams, AskedQuery>(endpoint, ({ request }) =>
+        request.json().then((body) => {
+          requests.push(body);
+          const start = body.offsetBy;
+          const pageSize = body.limit;
+          return HttpResponse.json({
+            ...queryResult,
+            result: {
+              ...queryResult.result,
+              calculations: [
+                {
+                  aggregates: Array.from(
+                    { length: start === 0 ? pageSize : 1 },
+                    (_unused, index) => ({
+                      ...fingerprintedAggregate,
+                      groups: [
+                        {
+                          key: "error.fingerprint",
+                          value: (start + index).toString(16).padStart(8, "0"),
+                        },
+                        { key: "error.tag", value: "Overflow" },
+                      ],
+                    }),
+                  ),
+                  calculation: "count",
+                  series: [],
+                },
+              ],
+            },
+          });
+        }),
+      ),
     );
     const result = yield* fetchErrorGroups(window);
     const pageSize = requests[0]?.limit;

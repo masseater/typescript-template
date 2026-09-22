@@ -4,8 +4,6 @@ import { Effect } from "effect";
 import { runAlchemy } from "./alchemy-cli.ts";
 import { describeFailure } from "./secrets.ts";
 
-import type { AlchemyCommand } from "./alchemy-cli.ts";
-
 const destructiveCommands = [
   ["unsafe", "nuke"],
   ["unsafe", "nuke", "--yes"],
@@ -15,15 +13,10 @@ const destructiveCommands = [
   ["provider", "cloudflare", "bootstrap", "--env-file", ".env", "unsafe", "nuke"],
 ];
 
-function untyped(command: readonly string[]): AlchemyCommand {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-  return command as unknown as AlchemyCommand;
-}
-
 it.effect("refuses every alchemy command outside the bootstrap allow list", () =>
   Effect.forEach(destructiveCommands, (command) =>
     Effect.gen(function* rejected() {
-      const failure = yield* runAlchemy(untyped(command), []).pipe(Effect.flip);
+      const failure = yield* runAlchemy(command, []).pipe(Effect.flip);
       assert.deepStrictEqual(describeFailure(failure, []), { code: "alchemy_command_rejected" });
     }),
   ),

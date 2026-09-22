@@ -1,5 +1,6 @@
 import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
-import { Effect, FileSystem, Path } from "effect";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 import { certificateAuthorityBase64, ensureGateway } from "./lan-gateway.ts";
 import {
@@ -15,6 +16,7 @@ import {
 import { urlPath, withFileSystem, withPath } from "./platform.ts";
 import { privateFileMode } from "./private-files.ts";
 
+import type { ChildProcessSpawner } from "effect/unstable/process";
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App } from "./local-environment.ts";
 
@@ -35,14 +37,10 @@ interface StatusReport {
 const statusTimeoutMilliseconds = 3000;
 
 function httpStatus(app: App, origin: string): Effect.Effect<number | null> {
-  return Effect.tryPromise(async (signal) =>
-    fetch(`${origin}${applicationReadyPaths[app]}`, {
-      redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(statusTimeoutMilliseconds)]),
-    }),
-  ).pipe(
+  return HttpClient.get(`${origin}${applicationReadyPaths[app]}`).pipe(
+    Effect.timeout(statusTimeoutMilliseconds),
+    Effect.provide(FetchHttpClient.layer),
     Effect.match({
-      // oxlint-disable-next-line unicorn/no-null
       onFailure: () => null,
       onSuccess: (response) => response.status,
     }),
@@ -56,7 +54,11 @@ function appOrigin(app: App, origins: "lan" | "loopback" | undefined): string {
 function appStatus(
   app: App,
   origins: "lan" | "loopback" | undefined,
-): Effect.Effect<AppStatus, LocalCommandFailure, Path.Path> {
+): Effect.Effect<
+  AppStatus,
+  LocalCommandFailure,
+  ChildProcessSpawner.ChildProcessSpawner | Path.Path
+> {
   const origin = appOrigin(app, origins);
   return Effect.all({ httpStatus: httpStatus(app, origin), processRunning: running(app) }).pipe(
     Effect.flatMap((observed) =>
@@ -110,9 +112,14 @@ const launch = Effect.fn("launch")(function* launch(app: App) {
   );
   yield* withFileSystem((fs) => fs.chmod(log, privateFileMode));
   const vp = yield* withPath((path) =>
-    Effect.succeed(JSON.stringify(path.join(root, "node_modules/.bin/vp"))),
+    Schema.encodeEffect(Schema.fromJsonString(Schema.String))(
+      path.join(root, "node_modules/.bin/vp"),
+    ).pipe(Effect.orDie),
   );
-  const command = `exec ${vp} run --filter @repo/${app} preview >> ${JSON.stringify(log)} 2>&1`;
+  const quotedLog = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.String))(log).pipe(
+    Effect.orDie,
+  );
+  const command = `exec ${vp} run --filter @repo/${app} preview >> ${quotedLog} 2>&1`;
   return yield* run(
     "tmux",
     ["-L", socket, "new-session", "-d", "-s", app, "-c", root, "fish", "-c", command],

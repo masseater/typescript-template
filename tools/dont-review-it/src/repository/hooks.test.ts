@@ -311,7 +311,6 @@ describe("lifecycle contents", () => {
       expect.arrayContaining([
         "check:code",
         "check:effect",
-        "check:effect:gate",
         "knip",
         "check:client",
         "check:imports",
@@ -321,19 +320,10 @@ describe("lifecycle contents", () => {
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
     expect(
-      configuredDirectories.filter(
-        (directory) =>
-          taskNames(directory).includes("check:effect") &&
-          !reachable(directory, ["prepush"]).includes("check:effect:gate"),
-      ),
-    ).toStrictEqual([]);
-    expect(
       configuredDirectories.flatMap((directory) =>
-        ["check:effect", "check:effect:gate"].flatMap((name) =>
-          taskNames(directory).includes(name)
-            ? commands(directory, name).filter((command) => command.includes("&&"))
-            : [],
-        ),
+        taskNames(directory).includes("check:effect")
+          ? commands(directory, "check:effect").filter((command) => command.includes("&&"))
+          : [],
       ),
     ).toStrictEqual([]);
     expect(

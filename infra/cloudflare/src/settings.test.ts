@@ -11,6 +11,7 @@ import {
   checkSharedConfig,
   deriveOrigins,
 } from "./config.ts";
+import { encodeJson } from "./platform.ts";
 import { describeFailure } from "./secrets.ts";
 import { authSecret, settings as deploymentSettings } from "./settings.ts";
 import {
@@ -57,7 +58,7 @@ it.effect("a rejected deployment input names its key without repeating its value
       ConfigProvider,
       fromDotEnvContents("TEMPLATE_AUTH_SECRET=too-short\n"),
     ).pipe(Effect.flip);
-    const described = JSON.stringify(describeFailure(failure, []));
+    const described = yield* encodeJson(describeFailure(failure, []));
     assert.include(described, "TEMPLATE_AUTH_SECRET");
     assert.notInclude(described, "too-short");
   }),
@@ -111,14 +112,14 @@ it.effect("refuses a base domain that is not a bare hostname", () =>
       ConfigProvider,
       environment({ TEMPLATE_APP_DOMAIN: "https://example.com" }),
     ).pipe(Effect.flip);
-    assert.include(JSON.stringify(describeFailure(failure, [])), "TEMPLATE_APP_DOMAIN");
+    assert.include(yield* encodeJson(describeFailure(failure, [])), "TEMPLATE_APP_DOMAIN");
   }),
 );
 
 it.effect("refuses origins that collapse onto one host and names the keys", () =>
   Effect.gen(function* program() {
     const shared = settings.origins["service-member"];
-    const config = yield* Schema.decodeUnknownEffect(SharedSettings)({
+    const config = yield* Schema.decodeEffect(SharedSettings)({
       ...settings,
       origins: { ...settings.origins, "internal-dashboard": shared, "service-admin": shared },
     });
@@ -130,7 +131,7 @@ it.effect("refuses origins that collapse onto one host and names the keys", () =
 
 it.effect("refuses a budget exhausted by fixed fees and names the keys", () =>
   Effect.gen(function* program() {
-    const config = yield* Schema.decodeUnknownEffect(SharedSettings)({
+    const config = yield* Schema.decodeEffect(SharedSettings)({
       ...settings,
       budget: { ...settings.budget, fixedCostUsd: 50 },
     });
@@ -145,18 +146,18 @@ it.effect("refuses a sender address outside the subdomain named by the prefix", 
     ["mail@example.com", "mail@send.example.com", `mail@${settings.prefix}x.example.com`],
     (mailFrom) =>
       Effect.gen(function* program() {
-        const config = yield* Schema.decodeUnknownEffect(SharedSettings)({ ...settings, mailFrom });
+        const config = yield* Schema.decodeEffect(SharedSettings)({ ...settings, mailFrom });
         const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
         assert.strictEqual(failure.code, "mail_from_outside_deployment");
         assert.deepStrictEqual([...failure.keys], ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"]);
-        assert.notInclude(JSON.stringify(failure), mailFrom);
+        assert.notInclude(yield* encodeJson(failure), mailFrom);
       }),
   ),
 );
 
 it.effect("accepts a sender address on the subdomain named by the prefix", () =>
   Effect.gen(function* program() {
-    const config = yield* Schema.decodeUnknownEffect(SharedSettings)(settings);
+    const config = yield* Schema.decodeEffect(SharedSettings)(settings);
     assert.strictEqual((yield* checkSharedConfig(config)).mailFrom, settings.mailFrom);
   }),
 );

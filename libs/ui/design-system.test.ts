@@ -14,6 +14,7 @@ import {
 } from "../../tools/dont-review-it/src/repository/ui-lint-settings.ts";
 import {
   appStylesheetViolations,
+  colorSchemeProbe,
   coverageViolations,
   declarations,
   designSystemComponents,
@@ -28,7 +29,7 @@ import {
   tokenViolations,
   untouchedTokens,
 } from "./design-system.ts";
-import { hoverViolations } from "./hover-colors.ts";
+import { hoverViolations, relativeLuminance } from "./hover-colors.ts";
 import { field } from "./record-field.ts";
 import { Heading } from "./src/shared/ui/heading.tsx";
 
@@ -121,6 +122,33 @@ describe("design token table", () => {
     expect(tokenViolations(`@theme { ${token}: 8px; }`)).toContainEqual(
       expect.stringContaining(token),
     );
+  });
+});
+
+const tone = (color: string): number => {
+  const value = relativeLuminance(color);
+  if (value === undefined) {
+    throw new Error(`unresolved color ${color}`);
+  }
+  return value;
+};
+
+describe("dark color scheme", () => {
+  it("applies dark background, card, and text under prefers-color-scheme: dark", () => {
+    expect.hasAssertions();
+    const css = stylesheetSource();
+    const light = colorSchemeProbe(css, "light");
+    const dark = colorSchemeProbe(css, "dark");
+    expect(light.colorScheme).toBe("light");
+    expect(dark.colorScheme).toBe("dark");
+    expect(dark.background).not.toBe(light.background);
+    expect(dark.card).not.toBe(light.card);
+    expect(dark.foreground).not.toBe(light.foreground);
+    expect(tone(light.foreground)).toBeLessThan(tone(light.background));
+    expect(tone(dark.background)).toBeLessThan(tone(light.background));
+    expect(tone(dark.foreground)).toBeGreaterThan(tone(dark.background));
+    expect(tone(dark.card)).toBeGreaterThan(tone(dark.background));
+    expect(tone(dark.card)).toBeLessThan(tone(dark.foreground));
   });
 });
 

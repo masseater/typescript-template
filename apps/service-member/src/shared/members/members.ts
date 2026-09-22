@@ -1,6 +1,5 @@
-import { UserNotFound, containsKeyword, query, schema } from "@repo/db";
-import { and, count, desc, eq, or } from "drizzle-orm";
-import { Effect } from "effect";
+import { UserNotFound, and, containsKeyword, count, desc, eq, or, query, schema } from "@repo/db";
+import { DateTime, Effect } from "effect";
 
 const { user } = schema;
 
@@ -83,8 +82,7 @@ const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) 
   const [profile] = yield* query((database) =>
     database.select(profileColumns).from(user).where(eq(user.id, userId)).limit(1),
   );
-  // oxlint-disable-next-line unicorn/no-null
-  return profile ?? null;
+  return profile;
 });
 
 const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
@@ -95,10 +93,11 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
     readonly socialLinks: readonly string[];
   },
 ) {
+  const now = DateTime.toDate(yield* DateTime.now);
   const [profile] = yield* query((database) =>
     database
       .update(user)
-      .set({ ...values, updatedAt: new Date() })
+      .set({ ...values, updatedAt: now })
       .where(eq(user.id, userId))
       .returning(profileColumns),
   );

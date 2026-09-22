@@ -1,10 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { once } from "node:events";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { text } from "node:stream/consumers";
-
+import { NodeHttpServer } from "@effect/platform-node";
 import { APPLICATION, loopbackAddress, loopbackOrigin } from "@repo/config";
 import {
   flushTelemetry,
@@ -13,7 +7,8 @@ import {
   Telemetry,
   TraceId,
 } from "@repo/observability";
-import { Cause, Effect, Schema } from "effect";
+import { Cause, Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
+import { HttpServer, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
 const spanName = "http.server.request";
 const isTraceId = Schema.is(TraceId);
@@ -23,16 +18,18 @@ class ReceiverCheckFailure extends Schema.TaggedError<ReceiverCheckFailure>()(
   { reason: Schema.String },
 ) {}
 
+const isReceiverCheckFailure = Schema.is(ReceiverCheckFailure);
+
 interface Inbox {
   failure: string | undefined;
   logs: unknown[];
   traces: unknown[];
 }
 
-interface Receiver {
-  readonly inbox: Inbox;
+interface OpenedReceiver {
+  readonly inbox: Ref.Ref<Inbox>;
   readonly origin: string;
-  readonly server: Server;
+  readonly scope: Scope.Scope;
 }
 
 interface Signal {
@@ -95,88 +92,73 @@ function signalOf(url: string | undefined): "logs" | "traces" | undefined {
   return undefined;
 }
 
-const rejected = (inbox: Inbox, response: ServerResponse, reason: string): void => {
-  inbox.failure = reason;
-  if (!response.headersSent) {
-    response.writeHead(httpStatus.internalServerError).end();
-  }
-};
-
-const capture = Effect.fn("capture")(function* capture(
-  inbox: Inbox,
-  request: IncomingMessage,
-  response: ServerResponse,
-) {
-  const signal = signalOf(request.url);
-  const contentType = request.headers["content-type"]?.split(";")[0];
-  if (request.method !== "POST" || signal === undefined || contentType !== "application/json") {
-    response.writeHead(httpStatus.notFound).end();
-    return;
-  }
-  const raw = yield* Effect.tryPromise({
-    catch: (error) => new ReceiverCheckFailure({ reason: describe(error) }),
-    try: async () => text(request),
-  });
-  const parsed: unknown = yield* Effect.try({
-    catch: () => new ReceiverCheckFailure({ reason: "response_invalid" }),
-    try: (): unknown => JSON.parse(raw),
-  });
-  inbox[signal].push(parsed);
-  response.writeHead(httpStatus.ok, { "content-type": "application/json" }).end("{}");
-});
-
-const accept = (inbox: Inbox, request: IncomingMessage, response: ServerResponse): void => {
-  void Effect.runPromise(
-    capture(inbox, request, response).pipe(
-      Effect.catchCause((cause) =>
-        Effect.sync(() => {
-          const squashed = Cause.squash(cause);
-          rejected(
-            inbox,
-            response,
-            squashed instanceof ReceiverCheckFailure ? squashed.reason : Cause.pretty(cause),
-          );
-        }),
-      ),
-    ),
-  );
-};
-
-const openReceiver = Effect.tryPromise({
-  catch: (error) => new ReceiverCheckFailure({ reason: describe(error) }),
-  try: async (): Promise<Receiver> => {
-    const inbox: Inbox = { failure: undefined, logs: [], traces: [] };
-    const server = createServer((request, response) => {
-      accept(inbox, request, response);
-    });
-    await new Promise<void>((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, loopbackAddress, () => {
-        resolve();
-      });
-    });
-    const address = server.address();
-    if (address === null || typeof address === "string") {
-      server.close();
-      throw new Error("receiver did not bind");
+const capture = (
+  inbox: Ref.Ref<Inbox>,
+): Effect.Effect<
+  HttpServerResponse.HttpServerResponse,
+  ReceiverCheckFailure,
+  HttpServerRequest.HttpServerRequest
+> =>
+  Effect.gen(function* captureProgram() {
+    const incoming = yield* HttpServerRequest.HttpServerRequest;
+    const signal = signalOf(incoming.url);
+    const contentType = incoming.headers["content-type"]?.split(";")[0];
+    if (incoming.method !== "POST" || signal === undefined || contentType !== "application/json") {
+      return HttpServerResponse.empty({ status: httpStatus.notFound });
     }
-    return { inbox, origin: loopbackOrigin(address.port), server };
-  },
+    const raw = yield* incoming.text.pipe(
+      Effect.mapError((error) => new ReceiverCheckFailure({ reason: describe(error) })),
+    );
+    const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(raw).pipe(
+      Effect.mapError(() => new ReceiverCheckFailure({ reason: "response_invalid" })),
+    );
+    yield* Ref.update(inbox, (current) => ({
+      ...current,
+      [signal]: [...current[signal], parsed],
+    }));
+    return HttpServerResponse.text("{}", {
+      contentType: "application/json",
+      status: httpStatus.ok,
+    });
+  });
+
+const openReceiver = Effect.gen(function* openReceiverProgram() {
+  const scope = yield* Scope.make();
+  const built = yield* Layer.build(NodeHttpServer.layerTest).pipe(
+    Scope.provide(scope),
+    Effect.mapError((error) => new ReceiverCheckFailure({ reason: describe(error) })),
+  );
+  const server = Context.get(built, HttpServer.HttpServer);
+  const inbox = yield* Ref.make<Inbox>({ failure: undefined, logs: [], traces: [] });
+  yield* server
+    .serve(
+      capture(inbox).pipe(
+        Effect.catchCause((cause) =>
+          Effect.gen(function* reject() {
+            yield* Ref.update(inbox, (current) => ({
+              ...current,
+              failure: receiverFailureReason(cause),
+            }));
+            return HttpServerResponse.empty({ status: httpStatus.internalServerError });
+          }),
+        ),
+      ),
+    )
+    .pipe(Scope.provide(scope));
+  if (server.address._tag !== "TcpAddress") {
+    yield* Scope.close(scope, Exit.succeed(undefined));
+    return yield* new ReceiverCheckFailure({ reason: "receiver did not bind" });
+  }
+  const opened: OpenedReceiver = {
+    inbox,
+    origin: loopbackOrigin(server.address.port),
+    scope,
+  };
+  return opened;
 });
 
-const closeReceiver = (server: Server): Effect.Effect<void> =>
-  Effect.tryPromise({
-    catch: (error) => new ReceiverCheckFailure({ reason: describe(error) }),
-    try: async () => {
-      if (!server.listening) {
-        return;
-      }
-      const closed = once(server, "close");
-      server.closeAllConnections();
-      server.close();
-      await closed;
-    },
-  }).pipe(Effect.ignore);
+const closeReceiver = (scope: Scope.Scope): Effect.Effect<void> =>
+  Scope.close(scope, Exit.succeed(undefined)).pipe(Effect.ignore);
 
 const deliver = Effect.fn("deliver")(function* deliver(origin: string) {
   const lines: string[] = [];
@@ -249,7 +231,7 @@ const matched = Effect.fn("matched")(function* matched(inbox: Inbox, lines: read
       inbox.failure ??
       exportFailure ??
       `receiver returned no match (logs=${inbox.logs.length}, traces=${inbox.traces.length})`;
-    return yield* Effect.fail(new ReceiverCheckFailure({ reason }));
+    return yield* new ReceiverCheckFailure({ reason });
   }
   const arrival: ExportedArrival = { log: log.body, span: span.body, traceId: span.traceId };
   return arrival;
@@ -259,14 +241,18 @@ const exportedArrived = Effect.fn("exportedArrived")(function* exportedArrived()
   return yield* Effect.acquireUseRelease(
     openReceiver,
     (receiver) =>
-      deliver(receiver.origin).pipe(Effect.flatMap((lines) => matched(receiver.inbox, lines))),
-    (receiver) => closeReceiver(receiver.server),
+      deliver(receiver.origin).pipe(
+        Effect.flatMap((lines) =>
+          Ref.get(receiver.inbox).pipe(Effect.flatMap((inbox) => matched(inbox, lines))),
+        ),
+      ),
+    (receiver) => closeReceiver(receiver.scope),
   );
 });
 
 const receiverFailureReason = (cause: Cause.Cause<ReceiverCheckFailure>): string => {
   const squashed = Cause.squash(cause);
-  if (squashed instanceof ReceiverCheckFailure) {
+  if (isReceiverCheckFailure(squashed)) {
     return squashed.reason;
   }
   return squashed instanceof Error ? squashed.message : "the receiver check failed";

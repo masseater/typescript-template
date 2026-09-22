@@ -1,13 +1,12 @@
-import { randomBytes } from "node:crypto";
-import { closeSync, openSync, writeFileSync } from "node:fs";
-
 import { once } from "es-toolkit/function";
 import { tryLock } from "fs-native-extensions";
 
+import { closeDescriptor, openDescriptor } from "../host-descriptors.ts";
+import { randomHex, writeFileString } from "../host.ts";
 import { closeFileDescriptorAfterFailure, releaseFileLock } from "./release-file-lock.ts";
 
 const lockedDescriptor = (lockPath: string): number | null => {
-  const descriptor = openSync(lockPath, "r+");
+  const descriptor = openDescriptor(lockPath);
   const acquired = (() => {
     try {
       return tryLock(descriptor);
@@ -19,7 +18,7 @@ const lockedDescriptor = (lockPath: string): number | null => {
     }
   })();
   if (!acquired) {
-    closeSync(descriptor);
+    closeDescriptor(descriptor);
     return null;
   }
   return descriptor;
@@ -46,7 +45,7 @@ const releaseAfterGenerationFailure = (input: {
 
 const recordGeneration = (markerPath: string, descriptor: number): void => {
   try {
-    writeFileSync(markerPath, randomBytes(16).toString("hex"));
+    writeFileString({ location: markerPath, written: randomHex(16) });
   } catch (generationWriteFailure) {
     releaseAfterGenerationFailure({ descriptor, generationWriteFailure });
   }
@@ -60,12 +59,9 @@ export const tryAcquireFileLock = (input: {
   if (descriptor === null) return null;
   recordGeneration(input.markerPath, descriptor);
   return {
-    release: once(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseDescriptor(descriptor);
-          resolve();
-        }),
-    ),
+    release: once(() => {
+      releaseDescriptor(descriptor);
+      return Promise.resolve();
+    }),
   };
 };

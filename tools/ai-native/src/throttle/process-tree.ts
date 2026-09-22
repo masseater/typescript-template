@@ -1,6 +1,6 @@
-import { spawnSync } from "node:child_process";
-
 import { attempt } from "es-toolkit";
+
+import { spawnChildSync } from "../node-spawn.ts";
 
 const combinedFailure = (primary: Error, fallback: Error | null): Error =>
   fallback === null
@@ -30,8 +30,16 @@ const signalProcess = (pid: number, signal: NodeJS.Signals): Error | null => {
   return signalFailure;
 };
 
-const executeTaskkill: TaskkillExecutor = (invocation) =>
-  spawnSync(invocation.executable, [...invocation.handedArguments], invocation.spawnConfiguration);
+const executeTaskkill: TaskkillExecutor = (invocation) => {
+  const exit = spawnChildSync({
+    executable: invocation.executable,
+    handed: invocation.handedArguments,
+    spawnOptions: invocation.spawnConfiguration,
+  });
+  return exit.error === undefined
+    ? { status: exit.status }
+    : { error: exit.error, status: exit.status };
+};
 
 const resolvedDependencies = (
   input: Partial<ProcessTreeDependencies> | undefined,

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
-import { appendFile } from "node:fs/promises";
+import { env as processEnvironment } from "node:process";
 
 import { runCli } from "@repo/cli";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
-import { Effect } from "effect";
+import { Effect, FileSystem } from "effect";
 
 import { PrepareCiEnvFailure, writeCiSecretsFile } from "./ci-env.ts";
+import { encodeJson, layer } from "./platform.ts";
 import { causeRecord } from "./secrets.ts";
 
 const EVENT = "cloudflare.ci_env_rejected";
@@ -19,30 +19,34 @@ function writeOutput(
   if (output === undefined || output === "") {
     return Effect.void;
   }
-  return Effect.tryPromise({
-    catch: () => new PrepareCiEnvFailure({ code: "ci_env_unwritable", keys: [] }),
-    try: async () => appendFile(output, `configured=${configured}\n`),
-  });
+  return Effect.gen(function* appendOutput() {
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem
+      .writeFileString(output, `configured=${configured}\n`, { flag: "a" })
+      .pipe(
+        Effect.mapError(() => new PrepareCiEnvFailure({ code: "ci_env_unwritable", keys: [] })),
+      );
+  }).pipe(Effect.provide(layer));
 }
 
 runCli(
   Effect.gen(function* program() {
-    // oxlint-disable-next-line node/no-process-env
-    const environment = process.env;
+    const environment = processEnvironment;
     const preparation = yield* writeCiSecretsFile(environment);
     if (preparation.status === "unconfigured") {
       if (environment["GITHUB_EVENT_NAME"] === "workflow_dispatch") {
-        return yield* Effect.fail(
-          new PrepareCiEnvFailure({ code: "ci_env_incomplete", keys: [...deploymentKeys] }),
-        );
+        return yield* new PrepareCiEnvFailure({
+          code: "ci_env_incomplete",
+          keys: [...deploymentKeys],
+        });
       }
       yield* writeOutput(environment, false);
-      console.info(JSON.stringify({ event: "cloudflare.ci_env_unconfigured" }));
+      yield* Effect.log(yield* encodeJson({ event: "cloudflare.ci_env_unconfigured" }));
       return;
     }
     yield* writeOutput(environment, true);
-    console.info(
-      JSON.stringify({ event: "cloudflare.ci_env_ready", filename: preparation.filename }),
+    yield* Effect.log(
+      yield* encodeJson({ event: "cloudflare.ci_env_ready", filename: preparation.filename }),
     );
   }),
   (cause) => causeRecord(EVENT, cause),

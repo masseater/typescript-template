@@ -1,6 +1,6 @@
-import { Cause, Console, Logger, Predicate, References } from "effect";
+import { Cause, Console, Effect, Logger, Predicate, References, Schema } from "effect";
 
-import { redactSecrets, redactedField } from "./redact.ts";
+import { appliedField, redactSecrets, redactedField } from "./redact.ts";
 
 import type { Layer, LogLevel } from "effect";
 import type { ServiceName } from "./service-name.ts";
@@ -36,8 +36,13 @@ function serviceLabel(name: ServiceName): string {
   return `${name}-server`;
 }
 
+const encodeJson = (value: unknown): string =>
+  Effect.runSync(
+    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(Effect.orDie),
+  );
+
 function redactedMessage(message: unknown): unknown {
-  return JSON.parse(JSON.stringify(messageParts(message), redactedField));
+  return appliedField(messageParts(message), redactedField);
 }
 
 function causeField(cause: Readonly<Cause.Cause<unknown>>): Readonly<Record<string, string>> {
@@ -67,16 +72,18 @@ function structuredLogs(options: StructuredLogOptions): Layer.Layer<never> {
   const logger = Logger.make(({ cause, fiber, logLevel, message }) => {
     const sink = options.log ?? fiber.getRef(Console.Console);
     const [event, attributes] = messageParts(message);
-    const line = JSON.stringify(
-      {
-        event: typeof event === "string" ? event : "application.log",
-        release: options.release,
-        service: serviceLabel(options.serviceName),
-        ...fiber.getRef(References.CurrentLogAnnotations),
-        ...(Predicate.isObject(attributes) ? attributes : {}),
-        ...causeField(cause),
-      },
-      redactedField,
+    const line = encodeJson(
+      appliedField(
+        {
+          event: typeof event === "string" ? event : "application.log",
+          release: options.release,
+          service: serviceLabel(options.serviceName),
+          ...fiber.getRef(References.CurrentLogAnnotations),
+          ...(Predicate.isObject(attributes) ? attributes : {}),
+          ...causeField(cause),
+        },
+        redactedField,
+      ),
     );
     sink[sinkByLevel[logLevel]](line);
   });

@@ -27,7 +27,6 @@ it.effect("of two writers holding the same version only the first one is stored"
     );
     assert.strictEqual(late._tag, "InterviewConflict");
     assert.deepStrictEqual(yield* findInterview("member"), {
-      // oxlint-disable-next-line unicorn/no-null
       savedSheet: null,
       state: { step: 1 },
       version: 1,
@@ -51,7 +50,6 @@ it.effect("the saved sheet stays until a write names it", () =>
       state: { step: 2 },
       version: TWICE_STORED,
     });
-    // oxlint-disable-next-line unicorn/no-null
     yield* storeInterview({
       savedSheet: null,
       state: { step: 3 },

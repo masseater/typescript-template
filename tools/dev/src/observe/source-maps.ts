@@ -1,5 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { SourceMap } from "node:module";
+const { SourceMap } = process.getBuiltinModule("module");
 
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
@@ -97,26 +96,23 @@ function directoryEntries(
   }).pipe(Effect.mapError(() => unreadable()));
 }
 
-function entryMap(
-  directory: string,
-  entry: DirectoryEntry,
-  filename: string,
-): Effect.Effect<string | undefined, SourceMapFailure, FileSystem.FileSystem | Path.Path> {
-  return Effect.gen(function* entryMapProgram() {
-    const path = yield* Path.Path;
-    const candidate = path.join(directory, entry.name);
-    if (entry.isFile() && entry.name === `${filename}.map`) {
-      return candidate;
-    }
-    // oxlint-disable-next-line typescript/no-use-before-define
-    return entry.isDirectory() ? yield* findMap(candidate, filename) : undefined;
-  });
-}
-
 function findMap(
   directory: string,
   filename: string,
 ): Effect.Effect<string | undefined, SourceMapFailure, FileSystem.FileSystem | Path.Path> {
+  const entryMap = (
+    entryDirectory: string,
+    entry: DirectoryEntry,
+    mapFilename: string,
+  ): Effect.Effect<string | undefined, SourceMapFailure, FileSystem.FileSystem | Path.Path> =>
+    Effect.gen(function* entryMapProgram() {
+      const path = yield* Path.Path;
+      const candidate = path.join(entryDirectory, entry.name);
+      if (entry.isFile() && entry.name === `${mapFilename}.map`) {
+        return candidate;
+      }
+      return entry.isDirectory() ? yield* findMap(candidate, mapFilename) : undefined;
+    });
   return directoryEntries(directory).pipe(
     Effect.flatMap((entries) =>
       Effect.forEach(entries, (entry: DirectoryEntry) => entryMap(directory, entry, filename)),
@@ -148,7 +144,7 @@ const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   const text = yield* withFileSystem((fs) => fs.readFileString(mapFile)).pipe(
     Effect.mapError(unreadable),
   );
-  const parsed = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Payload))(text).pipe(
+  const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Payload))(text).pipe(
     Effect.mapError(invalid),
   );
   return yield* Effect.try({

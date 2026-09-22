@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && vp run --filter @repo/dev prepare-browser"
+    "prepare": "vp config --no-agent && vp run --filter @repo/dev prepare-browser && effect-tsgo patch --typescript --oxlint"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
@@ -25,6 +25,8 @@
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "textlint": "catalog:",
     "textlint-rule-preset-ai-words-ja": "catalog:",
     "typescript": "catalog:",

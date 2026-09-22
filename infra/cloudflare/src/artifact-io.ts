@@ -1,14 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile, readdir, realpath } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
+import { Effect, FileSystem, Option, Path, PlatformError, Schema } from "effect";
 
-import { Effect, Schema } from "effect";
-
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
-
-type ArtifactEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "isSymbolicLink" | "name">>;
+import { isNotFound, layer } from "./platform.ts";
 
 class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFailure", {
   code: Schema.Literals([
@@ -37,55 +29,67 @@ class ArtifactFailure extends Schema.TaggedError<ArtifactFailure>()("ArtifactFai
 }) {}
 
 function fail(code: ArtifactFailure["code"]): Effect.Effect<never, ArtifactFailure> {
-  return Effect.fail(new ArtifactFailure({ code }));
+  return new ArtifactFailure({ code });
+}
+
+function ioFailed(): ArtifactFailure {
+  return new ArtifactFailure({ code: "artifact_io_failed" });
 }
 
 function isMissing(cause: unknown): boolean {
-  return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
+  return cause instanceof PlatformError.PlatformError && isNotFound(cause);
 }
 
-function io<Value>(run: () => Promise<Value>): Effect.Effect<Value, ArtifactFailure> {
-  return Effect.tryPromise({
-    catch: () => new ArtifactFailure({ code: "artifact_io_failed" }),
-    try: run,
-  });
-}
-
-function entryFiles(
-  directory: string,
-  entry: ArtifactEntry,
-): Effect.Effect<string[], ArtifactFailure> {
-  if (entry.isSymbolicLink()) {
-    return fail("artifact_symlink_forbidden");
-  }
-  const filename = path.join(directory, entry.name);
-  if (entry.isDirectory()) {
-    // oxlint-disable-next-line typescript/no-use-before-define
-    return files(filename);
-  }
-  return entry.isFile() ? Effect.succeed([filename]) : fail("artifact_file_type_invalid");
+function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
+  return left.length === right.length && left.every((byte, index) => byte === right[index]);
 }
 
 function files(directory: string): Effect.Effect<string[], ArtifactFailure> {
-  return io(async () => readdir(directory, { withFileTypes: true })).pipe(
-    Effect.flatMap((entries) =>
-      Effect.all(
-        entries.map((entry: ArtifactEntry) => entryFiles(directory, entry)),
-        { concurrency: "unbounded" },
-      ),
-    ),
-    Effect.map((nested) => nested.flat().toSorted()),
-  );
+  return Effect.gen(function* listFiles() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const names = yield* filesystem.readDirectory(directory).pipe(Effect.mapError(ioFailed));
+    const nested = yield* Effect.forEach(
+      names,
+      (name) => {
+        const filename = paths.join(directory, name);
+        return Effect.gen(function* classifyEntry() {
+          const linked = yield* filesystem.readLink(filename).pipe(
+            Effect.as(true),
+            Effect.catch((error) =>
+              isNotFound(error) ? fail("artifact_io_failed") : Effect.succeed(false),
+            ),
+          );
+          if (linked) {
+            return yield* fail("artifact_symlink_forbidden");
+          }
+          const info = yield* filesystem.stat(filename).pipe(Effect.mapError(ioFailed));
+          if (info.type === "Directory") {
+            return yield* files(filename);
+          }
+          return info.type === "File" ? [filename] : yield* fail("artifact_file_type_invalid");
+        });
+      },
+      { concurrency: "unbounded" },
+    );
+    return nested.flat().toSorted();
+  }).pipe(Effect.provide(layer));
 }
 
-function sha256Hex(content: Uint8Array<ArrayBuffer>): Effect.Effect<string, ArtifactFailure> {
-  return io(async () =>
-    Buffer.from(await crypto.subtle.digest("SHA-256", content)).toString("hex"),
-  );
+function sha256Hex(content: Uint8Array): Effect.Effect<string, ArtifactFailure> {
+  return Effect.tryPromise({
+    catch: ioFailed,
+    try: () => crypto.subtle.digest("SHA-256", Uint8Array.from(content)),
+  }).pipe(Effect.map((digest) => Buffer.from(digest).toString("hex")));
 }
 
 function fileSha256(file: string): Effect.Effect<string, ArtifactFailure> {
-  return io(async () => readFile(file)).pipe(Effect.flatMap(sha256Hex));
+  return Effect.gen(function* hashFile() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem
+      .readFile(file)
+      .pipe(Effect.mapError(ioFailed), Effect.flatMap(sha256Hex));
+  }).pipe(Effect.provide(layer));
 }
 
 function jsonSha256(value: unknown): Effect.Effect<string, ArtifactFailure> {
@@ -93,28 +97,79 @@ function jsonSha256(value: unknown): Effect.Effect<string, ArtifactFailure> {
 }
 
 function sameContent(left: string, right: string): Effect.Effect<boolean, ArtifactFailure> {
-  return io(async () => Promise.all([readFile(left), readFile(right)])).pipe(
-    Effect.map(([leftContent, rightContent]) => leftContent.equals(rightContent)),
-  );
+  return Effect.gen(function* compareFiles() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const [leftContent, rightContent] = yield* Effect.all(
+      [filesystem.readFile(left), filesystem.readFile(right)],
+      { concurrency: 2 },
+    ).pipe(Effect.mapError(ioFailed));
+    return equalBytes(leftContent, rightContent);
+  }).pipe(Effect.provide(layer));
 }
 
 function assertRealDirectory(
   directory: string,
   code: ArtifactFailure["code"],
 ): Effect.Effect<void, ArtifactFailure> {
-  return io(async () => realpath(directory)).pipe(
-    Effect.flatMap((resolved) => (resolved === directory ? Effect.void : fail(code))),
-  );
+  return Effect.gen(function* checkRealDirectory() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const resolved = yield* filesystem.realPath(directory).pipe(Effect.mapError(ioFailed));
+    if (resolved !== directory) {
+      return yield* fail(code);
+    }
+  }).pipe(Effect.provide(layer));
+}
+
+function readFileString(file: string): Effect.Effect<string, ArtifactFailure> {
+  return Effect.gen(function* readString() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem.readFileString(file).pipe(Effect.mapError(ioFailed));
+  }).pipe(Effect.provide(layer));
+}
+
+function fileSize(file: string): Effect.Effect<number, ArtifactFailure> {
+  return Effect.gen(function* readSize() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const info = yield* filesystem.stat(file).pipe(Effect.mapError(ioFailed));
+    return Number(info.size);
+  }).pipe(Effect.provide(layer));
+}
+
+function isSymlink(location: string): Effect.Effect<boolean, ArtifactFailure> {
+  return Effect.gen(function* checkLink() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem.readLink(location).pipe(
+      Effect.as(true),
+      Effect.catch((error) =>
+        isNotFound(error) ? fail("artifact_io_failed") : Effect.succeed(false),
+      ),
+    );
+  }).pipe(Effect.provide(layer));
+}
+
+function fileInfo(location: string): Effect.Effect<FileSystem.File.Info, ArtifactFailure> {
+  return Effect.gen(function* readInfo() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem.stat(location).pipe(Effect.mapError(ioFailed));
+  }).pipe(Effect.provide(layer));
+}
+
+function linkCount(info: FileSystem.File.Info): number {
+  return Option.getOrElse(info.nlink, () => 0);
 }
 
 export {
   ArtifactFailure,
   assertRealDirectory,
   fail,
+  fileInfo,
   fileSha256,
+  fileSize,
   files,
-  io,
   isMissing,
+  isSymlink,
   jsonSha256,
+  linkCount,
+  readFileString,
   sameContent,
 };

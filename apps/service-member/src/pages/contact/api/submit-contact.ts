@@ -5,9 +5,10 @@ import { ContactAccepted, ContactSubmission } from "#shared/contracts/index.ts";
 
 type ContactFormValues = typeof ContactSubmission.Type;
 
-async function submitContact(values: ContactFormValues): Promise<typeof ContactAccepted.Type> {
-  const { api } = await userClient();
-  return apiData(ContactAccepted, await api.contact.post(values));
+function submitContact(values: ContactFormValues): Promise<typeof ContactAccepted.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.contact.post(values).then((response) => apiData(ContactAccepted, response)),
+  );
 }
 
 export { submitContact };

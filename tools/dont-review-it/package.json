@@ -13,7 +13,6 @@
     "directory": "tools/dont-review-it"
   },
   "bin": {
-    "check-effect-typecheck": "./src/repository/check-effect-typecheck.ts",
     "dont-review-it": "./src/cli.ts",
     "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts",
     "dont-review-it-typecheck": "./src/repository/typecheck-workspaces.ts",
@@ -48,6 +47,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@effect/tsgo": "0.45.0",
     "@opentelemetry/api": "catalog:",
     "@repo/ai-native-telemetry": "workspace:*",
     "@repo/cli": "workspace:*",
@@ -57,13 +57,13 @@
     "@repo/vite-config": "workspace:*",
     "@shadcn/lint": "catalog:",
     "citty": "0.2.2",
-    "dependency-cruiser": "catalog:",
     "effect": "catalog:",
     "es-toolkit": "catalog:",
     "jsonc-parser": "3.3.1",
     "oxc-parser": "catalog:",
     "oxfmt": "0.67.0",
     "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "parse-git-diff": "0.0.20",
     "react-doctor": "0.9.14",
     "std-env": "4.2.0",
@@ -80,6 +80,7 @@
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "dependency-cruiser": "catalog:",
     "msw": "catalog:",
     "shell-quote": "catalog:",
     "vite": "catalog:",

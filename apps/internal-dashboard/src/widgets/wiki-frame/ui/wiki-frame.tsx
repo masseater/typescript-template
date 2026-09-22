@@ -25,7 +25,7 @@ function WikiFrame({
           aria-label="文書の木"
           aria-expanded={treeOpen}
           onClick={toggleTree}
-          className="cursor-pointer rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator md:hidden"
+          className="inline-flex min-h-6 min-w-6 shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-foreground outline-none hover:bg-card-hover focus-visible:focus-indicator md:hidden"
         >
           <Icon icon={MenuIcon} />
         </button>

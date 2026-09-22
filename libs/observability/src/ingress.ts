@@ -1,4 +1,4 @@
-import { Effect, HashSet, Ref, Result } from "effect";
+import { DateTime, Effect, HashSet, Ref, Result } from "effect";
 
 import { errorFingerprint } from "./errors.ts";
 import { parseBrowserEvents, type BrowserEvent } from "./events.ts";
@@ -47,7 +47,7 @@ const admitUnrecorded = (batch: {
   readonly browserEvents: readonly BrowserEvent[];
 }): Effect.Effect<readonly BrowserEvent[] | undefined> =>
   Ref.modify(ingressWindows, (windows) => {
-    const arrivedAt = Date.now();
+    const arrivedAt = DateTime.toEpochMillis(DateTime.nowUnsafe());
     const stored = windows.get(batch.serviceName);
     const activeWindow =
       stored === undefined || arrivedAt - stored.start > rateWindowMilliseconds
@@ -107,7 +107,7 @@ const recordBrowserEvent = (recorded: {
     request_id: browserEvent.requestId,
     service: `${serviceName}-browser`,
     span_id: browserEvent.spanId,
-    start: new Date(browserEvent.start).toISOString(),
+    start: DateTime.formatIso(DateTime.makeUnsafe(browserEvent.start)),
     "telemetry.source": "untrusted-browser",
     trace_id: browserEvent.traceId,
     ...kindFields(browserEvent),

@@ -71,32 +71,39 @@ const semantic = createSemanticIndex(() =>
 );
 
 const wikiLlms = llms(source, {
-  renderPage: async (
+  renderPage: (
     page: Readonly<{ data: Readonly<Pick<WikiPage["data"], "getText" | "title">>; url: string }>,
-  ) => `# ${page.data.title} (${page.url})\n\n${await page.data.getText("processed")}`,
+  ) =>
+    Effect.runPromise(
+      Effect.gen(function* renderWikiPage() {
+        const text = yield* Effect.promise(() => page.data.getText("processed"));
+        return `# ${page.data.title} (${page.url})\n\n${text}`;
+      }),
+    ),
 });
 
 function pageOf(url: string): string {
   return url.split("#")[0] ?? url;
 }
 
-async function readProcessedTexts(): Promise<ReadonlyMap<string, string>> {
-  const entries = await Promise.all(
-    source
-      .getPages()
-      .map(
-        async (
-          page: Readonly<{ data: Readonly<Pick<WikiPage["data"], "getText">>; url: string }>,
-        ) => [page.url, await page.data.getText("processed")] as const,
-      ),
-  );
-  return new Map(entries);
+function readProcessedTexts(): Effect.Effect<ReadonlyMap<string, string>> {
+  return Effect.gen(function* loadProcessedTexts() {
+    const entries = yield* Effect.forEach(
+      source.getPages(),
+      (page: Readonly<{ data: Readonly<Pick<WikiPage["data"], "getText">>; url: string }>) =>
+        Effect.promise(() => page.data.getText("processed")).pipe(
+          Effect.map((text) => [page.url, text] as const),
+        ),
+      { concurrency: "unbounded" },
+    );
+    return new Map(entries);
+  });
 }
 
 const textCache: { texts: ReadonlyMap<string, string> | undefined } = { texts: undefined };
 const processedTexts = Effect.suspend(() =>
   textCache.texts === undefined
-    ? Effect.promise(readProcessedTexts).pipe(
+    ? readProcessedTexts().pipe(
         Effect.tap((texts) =>
           Effect.sync(() => {
             textCache.texts = texts;
@@ -108,7 +115,6 @@ const processedTexts = Effect.suspend(() =>
 
 function pageResults(
   url: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   keywordResults: readonly KeywordResult[],
   semanticResults: readonly SemanticMatch[],
 ): SortedResult[] {
@@ -165,15 +171,10 @@ const semanticSearch = Effect.fn("semanticSearch")(function* semanticSearch(quer
 
 const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
   query: string,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   options?: SearchOptions,
 ) {
   const [keywordResults, texts, semanticResults] = yield* Effect.all(
-    [
-      Effect.promise(async () => keyword.search(query, options)),
-      processedTexts,
-      semanticSearch(query),
-    ],
+    [Effect.promise(() => keyword.search(query, options)), processedTexts, semanticSearch(query)],
     { concurrency: "unbounded" },
   );
   const keywordPages = [
@@ -198,11 +199,16 @@ const searchWiki = Effect.fn("searchWiki")(function* searchWiki(
 
 function searchServer(context: Context.Context<WikiServices>): SearchServer {
   return {
-    export: async () => keyword.export(),
-    search: async (query, options) => {
-      const { results } = await Effect.runPromiseWith(context)(searchWiki(query, options));
-      return results;
-    },
+    export: () => keyword.export(),
+    search: (query, options) =>
+      Effect.runPromise(
+        Effect.gen(function* searchWithContext() {
+          const { results } = yield* searchWiki(query, options).pipe(
+            Effect.provideContext(context),
+          );
+          return results;
+        }),
+      ),
   };
 }
 
