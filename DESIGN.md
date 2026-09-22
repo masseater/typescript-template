@@ -148,12 +148,37 @@ Two loaded faces only.
 
 ## Layout
 
-Tailwind spacing scale stays default (`--spacing` is not overridden). Rhythm is 4px half-steps via utilities.
+Tailwind spacing scale stays default (`--spacing` is not overridden). Rhythm is 4px half-steps via utilities — half, whole, and doubles of the base step, not freehand gaps.
 
-- Page content width: `max-w-page` (48rem). Wide: `max-w-wide` (64rem). Forms: `max-w-column` (28rem).
+### Content tracks
+
+Named containers only. Pick the **smallest** track that fits the job; do not invent `max-w-[37rem]` or stretch everything to `wide`.
+
+| Track | Token | Job |
+| --- | --- | --- |
+| Column | `max-w-column` (28rem) | Single-task auth, contact, verify — one form, one decision |
+| Page | `max-w-page` (48rem) | Default reading / working main |
+| Wide | `max-w-wide` (64rem) | Dense tables or multi-column lists only |
+
+Steps sit near a 3:2 / 4:3 ladder from the column unit (28 → 48 → 64). New widths must register in `libs/ui/src/styles.css` with that kind of ratio rationale — harmonic or golden steps from an existing token — never a one-off.
+
+### Alignment
+
+Alignment is a product rule, not decoration.
+
+- Every edge lines up to a **named track** (column / page / wide) or to the viewport center. No “almost” offsets.
+- Align by **meaning**: shared start edges for the same kind of content (titles with titles, actions with actions). Decorative centering that breaks the track is wrong.
+- **Header, main, and footer share the same inner track and horizontal padding** for a given surface. Logged-out chrome and the main card must not disagree (full-bleed header + floating narrow card is the failure mode).
+- Logged-out / auth: center the column track on the viewport (`mx-auto` + `max-w-column`). Admin `PublicFrame` is the reference.
+- Logged-in app shell: main uses `Page` / `max-w-page` (or `wide` when justified). Frame chrome stays with the shell; do not introduce a second competing max width inside the content pane.
+- **Bleed vs contained** is binary and consistent per surface: either the band is full-bleed (edge-to-edge paper/card) with an inner track for text, or the whole block sits in the track. Do not mix half-bleeding siblings in one view.
+
+### Hierarchy of regions
+
+- One primary region owns the job. Secondary regions (login asides, marketing flanks, metadata) must look **less important** — quieter type, no primary fill, no competing hero weight. If the right side is not the job, it must not read as the job.
 - Prefer one vertical column with `gap-*` over nested card grids.
 - App screens: one job per section — one heading, one short supporting line, then the interaction.
-- Cards are for interaction containers (settings rows, confirmations). Do not wrap every block in a card for decoration.
+- Cards are for interaction containers (settings rows, confirmations). Do not wrap every block in a card for decoration. A container that is only “big” is wrong; shrink to the track that matches the job.
 
 ## Elevation & Depth
 
@@ -177,6 +202,14 @@ Build from `@repo/ui` parts. Behavior comes from Base UI; appearance from the co
 - **Field / FormColumn:** form density lives here; screens only compose layout gaps.
 - **Focus:** `focus-indicator` / `focus-indicator-outer` utilities — keep ring on ink, not on primary fill.
 
+### Object-oriented UI
+
+Operate on **objects** (member, thread, setting, subscription), not on a zoo of one-off verbs.
+
+- Opening, editing, and confirming different objects should reuse the same affordances (`CardLink` to open, `Page` + `Field` to edit, `Button` primary to commit). Do not invent a new chrome per verb.
+- Navigation labels, page titles, and body copy name the **object that is actually on screen**. Renaming a nav item (e.g. “resend” → “subscriptions”) without showing subscription content is a defect.
+- Same job → same control. Different jobs must still share the part vocabulary above so muscle memory transfers.
+
 Do not copy external UI kit demos as normative styling. Do not add app-local CSS variables that redefine `--primary`, `--background`, or fonts.
 
 ## Do's and Don'ts
@@ -184,6 +217,13 @@ Do not copy external UI kit demos as normative styling. Do not add app-local CSS
 - Do read this file before changing UI, then confirm tokens in `libs/ui/src/styles.css`.
 - Do use semantic Tailwind tokens (`bg-background`, `text-foreground`, `bg-primary`, `border-border`, …).
 - Do keep primary terracotta on primary actions only.
+- Do pick the smallest content track and keep header / main / footer on that same track.
+- Do align edges to a named track or the viewport center, by meaning.
+- Don't ship a full-bleed header against a centered narrow card with mismatched inner widths.
+- Don't let a secondary region out-rank the primary job visually.
+- Don't grow containers “for balance”; oversized empty track is a bug.
+- Don't invent a second interaction pattern for the same kind of object.
+- Don't rename a surface without the content matching the new name.
 - Don't introduce purple-on-white themes, glow stacks, or a second display font.
 - Don't restyle `@repo/ui` parts with `bg-red-500`, arbitrary values, or unknown utility classes — shadcn lint forbids it.
 - Don't put stats strips, promo chips, or floating labels on hero media when composing promotional surfaces.
