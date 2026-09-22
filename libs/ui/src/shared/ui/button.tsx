@@ -5,17 +5,6 @@ import { kindByVariant, sizeBySize } from "./button-kinds";
 
 import type { Children } from "./types";
 
-type ButtonModel = Children &
-  Readonly<{
-    "aria-label"?: string;
-    action?: () => void | Promise<void>;
-    disabled?: boolean;
-    onClick?: BaseButtonProps["onClick"];
-    size?: "medium" | "small";
-    type: "button" | "submit";
-    variant?: "danger" | "primary" | "secondary";
-  }>;
-
 const clickHandlerFor = (
   model: Readonly<{
     action?: (() => void | Promise<void>) | undefined;
@@ -47,7 +36,16 @@ const Button = ({
   size = "medium",
   type,
   variant = "secondary",
-}: ButtonModel): ReactElement => {
+}: Children &
+  Readonly<{
+    "aria-label"?: string;
+    action?: () => void | Promise<void>;
+    disabled?: boolean;
+    onClick?: BaseButtonProps["onClick"];
+    size?: "medium" | "small";
+    type: "button" | "submit";
+    variant?: "danger" | "primary" | "secondary";
+  }>): ReactElement => {
   const buttonKind = kindByVariant[variant];
   const buttonSize = sizeBySize[size];
   const clickHandler = clickHandlerFor({ action, onClick, type });
