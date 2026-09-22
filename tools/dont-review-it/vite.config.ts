@@ -1,7 +1,13 @@
 import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { effectDiagnostics, intentValidation, lifecycle, testRun, modularBoundaries } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  intentValidation,
+  lifecycle,
+  testRun,
+  modularBoundaries,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -11,8 +17,14 @@ export default defineConfig({
       ...modularBoundaries,
       ...intentValidation,
       ...testRun,
-      "check:staged": { cache: false, command: "./src/features/dont-review-it/repository/check-staged.ts" },
-      "pr-affected": { cache: false, command: "./src/features/dont-review-it/repository/pr-affected.ts" },
+      "check:staged": {
+        cache: false,
+        command: "./src/features/dont-review-it/repository/check-staged.ts",
+      },
+      "pr-affected": {
+        cache: false,
+        command: "./src/features/dont-review-it/repository/pr-affected.ts",
+      },
       "clean:shared-task-cache": {
         cache: false,
         command: "./src/features/dont-review-it/repository/clean-shared-task-cache.ts",
@@ -43,7 +55,11 @@ export default defineConfig({
     unstubGlobals: true,
   },
   pack: {
-    entry: ["src/features/dont-review-it/cli.ts", "src/features/dont-review-it/canonical-literal-types/run-as-task.ts", "src/features/dont-review-it/index.ts"],
+    entry: [
+      "src/features/dont-review-it/cli.ts",
+      "src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
+      "src/features/dont-review-it/index.ts",
+    ],
     external: [/^vite-plus/],
     dts: { generator: "tsgo" },
   },

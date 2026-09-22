@@ -52,7 +52,11 @@ const forbidden = [
     'export const spanId = "0123456789abcdef";',
   ],
   ["github-token", "infra/cloudflare/src/features/cloudflare/probe-fixture.ts", githubTokenProbe],
-  ["aws-access-key", "infra/cloudflare/src/features/cloudflare/probe-fixture.ts", awsAccessKeyProbe],
+  [
+    "aws-access-key",
+    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    awsAccessKeyProbe,
+  ],
   [
     "base64-secret",
     "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
@@ -96,14 +100,26 @@ const forbidden = [
 ] as const;
 
 const allowed = [
-  ["tools/dev/src/features/dev/observe/probe.ts", 'export const origin = "https://probe.private-host.net";'],
+  [
+    "tools/dev/src/features/dev/observe/probe.ts",
+    'export const origin = "https://probe.private-host.net";',
+  ],
   [
     "tools/dev/src/features/dev/observe/probe.test.ts",
     'export const origin = "http://app.example.ts.net:3001/";',
   ],
-  ["tools/dev/src/features/dev/observe/probe.test.ts", 'export const host = "mac-mini.example.ts.net";'],
-  ["tools/dev/src/features/dev/observe/probe.test.ts", 'export const origin = "http://127.0.0.1:3001/";'],
-  ["tools/dev/src/features/dev/observe/probe.test.ts", 'export const origin = "https://api.cloudflare.com/x";'],
+  [
+    "tools/dev/src/features/dev/observe/probe.test.ts",
+    'export const host = "mac-mini.example.ts.net";',
+  ],
+  [
+    "tools/dev/src/features/dev/observe/probe.test.ts",
+    'export const origin = "http://127.0.0.1:3001/";',
+  ],
+  [
+    "tools/dev/src/features/dev/observe/probe.test.ts",
+    'export const origin = "https://api.cloudflare.com/x";',
+  ],
   [
     "tools/dev/src/features/dev/observe/probe.test.ts",
     'export const schema = "https://opentelemetry.io/schemas/1.20.0";',
@@ -112,7 +128,10 @@ const allowed = [
     "tools/dev/src/features/dev/observe/probe.test.ts",
     'export const registry = "https://registry.npmjs.org/vite-plus";',
   ],
-  ["tools/dev/src/features/dev/observe/probe.test.ts", 'export const docs = "https://192.0.2.10/status";'],
+  [
+    "tools/dev/src/features/dev/observe/probe.test.ts",
+    'export const docs = "https://192.0.2.10/status";',
+  ],
   ["tools/dev/src/features/dev/observe/probe.test.ts", 'export const event = "application.error";'],
   [
     "libs/db/src/features/db/probe-fixture.ts",
@@ -122,7 +141,10 @@ const allowed = [
     "tools/dev/src/features/dev/observe/probe.test.ts",
     'export const traceId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";',
   ],
-  ["tools/dev/src/features/dev/observe/probe.test.tsx", 'export const spanId = "0000000000000000";'],
+  [
+    "tools/dev/src/features/dev/observe/probe.test.tsx",
+    'export const spanId = "0000000000000000";',
+  ],
   [
     "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
     'export const authSecret = "verification-test-secret-0123456789abcdef";',
@@ -131,7 +153,10 @@ const allowed = [
     "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
     'export const headers = { authorization: "Bearer stack-verification-not-a-real-token" };',
   ],
-  ["infra/cloudflare/src/features/cloudflare/probe-fixture.ts", 'export const mail = "billing@example.com";'],
+  [
+    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    'export const mail = "billing@example.com";',
+  ],
 ] as const;
 
 describe("example values in tests and fixtures", () => {

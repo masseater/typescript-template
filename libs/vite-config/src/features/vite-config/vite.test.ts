@@ -114,7 +114,10 @@ describe("paraglideAppRun", () => {
             "messages/**",
             "project.inlang/**",
             { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-            { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts" },
+            {
+              base: "workspace",
+              pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts",
+            },
           ],
           output: [".paraglide/**"],
         },

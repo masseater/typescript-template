@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vite-plus/test";
+
 import { applications } from "./applications.ts";
 import {
   architectureKindOf,
@@ -6,8 +8,6 @@ import {
   modularBudgets,
   modularLayers,
 } from "./architecture.ts";
-
-import { describe, expect, it } from "vite-plus/test";
 
 describe("architecture kinds", () => {
   it("keeps FSD packages aligned with applications", () => {

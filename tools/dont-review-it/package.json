@@ -17,9 +17,9 @@
     "dont-review-it-canonical-literal-types": "./src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
     "dont-review-it-typecheck": "./src/features/dont-review-it/repository/typecheck-workspaces.ts",
     "quality-check-client": "./src/features/dont-review-it/repository/client-bundle.ts",
+    "quality-check-modular": "./src/features/dont-review-it/repository/modular-budgets-check.ts",
     "quality-check-react": "./src/features/dont-review-it/repository/react-doctor.ts",
-    "quality-check-thin-app-routes": "./src/features/dont-review-it/repository/thin-app-routes-check.ts",
-    "quality-check-modular": "./src/features/dont-review-it/repository/modular-budgets-check.ts"
+    "quality-check-thin-app-routes": "./src/features/dont-review-it/repository/thin-app-routes-check.ts"
   },
   "files": [
     "dist",

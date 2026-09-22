@@ -29,11 +29,15 @@ const allowedImports = [
 describe("retired state-package imports", () => {
   it.for(retiredImports)("rejects %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("retired-imports", { code, filename: "libs/ui/src/features/ui/probe.ts" })).toBe(true);
+    expect(
+      reported("retired-imports", { code, filename: "libs/ui/src/features/ui/probe.ts" }),
+    ).toBe(true);
   });
 
   it.for(allowedImports)("allows %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("retired-imports", { code, filename: "libs/ui/src/features/ui/probe.ts" })).toBe(false);
+    expect(
+      reported("retired-imports", { code, filename: "libs/ui/src/features/ui/probe.ts" }),
+    ).toBe(false);
   });
 });

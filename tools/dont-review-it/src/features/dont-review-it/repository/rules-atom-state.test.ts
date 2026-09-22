@@ -93,7 +93,11 @@ const unmanagedState = [
     "apps/service-member/src/probe.ts",
     'import { Atom } from "effect/unstable/reactivity"; export const keyword = Atom.searchParam("keyword");',
   ],
-  ["named-reexport", "libs/ui/src/features/ui/probe.ts", 'export { useState as useLocal } from "react";'],
+  [
+    "named-reexport",
+    "libs/ui/src/features/ui/probe.ts",
+    'export { useState as useLocal } from "react";',
+  ],
   ["star-reexport", "libs/ui/src/features/ui/probe.ts", 'export * from "react";'],
 ] as const;
 

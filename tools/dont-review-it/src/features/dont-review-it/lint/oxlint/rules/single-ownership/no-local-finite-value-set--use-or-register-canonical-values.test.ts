@@ -325,61 +325,91 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport const schema = z.enum(ENGINES);',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/direct-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/direct-engine-schema.ts",
+          ),
         },
         {
           code: 'import { SHADOW as LOCAL_ENGINES } from "./throttle/signals.ts";\nexport function schema(LOCAL_ENGINES: readonly ["shadow", "values"]) { return z.enum(LOCAL_ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
         },
       ],
       invalid: [
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport function schema(ENGINES: readonly ["shadow", "values"]) { return z.enum(ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport function schema() { const ENGINES = ["shadow", "values"] as const; return z.enum(ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport function schema(ENGINES: { shadow: null; values: null }) { return z.enum(Object.keys(ENGINES)); }',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
         {
           code: 'import { ENGINE_NAMES } from "./throttle/signals.ts";\nexport function schema(ENGINE_NAMES: readonly ["shadow", "values"]) { return z.enum(ENGINE_NAMES); }',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\ndeclare const ENGINES: readonly ["shadow", "values"];\nexport const schema = z.enum(ENGINES);',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
         {
           code: 'declare const ENGINE_NAMES: readonly ["shadow", "values"];\nexport const schema = z.enum(ENGINE_NAMES);',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
         {
           code: 'import { ENGINES as LOCAL_ENGINES } from "./throttle/signals.ts";\nexport function schema(LOCAL_ENGINES: readonly ["shadow", "values"]) { return z.enum(LOCAL_ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
         {
           code: 'import { ENGINE_NAMES as LOCAL_ENGINES } from "./throttle/signals.ts";\nexport function schema(LOCAL_ENGINES: readonly ["shadow", "values"]) { return z.enum(LOCAL_ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(repositoryRoot, "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts"),
+          filename: join(
+            repositoryRoot,
+            "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
+          ),
           errors: [{ messageId: "unregisteredCanonicalValuesImportRoute" }],
         },
       ],

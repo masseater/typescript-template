@@ -26,7 +26,10 @@ const textModule = (code: string, moduleId: string): string | undefined =>
 export default defineConfig({
   fmt: dontReviewItPreset.fmt({
     ignorePatterns: [...generatedFiles],
-    sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/features/ui/styles.css" },
+    sortTailwindcss: {
+      functions: ["cn", "cva"],
+      stylesheet: "./libs/ui/src/features/ui/styles.css",
+    },
   }),
   lint: dontReviewItPreset.lint(lintOptions),
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
@@ -79,7 +82,8 @@ export default defineConfig({
       },
       mutation: {
         cache: false,
-        command: "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker.ts",
+        command:
+          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker.ts",
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,

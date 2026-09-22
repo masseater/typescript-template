@@ -1,7 +1,13 @@
 import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { effectDiagnostics, intentValidation, lifecycle, testRun, modularBoundaries } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  intentValidation,
+  lifecycle,
+  testRun,
+  modularBoundaries,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({

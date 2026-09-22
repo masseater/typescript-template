@@ -7,7 +7,9 @@ import { Effect, FileSystem } from "effect";
 import { monitorStacks } from "./monitors.ts";
 import { layer } from "./platform.ts";
 
-const workflow = fileURLToPath(new URL("../../../../../.github/workflows/deploy.yml", import.meta.url));
+const workflow = fileURLToPath(
+  new URL("../../../../../.github/workflows/deploy.yml", import.meta.url),
+);
 const viteConfig = fileURLToPath(new URL("../../../vite.config.ts", import.meta.url));
 const stackBuilds = ["core", ...applications, ...monitorStacks].map(
   (unit) => `@repo/${unit}#build`,

@@ -81,18 +81,32 @@ const detected: readonly Case[] = [
     "no-app-to-app",
     { "apps/service-member/src/index.ts": 'export * from "@repo/service-admin";\n' },
   ],
-  ["no-shared-to-app", { "libs/auth/src/features/auth/index.ts": 'export * from "@repo/service-member";\n' }],
-  ["no-runtime-to-tools", { "libs/auth/src/features/auth/index.ts": 'export * from "@repo/dev";\n' }],
-  ["no-package-escape", { "libs/auth/src/features/auth/index.ts": 'export * from "../../db/src/index.ts";\n' }],
+  [
+    "no-shared-to-app",
+    { "libs/auth/src/features/auth/index.ts": 'export * from "@repo/service-member";\n' },
+  ],
+  [
+    "no-runtime-to-tools",
+    { "libs/auth/src/features/auth/index.ts": 'export * from "@repo/dev";\n' },
+  ],
   [
     "no-package-escape",
-    { "libs/auth/src/features/auth/index.ts": 'export type { Row } from "../../db/src/index.ts";\n' },
+    { "libs/auth/src/features/auth/index.ts": 'export * from "../../db/src/index.ts";\n' },
+  ],
+  [
+    "no-package-escape",
+    {
+      "libs/auth/src/features/auth/index.ts": 'export type { Row } from "../../db/src/index.ts";\n',
+    },
   ],
   [
     "no-database-admin-outside-admin",
     { "apps/service-member/src/index.ts": 'export * from "@repo/db/admin";\n' },
   ],
-  ["no-database-admin-outside-admin", { "libs/db/src/features/db/index.ts": 'export * from "./admin.ts";\n' }],
+  [
+    "no-database-admin-outside-admin",
+    { "libs/db/src/features/db/index.ts": 'export * from "./admin.ts";\n' },
+  ],
   [
     "no-database-operations-outside-tooling",
     { "apps/service-admin/src/index.ts": 'export * from "@repo/db/remote";\n' },
@@ -109,14 +123,20 @@ const detected: readonly Case[] = [
     "no-testing-entry-outside-tests",
     { "libs/auth/src/features/auth/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
-  ["no-testing-entry-outside-tests", { "libs/db/src/features/db/index.ts": 'export * from "./testing.ts";\n' }],
+  [
+    "no-testing-entry-outside-tests",
+    { "libs/db/src/features/db/index.ts": 'export * from "./testing.ts";\n' },
+  ],
   [
     "no-testing-entry-outside-tests",
     { "tools/dev/src/features/dev/index.ts": 'export * from "@repo/db/testing";\n' },
   ],
   [
     "no-testing-entry-outside-tests",
-    { "libs/runtime/src/features/runtime/index.ts": 'export * from "@repo/observability/testing";\n' },
+    {
+      "libs/runtime/src/features/runtime/index.ts":
+        'export * from "@repo/observability/testing";\n',
+    },
   ],
   [
     "no-development-dependency-in-shipped-code",
@@ -126,7 +146,10 @@ const detected: readonly Case[] = [
     "no-development-dependency-in-shipped-code",
     { "libs/ui/src/features/ui/index.ts": 'export type { Handler } from "msw";\n' },
   ],
-  ["no-raw-database-driver", { "libs/auth/src/features/auth/index.ts": 'export * from "drizzle-orm";\n' }],
+  [
+    "no-raw-database-driver",
+    { "libs/auth/src/features/auth/index.ts": 'export * from "drizzle-orm";\n' },
+  ],
   [
     "no-production-to-test",
     {
@@ -148,13 +171,17 @@ const detected: readonly Case[] = [
   ],
   [
     "no-deployment-config-in-shipped-code",
-    { "libs/config/src/features/config/index.ts": 'export * from "@repo/infra-cloudflare/deployment";\n' },
+    {
+      "libs/config/src/features/config/index.ts":
+        'export * from "@repo/infra-cloudflare/deployment";\n',
+    },
   ],
   [
     "no-deployment-config-in-shipped-code",
     {
       "libs/auth/src/features/auth/index.ts": 'export * from "./settings.ts";\n',
-      "libs/auth/src/features/auth/settings.ts": 'export * from "@repo/infra-cloudflare/deployment";\n',
+      "libs/auth/src/features/auth/settings.ts":
+        'export * from "@repo/infra-cloudflare/deployment";\n',
     },
   ],
   [
@@ -209,7 +236,10 @@ const accepted: readonly Case[] = [
     },
   ],
   ["no-shared-to-app", { "libs/auth/src/features/auth/index.ts": 'export * from "@repo/db";\n' }],
-  ["no-runtime-to-tools", { "tools/dev/src/features/dev/index.ts": 'export * from "@repo/db/remote";\n' }],
+  [
+    "no-runtime-to-tools",
+    { "tools/dev/src/features/dev/index.ts": 'export * from "@repo/db/remote";\n' },
+  ],
   [
     "no-package-escape",
     {
@@ -227,15 +257,22 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-object-storage-outside-runtime",
-    { "libs/runtime/src/features/runtime/file-store.ts": 'export * from "@repo/config/storage";\n' },
+    {
+      "libs/runtime/src/features/runtime/file-store.ts": 'export * from "@repo/config/storage";\n',
+    },
   ],
   [
     "no-object-storage-outside-runtime",
-    { "libs/vite-config/src/features/vite-config/vite.ts": 'export * from "@repo/config/storage";\n' },
+    {
+      "libs/vite-config/src/features/vite-config/vite.ts":
+        'export * from "@repo/config/storage";\n',
+    },
   ],
   [
     "no-object-storage-outside-runtime",
-    { "infra/cloudflare/src/features/cloudflare/app.ts": 'export * from "@repo/config/storage";\n' },
+    {
+      "infra/cloudflare/src/features/cloudflare/app.ts": 'export * from "@repo/config/storage";\n',
+    },
   ],
   [
     "no-testing-entry-outside-tests",
@@ -247,7 +284,10 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-testing-entry-outside-tests",
-    { "libs/runtime/src/features/runtime/index.test.ts": 'export * from "@repo/observability/testing";\n' },
+    {
+      "libs/runtime/src/features/runtime/index.test.ts":
+        'export * from "@repo/observability/testing";\n',
+    },
   ],
   [
     "no-development-dependency-in-shipped-code",
@@ -256,7 +296,10 @@ const accepted: readonly Case[] = [
         'import type { Handler } from "msw";\n\nexport type Mocked = Handler;\n',
     },
   ],
-  ["no-raw-database-driver", { "libs/db/src/features/db/index.ts": 'export * from "drizzle-orm";\n' }],
+  [
+    "no-raw-database-driver",
+    { "libs/db/src/features/db/index.ts": 'export * from "drizzle-orm";\n' },
+  ],
   [
     "no-production-to-test",
     {
@@ -277,7 +320,9 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-deployment-config-in-shipped-code",
-    { "tools/dev/src/features/dev/index.ts": 'export * from "@repo/infra-cloudflare/deployment";\n' },
+    {
+      "tools/dev/src/features/dev/index.ts": 'export * from "@repo/infra-cloudflare/deployment";\n',
+    },
   ],
   [
     "no-worker-runtime-in-node-test",

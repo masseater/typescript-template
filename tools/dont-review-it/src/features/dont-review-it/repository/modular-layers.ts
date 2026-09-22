@@ -9,9 +9,9 @@ const modularLayerSet: ReadonlySet<string> = new Set(modularLayers);
 const workspaceSource = (
   inspected: string,
 ): { readonly inside: string; readonly workspacePath: string } | undefined => {
-  const matched =
-    /\/(?<area>apps|libs|tools|infra)\/(?<name>[^/]+)\/src\/(?<inside>.+)$/u.exec(inspected)
-      ?.groups;
+  const matched = /\/(?<area>apps|libs|tools|infra)\/(?<name>[^/]+)\/src\/(?<inside>.+)$/u.exec(
+    inspected,
+  )?.groups;
   if (
     matched?.["area"] === undefined ||
     matched["name"] === undefined ||

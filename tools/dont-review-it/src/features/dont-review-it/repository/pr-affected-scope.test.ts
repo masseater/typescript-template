@@ -48,7 +48,9 @@ describe("affected test directories", () => {
 
   it("widens to the whole suite when any changed file is outside a workspace", () => {
     expect.hasAssertions();
-    expect(affectedTests(["libs/ui/src/features/ui/button.tsx", "vite.config.ts"], packages)).toStrictEqual({
+    expect(
+      affectedTests(["libs/ui/src/features/ui/button.tsx", "vite.config.ts"], packages),
+    ).toStrictEqual({
       kind: "all",
     });
     expect(affectedTests(["apps/missing/src/index.ts"], packages)).toStrictEqual({ kind: "all" });

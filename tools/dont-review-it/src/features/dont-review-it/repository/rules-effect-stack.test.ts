@@ -42,7 +42,10 @@ const forbiddenStacks = [
 ] as const;
 
 const allowedStacks = [
-  ["libs/runtime/src/features/runtime/http.ts", 'import { Elysia } from "elysia"; export const api = new Elysia();'],
+  [
+    "libs/runtime/src/features/runtime/http.ts",
+    'import { Elysia } from "elysia"; export const api = new Elysia();',
+  ],
   ["libs/shared/src/probe.ts", 'import type { Elysia } from "elysia"; export type Api = Elysia;'],
   ["libs/shared/src/probe.ts", 'export { helper } from "pre-elysia";'],
   ["libs/shared/src/probe.ts", 'export { helper } from "my-valibot";'],

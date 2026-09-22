@@ -59,10 +59,21 @@ const packageRootExport = (pkg) => {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const exportsField = manifest.exports;
   if (typeof exportsField === "string") return exportsField;
-  if (exportsField !== null && typeof exportsField === "object" && typeof exportsField["."] === "string") {
+  if (
+    exportsField !== null &&
+    typeof exportsField === "object" &&
+    typeof exportsField["."] === "string"
+  ) {
     return exportsField["."];
   }
   return undefined;
+};
+
+const hasNamedExport = (file) => {
+  if (!existsSync(file)) return false;
+  return /(?:^|\n)export\s+(?:\{|async\s+function|function|const|let|var|class|type|enum|interface|\*)/u.test(
+    readFileSync(file, "utf8"),
+  );
 };
 
 const ensureIndex = (pkg, featureDirectory) => {
@@ -73,12 +84,26 @@ const ensureIndex = (pkg, featureDirectory) => {
   const featurePrefix = `./src/features/${pkg.name}/`;
   if (typeof rootExport === "string" && rootExport.startsWith(featurePrefix)) {
     const relative = rootExport.slice(featurePrefix.length);
-    if (relative !== "index.ts" && relative !== "index.tsx") {
+    if (
+      relative !== "index.ts" &&
+      relative !== "index.tsx" &&
+      hasNamedExport(join(featureDirectory, relative))
+    ) {
       writeFileSync(indexTs, `export * from "./${relative}";\n`);
       return;
     }
   }
-  writeFileSync(indexTs, "export {};\n");
+  const modules = readdirSync(featureDirectory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /\.[cm]?[jt]sx?$/u.test(entry.name))
+    .map((entry) => entry.name)
+    .filter((name) => !/\.(?:test|spec|stories)\./u.test(name))
+    .filter((name) => name !== "index.ts" && name !== "index.tsx")
+    .toSorted()
+    .filter((name) => hasNamedExport(join(featureDirectory, name)));
+  if (modules.length === 0) {
+    throw new Error(`features/${pkg.name}: no named-export module for public API index`);
+  }
+  writeFileSync(indexTs, `export * from "./${modules[0]}";\n`);
 };
 
 const retargetPackageRootExport = (pkg) => {

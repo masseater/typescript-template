@@ -20,10 +20,13 @@ import {
 } from "./tasks.ts";
 import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
 
-const hooks: Readonly<Record<string, string>> = import.meta.glob("../../../../../../.vite-hooks/pre-*", {
-  eager: true,
-  import: "default",
-});
+const hooks: Readonly<Record<string, string>> = import.meta.glob(
+  "../../../../../../.vite-hooks/pre-*",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 const workflows: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../../../.github/workflows/*.yml",

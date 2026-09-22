@@ -77,7 +77,9 @@ const clientReachableModules = [
 ] as const;
 const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
-  ...serverOnlyPackages.map((packageDirectory) => `**/libs/${packageDirectory}/src/features/${packageDirectory}/**`),
+  ...serverOnlyPackages.map(
+    (packageDirectory) => `**/libs/${packageDirectory}/src/features/${packageDirectory}/**`,
+  ),
   "**/src/**/server-api/**",
 ];
 const clientReachableFiles: (string | RegExp)[] = [
@@ -190,12 +192,6 @@ const sliceBoundaries = {
   },
 } satisfies Tasks;
 
-const modularBoundaries = {
-  "check:modular": {
-    command: "quality-check-modular",
-    input: [...taskInput],
-  },
-} satisfies Tasks;
 
 const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
@@ -266,6 +262,13 @@ const lifecycle = (
   },
 });
 
+const modularBoundaries = {
+  "check:modular": {
+    command: "quality-check-modular",
+    input: [...taskInput],
+  },
+} satisfies Tasks;
+
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
@@ -306,8 +309,14 @@ const workspaceParaglideCompile = {
     { base: "workspace", pattern: "apps/*/messages/**" },
     { base: "workspace", pattern: "apps/*/project.inlang/**" },
     { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-    { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts" },
-    { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts" },
+    {
+      base: "workspace",
+      pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts",
+    },
+    {
+      base: "workspace",
+      pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+    },
   ],
   output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
 } satisfies NonNullable<Tasks[string]>;

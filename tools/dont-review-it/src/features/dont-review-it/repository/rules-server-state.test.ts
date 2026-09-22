@@ -125,6 +125,8 @@ describe("retired server-state imports", () => {
     ["react-query", 'export * from "react-query";'],
   ])("rejects %s imports", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("retired-imports", { code, filename: "libs/ui/src/features/ui/probe.ts" })).toBe(true);
+    expect(
+      reported("retired-imports", { code, filename: "libs/ui/src/features/ui/probe.ts" }),
+    ).toBe(true);
   });
 });

@@ -62,7 +62,6 @@ describe("alchemy stacks", () => {
     ]);
   });
 
-
   it("points application stacks at apps alchemy entrypoints", () => {
     expect.hasAssertions();
     for (const [stack, relative] of [

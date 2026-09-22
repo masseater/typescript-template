@@ -11,7 +11,10 @@ class BrokenSourceMapCheck extends Schema.TaggedError<BrokenSourceMapCheck>()(
   { message: Schema.String },
 ) {}
 
-const bundleEntry = paths.join(repositoryRoot, "libs/vite-config/src/features/vite-config/source-maps.ts");
+const bundleEntry = paths.join(
+  repositoryRoot,
+  "libs/vite-config/src/features/vite-config/source-maps.ts",
+);
 
 describe("failOnBrokenSourceMaps", () => {
   const it = test

@@ -1,13 +1,13 @@
 import type { KnipConfig, KnipConfiguration } from "knip";
 
-const modularFeaturePublicApi = ["src/features/*/index.ts", "src/features/*/index.tsx"] as const;
-
 const load = {
   entry: ["scenarios/*.ts!"],
   ignoreDependencies: ["k6"],
   project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
 };
 const loadCommands = ["src/features/load/cli.ts!", "src/features/load/ci.ts!"];
+
+const modularFeaturePublicApi = ["src/features/*/index.ts", "src/features/*/index.tsx"] as const;
 
 const workspaces = {
   ".": {
@@ -54,7 +54,10 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/observability": {
-    entry: ["src/features/observability/browser-testing.ts", "src/features/observability/server-testing.ts"],
+    entry: [
+      "src/features/observability/browser-testing.ts",
+      "src/features/observability/server-testing.ts",
+    ],
   },
   "libs/runtime": {
     entry: ["src/features/runtime/*-fixture.ts"],
@@ -138,8 +141,14 @@ const scripts = {
     "src/features/cloudflare/verify-origins.ts!",
   ],
   "infra/local": ["src/features/local/compose.ts!"],
-  "libs/db-local": ["src/features/db-local/bootstrap-local.ts!", "src/features/db-local/migrate-local.ts!"],
-  "libs/vite-config": ["src/features/vite-config/compile-paraglide.ts!", "src/features/vite-config/compile-workspace-paraglide.ts!"],
+  "libs/db-local": [
+    "src/features/db-local/bootstrap-local.ts!",
+    "src/features/db-local/migrate-local.ts!",
+  ],
+  "libs/vite-config": [
+    "src/features/vite-config/compile-paraglide.ts!",
+    "src/features/vite-config/compile-workspace-paraglide.ts!",
+  ],
   "tools/dev": [
     "src/features/dev/cli.ts!",
     "src/features/dev/prepare-browser.ts!",
@@ -225,7 +234,10 @@ const config = ({
         project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
-        entry: ["src/features/budget-monitor/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
+        entry: [
+          "src/features/budget-monitor/worker.ts!",
+          ...productionOnly(...scripts["infra/budget-monitor"]),
+        ],
         project: ["src/**/*.ts!"],
       },
       "infra/cloudflare": {

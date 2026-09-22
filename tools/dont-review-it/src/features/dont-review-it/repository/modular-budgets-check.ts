@@ -47,7 +47,9 @@ const directoryLines = (directory: string): Effect.Effect<number> =>
 const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[]> =>
   Effect.gen(function* scan() {
     const findings: string[] = [];
-    const appLines = yield* directoryLines(join(srcRoot, "app")).pipe(Effect.orElseSucceed(() => 0));
+    const appLines = yield* directoryLines(join(srcRoot, "app")).pipe(
+      Effect.orElseSucceed(() => 0),
+    );
     if (appLines > modularBudgets.app) {
       findings.push(
         `app: ${appLines} lines exceeds ${modularBudgets.app}. Move composition out into features/<name>.`,

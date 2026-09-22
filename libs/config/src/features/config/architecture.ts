@@ -8,14 +8,7 @@ export const fsdPackages = applications;
 export const modularLayers = ["app", "features", "shared"] as const;
 export type ModularLayer = (typeof modularLayers)[number];
 
-export const fsdLayers = [
-  "app",
-  "pages",
-  "widgets",
-  "features",
-  "entities",
-  "shared",
-] as const;
+export const fsdLayers = ["app", "pages", "widgets", "features", "entities", "shared"] as const;
 export type FsdLayer = (typeof fsdLayers)[number];
 
 export const modularBudgets = {

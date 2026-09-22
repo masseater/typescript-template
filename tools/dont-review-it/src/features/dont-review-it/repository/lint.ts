@@ -295,7 +295,10 @@ const lintOptions = {
       },
     },
     {
-      files: ["libs/db/src/features/db/testing.ts", "libs/monitor/src/features/monitor/monitor-fixture.ts"],
+      files: [
+        "libs/db/src/features/db/testing.ts",
+        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+      ],
       rules: {
         "typescript/no-namespace": LINT_SEVERITY.OFF,
       },

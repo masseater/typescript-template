@@ -21,9 +21,9 @@ describe("architecture coverage", () => {
       kind: architectureKindOf(directory),
     }));
     expect(kinds.every((entry) => entry.kind === "fsd" || entry.kind === "modular")).toBe(true);
-    expect(kinds.filter((entry) => entry.kind === "fsd").map((entry) => entry.directory)).toStrictEqual(
-      applications.map((app) => `apps/${app}`).toSorted(),
-    );
+    expect(
+      kinds.filter((entry) => entry.kind === "fsd").map((entry) => entry.directory),
+    ).toStrictEqual(applications.map((app) => `apps/${app}`).toSorted());
   });
 });
 

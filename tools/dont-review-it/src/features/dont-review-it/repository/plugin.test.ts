@@ -65,8 +65,16 @@ const forbiddenCode = [
     'import { createContext } from "react"; const Theme = createContext("light"); const Alias = Theme; export const Panel = () => <Alias.Provider value="dark" />;',
     "react-legacy",
   ],
-  ["libs/ui/src/features/ui/probe.tsx", 'export const Panel = () => <input ref="name" />;', "react-legacy"],
-  ["libs/ui/src/features/ui/probe.tsx", 'export const Panel = () => <input ref={"name"} />;', "react-legacy"],
+  [
+    "libs/ui/src/features/ui/probe.tsx",
+    'export const Panel = () => <input ref="name" />;',
+    "react-legacy",
+  ],
+  [
+    "libs/ui/src/features/ui/probe.tsx",
+    'export const Panel = () => <input ref={"name"} />;',
+    "react-legacy",
+  ],
   [
     "libs/ui/src/features/ui/probe.ts",
     'const Button = (label = "ok") => label; Button.defaultProps = { label: "ok" }; export { Button };',
@@ -130,13 +138,21 @@ const forbiddenCode = [
     'export { ThemeProvider } from "styled-components/native";',
     "retired-imports",
   ],
-  ["infra/cloudflare/src/features/cloudflare/probe.ts", 'export * from "@pulumi/aws";', "retired-imports"],
+  [
+    "infra/cloudflare/src/features/cloudflare/probe.ts",
+    'export * from "@pulumi/aws";',
+    "retired-imports",
+  ],
   [
     "tools/dev/src/features/dev/probe.ts",
     'import legacy = require("styled-components"); export { legacy };',
     "retired-imports",
   ],
-  ["tools/dev/src/features/dev/probe.ts", 'export const load = () => import("pulumi");', "retired-imports"],
+  [
+    "tools/dev/src/features/dev/probe.ts",
+    'export const load = () => import("pulumi");',
+    "retired-imports",
+  ],
   [
     "tools/dev/src/features/dev/probe.ts",
     "export const done = () => { process.exitCode = 0; };",
@@ -285,7 +301,11 @@ const opaqueSpecifiers = [
     "apps/service-member/src/probe.ts",
     "export const load = (target: string) => import(target);",
   ],
-  ["require", "libs/auth/src/features/auth/probe.ts", 'export const admin = require("@repo/db/admin");'],
+  [
+    "require",
+    "libs/auth/src/features/auth/probe.ts",
+    'export const admin = require("@repo/db/admin");',
+  ],
   [
     "require-alias",
     "libs/auth/src/features/auth/probe.ts",
@@ -307,10 +327,16 @@ const validBoundaries = [
   ["apps/service-admin/src/app/probe.ts", 'export * from "@repo/db/admin";'],
   ["apps/service-member/src/app/probe.ts", 'export * from "@repo/db/admin";'],
   ["apps/service-member/src/app/probe.ts", 'import "@repo/db/src/schema";'],
-  ["libs/ui/src/features/ui/probe.ts", 'export const send = () => fetch("/api", { redirect: "error" });'],
+  [
+    "libs/ui/src/features/ui/probe.ts",
+    'export const send = () => fetch("/api", { redirect: "error" });',
+  ],
   ["tools/dev/src/features/dev/probe.ts", 'export * from "@repo/db/remote";'],
   ["infra/cloudflare/src/features/cloudflare/probe.ts", 'export * from "@repo/db/remote";'],
-  ["infra/cloudflare/src/features/cloudflare/probe.ts", "export const load = (target: string) => import(target);"],
+  [
+    "infra/cloudflare/src/features/cloudflare/probe.ts",
+    "export const load = (target: string) => import(target);",
+  ],
   ["libs/db/src/features/db/remote.ts", 'export * from "./remote-operations";'],
   ["apps/service-member/src/app/probe.ts", 'export * from "@repo/db";'],
   ["apps/internal-dashboard/vite.config.ts", 'export { localDatabase } from "@repo/db/local";'],
@@ -326,8 +352,14 @@ const validBoundaries = [
     "libs/cli/src/features/cli/cli.ts",
     'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',
   ],
-  ["libs/cli/src/features/cli/cli.ts", "export const write = (line: string) => process.stdout.write(line);"],
-  ["libs/cli/src/features/cli/cli.ts", "export const warn = (line: string) => process.stderr.write(line);"],
+  [
+    "libs/cli/src/features/cli/cli.ts",
+    "export const write = (line: string) => process.stdout.write(line);",
+  ],
+  [
+    "libs/cli/src/features/cli/cli.ts",
+    "export const warn = (line: string) => process.stderr.write(line);",
+  ],
   ["libs/ui/src/features/ui/probe.ts", 'export * from "@repo/ui/button";'],
   [
     "libs/ui/src/features/ui/probe.tsx",

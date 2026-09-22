@@ -1,6 +1,12 @@
 import { architectureKindOf } from "@repo/config";
 
-import { filename, importVisitor, reportViolation, type LintContext, type Node } from "./lint-context.ts";
+import {
+  filename,
+  importVisitor,
+  reportViolation,
+  type LintContext,
+  type Node,
+} from "./lint-context.ts";
 import { workspaceSource } from "./modular-layers.ts";
 
 import type { Visitor } from "vite-plus/lint/plugins";

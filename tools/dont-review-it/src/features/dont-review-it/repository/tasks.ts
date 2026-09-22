@@ -5,7 +5,10 @@ import type { Tasks } from "@repo/vite-config";
 import type { ConfigEnv, UserConfig, UserConfigFnObject } from "vite-plus";
 
 const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> = import.meta.glob(
-  ["../../../../../../vite.config.ts", "../../../../../../{apps,libs,infra,tools}/*/vite.config.ts"],
+  [
+    "../../../../../../vite.config.ts",
+    "../../../../../../{apps,libs,infra,tools}/*/vite.config.ts",
+  ],
   { eager: true, import: "default" },
 );
 
