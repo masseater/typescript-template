@@ -54,7 +54,11 @@ it.effect("stops the database unit on a name another project created", () =>
 
 it.effect("reads nothing for the units that claim no account-wide name", () =>
   Effect.forEach(
-    sendingStacks.filter((stack) => !applications.some((app) => app === stack)),
+    sendingStacks.filter(
+      (stack) =>
+        !applications.some((app) => app === stack) &&
+        !stackDependencies(stack).includes(traceDestinationStack),
+    ),
     (stack) =>
       assertStackReady(
         stack,

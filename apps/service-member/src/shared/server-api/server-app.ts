@@ -97,4 +97,5 @@ const userApi = createApi(apiRoot)
   )
   .use(boardApi(api));
 
-export { userApi };
+export { userApi, userApi as app };
+export default userApi;
