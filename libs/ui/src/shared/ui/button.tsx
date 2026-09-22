@@ -1,12 +1,13 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { startTransition, type MouseEventHandler, type ReactElement } from "react";
 
 import { buttonVariants } from "./button-variants";
 
-import type { MouseEventHandler, ReactElement } from "react";
 import type { Children } from "./types";
 
 const Button = ({
   "aria-label": ariaLabel,
+  action,
   children,
   disabled,
   onClick,
@@ -16,6 +17,7 @@ const Button = ({
 }: Children &
   Readonly<{
     "aria-label"?: string;
+    action?: () => void | Promise<void>;
     disabled?: boolean;
     onClick?: MouseEventHandler;
     size?: "medium" | "small";
@@ -28,7 +30,15 @@ const Button = ({
       type={type}
       aria-label={ariaLabel}
       disabled={disabled}
-      onClick={onClick}
+      onClick={(click) => {
+        if (action !== undefined && type === "button") {
+          startTransition(() => {
+            void action();
+          });
+          return;
+        }
+        onClick?.(click);
+      }}
       className={buttonVariants({ size, variant })}
     >
       {children}
