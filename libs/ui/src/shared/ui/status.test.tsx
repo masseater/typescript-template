@@ -13,7 +13,7 @@ const pendingMarkup =
 describe("空の状態", () => {
   const it = test.extend("theEmptyStatus", () =>
     renderToStaticMarkup(
-      <StatusMessage variant={STATUS_VARIANT.empty}>一覧はまだありません。</StatusMessage>,
+      <StatusMessage variant={STATUS_VARIANT.empty}>{"一覧はまだありません。"}</StatusMessage>,
     ));
 
   it("待機を示すスピナーを出さない", ({ theEmptyStatus }) => {
@@ -25,7 +25,7 @@ describe("空の状態", () => {
 describe("処理中の状態", () => {
   const it = test.extend("thePendingStatus", () =>
     renderToStaticMarkup(
-      <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>,
+      <StatusMessage variant={STATUS_VARIANT.pending}>{"読み込み中です。"}</StatusMessage>,
     ));
 
   it("リクエストの途中はスピナーを出す", ({ thePendingStatus }) => {

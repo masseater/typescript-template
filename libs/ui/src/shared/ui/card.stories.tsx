@@ -10,8 +10,10 @@ export const Default = meta.story({
   args: {
     children: (
       <>
-        <Heading size="section">認証アプリ</Heading>
-        <StatusMessage variant={STATUS_VARIANT.success}>認証アプリは設定済みです。</StatusMessage>
+        <Heading size="section">{"認証アプリ"}</Heading>
+        <StatusMessage variant={STATUS_VARIANT.success}>
+          {"認証アプリは設定済みです。"}
+        </StatusMessage>
       </>
     ),
   },
