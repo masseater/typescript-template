@@ -12,7 +12,7 @@ export type CommandRunner = (commandLaunch: {
   readonly stdout: string;
 };
 
-export const defaultCommandRunner: CommandRunner = (commandLaunch) =>
+const defaultCommandRunner: CommandRunner = (commandLaunch) =>
   spawnChildSync({
     executable: commandLaunch.executable,
     handed: commandLaunch.handed,
