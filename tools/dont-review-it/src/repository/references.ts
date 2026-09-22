@@ -246,6 +246,15 @@ const callOrigins = (
   lookup: OriginLookup<NodeOf<"CallExpression">>,
 ): Origin[] => {
   const called = lookup.resolve(lookup.node.callee);
+  const propagated = called.find(
+    (origin) =>
+      origin.length === 2 &&
+      origin[0] === "react" &&
+      (origin[1] === "createContext" || origin[1] === "useEffectEvent"),
+  );
+  if (propagated !== undefined) {
+    return [propagated];
+  }
   if (
     called.some((origin) =>
       ["node:module.createRequire", "module.createRequire"].includes(origin.join(".")),

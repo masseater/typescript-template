@@ -1,0 +1,7 @@
+# 使う枝に入ってから待つ
+
+大本: https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-defer-await.md
+
+結果を使わない枝があるなら、その枝に入ってから待つ。入る前に待つと、すぐ戻る経路でも I/O が終わるまで止まる。
+
+安い同期条件で既に戻れるなら、その判定を待ちより前に置く。flag や権限の取得が条件の一部でも、ローカルな条件が偽なら取得しない。詳細は `async-cheap-condition-before-await.md`。

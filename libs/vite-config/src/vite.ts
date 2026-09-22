@@ -171,7 +171,10 @@ const taskInput = [
 ] as const;
 
 const sliceBoundaries = {
-  check: { command: "steiger src --fail-on-warnings", input: [...taskInput] },
+  check: {
+    command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
+    input: [...taskInput],
+  },
 } satisfies Tasks;
 
 const intentValidation = {

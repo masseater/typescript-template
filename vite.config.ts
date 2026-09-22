@@ -67,7 +67,16 @@ export default defineConfig({
         ],
         output: [],
       },
+      "check:text": {
+        command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
+        input: [
+          ...taskInput,
+          { base: "workspace", pattern: "apps/internal-dashboard/content/docs/**/*.md" },
+          { base: "workspace", pattern: ".textlintrc.json" },
+        ],
+      },
       ...lifecycle({
+        precommit: ["check:text"],
         prepush: ["knip", "check:canonical-literal-types"],
         premerge: ["test", "test:dev-server", "test:workers"],
         prerelease: ["mutation"],

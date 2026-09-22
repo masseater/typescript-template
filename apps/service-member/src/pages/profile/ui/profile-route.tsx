@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { ProfilePage } from "#pages/profile/index.ts";
+import { ProfilePage } from "./profile-page.tsx";
 
 import type { ReactElement } from "react";
 

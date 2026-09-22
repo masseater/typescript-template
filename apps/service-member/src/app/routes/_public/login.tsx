@@ -1,7 +1,7 @@
 import { redirectTarget } from "@repo/auth-ui";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { LoginRoute } from "./-login-route.tsx";
+import { LoginRoute } from "#pages/login/index.ts";
 
 const Route = createFileRoute("/_public/login")({
   component: LoginRoute,

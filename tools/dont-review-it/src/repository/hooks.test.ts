@@ -301,19 +301,19 @@ describe("lifecycle contents", () => {
 
   it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
-    expect(dependencies(".", "prepush")).toContain("check:code");
+    expect(dependencies(".", "precommit")).toContain("check:text");
+    expect(commands(".", "check:text")).toStrictEqual([
+      'textlint "apps/internal-dashboard/content/docs/**/*.md"',
+    ]);
+    expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toEqual(
-      expect.arrayContaining([
-        "check:code",
-        "check:effect",
-        "knip",
-        "check:client",
-        "check:imports",
-        "check:react",
-        "check:canonical-literal-types",
-      ]),
+      expect.arrayContaining(["knip", "check:canonical-literal-types", "check:text"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
+    expect(reachable(".", ["prepush"])).not.toContain("check:code");
+    expect(reachable(".", ["prepush"])).not.toContain("check:client");
+    expect(reachable(".", ["prepush"])).not.toContain("check:imports");
+    expect(reachable(".", ["prepush"])).not.toContain("check:react");
     expect(
       configuredDirectories.flatMap((directory) =>
         taskNames(directory).includes("check:effect")
