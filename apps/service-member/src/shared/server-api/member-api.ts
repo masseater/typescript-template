@@ -64,7 +64,7 @@ function memberApi(
     .use(leaveApi(api))
     .use(supportApi(api))
     .use(billingApi(api))
-    .onBeforeHandle(consentGate(api))
+    .beforeHandle(consentGate(api))
     .use(interviewApi(api))
     .use(jobsApi(api))
     .use(realtimeApi(api))
