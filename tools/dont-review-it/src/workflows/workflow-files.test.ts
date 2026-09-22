@@ -8,18 +8,27 @@ import { defaultWorkflowChecksConfig } from "./config.ts";
 import { readWorkflowDocuments } from "./workflow-files.ts";
 
 describe("readWorkflowDocuments", () => {
-  describe("a repository that has no workflow directory", () => {
-    const it = test.extend("documents", () =>
-      readWorkflowDocuments({
-        repositoryRoot: join(
-          mkdtempSync(join(tmpdir(), "dont-review-it-workflow-files-")),
-          "absent",
-        ),
-        config: defaultWorkflowChecksConfig,
-      }));
+  describe("a repository whose .github tree omits the workflows directory", () => {
+    test("fails instead of treating the missing tree as an empty scan", () => {
+      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-workflow-files-"));
+      mkdirSync(join(repositoryRoot, ".github"));
+      expect(() =>
+        readWorkflowDocuments({
+          repositoryRoot,
+          config: defaultWorkflowChecksConfig,
+        }),
+      ).toThrow(/ENOENT|no such file or directory/i);
+    });
+  });
 
-    it("reads nothing at all", ({ documents }) => {
-      expect(documents).toStrictEqual([]);
+  describe("a repository that has no .github tree", () => {
+    test("reads no workflows rather than inventing a CI layout", () => {
+      expect(
+        readWorkflowDocuments({
+          repositoryRoot: mkdtempSync(join(tmpdir(), "dont-review-it-workflow-files-")),
+          config: defaultWorkflowChecksConfig,
+        }),
+      ).toStrictEqual([]);
     });
   });
 
