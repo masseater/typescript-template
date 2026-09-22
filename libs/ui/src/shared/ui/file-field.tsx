@@ -30,7 +30,7 @@ const FileField = ({
     <div data-slot="field" className={fieldClassName}>
       <FormControl
         label={<span className={labelClassName}>{label}</span>}
-        caption={hint === undefined ? null : hint}
+        caption={hint ?? null}
       >
         <input
           aria-label={label}
