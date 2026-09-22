@@ -5,6 +5,7 @@ import {
   HttpsOrigin,
   type Application,
 } from "@repo/config";
+import { healthMonitorWorker, healthOriginKey } from "@repo/monitor/workers";
 import { Effect, Schema } from "effect";
 
 class HealthMonitorFailure extends Schema.TaggedError<HealthMonitorFailure>()(
@@ -13,19 +14,6 @@ class HealthMonitorFailure extends Schema.TaggedError<HealthMonitorFailure>()(
     code: Schema.Literals(["health_monitor_config_invalid", "health_monitor_origins_must_differ"]),
   },
 ) {}
-
-const healthMonitorWorker = {
-  className: "HealthMonitor",
-  cron: "37 * * * *",
-  event: "health_monitor",
-  name: "health",
-} as const;
-
-const healthOriginKey = {
-  [APPLICATION.wiki]: "INTERNAL_DASHBOARD_ORIGIN",
-  [APPLICATION.admin]: "SERVICE_ADMIN_ORIGIN",
-  [APPLICATION.user]: "SERVICE_MEMBER_ORIGIN",
-} as const satisfies Record<Application, string>;
 
 const HealthMonitorEnvironment = Schema.Struct({
   [healthOriginKey[APPLICATION.wiki]]: HttpsOrigin,

@@ -1,5 +1,5 @@
 import { CloudflareApiToken, CloudflareId } from "@repo/config";
-import { deploymentKey } from "@repo/observability/deployment-keys";
+import { errorMonitorEnv, errorMonitorWorker } from "@repo/monitor/workers";
 import { Effect, Schema } from "effect";
 
 class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("ErrorMonitorFailure", {
@@ -11,18 +11,6 @@ class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("Err
   ]),
   keys: Schema.Array(Schema.String),
 }) {}
-
-const errorMonitorWorker = {
-  className: "ErrorMonitor",
-  cron: "*/5 * * * *",
-  event: "error_monitor",
-  name: "errors",
-} as const;
-
-const errorMonitorEnv = {
-  accountId: deploymentKey.cloudflareAccountId,
-  observabilityToken: "OBSERVABILITY_TOKEN",
-} as const;
 
 const ErrorMonitorEnvironment = Schema.Struct({
   [errorMonitorEnv.accountId]: CloudflareId,
