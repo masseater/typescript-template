@@ -33,7 +33,6 @@
     "@effect/vitest": "catalog:",
     "@repo/vite-config": "workspace:*",
     "typescript": "catalog:",
-    "vite-plus": "catalog:",
-    "wrangler": "catalog:"
+    "vite-plus": "catalog:"
   }
 }
