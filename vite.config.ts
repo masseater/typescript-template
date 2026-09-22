@@ -12,8 +12,8 @@ import {
 import {
   effectDiagnostics,
   lifecycle,
-  paraglidePackageCompiles,
   taskInput,
+  workspaceParaglideCompile,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
@@ -32,10 +32,7 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
-      "compile:paraglide": {
-        command: [],
-        dependsOn: [...paraglidePackageCompiles],
-      },
+      "compile:paraglide": workspaceParaglideCompile,
       "check:client": {
         command: "quality-check-client",
         dependsOn: ["compile:paraglide"],
