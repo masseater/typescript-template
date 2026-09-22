@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "vp exec sync-base"
+            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "vp exec sync-base"
+            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
           }
         ]
       }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "vp exec sync-base"
+            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
           }
         ]
       }

@@ -12,7 +12,6 @@ const workspaces = {
     ignoreDependencies: [
       "@effect/language-service",
       "@effect/tsgo",
-      "@repo/ai-native",
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
