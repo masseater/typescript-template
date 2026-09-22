@@ -27,6 +27,8 @@
     "miniflare": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
+    "textlint": "catalog:",
+    "textlint-rule-preset-ai-words-ja": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
