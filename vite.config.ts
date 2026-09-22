@@ -76,7 +76,16 @@ export default defineConfig({
         output: [],
       },
       "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
+      "check:text": {
+        command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
+        input: [
+          ...taskInput,
+          { base: "workspace", pattern: "apps/internal-dashboard/content/docs/**/*.md" },
+          { base: "workspace", pattern: ".textlintrc.json" },
+        ],
+      },
       ...lifecycle({
+        precommit: ["check:text"],
         prepush: [
           "check:code",
           "check:effect",
