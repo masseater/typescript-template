@@ -5,7 +5,6 @@ import { httpStatus } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
 import {
-  AuthApps,
   assignAdminPermissionByEmail,
   assignRoleByEmail,
   bootstrapVerifiedAdmin,
