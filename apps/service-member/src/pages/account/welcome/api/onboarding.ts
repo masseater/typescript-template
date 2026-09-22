@@ -1,5 +1,5 @@
 import { apiData } from "@repo/runtime/client";
-import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { OnboardingView } from "#shared/contracts/index.ts";
@@ -26,9 +26,4 @@ const onboardingOptions = queryOptions({
   retry: false,
 });
 
-const saveOnboardingOptions = mutationOptions({
-  mutationFn: saveOnboardingStep,
-  mutationKey: ["onboarding", "save"],
-});
-
-export { loadOnboardingStep, onboardingOptions, saveOnboardingOptions, saveOnboardingStep };
+export { loadOnboardingStep, onboardingOptions, saveOnboardingStep };

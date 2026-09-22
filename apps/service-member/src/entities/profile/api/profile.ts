@@ -1,5 +1,5 @@
 import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
-import { mutationOptions, queryOptions } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -36,10 +36,5 @@ const profileOptions = queryOptions({
   retry: false,
 });
 
-const saveProfileOptions = mutationOptions({
-  mutationFn: saveProfile,
-  mutationKey: ["profile", "save"],
-});
-
-export { loadProfile, profileKey, profileOptions, saveProfile, saveProfileOptions };
+export { profileOptions, saveProfile };
 export type { Profile, ProfileDraft };

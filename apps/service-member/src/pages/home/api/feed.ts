@@ -16,4 +16,4 @@ function loadHomeFeed(): Promise<readonly FeedItem[]> {
 
 const homeFeedOptions = queryOptions({ queryFn: loadHomeFeed, queryKey: homeFeedKey });
 
-export { homeFeedOptions, loadHomeFeed };
+export { homeFeedOptions };
