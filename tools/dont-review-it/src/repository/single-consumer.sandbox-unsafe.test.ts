@@ -258,9 +258,6 @@ describe("repository single consumers", () => {
       "subpath:@repo/auth/testing",
       "subpath:@repo/runtime/contracts",
     ]);
-    expect(ids).toStrictEqual([
-      "subpath:@repo/auth/testing",
-      "subpath:@repo/runtime/contracts",
-    ]);
+    expect(ids).toStrictEqual(["subpath:@repo/auth/testing", "subpath:@repo/runtime/contracts"]);
   });
 });
