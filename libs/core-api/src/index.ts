@@ -25,3 +25,4 @@ export {
   SessionRequired,
   SessionUser,
 } from "./session-identity.ts";
+export { SessionRpcs, getSession } from "./session-rpcs.ts";

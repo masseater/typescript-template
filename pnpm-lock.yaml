@@ -477,6 +477,12 @@ importers:
 
   apps/core:
     dependencies:
+      '@repo/auth':
+        specifier: workspace:*
+        version: link:../../libs/auth
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
       '@repo/core-api':
         specifier: workspace:*
         version: link:../../libs/core-api
@@ -496,9 +502,6 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260916.1
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config

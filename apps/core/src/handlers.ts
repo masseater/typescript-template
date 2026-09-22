@@ -2,14 +2,13 @@ import {
   AdminRpcs,
   InternalRpcs,
   MemberProfileNotFound,
-  MemberProfileUpdate,
-  MemberProfileView,
   MemberRpcs,
   SessionIdentity,
-  SessionIdentityMiddleware,
-  SessionIdentityView,
-  SessionRequired,
+  type MemberProfileUpdate,
+  type MemberProfileView,
+  type SessionIdentityView,
 } from "@repo/core-api";
+import { APPLICATION } from "@repo/config";
 import { checkDatabase, Database, type DatabaseFailure } from "@repo/db";
 import { Effect } from "effect";
 import * as Layer from "effect/Layer";
@@ -17,14 +16,13 @@ import * as Layer from "effect/Layer";
 import type { Rpc } from "effect/unstable/rpc";
 import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 import type { CoreBindings } from "./bindings.ts";
-
-const sessionIdentityStub = (): Layer.Layer<SessionIdentityMiddleware> =>
-  Layer.succeed(SessionIdentityMiddleware, () => Effect.fail(new SessionRequired()));
+import { readMemberProfile, writeMemberProfile } from "./member-profile.ts";
+import { sessionIdentityMiddleware } from "./session-middleware.ts";
 
 const memberHandlers = (
   bindings: CoreBindings,
 ): Layer.Layer<
-  Rpc.ToHandler<RpcGroup.Rpcs<typeof MemberRpcs>> | SessionIdentityMiddleware
+  Rpc.ToHandler<RpcGroup.Rpcs<typeof MemberRpcs>> | Rpc.Middleware<RpcGroup.Rpcs<typeof MemberRpcs>>
 > =>
   Layer.mergeAll(
     MemberRpcs.toLayer({
@@ -33,33 +31,56 @@ const memberHandlers = (
       getMemberProfile: (): Effect.Effect<
         typeof MemberProfileView.Type,
         MemberProfileNotFound,
-        SessionIdentity
+        SessionIdentity | Database
       > =>
         Effect.gen(function* getMemberProfile() {
-          yield* SessionIdentity;
-          return yield* new MemberProfileNotFound();
-        }),
+          const identity = yield* SessionIdentity;
+          return yield* readMemberProfile(identity.user.id);
+        }).pipe(Effect.catchTag("DatabaseFailure", (failure) => Effect.die(failure))),
       getSession: (): Effect.Effect<typeof SessionIdentityView.Type, never, SessionIdentity> =>
         SessionIdentity,
       updateMemberProfile: (
-        _update: typeof MemberProfileUpdate.Type,
-      ): Effect.Effect<typeof MemberProfileView.Type, MemberProfileNotFound, SessionIdentity> =>
+        update: typeof MemberProfileUpdate.Type,
+      ): Effect.Effect<
+        typeof MemberProfileView.Type,
+        MemberProfileNotFound,
+        SessionIdentity | Database
+      > =>
         Effect.gen(function* updateMemberProfile() {
-          yield* SessionIdentity;
-          return yield* new MemberProfileNotFound();
-        }),
+          const identity = yield* SessionIdentity;
+          return yield* writeMemberProfile(identity.user.id, update);
+        }).pipe(Effect.catchTag("DatabaseFailure", (failure) => Effect.die(failure))),
     }),
-    sessionIdentityStub(),
+    sessionIdentityMiddleware(bindings, APPLICATION.user),
   ).pipe(Layer.provide(Database.layer(bindings.DB)));
 
-const adminHandlers = (): Layer.Layer<Rpc.Handler<"ready">> =>
-  AdminRpcs.toLayer({
-    ready: (): Effect.Effect<boolean> => Effect.succeed(true),
-  });
+const adminHandlers = (
+  bindings: CoreBindings,
+): Layer.Layer<
+  Rpc.ToHandler<RpcGroup.Rpcs<typeof AdminRpcs>> | Rpc.Middleware<RpcGroup.Rpcs<typeof AdminRpcs>>
+> =>
+  Layer.mergeAll(
+    AdminRpcs.toLayer({
+      getSession: (): Effect.Effect<typeof SessionIdentityView.Type, never, SessionIdentity> =>
+        SessionIdentity,
+      ready: (): Effect.Effect<boolean> => Effect.succeed(true),
+    }),
+    sessionIdentityMiddleware(bindings, APPLICATION.admin),
+  ).pipe(Layer.provide(Database.layer(bindings.DB)));
 
-const internalHandlers = (): Layer.Layer<Rpc.Handler<"ready">> =>
-  InternalRpcs.toLayer({
-    ready: (): Effect.Effect<boolean> => Effect.succeed(true),
-  });
+const internalHandlers = (
+  bindings: CoreBindings,
+): Layer.Layer<
+  | Rpc.ToHandler<RpcGroup.Rpcs<typeof InternalRpcs>>
+  | Rpc.Middleware<RpcGroup.Rpcs<typeof InternalRpcs>>
+> =>
+  Layer.mergeAll(
+    InternalRpcs.toLayer({
+      getSession: (): Effect.Effect<typeof SessionIdentityView.Type, never, SessionIdentity> =>
+        SessionIdentity,
+      ready: (): Effect.Effect<boolean> => Effect.succeed(true),
+    }),
+    sessionIdentityMiddleware(bindings, APPLICATION.wiki),
+  ).pipe(Layer.provide(Database.layer(bindings.DB)));
 
 export { adminHandlers, internalHandlers, memberHandlers };

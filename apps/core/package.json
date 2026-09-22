@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@repo/auth": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/core-api": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
@@ -11,7 +13,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@repo/config": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",

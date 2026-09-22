@@ -1,8 +1,9 @@
 import { AdminRpcs } from "@repo/core-api";
+import { APPLICATION } from "@repo/config";
 
 import { entrypointClass } from "./entrypoint.ts";
 import { adminHandlers } from "./handlers.ts";
 
-class AdminApi extends entrypointClass(AdminRpcs, adminHandlers) {}
+class AdminApi extends entrypointClass(AdminRpcs, APPLICATION.admin, adminHandlers) {}
 
 export { AdminApi };

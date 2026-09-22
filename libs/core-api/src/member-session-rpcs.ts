@@ -1,7 +1,12 @@
 import { Schema } from "effect";
 import { Rpc, RpcGroup } from "effect/unstable/rpc";
 
-import { SessionIdentityMiddleware, SessionIdentityView } from "./session-identity.ts";
+import {
+  SessionIdentityMiddleware,
+  SessionInvalid,
+  SessionRequired,
+} from "./session-identity.ts";
+import { SessionRpcs } from "./session-rpcs.ts";
 
 class MemberProfileNotFound extends Schema.TaggedError<MemberProfileNotFound>()(
   "MemberProfileNotFound",
@@ -22,34 +27,27 @@ const MemberProfileUpdate = Schema.Struct({
   socialLinks: Schema.Array(Schema.String),
 });
 
-const getSession = Rpc.make("getSession", {
-  payload: {},
-  success: SessionIdentityView,
-}).middleware(SessionIdentityMiddleware);
-
 const getMemberProfile = Rpc.make("getMemberProfile", {
-  error: MemberProfileNotFound,
+  error: Schema.Union([MemberProfileNotFound, SessionRequired, SessionInvalid]),
   payload: {},
   success: MemberProfileView,
 }).middleware(SessionIdentityMiddleware);
 
 const updateMemberProfile = Rpc.make("updateMemberProfile", {
-  error: MemberProfileNotFound,
+  error: Schema.Union([MemberProfileNotFound, SessionRequired, SessionInvalid]),
   payload: MemberProfileUpdate,
   success: MemberProfileView,
 }).middleware(SessionIdentityMiddleware);
 
 export class MemberSessionRpcs extends RpcGroup.make(
-  getSession,
   getMemberProfile,
   updateMemberProfile,
-) {}
+).merge(SessionRpcs) {}
 
 export {
   MemberProfileNotFound,
   MemberProfileUpdate,
   MemberProfileView,
   getMemberProfile,
-  getSession,
   updateMemberProfile,
 };
