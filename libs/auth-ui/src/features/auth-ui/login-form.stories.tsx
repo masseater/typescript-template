@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { expect, userEvent } from "storybook/test";
 
-import preview, { playTask } from "../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { LoginForm } from "./login-form";
 
 const meta = preview.meta({ args: { onAuthenticated: () => undefined }, component: LoginForm });

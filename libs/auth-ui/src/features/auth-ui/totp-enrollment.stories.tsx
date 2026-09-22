@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect, userEvent } from "storybook/test";
 
-import preview, { playTask } from "../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { TotpEnrollment } from "./totp-enrollment";
 
 const meta = preview.meta({

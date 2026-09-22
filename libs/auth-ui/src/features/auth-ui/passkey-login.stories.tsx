@@ -1,4 +1,4 @@
-import preview from "../storybook/preview";
+import preview from "../../../storybook/preview";
 import { PasskeyLogin } from "./passkey-login";
 
 const meta = preview.meta({

@@ -1,4 +1,4 @@
-import preview from "../storybook/preview";
+import preview from "../../../storybook/preview";
 import { ChallengeCodeField } from "./challenge-code-field";
 
 const meta = preview.meta({

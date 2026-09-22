@@ -1,4 +1,4 @@
-import preview from "../storybook/preview";
+import preview from "../../../storybook/preview";
 import { BackupCodeList } from "./backup-code-list";
 
 const meta = preview.meta({ component: BackupCodeList });

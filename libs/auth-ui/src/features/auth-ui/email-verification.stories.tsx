@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect } from "storybook/test";
 
-import preview, { playTask } from "../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { EmailVerification } from "./email-verification";
 
 const meta = preview.meta({ component: EmailVerification });

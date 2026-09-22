@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { expect } from "storybook/test";
 
-import preview, { playTask } from "../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { MFASettings } from "./mfa";
 
 const listPath = "/api/auth/passkey/list-user-passkeys";
