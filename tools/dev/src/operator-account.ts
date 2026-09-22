@@ -2,7 +2,7 @@ import { NodeHttpServer } from "@effect/platform-node";
 import { Auth } from "@repo/auth";
 import { APPLICATION, applicationOrigins, mailpitSendPath } from "@repo/config";
 import { Database } from "@repo/db";
-import { localDatabasePlatform } from "@repo/db-local";
+import { localDatabasePlatform } from "@repo/db-local/platform";
 import { ensureAdminRole } from "@repo/db/bootstrap";
 import { createEmailVerificationToken } from "better-auth/api";
 import {
