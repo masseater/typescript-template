@@ -13,7 +13,6 @@
     "./testing": "./src/features/runtime/app-fixture.ts",
     "./security": "./src/features/runtime/security.ts"
   },
-  "scripts": {},
   "dependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/sql-d1": "4.0.0-rc.112",

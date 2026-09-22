@@ -1,4 +1,5 @@
 import { env as processEnvironment } from "node:process";
+import { pathToFileURL } from "node:url";
 
 import { Stage, inMemoryState } from "alchemy";
 import { providers } from "alchemy/Cloudflare";
@@ -7,6 +8,7 @@ import { toEffect } from "alchemy/Test/Core";
 import { Effect, Predicate, References, Result, Schema } from "effect";
 
 import { repositoryRoot } from "./artifacts.ts";
+import { stackEntrypoint } from "./stack-entrypoints.ts";
 import { stackName } from "./stacks.ts";
 import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
 
@@ -260,7 +262,7 @@ function stackProgram(module: unknown): StackProgram | undefined {
 const compileStack = Effect.fn("compileStack")(function* compileStack(stack: StackName) {
   const module: unknown = yield* Effect.tryPromise({
     catch: (cause) => inventoryFailure("stack_module_invalid", stack, cause),
-    try: (): Promise<unknown> => import(`./${stack}.ts`),
+    try: (): Promise<unknown> => import(pathToFileURL(stackEntrypoint(stack)).href),
   });
   const program = stackProgram(module);
   if (program === undefined) {

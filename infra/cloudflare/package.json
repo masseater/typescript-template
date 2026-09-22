@@ -12,8 +12,11 @@
   },
   "type": "module",
   "exports": {
+    "./application": "./src/features/cloudflare/app.ts",
+    "./core-program": "./src/features/cloudflare/core-program.ts",
     "./deployment": "./src/features/cloudflare/deployment.ts",
-    "./lint-overrides": "./src/features/cloudflare/lint-overrides.ts"
+    "./lint-overrides": "./src/features/cloudflare/lint-overrides.ts",
+    "./stacks": "./src/features/cloudflare/stacks.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

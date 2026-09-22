@@ -9,7 +9,6 @@
     "./http-status": "./src/features/observability/http-status.ts",
     "./deployment-keys": "./src/features/observability/deployment-keys.ts"
   },
-  "scripts": {},
   "dependencies": {
     "@repo/config": "workspace:*",
     "effect": "catalog:",

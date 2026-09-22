@@ -5,7 +5,6 @@
   "exports": {
     ".": "./src/features/auth/index.ts"
   },
-  "scripts": {},
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.5",
     "@better-auth/mcp": "1.7.5",

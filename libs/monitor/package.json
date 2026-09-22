@@ -6,7 +6,6 @@
     ".": "./src/features/monitor/index.ts",
     "./vite": "./src/features/monitor/vite.ts"
   },
-  "scripts": {},
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",

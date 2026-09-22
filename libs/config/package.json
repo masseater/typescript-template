@@ -12,7 +12,6 @@
     "./worker": "./src/features/config/worker.ts",
     "./identity": "./src/features/config/identity.ts"
   },
-  "scripts": {},
   "dependencies": {
     "effect": "catalog:"
   },

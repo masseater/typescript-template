@@ -3,7 +3,6 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   moduleSpecifiers,
   repositorySingleConsumerFindings,
-  singleConsumerAllowlist,
   singleConsumerFindings,
   type SourceText,
   type WorkspaceManifest,
@@ -251,10 +250,9 @@ describe("single consumer findings", () => {
 });
 
 describe("repository single consumers", () => {
-  it("matches the allowlist and nothing outside it", () => {
+  it("reports no single-consumer packages or subpaths", () => {
     expect.hasAssertions();
     const ids = repositorySingleConsumerFindings().map((finding) => finding.id);
-    expect(singleConsumerAllowlist).toStrictEqual(["subpath:@repo/db-local/platform"]);
-    expect(ids).toStrictEqual(["subpath:@repo/db-local/platform"]);
+    expect(ids).toStrictEqual([]);
   });
 });

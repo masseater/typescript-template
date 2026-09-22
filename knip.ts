@@ -104,7 +104,6 @@ const workspaces = {
 };
 
 const cloudflareStacks = [
-  "src/features/cloudflare/core.ts!",
   "src/features/cloudflare/database.ts!",
   "src/features/cloudflare/flagship.ts!",
   "src/features/cloudflare/email.ts!",
@@ -113,12 +112,10 @@ const cloudflareStacks = [
   "src/features/cloudflare/budget-monitor.ts!",
   "src/features/cloudflare/error-monitor.ts!",
   "src/features/cloudflare/health-monitor.ts!",
-  "src/features/cloudflare/service-member.ts!",
-  "src/features/cloudflare/service-admin.ts!",
-  "src/features/cloudflare/internal-dashboard.ts!",
   "src/features/cloudflare/storage.ts!",
   "src/features/cloudflare/zone.ts!",
   "src/features/cloudflare/bindings.ts!",
+  "src/features/cloudflare/stack-entrypoints.ts!",
 ];
 
 const application = {
@@ -202,12 +199,13 @@ const config = ({
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
       "apps/*": app,
       "apps/core": {
-        entry: ["src/features/core/worker.ts!"],
+        entry: ["alchemy.run.ts!", "src/features/core/worker.ts!"],
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
       "apps/internal-dashboard": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: [
           "src/**/*.{ts,tsx,mdx}!",
           "src/**/*.css",
@@ -216,10 +214,12 @@ const config = ({
       },
       "apps/service-admin": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: ["src/**/*.{ts,tsx}!"],
       },
       "apps/service-member": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
@@ -250,7 +250,7 @@ const config = ({
       },
       "libs/vite-config": {
         entry: [
-          "src/features/vite-config/cloudflare-workers-loader.mjs",
+          "src/features/vite-config/cloudflare-workers-loader.ts",
           "src/features/vite-config/cloudflare-workers-stub.mjs",
           "src/features/vite-config/cloudflare-workflows-stub.mjs",
           ...productionOnly(...scripts["libs/vite-config"]),

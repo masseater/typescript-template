@@ -1,11 +1,10 @@
-const { fileURLToPath } = process.getBuiltinModule("url");
-
 import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 
 import { ArtifactWrites } from "./artifacts.ts";
 import { stateStore } from "./deployment-access.ts";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
+import { stackEntrypoint } from "./stack-entrypoints.ts";
 import { assertStackReady } from "./stack-guards.ts";
 
 import type { ProgressEvent } from "alchemy/Alchemist";
@@ -47,7 +46,7 @@ const planStack = Effect.fn("planStack")(function* planStack(
   const snapshot = yield* StackRoute.plan({
     operation: "deploy",
     target: {
-      entrypoint: fileURLToPath(new URL(`${stack}.ts`, import.meta.url)),
+      entrypoint: stackEntrypoint(stack),
       envFile: deployment.secrets.filename,
       stage: deployment.config.prefix,
     },
