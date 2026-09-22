@@ -154,11 +154,11 @@ Tailwind spacing scale stays default (`--spacing` is not overridden). Rhythm is 
 
 Named containers only. Pick the **smallest** track that fits the job; do not invent `max-w-[37rem]` or stretch everything to `wide`.
 
-| Track | Token | Job |
-| --- | --- | --- |
+| Track  | Token                  | Job                                                        |
+| ------ | ---------------------- | ---------------------------------------------------------- |
 | Column | `max-w-column` (28rem) | Single-task auth, contact, verify — one form, one decision |
-| Page | `max-w-page` (48rem) | Default reading / working main |
-| Wide | `max-w-wide` (64rem) | Dense tables or multi-column lists only |
+| Page   | `max-w-page` (48rem)   | Default reading / working main                             |
+| Wide   | `max-w-wide` (64rem)   | Dense tables or multi-column lists only                    |
 
 Steps sit near a 3:2 / 4:3 ladder from the column unit (28 → 48 → 64). New widths must register in `libs/ui/src/styles.css` with that kind of ratio rationale — harmonic or golden steps from an existing token — never a one-off.
 
