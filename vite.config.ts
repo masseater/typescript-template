@@ -9,7 +9,7 @@ import {
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle, paraglidePackageCompiles, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -42,6 +42,7 @@ export default defineConfig({
       ...effectDiagnostics,
       "check:types": {
         command: "dont-review-it-typecheck",
+        dependsOn: [...paraglidePackageCompiles],
         input: [...taskInput],
       },
       "check:imports":
@@ -66,6 +67,7 @@ export default defineConfig({
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
+        dependsOn: [...paraglidePackageCompiles],
         input: [
           ...taskInput,
           "!coverage/**",

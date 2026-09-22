@@ -7,6 +7,7 @@ import {
   effectDiagnostics,
   effectRun,
   lifecycle,
+  paraglideAppRun,
   sliceBoundaries,
   taskInput,
 } from "./vite.ts";
@@ -91,6 +92,21 @@ describe("appRun", () => {
           premerge: ["build", "check:dev"],
         }),
       },
+    });
+  });
+});
+
+describe("paraglideAppRun", () => {
+  const it = test.extend("localizedApplicationRun", () => paraglideAppRun);
+
+  it("compiles message catalogs before typecheck", ({ localizedApplicationRun }) => {
+    expect(localizedApplicationRun.tasks["check:effect"]).toStrictEqual({
+      ...effectDiagnostics["check:effect"],
+      dependsOn: ["compile:paraglide"],
+    });
+    expect(localizedApplicationRun.tasks["compile:paraglide"]).toMatchObject({
+      command: "../../libs/vite-config/src/compile-paraglide.ts",
+      output: [".paraglide/**"],
     });
   });
 });
