@@ -28,4 +28,4 @@ const load: LoadHookSync = (url, loadContext, nextLoad) => {
   return nextLoad(url, loadContext);
 };
 
-export { load, resolve, workersStub, workflowsStub };
+export { load, resolve };

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { load, resolve, workersStub, workflowsStub } from "./cloudflare-workers-loader.ts";
+import { load, resolve } from "./cloudflare-workers-loader.ts";
 
 import type { LoadHookContext, ResolveHookContext } from "node:module";
 
@@ -17,35 +17,54 @@ const emptyLoadContext = {
 
 describe("cloudflare workers resolve hook", () => {
   const it = test
-    .extend("workersExact", () =>
-      resolve("cloudflare:workers", emptyResolveContext, () => ({ url: "miss" })))
-    .extend("workersSubpath", () =>
-      resolve("cloudflare:workers/app", emptyResolveContext, () => ({ url: "miss" })),
-    )
-    .extend("workflowsExact", () =>
-      resolve("cloudflare:workflows", emptyResolveContext, () => ({ url: "miss" })),
-    )
-    .extend("workflowsSubpath", () =>
-      resolve("cloudflare:workflows/app", emptyResolveContext, () => ({ url: "miss" })),
-    )
+    .extend("workersExact", () => {
+      const resolved = resolve("cloudflare:workers", emptyResolveContext, () => ({ url: "miss" }));
+      return (
+        resolved.shortCircuit === true && resolved.url.endsWith("/cloudflare-workers-stub.mjs")
+      );
+    })
+    .extend("workersSubpath", () => {
+      const resolved = resolve("cloudflare:workers/app", emptyResolveContext, () => ({
+        url: "miss",
+      }));
+      return (
+        resolved.shortCircuit === true && resolved.url.endsWith("/cloudflare-workers-stub.mjs")
+      );
+    })
+    .extend("workflowsExact", () => {
+      const resolved = resolve("cloudflare:workflows", emptyResolveContext, () => ({
+        url: "miss",
+      }));
+      return (
+        resolved.shortCircuit === true && resolved.url.endsWith("/cloudflare-workflows-stub.mjs")
+      );
+    })
+    .extend("workflowsSubpath", () => {
+      const resolved = resolve("cloudflare:workflows/app", emptyResolveContext, () => ({
+        url: "miss",
+      }));
+      return (
+        resolved.shortCircuit === true && resolved.url.endsWith("/cloudflare-workflows-stub.mjs")
+      );
+    })
     .extend("forwarded", () =>
       resolve("effect", emptyResolveContext, () => ({ url: "effect-url" })),
     );
 
   it("stubs cloudflare:workers", ({ workersExact }) => {
-    expect(workersExact).toStrictEqual({ shortCircuit: true, url: workersStub });
+    expect(workersExact).toBe(true);
   });
 
   it("stubs cloudflare:workers subpaths", ({ workersSubpath }) => {
-    expect(workersSubpath).toStrictEqual({ shortCircuit: true, url: workersStub });
+    expect(workersSubpath).toBe(true);
   });
 
   it("stubs cloudflare:workflows", ({ workflowsExact }) => {
-    expect(workflowsExact).toStrictEqual({ shortCircuit: true, url: workflowsStub });
+    expect(workflowsExact).toBe(true);
   });
 
   it("stubs cloudflare:workflows subpaths", ({ workflowsSubpath }) => {
-    expect(workflowsSubpath).toStrictEqual({ shortCircuit: true, url: workflowsStub });
+    expect(workflowsSubpath).toBe(true);
   });
 
   it("forwards other specifiers", ({ forwarded }) => {
@@ -55,17 +74,28 @@ describe("cloudflare workers resolve hook", () => {
 
 describe("cloudflare workers load hook", () => {
   const it = test
-    .extend("workersLoad", () =>
-      load("cloudflare:workers", emptyLoadContext, (url, loadOptions) => ({
+    .extend("workersLoad", () => {
+      const loaded = load("cloudflare:workers", emptyLoadContext, (url, loadOptions) => ({
         format: loadOptions?.format ?? null,
         source: url,
-      })))
-    .extend("workflowsLoad", () =>
-      load("cloudflare:workflows", emptyLoadContext, (url, loadOptions) => ({
+      }));
+      return (
+        loaded.format === "module" &&
+        typeof loaded.source === "string" &&
+        loaded.source.endsWith("/cloudflare-workers-stub.mjs")
+      );
+    })
+    .extend("workflowsLoad", () => {
+      const loaded = load("cloudflare:workflows", emptyLoadContext, (url, loadOptions) => ({
         format: loadOptions?.format ?? null,
         source: url,
-      })),
-    )
+      }));
+      return (
+        loaded.format === "module" &&
+        typeof loaded.source === "string" &&
+        loaded.source.endsWith("/cloudflare-workflows-stub.mjs")
+      );
+    })
     .extend("forwardedLoad", () =>
       load("file:///app.ts", emptyLoadContext, (url, loadOptions) => ({
         format: loadOptions?.format ?? null,
@@ -74,11 +104,11 @@ describe("cloudflare workers load hook", () => {
     );
 
   it("loads the workers stub for cloudflare:workers urls", ({ workersLoad }) => {
-    expect(workersLoad).toStrictEqual({ format: "module", source: workersStub });
+    expect(workersLoad).toBe(true);
   });
 
   it("loads the workflows stub for cloudflare:workflows urls", ({ workflowsLoad }) => {
-    expect(workflowsLoad).toStrictEqual({ format: "module", source: workflowsStub });
+    expect(workflowsLoad).toBe(true);
   });
 
   it("forwards other urls", ({ forwardedLoad }) => {
