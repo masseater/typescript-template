@@ -20,9 +20,7 @@ export const Toggles = meta.story({
     Effect.runPromise(
       Effect.gen(function* toggleCheckbox() {
         yield* playTask(() => userEvent.click(canvas.getByRole("checkbox")));
-        yield* playTask(() =>
-          expect(args.onCheckedChange).toHaveBeenCalledWith(true, expect.anything()),
-        );
+        yield* playTask(() => expect(args.onCheckedChange).toHaveBeenCalledWith(true));
       }),
     ),
 });

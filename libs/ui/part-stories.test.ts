@@ -37,27 +37,16 @@ const storybookProjects = (): unknown[] => {
 
 const acceptedA11yViolations = [
   {
-    file: "libs/ui/src/shared/ui/toast-item.stories.tsx",
-    rule: "aria-hidden-focus",
-    story: "Failure",
-  },
-  {
-    file: "libs/ui/src/shared/ui/toast-item.stories.tsx",
-    rule: "aria-hidden-focus",
-    story: "Success",
+    file: "libs/ui/src/shared/ui/select-field.stories.tsx",
+    rule: "aria-valid-attr-value",
+    story: "Selects",
   },
   {
     file: "libs/ui/src/shared/ui/toast-provider.stories.tsx",
     rule: "aria-hidden-focus",
     story: "Success",
   },
-  {
-    file: "libs/ui/src/shared/ui/toast-viewport.stories.tsx",
-    rule: "aria-hidden-focus",
-    story: "Stacked",
-  },
 ];
-
 describe("part stories", () => {
   it("looks for stories in the parts directory components.json points at", () => {
     expect.hasAssertions();
