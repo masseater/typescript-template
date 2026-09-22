@@ -16,9 +16,9 @@ const SelectField = ({
   options: readonly Readonly<{ label: string; value: string }>[];
   value: string;
 }>): ReactElement => {
-  const selected: SelectValue = options
-    .filter((choice) => choice.value === value)
-    .map((choice) => ({ id: choice.value, label: choice.label }));
+  const match = options.find((choice) => choice.value === value);
+  const selected: SelectValue =
+    match === undefined ? [] : [{ id: match.value, label: match.label }];
   return (
     <FormControl label={label}>
       <Select
