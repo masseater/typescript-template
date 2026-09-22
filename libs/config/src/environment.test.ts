@@ -77,9 +77,7 @@ describe("readEnvironment", () => {
     const it = test.extend("refusal", () => {
       const { MAILPIT_URL: _mailpit, ...remoteBindings } = localBindings;
       return Effect.runPromise(
-        Effect.flip(
-          readEnvironment({ ...remoteBindings, APP_ORIGIN: "https://app.example.test" }),
-        ),
+        Effect.flip(readEnvironment({ ...remoteBindings, APP_ORIGIN: "https://app.example.test" })),
       );
     });
 
