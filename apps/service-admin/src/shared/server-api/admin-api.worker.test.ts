@@ -1,8 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
 import { signedSessionCookie } from "@repo/auth/testing";
-import { ACCOUNT_STATE, ADMIN_PERMISSION, APPLICATION, ROLE, httpStatus } from "@repo/config";
+import { ACCOUNT_STATE, ADMIN_PERMISSION, APPLICATION, ROLE } from "@repo/config";
 import { Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
+import { httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";

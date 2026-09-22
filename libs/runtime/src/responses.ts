@@ -1,4 +1,9 @@
-import {googleAnalyticsConnectSrc, googleAnalyticsImgSrc, googleAnalyticsScriptSrc, httpStatus} from "@repo/config";
+import {
+  googleAnalyticsConnectSrc,
+  googleAnalyticsImgSrc,
+  googleAnalyticsScriptSrc,
+  httpStatus,
+} from "@repo/config";
 import { strictTransportSecurity } from "@repo/runtime/security";
 
 const nonceBytes = 16;

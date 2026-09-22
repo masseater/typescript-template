@@ -1,6 +1,6 @@
-import { httpStatus } from "@repo/config";
 import { assert, it } from "@effect/vitest";
 import { inquiryStaff, type ReadOnlyInquiryStaff } from "@repo/db/inquiry-staff";
+import { httpStatus } from "@repo/config";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { Effect } from "effect";

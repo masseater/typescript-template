@@ -1,4 +1,3 @@
-import { httpStatus } from "@repo/config";
 const httpStatus = {
   accepted: 202,
   badRequest: 400,

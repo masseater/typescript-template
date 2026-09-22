@@ -1,4 +1,13 @@
-import {ADMIN_PERMISSION, APPLICATION, ROLE, STAFF_PERMISSION, type AccountPermission, type Application, type Role, httpStatus} from "@repo/config";
+import {
+  ADMIN_PERMISSION,
+  APPLICATION,
+  ROLE,
+  STAFF_PERMISSION,
+  type AccountPermission,
+  type Application,
+  type Role,
+  httpStatus,
+} from "@repo/config";
 import {
   EmptyTestDatabase,
   TestDatabase,

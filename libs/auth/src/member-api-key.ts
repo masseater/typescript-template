@@ -1,5 +1,6 @@
-import { memberApiKeyHeader, memberApiKeyReadPermissions, httpStatus } from "@repo/config";
+import { memberApiKeyHeader, memberApiKeyReadPermissions } from "@repo/config";
 import { findUser } from "@repo/db";
+import { httpStatus } from "@repo/config";
 import { Effect } from "effect";
 
 import { ApiKeyWriteForbidden } from "./api-key-write-forbidden.ts";

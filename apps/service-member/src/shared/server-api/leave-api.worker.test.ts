@@ -1,6 +1,7 @@
 import { assert, it } from "@effect/vitest";
-import { APPLICATION, httpStatus } from "@repo/config";
+import { APPLICATION } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
+import { httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
