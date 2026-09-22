@@ -1,0 +1,4 @@
+{
+  "install": "mise install && bash .cursor/scripts/seed-mergify-auth.sh",
+  "start": "bash .cursor/scripts/seed-mergify-auth.sh"
+}
