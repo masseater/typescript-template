@@ -54,6 +54,9 @@ jobs:
             summary "### \`${method} ${path}\` → HTTP \`${code}\`"
             summary '```json'
             if [ -s "$tmp" ]; then
+              if [ "$path" = "/application" ]; then
+                cp "$tmp" /tmp/mergify-application.json
+              fi
               tee -a "$report" >> "$GITHUB_STEP_SUMMARY" < "$tmp"
               summary ''
             else
@@ -140,9 +143,25 @@ jobs:
           cp "$report" "$RUNNER_TEMP/mergify-probe-report.md"
           echo "MERGIFY_PROBE_REPORT=$RUNNER_TEMP/mergify-probe-report.md" >> "$GITHUB_ENV"
 
+          scope="$(python3 - <<'PY'
+import json,sys
+try:
+    print(json.load(open("/tmp/mergify-application.json"))["scope"])
+except Exception:
+    print("unknown")
+PY
+)" || scope="unknown"
+
+          summary "## Conclusion"
           if [ "$app_code" != "200" ]; then
-            echo "::error::MERGIFY_TOKEN was rejected by GET /application (HTTP ${app_code}). Create an application key and set it as the MERGIFY_TOKEN repository secret."
+            echo "::error::MERGIFY_TOKEN was rejected by GET /application (HTTP ${app_code})."
+            summary "MERGIFY_TOKEN rejected by /application (HTTP ${app_code})."
             exit 1
+          fi
+          summary "- application scope: \`$scope\`"
+          if [ "$scope" = "ci" ]; then
+            summary "- check-job metrics need the \`ci_insights\` product enabled in the Mergify GitHub Integration dashboard; a \`ci\` application key cannot PUT /products or read job/check event logs"
+            echo "::notice::MERGIFY_TOKEN scope=ci (ok for test uploads). Enable ci_insights at https://dashboard.mergify.com/integrations/github for check-job metrics."
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
