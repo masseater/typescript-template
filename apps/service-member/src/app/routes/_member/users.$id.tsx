@@ -13,7 +13,7 @@ import type { QueryClient } from "@tanstack/react-query";
 const Route = createFileRoute("/_member/users/$id")({
   component: ProfileRoute,
   errorComponent: ProfileFailed,
-  loader: async ({
+  loader: ({
     context,
     params,
   }: Readonly<{

@@ -47,14 +47,14 @@ const referenceCoverage = Effect.fn("referenceCoverage")(function* referenceCove
   app: AnyElysia,
   init?: RequestInit,
 ) {
-  const reply = yield* Effect.promise(async () =>
-    app.fetch(new Request(`${referenceOrigin}${apiRoot}/docs/json`, init)),
+  const reply = yield* Effect.promise(() =>
+    Promise.resolve(app.fetch(new Request(`${referenceOrigin}${apiRoot}/docs/json`, init))),
   );
   const served = yield* servedOperations(app);
   if (!reply.ok) {
     return { documented: [], served, status: reply.status } satisfies ReferenceCoverage;
   }
-  const document = yield* readDocument(yield* Effect.promise(async () => reply.json()));
+  const document = yield* readDocument(yield* Effect.promise(() => reply.json()));
   return {
     documented: documentedOperations(document),
     served,

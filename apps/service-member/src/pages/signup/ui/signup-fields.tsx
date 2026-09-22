@@ -55,8 +55,6 @@ const SignUpFields = ({
           label="ユーザー名"
           name="name"
           autoComplete="name"
-          required
-          maxLength={100}
           value={accountName.value}
           onValueChange={accountName.handleChange}
         />
@@ -65,7 +63,6 @@ const SignUpFields = ({
           name="email"
           type="email"
           autoComplete="username"
-          required
           value={email.value}
           onValueChange={email.handleChange}
         />
@@ -74,9 +71,6 @@ const SignUpFields = ({
           name={AUTHENTICATION_METHOD.password}
           type={AUTHENTICATION_METHOD.password}
           autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
-          required
           value={password.value}
           onValueChange={password.handleChange}
         />

@@ -5,18 +5,18 @@ import { InterviewRoom } from "#widgets/interview-room/index.ts";
 import { saveOnboardingStep } from "../api/onboarding.ts";
 
 import type { ReactElement } from "react";
-
 function WelcomeInterviewPage(): ReactElement {
   const navigate = useNavigate();
   const action = useAction();
-  const finish = async (): Promise<void> => {
-    await saveOnboardingStep("done");
-    await navigate({ to: "/home" });
-  };
+  const finish = (): Promise<void> =>
+    saveOnboardingStep("done").then(() =>
+      navigate({
+        to: "/home",
+      }).then(() => undefined),
+    );
   const skip = (): void => {
     action.run(finish);
   };
-
   return (
     <main className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
@@ -32,5 +32,4 @@ function WelcomeInterviewPage(): ReactElement {
     </main>
   );
 }
-
 export { WelcomeInterviewPage };

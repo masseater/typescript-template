@@ -15,7 +15,7 @@ const progressLabel: Readonly<Record<Exclude<OnboardingStep, "done">, string>> =
 };
 
 const Route = createFileRoute("/_welcome")({
-  beforeLoad: async ({
+  beforeLoad: ({
     context,
     location,
   }: Readonly<{

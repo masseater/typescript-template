@@ -31,10 +31,7 @@ function ApiKeyItem({
   const label = entry.name ?? "名前のない API キー";
   const revoke = (): void => {
     setConfirming(false);
-    action.run(async () => {
-      await revokeApiKey(entry.id);
-      onRevoked();
-    });
+    action.run(() => revokeApiKey(entry.id).then(() => onRevoked()));
   };
   return (
     <li>

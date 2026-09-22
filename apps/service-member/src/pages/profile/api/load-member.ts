@@ -7,28 +7,28 @@ import { userClient } from "#shared/api/index.ts";
 import { MemberView } from "#shared/contracts/index.ts";
 
 import type { Member } from "#pages/profile/model/member.ts";
+import type { ApiReply } from "@repo/runtime/client";
 
 const memberKey = (id: string): readonly [string, string] => [ROLE.member, id];
 
-async function loadMember(id: string): Promise<Member> {
-  const { api } = await userClient();
-  const member = apiDataOrNone(
-    MemberView,
-    await api.member.get({ query: { id } }),
-    absent.notFound,
+function loadMember(id: string): Promise<Member> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.member.get({ query: { id } }).then((response: ApiReply) => {
+      const member = apiDataOrNone(MemberView, response, absent.notFound);
+      if (member === undefined) {
+        throw notFound();
+      }
+      return member;
+    }),
   );
-  if (member === undefined) {
-    throw notFound();
-  }
-  return member;
 }
 
 function memberOptions(id: string) {
   return queryOptions({
-    queryFn: async () => loadMember(id),
+    queryFn: () => loadMember(id),
     queryKey: memberKey(id),
     retry: false,
   });
 }
 
-export { memberOptions };
+export { loadMember, memberOptions };

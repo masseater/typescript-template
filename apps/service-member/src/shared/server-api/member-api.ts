@@ -32,6 +32,7 @@ import type { Stripe } from "#shared/billing/index.ts";
 import type { Interviewer } from "#shared/interview/server.ts";
 import type { PhotoStore } from "#shared/photo/index.ts";
 import type { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
+import type { FeatureFlags } from "@repo/feature-flags";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 import type { OpsMail } from "./ops-mail.ts";
@@ -40,7 +41,13 @@ const failures = { ...memberFailures, ...apiKeyWriteFailure, ...paidFailures };
 
 function memberApi(
   api: ApiRoutes<
-    AppServices | Interviewer | OpsMail | PhotoStore | ProfileLayoutAssembler | Stripe
+    | AppServices
+    | FeatureFlags
+    | Interviewer
+    | OpsMail
+    | PhotoStore
+    | ProfileLayoutAssembler
+    | Stripe
   >,
 ) {
   return createApi(apiRoot)
@@ -52,7 +59,7 @@ function memberApi(
     .use(onboardingStepApi(api))
     .use(leaveApi(api))
     .use(billingApi(api))
-    .onBeforeHandle(consentGate(api))
+    .beforeHandle(consentGate(api))
     .use(interviewApi(api))
     .use(photoApi(api))
     .use(socialApi(api))

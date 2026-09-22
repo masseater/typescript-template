@@ -25,12 +25,14 @@ function AgreementPage({ agreements }: Readonly<{ agreements: Agreements }>): Re
       <Button
         disabled={action.blocked}
         onClick={() => {
-          action.run(async () => {
-            if (pending.length > 0) {
-              await acceptAgreements(pending.map((agreement) => agreement.id));
-            }
-            await saveOnboardingStep("choose");
-            await navigate({ to: "/welcome/choose" });
+          action.run(() => {
+            const accepted =
+              pending.length > 0
+                ? acceptAgreements(pending.map((agreement) => agreement.id))
+                : Promise.resolve();
+            return accepted
+              .then(() => saveOnboardingStep("choose"))
+              .then(() => navigate({ to: "/welcome/choose" }));
           });
         }}
         type="button"

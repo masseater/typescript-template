@@ -4,7 +4,7 @@ import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { env } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
+import { DateTime, Effect, Layer } from "effect";
 
 import { advanceOnboarding, followMember, homeFeed, stepOf } from "./member-social.ts";
 import { OpsMail } from "./ops-mail.ts";
@@ -13,13 +13,13 @@ import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 const testLayer = Layer.merge(
   TestDatabase,
   Layer.succeed(OpsMail, {
     APP_ORIGIN: fixtureOrigin,
-    EMAIL: env.EMAIL,
+    EMAIL: { send: () => Promise.resolve(undefined) },
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",
   }),
@@ -83,7 +83,7 @@ it.effect("the home feed drops followees who closed their profile", () =>
       (yield* homeFeed("viewer")).map((item) => item.actorId),
       ["open"],
     );
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );
 
 it.effect("the home feed drops followees who closed their profile", () =>
@@ -97,7 +97,7 @@ it.effect("the home feed drops followees who closed their profile", () =>
       (yield* homeFeed("viewer")).map((item) => item.actorId),
       ["open"],
     );
-  }).pipe(Effect.provide(TestDatabase)),
+  }).pipe(Effect.provide(testLayer)),
 );
 
 it.effect("treats missing onboarding rows as the agreement step", () =>

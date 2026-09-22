@@ -1,7 +1,7 @@
 import { ROLE } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { and, count, desc, eq, sql } from "drizzle-orm";
-import { Clock, Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { withdrawnAuthorName } from "#shared/contracts/board.ts";
 import { BoardMemberRequired } from "./board-member-required.ts";
@@ -58,7 +58,7 @@ const postColumns = {
   id: boardPost.id,
   storedAuthorId: boardPost.authorId,
 };
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 function shownAuthor(row: {
   readonly authorName: string | null;

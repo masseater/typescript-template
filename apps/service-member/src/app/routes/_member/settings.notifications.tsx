@@ -6,7 +6,7 @@ import type { ReactElement } from "react";
 
 const Route = createFileRoute("/_member/settings/notifications")({
   component: SettingsNotificationsRoute,
-  loader: async () => ({ preferences: await loadNotificationPreferences() }),
+  loader: () => loadNotificationPreferences().then((preferences) => ({ preferences })),
 });
 
 function SettingsNotificationsRoute(): ReactElement {

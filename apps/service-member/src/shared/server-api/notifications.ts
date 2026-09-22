@@ -1,7 +1,7 @@
 import { sendNotificationEmail } from "@repo/auth";
 import { NOTIFICATION_KIND, query, schema } from "@repo/db";
 import { and, count, desc, eq, isNull } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { NotificationNotFound } from "./notification-not-found.ts";
 import { OpsMail } from "./ops-mail.ts";
@@ -103,7 +103,7 @@ const deliverNotificationEmail = Effect.fn("deliverNotificationEmail")(function*
 });
 
 const notify = Effect.fn("notify")(function* notify(payload: NotifyPayload) {
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   const id = crypto.randomUUID();
   yield* query((database) =>
     database.insert(notification).values({
@@ -178,10 +178,11 @@ const markNotificationRead = Effect.fn("markNotificationRead")(function* markRea
   memberId: string,
   notificationId: string,
 ) {
+  const now = DateTime.toDate(yield* DateTime.now);
   const [updated] = yield* query((database) =>
     database
       .update(notification)
-      .set({ readAt: new Date() })
+      .set({ readAt: now })
       .where(
         and(
           eq(notification.id, notificationId),
@@ -208,10 +209,11 @@ const markNotificationRead = Effect.fn("markNotificationRead")(function* markRea
 const markAllNotificationsRead = Effect.fn("markAllNotificationsRead")(function* markAll(
   memberId: string,
 ) {
+  const now = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .update(notification)
-      .set({ readAt: new Date() })
+      .set({ readAt: now })
       .where(and(eq(notification.memberId, memberId), isNull(notification.readAt))),
   );
 });
@@ -239,7 +241,6 @@ const updateNotificationPreferences = Effect.fn("updateNotificationPreferences")
   memberId: string,
   preferences: NotificationPreferences,
 ) {
-  const now = new Date();
   yield* query((database) =>
     database
       .insert(notificationPreference)

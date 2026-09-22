@@ -7,6 +7,7 @@ import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect, Schema } from "effect";
 
 import { PaidAlready, Stripe, handleStripeEvent, paidFailures } from "#shared/billing/index.ts";
+import { StripeFailure } from "#shared/billing/stripe-failure.ts";
 import {
   CHECKOUT_RETURN,
   HostedPage,
@@ -36,7 +37,7 @@ const plan = Effect.fn("billing.api.plan")(function* plan(request: Request) {
 
 const offer = Effect.fn("billing.api.offer")(function* offer(request: Request) {
   yield* verifySession(request.headers);
-  return yield* (yield* Stripe).offer();
+  return yield* (yield* Stripe).offer;
 });
 
 const checkout = Effect.fn("billing.api.checkout")(function* checkout(request: Request) {
@@ -73,7 +74,10 @@ const portal = Effect.fn("billing.api.portal")(function* portal(request: Request
 });
 
 const webhook = Effect.fn("billing.api.webhook")(function* webhook(request: Request) {
-  const payload = yield* Effect.promise(async () => request.text());
+  const payload = yield* Effect.tryPromise({
+    try: () => request.text(),
+    catch: (cause) => new StripeFailure({ cause, reason: "request_failed" }),
+  });
   const event = yield* (yield* Stripe).readEvent(payload, request.headers.get("stripe-signature"));
   return { outcome: yield* handleStripeEvent(event) };
 });

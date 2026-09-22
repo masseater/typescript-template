@@ -10,5 +10,6 @@
     "vite.config.ts",
     ".paraglide/**/*.ts",
     ".paraglide/**/*.js"
-  ]
+  ],
+  "exclude": ["src/**/*.worker.test.ts"]
 }

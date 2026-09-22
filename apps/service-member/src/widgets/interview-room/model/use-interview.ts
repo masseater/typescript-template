@@ -39,11 +39,12 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
   const turn = useMutation({ mutationFn: submitTurn, onSuccess: publish });
   const save = useMutation({
     mutationFn: saveInterviewSheet,
-    onSuccess: async (view: InterviewViewData) => {
+    onSuccess: (view: InterviewViewData) => {
       publish(view);
       if (onSaved !== undefined) {
-        await onSaved();
+        return onSaved();
       }
+      return undefined;
     },
   });
   const restart = useMutation({ mutationFn: restartInterviewSession, onSuccess: publish });

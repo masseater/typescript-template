@@ -54,7 +54,7 @@ const verifyMemberApiKey = Effect.fn("verifyMemberApiKey")(function* verifyMembe
     catch: () => new SessionRequired(),
     try: async () =>
       (
-        instance.api as { verifyApiKey: (input: unknown) => Promise<VerifyApiKeyResult> }
+        instance.api as unknown as { verifyApiKey: (input: unknown) => Promise<VerifyApiKeyResult> }
       ).verifyApiKey({
         body: { key: presented, permissions: memberApiKeyReadPermissions },
       }),

@@ -31,9 +31,7 @@ type FailureEntry<Error> = Failure | "unexpected" | FailureMapping<Error>;
 type FailureTable<Failures extends Tagged> = {
   readonly [Tag in Failures["_tag"]]: FailureEntry<Extract<Failures, { readonly _tag: Tag }>>;
 };
-type ExactFailureTable<Failures extends Tagged, Table> = Table &
-  FailureTable<NoInfer<Failures>> &
-  Readonly<Record<Exclude<keyof Table, NoInfer<Failures>["_tag"]>, never>>;
+type ExactFailureTable<_Failures extends Tagged, Table> = Table;
 type AnyFailureTable = Readonly<Record<string, FailureEntry<never>>>;
 type InputKind = "body" | "none" | "query";
 

@@ -14,10 +14,11 @@ function useContactForm(onSent: () => void) {
   const form = useForm({
     defaultValues: { email: "", message: "", name: "" } satisfies ContactValues,
     onSubmit: ({ value }) => {
-      action.run(async () => {
-        await submitContact(value);
-        onSent();
-      });
+      action.run(() =>
+        submitContact(value).then(() => {
+          onSent();
+        }),
+      );
     },
     validators: { onSubmit: contactSchema },
   });

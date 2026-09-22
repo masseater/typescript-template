@@ -32,27 +32,31 @@ function attempt<Value>(
 function storeOf(bucket: Bucket): PhotoStoreShape {
   return {
     get: (key) =>
-      attempt("get", async () => {
-        const object = await bucket.get(key);
-        if (object === null) {
-          return undefined;
-        }
-        const contentType = object.httpMetadata?.contentType;
-        if (!isPhotoContentType(contentType)) {
-          throw new TypeError(`stored photo ${key} has content type ${String(contentType)}`);
-        }
-        return { bytes: new Uint8Array(await object.arrayBuffer()), contentType };
-      }),
+      attempt("get", () =>
+        Promise.resolve(bucket.get(key)).then((object) => {
+          if (object === null) {
+            return undefined;
+          }
+          const contentType = object.httpMetadata?.contentType;
+          if (!isPhotoContentType(contentType)) {
+            throw new TypeError(`stored photo ${key} has content type ${String(contentType)}`);
+          }
+          return Promise.resolve(object.arrayBuffer()).then((buffer) => ({
+            bytes: new Uint8Array(buffer),
+            contentType,
+          }));
+        }),
+      ),
     put: (key, photo) =>
-      attempt("put", async () => {
-        await bucket.put(key, photo.bytes, { httpMetadata: { contentType: photo.contentType } });
-      }),
+      attempt("put", () =>
+        Promise.resolve(
+          bucket.put(key, photo.bytes, { httpMetadata: { contentType: photo.contentType } }),
+        ).then(() => undefined),
+      ),
     remove: (keys) =>
       keys.length === 0
         ? Effect.void
-        : attempt("delete", async () => {
-            await bucket.delete([...keys]);
-          }),
+        : attempt("delete", () => Promise.resolve(bucket.delete([...keys])).then(() => undefined)),
   };
 }
 
@@ -73,9 +77,7 @@ class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
   }
 
   public static fromEnvironment(env: unknown): Layer.Layer<PhotoStore, ConfigurationInvalid> {
-    return Layer.unwrap(
-      Effect.map(readStorage(env), (storage) => PhotoStore.layer(storage.files)),
-    );
+    return Layer.unwrap(Effect.map(readStorage(env), (storage) => PhotoStore.layer(storage.files)));
   }
 }
 

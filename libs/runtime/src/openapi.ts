@@ -6,7 +6,7 @@ import { ErrorBody, type Decodable } from "./contracts.ts";
 import { declaredStatuses } from "./failures.ts";
 
 import type { JsonSchema } from "effect";
-import type { DocumentDecoration } from "elysia";
+import type { DocumentDecoration } from "elysia/types";
 import type { AnyFailureTable } from "./failures.ts";
 
 interface RouteDetail {

@@ -9,6 +9,8 @@ import {
   BoardThreadView,
 } from "#shared/contracts/index.ts";
 
+import type { ApiReply } from "@repo/runtime/client";
+
 type ThreadList = typeof BoardThreadList.Type;
 type Thread = typeof BoardThreadView.Type;
 
@@ -16,13 +18,13 @@ function loadThreads(page: number): Promise<ThreadList> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.board.threads
       .get({ query: { page: String(page) } })
-      .then((response) => apiData(BoardThreadList, response)),
+      .then((response: ApiReply) => apiData(BoardThreadList, response)),
   );
 }
 
 function loadThread(id: string, page: number): Promise<Thread> {
   return Promise.resolve(userClient()).then(({ api }) =>
-    api.board.thread.get({ query: { id, page: String(page) } }).then((response) => {
+    api.board.thread.get({ query: { id, page: String(page) } }).then((response: ApiReply) => {
       const thread = apiDataOrNone(BoardThreadView, response, absent.notFound);
       if (thread === undefined) {
         throw notFound();
@@ -36,7 +38,7 @@ function openThread(title: string, body: string): Promise<string> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.board.threads
       .post({ body, title })
-      .then((response) => apiData(BoardThreadCreated, response).id),
+      .then((response: ApiReply) => apiData(BoardThreadCreated, response).id),
   );
 }
 
@@ -44,7 +46,7 @@ function replyToThread(threadId: string, body: string): Promise<string> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.board.posts
       .post({ body, threadId })
-      .then((response) => apiData(BoardPostCreated, response).id),
+      .then((response: ApiReply) => apiData(BoardPostCreated, response).id),
   );
 }
 

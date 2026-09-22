@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 
 import { membersOptions } from "#pages/users/api/load-members.ts";
 import { memberPageSize } from "#shared/contracts/index.ts";
-import { MemberCard } from "./member-card.tsx";
+import { MemberCard } from "#widgets/member-search/ui/member-card.tsx";
 
 import type { Member } from "#pages/users/api/load-members.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";

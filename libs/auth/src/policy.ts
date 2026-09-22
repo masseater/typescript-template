@@ -93,10 +93,10 @@ const assertEligibleUser: <
   if (eligibleUser === undefined || !eligibleUser.emailVerified) {
     deny("VERIFIED_EMAIL_REQUIRED");
   }
-  if (eligibleUser.accountState !== ACCOUNT_STATE.active) {
+  if (eligibleUser!.accountState !== ACCOUNT_STATE.active) {
     deny("ACCOUNT_SUSPENDED");
   }
-  if (eligibleUser.role !== audienceRoles[audience]) {
+  if (eligibleUser!.role !== audienceRoles[audience]) {
     deny("ROLE_REQUIRED");
   }
 };

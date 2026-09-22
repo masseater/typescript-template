@@ -1,8 +1,4 @@
-import {
-  maximumNameLength,
-  maximumPasswordLength,
-  minimumPasswordLength,
-} from "@repo/runtime/contracts";
+import { maximumNameLength, maximumPasswordLength } from "@repo/runtime/contracts";
 import {
   ActionStatus,
   Button,
@@ -68,7 +64,6 @@ const InviteForm = ({
           name="name"
           type="text"
           autoComplete="name"
-          required
           maxLength={maximumNameLength}
           value={displayName.value}
           onValueChange={displayName.handleChange}
@@ -78,14 +73,12 @@ const InviteForm = ({
           name="account-password"
           type="password"
           autoComplete="new-password"
-          required
-          minLength={minimumPasswordLength}
           maxLength={maximumPasswordLength}
           value={password.value}
           onValueChange={password.handleChange}
         />
         <Button type="submit" variant="primary" disabled={action.blocked}>
-          アカウントを作成する
+          {"アカウントを作成する"}
         </Button>
         <ActionStatus action={action} pendingMessage="アカウントを作成しています。" />
       </FormColumn>
@@ -105,9 +98,9 @@ const InviteAcceptance = ({
     return (
       <FormColumn>
         <StatusMessage variant={STATUS_VARIANT.success}>
-          アカウントを作成しました。設定したパスワードでログインしてください。
+          {"アカウントを作成しました。設定したパスワードでログインしてください。"}
         </StatusMessage>
-        <TextLink to="/login">ログインへ</TextLink>
+        <TextLink to="/login">{"ログインへ"}</TextLink>
       </FormColumn>
     );
   }

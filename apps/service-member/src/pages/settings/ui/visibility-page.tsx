@@ -16,18 +16,28 @@ import { useVisibilityForm } from "#pages/settings/model/visibility-form.ts";
 import type { Visibility } from "#pages/settings/api/visibility.ts";
 import type { ProfileVisibility } from "@repo/config";
 import type { ReactElement } from "react";
-
 const visibilityOptions = [
-  { label: "全会員", value: PROFILE_VISIBILITY.allMembers },
-  { label: "自分だけ", value: PROFILE_VISIBILITY.self },
-] as const satisfies readonly Readonly<{ label: string; value: ProfileVisibility }>[];
-
-function VisibilityPage({ initial }: Readonly<{ initial: Visibility }>): ReactElement {
+  {
+    label: "全会員",
+    value: PROFILE_VISIBILITY.allMembers,
+  },
+  {
+    label: "自分だけ",
+    value: PROFILE_VISIBILITY.self,
+  },
+] as const satisfies readonly Readonly<{
+  label: string;
+  value: ProfileVisibility;
+}>[];
+function VisibilityPage({
+  initial,
+}: Readonly<{
+  initial: Visibility;
+}>): ReactElement {
   const router = useRouter();
   const notify = useToast();
-  async function showSaved(): Promise<void> {
-    await router.invalidate();
-    notify("success", "公開範囲を保存しました。");
+  function showSaved(): Promise<void> {
+    return router.invalidate().then(() => notify("success", "公開範囲を保存しました。"));
   }
   const form = useVisibilityForm(initial, showSaved);
   return (
@@ -60,5 +70,4 @@ function VisibilityPage({ initial }: Readonly<{ initial: Visibility }>): ReactEl
     </Page>
   );
 }
-
 export { VisibilityPage };

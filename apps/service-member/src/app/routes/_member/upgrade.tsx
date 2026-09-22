@@ -6,16 +6,20 @@ import { readCheckoutReturn } from "#shared/contracts/index.ts";
 import { UpgradeRoute } from "./-upgrade-route.tsx";
 
 import type { Upgrade } from "#pages/upgrade/index.ts";
-
-async function loadOrLeave(): Promise<Upgrade> {
-  const upgrade = await loadUpgrade();
-  if (upgrade.plan.plan === PLAN.paid) {
-    throw redirect({ replace: true, search: {}, to: "/settings/plan" });
-  }
-  return upgrade;
+function loadOrLeave(): Promise<Upgrade> {
+  return loadUpgrade().then((upgrade) =>
+    Promise.resolve().then(() => {
+      if (upgrade.plan.plan === PLAN.paid) {
+        throw redirect({
+          replace: true,
+          search: {},
+          to: "/settings/plan",
+        });
+      }
+      return upgrade;
+    }),
+  );
 }
-
-// oxlint-disable-next-line eslint/sort-keys
 const Route = createFileRoute("/_member/upgrade")({
   validateSearch: readCheckoutReturn,
   loader: loadOrLeave,
@@ -23,5 +27,4 @@ const Route = createFileRoute("/_member/upgrade")({
   component: UpgradeRoute,
   errorComponent: UpgradeFailed,
 });
-
 export { Route };

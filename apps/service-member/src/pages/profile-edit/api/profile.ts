@@ -1,17 +1,12 @@
 import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
-import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
 import { ProfileView } from "#shared/contracts/index.ts";
 
-import type { ProfileUpdate } from "#shared/contracts/index.ts";
 import type { ApiReply } from "@repo/runtime/client";
 
 type Profile = typeof ProfileView.Type;
-type ProfileDraft = typeof ProfileUpdate.Type;
-
-const profileKey = ["profile"] as const;
 
 function loadProfile(): Promise<Profile> {
   return Promise.resolve(userClient()).then(({ api }) =>
@@ -25,17 +20,17 @@ function loadProfile(): Promise<Profile> {
   );
 }
 
-function saveProfile(draft: ProfileDraft): Promise<Profile> {
+function saveProfile(
+  name: string,
+  profile: string,
+  socialLinks: readonly string[],
+): Promise<Profile> {
   return Promise.resolve(userClient()).then(({ api }) =>
-    api.profile.patch(draft).then((response: ApiReply) => apiData(ProfileView, response)),
+    api.profile
+      .patch({ name, profile, socialLinks })
+      .then((response: ApiReply) => apiData(ProfileView, response)),
   );
 }
 
-const profileOptions = queryOptions({
-  queryFn: loadProfile,
-  queryKey: profileKey,
-  retry: false,
-});
-
-export { profileOptions, saveProfile };
-export type { Profile, ProfileDraft };
+export { loadProfile, saveProfile };
+export type { Profile };

@@ -65,16 +65,17 @@ function readBounded(
 function fileOf(bytes: Bytes, contentType: string): Effect.Effect<Bytes, PhotoMissing> {
   return Effect.tryPromise({
     catch: () => new PhotoMissing(),
-    try: async (): Promise<Bytes | undefined> => {
-      const form = await new Response(bytes, {
-        headers: { "content-type": contentType },
-      }).formData();
-      const file = form.get(fileField);
-      return file instanceof Blob ? new Uint8Array(await file.arrayBuffer()) : undefined;
-    },
+    try: (): Promise<Bytes | undefined> =>
+      new Response(bytes, { headers: { "content-type": contentType } }).formData().then((form) => {
+        const file = form.get(fileField);
+        return file instanceof Blob
+          ? file.arrayBuffer().then((buffer) => new Uint8Array(buffer))
+          : undefined;
+      }),
   }).pipe(
-    Effect.flatMap((file) =>
-      file === undefined ? Effect.fail(new PhotoMissing()) : Effect.succeed(file),
+    Effect.filterOrFail(
+      (file): file is NonNullable<typeof file> => file !== undefined,
+      () => new PhotoMissing(),
     ),
   );
 }

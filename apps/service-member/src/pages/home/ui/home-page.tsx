@@ -1,5 +1,6 @@
 import { Heading, NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useQuery } from "@tanstack/react-query";
+import { DateTime } from "effect";
 
 import { homeFeedOptions } from "#pages/home/api/feed.ts";
 
@@ -20,7 +21,7 @@ function FeedEntry({ item }: Readonly<{ item: FeedItem }>): ReactElement {
       </NavigationLink>
       <p className="text-sm leading-normal text-muted-foreground">プロフィールを更新しました</p>
       <p className="text-xs leading-normal text-muted-foreground">
-        {updatedAtLabel.format(new Date(item.updatedAt))}
+        {updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(item.updatedAt)))}
       </p>
     </li>
   );

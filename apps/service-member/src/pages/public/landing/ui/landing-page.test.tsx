@@ -12,8 +12,8 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { overwriteGetLocale, type Locale } from "#paraglide/runtime.js";
 import { fieldValidationMessages } from "#shared/i18n/index.ts";
-import englishMessages from "../../../../messages/en.json" with { type: "json" };
-import japaneseMessages from "../../../../messages/ja.json" with { type: "json" };
+import englishMessages from "../../../../../messages/en.json" with { type: "json" };
+import japaneseMessages from "../../../../../messages/ja.json" with { type: "json" };
 import { Consequences } from "./consequences.tsx";
 import { Hero } from "./hero.tsx";
 

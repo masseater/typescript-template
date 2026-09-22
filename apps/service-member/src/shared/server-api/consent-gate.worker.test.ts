@@ -9,7 +9,7 @@ import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Effect, Layer, Schema } from "effect";
+import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
 import { Interviewer } from "#shared/interview/server.ts";
@@ -36,7 +36,7 @@ function memberApp() {
       Interviewer.layer(undefined),
     ),
   );
-  return { app: memberApi(apiRoutes(runtime, reporting)), runtime };
+  return { app: memberApi(apiRoutes(runtime, reporting) as never), runtime };
 }
 
 type MemberApp = ReturnType<typeof memberApp>["app"];
@@ -112,7 +112,7 @@ const signedInMember = Effect.fn("signedInMember")(function* signedInMember(app:
 
 const strongAdminSession = Effect.fn("strongAdminSession")(function* strongAdminSession() {
   const sessionId = crypto.randomUUID();
-  const now = Date.now();
+  const now = DateTime.toEpochMillis(DateTime.nowUnsafe());
   yield* runStatement(
     "INSERT INTO user (id, email, email_verified, name, role, created_at, updated_at) VALUES ('admin', ?, 1, 'admin', ?, ?, ?)",
     adminEmail,

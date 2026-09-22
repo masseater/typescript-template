@@ -15,7 +15,7 @@ const upgradeRequired = 426;
 function realtimeApi(api: ApiRoutes<AppServices>) {
   return createApi("").get(
     "/realtime",
-    api.raw(
+    ...api.raw(
       (request) =>
         Effect.gen(function* handle() {
           const { user } = yield* verifySession(request.headers);

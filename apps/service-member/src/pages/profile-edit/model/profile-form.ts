@@ -49,17 +49,15 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
       socialLinks: socialLinksForEditor(initial.socialLinks),
     } satisfies ProfileFormValues,
     onSubmit: ({ value }) => {
-      action.run(async () => {
-        await saveProfile(profileDraft(value));
-        await onSaved();
-      });
+      action.run(() => saveProfile(profileDraft(value)).then(() => onSaved()));
     },
     validators: {
       onSubmit: ({ value }) => {
-        const decoded = Schema.decodeUnknownResult(ProfileUpdate)(profileDraft(value));
+        const decoded = Schema.decodeResult(ProfileUpdate)(profileDraft(value));
         if (decoded._tag === "Failure") {
           return decoded.failure.message;
         }
+        return undefined;
       },
     },
   });

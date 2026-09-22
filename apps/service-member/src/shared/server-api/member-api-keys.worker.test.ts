@@ -9,7 +9,7 @@ import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Effect, Layer } from "effect";
+import { DateTime, Effect, Layer } from "effect";
 
 import { memberApi } from "./member-api.ts";
 
@@ -24,7 +24,7 @@ const routes = {
 const addMember = (memberId: string, emailVerified = true) =>
   query(async (database): Promise<void> => {
     await database.insert(user).values({
-      createdAt: new Date("2026-01-02T00:00:00.000Z"),
+      createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
       email: `${memberId}@example.com`,
       emailVerified,
       id: memberId,
@@ -32,7 +32,7 @@ const addMember = (memberId: string, emailVerified = true) =>
       profile: `${memberId}-profile`,
       role: ROLE.member,
       searchable: true,
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      updatedAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
     });
   });
 
@@ -43,7 +43,7 @@ const subscribe = (memberId: string) =>
       status: SUBSCRIPTION_STATUS.active,
       stripeCustomerId: `cus_${memberId}`,
       stripeSubscriptionId: `sub_${memberId}`,
-      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      updatedAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
     });
   });
 
@@ -81,7 +81,7 @@ it.effect("lets API keys read allowed resources and rejects writes", () => {
   );
 
   return Effect.gen(function* program() {
-    yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase));
+    yield* Effect.orDie(Effect.provide(runStatement("select 1"), TestDatabase) as never);
     yield* addMember("owner");
     yield* subscribe("owner");
     yield* addMember("listed");

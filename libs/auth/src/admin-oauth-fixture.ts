@@ -26,7 +26,7 @@ type AuthorizationFlow = {
 const adminOrigin = origins[APPLICATION.admin];
 const redirectUri = "http://127.0.0.1:43124/callback";
 const VERIFIER_BYTES = 32;
-const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
+const _decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Registration = Schema.Struct({ client_id: Schema.String });
 
 const adminOperator = Effect.fn("adminOperator")(function* adminOperator(

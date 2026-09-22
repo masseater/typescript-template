@@ -5,8 +5,8 @@ import { findPasskeyUser } from "@repo/db";
 import { jwt, twoFactor } from "better-auth/plugins";
 import { Effect } from "effect";
 
-import { memberApiKeyPlugin } from "./member-api-key-options.ts";
 import { adminScopes } from "./admin-scopes.ts";
+import { memberApiKeyPlugin } from "./member-api-key-options.ts";
 import { passkeyRpId } from "./passkey-rp-id.ts";
 import { assertEligibleUser, deny } from "./policy.ts";
 import { wikiScopes } from "./scopes.ts";

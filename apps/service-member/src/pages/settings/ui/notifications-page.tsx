@@ -11,35 +11,43 @@ import {
 } from "@repo/ui";
 
 import { saveNotificationPreferences } from "#pages/settings/api/notification-preferences.ts";
+import { NotificationPreferences } from "#shared/contracts/index.ts";
 
-import type { NotificationPreferences } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
 
-const useDraft = localState<NotificationPreferences | undefined>(undefined);
+type Preferences = typeof NotificationPreferences.Type;
+
+const useDraft = localState<Preferences | undefined>(undefined);
 
 function NotificationsPage({
   initial,
-}: Readonly<{ initial: NotificationPreferences }>): ReactElement {
+}: Readonly<{
+  initial: Preferences;
+}>): ReactElement {
   const notify = useToast();
   const saveAction = useAction();
   const [draft, setDraft] = useDraft();
   const preferences = draft ?? initial;
-
   const setMessageMail = (messageMail: boolean): void => {
-    setDraft({ ...preferences, messageMail });
-  };
-  const setBoardMail = (boardMail: boolean): void => {
-    setDraft({ ...preferences, boardMail });
-  };
-
-  const save = (): void => {
-    saveAction.run(async () => {
-      const saved = await saveNotificationPreferences(preferences);
-      setDraft(saved);
-      notify("success", "通知設定を保存しました。");
+    setDraft({
+      ...preferences,
+      messageMail,
     });
   };
-
+  const setBoardMail = (boardMail: boolean): void => {
+    setDraft({
+      ...preferences,
+      boardMail,
+    });
+  };
+  const save = (): void => {
+    saveAction.run(() =>
+      saveNotificationPreferences(preferences).then((saved) => {
+        setDraft(saved);
+        return notify("success", "通知設定を保存しました。");
+      }),
+    );
+  };
   return (
     <Page title="通知">
       {saveAction.error !== undefined && (

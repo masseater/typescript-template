@@ -18,7 +18,10 @@ const member = {
   id: "member-1",
   joined: "2026-04",
   name: "山田 花子",
+  photos: { company: null, face: null },
   profile: "本屋めぐりをしています。",
+  profileLayout: { blocks: [{ kind: "identity" }, { kind: "biography" }, { kind: "actions" }] },
+  sheet: {},
   socialLinks: [],
 } as const satisfies Member;
 

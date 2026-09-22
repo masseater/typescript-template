@@ -7,7 +7,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 
 const Route = createFileRoute("/_public")({
-  beforeLoad: async ({
+  beforeLoad: ({
     context,
     location,
   }: Readonly<{

@@ -11,10 +11,10 @@ class OpsMail extends Context.Service<OpsMail, OpsMailShape>()("@repo/service-me
 function opsMailLayer(config: AppConfig): Layer.Layer<OpsMail> {
   return Layer.succeed(OpsMail, {
     APP_ORIGIN: config.APP_ORIGIN,
-    EMAIL: config.EMAIL,
     EMAIL_FROM: config.EMAIL_FROM,
-    MAILPIT_URL: config.MAILPIT_URL,
     OPS_EMAIL: config.OPS_EMAIL,
+    ...(config.EMAIL === undefined ? {} : { EMAIL: config.EMAIL }),
+    ...(config.MAILPIT_SEND_URL === undefined ? {} : { MAILPIT_SEND_URL: config.MAILPIT_SEND_URL }),
   });
 }
 

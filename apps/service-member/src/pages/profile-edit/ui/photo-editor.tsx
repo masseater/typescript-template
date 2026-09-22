@@ -8,8 +8,8 @@ import type { ReactElement } from "react";
 
 function PhotoEditor({ profile }: Readonly<{ profile: Profile }>): ReactElement {
   const router = useRouter();
-  async function refresh(): Promise<void> {
-    await router.invalidate();
+  function refresh(): Promise<void> {
+    return router.invalidate();
   }
   return (
     <div className="flex flex-col gap-6">

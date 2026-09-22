@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { UserNotFound, requireSignupAgreements } from "@repo/db";
+import { requireSignupAgreements } from "@repo/db";
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
@@ -20,7 +20,6 @@ import {
   OnboardingView,
 } from "#shared/contracts/index.ts";
 import { agreementRequired } from "./agreement-api.ts";
-import { FollowSelfForbidden } from "./follow-self-forbidden.ts";
 import {
   advanceOnboarding,
   followMember,
@@ -31,7 +30,6 @@ import {
   stepOf,
   unfollowMember,
 } from "./member-social.ts";
-import { NotificationNotFound } from "./notification-not-found.ts";
 import {
   getNotificationPreferences,
   listNotifications,
@@ -44,6 +42,7 @@ import {
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
+import type { OpsMail } from "./ops-mail.ts";
 
 const failures = {
   ...unavailable,
@@ -74,7 +73,7 @@ function onboardingStepApi(api: ApiRoutes<AppServices>) {
   );
 }
 
-function socialApi(api: ApiRoutes<AppServices>) {
+function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
   return createApi("")
     .post(
       "/onboarding",

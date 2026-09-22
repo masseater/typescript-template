@@ -6,7 +6,7 @@ import type { ReactElement } from "react";
 
 const Route = createFileRoute("/_member/settings/ai")({
   component: AiRoute,
-  loader: async () => loadApiKeys(),
+  loader: () => loadApiKeys(),
 });
 
 function AiRoute(): ReactElement {

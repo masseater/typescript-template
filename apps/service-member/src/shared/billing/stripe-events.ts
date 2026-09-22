@@ -1,6 +1,6 @@
 import { SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, subscriptionStatuses } from "@repo/config";
 import { attachCheckout, markPaymentFailed, memberOfCustomer, recordSubscription } from "@repo/db";
-import { Effect, Schema } from "effect";
+import { Effect, Schema, DateTime } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 
@@ -24,12 +24,12 @@ const CheckoutSession = Schema.Struct({
 });
 
 const PeriodItems = Schema.Struct({
-  data: Schema.Array(Schema.Struct({ current_period_end: Schema.optionalKey(Schema.Number) })),
+  data: Schema.Array(Schema.Struct({ current_period_end: Schema.optionalKey(Schema.Finite) })),
 });
 
 const Subscription = Schema.Struct({
   cancel_at_period_end: Schema.Boolean,
-  current_period_end: Schema.optionalKey(Schema.Number),
+  current_period_end: Schema.optionalKey(Schema.Finite),
   customer: Schema.String,
   id: Schema.String,
   items: Schema.optionalKey(PeriodItems),
@@ -63,14 +63,16 @@ function readObject<Contract extends Decodable>(
 
 function eventRecord(event: StripeEvent): StripeEventRecord {
   return {
-    createdAt: new Date(event.created * millisecondsPerSecond),
+    createdAt: DateTime.toDate(DateTime.makeUnsafe(event.created * millisecondsPerSecond)),
     id: event.id,
     type: event.type,
   };
 }
 
 function secondsToDate(seconds: number | undefined): Date | undefined {
-  return seconds === undefined ? undefined : new Date(seconds * millisecondsPerSecond);
+  return seconds === undefined
+    ? undefined
+    : DateTime.toDate(DateTime.makeUnsafe(seconds * millisecondsPerSecond));
 }
 
 const paidPaymentStatuses: ReadonlySet<string> = new Set(["no_payment_required", "paid"]);

@@ -1,4 +1,5 @@
 import { Heading, Page, StatusMessage, TextLink, formatWarekiDate } from "@repo/ui";
+import { DateTime } from "effect";
 
 import { PendingAgreementList, agreementKindLabels } from "#entities/agreement/index.ts";
 
@@ -35,7 +36,7 @@ function AgreementsPage({ agreements }: Readonly<{ agreements: Agreements }>): R
             {accepted.map((agreement) => (
               <li key={agreement.versionId}>
                 {agreementKindLabels[agreement.kind]}（{agreement.version}）に
-                {formatWarekiDate(new Date(agreement.acceptedAt))}同意
+                {formatWarekiDate(DateTime.toDate(DateTime.makeUnsafe(agreement.acceptedAt)))}同意
               </li>
             ))}
           </ul>

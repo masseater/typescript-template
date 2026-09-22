@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 const sampleMember = {
   id: "sample-member",
   name: "山田 花子",
+  photos: { face: null },
   profile: "週末は本屋めぐり。プロフィールで趣味と近況を書いています。",
 } as const;
 

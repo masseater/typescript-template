@@ -12,10 +12,12 @@ function ProfileEditPage({ initial }: Readonly<{ initial: Profile }>): ReactElem
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showSaved(): Promise<void> {
-    await router.invalidate();
-    await navigate({ params: { id: initial.id }, to: "/users/$id" });
-    notify("success", "プロフィールを保存しました。");
+  function showSaved(): Promise<void> {
+    return router.invalidate().then(() =>
+      navigate({ params: { id: initial.id }, to: "/users/$id" }).then(() => {
+        notify("success", "プロフィールを保存しました。");
+      }),
+    );
   }
   const formState = useProfileForm(initial, showSaved);
   return (

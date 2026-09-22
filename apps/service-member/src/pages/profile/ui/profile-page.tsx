@@ -18,15 +18,15 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
   const following = followingOverride ?? member.following ?? false;
 
   const toggleFollow = (): void => {
-    followAction.run(async () => {
-      if (following) {
-        await unfollowMember(member.id);
-        setFollowingOverride(false);
-      } else {
-        await followMember(member.id);
-        setFollowingOverride(true);
-      }
-      await router.invalidate();
+    followAction.run(() => {
+      const next = following
+        ? unfollowMember(member.id).then(() => {
+            setFollowingOverride(false);
+          })
+        : followMember(member.id).then(() => {
+            setFollowingOverride(true);
+          });
+      return next.then(() => router.invalidate());
     });
   };
 

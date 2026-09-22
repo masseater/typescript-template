@@ -19,4 +19,4 @@ const blocksMember = (pending: readonly Pending[]): boolean =>
   pending.some((agreement) => agreementPolicies[agreement.kind].blocksUntilReaccepted);
 
 export { agreementKindLabels, agreementKindPaths, blocksMember };
-export type { Agreements };
+export type { Agreements, Pending };

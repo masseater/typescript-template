@@ -18,19 +18,18 @@ import { PhotoStore } from "./photo-store.ts";
 import { deleteMemberPhotos, readPhoto, removePhoto, uploadPhoto } from "./photos.ts";
 import { readPhotoUpload } from "./upload.ts";
 
-import type { R2Bucket } from "@cloudflare/workers-types";
 import type { ProfileVisibility } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { user } = schema;
 const origin = "http://localhost:3001";
 
-const bucket: R2Bucket = await Effect.runPromise(
+const bucket = await Effect.runPromise(
   Effect.map(readStorage(env), (found) => {
-    if (found === undefined) {
+    if (found === undefined || found.files === undefined) {
       throw new TypeError("the worker test pool has no FILES bucket");
     }
-    return found;
+    return found.files;
   }),
 );
 

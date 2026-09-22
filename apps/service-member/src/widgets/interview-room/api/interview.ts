@@ -4,29 +4,37 @@ import { queryOptions } from "@tanstack/react-query";
 import { userClient } from "#shared/api/index.ts";
 import { InterviewView, Utterance } from "#shared/interview/index.ts";
 
+import type { ApiReply } from "@repo/runtime/client";
+
 type InterviewViewData = typeof InterviewView.Type;
 type MemberUtterance = typeof Utterance.Type;
 
 const interviewKey = ["interview"] as const;
 
-async function loadInterview(): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.get());
+function loadInterview(): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.get().then((response: ApiReply) => apiData(InterviewView, response)),
+  );
 }
 
-async function submitTurn(utterance: MemberUtterance): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.turns.post(utterance));
+function submitTurn(utterance: MemberUtterance): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.turns
+      .post(utterance)
+      .then((response: ApiReply) => apiData(InterviewView, response)),
+  );
 }
 
-async function saveInterviewSheet(): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.sheet.post({}));
+function saveInterviewSheet(): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.sheet.post({}).then((response: ApiReply) => apiData(InterviewView, response)),
+  );
 }
 
-async function restartInterviewSession(): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.restart.post({}));
+function restartInterviewSession(): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.restart.post({}).then((response: ApiReply) => apiData(InterviewView, response)),
+  );
 }
 
 const interviewOptions = queryOptions({

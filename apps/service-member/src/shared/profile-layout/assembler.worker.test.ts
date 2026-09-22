@@ -77,7 +77,7 @@ it.effect("a valid model answer keeps the chosen block order", () =>
         { kind: "sheet-occupation" },
         { kind: "actions" },
       ],
-    };
+    } as const;
     yield* withServer(http.post(endpoint, () => completion(chosen)));
     const layout = yield* assemble({});
     assert.deepStrictEqual(layout, chosen);
@@ -89,9 +89,7 @@ it.effect("without access to a model the assembler reports that it is unavailabl
     const failed = yield* Effect.gen(function* program() {
       const assembler = yield* ProfileLayoutAssembler;
       return yield* assembler.assemble({});
-    })
-      .pipe(Effect.provide(ProfileLayoutAssembler.layer()))
-      .pipe(Effect.flip);
+    }).pipe(Effect.provide(ProfileLayoutAssembler.layer()), Effect.flip);
     assert.deepStrictEqual(failed.reason, "unavailable");
   }),
 );

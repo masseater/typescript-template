@@ -21,6 +21,7 @@ const member = {
   email: "member@example.com",
   id: "member-1",
   name: "会員",
+  permission: null,
   role: ROLE.member,
   twoFactorEnabled: false,
 } as const satisfies SessionView["user"];

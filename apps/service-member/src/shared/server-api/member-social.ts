@@ -8,7 +8,7 @@ import {
   schema,
 } from "@repo/db";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { FollowSelfForbidden } from "./follow-self-forbidden.ts";
 import { notify } from "./notifications.ts";
@@ -34,7 +34,7 @@ const advanceOnboarding = Effect.fn("advanceOnboarding")(function* advanceOnboar
   userId: string,
   step: OnboardingStep,
 ) {
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
       .insert(memberOnboarding)
@@ -107,7 +107,7 @@ const followMember = Effect.fn("followMember")(function* followMember(
   if (follower === undefined) {
     return yield* new UserNotFound();
   }
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   const inserted = yield* query((database) =>
     database
       .insert(follow)

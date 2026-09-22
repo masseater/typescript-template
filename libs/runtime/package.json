@@ -11,7 +11,9 @@
     "./account": "./src/account.ts",
     "./jobs": "./src/jobs.ts",
     "./testing": "./src/app-fixture.ts",
-    "./security": "./src/security.ts"
+    "./security": "./src/security.ts",
+    "./contracts": "./src/contracts.ts",
+    "./reference-coverage": "./src/reference-coverage.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -19,6 +21,7 @@
     "@effect/sql-d1": "4.0.0-rc.112",
     "@effect/sql-sqlite-do": "4.0.0-rc.112",
     "@elysia/eden": "2.0.0-beta.5",
+    "@elysia/openapi": "2.0.0-beta.4",
     "@repo/auth": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",

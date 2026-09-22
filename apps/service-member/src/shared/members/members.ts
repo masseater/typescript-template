@@ -8,7 +8,7 @@ import {
   schema,
 } from "@repo/db";
 import { and, count, desc, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { photoVersion } from "#shared/photo/index.ts";
 import {
@@ -149,7 +149,11 @@ const getMember = Effect.fn("getMember")(function* getMember(viewerId: string, m
     following = row !== undefined;
   }
   const presentation = yield* profilePresentation(memberId);
-  return { ...shown(member, presentation), following };
+  const base = shown(member, presentation);
+  if (following === undefined) {
+    return base;
+  }
+  return { ...base, following };
 });
 
 const listMembers = Effect.fn("listMembers")(function* listMembers(page: {
@@ -193,10 +197,11 @@ const updateProfile = Effect.fn("updateProfile")(function* updateProfile(
     readonly socialLinks: readonly string[];
   },
 ) {
+  const now = DateTime.toDate(yield* DateTime.now);
   const [profile] = yield* query((database) =>
     database
       .update(user)
-      .set({ ...values, updatedAt: new Date() })
+      .set({ ...values, updatedAt: now })
       .where(eq(user.id, userId))
       .returning(profileColumns),
   );

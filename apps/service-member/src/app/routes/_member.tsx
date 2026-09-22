@@ -7,14 +7,14 @@ import { MemberLayout } from "./-member-layout.tsx";
 import type { QueryClient } from "@tanstack/react-query";
 
 const Route = createFileRoute("/_member")({
-  beforeLoad: async ({
+  beforeLoad: ({
     context,
     location,
   }: Readonly<{
     context: Readonly<{ queryClient: QueryClient }>;
     location: Readonly<{ href: string; pathname: string }>;
   }>) => enterMemberFrame(context.queryClient, location.href, location.pathname),
-  loader: async () => loadNavBadges(),
+  loader: () => loadNavBadges(),
   component: MemberLayout,
 });
 

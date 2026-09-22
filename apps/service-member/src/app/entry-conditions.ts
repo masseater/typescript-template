@@ -1,5 +1,6 @@
 import { loginPath, sessionOptions } from "@repo/auth-ui";
 import { redirect } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
 import { onboardingOptions } from "#pages/account/welcome/index.ts";
@@ -23,70 +24,82 @@ const welcomePath = {
   recovery: "/welcome/recovery",
 } as const;
 
-async function currentSession(queries: QueryClient): Promise<Session | undefined> {
-  return queries.fetchQuery(sessionOptions);
+function currentSession(queries: QueryClient): Promise<Session | undefined> {
+  return Effect.runPromise(Effect.promise(() => queries.fetchQuery(sessionOptions)));
 }
 
-async function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void> {
-  if (!entrances.has(pathname)) {
-    return;
-  }
-  if ((await currentSession(queries)) !== undefined) {
-    throw redirect({ to: "/home" });
-  }
+function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* () {
+      if (!entrances.has(pathname)) {
+        return;
+      }
+      if ((yield* Effect.promise(() => currentSession(queries))) !== undefined) {
+        throw redirect({ to: "/home" });
+      }
+    }),
+  );
 }
 
-async function enterMemberFrame(
+function enterMemberFrame(
   queries: QueryClient,
   href: string,
   pathname: string,
 ): Promise<{ agreements: Agreements; memberBoard: boolean; session: Session }> {
-  const session = await currentSession(queries);
-  if (session === undefined) {
-    throw redirect({ href: loginPath(href) });
-  }
-  const step = await queries.fetchQuery(onboardingOptions);
-  if (step !== "done") {
-    const offer = await loadRecoveryOffer();
-    if (offer.available && pathname !== welcomePath.recovery) {
-      throw redirect({ to: welcomePath.recovery });
-    }
-    if (pathname !== welcomePath.recovery) {
-      throw redirect({ to: welcomePath[step] });
-    }
-  }
-  if (pathname.startsWith("/welcome")) {
-    throw redirect({ to: "/home" });
-  }
-  const agreements = await loadAgreements();
-  if (blocksMember(agreements.pending) && pathname !== agreementPath) {
-    throw redirect({ search: { redirect: href }, to: agreementPath });
-  }
-  const memberBoard = await loadMemberFlags();
-  return { agreements, memberBoard, session };
+  return Effect.runPromise(
+    Effect.gen(function* () {
+      const session = yield* Effect.promise(() => currentSession(queries));
+      if (session === undefined) {
+        throw redirect({ href: loginPath(href) });
+      }
+      const step = yield* Effect.promise(() => queries.fetchQuery(onboardingOptions));
+      if (step !== "done") {
+        const offer = yield* Effect.promise(() => loadRecoveryOffer());
+        if (offer.available && pathname !== welcomePath.recovery) {
+          throw redirect({ to: welcomePath.recovery });
+        }
+        if (pathname !== welcomePath.recovery) {
+          throw redirect({ to: welcomePath[step] });
+        }
+      }
+      if (pathname.startsWith("/welcome")) {
+        throw redirect({ to: "/home" });
+      }
+      const agreements = yield* Effect.promise(() => loadAgreements());
+      if (blocksMember(agreements.pending) && pathname !== agreementPath) {
+        throw redirect({ search: { redirect: href }, to: agreementPath });
+      }
+      const memberBoard = yield* Effect.promise(() => loadMemberFlags());
+      return { agreements, memberBoard, session };
+    }),
+  );
 }
 
-async function enterWelcomeFrame(
+function enterWelcomeFrame(
   queries: QueryClient,
   href: string,
 ): Promise<{ session: Session; step: OnboardingStep }> {
-  const session = await currentSession(queries);
-  if (session === undefined) {
-    throw redirect({ href: loginPath(href) });
-  }
-  const step = await queries.fetchQuery(onboardingOptions);
-  if (step === "done") {
-    throw redirect({ to: "/home" });
-  }
-  const pathname = new URL(href).pathname;
-  const offer = await loadRecoveryOffer();
-  if (offer.available && pathname !== welcomePath.recovery) {
-    throw redirect({ to: welcomePath.recovery });
-  }
-  if (!offer.available && pathname === welcomePath.recovery) {
-    throw redirect({ to: welcomePath[step] });
-  }
-  return { session, step };
+  return Effect.runPromise(
+    Effect.gen(function* () {
+      const session = yield* Effect.promise(() => currentSession(queries));
+      if (session === undefined) {
+        throw redirect({ href: loginPath(href) });
+      }
+      const step = yield* Effect.promise(() => queries.fetchQuery(onboardingOptions));
+      if (step === "done") {
+        throw redirect({ to: "/home" });
+      }
+      const pathname = new URL(href).pathname;
+      const offer = yield* Effect.promise(() => loadRecoveryOffer());
+      if (offer.available && pathname !== welcomePath.recovery) {
+        throw redirect({ to: welcomePath.recovery });
+      }
+      if (!offer.available && pathname === welcomePath.recovery) {
+        throw redirect({ to: welcomePath[step] });
+      }
+      return { session, step };
+    }),
+  );
 }
 
 export { enterMemberFrame, enterPublicFrame, enterWelcomeFrame, welcomePath };

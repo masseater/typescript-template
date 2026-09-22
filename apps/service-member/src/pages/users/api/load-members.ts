@@ -1,32 +1,34 @@
 import { httpStatus } from "@repo/observability/http-status";
 import { apiData } from "@repo/runtime/client";
 import { infiniteQueryOptions } from "@tanstack/react-query";
+import { Data } from "effect";
 
 import { userClient } from "#shared/api/index.ts";
 import { MemberList } from "#shared/contracts/index.ts";
 
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
+import type { ApiReply } from "@repo/runtime/client";
 
 type Members = typeof MemberList.Type;
 type Member = Members["members"][number];
 
-class PaidPlanRequired extends Error {
-  override readonly name = "PaidPlanRequired";
-}
+class PaidPlanRequired extends Data.TaggedError("PaidPlanRequired") {}
 
 const firstPage = 1;
 
-async function loadMembers(search: UsersSearch, page: number): Promise<Members> {
-  const { api } = await userClient();
+function loadMembers(search: UsersSearch, page: number): Promise<Members> {
   const query = {
     ...(search.keyword === undefined ? {} : { keyword: search.keyword }),
     page: String(page),
   };
-  const reply = await api.members.get({ query });
-  if (reply.error?.status === httpStatus.paymentRequired) {
-    throw new PaidPlanRequired();
-  }
-  return apiData(MemberList, reply);
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.members.get({ query }).then((reply: ApiReply) => {
+      if (reply.error?.status === httpStatus.paymentRequired) {
+        throw new PaidPlanRequired();
+      }
+      return apiData(MemberList, reply);
+    }),
+  );
 }
 
 function membersKey(search: UsersSearch): readonly [string, string] {
@@ -42,8 +44,7 @@ function membersOptions(search: UsersSearch) {
     getNextPageParam: (loaded: Members, pages: readonly Members[]) =>
       nextPage(loaded, firstPage + pages.length - 1),
     initialPageParam: firstPage,
-    queryFn: async ({ pageParam }: Readonly<{ pageParam: number }>) =>
-      loadMembers(search, pageParam),
+    queryFn: ({ pageParam }: Readonly<{ pageParam: number }>) => loadMembers(search, pageParam),
     queryKey: membersKey(search),
   });
 }

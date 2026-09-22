@@ -2,7 +2,7 @@ import { assert, it } from "@effect/vitest";
 import { PROFILE_VISIBILITY, ROLE } from "@repo/config";
 import { query, schema, setPhotoKey } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { getMember, getProfile, listMembers, updateProfile } from "./members.ts";
 
@@ -25,18 +25,21 @@ function addUser(
   id: string,
   settings: Readonly<{ searchable?: boolean; visibility?: ProfileVisibility }> = {},
 ): Effect.Effect<void, DatabaseFailure, Database> {
-  return query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: new Date(),
-      email: `${id}@example.com`,
-      emailVerified: true,
-      id,
-      name: id,
-      role: ROLE.member,
-      updatedAt: new Date(),
-      ...settings,
-    });
-  });
+  return query((database) =>
+    database
+      .insert(user)
+      .values({
+        createdAt: DateTime.toDate(DateTime.nowUnsafe()),
+        email: `${id}@example.com`,
+        emailVerified: true,
+        id,
+        name: id,
+        role: ROLE.member,
+        updatedAt: DateTime.toDate(DateTime.nowUnsafe()),
+        ...settings,
+      })
+      .then(() => undefined),
+  );
 }
 
 it.effect("shows another member only when their profile is open to members", () =>

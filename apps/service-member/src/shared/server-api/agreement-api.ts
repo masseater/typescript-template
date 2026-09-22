@@ -10,7 +10,7 @@ import {
 import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, failureBy, readJsonBody, readSearchParams } from "@repo/runtime/http";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import {
   AgreementAcceptance,
@@ -80,7 +80,11 @@ function agreementApi(api: ApiRoutes<AppServices>) {
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
             const { versionIds } = yield* readJsonBody(AgreementAcceptance, request);
-            yield* acceptAgreementVersions({ acceptedAt: new Date(), userId: user.id, versionIds });
+            yield* acceptAgreementVersions({
+              acceptedAt: DateTime.toDate(yield* DateTime.now),
+              userId: user.id,
+              versionIds,
+            });
             return yield* agreementsOf(user.id);
           }),
         failures,

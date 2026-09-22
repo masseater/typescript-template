@@ -76,7 +76,7 @@ const loadSnapshot = Effect.fn("loadMemberSnapshot")(function* loadSnapshot(memb
       .from(follow)
       .where(eq(follow.followeeId, memberId)),
   );
-  const snapshot: MemberSnapshot = {
+  const snapshot: typeof MemberSnapshot.Type = {
     followers: followers.map((row) => row.followerId),
     following: following.map((row) => row.followeeId),
     ...(onboarding === undefined

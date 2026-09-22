@@ -4,10 +4,11 @@ import { apiDataOrNone } from "@repo/runtime/client";
 import { userClient } from "#shared/api/index.ts";
 
 import type { Session } from "#entities/session/model/session.ts";
+import type { ApiReply } from "@repo/runtime/client";
 
 function loadSession(): Promise<Session | undefined> {
   return Promise.resolve(userClient()).then(({ api }) =>
-    api.session.get().then((response) => apiDataOrNone(SessionView, response)),
+    api.session.get().then((response: ApiReply) => apiDataOrNone(SessionView, response)),
   );
 }
 

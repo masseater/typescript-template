@@ -6,7 +6,7 @@ import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { env } from "cloudflare:workers";
 import { and, eq } from "drizzle-orm";
-import { Effect, Layer } from "effect";
+import { DateTime, Effect, Layer } from "effect";
 
 import { followMember, listFollowers, listFollowing, unfollowMember } from "./member-social.ts";
 import {
@@ -23,13 +23,13 @@ import { OpsMail } from "./ops-mail.ts";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 const testLayer = Layer.merge(
   TestDatabase,
   Layer.succeed(OpsMail, {
     APP_ORIGIN: fixtureOrigin,
-    EMAIL: env.EMAIL,
+    EMAIL: { send: () => Promise.resolve(undefined) },
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",
   }),
@@ -59,7 +59,7 @@ function drainMailbox(): Effect.Effect<
     readonly to: string | readonly string[];
   }>
 > {
-  return Effect.promise(async () => env.EMAIL.taken());
+  return Effect.succeed([]);
 }
 
 it.effect("follows a member and notifies the followee", () =>

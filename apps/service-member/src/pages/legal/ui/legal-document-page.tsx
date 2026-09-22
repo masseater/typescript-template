@@ -1,4 +1,5 @@
 import { Page, STATUS_VARIANT, StatusMessage, formatWarekiDate } from "@repo/ui";
+import { DateTime } from "effect";
 
 import { agreementKindLabels } from "#entities/agreement/index.ts";
 
@@ -22,7 +23,8 @@ function LegalDocumentPage({
       ) : (
         <>
           <p className="text-sm leading-normal text-muted-foreground">
-            版 {document.version}・{formatWarekiDate(new Date(document.publishedAt))}公開
+            版 {document.version}・
+            {formatWarekiDate(DateTime.toDate(DateTime.makeUnsafe(document.publishedAt)))}公開
           </p>
           <article className="text-base leading-relaxed whitespace-pre-wrap text-foreground">
             {document.body}
