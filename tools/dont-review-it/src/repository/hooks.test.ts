@@ -333,7 +333,7 @@ describe("lifecycle contents", () => {
     ]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(dependencies(".", "prepush")).toContain("check:code");
-    expect(reachable(".", ["prepush"])).toEqual(
+    expect(reachable(".", ["prepush"])).toStrictEqual(
       expect.arrayContaining([
         "check:code",
         "check:effect",
@@ -407,7 +407,7 @@ describe("test ownership", () => {
     expect.hasAssertions();
     expect(toolsPackagesWithTests().length).toBeGreaterThan(0);
     expect(uncoveredToolTestPackages()).toStrictEqual([]);
-    expect(testProjectDirectories).toEqual(
+    expect(testProjectDirectories).toStrictEqual(
       expect.arrayContaining(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, ""))),
     );
   });

@@ -8,7 +8,7 @@ import { applications } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
-import { ANALYSIS_TIMEOUT, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
+import { skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 interface Scan {

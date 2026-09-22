@@ -108,7 +108,7 @@ describe("atom-server-data", () => {
     ],
   ])("allows non-server Atom usage: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reportedRules({ code, filename: "libs/ui/src/probe.ts" })).toStrictEqual([]);
+    expect(reportedRules({ code: code ?? "", filename: "libs/ui/src/probe.ts" })).toStrictEqual([]);
   });
 });
 
@@ -125,6 +125,8 @@ describe("retired server-state imports", () => {
     ["react-query", 'export * from "react-query";'],
   ])("rejects %s imports", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reported("retired-imports", { code, filename: "libs/ui/src/probe.ts" })).toBe(true);
+    expect(
+      reported("retired-imports", { code: code ?? "", filename: "libs/ui/src/probe.ts" }),
+    ).toBe(true);
   });
 });

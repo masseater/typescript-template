@@ -45,6 +45,11 @@ describe("paraglide message catalogs", () => {
     expect.hasAssertions();
     const workspace = workspaceManifests.find(({ file }) => file === `apps/${app}/package.json`);
     expect(workspace).toBeDefined();
-    expect(field(workspace?.manifest.dependencies, "@inlang/paraglide-js")).toBe("catalog:");
+    if (workspace === undefined) {
+      return;
+    }
+    expect(field(field(workspace.manifest, "dependencies"), "@inlang/paraglide-js")).toBe(
+      "catalog:",
+    );
   });
 });

@@ -128,7 +128,7 @@ describe("effect diagnostics coverage", () => {
     expect(effectDiagnostics["check:effect"].command).toBe(
       '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
     );
-    expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
+    expect(appRun.tasks.build.dependsOn).toStrictEqual(expect.arrayContaining(["check:effect"]));
   });
 
   it("keeps Effect language-service diagnostics on and failing tsc", () => {

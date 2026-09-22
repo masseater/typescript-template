@@ -11,17 +11,16 @@ import {
 import configuration from "./stryker.ts";
 
 const qualityDirectory = fileURLToPath(new URL(".", import.meta.url));
-const sandboxUnsafeName = /\.sandbox-unsafe\.test\.ts$/u;
 
 const onDiskSandboxUnsafe = (): string[] =>
   readdirSync(qualityDirectory)
-    .filter((file) => sandboxUnsafeName.test(file))
+    .filter((file) => file.endsWith(".sandbox-unsafe.test.ts"))
     .map((file) => `tools/dont-review-it/src/repository/${file}`)
     .toSorted();
 
 const unmarkedSandboxUnsafe = (): string[] => {
   return readdirSync(qualityDirectory)
-    .filter((file) => file.endsWith(".test.ts") && !sandboxUnsafeName.test(file))
+    .filter((file) => file.endsWith(".test.ts") && !file.endsWith(".sandbox-unsafe.test.ts"))
     .filter((file) => {
       const source = readFileSync(new URL(file, import.meta.url), "utf8");
       return sandboxUnsafeReasons.some((reason) => source.includes(reason));

@@ -40,7 +40,9 @@ describe("shared task cache", () => {
         ok: true,
         path: cache,
       });
-      await expect(readFile(path.join(cache, "stale"), "utf8")).rejects.toThrow();
+      await expect(readFile(path.join(cache, "stale"), "utf8")).rejects.toThrow(
+        /ENOENT|no such file/u,
+      );
     } finally {
       await rm(root, { force: true, recursive: true });
     }

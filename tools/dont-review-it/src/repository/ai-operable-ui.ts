@@ -56,7 +56,7 @@ const hoverOnlyActionViolations = (source: string): string[] => {
     ...source.matchAll(/className\s*=\s*(?:\{`([^`]*)`\}|"([^"]*)"|'([^']*)')/gu),
   ];
   const hovering = classBlocks.some((match) => {
-    const classes = match[1] ?? match[2] ?? match[3]!;
+    const classes = match[1] ?? match[2] ?? match[3] ?? "";
     return hoverHidden.test(classes) && hoverReveal.test(classes);
   });
   return hovering

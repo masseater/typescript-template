@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 
+import { type WorkspaceManifest } from "./dependencies.ts";
 import {
   moduleSpecifiers,
   repositorySingleConsumerFindings,
   singleConsumerAllowlist,
   singleConsumerFindings,
   type SourceText,
-  type WorkspaceManifest,
 } from "./single-consumer.ts";
 
 const workspace = (
