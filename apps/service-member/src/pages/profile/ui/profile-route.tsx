@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 
-import { ProfilePage, memberOptions } from "#pages/profile/index.ts";
+import { memberOptions } from "../api/load-member.ts";
+import { ProfilePage } from "./profile-page.tsx";
 
 import type { ReactElement } from "react";
 

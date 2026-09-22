@@ -61,7 +61,7 @@ erDiagram
 - `direct` の参加者は常に 2 人で、同じ 2 人の組に対する Conversation は 1 つまでである
 - 無料の利用者が、まだメッセージの無い相手へ最初のメッセージを送ることはできない。届いたメッセージへの返信は無料でもできる
 - 未読件数は、各 ConversationParticipant の `lastReadAt` より後の、自分以外の Message の件数である
-- Group は 1 つの Conversation を裏に持つ。GroupInvite のリンクから入った利用者だけが、所有者以外の参加経路になる
+- Group は 1 つの Conversation を裏に持つ。GroupInvite のリンクから入った利用者だけが、所有者以外の参加のしかたになる
 - ブロックしている相手との `direct` は新規に作れない。既存の Conversation は残るが、ブロック中は新しい Message を送れない
 
 ## 画面

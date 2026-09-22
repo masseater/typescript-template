@@ -4,9 +4,9 @@ import {
   ProfileFailed,
   ProfileMissing,
   ProfilePending,
+  ProfileRoute,
   memberOptions,
 } from "#pages/profile/index.ts";
-import { ProfileRoute } from "./-profile-route.tsx";
 
 import type { QueryClient } from "@tanstack/react-query";
 

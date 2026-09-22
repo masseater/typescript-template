@@ -13,7 +13,11 @@ describe("steiger coverage", () => {
       .map((app) => `apps/${app}: ${commands(`apps/${app}`, "check").join(" ")}`)
       .toSorted();
     expect(checks).toStrictEqual(
-      applications.map((app) => `apps/${app}: steiger src --fail-on-warnings`).toSorted(),
+      applications
+        .map(
+          (app) => `apps/${app}: steiger src --fail-on-warnings && quality-check-thin-app-routes`,
+        )
+        .toSorted(),
     );
   });
 });

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { profileOptions } from "#entities/profile/index.ts";
-import { ProfileEditRoute } from "./-profile-edit-route.tsx";
+import { ProfileEditRoute } from "#pages/profile-edit/index.ts";
 
 import type { QueryClient } from "@tanstack/react-query";
 

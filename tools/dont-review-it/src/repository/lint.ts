@@ -138,6 +138,7 @@ const lintOptions = {
         "project/example-values": LINT_SEVERITY.ERROR,
         "project/git-environment": LINT_SEVERITY.ERROR,
         "project/layers": LINT_SEVERITY.ERROR,
+        "project/thin-app-routes": LINT_SEVERITY.ERROR,
         "project/logs": LINT_SEVERITY.ERROR,
         "project/no-internal-mocks": LINT_SEVERITY.ERROR,
         "project/no-manual-memoization": LINT_SEVERITY.ERROR,

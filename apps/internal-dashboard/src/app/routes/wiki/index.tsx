@@ -1,15 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { DocsPage, loadWikiPage } from "#pages/docs/index.ts";
-
-import type { ReactElement } from "react";
-
-function WikiIndexPage(): ReactElement {
-  return <DocsPage data={Route.useLoaderData()} />;
-}
+import { WikiIndexRoute, loadWikiPage } from "#pages/docs/index.ts";
 
 const Route = createFileRoute("/wiki/")({
-  component: WikiIndexPage,
+  component: WikiIndexRoute,
   loader: () => loadWikiPage({ data: [] }),
 });
 

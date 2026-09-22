@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { LoginPage } from "#pages/account/login/index.ts";
+import { LoginPage } from "./login-page.tsx";
 
 import type { ReactElement } from "react";
 
