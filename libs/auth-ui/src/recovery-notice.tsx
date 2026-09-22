@@ -19,13 +19,8 @@ const RecoveryNotice = ({
   }
   return (
     <>
-<<<<<<< HEAD
-      <StatusMessage>バックアップコードでログインしました。</StatusMessage>
-      {role !== ROLE.member ? (
-=======
       <StatusMessage>{"バックアップコードでログインしました。"}</StatusMessage>
-      {role === ROLE.administrator ? (
->>>>>>> origin/main
+      {role !== ROLE.member ? (
         <StatusMessage>
           {
             "復旧コードでは管理者操作はできません。ログアウト後、登録済みのパスキーまたは認証アプリで\n          ログインしてください。どちらも使えない場合は、この画面から管理者の認証設定を復旧できません。"
