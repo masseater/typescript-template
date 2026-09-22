@@ -4,7 +4,7 @@ import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { AdminFrame } from "#widgets/admin-frame/index.ts";
+import { AdminFrame } from "./admin-frame.tsx";
 
 import type { ReactElement } from "react";
 

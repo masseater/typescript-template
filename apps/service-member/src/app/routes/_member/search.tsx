@@ -4,12 +4,12 @@ import { Schema } from "effect";
 import {
   InvalidUsersSearch,
   PaidPlanRequired,
+  SearchRoute,
   UsersFailed,
   UsersPending,
   loadMembers,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
-import { SearchRoute } from "./-search-route.tsx";
 
 import type { UsersSearch } from "#pages/users/index.ts";
 

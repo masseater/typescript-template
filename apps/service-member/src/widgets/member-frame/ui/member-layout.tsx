@@ -1,6 +1,6 @@
 import { Outlet, getRouteApi } from "@tanstack/react-router";
 
-import { MemberFrame } from "#widgets/member-frame/index.ts";
+import { MemberFrame } from "./member-frame.tsx";
 
 import type { ReactElement } from "react";
 

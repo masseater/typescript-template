@@ -6,10 +6,10 @@ import {
   ThreadFailed,
   ThreadMissing,
   ThreadPending,
+  ThreadRoute,
   loadThread,
   normalizeThreadSearch,
 } from "#pages/board/index.ts";
-import { ThreadRoute } from "./-thread-route.tsx";
 
 import type { ThreadSearch } from "#pages/board/index.ts";
 

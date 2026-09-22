@@ -3,7 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
-import { baselineProfileLayout, ProfileLayoutRenderer } from "#shared/profile-layout/index.ts";
+import { ProfileLayoutRenderer } from "#shared/profile-layout/index.ts";
 
 import type { Member } from "#pages/profile/model/member.ts";
 
@@ -13,7 +13,15 @@ const member = {
   name: "山田 花子",
   photos: { company: null, face: null },
   profile: "本屋めぐりをしています。",
-  profileLayout: baselineProfileLayout,
+  profileLayout: {
+    blocks: [
+      { kind: "identity" },
+      { kind: "biography" },
+      { kind: "social-links" },
+      { kind: "joined" },
+      { kind: "actions" },
+    ],
+  },
   sheet: {},
   socialLinks: [],
 } as const satisfies Member;
