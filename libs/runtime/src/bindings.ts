@@ -21,6 +21,9 @@ import type { TelemetryInvalid } from "@repo/observability";
 const isFetcher = (value: unknown): value is AssetFetcher =>
   typeof value === "object" && value !== null && typeof Reflect.get(value, "fetch") === "function";
 
+const isCoreFetcher = (value: unknown): value is Fetcher =>
+  typeof value === "object" && value !== null && typeof Reflect.get(value, "fetch") === "function";
+
 const isFlagship = (value: unknown): value is Flagship =>
   typeof value === "object" &&
   value !== null &&
@@ -97,9 +100,20 @@ type LoadedBinding = {
   readonly OTLP_AUTHORIZATION: string | undefined;
 };
 
-type WorkerAppConfig = AppConfig & { readonly AI: WorkersAi.WorkersAiBinding | undefined };
+type WorkerAppConfig = AppConfig & {
+  readonly AI: WorkersAi.WorkersAiBinding | undefined;
+  readonly CORE: Fetcher;
+};
 
 type WorkerModel = WorkersAi.WorkersAiBinding;
+
+const readCore = (env: WorkerEnv): Effect.Effect<Fetcher, ConfigurationInvalid> => {
+  const core = Reflect.get(env, "CORE");
+  if (!isCoreFetcher(core)) {
+    return Effect.fail(new ConfigurationInvalid({ reason: "CORE" }));
+  }
+  return Effect.succeed(core);
+};
 
 const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfig(env: unknown) {
   if (!isWorkerEnv(env)) {
@@ -119,11 +133,13 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
   if (scalars.MAILPIT_URL === undefined && loaded.EMAIL === undefined) {
     return yield* new ConfigurationInvalid({ reason: "An email delivery binding is required" });
   }
+  const core = yield* readCore(env);
   const flags = Reflect.get(env, "FLAGS");
   const config: WorkerAppConfig = {
     ...scalars,
     AI: loaded.AI,
     ASSETS: loaded.ASSETS,
+    CORE: core,
     DB: loaded.DB,
     ...(loaded.EMAIL === undefined ? {} : { EMAIL: loaded.EMAIL }),
     ...(isFlagship(flags) ? { FLAGS: flags } : {}),

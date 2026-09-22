@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { httpStatus } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appEnvironment } from "@repo/runtime/testing";
 import { serveApp, workerRuntime } from "@repo/runtime/worker";
@@ -45,10 +45,13 @@ describe("a wiki worker whose database has not been migrated", () => {
   it.effect("names the missing table that broke the layer", () =>
     Effect.gen(function* program() {
       const logs = recordingSink();
-      const response = yield* servedUnavailable(() => wikiLayer(appEnvironment(), validRoutes), {
+      const response = yield* servedUnavailable(
+        () => wikiLayer(appEnvironment({}, APPLICATION.wiki), validRoutes),
+        {
         log: logs.sink,
         service: wikiService,
-      });
+      },
+      );
       assert.strictEqual(response.status, httpStatus.serviceUnavailable);
       const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
       assert.notInclude(error, "oauth_resource");

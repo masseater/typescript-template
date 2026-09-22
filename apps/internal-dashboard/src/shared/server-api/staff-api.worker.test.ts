@@ -70,8 +70,10 @@ const seedAccounts = Effect.gen(function* seedAccounts() {
 }).pipe(Effect.provide(TestDatabase));
 
 function wikiApp() {
-  Object.assign(env, appEnvironment());
-  const runtime = workerRuntime(() => Layer.orDie(wikiLayer(appEnvironment(), routes)));
+  Object.assign(env, appEnvironment({}, APPLICATION.wiki));
+  const runtime = workerRuntime(() =>
+    Layer.orDie(wikiLayer(appEnvironment({}, APPLICATION.wiki), routes)),
+  );
   const routesFor = apiRoutes(runtime, reporting);
   const app = createApi(apiRoot).use(staffApi(routesFor)).use(flagsApi(routesFor));
   const cookieOf = (actor: Actor): Effect.Effect<string> =>

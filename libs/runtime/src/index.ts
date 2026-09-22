@@ -5,7 +5,8 @@ import { Layer } from "effect";
 
 import { AppOrigin } from "./app-origin.ts";
 import { Assets } from "./assets.ts";
-import { DatabaseHealth } from "./database-health.ts";
+import { CoreHealth } from "./core-health.ts";
+import { Core } from "./core.ts";
 import { FileStore } from "./file-store.ts";
 import { ReadCache } from "./read-cache.ts";
 
@@ -17,15 +18,18 @@ type AppServices =
   | AppOrigin
   | Assets
   | Auth
+  | Core
+  | CoreHealth
   | Database
-  | DatabaseHealth
   | FileStore
   | ReadCache
   | Telemetry
   | TelemetryFlusher;
 
+type AppLayerConfig = AppConfig & { readonly CORE: Fetcher };
+
 function configuredAppLayer(
-  config: AppConfig,
+  config: AppLayerConfig,
   audience: Application,
   routes: Readonly<Record<string, string>>,
   storage: {
@@ -33,7 +37,7 @@ function configuredAppLayer(
     readonly files: Parameters<typeof FileStore.layer>[0];
   } = { cache: undefined, files: undefined },
 ): Layer.Layer<AppServices, AuthFailure | TelemetryInvalid> {
-  const database = DatabaseHealth.layer.pipe(Layer.provideMerge(Database.layer(config.DB)));
+  const database = Database.layer(config.DB);
   const auth = Auth.layer({
     audience,
     baseURL: config.APP_ORIGIN,
@@ -50,8 +54,11 @@ function configuredAppLayer(
     routes,
     serviceName: audience,
   });
+  const core = Layer.succeed(Core, { audience, fetcher: config.CORE });
   const services = Layer.mergeAll(
     auth,
+    core,
+    CoreHealth.layer.pipe(Layer.provide(core)),
     Layer.succeed(AppOrigin, config.APP_ORIGIN),
     Layer.succeed(Assets, config.ASSETS),
     FileStore.layer(storage.files),
@@ -61,7 +68,8 @@ function configuredAppLayer(
 }
 
 export { configuredAppLayer };
-export type { AppServices };
+export type { AppLayerConfig, AppServices };
 export { FileStore } from "./file-store.ts";
 export type { StoredFile } from "./file-store.ts";
 export { StorageFailed } from "./storage-failed.ts";
+export { Core, forwardAuth, readSession } from "./core.ts";

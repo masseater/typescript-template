@@ -1,6 +1,12 @@
-import { handleAuthRequest, verifySession } from "@repo/auth";
+import { verifySession } from "@repo/auth";
 import { APPLICATION } from "@repo/config";
-import { accountApi, sessionFailures, unavailable } from "@repo/runtime/account";
+import {
+  accountApi,
+  forbidden,
+  forwardAuth,
+  sessionFailures,
+  unavailable,
+} from "@repo/runtime/account";
 import { apiDocs, apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 
 import { serveMcp } from "#shared/admin/index.ts";
@@ -12,11 +18,18 @@ import { reporting, runtime } from "./runtime.ts";
 
 const api = apiRoutes(runtime, reporting);
 
+const docsSessionFailures = {
+  ...sessionFailures,
+  ...unavailable,
+  AdminMfaRequired: forbidden,
+  AdminRequired: forbidden,
+} as const;
+
 const adminApi = createApi(apiRoot)
   .use(
     apiDocs(
       APPLICATION.admin,
-      api.guard((request) => verifySession(request.headers), sessionFailures),
+      api.guard((request) => verifySession(request.headers), docsSessionFailures),
     ),
   )
   .use(accountApi(api))
@@ -27,7 +40,7 @@ const adminApi = createApi(apiRoot)
 
 const adminProtocol = createApi("")
   .all("/mcp", ...api.raw(serveMcp, unavailable))
-  .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));
+  .all("/.well-known/oauth-*", ...api.raw(forwardAuth, {}));
 
 export { adminApi, adminProtocol, adminApi as app };
 export default adminApi;

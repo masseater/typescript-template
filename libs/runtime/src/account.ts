@@ -1,11 +1,4 @@
-import {
-  InviteRejected,
-  acceptInvitation,
-  handleAuthRequest,
-  previewInvitation,
-  verifyEmailToken,
-  verifySession,
-} from "@repo/auth";
+import { InviteRejected, acceptInvitation, previewInvitation, verifyEmailToken } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { Telemetry, ingestBrowser } from "@repo/observability";
 import { Effect } from "effect";
@@ -20,10 +13,12 @@ import {
   InvitePreviewQuery,
   SessionView,
 } from "./contracts.ts";
-import { DatabaseHealth } from "./database-health.ts";
+import { CoreHealth } from "./core-health.ts";
+import { forwardAuth, readSession } from "./core.ts";
 import { createApi, failureBy } from "./http.ts";
 
 import type { EmailVerificationFailed } from "@repo/auth";
+import type { SessionRpcError } from "./core.ts";
 import type { Failure, FailureTable } from "./failures.ts";
 import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
@@ -35,17 +30,21 @@ const forbidden = {
 const authUnavailable = { AuthFailure: "unexpected" } as const;
 const databaseUnavailable = { DatabaseFailure: "unexpected" } as const;
 const unavailable = { ...authUnavailable, ...databaseUnavailable } as const;
+const coreUnavailable = { RpcClientError: "unexpected" } as const;
 
 const sessionFailures = {
-  ...unavailable,
-  AdminMfaRequired: forbidden,
-  AdminRequired: forbidden,
+  ...coreUnavailable,
   SessionInvalid: forbidden,
   SessionRequired: { message: "ログインしてください。", status: httpStatus.unauthorized },
-} as const satisfies FailureTable<Effect.Error<ReturnType<typeof verifySession>>>;
+} as const satisfies FailureTable<SessionRpcError>;
+
+const healthFailures = {
+  ...databaseUnavailable,
+  ...coreUnavailable,
+} as const;
 
 const health = Effect.fn("health")(function* health() {
-  yield* (yield* DatabaseHealth).check;
+  yield* (yield* CoreHealth).check;
   const telemetry = yield* Telemetry;
   return { ok: true, release: telemetry.release, service: telemetry.serviceName } as const;
 });
@@ -82,6 +81,8 @@ const inviteRejected = failureBy(
 
 const privileged = {
   ...sessionFailures,
+  AdminMfaRequired: forbidden,
+  AdminRequired: forbidden,
   AdminStrongSessionRequired: forbidden,
   EmailDeliveryFailed: "unexpected",
   InviteRejected: inviteRejected,
@@ -90,6 +91,7 @@ const privileged = {
     message: "対象が存在しないか、操作権限が失効しています。",
     status: httpStatus.conflict,
   },
+  ...unavailable,
 } as const;
 
 const inviteFailures = { ...unavailable, InviteRejected: inviteRejected };
@@ -135,16 +137,12 @@ function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requiremen
 
 function sessionApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
-    .all("/auth/*", ...api.raw(handleAuthRequest, authUnavailable))
+    .all("/auth/*", ...api.raw(forwardAuth, {}))
     .post("/telemetry", ...api.raw(ingestBrowser, {}))
-    .get("/health", ...api.route({ response: HealthView }, health, databaseUnavailable))
+    .get("/health", ...api.route({ response: HealthView }, health, healthFailures))
     .get(
       "/session",
-      ...api.route(
-        { response: SessionView },
-        (request) => verifySession(request.headers, true),
-        sessionFailures,
-      ),
+      ...api.route({ response: SessionView }, (request) => readSession(request), sessionFailures),
     );
 }
 
@@ -166,6 +164,7 @@ export {
   authUnavailable,
   databaseUnavailable,
   forbidden,
+  forwardAuth,
   inviteApi,
   privileged,
   sessionApi,

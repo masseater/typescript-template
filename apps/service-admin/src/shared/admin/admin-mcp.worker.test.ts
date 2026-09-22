@@ -62,7 +62,10 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
       Layer.merge(
         Layer.succeed(Auth, adminAuth),
         appLayer(
-          appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret }),
+          appEnvironment(
+            { APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret },
+            APPLICATION.admin,
+          ),
           APPLICATION.admin,
           routes,
         ),
