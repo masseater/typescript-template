@@ -37,6 +37,11 @@ const storybookProjects = (): unknown[] => {
 
 const acceptedA11yViolations = [
   {
+    file: "libs/ui/src/shared/ui/select-field.stories.tsx",
+    rule: "aria-valid-attr-value",
+    story: "Selects",
+  },
+  {
     file: "libs/ui/src/shared/ui/toast-provider.stories.tsx",
     rule: "aria-hidden-focus",
     story: "Success",

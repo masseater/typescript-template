@@ -21,6 +21,7 @@ const DropdownMenuItem = ({
   return (
     <button
       type="button"
+      role="menuitem"
       data-slot="dropdown-menu-item"
       disabled={disabled}
       className={css({
