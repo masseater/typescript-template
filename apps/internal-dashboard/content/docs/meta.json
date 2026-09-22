@@ -1,3 +1,13 @@
 {
-  "pages": ["index", "getting-started", "data-model", "glossary", "guidelines", "pages", "plans"]
+  "pages": [
+    "index",
+    "getting-started",
+    "tech-stack",
+    "observability",
+    "data-model",
+    "glossary",
+    "guidelines",
+    "pages",
+    "plans"
+  ]
 }
