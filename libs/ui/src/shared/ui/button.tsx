@@ -32,8 +32,8 @@ const Button = ({
       disabled={disabled}
       onClick={(click) => {
         if (action !== undefined && type === "button") {
-          startTransition(async () => {
-            await action();
+          startTransition(() => {
+            void action();
           });
           return;
         }
