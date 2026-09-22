@@ -3,7 +3,7 @@ import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { WikiFrame } from "#widgets/wiki-frame/index.ts";
+import { WikiFrame } from "./wiki-frame.tsx";
 
 import type { ReactElement } from "react";
 

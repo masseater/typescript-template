@@ -5,10 +5,10 @@ import {
   InvalidUsersSearch,
   UsersFailed,
   UsersPending,
+  UsersRoute,
   loadMembers,
   normalizeUsersSearch,
 } from "#pages/users/index.ts";
-import { UsersRoute } from "./-users-route.tsx";
 
 import type { UsersSearch } from "#pages/users/index.ts";
 

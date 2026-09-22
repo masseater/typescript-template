@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { ThreadPage } from "#pages/board/index.ts";
+import { ThreadPage } from "./thread-page.tsx";
 
 import type { ReactElement } from "react";
 

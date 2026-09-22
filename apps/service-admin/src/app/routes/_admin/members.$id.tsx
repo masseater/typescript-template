@@ -1,16 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { MemberDetailPage } from "#pages/member-detail/index.ts";
-
-import type { ReactElement } from "react";
+import { MemberDetailRoute } from "#pages/member-detail/index.ts";
 
 const Route = createFileRoute("/_admin/members/$id")({
   component: MemberDetailRoute,
 });
-
-function MemberDetailRoute(): ReactElement {
-  const { id } = Route.useParams();
-  return <MemberDetailPage memberId={id} />;
-}
 
 export { Route };

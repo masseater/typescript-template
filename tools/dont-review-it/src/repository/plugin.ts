@@ -25,6 +25,7 @@ import {
   testImportGraphVisitor,
 } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
+import { thinAppRoutesVisitor } from "./thin-app-routes.ts";
 import { warekiFormatVisitor } from "./wareki-format.ts";
 
 const metadata = (violation: string): RuleMeta => {
@@ -314,6 +315,12 @@ const projectPlugin = definePlugin({
       create: layersVisitor,
       meta: metadata(
         "Feature-Sliced Design のアプリでは、src の直下に置けるのは app・pages・widgets・features・entities・shared の各レイヤーだけです。ファイルをいずれかのレイヤーのスライスかセグメントへ移してください。レイヤーの外は steiger の検査が届きません。",
+      ),
+    },
+    "thin-app-routes": {
+      create: thinAppRoutesVisitor,
+      meta: metadata(
+        "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。",
       ),
     },
     logs: {

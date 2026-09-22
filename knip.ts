@@ -16,6 +16,8 @@ const workspaces = {
       "@swc/core",
       "oxlint",
       "oxlint-tsgolint",
+      "textlint",
+      "textlint-rule-preset-ai-words-ja",
     ],
     project: ["*.{js,ts}"],
     vitest: {
