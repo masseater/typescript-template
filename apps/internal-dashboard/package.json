@@ -12,6 +12,7 @@
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/db": "workspace:*",
     "@repo/feature-flags": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
     "@repo/observability": "workspace:*",

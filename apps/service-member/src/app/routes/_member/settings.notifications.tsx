@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { NotificationsPage } from "#pages/settings/index.ts";
+import { SettingsNotificationsRoute, loadNotificationPreferences } from "#pages/settings/index.ts";
 
 const Route = createFileRoute("/_member/settings/notifications")({
-  component: NotificationsPage,
+  component: SettingsNotificationsRoute,
+  loader: () => loadNotificationPreferences().then((preferences) => ({ preferences })),
 });
 
 export { Route };

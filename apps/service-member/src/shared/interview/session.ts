@@ -1,9 +1,29 @@
-import { countInterviewTurn, findInterview, startInterview, storeInterview } from "@repo/db";
+import { AGREEMENT_KIND } from "@repo/config";
+import {
+  acceptAgreementVersions,
+  countInterviewTurn,
+  findInterview,
+  hasAcceptedLatestAgreement,
+  pendingAgreements,
+  startInterview,
+  storeInterview,
+} from "@repo/db";
 import { logAt } from "@repo/observability";
-import { Effect, Option, Schema } from "effect";
+import { DateTime, Effect, Option, Schema } from "effect";
 
+import { assembleProfileLayout } from "#shared/profile-layout/assembler.ts";
+import { writeSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { viewOf } from "./contracts.ts";
-import { accepts, advance, begin, needsModel, save, spoken } from "./engine.ts";
+import {
+  accepts,
+  advance,
+  begin,
+  clearConversation,
+  needsModel,
+  requestHistoryConsent,
+  save,
+  spoken,
+} from "./engine.ts";
 import { Interviewer } from "./interviewer.ts";
 import { fieldKeys } from "./sheet.ts";
 import { State } from "./state.ts";
@@ -110,17 +130,74 @@ const takeTurn = Effect.fn("interview.turn")(function* takeTurn(
   return view;
 });
 
+const finishSaving = Effect.fn("interview.finishSaving")(function* finishSaving(
+  userId: string,
+  version: number,
+  state: Exclude<InterviewState, { readonly phase: "asking" }>,
+) {
+  const layout = yield* assembleProfileLayout(state.sheet);
+  const savedSheet = yield* Effect.orDie(writeSavedSheet(state.sheet, layout));
+  const accepted = yield* hasAcceptedLatestAgreement(userId, AGREEMENT_KIND.interview_history);
+  const next = accepted ? save(state) : requestHistoryConsent(state);
+  return yield* replace(userId, version, { savedSheet, state: next });
+});
+
 const saveInterview = Effect.fn("interview.save")(function* saveInterview(userId: string) {
   const { state, version } = yield* current(userId);
   if (state.phase !== "summary") {
     return yield* new TurnRejected();
   }
-  return yield* replace(userId, version, { savedSheet: state.sheet, state: save(state) });
+  return yield* finishSaving(userId, version, state);
 });
+
+const respondHistoryConsent = Effect.fn("interview.respondHistoryConsent")(
+  function* respondHistoryConsent(userId: string, accept: boolean) {
+    const { state, version } = yield* current(userId);
+    if (state.phase !== "history_consent") {
+      return yield* new TurnRejected();
+    }
+    if (accept) {
+      const [pending] = (yield* pendingAgreements(userId)).filter(
+        (agreement) => agreement.kind === AGREEMENT_KIND.interview_history,
+      );
+      if (pending === undefined) {
+        return yield* replace(userId, version, { state: save(state) });
+      }
+      const acceptedAt = DateTime.toDate(yield* DateTime.now);
+      yield* acceptAgreementVersions({
+        acceptedAt,
+        userId,
+        versionIds: [pending.id],
+      });
+      return yield* replace(userId, version, { state: save(state) });
+    }
+    return yield* replace(userId, version, { state: clearConversation(state) });
+  },
+);
+
+const withdrawInterviewHistoryConsent = Effect.fn("interview.withdrawHistoryConsent")(
+  function* withdrawInterviewHistoryConsent(userId: string) {
+    const { state, version } = yield* current(userId);
+    if (state.phase === "history_consent") {
+      return yield* replace(userId, version, { state: clearConversation(state) });
+    }
+    if (state.phase === "saved" && state.messages.length > 1) {
+      return yield* replace(userId, version, { state: clearConversation(state) });
+    }
+    return viewOf(state);
+  },
+);
 
 const restartInterview = Effect.fn("interview.restart")(function* restartInterview(userId: string) {
   const { version } = yield* current(userId);
   return yield* replace(userId, version, { savedSheet: null, state: begin() });
 });
 
-export { openInterview, restartInterview, saveInterview, takeTurn };
+export {
+  openInterview,
+  respondHistoryConsent,
+  restartInterview,
+  saveInterview,
+  takeTurn,
+  withdrawInterviewHistoryConsent,
+};

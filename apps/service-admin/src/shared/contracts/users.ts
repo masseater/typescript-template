@@ -1,13 +1,12 @@
-import { roles } from "@repo/config";
+import { accountStates } from "@repo/config";
 import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
+import { Identifier } from "@repo/runtime/contracts";
 import { Effect, Schema, SchemaGetter } from "effect";
 
-const maximumIdentifierLength = 256;
 const maximumKeywordLength = 100;
 const secondPage = 2;
 
-const Role = Schema.Literals(roles);
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
+const AccountState = Schema.Literals(accountStates);
 
 function pageNumber(
   fallback: number,
@@ -39,38 +38,38 @@ function laterPage(maximum: number): Schema.Codec<number, number | string> {
 }
 
 const UserListQuery = Schema.Struct({
+  accountState: Schema.optionalKey(AccountState),
   emailVerified: Schema.optionalKey(BooleanText),
   keyword: Schema.optionalKey(UserKeyword),
   limit: pageNumber(adminPageSize, 1, maximumAdminPageSize),
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
-  role: Schema.optionalKey(Role),
 });
 
 const UserSummary = Schema.Struct({
+  accountState: AccountState,
   createdAt: Schema.DateFromString,
   email: Schema.String,
   emailVerified: Schema.Boolean,
   id: Schema.String,
   name: Schema.String,
-  role: Role,
   twoFactorEnabled: Schema.Boolean,
 });
 
 const UserList = Schema.Struct({ total: Schema.Finite, users: Schema.Array(UserSummary) });
 
-const RoleChange = Schema.Struct({ id: Identifier, role: Role });
+const MemberStateChange = Schema.Struct({ accountState: AccountState, id: Identifier });
 
-const RoleChanged = Schema.Struct({ id: Schema.String, role: Role });
+const MemberStateChanged = Schema.Struct({ accountState: AccountState, id: Schema.String });
 
 const UserDeletion = Schema.Struct({ id: Identifier });
 
 const UserDeleted = Schema.Struct({ id: Schema.String });
 
 export {
+  AccountState,
   BooleanText,
-  Role,
-  RoleChange,
-  RoleChanged,
+  MemberStateChange,
+  MemberStateChanged,
   SearchKeyword,
   UserDeleted,
   UserDeletion,
