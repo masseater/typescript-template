@@ -25,13 +25,25 @@ const recordedRows = Effect.fn("recordedRows")(function* recordedRows<Failure, R
   stacks: readonly StackName[],
 ) {
   const state = yield* store;
-  const found = yield* Effect.forEach(stacks, (stack) =>
+  const results = yield* Effect.forEach(stacks, (stack) =>
     readState({ path: `${stackName(stack)}/${prefix}`, recursive: true }).pipe(
       Effect.provideService(State, Effect.succeed(state)),
-      Effect.map((entries) => entries.map((entry) => entry.value)),
+      Effect.map((entries) => ({
+        missing: undefined,
+        rows: entries.map((entry) => entry.value),
+      })),
+      Effect.catchTag("InvalidStatePath", (error) =>
+        error.reason === "path does not exist"
+          ? Effect.succeed({ missing: error, rows: [] })
+          : Effect.fail(error),
+      ),
     ),
   );
-  return found.flat();
+  if (results.every((result) => result.rows.length === 0)) {
+    const missing = results.find((result) => result.missing !== undefined)?.missing;
+    return missing === undefined ? [] : yield* missing;
+  }
+  return results.flatMap((result) => result.rows);
 });
 
 const recordedDatabaseIds = Effect.fn("recordedDatabaseIds")(function* recordedDatabaseIds<
