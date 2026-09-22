@@ -132,7 +132,7 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     readonly sessionId: string;
   }) {
     const actor = yield* requirePublishingAdmin(published.sessionId);
-    const publishedAt = DateTime.toDate(yield* DateTime.now);
+    const publishedAt = DateTime.toDate(DateTime.nowUnsafe());
     const change = {
       action: AUDIT_ACTION.agreementPublished,
       actorId: actor.user.id,

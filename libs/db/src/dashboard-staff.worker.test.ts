@@ -192,7 +192,7 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
         .then(() => undefined),
     );
     yield* refreshMetricSnapshots();
-    const today = bucketFor(METRIC_PERIOD.daily, DateTime.toDate(DateTime.nowUnsafe()));
+    const today = bucketFor(METRIC_PERIOD.daily, DateTime.toDate(yield* DateTime.now));
     const wikiSnapshots = yield* query((database) =>
       database
         .select()
