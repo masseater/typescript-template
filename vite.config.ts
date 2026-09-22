@@ -9,7 +9,7 @@ import {
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
-import { lifecycle, taskInput } from "@repo/vite-config";
+import { lifecycle, taskInput, workspaceParaglideCompile } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -27,8 +27,10 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
+      "compile:paraglide": workspaceParaglideCompile,
       "check:types": {
         command: "dont-review-it-typecheck",
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
       "check:canonical-literal-types": {
@@ -37,6 +39,7 @@ export default defineConfig({
       },
       knip: {
         command: ["knip", "knip --strict"],
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
@@ -46,6 +49,7 @@ export default defineConfig({
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
+        dependsOn: ["compile:paraglide"],
         input: [
           ...taskInput,
           "!coverage/**",
@@ -55,7 +59,11 @@ export default defineConfig({
         ],
         output: [],
       },
-      "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
+      "test:dev-server": {
+        cache: false,
+        command: "vp test run --project dev-server",
+        dependsOn: ["compile:paraglide"],
+      },
       "test:workers": {
         command: "vp test run --project workers",
         input: [

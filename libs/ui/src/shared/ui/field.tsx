@@ -1,12 +1,26 @@
-import { Field as FieldPrimitive } from "@base-ui/react/field";
+import { FormControl } from "baseui/form-control";
+import { type ComponentProps, type ReactElement } from "react";
 
+import { localState } from "../../local-state";
 import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
 import {
   fieldValidationMessageKinds,
   useFieldValidationMessages,
 } from "./field-validation-messages";
 
-import type { ComponentProps, ReactElement } from "react";
+const useConstraintMessage = localState<string | undefined>(undefined);
+
+const messageForValidity = (
+  validity: globalThis.ValidityState,
+  validationMessages: ReturnType<typeof useFieldValidationMessages>,
+): string | undefined => {
+  for (const constraint of fieldValidationMessageKinds) {
+    if (validity[constraint]) {
+      return validationMessages[constraint];
+    }
+  }
+  return undefined;
+};
 
 const Field = ({
   autoComplete,
@@ -35,7 +49,7 @@ const Field = ({
       | "one-time-code"
       | "username";
     label: string;
-    onValueChange?: (value: string) => void;
+    onValueChange?: (nextValue: string) => void;
   }
 > &
   Readonly<
@@ -43,11 +57,31 @@ const Field = ({
     | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
   >): ReactElement => {
   const validationMessages = useFieldValidationMessages();
-  return (
-    <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
-      <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
-      <FieldPrimitive.Control
-        render={multiline === true ? <textarea aria-label={label} /> : undefined}
+  const [constraintMessage, setConstraintMessage] = useConstraintMessage();
+  const syncConstraintMessage = (validity: globalThis.ValidityState): void => {
+    setConstraintMessage(messageForValidity(validity, validationMessages));
+  };
+  const control =
+    multiline === true ? (
+      <textarea
+        aria-label={label}
+        name={name}
+        value={value}
+        readOnly={readOnly}
+        required={required}
+        maxLength={maxLength}
+        minLength={minLength}
+        className={`block field-sizing-content min-h-16 ${controlClassName}`}
+        onBlur={(blur) => {
+          syncConstraintMessage(blur.currentTarget.validity);
+        }}
+        onChange={(change) => {
+          onValueChange?.(change.currentTarget.value);
+        }}
+      />
+    ) : (
+      <input
+        aria-label={label}
         type={type}
         name={name}
         value={value}
@@ -58,15 +92,28 @@ const Field = ({
         pattern={pattern}
         readOnly={readOnly}
         required={required}
-        onValueChange={onValueChange}
-        className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
+        className={`inline-block leading-none ${controlClassName}`}
+        onBlur={(blur) => {
+          syncConstraintMessage(blur.currentTarget.validity);
+        }}
+        onChange={(change) => {
+          onValueChange?.(change.currentTarget.value);
+        }}
       />
-      {fieldValidationMessageKinds.map((constraint) => (
-        <FieldPrimitive.Error key={constraint} match={constraint} className={errorClassName}>
-          {validationMessages[constraint]}
-        </FieldPrimitive.Error>
-      ))}
-    </FieldPrimitive.Root>
+    );
+  return (
+    <div data-slot="field" className={fieldClassName}>
+      <FormControl
+        label={<span className={labelClassName}>{label}</span>}
+        error={
+          constraintMessage === undefined ? null : (
+            <span className={errorClassName}>{constraintMessage}</span>
+          )
+        }
+      >
+        {control}
+      </FormControl>
+    </div>
   );
 };
 

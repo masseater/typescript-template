@@ -338,6 +338,42 @@ const appRun = (app: Application): RunConfig => ({
   },
 });
 
+const workspaceParaglideCompile = {
+  command: "./libs/vite-config/src/compile-workspace-paraglide.ts",
+  input: [
+    ...taskInput,
+    { base: "workspace", pattern: "apps/*/messages/**" },
+    { base: "workspace", pattern: "apps/*/project.inlang/**" },
+    { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
+    { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
+    { base: "workspace", pattern: "libs/vite-config/src/compile-workspace-paraglide.ts" },
+  ],
+  output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
+} satisfies NonNullable<Tasks[string]>;
+
+const paraglideCompileInputs = [
+  ...taskInput,
+  "messages/**",
+  "project.inlang/**",
+  { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
+  { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
+] as const;
+
+const paraglideAppRun = (app: Application): RunConfig => ({
+  tasks: {
+    ...appRun(app).tasks,
+    "compile:paraglide": {
+      command: "../../libs/vite-config/src/compile-paraglide.ts",
+      input: [...paraglideCompileInputs],
+      output: [".paraglide/**"],
+    },
+    "check:effect": {
+      ...effectDiagnostics["check:effect"],
+      dependsOn: ["compile:paraglide"],
+    },
+  },
+});
+
 const coreDevWorker = {
   config: {
     compatibility_date: workerCompatibility.date,
@@ -444,7 +480,9 @@ export {
   effectRun,
   inspectedLibraryRun,
   intentValidation,
+  paraglideAppRun,
   previewDevVars,
+  workspaceParaglideCompile,
   reactCompiler,
   serverOnlyMarkers,
   serverOnlyPackages,
@@ -461,7 +499,7 @@ export {
 };
 export { paths } from "./host.ts";
 export { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
-export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
+export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
 export { devBoundary };
