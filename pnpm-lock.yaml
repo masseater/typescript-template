@@ -438,9 +438,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
-      dependency-cruiser:
-        specifier: 'catalog:'
-        version: 18.3.1
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -1942,6 +1939,9 @@ importers:
       citty:
         specifier: 0.2.2
         version: 0.2.2
+      dependency-cruiser:
+        specifier: 'catalog:'
+        version: 18.3.1
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.112
@@ -2006,9 +2006,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.11(@vitest/browser@4.1.11)(vitest@4.1.11)
-      dependency-cruiser:
-        specifier: 'catalog:'
-        version: 18.3.1
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)

@@ -12,7 +12,7 @@ import {
   revokeUserSessions,
 } from "@repo/db";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { DateTime, Effect, Predicate } from "effect";
+import { DateTime, Effect, Predicate, Result } from "effect";
 
 import {
   deny,
@@ -268,11 +268,11 @@ const confirmsEmailChange = function confirmsEmailChange(
   ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
   const token = queryToken(ctx);
-  return (
-    ctx.path === emailVerificationPath &&
-    token !== undefined &&
-    emailChangeTarget(token) !== undefined
-  );
+  if (ctx.path !== emailVerificationPath || token === undefined) {
+    return false;
+  }
+  const target = emailChangeTarget(token);
+  return Result.isSuccess(target) && target.success !== undefined;
 };
 
 const notifyEmailChange = Effect.fn("notifyEmailChange")(function* notifyEmailChange(

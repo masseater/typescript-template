@@ -5,7 +5,7 @@ import { claimMailSlot, findUser, schema, type DrizzleDatabase } from "@repo/db"
 import { logAt, logCause } from "@repo/observability";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
-import { Clock, DateTime, Effect, Cause } from "effect";
+import { Cause, Clock, DateTime, Effect, Result } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
 import {
@@ -134,9 +134,13 @@ const createEmailVerification = (
     sendVerificationEmail: ({
       user,
       token,
-    }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) =>
-      run(
-        emailChangeTarget(token) === undefined
+    }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
+      const target = emailChangeTarget(token);
+      if (Result.isFailure(target)) {
+        return run(Effect.fail(target.failure));
+      }
+      return run(
+        target.success === undefined
           ? sendVerificationEmail(authOptions.mail, {
               email: user.email,
               url: verificationLink(origin, token),
@@ -145,7 +149,8 @@ const createEmailVerification = (
               email: user.email,
               url: emailChangeLink(origin, token),
             }),
-      ),
+      );
+    },
   };
 };
 
