@@ -12,6 +12,7 @@
     "./account": "./src/account.ts",
     "./jobs": "./src/jobs.ts",
     "./testing": "./src/app-fixture.ts",
+    "./reference-coverage": "./src/reference-coverage.ts",
     "./security": "./src/security.ts"
   },
   "scripts": {},
@@ -26,8 +27,7 @@
     "@repo/observability": "workspace:*",
     "effect": "catalog:",
     "effect-cf": "0.47.0",
-    "elysia": "2.0.0-beta.16",
-    "@elysia/openapi": "2.0.0-beta.4"
+    "elysia": "2.0.0-beta.16"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",

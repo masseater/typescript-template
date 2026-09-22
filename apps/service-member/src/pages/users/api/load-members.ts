@@ -49,4 +49,4 @@ function membersOptions(search: UsersSearch) {
 }
 
 export { PaidPlanRequired, membersOptions };
-export type { Member, Members };
+export type { Member };

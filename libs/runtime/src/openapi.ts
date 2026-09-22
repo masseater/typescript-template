@@ -28,6 +28,11 @@ type Guard = (context: { readonly request: Request }) => Promise<Response | unde
 interface Content {
   content: { "application/json": { schema: JsonSchema.JsonSchema } };
 }
+interface DocumentedRoute {
+  readonly hooks?: { readonly detail?: DocumentDecoration };
+  readonly method: string;
+  readonly path: string;
+}
 
 const inlined = { referencePolicy: (): undefined => undefined } as const;
 const hidden: RouteDetail = { detail: { hide: true } };
@@ -57,6 +62,7 @@ const ObjectSchema = Schema.Struct({
   properties: Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Unknown)),
   required: Schema.optionalKey(Schema.Array(Schema.String)),
 });
+const skippedMethods = new Set(["ALL", "HEAD", "OPTIONS"]);
 
 // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function jsonSchema(contract: Decodable): JsonSchema.JsonSchema {
@@ -107,6 +113,36 @@ function routeDetail<Input extends Decodable, Value, Encoded>(
   return { detail };
 }
 
+function openApiDocument(
+  routes: readonly DocumentedRoute[],
+  audience: Application,
+): {
+  readonly info: { readonly description: string; readonly title: string; readonly version: string };
+  readonly openapi: "3.0.3";
+  readonly paths: Readonly<Record<string, Readonly<Record<string, DocumentDecoration>>>>;
+} {
+  const paths: Record<string, Record<string, DocumentDecoration>> = {};
+  for (const route of routes) {
+    const detail = route.hooks?.detail;
+    if (detail?.hide === true || skippedMethods.has(route.method.toUpperCase())) {
+      continue;
+    }
+    const method = route.method.toLowerCase();
+    const methods = paths[route.path] ?? {};
+    methods[method] = {
+      ...(detail?.parameters === undefined ? {} : { parameters: detail.parameters }),
+      ...(detail?.requestBody === undefined ? {} : { requestBody: detail.requestBody }),
+      responses: detail?.responses ?? {},
+    };
+    paths[route.path] = methods;
+  }
+  return {
+    info: { description: `${audience} の HTTP API`, title: audience, version: "1" },
+    openapi: "3.0.3",
+    paths,
+  };
+}
+
 function referencePage(audience: Application): Response {
   const configuration = JSON.stringify(referenceConfiguration);
   const body = `<!doctype html>
@@ -130,5 +166,5 @@ function referencePage(audience: Application): Response {
   });
 }
 
-export { docsPath, hidden, referencePage, routeDetail };
+export { docsPath, hidden, openApiDocument, referencePage, routeDetail };
 export type { Guard, RouteDetail, RouteSpec };

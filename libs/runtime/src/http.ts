@@ -1,4 +1,3 @@
-import { openapi } from "@elysia/openapi";
 import { httpStatus, readJson } from "@repo/observability";
 import { Effect, Exit, Schema, Stream } from "effect";
 import { Elysia, NotFound, sse, status } from "elysia";
@@ -7,7 +6,7 @@ import { WebStandardAdapter } from "elysia/adapter/web-standard";
 import { AppOrigin } from "./app-origin.ts";
 import { failureBody, failureResponse, inputFailures, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
-import { docsPath, hidden, referencePage, routeDetail } from "./openapi.ts";
+import { docsPath, hidden, openApiDocument, referencePage, routeDetail } from "./openapi.ts";
 import { jsonResponse } from "./responses.ts";
 
 import type { Application } from "@repo/config";
@@ -132,16 +131,17 @@ function createApi<const Prefix extends string>(prefix: Prefix) {
 }
 
 function apiDocs(audience: Application, guard?: Guard) {
-  const documentation = openapi({
-    documentation: {
-      info: { description: `${audience} の HTTP API`, title: audience, version: "1" },
-    },
-    path: docsPath,
-    // oxlint-disable-next-line unicorn/no-null
-    provider: null,
-  });
-  const docs = new Elysia().use(documentation).get(docsPath, hidden, () => referencePage(audience));
-  return guard === undefined ? docs : new Elysia().beforeHandle(guard).use(docs);
+  return <App extends AnyElysia>(app: App): App => {
+    const docs = new Elysia({ adapter: WebStandardAdapter })
+      .get(docsPath, hidden, () => referencePage(audience))
+      .get(`${docsPath}/json`, hidden, () => jsonResponse(openApiDocument(app.routes, audience)));
+    if (guard === undefined) {
+      return app.use(docs) as App;
+    }
+    return app.use(
+      new Elysia({ adapter: WebStandardAdapter }).beforeHandle(guard).use(docs),
+    ) as App;
+  };
 }
 
 function elysiaServer(app: AnyElysia): {
