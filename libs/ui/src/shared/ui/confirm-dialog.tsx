@@ -57,4 +57,3 @@ const ConfirmDialog = ({
 };
 
 export { ConfirmDialog };
-export type { ConfirmDialogProps };

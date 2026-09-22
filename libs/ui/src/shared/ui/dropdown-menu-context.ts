@@ -19,4 +19,3 @@ const useDropdownMenu = (): DropdownMenuContextValue => {
 };
 
 export { DropdownMenuContext, useDropdownMenu };
-export type { DropdownMenuContextValue };
