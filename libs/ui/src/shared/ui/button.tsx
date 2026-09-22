@@ -17,7 +17,11 @@ type ButtonModel = Children &
   }>;
 
 const clickHandlerFor = (
-  model: Pick<ButtonModel, "action" | "onClick" | "type">,
+  model: Readonly<{
+    action?: (() => void | Promise<void>) | undefined;
+    onClick?: BaseButtonProps["onClick"] | undefined;
+    type: "button" | "submit";
+  }>,
 ): BaseButtonProps["onClick"] | undefined => {
   const { action, onClick, type: buttonType } = model;
   if (action === undefined && onClick === undefined) {
