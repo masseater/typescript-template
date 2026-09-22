@@ -159,11 +159,10 @@ function ungatedProjects(): string[] {
 }
 
 function strayTestTasks(): string[] {
+  const allowed = new Set([...testProjectDirectories, ...workspacesWithTests()]);
   return configuredDirectories.filter(
     (directory) =>
-      directory !== "." &&
-      !testProjectDirectories.includes(directory) &&
-      taskNames(directory).includes("test"),
+      directory !== "." && !allowed.has(directory) && taskNames(directory).includes("test"),
   );
 }
 
@@ -200,6 +199,18 @@ function toolsPackagesWithTests(): string[] {
       ),
     ),
   ].toSorted();
+}
+
+function workspacesWithTests(): Set<string> {
+  const repositoryRoot = join(toolsRoot, "..");
+  return new Set(
+    workspaceDirectories.filter((directory) => {
+      if (directory === ".") {
+        return false;
+      }
+      return collectTestPackages(join(repositoryRoot, directory), directory).length > 0;
+    }),
+  );
 }
 
 function uncoveredToolTestPackages(): string[] {
