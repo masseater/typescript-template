@@ -33,7 +33,7 @@ function photoApi(api: ApiRoutes<AppServices | PhotoStore>) {
   return createApi("")
     .get(
       "/member/photo",
-      api.raw(
+      ...api.raw(
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -48,8 +48,8 @@ function photoApi(api: ApiRoutes<AppServices | PhotoStore>) {
     )
     .put(
       "/profile/photo",
-      api.route(
-        PhotoView,
+      ...api.route(
+        { response: PhotoView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -62,8 +62,8 @@ function photoApi(api: ApiRoutes<AppServices | PhotoStore>) {
     )
     .delete(
       "/profile/photo",
-      api.route(
-        PhotoView,
+      ...api.route(
+        { response: PhotoView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
   applicationPorts,
@@ -9,6 +11,7 @@ import {
   jobsWorkflowClass,
   jobsWorkflowName,
   loopbackAddress,
+  scalarReferencePath,
   type Application,
 } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
@@ -69,6 +72,43 @@ const previewDevVars = (appRoot: string): Plugin => {
     name: "template-preview-dev-vars",
   };
 };
+
+const scalarReferenceEntry = fileURLToPath(import.meta.resolve("@scalar/api-reference"));
+const scalarReferenceSource = path.join(
+  path.dirname(scalarReferenceEntry),
+  "browser/standalone.js",
+);
+
+const readScalarReference = (): Effect.Effect<string> =>
+  filesystem.readFileString(scalarReferenceSource).pipe(Effect.orDie);
+
+const scalarReference = (): Plugin => ({
+  applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
+  configureServer(server) {
+    server.middlewares.use(scalarReferencePath, (_request, response, next) => {
+      void Effect.runPromise(readScalarReference()).then(
+        (source) => {
+          response.setHeader("content-type", "text/javascript");
+          response.end(source);
+        },
+        next,
+      );
+    });
+  },
+  generateBundle() {
+    const emit = (file: Readonly<{ fileName: string; source: string; type: "asset" }>): void => {
+      this.emitFile(file);
+    };
+    return Effect.runPromise(
+      readScalarReference().pipe(
+        Effect.map((source) => {
+          emit({ fileName: scalarReferencePath.slice(1), source, type: "asset" });
+        }),
+      ),
+    );
+  },
+  name: "template-scalar-reference",
+});
 
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
@@ -326,6 +366,7 @@ const appConfig = (
       failOnBrokenSourceMaps(),
       previewDevVars(appRoot),
       privateSourceMaps(app),
+      scalarReference(),
       devBoundary(app),
       elysiaAot(appRoot),
       elysiaWorkerdJit(),
@@ -406,7 +447,9 @@ export {
   lifecycleInherits,
   lifecycles,
   previewDevVars,
+  readScalarReference,
   reactCompiler,
+  scalarReference,
   serverOnlyMarkers,
   serverOnlyPackages,
   generatedDirectories,

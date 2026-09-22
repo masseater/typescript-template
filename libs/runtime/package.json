@@ -26,7 +26,8 @@
     "@repo/observability": "workspace:*",
     "effect": "catalog:",
     "effect-cf": "0.47.0",
-    "elysia": "2.0.0-beta.16"
+    "elysia": "2.0.0-beta.16",
+    "@elysia/openapi": "2.0.0-beta.4"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",

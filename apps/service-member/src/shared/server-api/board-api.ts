@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/observability";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -22,7 +22,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   BoardMemberRequired: { message: "掲示板は会員だけが使えます。", status: httpStatus.forbidden },
   BoardThreadNotFound: { message: "スレッドが見つかりません。", status: httpStatus.notFound },
 };
@@ -31,8 +31,8 @@ function boardApi(api: ApiRoutes<AppServices>) {
   return createApi("/board")
     .get(
       "/threads",
-      api.route(
-        BoardThreadList,
+      ...api.route(
+        { response: BoardThreadList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -48,8 +48,8 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/threads",
-      api.route(
-        BoardThreadCreated,
+      ...api.route(
+        { response: BoardThreadCreated },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -61,8 +61,8 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/thread",
-      api.route(
-        BoardThreadView,
+      ...api.route(
+        { response: BoardThreadView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -78,8 +78,8 @@ function boardApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/posts",
-      api.route(
-        BoardPostCreated,
+      ...api.route(
+        { response: BoardPostCreated },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

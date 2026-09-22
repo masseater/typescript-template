@@ -11,7 +11,7 @@ import {
   withdrawAgreementKind,
 } from "@repo/db";
 import { httpStatus } from "@repo/observability";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect, DateTime } from "effect";
 
@@ -35,7 +35,7 @@ const agreementRequired = (error: AgreementRequired): Failure => ({
 });
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   AgreementRequired: agreementRequired,
   AgreementVersionUnavailable: {
     message: "同意の対象となる規約が見つかりません。",
@@ -108,10 +108,10 @@ const withdraw = Effect.fn("agreements.withdraw")(function* withdraw(request: Re
 
 function agreementApi(api: ApiRoutes<AppServices>) {
   return createApi("")
-    .get("/agreements", api.route(AgreementsView, listCurrent, failures))
-    .post("/agreements/accept", api.route(AgreementsView, accept, failures))
-    .get("/agreements/published", api.route(PublishedAgreementView, published, failures))
-    .post("/agreements/withdraw", api.route(AgreementsView, withdraw, failures));
+    .get("/agreements", ...api.route({ response: AgreementsView }, listCurrent, failures))
+    .post("/agreements/accept", ...api.route({ response: AgreementsView }, accept, failures))
+    .get("/agreements/published", ...api.route({ response: PublishedAgreementView }, published, failures))
+    .post("/agreements/withdraw", ...api.route({ response: AgreementsView }, withdraw, failures));
 }
 
 const enforceAgreements = Effect.fn("consent.gate")(function* enforceAgreements(request: Request) {

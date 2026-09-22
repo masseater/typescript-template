@@ -1,6 +1,6 @@
 import { inquiryStaff } from "@repo/db/inquiry-staff";
 import { httpStatus } from "@repo/observability";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -16,7 +16,7 @@ import type { WikiServices } from "#shared/wiki/index.ts";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   InquiryNotFound: { message: "問い合わせが見つかりません。", status: httpStatus.notFound },
 };
 
@@ -24,12 +24,12 @@ function inquiryApi(api: ApiRoutes<WikiServices>) {
   return createApi("")
     .get(
       "/inquiries/counts",
-      api.route(StaffInquiryCounts, () => inquiryStaff.inquiryCounts(), failures),
+      ...api.route({ response: StaffInquiryCounts }, () => inquiryStaff.inquiryCounts(), failures),
     )
     .get(
       "/inquiries/member",
-      api.route(
-        StaffInquiryList,
+      ...api.route(
+        { response: StaffInquiryList },
         (request) =>
           Effect.gen(function* handle() {
             const { id } = yield* readSearchParams(MemberQuery, request);
@@ -41,8 +41,8 @@ function inquiryApi(api: ApiRoutes<WikiServices>) {
     )
     .get(
       "/inquiries/detail",
-      api.route(
-        StaffInquiryThread,
+      ...api.route(
+        { response: StaffInquiryThread },
         (request) =>
           Effect.gen(function* handle() {
             const { id } = yield* readSearchParams(InquiryQuery, request);

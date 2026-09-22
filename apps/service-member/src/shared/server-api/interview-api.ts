@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/observability";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect, Schema } from "effect";
 
@@ -21,7 +21,7 @@ import type { ApiRoutes } from "@repo/runtime/http";
 const Empty = Schema.Struct({});
 const HistoryConsent = Schema.Struct({ accept: Schema.Boolean });
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   InterviewConflict: {
     message: "別の画面で会話が進んでいます。読み込み直してください。",
     status: httpStatus.conflict,
@@ -69,11 +69,11 @@ const historyConsent = Effect.fn("interview.api.historyConsent")(function* histo
 
 function interviewApi(api: ApiRoutes<AppServices | Interviewer | ProfileLayoutAssembler>) {
   return createApi("")
-    .get("/interview", api.route(InterviewView, open, failures))
-    .post("/interview/turns", api.route(InterviewView, turn, failures))
-    .post("/interview/sheet", api.route(InterviewView, saveSheet, failures))
-    .post("/interview/history-consent", api.route(InterviewView, historyConsent, failures))
-    .post("/interview/restart", api.route(InterviewView, restart, failures));
+    .get("/interview", ...api.route({ response: InterviewView }, open, failures))
+    .post("/interview/turns", ...api.route({ response: InterviewView }, turn, failures))
+    .post("/interview/sheet", ...api.route({ response: InterviewView }, saveSheet, failures))
+    .post("/interview/history-consent", ...api.route({ response: InterviewView }, historyConsent, failures))
+    .post("/interview/restart", ...api.route({ response: InterviewView }, restart, failures));
 }
 
 export { interviewApi };

@@ -30,7 +30,7 @@ function tick(count: number): typeof Tick.Type {
 function open(ticks: Ticks): Effect.Effect<Response> {
   const app = createApi("/api").get(
     "/events",
-    api.events(Tick, () => Effect.succeed(ticks), {}),
+    ...api.events(Tick, () => Effect.succeed(ticks), {}),
   );
   return Effect.promise(() => Promise.resolve(app.fetch(new Request(`${origin}/api/events`))));
 }
@@ -109,7 +109,7 @@ describe("an event stream route seen by its callers", () => {
     Effect.gen(function* program() {
       const silentAfterFirst = Stream.make(tick(1)).pipe(Stream.concat(Stream.never));
       const ticks = api.events(Tick, () => Effect.succeed(silentAfterFirst), {});
-      const { handlers } = elysiaServer(createApi("/api").get("/events", ticks));
+      const { handlers } = elysiaServer(createApi("/api").get("/events", ...ticks));
       const { HEAD: head } = handlers;
       const request = new Request(`${origin}/api/events`, { method: "HEAD" });
       const response = yield* Effect.promise(() => head({ request }));
@@ -129,7 +129,7 @@ describe("an event stream route seen by its callers", () => {
           readSearchParams(Query, request).pipe(Effect.map(({ from }) => Stream.make(tick(from)))),
         {},
       );
-      const app = createApi("/api").get("/events", ticks);
+      const app = createApi("/api").get("/events", ...ticks);
       const request = new Request(`${origin}/api/events`);
       const response = yield* Effect.promise(() => Promise.resolve(app.fetch(request)));
       const body: unknown = yield* Effect.promise(() => response.json());
@@ -143,7 +143,7 @@ describe("an event stream route seen by its callers", () => {
   it.effect("reaches the typed client as event objects the contract decodes", () =>
     Effect.gen(function* program() {
       const ticks = api.events(Tick, () => Effect.succeed(Stream.make(tick(1), tick(second))), {});
-      const client = apiServerClient(createApi("/api").get("/events", ticks), {});
+      const client = apiServerClient(createApi("/api").get("/events", ...ticks), {});
       const reply = yield* Effect.promise(() => client.api.events.get());
       assert.isNotNull(reply.data);
       if (Symbol.asyncIterator in reply.data === false) {

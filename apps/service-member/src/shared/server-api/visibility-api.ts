@@ -13,8 +13,8 @@ function visibilityApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/profile/visibility",
-      api.route(
-        VisibilityView,
+      ...api.route(
+        { response: VisibilityView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -25,8 +25,8 @@ function visibilityApi(api: ApiRoutes<AppServices>) {
     )
     .patch(
       "/profile/visibility",
-      api.route(
-        VisibilityView,
+      ...api.route(
+        { response: VisibilityView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

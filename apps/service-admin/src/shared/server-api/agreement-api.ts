@@ -87,11 +87,11 @@ const publishVersion = Effect.fn("agreements.publish")(function* publishVersion(
 
 function agreementApi(api: ApiRoutes<AppServices>) {
   return createApi("")
-    .get("/agreements", api.route(AgreementVersionList, listVersions, failures))
-    .get("/agreements/version", api.route(AgreementVersionDetail, readVersion, failures))
-    .post("/agreements", api.route(AgreementVersionSaved, createDraft, failures))
-    .patch("/agreements", api.route(AgreementVersionSaved, reviseDraft, failures))
-    .post("/agreements/publish", api.route(AgreementPublished, publishVersion, failures));
+    .get("/agreements", ...api.route({ response: AgreementVersionList }, listVersions, failures))
+    .get("/agreements/version", ...api.route({ response: AgreementVersionDetail }, readVersion, failures))
+    .post("/agreements", ...api.route({ response: AgreementVersionSaved }, createDraft, failures))
+    .patch("/agreements", ...api.route({ response: AgreementVersionSaved }, reviseDraft, failures))
+    .post("/agreements/publish", ...api.route({ response: AgreementPublished }, publishVersion, failures));
 }
 
 export { agreementApi };
