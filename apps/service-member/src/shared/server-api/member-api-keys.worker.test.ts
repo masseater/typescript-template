@@ -1,7 +1,12 @@
 import { assert, it } from "@effect/vitest";
 import { Auth } from "@repo/auth";
-import { APPLICATION, ROLE, SUBSCRIPTION_STATUS, memberApiKeyHeader } from "@repo/config";
-import { httpStatus } from "@repo/config";
+import {
+  APPLICATION,
+  ROLE,
+  SUBSCRIPTION_STATUS,
+  httpStatus,
+  memberApiKeyHeader,
+} from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";

@@ -1,5 +1,4 @@
-import { ROLE } from "@repo/config";
-import { INQUIRY_STATUS, inquiryStatuses } from "@repo/config";
+import { INQUIRY_STATUS, ROLE, inquiryStatuses } from "@repo/config";
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
