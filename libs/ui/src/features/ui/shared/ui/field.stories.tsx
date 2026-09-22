@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, waitFor } from "storybook/test";
 
-import preview, { playTask } from "../../../storybook/preview";
+import preview, { playTask } from "../../../../../storybook/preview";
 import { Field } from "./field";
 import { FieldValidationMessageProvider } from "./field-validation-message-provider";
 

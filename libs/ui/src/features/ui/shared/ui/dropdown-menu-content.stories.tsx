@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview, { playTask } from "../../../storybook/preview";
+import preview, { playTask } from "../../../../../storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
 import { DropdownMenuContent } from "./dropdown-menu-content";
 import { DropdownMenuItem } from "./dropdown-menu-item";

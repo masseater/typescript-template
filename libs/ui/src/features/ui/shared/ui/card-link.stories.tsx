@@ -1,4 +1,4 @@
-import preview from "../../../storybook/preview";
+import preview from "../../../../../storybook/preview";
 import { CardLink } from "./card-link";
 import { Heading } from "./heading";
 

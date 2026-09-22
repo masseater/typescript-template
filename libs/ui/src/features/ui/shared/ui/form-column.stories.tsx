@@ -1,6 +1,6 @@
 import { noop } from "es-toolkit";
 
-import preview from "../../../storybook/preview";
+import preview from "../../../../../storybook/preview";
 import { Button } from "./button";
 import { Field } from "./field";
 import { FormColumn } from "./form-column";

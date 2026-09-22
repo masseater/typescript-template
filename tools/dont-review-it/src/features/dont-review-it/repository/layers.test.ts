@@ -133,4 +133,54 @@ describe("modular imports", () => {
       }),
     ).toBe(false);
   });
+
+  it("rejects app importing feature internals", () => {
+    expect.hasAssertions();
+    expect(
+      reported("modular-imports", {
+        code: 'import { createAuth } from "../features/auth/create-auth.ts";\n',
+        filename: "libs/auth/src/app/boot.ts",
+      }),
+    ).toBe(true);
+  });
+
+  it("allows app importing feature public API", () => {
+    expect.hasAssertions();
+    expect(
+      reported("modular-imports", {
+        code: 'import { createAuth } from "../features/auth/index.ts";\n',
+        filename: "libs/auth/src/app/boot.ts",
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects cross-feature deep imports", () => {
+    expect.hasAssertions();
+    expect(
+      reported("modular-imports", {
+        code: 'import { helper } from "../billing/helper.ts";\n',
+        filename: "libs/auth/src/features/auth/index.ts",
+      }),
+    ).toBe(true);
+  });
+
+  it("allows cross-feature public API imports", () => {
+    expect.hasAssertions();
+    expect(
+      reported("modular-imports", {
+        code: 'import { helper } from "../billing/index.ts";\n',
+        filename: "libs/auth/src/features/auth/index.ts",
+      }),
+    ).toBe(false);
+  });
+
+  it("allows same-feature deep imports", () => {
+    expect.hasAssertions();
+    expect(
+      reported("modular-imports", {
+        code: 'import { createAuth } from "./create-auth.ts";\n',
+        filename: "libs/auth/src/features/auth/index.ts",
+      }),
+    ).toBe(false);
+  });
 });

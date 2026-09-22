@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect, fn, screen, userEvent, waitFor } from "storybook/test";
 
-import preview, { playTask } from "../../../storybook/preview";
+import preview, { playTask } from "../../../../../storybook/preview";
 import { SelectField } from "./select-field";
 
 const meta = preview.meta({

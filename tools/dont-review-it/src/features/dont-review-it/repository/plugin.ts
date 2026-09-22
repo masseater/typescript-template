@@ -328,7 +328,7 @@ const projectPlugin = definePlugin({
     "modular-imports": {
       create: modularImportsVisitor,
       meta: metadata(
-        "Modular パッケージでは shared から features や app を import できません。横断処理に業務スライスを持ち込まず、features 側から shared を使ってください。",
+        "Modular パッケージでは shared から features や app を import できません。また app や別 features から features/<name> の内部へは入れず、features/<name>/index の公開面だけを使ってください。",
       ),
     },
     "thin-app-routes": {

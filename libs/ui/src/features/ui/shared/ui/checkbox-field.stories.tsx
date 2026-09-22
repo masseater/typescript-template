@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, fn, userEvent } from "storybook/test";
 
-import preview, { playTask } from "../../../storybook/preview";
+import preview, { playTask } from "../../../../../storybook/preview";
 import { CheckboxField } from "./checkbox-field";
 
 const meta = preview.meta({

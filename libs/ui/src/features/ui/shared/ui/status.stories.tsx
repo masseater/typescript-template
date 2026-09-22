@@ -1,4 +1,4 @@
-import preview from "../../../storybook/preview";
+import preview from "../../../../../storybook/preview";
 import { StatusMessage } from "./status";
 import { STATUS_VARIANT } from "./status-variants.ts";
 

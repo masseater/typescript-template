@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect } from "storybook/test";
 
-import preview, { playTask } from "../../../storybook/preview";
+import preview, { playTask } from "../../../../../storybook/preview";
 import { Button } from "./button";
 
 const meta = preview.meta({ component: Button });

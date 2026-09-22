@@ -1,4 +1,4 @@
-import preview from "../../../storybook/preview";
+import preview from "../../../../../storybook/preview";
 import { DropdownMenu } from "./dropdown-menu";
 import { DropdownMenuTrigger } from "./dropdown-menu-trigger";
 

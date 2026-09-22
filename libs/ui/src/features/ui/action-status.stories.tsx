@@ -1,6 +1,6 @@
 import { noop } from "es-toolkit";
 
-import preview from "../storybook/preview";
+import preview from "../../../storybook/preview";
 import { ActionStatus } from "./action-status";
 
 const meta = preview.meta({

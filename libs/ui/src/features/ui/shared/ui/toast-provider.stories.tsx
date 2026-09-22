@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview, { playTask } from "../../../storybook/preview";
+import preview, { playTask } from "../../../../../storybook/preview";
 import { Button } from "./button";
 import { STATUS_VARIANT } from "./status-variants.ts";
 import { ToastProvider } from "./toast-provider";

@@ -1,4 +1,4 @@
-import preview from "../../../storybook/preview";
+import preview from "../../../../../storybook/preview";
 import { ButtonLink } from "./button-link";
 
 const meta = preview.meta({

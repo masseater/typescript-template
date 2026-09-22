@@ -1,4 +1,4 @@
-import preview from "../../../storybook/preview";
+import preview from "../../../../../storybook/preview";
 import { Page } from "./page";
 import { StatusMessage } from "./status";
 

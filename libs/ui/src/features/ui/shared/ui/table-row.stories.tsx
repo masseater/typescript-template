@@ -1,4 +1,4 @@
-import preview from "../../../storybook/preview";
+import preview from "../../../../../storybook/preview";
 import { Table } from "./table";
 import { TableBody } from "./table-body";
 import { TableCell } from "./table-cell";

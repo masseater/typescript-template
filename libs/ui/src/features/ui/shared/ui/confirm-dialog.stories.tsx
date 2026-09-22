@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, screen } from "storybook/test";
 
-import preview, { playTask } from "../../../storybook/preview";
+import preview, { playTask } from "../../../../../storybook/preview";
 import { ConfirmDialog } from "./confirm-dialog";
 
 const meta = preview.meta({
