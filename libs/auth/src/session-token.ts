@@ -4,11 +4,43 @@ import { Effect } from "effect";
 
 const signatureLength = 44;
 
-const sessionTokenFrom = Effect.fn("sessionTokenFrom")(function* sessionTokenFrom(
-  headers: Headers,
-  cookiePrefix: string,
-  secret: string,
-) {
+const signatureBytesOf = (signature: string): ArrayBuffer =>
+  Uint8Array.from(atob(signature), (character) => character.charCodeAt(0)).buffer;
+
+const verifySignedToken = Effect.fn("verifySignedToken")(function* verifySignedToken({
+  secret,
+  signature,
+  tokenValue,
+}: {
+  readonly secret: string;
+  readonly signature: string;
+  readonly tokenValue: string;
+}) {
+  const cryptoKey = yield* Effect.tryPromise(() => getCryptoKey(secret)).pipe(
+    Effect.orElseSucceed(() => null),
+  );
+  if (cryptoKey === null) {
+    return false;
+  }
+  return yield* Effect.tryPromise(() =>
+    crypto.subtle.verify(
+      "HMAC",
+      cryptoKey,
+      signatureBytesOf(signature),
+      new TextEncoder().encode(tokenValue),
+    ),
+  ).pipe(Effect.orElseSucceed(() => false));
+});
+
+const sessionTokenFrom = Effect.fn("sessionTokenFrom")(function* sessionTokenFrom({
+  cookiePrefix,
+  headers,
+  secret,
+}: {
+  readonly cookiePrefix: string;
+  readonly headers: Headers;
+  readonly secret: string;
+}) {
   const raw = getSessionCookie(headers, { cookiePrefix });
   if (raw === null) {
     return undefined;
@@ -17,22 +49,13 @@ const sessionTokenFrom = Effect.fn("sessionTokenFrom")(function* sessionTokenFro
   if (signatureStart < 1) {
     return undefined;
   }
-  const value = raw.slice(0, signatureStart);
+  const tokenValue = raw.slice(0, signatureStart);
   const signature = raw.slice(signatureStart + 1);
   if (signature.length !== signatureLength || !signature.endsWith("=")) {
     return undefined;
   }
-  const binary = atob(signature);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  const valid = yield* Effect.tryPromise(() =>
-    getCryptoKey(secret).then((key) =>
-      crypto.subtle.verify("HMAC", key, bytes, new TextEncoder().encode(value)),
-    ),
-  ).pipe(Effect.orElseSucceed(() => false));
-  return valid ? value : undefined;
+  const valid = yield* verifySignedToken({ secret, signature, tokenValue });
+  return valid ? tokenValue : undefined;
 });
 
 export { sessionTokenFrom };

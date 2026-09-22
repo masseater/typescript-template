@@ -30,7 +30,6 @@ const awaitingPresetPackages = [
   "apps/service-member/**",
   "apps/internal-dashboard/**",
   "infra/cloudflare/**",
-  "libs/auth/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -404,6 +403,44 @@ const lintOptions = {
       rules: {
         "dont-review-it/no-hand-rolled-server-read--use-tanstack-query": LINT_SEVERITY.OFF,
         "project/atom-server-data": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/auth/src/request-hooks.ts"],
+      rules: {
+        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/auth/src/auth-request.ts",
+        "libs/auth/src/auth-test-fixture.ts",
+        "libs/auth/src/browser-client.ts",
+        "libs/auth/src/email-change.ts",
+        "libs/auth/src/email-change.worker.test.ts",
+        "libs/auth/src/wiki-oauth-fixture.ts",
+      ],
+      rules: {
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/auth/src/auth-request.ts",
+        "libs/auth/src/browser-client.ts",
+        "libs/auth/src/session.ts",
+        "libs/auth/src/session-token.ts",
+      ],
+      rules: {
+        "eslint/max-statements": LINT_SEVERITY.OFF,
+        "eslint/max-nested-callbacks": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/auth/src/create-auth.ts", "libs/auth/src/email.ts"],
+      rules: {
+        "dont-review-it/no-detached-declaration--declare-it-next-to-its-use": LINT_SEVERITY.OFF,
       },
     },
     {

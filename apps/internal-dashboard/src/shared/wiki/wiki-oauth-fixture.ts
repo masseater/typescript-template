@@ -4,21 +4,14 @@ import { Effect, Schema } from "effect";
 
 import {
   AuthApps,
+  redirectUri,
   startAuthorization,
   wikiAdministrator,
   wikiOrigin,
-} from "../../../../../libs/auth/src/testing.ts";
+} from "@repo/auth/testing";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-import type { BrowserClient } from "../../../../../libs/auth/src/testing.ts";
-
-type AuthorizationFlow = {
-  readonly clientId: string;
-  readonly oauthQuery: string;
-  readonly verifier: string;
-};
-
-const redirectUri = "http://127.0.0.1:43123/callback";
+import type { AuthorizationFlow, BrowserClient } from "@repo/auth/testing";
 const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Tokens = Schema.Struct({ access_token: Schema.String });
 
