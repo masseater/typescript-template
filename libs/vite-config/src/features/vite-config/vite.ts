@@ -192,7 +192,6 @@ const sliceBoundaries = {
   },
 } satisfies Tasks;
 
-
 const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
