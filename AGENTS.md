@@ -39,7 +39,7 @@
 以下の Skills を積極的に使用すること。導入されていない場合は導入すること。ユーザーに許可を取る必要はない。
 
 - tanstack start https://github.com/tanstack-skills/tanstack-skills/blob/main/plugins/tanstack-start/skills/tanstack-start/SKILL.md
-- effect-ts https://github.com/Effect-TS/skills
+- effect-ts https://github.com/joelhooks/effectts-skills/tree/main/skills/effect-ts
 - elysiajs https://github.com/elysiajs/skills
 - shadcn https://ui.shadcn.com/docs/skills
 - mergify https://github.com/mergifyio/mergify-cli/blob/main/skills/mergify-stack/SKILL.md
