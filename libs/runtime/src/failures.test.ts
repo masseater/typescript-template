@@ -90,4 +90,27 @@ describe("failure responses", () => {
       });
     }),
   );
+
+  it.effect(
+    "carries the details a route table attaches without letting them replace the message",
+    () =>
+      Effect.gen(function* program() {
+        const table = {
+          Pending: (error: { readonly _tag: "Pending"; readonly kinds: readonly string[] }) => ({
+            details: { error: "overridden", kinds: error.kinds },
+            message: "同意が必要です。",
+            status: httpStatus.preconditionRequired,
+          }),
+        };
+        const response = yield* failureResponse(
+          table,
+          Cause.fail({ _tag: "Pending", kinds: ["terms"] }),
+        );
+        assert.strictEqual(response.status, httpStatus.preconditionRequired);
+        assert.deepStrictEqual(yield* Effect.promise(() => response.json()), {
+          error: "同意が必要です。",
+          kinds: ["terms"],
+        });
+      }),
+  );
 });

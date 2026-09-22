@@ -56,31 +56,36 @@ const receiveMail = (deliveries: Mailbox["Service"]) => {
     );
 };
 
-const startNetwork = (deliveries: Mailbox["Service"]): ReturnType<typeof setupNetwork> => {
+type Network = ReturnType<typeof setupNetwork>;
+
+class MockNetwork extends Context.Service<MockNetwork, Network>()("@repo/auth/MockNetwork") {}
+
+const startNetwork = (): Network => {
   const network = setupNetwork();
   network.configure({ onUnhandledFrame: "error" });
-  network.use(http.post(mailConfig.MAILPIT_SEND_URL, receiveMail(deliveries)));
   network.enable();
   return network;
 };
 
-const stopNetwork = (network: Readonly<ReturnType<typeof setupNetwork>>): Effect.Effect<void> => {
+const stopNetwork = (network: Readonly<Network>): Effect.Effect<void> => {
   return Effect.sync(() => {
     network.disable();
   });
 };
 
+const mockNetwork = Layer.effect(
+  MockNetwork,
+  Effect.acquireRelease(Effect.sync(startNetwork), stopNetwork),
+);
+
 const mailServer = Layer.effect(
   Mailbox,
   Effect.gen(function* startMailServer() {
     const deliveries = yield* Ref.make<readonly Delivery[]>([]);
-    yield* Effect.acquireRelease(
-      Effect.sync(() => startNetwork(deliveries)),
-      stopNetwork,
-    );
+    (yield* MockNetwork).use(http.post(mailConfig.MAILPIT_SEND_URL, receiveMail(deliveries)));
     return deliveries;
   }),
-);
+).pipe(Layer.provideMerge(mockNetwork));
 
 const mailRecipients = Effect.gen(function* readRecipients() {
   const deliveries = yield* Ref.get(yield* Mailbox);
@@ -113,6 +118,7 @@ const hasMail = Effect.fn("hasMail")(function* hasMail(email: string) {
 
 export {
   Mailbox,
+  MockNetwork,
   clearMailbox,
   hasMail,
   mailConfig,

@@ -79,4 +79,32 @@ describe("the variables every runner shares", () => {
         });
       }).pipe(Effect.provide(layer)),
     ));
+
+  it("gives the member app test-mode Stripe placeholders until real test keys are stored", () =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        expect.hasAssertions();
+        const credentials = yield* sharedRunnerCredentials();
+        expect(appVariables("service-member", credentials, "loopback")).toMatchObject({
+          STRIPE_PRICE_ID: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
+          STRIPE_SECRET_KEY: expect.stringMatching(/^sk_test_[A-Za-z0-9]+$/u),
+          STRIPE_WEBHOOK_SECRET: expect.stringMatching(/^whsec_[A-Za-z0-9]+$/u),
+        });
+        const stripe = {
+          priceId: "price_storedNotReal",
+          secretKey: "sk_test_storedNotAReal",
+          webhookSecret: "whsec_storedNotReal",
+        };
+        expect(
+          appVariables("service-member", { ...credentials, stripe }, "loopback"),
+        ).toMatchObject({
+          STRIPE_PRICE_ID: stripe.priceId,
+          STRIPE_SECRET_KEY: stripe.secretKey,
+          STRIPE_WEBHOOK_SECRET: stripe.webhookSecret,
+        });
+        expect(Object.keys(appVariables("service-admin", credentials, "loopback"))).not.toContain(
+          "STRIPE_SECRET_KEY",
+        );
+      }).pipe(Effect.provide(layer)),
+    ));
 });

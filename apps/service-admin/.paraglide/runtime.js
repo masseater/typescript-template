@@ -59,12 +59,12 @@ export const urlPatterns = [
     "pattern": "/:path(.*)?",
     "localized": [
       [
-        "en",
-        "/en/:path(.*)?"
-      ],
-      [
         "ja",
         "/:path(.*)?"
+      ],
+      [
+        "en",
+        "/en/:path(.*)?"
       ]
     ]
   }

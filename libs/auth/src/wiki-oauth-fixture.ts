@@ -2,14 +2,7 @@ import { APPLICATION } from "@repo/config";
 import { httpStatus } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
-import {
-  PASSWORD,
-  bootstrapVerifiedAdmin,
-  clientOf,
-  enableTotp,
-  requireStatus,
-  signInAs,
-} from "./auth-test-fixture.ts";
+import { bootstrapVerifiedStaff, clientOf, enableTotp, signInAs } from "./auth-test-fixture.ts";
 import { origins, type BrowserClient } from "./browser-client.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
@@ -24,22 +17,10 @@ const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
 const Registration = Schema.Struct({ client_id: Schema.String });
 
-const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
-  email: string,
-) {
-  yield* bootstrapVerifiedAdmin(email);
-  const { authenticator } = yield* enableTotp(yield* signInAs(APPLICATION.admin, email));
-  const client = yield* clientOf(APPLICATION.wiki);
-  yield* requireStatus(httpStatus.ok, {
-    client,
-    endpoint: "/sign-in/email",
-    jsonFields: { email, password: PASSWORD },
-  });
-  yield* requireStatus(httpStatus.ok, {
-    client,
-    endpoint: "/two-factor/verify-totp",
-    jsonFields: { code: authenticator.generate() },
-  });
+const wikiStaff = Effect.fn("wikiStaff")(function* wikiStaff(email: string) {
+  yield* bootstrapVerifiedStaff(email);
+  const client = yield* signInAs(APPLICATION.wiki, email);
+  yield* enableTotp(client);
   return client;
 });
 
@@ -97,4 +78,4 @@ const startAuthorization = Effect.fn("startAuthorization")(function* startAuthor
   return flow;
 });
 
-export { startAuthorization, wikiAdministrator, wikiOrigin };
+export { startAuthorization, wikiStaff, wikiOrigin };

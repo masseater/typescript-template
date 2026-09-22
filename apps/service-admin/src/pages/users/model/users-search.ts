@@ -1,6 +1,6 @@
 import { Option, Schema } from "effect";
 
-import { BooleanText, Role, SearchKeyword, laterPage } from "#shared/contracts/index.ts";
+import { AccountState, BooleanText, SearchKeyword, laterPage } from "#shared/contracts/index.ts";
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
 
 const Verified = Schema.Union([Schema.Boolean, BooleanText]);
@@ -8,7 +8,7 @@ const Verified = Schema.Union([Schema.Boolean, BooleanText]);
 const UsersSearchParams = Schema.Struct({
   keyword: Schema.optionalKey(SearchKeyword),
   page: Schema.optionalKey(laterPage(maximumUsersPage)),
-  role: Schema.optionalKey(Role),
+  status: Schema.optionalKey(AccountState),
   verified: Schema.optionalKey(Verified),
 });
 
@@ -30,7 +30,7 @@ function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
     limit: String(usersPageSize),
     offset: String(((search.page ?? 1) - 1) * usersPageSize),
     ...(search.keyword === undefined ? {} : { keyword: search.keyword }),
-    ...(search.role === undefined ? {} : { role: search.role }),
+    ...(search.status === undefined ? {} : { accountState: search.status }),
     ...(search.verified === undefined ? {} : { emailVerified: String(search.verified) }),
   };
 }

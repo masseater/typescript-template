@@ -85,14 +85,23 @@ function handedNonce(policy: string | null): string | undefined {
   return /'nonce-(?<nonce>[^']+)'/u.exec(policy ?? "")?.groups?.["nonce"];
 }
 
-function documentDirectives(nonce: string | undefined): readonly string[] {
+function documentDirectives(
+  nonce: string | undefined,
+  googleAnalytics: boolean = false,
+): readonly string[] {
   return [
     "default-src 'none'",
-    `script-src 'nonce-${nonce}' 'strict-dynamic'`,
+    googleAnalytics
+      ? `script-src 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com`
+      : `script-src 'nonce-${nonce}' 'strict-dynamic'`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    googleAnalytics
+      ? "img-src 'self' data: https://www.google-analytics.com"
+      : "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'self'",
+    googleAnalytics
+      ? "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com"
+      : "connect-src 'self'",
     "manifest-src 'self'",
     "form-action 'self'",
     "base-uri 'none'",
@@ -344,6 +353,28 @@ describe("documents behind a start server route", () => {
     Effect.gen(function* program() {
       const { headers } = yield* servedDocument(new Request(secureOrigin));
       assert.strictEqual(headers.get("strict-transport-security"), strictTransportSecurity);
+    }),
+  );
+
+  it.effect("allow google analytics hosts only when analytics is configured", () =>
+    Effect.gen(function* program() {
+      const enabled = startRoute(
+        {
+          fetch: (rendered: Request): Response =>
+            new Response("<!DOCTYPE html>", {
+              headers: {
+                "content-type": "text/html; charset=utf-8",
+                "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
+              },
+            }),
+        },
+        { googleAnalytics: true },
+      );
+      const { headers } = yield* enabled(new Request(origin));
+      assert.deepStrictEqual(
+        policyDirectives(headers.get("content-security-policy")),
+        documentDirectives(handedNonce(headers.get("content-security-policy")), true),
+      );
     }),
   );
 });

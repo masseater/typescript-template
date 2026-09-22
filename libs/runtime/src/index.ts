@@ -62,5 +62,6 @@ function configuredAppLayer(
 
 export { configuredAppLayer };
 export type { AppServices };
+export { FileStore } from "./file-store.ts";
 export type { StoredFile } from "./file-store.ts";
 export { StorageFailed } from "./storage-failed.ts";

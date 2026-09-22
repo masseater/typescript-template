@@ -100,12 +100,32 @@ function serveApp<Requirements>(
   );
 }
 
+function startRoute(
+  handler: StartHandler,
+  options: Readonly<{ googleAnalytics?: boolean }> = {},
+): (request: Request) => Effect.Effect<Response> {
+  const googleAnalytics = options.googleAnalytics === true;
+  return (request) =>
+    Effect.gen(function* startRouteProgram() {
+      const nonce = createNonce();
+      const rendered = new Request(request);
+      rendered.headers.set(cspNonceHeader, nonce);
+      return secureResponse(
+        request,
+        yield* Effect.promise(() => Promise.resolve(handler.fetch(rendered))),
+        nonce,
+        googleAnalytics,
+      );
+    });
+}
+
 function appServerEntry<Requirements>(
   runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
   handler: StartHandler,
   reporting: Reporting,
+  options: Readonly<{ googleAnalytics?: boolean }> = {},
 ): FetchWorker {
-  return serveApp(runtime, startRoute(handler), reporting);
+  return serveApp(runtime, startRoute(handler, options), reporting);
 }
 
 function withQueue(
@@ -118,20 +138,6 @@ function withQueue(
   ) => Promise<void>,
 ): FetchWorker & { readonly queue: typeof queue } {
   return { ...worker, queue };
-}
-
-function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<Response> {
-  return (request) =>
-    Effect.gen(function* startRouteProgram() {
-      const nonce = createNonce();
-      const rendered = new Request(request);
-      rendered.headers.set(cspNonceHeader, nonce);
-      return secureResponse(
-        request,
-        yield* Effect.promise(() => Promise.resolve(handler.fetch(rendered))),
-        nonce,
-      );
-    });
 }
 
 export { appServerEntry, serveApp, serveWorker, startRoute, withQueue };
