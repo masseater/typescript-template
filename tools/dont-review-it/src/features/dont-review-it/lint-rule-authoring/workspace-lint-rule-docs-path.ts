@@ -1,4 +1,4 @@
-import packageManifest from "../../../../../../package.json" with { type: "json" };
+import packageManifest from "../../../../package.json" with { type: "json" };
 
 const REPOSITORY_BLOB_BASE_URL = `${packageManifest.homepage}/blob/main`;
 
