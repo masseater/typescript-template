@@ -1,5 +1,5 @@
 import { CloudflareApiToken, CloudflareId, usageAllowanceRemains } from "@repo/config";
-import { deploymentKey } from "@repo/observability/deployment-keys";
+import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/monitor/workers";
 import { Effect, Schema, SchemaTransformation } from "effect";
 
 class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure", {
@@ -21,22 +21,6 @@ class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure",
 
 const fail = (failureCode: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> =>
   Effect.fail(new BudgetFailure({ code: failureCode }));
-
-const budgetMonitorWorker = {
-  className: "BudgetMonitor",
-  cron: "17 */6 * * *",
-  event: "budget",
-  name: "budget",
-} as const;
-
-const budgetMonitorEnv = {
-  accountId: deploymentKey.cloudflareAccountId,
-  billingReadToken: "BILLING_READ_TOKEN",
-  budgetJpy: deploymentKey.budgetJpy,
-  fixedCostUsd: "FIXED_COST_USD",
-  jpyPerUsd: "JPY_PER_USD",
-  reserveUsd: "RESERVE_USD",
-} as const;
 
 const DecimalText = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/u));
 const FiniteNumber = Schema.Number.check(Schema.isFinite());
@@ -75,5 +59,5 @@ const parseBudgetConfig = Effect.fn("parseBudgetConfig")(function* parseBudgetCo
   return config;
 });
 
-export { BudgetFailure, budgetMonitorEnv, budgetMonitorWorker, fail, parseBudgetConfig };
+export { BudgetFailure, budgetMonitorWorker, fail, parseBudgetConfig };
 export type { BudgetConfig, BudgetMonitorEnv };
