@@ -1,4 +1,4 @@
-import { applicationOrigins, applicationReadyPaths, applications } from "@repo/config";
+import { applicationOrigins, applicationReadyPaths, applications, httpStatus } from "@repo/config";
 import { Effect, FileSystem, Path, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 

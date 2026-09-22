@@ -6,10 +6,9 @@ import {
   runWith,
   startAdminAuthorization,
 } from "@repo/auth/testing";
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, httpStatus } from "@repo/config";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { addUser, auditActionsOf } from "@repo/db/testing";
-import { httpStatus } from "@repo/config";
 import { unavailable } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";

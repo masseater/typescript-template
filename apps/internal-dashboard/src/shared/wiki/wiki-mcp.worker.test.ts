@@ -10,7 +10,7 @@ import {
   signIn,
   signInAs,
 } from "@repo/auth/testing";
-import { APPLICATION, ROLE, httpStatus } from "@repo/config";
+import {APPLICATION, ROLE, httpStatus} from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
