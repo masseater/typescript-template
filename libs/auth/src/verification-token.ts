@@ -1,5 +1,10 @@
 import { Encoding, Result, Schema } from "effect";
 
+class VerificationTokenInvalid extends Schema.TaggedError<VerificationTokenInvalid>()(
+  "VerificationTokenInvalid",
+  {},
+) {}
+
 const VerificationClaims = Schema.Struct({
   email: Schema.optional(Schema.String),
   updateTo: Schema.optional(Schema.String),
@@ -7,20 +12,39 @@ const VerificationClaims = Schema.Struct({
 
 const decodeClaims = Schema.decodeUnknownResult(Schema.fromJsonString(VerificationClaims));
 
-const decodedClaims = (token: string) => {
+const decodedClaims = (
+  token: string,
+): Result.Result<
+  { readonly email?: string; readonly updateTo?: string },
+  VerificationTokenInvalid
+> => {
   const [, claims] = token.split(".");
   if (claims === undefined) {
-    return undefined;
+    return Result.fail(new VerificationTokenInvalid());
   }
   const decoded = Result.flatMap(Encoding.decodeBase64UrlString(claims), decodeClaims);
-  return Result.isSuccess(decoded) ? decoded.success : undefined;
+  if (Result.isFailure(decoded)) {
+    return Result.fail(new VerificationTokenInvalid());
+  }
+  return Result.succeed(decoded.success);
 };
 
-const emailChangeTarget = (token: string): string | undefined => decodedClaims(token)?.updateTo;
+const emailChangeTarget = (
+  token: string,
+): Result.Result<string | undefined, VerificationTokenInvalid> => {
+  const claims = decodedClaims(token);
+  if (Result.isFailure(claims)) {
+    return claims;
+  }
+  return Result.succeed(claims.success.updateTo);
+};
 
 const emailChangePrevious = (token: string): string | undefined => {
   const claims = decodedClaims(token);
-  return claims?.updateTo === undefined ? undefined : claims.email;
+  if (Result.isFailure(claims)) {
+    return undefined;
+  }
+  return claims.success.updateTo === undefined ? undefined : claims.success.email;
 };
 
 export { emailChangePrevious, emailChangeTarget };
