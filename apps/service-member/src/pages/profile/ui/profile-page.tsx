@@ -3,7 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 
 import { followMember, unfollowMember } from "#pages/profile/api/follow.ts";
 import { blockMember, unblockMember } from "#shared/api/index.ts";
-import { ProfileLayoutRenderer } from "#shared/profile-layout/renderer.tsx";
+import { ProfileLayoutRenderer } from "#shared/profile-layout/index.ts";
 import { ProfileBody } from "./profile-body.tsx";
 import { ProfileShare } from "./profile-share.tsx";
 
