@@ -10,7 +10,8 @@ const authenticatorOptions = {
 } as const;
 
 const enableVirtualAuthenticator = (page: Page): Promise<void> =>
-  page.context()
+  page
+    .context()
     .newCDPSession(page)
     .then((client) =>
       client.send("WebAuthn.enable", { enableUI: false }).then(() =>

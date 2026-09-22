@@ -189,10 +189,7 @@ const submitPasskeyRegistration = (
     yield* seeText(visit.page, passkeyLabel);
   });
 
-const registerPasskey = (
-  visit: Visit,
-  passkeyLabel: string,
-): Effect.Effect<void, JourneyFailure> =>
+const registerPasskey = (visit: Visit, passkeyLabel: string): Effect.Effect<void, JourneyFailure> =>
   Effect.gen(function* registerVisitPasskey() {
     yield* pageStep(() => visit.page.goto(`${visit.origin}/settings/security`));
     yield* readyButton(visit.page, "パスキーを登録");

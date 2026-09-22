@@ -41,9 +41,9 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
   const page = yield* Effect.tryPromise({
     catch: () => failure("browser_start_failed"),
     try: () =>
-      browserSession.newPage().then((openedPage) =>
-        enableVirtualAuthenticator(openedPage).then(() => openedPage),
-      ),
+      browserSession
+        .newPage()
+        .then((openedPage) => enableVirtualAuthenticator(openedPage).then(() => openedPage)),
   });
   const verified = yield* runVerifyMember({
     mail,

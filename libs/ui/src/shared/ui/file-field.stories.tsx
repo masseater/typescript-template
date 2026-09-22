@@ -26,8 +26,8 @@ export const Picks = meta.story({
     const picked = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], "me.jpg", {
       type: "image/jpeg",
     });
-    return userEvent.upload(canvas.getByLabelText("顔写真"), picked).then(() =>
-      expect(args.onFileChange).toHaveBeenCalledWith(picked),
-    );
+    return userEvent
+      .upload(canvas.getByLabelText("顔写真"), picked)
+      .then(() => expect(args.onFileChange).toHaveBeenCalledWith(picked));
   },
 });

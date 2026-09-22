@@ -90,9 +90,7 @@ function adminApp() {
   const send = (call: Call, cookie?: string): Effect.Effect<Response> =>
     Effect.gen(function* sendCall() {
       const body =
-        call.body === undefined
-          ? undefined
-          : yield* Schema.encodeEffect(JsonUnknown)(call.body);
+        call.body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(call.body);
       return yield* Effect.promise(() =>
         Promise.resolve(
           app.fetch(

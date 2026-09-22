@@ -166,7 +166,7 @@ const stripeBindings = {
 
 describe("readStripeConfig", () => {
   describe("test-mode keys on a local origin", () => {
-    const it = test.extend("stripeConfig", async () =>
+    const it = test.extend("stripeConfig", () =>
       Effect.runPromise(readStripeConfig(stripeBindings)));
 
     it("is read as a test-mode configuration", ({ stripeConfig }) => {
@@ -180,7 +180,7 @@ describe("readStripeConfig", () => {
   });
 
   describe("a live key on a deployed origin", () => {
-    const it = test.extend("stripeConfig", async () =>
+    const it = test.extend("stripeConfig", () =>
       Effect.runPromise(
         readStripeConfig({
           ...stripeBindings,
@@ -216,7 +216,7 @@ describe("readStripeConfig", () => {
       'Expected a string matching the RegExp ^price_[A-Za-z0-9]+$\n  at ["STRIPE_PRICE_ID"]',
     ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
-    const it = test.extend("refusal", async () =>
+    const it = test.extend("refusal", () =>
       Effect.runPromise(Effect.flip(readStripeConfig({ ...stripeBindings, ...overridden }))));
 
     it("is refused with the reason that names the rule it breaks", ({ refusal }) => {
@@ -225,7 +225,7 @@ describe("readStripeConfig", () => {
   });
 
   describe("bindings that carry no Stripe keys at all", () => {
-    const it = test.extend("refusal", async () =>
+    const it = test.extend("refusal", () =>
       Effect.runPromise(Effect.flip(readStripeConfig({ APP_ORIGIN: stripeBindings.APP_ORIGIN }))));
 
     it("are refused instead of falling back to a free-for-all", ({ refusal }) => {
@@ -237,7 +237,7 @@ describe("readStripeConfig", () => {
 });
 
 describe("an analytics measurement id beside a public origin", () => {
-  const it = test.extend("analyticsEnvironment", async () => {
+  const it = test.extend("analyticsEnvironment", () => {
     const { MAILPIT_URL: _mailpit, ...remoteBindings } = localBindings;
     return Effect.runPromise(
       readEnvironment({
@@ -262,7 +262,7 @@ describe("an analytics measurement id beside a public origin", () => {
 });
 
 describe("an analytics measurement id on localhost", () => {
-  const it = test.extend("localAnalyticsEnvironment", async () =>
+  const it = test.extend("localAnalyticsEnvironment", () =>
     Effect.runPromise(
       readEnvironment({
         ...localBindings,

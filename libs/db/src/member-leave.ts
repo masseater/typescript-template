@@ -361,7 +361,9 @@ const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
     return { immediate: true as const };
   }
   const withdrawnAt = DateTime.toDate(yield* DateTime.now);
-  const purgeAt = DateTime.toDate(DateTime.makeUnsafe(withdrawnAt.getTime() + retentionMilliseconds));
+  const purgeAt = DateTime.toDate(
+    DateTime.makeUnsafe(withdrawnAt.getTime() + retentionMilliseconds),
+  );
   const snapshot = yield* loadSnapshot(memberId);
   yield* query((database) =>
     database

@@ -76,7 +76,9 @@ it.effect("a member without a subscription is free and is refused paid features"
 it.effect("an active subscription inside its period makes the member paid", () =>
   Effect.gen(function* program() {
     yield* addMember("alice");
-    yield* TestClock.setTime(DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")));
+    yield* TestClock.setTime(
+      DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
+    );
     const outcome = yield* recordSubscription(
       event("evt_1", "2026-09-20T00:00:00.000Z"),
       active("alice"),

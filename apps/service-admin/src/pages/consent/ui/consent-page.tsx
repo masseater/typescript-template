@@ -12,10 +12,7 @@ import type { ReactElement } from "react";
 const consentRoute = getRouteApi("/consent");
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 
-function getPublicClient(
-  fetchImpl: typeof fetch,
-  clientId: string,
-): Promise<Response> {
+function getPublicClient(fetchImpl: typeof fetch, clientId: string): Promise<Response> {
   return fetchImpl(
     `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
     { cache: "no-store", credentials: "same-origin" },
@@ -31,7 +28,9 @@ function loadClientName(clientId: string): Promise<string | undefined> {
     if (!response.ok) {
       throw new Error("クライアントの情報を取得できませんでした。");
     }
-    return response.json().then((payload) => decodeJson(ClientView, payload).client_name ?? clientId);
+    return response
+      .json()
+      .then((payload) => decodeJson(ClientView, payload).client_name ?? clientId);
   });
 }
 

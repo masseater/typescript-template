@@ -92,8 +92,7 @@ const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(
   token: string,
   body?: unknown,
 ) {
-  const encoded =
-    body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(body);
+  const encoded = body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(body);
   const incoming = new Request(`${adminOrigin}/mcp`, {
     ...(encoded === undefined ? {} : { body: encoded }),
     headers: {

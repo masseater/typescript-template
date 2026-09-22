@@ -4,17 +4,6 @@ import { Result, Schema } from "effect";
 
 import { decodeJson, errorMessage } from "./protocol.ts";
 
-const readFailure = (served: Response): Promise<unknown> =>
-  served.json().then(
-    (body) => body,
-    (unreadableFailure: unknown) => ({ error: errorMessage(unreadableFailure) }),
-  );
-
-const inviteFailureOf = (served: Response, fallback: string): Promise<string> =>
-  readFailure(served).then((failureBody) => {
-    const decoded = Schema.decodeUnknownResult(ErrorBody)(failureBody);
-    return Result.isSuccess(decoded) ? decoded.success.error : fallback;
-  });
 
 const fetchInvitationResponse = (
   fetchImpl: typeof fetch,
@@ -34,6 +23,18 @@ const unavailable = (message: string): Invitation => ({ message, status: "unavai
 
 const available = (email: string): Invitation => ({ email, status: "available" });
 
+const readFailure = (served: Response): Promise<unknown> =>
+  served.json().then(
+    (body: unknown): unknown => body,
+    (unreadableFailure: unknown) => ({ error: errorMessage(unreadableFailure) }),
+  );
+
+const inviteFailureOf = (served: Response, fallback: string): Promise<string> =>
+  readFailure(served).then((failureBody) => {
+    const decoded = Schema.decodeUnknownResult(ErrorBody)(failureBody);
+    return Result.isSuccess(decoded) ? decoded.success.error : fallback;
+  });
+
 const readInvitation = (served: Response, closedMessage: string): Promise<Invitation> => {
   if (served.status === httpStatus.notFound) {
     return Promise.resolve(unavailable(closedMessage));
@@ -41,9 +42,9 @@ const readInvitation = (served: Response, closedMessage: string): Promise<Invita
   if (!served.ok) {
     return inviteFailureOf(served, closedMessage).then(unavailable);
   }
-  return served.json().then((servedInvite: unknown) =>
-    available(decodeJson(InvitePreview, servedInvite).email),
-  );
+  return served
+    .json()
+    .then((servedInvite: unknown) => available(decodeJson(InvitePreview, servedInvite).email));
 };
 
 const previewInvitation = (endpoint: string, token: string): Promise<Invitation> => {

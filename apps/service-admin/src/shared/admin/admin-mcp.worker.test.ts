@@ -163,8 +163,7 @@ describe("admin MCP authorization", () => {
         const searched = yield* callTool(app.fetchMcp, tokens.access_token, "search_members");
         yield* app.stop;
         const text =
-          (searched as { result: { content: [{ text: string }] } }).result.content[0]?.text ??
-          "{}";
+          (searched as { result: { content: [{ text: string }] } }).result.content[0]?.text ?? "{}";
         return yield* Schema.decodeEffect(JsonUnknown)(text);
       }),
     ).then((result) => {
@@ -207,8 +206,7 @@ describe("admin MCP authorization", () => {
           method: "tools/list",
         });
         yield* app.stop;
-        const body =
-          granted instanceof Response ? yield* parseGrantedBody(granted) : granted;
+        const body = granted instanceof Response ? yield* parseGrantedBody(granted) : granted;
         return {
           grantedStatus: body !== undefined ? httpStatus.ok : httpStatus.internalServerError,
         };

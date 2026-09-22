@@ -176,7 +176,9 @@ describe("findRecoveryOffer", () => {
           yield* query((database) =>
             database
               .update(withdrawnMember)
-              .set({ withdrawnAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
+              .set({
+                withdrawnAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")),
+              })
               .where(eq(withdrawnMember.memberId, "older")),
           );
           yield* addMember({ email: "returning@example.com", userId: "newcomer" });
@@ -239,7 +241,9 @@ describe("findRecoveryOffer", () => {
               .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
               .where(eq(leaveRequestTable.memberId, "former")),
           );
-          yield* purgeExpiredWithdrawnMembers(DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")));
+          yield* purgeExpiredWithdrawnMembers(
+            DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
+          );
           yield* addMember({ email: "returning@example.com", userId: "newcomer" });
           return yield* findRecoveryOffer("newcomer");
         }),
@@ -364,7 +368,9 @@ describe("purgeExpiredWithdrawnMembers", () => {
               .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
               .where(eq(leaveRequestTable.memberId, "expired")),
           );
-          const purged = yield* purgeExpiredWithdrawnMembers(DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")));
+          const purged = yield* purgeExpiredWithdrawnMembers(
+            DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
+          );
           return {
             purged,
             withdrawn: yield* countWithdrawnMember("expired"),

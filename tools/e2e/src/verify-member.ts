@@ -67,9 +67,7 @@ const completeWelcomeOnboarding = (onboarding: {
   readonly page: Page;
 }): Effect.Effect<void, JourneyFailure> =>
   Effect.gen(function* finishWelcome() {
-    yield* pageStep(() =>
-      onboarding.page.waitForURL((url) => url.pathname.includes("/welcome")),
-    );
+    yield* pageStep(() => onboarding.page.waitForURL((url) => url.pathname.includes("/welcome")));
     yield* seeHeading(onboarding.page, "規約への同意");
     yield* press(onboarding.page, "同意して続ける");
     yield* seeHeading(onboarding.page, "プロフィールの作り方");
@@ -120,10 +118,7 @@ const finalizeVerifyMember = (finalization: {
   Effect.gen(function* finalizeVerification() {
     yield* pageStep(() => finalization.page.goto(`${finalization.origin}/settings/profile`));
     yield* seeText(finalization.page, finalization.biography);
-    const session = yield* readSession(
-      finalization.page,
-      `${finalization.origin}/api/session`,
-    );
+    const session = yield* readSession(finalization.page, `${finalization.origin}/api/session`);
     finalization.capture.stop();
     return {
       biography: finalization.biography,

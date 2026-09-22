@@ -14,8 +14,8 @@ describe("GoogleAnalyticsMeasurementId", () => {
     ["G-", false],
     ["not-an-id", false],
   ] as const)("%s", ([candidate, accepted]) => {
-    const it = test.extend("decoded", async () =>
-      Effect.runPromise(Schema.decodeUnknownEffect(GoogleAnalyticsMeasurementId)(candidate)).catch(
+    const it = test.extend("decoded", () =>
+      Effect.runPromise(Schema.decodeEffect(GoogleAnalyticsMeasurementId)(candidate)).catch(
         () => undefined,
       ));
 

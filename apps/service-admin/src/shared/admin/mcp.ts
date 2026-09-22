@@ -79,19 +79,17 @@ const runTool =
       program.pipe(
         Effect.flatMap((value) =>
           Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(
-            Effect.map(
-              (text): { content: [{ type: "text"; text: string }] } => ({
-                content: [{ text, type: "text" }],
-              }),
-            ),
+            Effect.map((text): { content: [{ type: "text"; text: string }] } => ({
+              content: [{ text, type: "text" }],
+            })),
             Effect.orDie,
           ),
         ),
       ),
     ).catch(
-      (
-        failure: { readonly _tag?: string },
-      ): { content: [{ type: "text"; text: string }]; isError: true } => {
+      (failure: {
+        readonly _tag?: string;
+      }): { content: [{ type: "text"; text: string }]; isError: true } => {
         if (failure?._tag === "PermissionRequired") {
           return toolFailure("permission_required");
         }

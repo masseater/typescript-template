@@ -46,7 +46,9 @@ it.effect("admin agreement reads never expose interview conversation content", (
     const [version] = listed.versions;
     if (version !== undefined) {
       const read = yield* readAgreementVersion(sessionId, version.version);
-      const readSerialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(read);
+      const readSerialized = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+        read,
+      );
       assert.isFalse(readSerialized.includes(conversationToken));
     }
   }).pipe(Effect.provide(TestDatabase)),

@@ -213,7 +213,10 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
 
 it("formats daily buckets as UTC dates", () => {
   assert.strictEqual(
-    bucketFor(METRIC_PERIOD.daily, DateTime.toDate(DateTime.makeUnsafe("2026-03-15T12:34:56.000Z"))),
+    bucketFor(
+      METRIC_PERIOD.daily,
+      DateTime.toDate(DateTime.makeUnsafe("2026-03-15T12:34:56.000Z")),
+    ),
     "2026-03-15",
   );
 });

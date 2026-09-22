@@ -9,9 +9,7 @@ import {
   InquiryReply,
 } from "#shared/contracts/index.ts";
 
-function loadInquiries(
-  query: typeof InquiryListQuery.Type,
-): Promise<typeof AdminInquiryList.Type> {
+function loadInquiries(query: typeof InquiryListQuery.Type): Promise<typeof AdminInquiryList.Type> {
   return adminClient()
     .inquiries.get({ query })
     .then((response) => apiData(AdminInquiryList, response));
@@ -29,9 +27,7 @@ function loadMemberSummary(memberId: string): Promise<typeof InquiryMemberSummar
     .then((response) => apiData(InquiryMemberSummary, response));
 }
 
-function replyToInquiry(
-  values: typeof InquiryReply.Type,
-): Promise<typeof AdminInquiryThread.Type> {
+function replyToInquiry(values: typeof InquiryReply.Type): Promise<typeof AdminInquiryThread.Type> {
   return adminClient()
     .inquiries.reply.post(values)
     .then((response) => apiData(AdminInquiryThread, response));

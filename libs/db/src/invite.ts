@@ -25,9 +25,11 @@ const INVITE_LIFETIME_MS =
 
 const hashInviteToken = (rawToken: string): Effect.Effect<string> =>
   Effect.promise(() =>
-    crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken)).then((digest) =>
-      [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
-    ),
+    crypto.subtle
+      .digest("SHA-256", new TextEncoder().encode(rawToken))
+      .then((digest) =>
+        [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+      ),
   );
 
 const freshToken = (): string => `${crypto.randomUUID()}${crypto.randomUUID()}`.replaceAll("-", "");
