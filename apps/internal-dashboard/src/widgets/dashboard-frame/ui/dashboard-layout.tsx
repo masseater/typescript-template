@@ -9,7 +9,7 @@ import type { ReactElement } from "react";
 
 const SECURITY = "/security";
 
-function DashboardLayout(): ReactElement {
+function DashboardLayout(): ReactElement | null {
   const { error, loading, session } = useSession();
   const { href, pathname } = useLocation();
   const navigate = useNavigate();
@@ -21,16 +21,22 @@ function DashboardLayout(): ReactElement {
     }
     void navigate({ href: session === undefined ? loginPath(href) : SECURITY, replace: true });
   }, [allowed, error, href, loading, navigate, session]);
-  if (!allowed) {
+  if (loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center p-4">
-        {error === undefined ? (
-          <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-        ) : (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
-        )}
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       </div>
     );
+  }
+  if (error !== undefined) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center p-4">
+        <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
+      </div>
+    );
+  }
+  if (!allowed || session === undefined) {
+    return null;
   }
   return (
     <SessionUserProvider user={session.user}>
