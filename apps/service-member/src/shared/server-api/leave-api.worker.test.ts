@@ -36,6 +36,7 @@ function postRecoveryAccept(app: ReturnType<typeof leaveApp>): Effect.Effect<Res
     Promise.resolve(
       app.fetch(
         new Request(`${fixtureOrigin}${apiRoot}/recovery/accept`, {
+          body: "{}",
           headers: { "content-type": "application/json", origin: fixtureOrigin },
           method: "POST",
         }),
