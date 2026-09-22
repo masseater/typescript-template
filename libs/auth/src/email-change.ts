@@ -7,4 +7,4 @@ const requestEmailChange = (
   newEmail: string,
 ): ReturnType<BrowserClient["json"]> => client.json(emailChangePath, { newEmail });
 
-export { emailChangePath, requestEmailChange };
+export { requestEmailChange };

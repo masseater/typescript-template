@@ -24,6 +24,7 @@ export {
   withAuth,
 } from "./auth-test-fixture.ts";
 export { BrowserClient, origins } from "./browser-client.ts";
+export { requestEmailChange } from "./email-change.ts";
 export { mailSubjects } from "./email.ts";
 export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixture.ts";
 export { UnexpectedStatus } from "./unexpected-status.ts";

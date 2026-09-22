@@ -11,7 +11,6 @@ const workspaces = {
   ".": {
     ignoreDependencies: [
       "@effect/language-service",
-      "@effect/tsgo",
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
@@ -35,7 +34,6 @@ const workspaces = {
       "src/auth-test-fixture.ts",
       "src/browser-client.ts",
       "src/mail-fixture.ts",
-      "src/testing.ts",
       "src/unexpected-status.ts",
       "src/wiki-oauth-fixture.ts",
     ],

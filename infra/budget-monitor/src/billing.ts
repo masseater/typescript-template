@@ -170,5 +170,5 @@ const fetchUsage = Effect.fn("fetchUsage")(function* fetchUsage(asked: {
   });
 });
 
-export { billableUsageEndpoint, fetchUsage };
+export { fetchUsage };
 export type { UsageSnapshot };
