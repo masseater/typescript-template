@@ -108,13 +108,13 @@ describe("paraglideAppRun", () => {
       tasks: {
         ...appRun.tasks,
         "compile:paraglide": {
-          command: "../../libs/vite-config/src/compile-paraglide.ts",
+          command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
           input: [
             ...taskInput,
             "messages/**",
             "project.inlang/**",
             { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-            { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
+            { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts" },
           ],
           output: [".paraglide/**"],
         },

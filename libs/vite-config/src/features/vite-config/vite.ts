@@ -300,14 +300,14 @@ const appRun = {
 } satisfies RunConfig;
 
 const workspaceParaglideCompile = {
-  command: "./libs/vite-config/src/compile-workspace-paraglide.ts",
+  command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
   input: [
     ...taskInput,
     { base: "workspace", pattern: "apps/*/messages/**" },
     { base: "workspace", pattern: "apps/*/project.inlang/**" },
     { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-    { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
-    { base: "workspace", pattern: "libs/vite-config/src/compile-workspace-paraglide.ts" },
+    { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts" },
+    { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts" },
   ],
   output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
 } satisfies NonNullable<Tasks[string]>;
@@ -317,14 +317,14 @@ const paraglideCompileInputs = [
   "messages/**",
   "project.inlang/**",
   { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-  { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
+  { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts" },
 ] as const;
 
 const paraglideAppRun = {
   tasks: {
     ...appRun.tasks,
     "compile:paraglide": {
-      command: "../../libs/vite-config/src/compile-paraglide.ts",
+      command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
       input: [...paraglideCompileInputs],
       output: [".paraglide/**"],
     },

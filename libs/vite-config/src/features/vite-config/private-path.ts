@@ -11,7 +11,7 @@ const isSecretFileName = (fileName: string): boolean => secretFileName.test(file
 
 const privateAdminPath = (slashedPath: string, application: Application): boolean =>
   application !== APPLICATION.admin &&
-  (/(?:^|\/)libs\/db\/src\/admin(?:\.[^/]*)?$/u.test(slashedPath) ||
+  (/(?:^|\/)libs\/db\/src\/features\/db\/admin(?:\.[^/]*)?$/u.test(slashedPath) ||
     /@repo\/db\/admin(?:\/|$)/u.test(slashedPath));
 
 const privatePath = ({
@@ -30,7 +30,7 @@ const privatePath = ({
     /^(?:infra|tools)(?:\/|$)/u.test(repositoryRelativePath) ||
     new RegExp(`(?:^|/)apps/(?:${foreignApplications})(?:/|$)`, "u").test(slashedPath) ||
     new RegExp(`@repo/(?:${foreignApplications})(?:/|$)`, "u").test(slashedPath) ||
-    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)libs\/db\/src\/(?:remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$/u.test(
+    /(?:^|\/)(?:\.local(?:-agents)?|\.git)(?:\/|$)|(?:^|\/)libs\/db\/src\/features\/db\/(?:remote[^/]*|bootstrap[^/]*|testing)(?:\.[^/]*)?$/u.test(
       slashedPath,
     ) ||
     isSecretFileName(slashedPath.split("/").at(-1) ?? slashedPath) ||

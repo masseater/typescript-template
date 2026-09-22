@@ -5,7 +5,7 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
 import type { D1Database, D1PreparedStatement, D1Result } from "@cloudflare/workers-types";
-import type { RemoteFailure } from "../../db/src/remote-input.ts";
+import type { RemoteFailure } from "@repo/db/migrations";
 
 const HttpParam = Schema.Union([Schema.String, Schema.Finite, Schema.Null]);
 const HttpQuery = Schema.Struct({

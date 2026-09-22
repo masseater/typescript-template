@@ -5,7 +5,7 @@ const load = {
   ignoreDependencies: ["k6"],
   project: ["src/**/*.ts!", "scenarios/**/*.ts!"],
 };
-const loadCommands = ["src/cli.ts!", "src/ci.ts!"];
+const loadCommands = ["src/features/load/cli.ts!", "src/features/load/ci.ts!"];
 
 const workspaces = {
   ".": {
@@ -26,21 +26,21 @@ const workspaces = {
     },
   },
   "infra/error-monitor": {
-    entry: ["src/worker.ts!"],
+    entry: ["src/features/error-monitor/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "infra/health-monitor": {
-    entry: ["src/worker.ts!"],
+    entry: ["src/features/health-monitor/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
     entry: [
-      "src/auth-test-fixture.ts",
-      "src/browser-client.ts",
-      "src/mail-fixture.ts",
-      "src/testing.ts",
-      "src/unexpected-status.ts",
-      "src/wiki-oauth-fixture.ts",
+      "src/features/auth/auth-test-fixture.ts",
+      "src/features/auth/browser-client.ts",
+      "src/features/auth/mail-fixture.ts",
+      "src/features/auth/testing.ts",
+      "src/features/auth/unexpected-status.ts",
+      "src/features/auth/wiki-oauth-fixture.ts",
     ],
     project: ["src/**/*.ts!"],
   },
@@ -48,14 +48,14 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/monitor": {
-    entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
+    entry: ["src/features/monitor/mail-recorder.ts", "src/features/monitor/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
   "libs/observability": {
-    entry: ["src/browser-testing.ts", "src/server-testing.ts"],
+    entry: ["src/features/observability/browser-testing.ts", "src/features/observability/server-testing.ts"],
   },
   "libs/runtime": {
-    entry: ["src/*-fixture.ts"],
+    entry: ["src/features/runtime/*-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
   "libs/auth-ui": {
@@ -82,18 +82,19 @@ const workspaces = {
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
     entry: [
-      "src/repository/dependency-cruiser.ts",
+      "dependency-cruiser.ts",
+      "src/features/dont-review-it/repository/dependency-cruiser.ts",
       "doctor.config.ts",
-      "src/index.ts!",
-      "src/repository/lint.ts!",
-      "src/repository/plugin.ts!",
+      "src/features/dont-review-it/index.ts!",
+      "src/features/dont-review-it/repository/lint.ts!",
+      "src/features/dont-review-it/repository/plugin.ts!",
     ],
     ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
     project: [
-      "src/repository/**/*.{ts,mjs}",
+      "src/features/dont-review-it/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
       "*.ts",
-      "!src/vitest/parsed-fields.ts!",
+      "!src/features/dont-review-it/vitest/parsed-fields.ts!",
     ],
   },
   "tools/e2e": {
@@ -103,21 +104,21 @@ const workspaces = {
 };
 
 const cloudflareStacks = [
-  "src/core.ts!",
-  "src/database.ts!",
-  "src/flagship.ts!",
-  "src/email.ts!",
-  "src/observability.ts!",
-  "src/tokens.ts!",
-  "src/budget-monitor.ts!",
-  "src/error-monitor.ts!",
-  "src/health-monitor.ts!",
-  "src/service-member.ts!",
-  "src/service-admin.ts!",
-  "src/internal-dashboard.ts!",
-  "src/storage.ts!",
-  "src/zone.ts!",
-  "src/bindings.ts!",
+  "src/features/cloudflare/core.ts!",
+  "src/features/cloudflare/database.ts!",
+  "src/features/cloudflare/flagship.ts!",
+  "src/features/cloudflare/email.ts!",
+  "src/features/cloudflare/observability.ts!",
+  "src/features/cloudflare/tokens.ts!",
+  "src/features/cloudflare/budget-monitor.ts!",
+  "src/features/cloudflare/error-monitor.ts!",
+  "src/features/cloudflare/health-monitor.ts!",
+  "src/features/cloudflare/service-member.ts!",
+  "src/features/cloudflare/service-admin.ts!",
+  "src/features/cloudflare/internal-dashboard.ts!",
+  "src/features/cloudflare/storage.ts!",
+  "src/features/cloudflare/zone.ts!",
+  "src/features/cloudflare/bindings.ts!",
 ];
 
 const application = {
@@ -127,27 +128,27 @@ const application = {
 };
 
 const scripts = {
-  "infra/budget-monitor": ["src/inspect.ts!"],
+  "infra/budget-monitor": ["src/features/budget-monitor/inspect.ts!"],
   "infra/cloudflare": [
-    "src/cli.ts!",
-    "src/check-stacks.ts!",
-    "src/check-account.ts!",
-    "src/bootstrap-state.ts!",
-    "src/database-command.ts!",
-    "src/prepare-ci-env.ts!",
-    "src/verify-origins.ts!",
+    "src/features/cloudflare/cli.ts!",
+    "src/features/cloudflare/check-stacks.ts!",
+    "src/features/cloudflare/check-account.ts!",
+    "src/features/cloudflare/bootstrap-state.ts!",
+    "src/features/cloudflare/database-command.ts!",
+    "src/features/cloudflare/prepare-ci-env.ts!",
+    "src/features/cloudflare/verify-origins.ts!",
   ],
-  "infra/local": ["src/compose.ts!"],
-  "libs/db-local": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
-  "libs/vite-config": ["src/compile-paraglide.ts!", "src/compile-workspace-paraglide.ts!"],
+  "infra/local": ["src/features/local/compose.ts!"],
+  "libs/db-local": ["src/features/db-local/bootstrap-local.ts!", "src/features/db-local/migrate-local.ts!"],
+  "libs/vite-config": ["src/features/vite-config/compile-paraglide.ts!", "src/features/vite-config/compile-workspace-paraglide.ts!"],
   "tools/dev": [
-    "src/cli.ts!",
-    "src/prepare-browser.ts!",
-    "src/dev-start.ts!",
-    "src/observe/cli.ts!",
-    "src/observe/verify.ts!",
-    "src/observe/symbolicate.ts!",
-    "src/observe/receiver-check.ts!",
+    "src/features/dev/cli.ts!",
+    "src/features/dev/prepare-browser.ts!",
+    "src/features/dev/dev-start.ts!",
+    "src/features/dev/observe/cli.ts!",
+    "src/features/dev/observe/verify.ts!",
+    "src/features/dev/observe/symbolicate.ts!",
+    "src/features/dev/observe/receiver-check.ts!",
   ],
 };
 
@@ -201,7 +202,7 @@ const config = ({
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
       "apps/*": app,
       "apps/core": {
-        entry: ["src/worker.ts!"],
+        entry: ["src/features/core/worker.ts!"],
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
@@ -222,15 +223,15 @@ const config = ({
         project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
-        entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
+        entry: ["src/features/budget-monitor/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
         project: ["src/**/*.ts!"],
       },
       "infra/cloudflare": {
         entry: [
           ...cloudflareStacks,
           ...productionOnly(...scripts["infra/cloudflare"]),
-          "src/account-fixture.ts",
-          "src/inspection-fixture.ts",
+          "src/features/cloudflare/account-fixture.ts",
+          "src/features/cloudflare/inspection-fixture.ts",
         ],
         ignoreExportsUsedInFile: true,
         project: ["src/**/*.ts!"],
@@ -240,7 +241,7 @@ const config = ({
         project: ["src/**/*.ts!"],
       },
       "libs/db": {
-        entry: ["src/records-fixture.ts"],
+        entry: ["src/features/db/records-fixture.ts"],
         project: ["src/**/*.ts!"],
       },
       "libs/db-local": {
@@ -249,14 +250,14 @@ const config = ({
       },
       "libs/vite-config": {
         entry: [
-          "src/cloudflare-workers-loader.mjs",
-          "src/cloudflare-workers-stub.mjs",
-          "src/cloudflare-workflows-stub.mjs",
+          "src/features/vite-config/cloudflare-workers-loader.mjs",
+          "src/features/vite-config/cloudflare-workers-stub.mjs",
+          "src/features/vite-config/cloudflare-workflows-stub.mjs",
           ...productionOnly(...scripts["libs/vite-config"]),
         ],
       },
       "tools/dev": {
-        entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
+        entry: ["src/features/dev/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
         ignoreDependencies: ["agent-browser", "playwright"],
         project: ["src/**/*.ts!"],
       },

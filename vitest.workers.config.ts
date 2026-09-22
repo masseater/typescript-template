@@ -72,7 +72,7 @@ export default defineProject({
     include: [`libs/${workerTests}`, `infra/${workerTests}`, `apps/${workerTests}`],
     name: "workers",
     root,
-    setupFiles: [paths.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
+    setupFiles: [paths.join(root, "tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields.ts")],
     testTimeout: 30_000,
   },
 });

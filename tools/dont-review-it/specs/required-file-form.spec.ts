@@ -4,10 +4,10 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { defaultRequiredFileFormConfig } from "../src/required-file-form/config.ts";
-import { runRequiredFileFormChecks } from "../src/required-file-form/run-required-file-form-checks.ts";
+import { defaultRequiredFileFormConfig } from "../src/features/dont-review-it/required-file-form/config.ts";
+import { runRequiredFileFormChecks } from "../src/features/dont-review-it/required-file-form/run-required-file-form-checks.ts";
 
-import type { ScannedProblems } from "../src/repository-checks/index.ts";
+import type { ScannedProblems } from "../src/features/dont-review-it/repository-checks/index.ts";
 
 const scannedFor = async ({
   files,
