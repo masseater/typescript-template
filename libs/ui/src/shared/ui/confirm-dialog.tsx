@@ -3,15 +3,7 @@ import { Modal, ModalBody, ModalButton, ModalFooter, ModalHeader, ROLE, SIZE } f
 
 import type { ReactElement } from "react";
 
-type ConfirmDialogProps = {
-  readonly confirmLabel: string;
-  readonly description: string;
-  readonly onConfirm: () => void;
-  readonly onOpenChange: (open: boolean) => void;
-  readonly open: boolean;
-  readonly title: string;
-  readonly variant?: "danger" | "primary" | undefined;
-};
+const cancelLabel = "キャンセル";
 
 const ConfirmDialog = ({
   confirmLabel,
@@ -21,7 +13,15 @@ const ConfirmDialog = ({
   open,
   title,
   variant = "primary",
-}: ConfirmDialogProps): ReactElement => {
+}: Readonly<{
+  confirmLabel: string;
+  description: string;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  title: string;
+  variant?: "danger" | "primary" | undefined;
+}>): ReactElement => {
   return (
     <Modal
       data-slot="confirm-dialog"
@@ -43,7 +43,7 @@ const ConfirmDialog = ({
             onOpenChange(false);
           }}
         >
-          キャンセル
+          {cancelLabel}
         </ModalButton>
         <ModalButton
           kind={variant === "danger" ? KIND.dangerPrimary : KIND.primary}
