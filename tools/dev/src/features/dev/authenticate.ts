@@ -33,6 +33,11 @@ interface AuthenticateReport {
 
 const loginSettleMilliseconds = "2500";
 
+const submitLoginForm = [
+  "eval",
+  "(() => { const form = document.querySelector('form'); if (form === null) { throw new Error('login_form_missing'); } form.requestSubmit(); return true; })()",
+] as const;
+
 function sessionName(app: App): string {
   return `template-local-${app}`;
 }
@@ -90,10 +95,7 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     "fill",
     operator.password,
   ]);
-  yield* agent(app, credentials, socketDirectory, [
-    "eval",
-    "document.querySelector('form')?.requestSubmit(); true",
-  ]);
+  yield* agent(app, credentials, socketDirectory, [...submitLoginForm]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   yield* agent(app, credentials, socketDirectory, [
     "find",
@@ -102,10 +104,7 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     "fill",
     URI.parse(operator.totpURI).generate(),
   ]);
-  yield* agent(app, credentials, socketDirectory, [
-    "eval",
-    "document.querySelector('form')?.requestSubmit(); true",
-  ]);
+  yield* agent(app, credentials, socketDirectory, [...submitLoginForm]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPath(app)}`]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
