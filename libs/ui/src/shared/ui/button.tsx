@@ -5,6 +5,36 @@ import { kindByVariant, sizeBySize } from "./button-kinds";
 
 import type { Children } from "./types";
 
+type ButtonModel = Children &
+  Readonly<{
+    "aria-label"?: string;
+    action?: () => void | Promise<void>;
+    disabled?: boolean;
+    onClick?: BaseButtonProps["onClick"];
+    size?: "medium" | "small";
+    type: "button" | "submit";
+    variant?: "danger" | "primary" | "secondary";
+  }>;
+
+const clickHandlerFor = (
+  action: ButtonModel["action"],
+  type: ButtonModel["type"],
+  onClick: ButtonModel["onClick"],
+): BaseButtonProps["onClick"] | undefined => {
+  if (action === undefined && onClick === undefined) {
+    return undefined;
+  }
+  return (click) => {
+    if (action !== undefined && type === "button") {
+      startTransition(() => {
+        void action();
+      });
+      return;
+    }
+    onClick?.(click);
+  };
+};
+
 const Button = ({
   "aria-label": ariaLabel,
   action,
@@ -14,43 +44,24 @@ const Button = ({
   size = "medium",
   type,
   variant = "secondary",
-}: Children &
-  Readonly<{
-    "aria-label"?: string;
-    action?: () => void | Promise<void>;
-    disabled?: boolean;
-    onClick?: BaseButtonProps["onClick"];
-    size?: "medium" | "small";
-    type: "button" | "submit";
-    variant?: "danger" | "primary" | "secondary";
-  }>): ReactElement => {
+}: ButtonModel): ReactElement => {
   const buttonKind = kindByVariant[variant];
   const buttonSize = sizeBySize[size];
-  const handleClick: BaseButtonProps["onClick"] = (click) => {
-    if (action !== undefined && type === "button") {
-      startTransition(() => {
-        void action();
-      });
-      return;
-    }
-    onClick?.(click);
-  };
-  const clickHandler =
-    action === undefined && onClick === undefined ? undefined : handleClick;
+  const clickHandler = clickHandlerFor(action, type, onClick);
+  if (clickHandler === undefined && ariaLabel === undefined) {
+    return (
+      <BaseButton
+        data-slot="button"
+        type={type}
+        disabled={disabled}
+        kind={buttonKind}
+        size={buttonSize}
+      >
+        {children}
+      </BaseButton>
+    );
+  }
   if (clickHandler === undefined) {
-    if (ariaLabel === undefined) {
-      return (
-        <BaseButton
-          data-slot="button"
-          type={type}
-          disabled={disabled}
-          kind={buttonKind}
-          size={buttonSize}
-        >
-          {children}
-        </BaseButton>
-      );
-    }
     return (
       <BaseButton
         data-slot="button"
