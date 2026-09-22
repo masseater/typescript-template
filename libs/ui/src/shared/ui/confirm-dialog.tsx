@@ -1,29 +1,58 @@
-import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
-
-import { ConfirmDialogPopup, type ConfirmDialogProps } from "./confirm-dialog-popup";
+import { KIND } from "baseui/button";
+import { Modal, ModalBody, ModalButton, ModalFooter, ModalHeader, ROLE, SIZE } from "baseui/modal";
 
 import type { ReactElement } from "react";
 
-const ConfirmDialog = (props: ConfirmDialogProps): ReactElement => {
-  const { confirmLabel, description, onConfirm, onOpenChange, open, title, variant } = props;
+const cancelLabel = "キャンセル";
+
+const ConfirmDialog = ({
+  confirmLabel,
+  description,
+  onConfirm,
+  onOpenChange,
+  open,
+  title,
+  variant = "primary",
+}: Readonly<{
+  confirmLabel: string;
+  description: string;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  title: string;
+  variant?: "danger" | "primary" | undefined;
+}>): ReactElement => {
   return (
-    <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
-      <AlertDialogPrimitive.Portal>
-        <AlertDialogPrimitive.Backdrop
-          data-slot="confirm-dialog-backdrop"
-          className="fixed inset-0 z-50 bg-scrim"
-        />
-        <ConfirmDialogPopup
-          confirmLabel={confirmLabel}
-          description={description}
-          onConfirm={onConfirm}
-          onOpenChange={onOpenChange}
-          open={open}
-          title={title}
-          variant={variant}
-        />
-      </AlertDialogPrimitive.Portal>
-    </AlertDialogPrimitive.Root>
+    <Modal
+      data-slot="confirm-dialog"
+      isOpen={open}
+      animate
+      closeable
+      role={ROLE.alertdialog}
+      size={SIZE.default}
+      onClose={() => {
+        onOpenChange(false);
+      }}
+    >
+      <ModalHeader>{title}</ModalHeader>
+      <ModalBody>{description}</ModalBody>
+      <ModalFooter>
+        <ModalButton
+          kind={KIND.tertiary}
+          onClick={() => {
+            onOpenChange(false);
+          }}
+        >
+          {cancelLabel}
+        </ModalButton>
+        <ModalButton
+          kind={variant === "danger" ? KIND.dangerPrimary : KIND.primary}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </ModalButton>
+      </ModalFooter>
+    </Modal>
   );
 };
 

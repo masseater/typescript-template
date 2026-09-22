@@ -56,6 +56,7 @@ describe("application package boundaries", () => {
 describe("replaced packages", () => {
   it.for([
     { kind: "exact", dependency: "styled-components" },
+    { kind: "exact", dependency: "@base-ui/react" },
     { kind: "exact", dependency: "i18next" },
     { kind: "exact", dependency: "react-intl" },
     { kind: "prefix", dependency: "@pulumi/cloudflare" },
