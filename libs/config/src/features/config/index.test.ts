@@ -40,10 +40,24 @@ it.effect("validates local configuration and defaults the release to local", () 
   }),
 );
 
+it.effect("requires a release outside local development", () =>
+  Effect.gen(function* program() {
+    const { MAILPIT_URL: _mailpit, ...remote } = local;
+    assert.strictEqual(
+      yield* reason({ ...remote, APP_ORIGIN: "https://app.example.test" }),
+      "APP_RELEASE is required outside local development",
+    );
+  }),
+);
+
 it.effect("rejects Mailpit for public application origins", () =>
   Effect.gen(function* program() {
     assert.strictEqual(
-      yield* reason({ ...local, APP_ORIGIN: "https://app.example.test" }),
+      yield* reason({
+        ...local,
+        APP_ORIGIN: "https://app.example.test",
+        APP_RELEASE: "1.2.3",
+      }),
       "Mailpit is restricted to local development",
     );
   }),
@@ -216,6 +230,7 @@ it.effect("requires a way to deliver mail", () =>
         ...withoutMailpit,
         ...withoutEmail,
         APP_ORIGIN: "https://app.example.test",
+        APP_RELEASE: "1.2.3",
       }),
       "An email delivery binding is required",
     );
