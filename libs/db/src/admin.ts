@@ -119,7 +119,13 @@ export const getMember = Effect.fn("getMember")(function* getMember(
     database
       .select(memberColumns)
       .from(user)
-      .where(and(eq(user.id, memberId), eq(user.role, ROLE.member), liveAdmin(database, sessionId, checkedAt)))
+      .where(
+        and(
+          eq(user.id, memberId),
+          eq(user.role, ROLE.member),
+          liveAdmin(database, sessionId, checkedAt),
+        ),
+      )
       .limit(1),
   );
   if (!member) {
