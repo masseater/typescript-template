@@ -114,10 +114,13 @@ const scannedFileAt = (input: {
   readonly absolutePath: string;
   readonly realRepositoryRoot: string;
   readonly repositoryRoot: string;
-}): ScannedFile => {
+}): ScannedFile | null => {
   const { absolutePath, realRepositoryRoot, repositoryRoot } = input;
-  const stats = statSync(absolutePath);
-  const realPath = realpathSync.native(absolutePath);
+  const stats = statOf(absolutePath);
+  const realPath = readUnlessMissing(() => realpathSync.native(absolutePath));
+  if (stats === null || realPath === null) {
+    return null;
+  }
   const symbolicLinkTarget = readUnlessMissing(() =>
     lstatSync(absolutePath).isSymbolicLink() ? readlinkSync(absolutePath) : null,
   );
@@ -149,7 +152,7 @@ const scannedSymbolicFile = (
     realRepositoryRoot: input.realRepositoryRoot,
     repositoryRoot: input.repositoryRoot,
   });
-  return { files: [scanned], problems: [] };
+  return scanned === null ? EMPTY_SCANNED_FILES : { files: [scanned], problems: [] };
 };
 
 const scannedSymbolicLink = (input: ScanDirectoryInput, directoryEntry: Dirent): ScannedFiles => {
@@ -178,7 +181,7 @@ const scannedRegularFile = (input: ScanDirectoryInput, absolutePath: string): Sc
     realRepositoryRoot: input.realRepositoryRoot,
     repositoryRoot: input.repositoryRoot,
   });
-  return { files: [scanned], problems: [] };
+  return scanned === null ? EMPTY_SCANNED_FILES : { files: [scanned], problems: [] };
 };
 
 const scannedDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent): ScannedFiles => {
