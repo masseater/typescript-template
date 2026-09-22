@@ -35,7 +35,7 @@ const ChallengeLogin = ({
         {mode === CHALLENGE_MODE.backup ? "認証アプリのコードを使う" : "バックアップコードを使う"}
       </Button>
       <Button type="button" disabled={action.blocked} onClick={restart}>
-        ログイン方法を選び直す
+        {"ログイン方法を選び直す"}
       </Button>
     </>
   );

@@ -51,7 +51,7 @@ const PasskeyItem = ({
           setConfirming(true);
         }}
       >
-        削除
+        {"削除"}
       </Button>
       <ConfirmDialog
         open={confirming}

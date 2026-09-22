@@ -21,8 +21,8 @@ export const Default = meta.story({
   args: {
     children: (
       <>
-        <TableCell>山田 太郎</TableCell>
-        <TableCell>管理者</TableCell>
+        <TableCell>{"山田 太郎"}</TableCell>
+        <TableCell>{"管理者"}</TableCell>
       </>
     ),
   },

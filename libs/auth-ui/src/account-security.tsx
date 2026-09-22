@@ -27,9 +27,9 @@ const AccountSecurity = ({
   };
   return (
     <div className="flex w-full flex-col gap-4">
-      <Heading>認証アプリとパスキー</Heading>
+      <Heading>{"認証アプリとパスキー"}</Heading>
       <TotpSettings context={settings} />
-      <Heading>パスキー</Heading>
+      <Heading>{"パスキー"}</Heading>
       <PasskeyRegisterForm context={settings} onRegistered={() => Promise.resolve()} />
       <PasskeyList action={action} listError={undefined} passkeys={passkeys} />
       <ActionStatus action={action} notice={notice} pendingMessage="認証設定を更新しています。" />
