@@ -234,7 +234,10 @@ function monitorResource(options: {
   };
 }
 
-function accountToken(slug: string, permission: string): ResourceInventory {
+function accountToken(
+  slug: string,
+  permission: string | { readonly id: string },
+): ResourceInventory {
   return {
     adopt: false,
     bindings: [],
@@ -389,7 +392,9 @@ const staticExpected: Readonly<
   }),
   tokens: declaredStack("tokens", {
     BillingRead: accountToken("billing-read", "Billing Read"),
-    FlagshipWrite: accountToken("flagship-write", "Flagship Write"),
+    FlagshipWrite: accountToken("flagship-write", {
+      id: "521a41dc78f94eaba5e643528846cb7b",
+    }),
     ObservabilityQuery: accountToken("observability-query", "Workers Observability Write"),
   }),
   zone: declaredStack("zone", {
