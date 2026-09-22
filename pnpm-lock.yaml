@@ -1108,9 +1108,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@repo/observability':
-        specifier: workspace:*
-        version: link:../observability
       '@repo/ui':
         specifier: workspace:*
         version: link:../ui
@@ -1343,9 +1340,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../config
-      '@repo/observability':
-        specifier: workspace:*
-        version: link:../observability
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../vite-config
