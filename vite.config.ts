@@ -9,7 +9,12 @@ import {
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
-import { effectDiagnostics, lifecycle, paraglidePackageCompiles, taskInput } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  paraglidePackageCompiles,
+  taskInput,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
