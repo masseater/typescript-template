@@ -11,9 +11,7 @@ OpenFeature は、機能フラグの評価 API を共通にする CNCF の仕様
 import { FlagshipServerProvider } from "@cloudflare/flagship/server";
 import { OpenFeature } from "@openfeature/server-sdk";
 
-await OpenFeature.setProviderAndWait(
-  new FlagshipServerProvider({ binding: env.FLAGS }),
-);
+await OpenFeature.setProviderAndWait(new FlagshipServerProvider({ binding: env.FLAGS }));
 
 const client = OpenFeature.getClient();
 
