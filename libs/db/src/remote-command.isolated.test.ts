@@ -1,14 +1,28 @@
-import { query, schema } from "@repo/db";
 import { EmptyTestDatabase, TestBinding, executeD1RawBatch } from "@repo/db-local";
-import { loadRemoteMigrations } from "@repo/db/migrations";
-import { Effect } from "effect";
-import { HttpResponse, http } from "msw";
+import { DateTime, Effect } from "effect";
+import { HttpResponse, http, type HttpResponseResolver } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
-import { runRemoteDatabaseCommand } from "./remote-command.ts";
+import { runRemoteDatabaseCommand } from "../../../infra/cloudflare/src/remote-command.ts";
+import { query } from "./database.ts";
+import { loadRemoteMigrations } from "./remote-operations.ts";
+import { user } from "./schema.ts";
 
-const { user } = schema;
+import type { D1Database } from "@cloudflare/workers-types";
+
+const respondRaw =
+  (database: D1Database): HttpResponseResolver =>
+  ({ request }) =>
+    Effect.runPromise(
+      Effect.gen(function* respond() {
+        if (request.headers.get("authorization") !== `Bearer ${d1Target.apiToken}`) {
+          return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
+        }
+        const requestJson = yield* Effect.promise(() => request.json());
+        return HttpResponse.json(yield* executeD1RawBatch(database, requestJson));
+      }),
+    );
 
 const d1Target = {
   accountId: "a".repeat(32),
@@ -21,13 +35,13 @@ const d1Query = `https://api.cloudflare.com/client/v4/accounts/${d1Target.accoun
 describe("runRemoteDatabaseCommand", () => {
   describe("a bootstrap plan", () => {
     const it = test
-      .extend("migrationList", async () =>
+      .extend("migrationList", () =>
         Effect.runPromise(
           Effect.map(loadRemoteMigrations(), (migrations) =>
             migrations.map((migration) => ({ hash: migration.hash, name: migration.name })),
           ),
         ))
-      .extend("planReport", async ({}, { onCleanup }) => {
+      .extend("planReport", ({}, { onCleanup }) => {
         const unreachable = setupServer();
         unreachable.listen({ onUnhandledRequest: "error" });
         onCleanup(() => {
@@ -57,17 +71,11 @@ describe("runRemoteDatabaseCommand", () => {
   });
 
   describe("a migration executed twice through the D1 HTTP batch contract", () => {
-    const it = test.extend("secondReport", async ({}, { onCleanup }) =>
+    const it = test.extend("secondReport", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* migrateTwice() {
           const binding = yield* TestBinding;
-          const d1Api = setupServer(
-            http.post(d1Query, async ({ request }) =>
-              request.headers.get("authorization") === `Bearer ${d1Target.apiToken}`
-                ? HttpResponse.json(await executeD1RawBatch(binding, await request.json()))
-                : HttpResponse.json({ error: "unauthorized" }, { status: 401 }),
-            ),
-          );
+          const d1Api = setupServer(http.post(d1Query, respondRaw(binding)));
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {
             d1Api.close();
@@ -89,38 +97,36 @@ describe("runRemoteDatabaseCommand", () => {
   });
 
   describe("a bootstrap executed through the D1 HTTP batch contract", () => {
-    const it = test.extend("promotedUsers", async ({}, { onCleanup }) =>
+    const it = test.extend("promotedUsers", ({}, { onCleanup }) =>
       Effect.runPromise(
         Effect.gen(function* bootstrapRemote() {
           const binding = yield* TestBinding;
-          const d1Api = setupServer(
-            http.post(d1Query, async ({ request }) =>
-              request.headers.get("authorization") === `Bearer ${d1Target.apiToken}`
-                ? HttpResponse.json(await executeD1RawBatch(binding, await request.json()))
-                : HttpResponse.json({ error: "unauthorized" }, { status: 401 }),
-            ),
-          );
+          const d1Api = setupServer(http.post(d1Query, respondRaw(binding)));
           d1Api.listen({ onUnhandledRequest: "error" });
           onCleanup(() => {
             d1Api.close();
           });
           const execute = ["--execute", "--confirm-database", d1Target.databaseId];
           yield* runRemoteDatabaseCommand(["migrate", ...execute], d1Target);
-          yield* query(async (database): Promise<void> => {
-            await database.insert(user).values({
-              createdAt: new Date(),
-              email: "private@example.test",
-              emailVerified: true,
-              id: "first",
-              name: "Private Name",
-              updatedAt: new Date(),
-            });
-          });
+          const createdAt = DateTime.toDate(yield* DateTime.now);
+          yield* query((database) =>
+            database
+              .insert(user)
+              .values({
+                createdAt,
+                email: "private@example.test",
+                emailVerified: true,
+                id: "first",
+                name: "Private Name",
+                updatedAt: createdAt,
+              })
+              .then(() => undefined),
+          );
           yield* runRemoteDatabaseCommand(["bootstrap", ...execute], {
             ...d1Target,
             email: "private@example.test",
           });
-          return yield* query(async (database) =>
+          return yield* query((database) =>
             database.select({ role: user.role, securityVersion: user.securityVersion }).from(user),
           );
         }).pipe(Effect.provide(EmptyTestDatabase)),
