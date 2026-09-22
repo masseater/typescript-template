@@ -88,4 +88,4 @@ const cloudflareAppPlugin = (
   });
 };
 
-export { cloudflareAppPlugin, coreDevWorker };
+export { cloudflareAppPlugin };
