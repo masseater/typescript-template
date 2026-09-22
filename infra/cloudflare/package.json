@@ -12,8 +12,11 @@
   },
   "type": "module",
   "exports": {
+    "./application": "./src/app.ts",
+    "./core-program": "./src/core-program.ts",
     "./deployment": "./src/deployment.ts",
-    "./lint-overrides": "./src/lint-overrides.ts"
+    "./lint-overrides": "./src/lint-overrides.ts",
+    "./stacks": "./src/stacks.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

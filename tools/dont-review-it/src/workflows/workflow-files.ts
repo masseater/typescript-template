@@ -1,7 +1,6 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
-import { readUnlessMissing } from "../repository-checks/index.ts";
 import { parseWorkflowDocument, type WorkflowDocument } from "./workflow-document.ts";
 
 import type { WorkflowChecksConfig } from "./config.ts";
@@ -14,7 +13,14 @@ export const readWorkflowDocuments = ({
   readonly config: WorkflowChecksConfig;
 }): readonly WorkflowDocument[] => {
   const directory = join(repositoryRoot, config.workflowDirectory);
-  const entryNames = readUnlessMissing(() => readdirSync(directory)) ?? [];
+  if (!existsSync(directory)) {
+    const githubDirectory = dirname(directory);
+    if (existsSync(githubDirectory)) {
+      readdirSync(directory);
+    }
+    return [];
+  }
+  const entryNames = readdirSync(directory);
 
   return entryNames
     .filter((spelled) =>
