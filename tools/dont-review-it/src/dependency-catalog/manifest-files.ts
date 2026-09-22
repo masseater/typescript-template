@@ -6,6 +6,7 @@ import { uniq } from "es-toolkit";
 
 import { readJsonFile } from "../lint/oxlint/lib/canonical-values/read-json-file.ts";
 import { NEGATION_PREFIX } from "../lint/oxlint/lib/tracked-paths/ignore-listing.ts";
+import { readUnlessMissing } from "../repository-checks/index.ts";
 
 import type { DependencyCatalogChecksConfig } from "./config.ts";
 
@@ -27,9 +28,12 @@ export const directoriesMatching = ({
   if (!pattern.endsWith(SINGLE_LEVEL_PATTERN_SUFFIX)) return [pattern];
 
   const parentDirectory = pattern.slice(0, -SINGLE_LEVEL_PATTERN_SUFFIX.length);
-  const parentEntries = readdirSync(join(repositoryRoot, parentDirectory), {
-    withFileTypes: true,
-  });
+  const parentEntries =
+    readUnlessMissing(() =>
+      readdirSync(join(repositoryRoot, parentDirectory), {
+        withFileTypes: true,
+      }),
+    ) ?? [];
 
   return parentEntries
     .filter((parentEntry) => parentEntry.isDirectory())
