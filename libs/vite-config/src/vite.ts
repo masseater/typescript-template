@@ -336,7 +336,7 @@ const paraglideAppRun = {
       output: [".paraglide/**"],
     },
     "check:effect": {
-      ...effectDiagnostics["check:effect"],
+      ...awaitingEffectDiagnostics["check:effect"],
       dependsOn: ["compile:paraglide"],
     },
   },

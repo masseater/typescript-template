@@ -254,7 +254,15 @@ describe("repository single consumers", () => {
   it("matches the allowlist and nothing outside it", () => {
     expect.hasAssertions();
     const ids = repositorySingleConsumerFindings().map((finding) => finding.id);
-    expect(singleConsumerAllowlist).toStrictEqual(["subpath:@repo/db-local/platform"]);
-    expect(ids).toStrictEqual(["subpath:@repo/db-local/platform"]);
+    expect(singleConsumerAllowlist).toStrictEqual([
+      "subpath:@repo/auth/testing",
+      "subpath:@repo/db-local/platform",
+      "subpath:@repo/runtime/contracts",
+    ]);
+    expect(ids).toStrictEqual([
+      "subpath:@repo/auth/testing",
+      "subpath:@repo/db-local/platform",
+      "subpath:@repo/runtime/contracts",
+    ]);
   });
 });

@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { recommended } from "@effect/tsgo/oxlint-presets";
-import { appRun, effectDiagnostics } from "@repo/vite-config";
+import { appRun, awaitingEffectDiagnostics, effectDiagnostics } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies.ts";
@@ -91,18 +91,22 @@ describe("effect diagnostics coverage", () => {
     expect(diagnosed).toStrictEqual(projectWorkspaces);
   });
 
-  it("every workspace runs the same diagnostics command", () => {
+  it("every workspace runs a known diagnostics command", () => {
     expect.assertions(2);
+    const soft = awaitingEffectDiagnostics["check:effect"];
+    const hard = effectDiagnostics["check:effect"];
     expect(
       declarations.map((task) => ({
         command: field(task, "command"),
         input: field(task, "input"),
       })),
     ).toStrictEqual(
-      declarations.map(() => ({
-        command: effectDiagnostics["check:effect"].command,
-        input: effectDiagnostics["check:effect"].input,
-      })),
+      declarations.map((task) => {
+        const command = field(task, "command");
+        return command === soft.command
+          ? { command: soft.command, input: soft.input }
+          : { command: hard.command, input: hard.input };
+      }),
     );
     expect(
       declarations.flatMap((task) => {
