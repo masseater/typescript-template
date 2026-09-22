@@ -1,5 +1,4 @@
-import { APPLICATION, ROLE } from "@repo/config";
-import { httpStatus } from "@repo/observability";
+import { APPLICATION, ROLE, httpStatus } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
