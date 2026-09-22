@@ -1,11 +1,11 @@
-import { effectDiagnostics, lifecycle, testCoverageRun } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle, testRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
-      ...testCoverageRun,
+      ...testRun,
       ci: {
         cache: false,
         command: "./src/ci.ts",
