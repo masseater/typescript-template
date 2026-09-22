@@ -170,11 +170,15 @@ describe("json request bodies", () => {
 });
 
 describe("api routes behind a start server route", () => {
-  const echo = api.route(EchoBody, (request) => readJsonBody(EchoBody, request), {});
+  const echo = api.route(
+    { body: EchoBody, response: EchoBody },
+    (_request, body) => Effect.succeed(body),
+    {},
+  );
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {
-      const app = createApi("").patch("/api/profile", echo);
+      const app = createApi("").patch("/api/profile", ...echo);
       const name = "private-profile-text".repeat(repeatedPrivateText);
       const body = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
         name,
@@ -196,7 +200,7 @@ describe("api routes behind a start server route", () => {
   for (const { headers, body, reason } of rejections) {
     it.effect(`keeps the request body readable so ${reason} is still rejected`, () =>
       Effect.gen(function* program() {
-        const app = createApi("").patch("/api/profile", echo);
+        const app = createApi("").patch("/api/profile", ...echo);
         const response = yield* Effect.promise(() => callApi(app, mutation(headers, body)));
         assert.isAtLeast(response.status, httpStatus.badRequest);
         assert.isBelow(response.status, httpStatus.internalServerError);
@@ -209,8 +213,10 @@ describe("api responses behind a start server route", () => {
   it.effect("encode the response contract and drop fields outside it", () =>
     Effect.gen(function* program() {
       const View = Schema.Struct({ id: Schema.String });
-      const handler = api.route(View, () => Effect.succeed({ id: "visible", profile: "x" }), {});
-      const app = createApi("").get("/api/view", handler);
+      const app = createApi("").get(
+        "/api/view",
+        ...api.route({ response: View }, () => Effect.succeed({ id: "visible", profile: "x" }), {}),
+      );
       const response = yield* Effect.promise(() => callApi(app, new Request(`${origin}/api/view`)));
       assert.strictEqual(response.status, httpStatus.ok);
       assert.deepStrictEqual(yield* Effect.promise(() => response.json()), { id: "visible" });
@@ -229,10 +235,12 @@ describe("api responses behind a start server route", () => {
   it.effect("turn unexpected failures into a generic 500 response", () =>
     Effect.gen(function* program() {
       const broken = { _tag: "Broken" } as const;
-      const handler = api.route(Schema.Struct({}), () => Effect.fail(broken), {
-        Broken: "unexpected",
-      });
-      const app = createApi("").get("/api/broken", handler);
+      const app = createApi("").get(
+        "/api/broken",
+        ...api.route({ response: Schema.Struct({}) }, () => Effect.fail(broken), {
+          Broken: "unexpected",
+        }),
+      );
       const response = yield* Effect.promise(() =>
         callApi(app, new Request(`${origin}/api/broken`)),
       );
@@ -244,12 +252,14 @@ describe("api responses behind a start server route", () => {
 describe("api methods behind a start server route", () => {
   it.effect("answer HEAD on every route that answers GET", () =>
     Effect.gen(function* program() {
-      const handler = api.route(
-        Schema.Struct({ id: Schema.String }),
-        () => Effect.succeed({ id: "visible" }),
-        {},
+      const app = createApi("").get(
+        "/api/view",
+        ...api.route(
+          { response: Schema.Struct({ id: Schema.String }) },
+          () => Effect.succeed({ id: "visible" }),
+          {},
+        ),
       );
-      const app = createApi("").get("/api/view", handler);
       const response = yield* Effect.promise(() =>
         callApi(app, new Request(`${origin}/api/view`, { method: "HEAD" })),
       );
@@ -261,7 +271,7 @@ describe("api methods behind a start server route", () => {
     Effect.gen(function* program() {
       const app = createApi("").get(
         "/api/view",
-        api.route(Schema.Struct({}), () => Effect.succeed({}), {}),
+        ...api.route({ response: Schema.Struct({}) }, () => Effect.succeed({}), {}),
       );
       const response = yield* Effect.promise(() =>
         callApi(app, new Request(`${origin}/api/missing`)),

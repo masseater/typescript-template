@@ -42,7 +42,6 @@ function WelcomeProfilePage(): ReactElement {
           maxLength={maximumNameLength}
           name="name"
           onValueChange={setName}
-          required
           value={name}
         />
         <Field

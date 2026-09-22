@@ -12,6 +12,7 @@
     "./account": "./src/account.ts",
     "./jobs": "./src/jobs.ts",
     "./testing": "./src/app-fixture.ts",
+    "./reference-coverage": "./src/reference-coverage.ts",
     "./security": "./src/security.ts"
   },
   "dependencies": {

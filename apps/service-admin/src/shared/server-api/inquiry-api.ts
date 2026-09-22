@@ -75,12 +75,21 @@ const close = Effect.fn("close")(function* close(request: Request) {
 
 function inquiryApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
-    .get("/inquiries", api.route(AdminInquiryList, listInquiries, failures))
-    .get("/inquiries/pending-count", api.route(PendingCount, pendingCount, failures))
-    .get("/inquiries/detail", api.route(AdminInquiryThread, inquiryDetail, failures))
-    .get("/inquiries/member", api.route(InquiryMemberSummary, memberSummary, failures))
-    .post("/inquiries/reply", api.route(AdminInquiryThread, reply, failures))
-    .post("/inquiries/close", api.route(AdminInquiryThread, close, failures));
+    .get("/inquiries", ...api.route({ response: AdminInquiryList }, listInquiries, failures))
+    .get(
+      "/inquiries/pending-count",
+      ...api.route({ response: PendingCount }, pendingCount, failures),
+    )
+    .get(
+      "/inquiries/detail",
+      ...api.route({ response: AdminInquiryThread }, inquiryDetail, failures),
+    )
+    .get(
+      "/inquiries/member",
+      ...api.route({ response: InquiryMemberSummary }, memberSummary, failures),
+    )
+    .post("/inquiries/reply", ...api.route({ response: AdminInquiryThread }, reply, failures))
+    .post("/inquiries/close", ...api.route({ response: AdminInquiryThread }, close, failures));
 }
 
 export { inquiryApi };

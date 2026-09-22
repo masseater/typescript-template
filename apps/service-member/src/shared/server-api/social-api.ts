@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { requireSignupAgreements } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -44,7 +44,7 @@ import type { ApiRoutes } from "@repo/runtime/http";
 import type { OpsMail } from "./ops-mail.ts";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   EmailDeliveryFailed: "unexpected",
   FollowSelfForbidden: {
     message: "自分自身をフォローすることはできません。",
@@ -68,8 +68,8 @@ const onboardingFailures = {
 function onboardingStepApi(api: ApiRoutes<AppServices>) {
   return createApi("").get(
     "/onboarding",
-    api.route(
-      OnboardingView,
+    ...api.route(
+      { response: OnboardingView },
       (request) =>
         Effect.gen(function* handle() {
           const { user } = yield* verifySession(request.headers);
@@ -84,8 +84,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
   return createApi("")
     .post(
       "/onboarding",
-      api.route(
-        OnboardingView,
+      ...api.route(
+        { response: OnboardingView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -101,8 +101,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/home/feed",
-      api.route(
-        HomeFeed,
+      ...api.route(
+        { response: HomeFeed },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -113,8 +113,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/social/follow",
-      api.route(
-        FollowState,
+      ...api.route(
+        { response: FollowState },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -126,8 +126,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .put(
       "/social/follow",
-      api.route(
-        FollowMember,
+      ...api.route(
+        { response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -140,8 +140,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .delete(
       "/social/follow",
-      api.route(
-        FollowMember,
+      ...api.route(
+        { response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -154,8 +154,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/social/followers",
-      api.route(
-        FollowList,
+      ...api.route(
+        { response: FollowList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -167,8 +167,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/social/following",
-      api.route(
-        FollowList,
+      ...api.route(
+        { response: FollowList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -180,8 +180,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/notifications",
-      api.route(
-        NotificationList,
+      ...api.route(
+        { response: NotificationList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -192,8 +192,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/notifications/unread",
-      api.route(
-        NotificationUnread,
+      ...api.route(
+        { response: NotificationUnread },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -204,8 +204,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .post(
       "/notifications/read",
-      api.route(
-        FollowMember,
+      ...api.route(
+        { response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -218,8 +218,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .post(
       "/notifications/read-all",
-      api.route(
-        FollowMember,
+      ...api.route(
+        { response: FollowMember },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -231,8 +231,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/notifications/preferences",
-      api.route(
-        NotificationPreferences,
+      ...api.route(
+        { response: NotificationPreferences },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -243,8 +243,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .patch(
       "/notifications/preferences",
-      api.route(
-        NotificationPreferences,
+      ...api.route(
+        { response: NotificationPreferences },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -256,8 +256,8 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
     )
     .get(
       "/nav/badges",
-      api.route(
-        NavBadges,
+      ...api.route(
+        { response: NavBadges },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

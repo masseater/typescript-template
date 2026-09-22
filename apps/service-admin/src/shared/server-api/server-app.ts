@@ -1,6 +1,7 @@
-import { handleAuthRequest } from "@repo/auth";
-import { accountApi, unavailable } from "@repo/runtime/account";
-import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
+import { handleAuthRequest, verifySession } from "@repo/auth";
+import { APPLICATION } from "@repo/config";
+import { accountApi, sessionFailures, unavailable } from "@repo/runtime/account";
+import { apiDocs, apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 
 import { serveMcp } from "#shared/admin/index.ts";
 import { adminRoutes } from "./admin-api.ts";
@@ -12,6 +13,12 @@ import { reporting, runtime } from "./runtime.ts";
 const api = apiRoutes(runtime, reporting);
 
 const adminApi = createApi(apiRoot)
+  .use(
+    apiDocs(
+      APPLICATION.admin,
+      api.guard((request) => verifySession(request.headers), sessionFailures),
+    ),
+  )
   .use(accountApi(api))
   .use(agreementApi(api))
   .use(inquiryApi(api))
@@ -19,8 +26,8 @@ const adminApi = createApi(apiRoot)
   .use(adminRoutes(api));
 
 const adminProtocol = createApi("")
-  .all("/mcp", api.raw(serveMcp, unavailable))
-  .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
+  .all("/mcp", ...api.raw(serveMcp, unavailable))
+  .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));
 
 export { adminApi, adminProtocol, adminApi as app };
 export default adminApi;

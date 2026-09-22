@@ -1,5 +1,6 @@
+import { APPLICATION } from "@repo/config";
 import { sessionApi } from "@repo/runtime/account";
-import { apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
+import { apiDocs, apiRoot, apiRoutes, createApi, jsonResponse } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { dashboardApi } from "./dashboard-api.ts";
@@ -28,12 +29,13 @@ function search(request: Request): Effect.Effect<Response, never, WikiServices> 
 }
 
 const wikiApi = createApi(apiRoot)
+  .use(apiDocs(APPLICATION.wiki))
   .use(sessionApi(api))
   .use(staffApi(api))
   .use(flagsApi(api))
   .use(inquiryApi(api))
   .use(dashboardApi(api))
-  .get("/search", api.raw(search, {}));
+  .get("/search", ...api.raw(search, {}));
 
 export { wikiApi, wikiApi as app };
 export default wikiApi;
