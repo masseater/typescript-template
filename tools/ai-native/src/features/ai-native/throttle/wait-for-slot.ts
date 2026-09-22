@@ -7,11 +7,12 @@ import {
   makeWaitingInterruptHandler,
 } from "./signals.ts";
 import {
-  enqueueWaiter,
   removeWaiter,
+  reserveWaiterPath,
   slotStateFingerprint,
   sweepWaiters,
   tryAcquireAny,
+  writeWaiterEntry,
   type AcquireConfiguration,
   type SlotHold,
 } from "./slots.ts";
@@ -78,13 +79,13 @@ export const waitForSlot = (
 ): Promise<SlotHold | "budget-exhausted"> =>
   Effect.runPromise(
     Effect.gen(function* waitUntilFree() {
-      let waiterPath: string | undefined;
+      const waiterPath = reserveWaiterPath(configuration.slotDir);
       const interruptHandler = makeWaitingInterruptHandler({
-        entryPathOf: () => waiterPath,
+        entryPath: waiterPath,
         removeEntry: removeWaiter,
       });
       installInterruptHandler(interruptHandler);
-      waiterPath = enqueueWaiter(configuration.slotDir);
+      writeWaiterEntry(waiterPath);
       return yield* Effect.promise(() =>
         pollForSlot(configuration, {
           entryName: baseName(waiterPath),
@@ -94,9 +95,7 @@ export const waitForSlot = (
       ).pipe(
         Effect.ensuring(
           Effect.sync(() => {
-            if (waiterPath !== undefined) {
-              removeWaiter(waiterPath);
-            }
+            removeWaiter(waiterPath);
             dropInterruptHandler(interruptHandler);
           }),
         ),

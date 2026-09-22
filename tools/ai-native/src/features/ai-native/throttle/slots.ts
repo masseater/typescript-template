@@ -64,12 +64,20 @@ export const slotStateFingerprint = (slotDir: string, limit: number): string =>
     .map((index) => generationIdentity(markerPath(slotDir, index)))
     .join(",");
 
-export const enqueueWaiter = (slotDir: string): string => {
+export const reserveWaiterPath = (slotDir: string): string => {
   const spelled = [String(epochMillis()).padStart(13, "0"), String(process.pid), randomHex(4)].join(
     "-",
   );
-  const waiterPath = joinPath(waitersDir(slotDir), spelled);
+  return joinPath(waitersDir(slotDir), spelled);
+};
+
+export const writeWaiterEntry = (waiterPath: string): void => {
   writeFileString({ location: waiterPath, written: `${process.pid}\n` });
+};
+
+export const enqueueWaiter = (slotDir: string): string => {
+  const waiterPath = reserveWaiterPath(slotDir);
+  writeWaiterEntry(waiterPath);
   return waiterPath;
 };
 
