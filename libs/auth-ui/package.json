@@ -9,7 +9,6 @@
     "@better-auth/passkey": "catalog:",
     "@effect/atom-react": "catalog:",
     "@repo/config": "workspace:*",
-    "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tanstack/react-query": "catalog:",

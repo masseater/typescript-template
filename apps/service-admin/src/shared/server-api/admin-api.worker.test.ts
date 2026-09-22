@@ -3,7 +3,7 @@ import { signedSessionCookie } from "@repo/auth/testing";
 import { ACCOUNT_STATE, ADMIN_PERMISSION, APPLICATION, ROLE } from "@repo/config";
 import { Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";

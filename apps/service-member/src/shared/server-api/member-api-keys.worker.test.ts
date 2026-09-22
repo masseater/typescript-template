@@ -3,7 +3,7 @@ import { Auth } from "@repo/auth";
 import { APPLICATION, ROLE, SUBSCRIPTION_STATUS, memberApiKeyHeader } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";

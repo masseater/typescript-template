@@ -1,7 +1,7 @@
 import { APPLICATION } from "@repo/config";
 import { ROLE } from "@repo/config";
 import { ADMIN_PERMISSION, type AdminPermission } from "@repo/config/identity";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { Effect, Schema } from "effect";
 
 import {

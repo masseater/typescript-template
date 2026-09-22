@@ -1,6 +1,6 @@
 import { createResourceServerChallenge } from "@better-auth/oauth-provider";
 import { adminScopes, Auth } from "@repo/auth";
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { APIError } from "better-auth/api";
 import { createInsufficientScopeError, verifyJwsAccessToken } from "better-auth/oauth2";
 import { APIError as ChallengeError } from "better-call";

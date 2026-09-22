@@ -1,5 +1,5 @@
 import { browserHttp } from "@repo/auth-ui";
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
 import { queryOptions } from "@tanstack/react-query";
 import { Effect, Schema } from "effect";

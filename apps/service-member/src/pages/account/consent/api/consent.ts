@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { Schema } from "effect";

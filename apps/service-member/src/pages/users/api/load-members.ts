@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { apiData } from "@repo/runtime/client";
 import { infiniteQueryOptions } from "@tanstack/react-query";
 import { Schema } from "effect";

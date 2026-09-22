@@ -31,9 +31,4 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-      - run: vp run --filter @repo/local up
-      - run: vp run --filter @repo/dev setup loopback
-      - run: vp run --filter @repo/db-local db:migrate:local
-      - run: vp run --filter @repo/service-member build
-      - run: vp run --filter @repo/service-member preview &
-      - run: vp run --filter @repo/load load service-member smoke
+      - run: vp run --filter @repo/load ci service-member smoke
