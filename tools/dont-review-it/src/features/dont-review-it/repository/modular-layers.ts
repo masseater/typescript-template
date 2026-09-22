@@ -51,4 +51,4 @@ const modularLayersVisitor = (inspection: LintContext): Visitor => {
   };
 };
 
-export { isOutsideModularLayers, modularLayersVisitor, workspaceSource };
+export { modularLayersVisitor, workspaceSource };

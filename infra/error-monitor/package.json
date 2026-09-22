@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    ".": "./src/features/error-monitor/index.ts",
     "./config": "./src/features/error-monitor/config.ts"
   },
   "dependencies": {

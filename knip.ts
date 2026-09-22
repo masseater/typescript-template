@@ -82,7 +82,6 @@ const workspaces = {
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
     entry: [
-      "dependency-cruiser.ts",
       "src/features/dont-review-it/repository/dependency-cruiser.ts",
       "doctor.config.ts",
       "src/features/dont-review-it/index.ts!",

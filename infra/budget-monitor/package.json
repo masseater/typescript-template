@@ -6,6 +6,7 @@
   },
   "type": "module",
   "exports": {
+    ".": "./src/features/budget-monitor/index.ts",
     "./config": "./src/features/budget-monitor/config.ts"
   },
   "dependencies": {

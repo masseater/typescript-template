@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    ".": "./src/features/health-monitor/index.ts",
     "./config": "./src/features/health-monitor/config.ts"
   },
   "dependencies": {
