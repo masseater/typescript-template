@@ -25,7 +25,7 @@ const meta = preview.meta({
     ),
   render: ({ children, disabled, onClick: handleClick, variant }): ReactElement => (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label="利用者の操作">操作</DropdownMenuTrigger>
+      <DropdownMenuTrigger aria-label="利用者の操作">{"操作"}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem
           disabled={disabled === true}

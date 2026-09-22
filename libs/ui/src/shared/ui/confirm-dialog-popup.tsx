@@ -38,7 +38,7 @@ const ConfirmDialogPopup = ({
       </AlertDialogPrimitive.Description>
       <div className="flex justify-end gap-2">
         <Button type="button" onClick={cancel}>
-          キャンセル
+          {"キャンセル"}
         </Button>
         <Button type="button" variant={variant} onClick={onConfirm}>
           {confirmLabel}

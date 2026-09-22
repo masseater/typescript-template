@@ -87,8 +87,11 @@ const knipOwnedRules = [
   "react-doctor/unused-type",
 ] as const;
 
+const oxlintOwnedRules = ["react-doctor/jsx-curly-brace-presence"] as const;
+
 const globalOffRules = [
   ...knipOwnedRules,
+  ...oxlintOwnedRules,
   "react-doctor/react-compiler-no-manual-memoization",
   "react-doctor/react-in-jsx-scope",
 ] as const;
@@ -139,7 +142,7 @@ describe("react-doctor integration", () => {
     ).toStrictEqual([]);
   });
 
-  it("keeps global offs inside knip, the JSX runtime, and a retired rule", () => {
+  it("keeps global offs inside knip, oxlint-owned duplicates, the JSX runtime, and a retired rule", () => {
     expect.hasAssertions();
     expect(offRules()).toStrictEqual([...globalOffRules].toSorted());
     expect(field(rootRules(), "react-doctor/circular-dependency")).toStrictEqual("error");
@@ -147,6 +150,11 @@ describe("react-doctor integration", () => {
     expect(field(rootDoctorConfigs["../../doctor.config.ts"], "ignore")).toStrictEqual({
       files: ["dist/**"],
     });
+  });
+
+  it("leaves jsx-curly-brace-presence off only while oxlint owns children:always", () => {
+    expect.hasAssertions();
+    expect(oxlintOwnedRules.filter((rule) => !offRules().includes(rule))).toStrictEqual([]);
   });
 
   it("leaves unused rules off only while knip --strict is on the push gate", () => {

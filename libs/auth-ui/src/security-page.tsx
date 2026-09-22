@@ -13,14 +13,16 @@ const SecurityPage = ({
   const { session, loading, error } = useSession();
   return (
     <Page title={title}>
-      {loading && <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>}
+      {loading && (
+        <StatusMessage variant={STATUS_VARIANT.pending}>{"読み込み中です。"}</StatusMessage>
+      )}
       {!loading && session && (
         <>
           <MFASettings session={session} />
           <SignOutButton destination={signedOutPath} />
         </>
       )}
-      {!loading && !session && <a href="/login">ログインしてください。</a>}
+      {!loading && !session && <a href="/login">{"ログインしてください。"}</a>}
       {error !== undefined && (
         <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
       )}
