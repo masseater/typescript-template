@@ -21,42 +21,25 @@ const syncBaseEventOf = (hookEventName: string): SyncBaseEvent | undefined => {
   return undefined;
 };
 
-const decisionFor = (hookEvent: SyncBaseEvent, instruction: string) => {
-  switch (hookEvent) {
-    case "SessionStart":
-      return {
-        event: "SessionStart",
-        output: {
-          hookSpecificOutput: {
-            additionalContext: instruction,
-            hookEventName: "SessionStart",
-          },
-        },
-      } as const;
-    case "Stop":
-      return {
-        event: "Stop",
-        output: {
-          hookSpecificOutput: {
-            additionalContext: instruction,
-            hookEventName: "Stop",
-          },
-        },
-      } as const;
-    case "UserPromptSubmit":
-      return {
-        event: "UserPromptSubmit",
-        output: {
-          hookSpecificOutput: {
-            additionalContext: instruction,
-            hookEventName: "UserPromptSubmit",
-          },
-        },
-      } as const;
-  }
+export type SyncBaseDecision = {
+  readonly event: SyncBaseEvent;
+  readonly output: {
+    readonly hookSpecificOutput: {
+      readonly additionalContext: string;
+      readonly hookEventName: SyncBaseEvent;
+    };
+  };
 };
 
-export type SyncBaseDecision = ReturnType<typeof decisionFor>;
+const decisionFor = (hookEvent: SyncBaseEvent, instruction: string): SyncBaseDecision => ({
+  event: hookEvent,
+  output: {
+    hookSpecificOutput: {
+      additionalContext: instruction,
+      hookEventName: hookEvent,
+    },
+  },
+});
 
 export const decisionOf = (inquiry: DecisionInquiry): SyncBaseDecision | undefined => {
   const hookEvent = syncBaseEventOf(inquiry.hookEventName);

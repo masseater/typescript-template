@@ -3,9 +3,15 @@ import { defineHook } from "cc-hooks-ts";
 import { decisionOf } from "./decision.ts";
 import { defaultCommandRunner, type CommandRunner } from "./read-open-pr.ts";
 
+type SyncBaseHookTrigger = {
+  SessionStart: true;
+  Stop: true;
+  UserPromptSubmit: true;
+};
+
 export const hookFor = (
   run: CommandRunner = defaultCommandRunner,
-): ReturnType<typeof defineHook<{ SessionStart: true; Stop: true; UserPromptSubmit: true }>> =>
+): ReturnType<typeof defineHook<SyncBaseHookTrigger>> =>
   defineHook({
     trigger: {
       SessionStart: true,
@@ -21,10 +27,8 @@ export const hookFor = (
       if (decision === undefined) {
         return hookContext.success({});
       }
-      return hookContext.json(decision);
+      return hookContext.json(decision as Parameters<(typeof hookContext)["json"]>[0]);
     },
   });
 
-export const hook: ReturnType<
-  typeof defineHook<{ SessionStart: true; Stop: true; UserPromptSubmit: true }>
-> = hookFor();
+export const hook: ReturnType<typeof defineHook<SyncBaseHookTrigger>> = hookFor();
