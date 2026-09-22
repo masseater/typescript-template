@@ -43,3 +43,11 @@ it.effect("names a missing database and a missing mail binding", () =>
     assert.strictEqual(missingMail.reason, "An email delivery binding is required");
   }),
 );
+
+it.effect("rejects a FLAGS binding that is not Flagship", () =>
+  Effect.gen(function* program() {
+    const invalidFlags = yield* readWorkerConfig(appEnvironment({ FLAGS: {} })).pipe(Effect.flip);
+    assert.strictEqual(invalidFlags._tag, "ConfigurationInvalid");
+    assert.strictEqual(invalidFlags.reason, "FLAGS");
+  }),
+);

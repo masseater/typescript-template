@@ -23,7 +23,7 @@ export type FlagDefinition = Readonly<{
 
 export const flagDefinitions: readonly FlagDefinition[] = [
   {
-    defaultVariation: FLAG_VARIATION.enabled,
+    defaultVariation: FLAG_VARIATION.disabled,
     description: "会員向けアプリの掲示板タブを表示する",
     enabled: true,
     key: FLAG_KEY.memberBoard,
@@ -40,6 +40,15 @@ export const variationForBoolean = (isEnabled: boolean): FlagVariation =>
 
 export const booleanForVariation = (variation: FlagVariation): boolean =>
   variation === FLAG_VARIATION.enabled;
+
+/** @canonical-values feature-flag.evaluation-kind */
+export const flagEvaluationKinds = ["primary", "failure"] as const;
+export const FLAG_EVALUATION_KIND = {
+  failure: flagEvaluationKinds[1],
+  primary: flagEvaluationKinds[0],
+} as const;
+
+export type FlagEvaluationKind = (typeof flagEvaluationKinds)[number];
 
 export const auditTargetForToggle = (
   toggle: Readonly<{
