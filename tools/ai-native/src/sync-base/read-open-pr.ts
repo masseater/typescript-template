@@ -3,18 +3,14 @@ import { env as processEnvironment } from "node:process";
 import { spawnChildSync } from "../node-spawn.ts";
 import { parseOpenPullRequest, type OpenPullRequest } from "./parse-open-pr.ts";
 
-export type CommandLaunch = {
+export type CommandRunner = (commandLaunch: {
   readonly cwd: string;
   readonly executable: string;
   readonly handed: readonly string[];
-};
-
-export type CommandResult = {
+}) => {
   readonly status: number | null;
   readonly stdout: string;
 };
-
-export type CommandRunner = (commandLaunch: CommandLaunch) => CommandResult;
 
 export const defaultCommandRunner: CommandRunner = (commandLaunch) =>
   spawnChildSync({

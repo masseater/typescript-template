@@ -8,9 +8,9 @@ export type DecisionInquiry = {
 };
 
 /** @canonical-values sync-base.hook-event */
-export const SYNC_BASE_HOOK_EVENTS = ["SessionStart", "Stop", "UserPromptSubmit"] as const;
+const SYNC_BASE_HOOK_EVENTS = ["SessionStart", "Stop", "UserPromptSubmit"] as const;
 
-export type SyncBaseEvent = (typeof SYNC_BASE_HOOK_EVENTS)[number];
+type SyncBaseEvent = (typeof SYNC_BASE_HOOK_EVENTS)[number];
 
 const syncBaseEventOf = (hookEventName: string): SyncBaseEvent | undefined => {
   for (const knownHookEvent of SYNC_BASE_HOOK_EVENTS) {
