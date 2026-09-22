@@ -7,6 +7,7 @@ it("packs each monitor from src/worker.ts and builds that artifact in the pull r
   const build = config.run.tasks.build;
   assert.deepStrictEqual(config.pack.entry, { index: "src/worker.ts" });
   assert.deepStrictEqual(config.pack.outExtensions(), { js: ".js" });
+  assert.deepStrictEqual(config.pack.deps.alwaysBundle, [/^@repo\//, /^effect(?:\/|$)/]);
   assert.deepStrictEqual(config.pack.deps.onlyBundle, ["effect", "@repo/monitor"]);
   if (typeof build === "string" || build === undefined) {
     assert.fail("the shared build task was replaced");
