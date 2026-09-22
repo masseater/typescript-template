@@ -13,7 +13,7 @@ function loadProfile(): Promise<Profile> {
       if (profile == null) {
         throw notFound();
       }
-      return profile;
+      return profile as Profile;
     }),
   );
 }

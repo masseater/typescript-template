@@ -27,7 +27,7 @@ function loadThread(id: string, page: number): Promise<Thread> {
       if (thread == null) {
         throw notFound();
       }
-      return thread;
+      return thread as Thread;
     }),
   );
 }

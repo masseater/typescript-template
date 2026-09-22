@@ -13,7 +13,7 @@ function loadMember(id: string): Promise<Member> {
       if (member == null) {
         throw notFound();
       }
-      return member;
+      return member as Member;
     }),
   );
 }
