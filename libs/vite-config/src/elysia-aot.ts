@@ -17,19 +17,32 @@ const elysiaAot = (appRoot: string): Plugin => {
     strip: true,
     target: "workerd",
   });
-  const { apply: _buildOnly, ...hooks } = compiled;
+  const { apply: _buildOnly, transform: aotTransform, ...hooks } = compiled;
   void _buildOnly;
-  const start = (): Promise<void> =>
-    Effect.runPromise(
-      Effect.as(
-        Effect.promise(() => Promise.resolve(compiled.buildStart())),
-        undefined,
+  let startFailure: unknown;
+  const start = (): Promise<void> => {
+    startFailure = undefined;
+    return Effect.runPromise(
+      Effect.promise(() => Promise.resolve(compiled.buildStart())).pipe(
+        Effect.tapError((failure) =>
+          Effect.sync(() => {
+            startFailure = failure;
+          }),
+        ),
+        Effect.asVoid,
       ),
     );
+  };
   return {
     ...hooks,
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
     buildStart: start,
+    buildEnd: () => {
+      if (startFailure !== undefined) {
+        throw startFailure instanceof Error ? startFailure : new Error(String(startFailure));
+      }
+      hooks.buildEnd?.();
+    },
     configureServer: start,
     resolveId: (specifier: string): string | undefined => {
       if (specifier === "elysia") {
@@ -37,6 +50,7 @@ const elysiaAot = (appRoot: string): Plugin => {
       }
       return compiled.resolveId(specifier);
     },
+    transform: (code: string, id: string) => aotTransform(code, id),
   };
 };
 
