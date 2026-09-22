@@ -30,7 +30,10 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -u
-          summary() { printf '%s\n' "$*" >> "$GITHUB_STEP_SUMMARY"; }
+          report="$(mktemp)"
+          summary() {
+            printf '%s\n' "$*" | tee -a "$report" >> "$GITHUB_STEP_SUMMARY"
+          }
           api() {
             local method="$1" path="$2" body="${3:-}"
             local tmp code
@@ -50,8 +53,12 @@ jobs:
             fi
             summary "### \`${method} ${path}\` → HTTP \`${code}\`"
             summary '```json'
-            if [ -s "$tmp" ]; then cat "$tmp" >> "$GITHUB_STEP_SUMMARY"; else summary "(empty body)"; fi
-            summary ''
+            if [ -s "$tmp" ]; then
+              tee -a "$report" >> "$GITHUB_STEP_SUMMARY" < "$tmp"
+              summary ''
+            else
+              summary "(empty body)"
+            fi
             summary '```'
             printf '%s' "$code"
           }
@@ -71,7 +78,7 @@ jobs:
 
           summary "## CLI"
           summary '```'
-          mergify --version >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          mergify --version 2>&1 | tee -a "$report" >> "$GITHUB_STEP_SUMMARY" || true
           summary '```'
 
           summary "## Application key"
@@ -107,9 +114,9 @@ jobs:
           for type in product.enabled product.disabled action.queue.checks_start action.queue.checks_end action.queue.checks.change action.queue.checks_not_started ci_insights.job_retried; do
             summary "### $type"
             if [ -n "${PR_NUMBER:-}" ]; then
-              mergify events -r "$GITHUB_REPOSITORY" --pr "$PR_NUMBER" --since 90d --type "$type" --limit 20 >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+              mergify events -r "$GITHUB_REPOSITORY" --pr "$PR_NUMBER" --since 90d --type "$type" --limit 20 2>&1 | tee -a "$report" >> "$GITHUB_STEP_SUMMARY" || true
             else
-              mergify events -r "$GITHUB_REPOSITORY" --since 90d --type "$type" --limit 20 >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+              mergify events -r "$GITHUB_REPOSITORY" --since 90d --type "$type" --limit 20 2>&1 | tee -a "$report" >> "$GITHUB_STEP_SUMMARY" || true
             fi
           done
           summary '```'
@@ -117,7 +124,7 @@ jobs:
           summary "## Config simulate"
           summary '```'
           if [ -n "${PR_URL:-}" ]; then
-            mergify config simulate "$PR_URL" >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+            mergify config simulate "$PR_URL" 2>&1 | tee -a "$report" >> "$GITHUB_STEP_SUMMARY" || true
           else
             summary "no pull request URL"
           fi
@@ -126,11 +133,20 @@ jobs:
           summary "## Queue show"
           summary '```'
           if [ -n "${PR_NUMBER:-}" ]; then
-            mergify queue show -r "$GITHUB_REPOSITORY" "$PR_NUMBER" >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+            mergify queue show -r "$GITHUB_REPOSITORY" "$PR_NUMBER" 2>&1 | tee -a "$report" >> "$GITHUB_STEP_SUMMARY" || true
           fi
           summary '```'
+
+          cp "$report" "$RUNNER_TEMP/mergify-probe-report.md"
+          echo "MERGIFY_PROBE_REPORT=$RUNNER_TEMP/mergify-probe-report.md" >> "$GITHUB_ENV"
 
           if [ "$app_code" != "200" ]; then
             echo "::error::MERGIFY_TOKEN was rejected by GET /application (HTTP ${app_code}). Create an application key and set it as the MERGIFY_TOKEN repository secret."
             exit 1
           fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: mergify-probe-report
+          path: ${{ env.MERGIFY_PROBE_REPORT }}
+          if-no-files-found: warn
