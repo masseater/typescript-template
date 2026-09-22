@@ -254,7 +254,9 @@ describe("lifecycle entry points", () => {
       cache: ["vp run -r prepr"],
       check: ["vp run -r prepr"],
       e2e: [],
-      "merge-queue": ["vp run -r premerge"],
+      "merge-queue": [],
+      "merge-queue-packages": ["vp run -r premerge"],
+      "merge-queue-unit": [],
     });
     expect(lifecycleByJob("../../../../.github/workflows/prerelease.yml")).toStrictEqual({
       load: [],
@@ -271,6 +273,8 @@ describe("lifecycle entry points", () => {
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
       "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
       "vp run -r premerge",
+      "vp run compile:paraglide",
+      "vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4",
       "vp run --filter @repo/e2e test:e2e",
       "vp run -r prepr",
     ]);
@@ -306,6 +310,7 @@ describe("lifecycle contents", () => {
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
       ".#test:dev-server",
+      ".#test:storybook",
       "apps/internal-dashboard#check:dev",
       "apps/service-admin#check:dev",
       "apps/service-member#check:dev",
@@ -398,6 +403,7 @@ describe("test ownership", () => {
       "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
     ]);
     expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
+    expect(commands(".", "test:storybook")).toStrictEqual(["vp test run --project storybook"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 
