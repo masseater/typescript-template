@@ -5,14 +5,34 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { makeCoreClient } from "./client.ts";
 import { MemberRpcs } from "./member-rpcs.ts";
+import { MemberProfileNotFound } from "./member-session-rpcs.ts";
 import { createRpcFetcher } from "./serve.ts";
+import {
+  SessionIdentity,
+  SessionIdentityMiddleware,
+  SessionRequired,
+} from "./session-identity.ts";
 
 describe("makeCoreClient", () => {
   const it = test.extend("databaseReady", () => {
-    const handlerLayer = MemberRpcs.toLayer({
-      databaseReady: (): Effect.Effect<boolean, DatabaseFailure, Database> =>
-        checkDatabase().pipe(Effect.as(true)),
-    }).pipe(Layer.provide(TestDatabase));
+    const handlerLayer = Layer.mergeAll(
+      MemberRpcs.toLayer({
+        databaseReady: (): Effect.Effect<boolean, DatabaseFailure, Database> =>
+          checkDatabase().pipe(Effect.as(true)),
+        getMemberProfile: () =>
+          Effect.gen(function* getMemberProfile() {
+            yield* SessionIdentity;
+            return yield* new MemberProfileNotFound();
+          }),
+        getSession: () => SessionIdentity,
+        updateMemberProfile: () =>
+          Effect.gen(function* updateMemberProfile() {
+            yield* SessionIdentity;
+            return yield* new MemberProfileNotFound();
+          }),
+      }),
+      Layer.succeed(SessionIdentityMiddleware, () => Effect.fail(new SessionRequired())),
+    ).pipe(Layer.provide(TestDatabase));
     const rpcFetch = createRpcFetcher(MemberRpcs, handlerLayer).fetch;
     const core: Fetcher = {
       connect: (): never => Effect.runSync(Effect.die(new Error("Core RPC does not open sockets"))),

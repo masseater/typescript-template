@@ -6,13 +6,14 @@ import { RpcSerialization, RpcServer, type Rpc } from "effect/unstable/rpc";
 
 import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 
-const createRpcFetcher = <
-  Rpcs extends Rpc.Any,
-  HandlerLayer extends Layer.Layer<Rpc.ToHandler<Rpcs>>,
->(
+const createRpcFetcher = <Rpcs extends Rpc.Any>(
   rpcContract: RpcGroup.RpcGroup<Rpcs>,
-  handlerLayer: HandlerLayer,
-  ...handlerLayers: readonly HandlerLayer[]
+  handlerLayer: Layer.Layer<Rpc.ToHandler<Rpcs> | Rpc.Middleware<Rpcs>, never, never>,
+  ...handlerLayers: readonly Layer.Layer<
+    Rpc.ToHandler<Rpcs> | Rpc.Middleware<Rpcs>,
+    never,
+    never
+  >[]
 ): {
   readonly dispose: () => Promise<void>;
   readonly fetch: (httpRequest: Request) => Promise<Response>;
