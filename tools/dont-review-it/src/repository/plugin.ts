@@ -13,6 +13,7 @@ import {
 import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
+import { thinAppRoutesVisitor } from "./thin-app-routes.ts";
 import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
@@ -314,6 +315,12 @@ const projectPlugin = definePlugin({
       create: layersVisitor,
       meta: metadata(
         "Feature-Sliced Design のアプリでは、src の直下に置けるのは app・pages・widgets・features・entities・shared の各レイヤーだけです。ファイルをいずれかのレイヤーのスライスかセグメントへ移してください。レイヤーの外は steiger の検査が届きません。",
+      ),
+    },
+    "thin-app-routes": {
+      create: thinAppRoutesVisitor,
+      meta: metadata(
+        "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。",
       ),
     },
     logs: {

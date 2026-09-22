@@ -3,7 +3,7 @@ import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-import { DashboardFrame } from "#widgets/dashboard-frame/index.ts";
+import { DashboardFrame } from "./dashboard-frame.tsx";
 
 import type { ReactElement } from "react";
 
