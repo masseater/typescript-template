@@ -1,7 +1,7 @@
 import { httpStatus, readJson } from "@repo/observability";
 import { Effect, Exit, Schema, Stream } from "effect";
-import { Elysia, sse, status } from "elysia";
-import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
+import { Elysia, NotFound, sse, status } from "elysia";
+import { WebStandardAdapter } from "elysia/adapter/web-standard";
 
 import { AppOrigin } from "./app-origin.ts";
 import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
@@ -22,7 +22,9 @@ interface ElysiaContext {
   readonly request: Request;
 }
 interface ElysiaStreamContext extends ElysiaContext {
-  readonly set: { readonly headers: Record<string, string | number> };
+  readonly set: {
+    readonly headers: { readonly [header: string]: string | number | string[] | undefined };
+  };
 }
 interface ServerSentEvent {
   readonly data: unknown;
@@ -40,6 +42,7 @@ interface ApiRoutes<Requirements> {
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: FailureTable<Exclude<Failures, CommonFailure>>,
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
   readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
@@ -54,7 +57,6 @@ interface ApiRoutes<Requirements> {
 
 const missingMessage = "見つかりませんでした。";
 const eventStreamType = "text/event-stream";
-const unreadBody = { unread: true } as const;
 
 function decodeInput<Contract extends Decodable>(
   schema: Contract,
@@ -85,10 +87,12 @@ function readSearchParams<Contract extends Decodable>(
 const apiRoot = "/api";
 
 function createApi<const Prefix extends string>(prefix: Prefix) {
-  return new Elysia({ adapter: CloudflareAdapter, aot: false, prefix })
-    .onParse(() => unreadBody)
-    .onError(({ code }) =>
-      code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
+  return new Elysia({ adapter: WebStandardAdapter, prefix })
+    .guard({ parse: "none" })
+    .error(({ error }) =>
+      error instanceof NotFound
+        ? status(httpStatus.notFound, { error: missingMessage })
+        : undefined,
     );
 }
 
