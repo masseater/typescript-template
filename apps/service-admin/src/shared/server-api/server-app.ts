@@ -22,4 +22,5 @@ const adminProtocol = createApi("")
   .all("/mcp", api.raw(serveMcp, unavailable))
   .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
 
-export { adminApi, adminProtocol };
+export { adminApi, adminProtocol, adminApi as app };
+export default adminApi;

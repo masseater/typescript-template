@@ -8,6 +8,7 @@ export {
   applicationReadyPaths,
   applications,
   audienceRoles,
+  coreEntrypoints,
   grants,
   loopbackAddress,
   loopbackHostSet,

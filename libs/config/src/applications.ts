@@ -49,6 +49,12 @@ export const audienceRoles: Readonly<Record<Application, Role>> = {
   "service-member": ROLE.member,
 };
 
+export const coreEntrypoints = {
+  [APPLICATION.admin]: "AdminApi",
+  [APPLICATION.user]: "MemberApi",
+  [APPLICATION.wiki]: "InternalApi",
+} as const satisfies Readonly<Record<Application, string>>;
+
 export const loopbackAddress = "127.0.0.1";
 export const loopbackHosts: readonly string[] = ["localhost", loopbackAddress, "[::1]"];
 export const loopbackHostSet: ReadonlySet<string> = new Set(loopbackHosts);

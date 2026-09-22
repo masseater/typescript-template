@@ -16,6 +16,7 @@ import {
 } from "@repo/config";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
+import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
 import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
@@ -23,6 +24,7 @@ import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { hstsSetting } from "./config.ts";
+import { assertCoreNotPublic } from "./core-guard.ts";
 import {
   applyVerificationEnvironment,
   bindsSendEmail,
@@ -108,6 +110,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.appOrigin, origins[app]),
       plainText(appEnvKey.appRelease, release),
       `${appEnvKey.authSecret}:secret_text:text=$${deploymentKey.authSecret}`,
+      `CORE:service:entrypoint=${coreEntrypoints[app]}:service=${stackName("core")}.Worker.workerName`,
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText(appEnvKey.emailFrom, mailFrom),
@@ -275,6 +278,25 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
 const staticExpected: Readonly<
   Record<Exclude<StackName, Application | "flagship">, StackInventory>
 > = {
+  core: declaredStack("core", {
+    Worker: {
+      adopt: false,
+      bindings: [
+        `${appEnvKey.authSecret}:secret_text:text=$${deploymentKey.authSecret}`,
+        `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
+        `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
+        plainText(appEnvKey.emailFrom, mailFrom),
+      ].toSorted(),
+      declared: {
+        ...sharedWorker,
+        bundle: false,
+        main: "apps/core/dist/index.js",
+        name: `${prefix}-core`,
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Worker",
+    },
+  }),
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
@@ -413,13 +435,23 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const expected = yield* expectedStack(stack);
-  const matches = isDeepStrictEqual(inventory, expected);
+  const coreViolation = stack === "core" ? assertCoreNotPublic(inventory) : undefined;
+  const matches = coreViolation === undefined && isDeepStrictEqual(inventory, expected);
+  if (coreViolation !== undefined) {
+    yield* Console.error(
+      yield* encodeJson({ event: "core.public_entry", stack, violation: coreViolation }),
+    );
+  }
   if (!matches) {
     yield* Console.error(
       yield* encodeJson({ actual: inventory, event: "stacks.differs", expected, stack }),
     );
   }
-  return { matches, onboards: onboards(inventory), sends: bindsSendEmail(inventory) } as const;
+  return {
+    matches,
+    onboards: onboards(inventory),
+    sends: bindsSendEmail(inventory),
+  } as const;
 });
 
 runCli(

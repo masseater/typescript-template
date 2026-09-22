@@ -11,6 +11,7 @@ import type {
   KV,
   Queues,
   R2,
+  WorkerEntrypointBinding,
   WorkflowLike,
 } from "alchemy/Cloudflare";
 import type { Redacted } from "effect";
@@ -19,6 +20,7 @@ type SharedEnv = Readonly<{
   APP_ORIGIN: string;
   APP_RELEASE: string;
   AUTH_SECRET: Redacted.Redacted;
+  CORE: WorkerEntrypointBinding;
   DB: D1.Database;
   EMAIL: Email.SendEmail;
   EMAIL_FROM: string;

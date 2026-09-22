@@ -14,4 +14,5 @@ const memberProtocol = createApi("")
   .all("/mcp", api.raw(serveMcp, unavailable))
   .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
 
-export { memberProtocol, userApi };
+export { memberProtocol, userApi, userApi as app };
+export default userApi;

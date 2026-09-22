@@ -6,11 +6,21 @@ import {
   userInboxClassName,
 } from "@repo/config";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
-import { DurableObject, Email, Queues, Worker, Workers, Workflow } from "alchemy/Cloudflare";
+import { coreEntrypoints } from "@repo/core-api/entrypoints";
+import {
+  DurableObject,
+  Email,
+  Queues,
+  Worker,
+  WorkerEntrypoint,
+  Workers,
+  Workflow,
+} from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
+import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { memberLeavePurgeCron } from "./member-leave-purge.ts";
@@ -65,6 +75,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();
+  const core = yield* coreWorkerRef();
   const email = yield* Email.SendEmail("Email", { allowedSenderAddresses: [config.mailFrom] });
   const jobsQueue = grants(target, "jobs") ? yield* Queues.Queue("Jobs", {}) : undefined;
   const shared: DeclaredEnv = yield* appEnv(
@@ -73,6 +84,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       APP_ORIGIN: origin,
       APP_RELEASE: artifacts.release,
       AUTH_SECRET: secret,
+      CORE: WorkerEntrypoint(core, coreEntrypoints[target]),
       DB: database,
       EMAIL: email,
       EMAIL_FROM: config.mailFrom,
