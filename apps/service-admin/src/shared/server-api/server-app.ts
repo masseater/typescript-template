@@ -1,9 +1,9 @@
-import { verifySession } from "@repo/auth";
 import { APPLICATION } from "@repo/config";
 import {
   accountApi,
   forbidden,
   forwardAuth,
+  readSession,
   sessionFailures,
   unavailable,
 } from "@repo/runtime/account";
@@ -29,7 +29,7 @@ const adminApi = createApi(apiRoot)
   .use(
     apiDocs(
       APPLICATION.admin,
-      api.guard((request) => verifySession(request.headers), docsSessionFailures),
+      api.guard((request) => readSession(request), docsSessionFailures),
     ),
   )
   .use(accountApi(api))

@@ -2,11 +2,12 @@ import { createRpcFetcher, isAuthForwardPath } from "@repo/core-api";
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { Effect } from "effect";
 
+import { handleForwardedAuth } from "./auth-layer.ts";
+
 import type { Application } from "@repo/config";
 import type * as Layer from "effect/Layer";
 import type { Rpc } from "effect/unstable/rpc";
 import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
-import { handleForwardedAuth } from "./auth-layer.ts";
 import type { CoreBindings } from "./bindings.ts";
 
 const entrypointClass = <Rpcs extends Rpc.Any>(

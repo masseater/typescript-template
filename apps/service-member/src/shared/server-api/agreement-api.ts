@@ -1,18 +1,15 @@
-import { verifySession } from "@repo/auth";
-import { AGREEMENT_KIND, agreementPolicies, httpStatus } from "@repo/config";
+import { AGREEMENT_KIND, httpStatus } from "@repo/config";
 import {
-  AgreementVersionUnavailable,
-  AgreementWithdrawalUnavailable,
-  acceptAgreementVersions,
-  acceptedAgreements,
-  pendingAgreements,
+  acceptAgreements,
+  listAgreements,
   publishedAgreement,
+  readSession,
   requireCurrentAgreements,
-  withdrawAgreementKind,
-} from "@repo/db";
-import { sessionFailures } from "@repo/runtime/account";
+  sessionFailures,
+  withdrawAgreement,
+} from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
-import { Effect, DateTime } from "effect";
+import { Effect } from "effect";
 
 import {
   AgreementAcceptance,
@@ -48,61 +45,30 @@ const failures = {
     message: "別の画面で会話が進んでいます。読み込み直してください。",
     status: httpStatus.conflict,
   },
-};
-
-const agreementsOf = Effect.fn("agreementsOf")(function* agreementsOf(userId: string) {
-  const [pending, accepted] = yield* Effect.all([
-    pendingAgreements(userId),
-    acceptedAgreements(userId),
-  ]);
-  return {
-    accepted: accepted.map((agreement) => ({
-      ...agreement,
-      acceptedAt: agreement.acceptedAt.getTime(),
-    })),
-    pending: pending.map((agreement) => ({
-      ...agreement,
-      publishedAt: agreement.publishedAt.getTime(),
-    })),
-  };
-});
+} as const;
 
 const listCurrent = Effect.fn("agreements.list")(function* listCurrent(request: Request) {
-  const { user } = yield* verifySession(request.headers);
-  return yield* agreementsOf(user.id);
+  return yield* listAgreements(request);
 });
 
 const accept = Effect.fn("agreements.accept")(function* accept(request: Request) {
-  const { user } = yield* verifySession(request.headers);
   const { versionIds } = yield* readJsonBody(AgreementAcceptance, request);
-  yield* acceptAgreementVersions({
-    acceptedAt: DateTime.toDate(yield* DateTime.now),
-    userId: user.id,
-    versionIds,
-  });
-  return yield* agreementsOf(user.id);
+  return yield* acceptAgreements(request, versionIds);
 });
 
 const published = Effect.fn("agreements.published")(function* published(request: Request) {
   const { kind } = yield* readSearchParams(PublishedAgreementQuery, request);
-  const found = yield* publishedAgreement(kind);
-  if (found === null) {
-    return yield* new AgreementVersionUnavailable();
-  }
-  return { ...found, publishedAt: found.publishedAt.getTime() };
+  return yield* publishedAgreement(kind);
 });
 
 const withdraw = Effect.fn("agreements.withdraw")(function* withdraw(request: Request) {
-  const { user } = yield* verifySession(request.headers);
   const { kind } = yield* readJsonBody(AgreementWithdrawal, request);
-  if (!agreementPolicies[kind].withdrawable) {
-    return yield* new AgreementWithdrawalUnavailable();
-  }
-  yield* withdrawAgreementKind({ kind, userId: user.id });
+  const view = yield* withdrawAgreement(request, kind);
   if (kind === AGREEMENT_KIND.interview_history) {
-    yield* withdrawInterviewHistoryConsent(user.id);
+    const session = yield* readSession(request);
+    yield* withdrawInterviewHistoryConsent(session.user.id);
   }
-  return yield* agreementsOf(user.id);
+  return view;
 });
 
 function agreementApi(api: ApiRoutes<AppServices>) {
@@ -142,8 +108,7 @@ const enforceAgreements = Effect.fn("consent.gate")(function* enforceAgreements(
   if (consentExempt(request)) {
     return;
   }
-  yield* verifySession(request.headers).pipe(
-    Effect.flatMap(({ user }) => requireCurrentAgreements(user.id)),
+  yield* requireCurrentAgreements(request).pipe(
     Effect.catchTags({
       SessionInvalid: () => Effect.void,
       SessionRequired: () => Effect.void,

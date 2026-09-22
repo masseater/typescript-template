@@ -2,7 +2,9 @@ import { Auth, handleAuthRequest, verifySession } from "@repo/auth";
 import { APPLICATION, type Application } from "@repo/config";
 import {
   AdminRpcs,
+  EmailVerificationFailed,
   InternalRpcs,
+  InviteRejected,
   MemberProfileNotFound,
   MemberRpcs,
   SessionIdentity,
@@ -13,7 +15,13 @@ import {
   isAuthForwardPath,
   type SessionIdentityView,
 } from "@repo/core-api";
-import { checkDatabase, Database, type DatabaseFailure } from "@repo/db";
+import {
+  AgreementVersionUnavailable,
+  AgreementWithdrawalUnavailable,
+  checkDatabase,
+  Database,
+  type DatabaseFailure,
+} from "@repo/db";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
@@ -36,7 +44,7 @@ const envEmail = (): SendEmail | undefined => {
   return typeof email === "object" &&
     email !== null &&
     typeof Reflect.get(email, "send") === "function"
-    ? (email as SendEmail)
+    ? (email as unknown as SendEmail)
     : undefined;
 };
 
@@ -91,42 +99,59 @@ const sessionMiddleware = (
   );
 };
 
+const accountStubs = {
+  acceptInvite: () => Effect.fail(new InviteRejected({ reason: "missing" })),
+  previewInvite: () => Effect.fail(new InviteRejected({ reason: "missing" })),
+  verifyEmail: () => Effect.fail(new EmailVerificationFailed({ rateLimited: false })),
+} as const;
+
+const agreementStubs = {
+  acceptAgreements: () => Effect.succeed({ accepted: [], pending: [] }),
+  listAgreements: () => Effect.succeed({ accepted: [], pending: [] }),
+  publishedAgreement: () => Effect.fail(new AgreementVersionUnavailable()),
+  requireCurrentAgreements: () => Effect.void,
+  withdrawAgreement: () => Effect.fail(new AgreementWithdrawalUnavailable()),
+} as const;
+
 const rpcFetcherFor = (
   audience: Application,
   database: D1Database,
   origin: string,
   secret: string,
 ) => {
-  const databaseLayer = Database.layer(database);
   const middleware = sessionMiddleware(audience, origin, secret, database);
+  const auth = authLayerFor(audience, origin, secret, database);
   switch (audience) {
     case APPLICATION.admin:
       return createRpcFetcher(
         AdminRpcs,
         Layer.mergeAll(
           AdminRpcs.toLayer({
+            ...accountStubs,
             getSession: () => SessionIdentity,
             ready: (): Effect.Effect<boolean> => Effect.succeed(true),
           }),
           middleware,
-        ).pipe(Layer.provide(databaseLayer)),
+        ).pipe(Layer.provide(auth)),
       );
     case APPLICATION.wiki:
       return createRpcFetcher(
         InternalRpcs,
         Layer.mergeAll(
           InternalRpcs.toLayer({
+            ...accountStubs,
             getSession: () => SessionIdentity,
             ready: (): Effect.Effect<boolean> => Effect.succeed(true),
           }),
           middleware,
-        ).pipe(Layer.provide(databaseLayer)),
+        ).pipe(Layer.provide(auth)),
       );
     case APPLICATION.user:
       return createRpcFetcher(
         MemberRpcs,
         Layer.mergeAll(
           MemberRpcs.toLayer({
+            ...agreementStubs,
             databaseReady: (): Effect.Effect<boolean, DatabaseFailure, Database> =>
               checkDatabase().pipe(Effect.as(true)),
             getMemberProfile: () =>
@@ -140,9 +165,10 @@ const rpcFetcherFor = (
                 yield* SessionIdentity;
                 return yield* new MemberProfileNotFound();
               }),
+            verifyEmail: accountStubs.verifyEmail,
           }),
           middleware,
-        ).pipe(Layer.provide(databaseLayer)),
+        ).pipe(Layer.provide(auth)),
       );
   }
 };

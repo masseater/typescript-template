@@ -1,5 +1,5 @@
-import { MemberRpcs } from "@repo/core-api";
 import { APPLICATION } from "@repo/config";
+import { MemberRpcs } from "@repo/core-api";
 
 import { entrypointClass } from "./entrypoint.ts";
 import { memberHandlers } from "./handlers.ts";

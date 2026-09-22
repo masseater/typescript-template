@@ -1,10 +1,4 @@
-import {
-  authTest,
-  authTestSecret,
-  registerVerified,
-  runWith,
-  signInAs,
-} from "@repo/auth/testing";
+import { authTest, authTestSecret, registerVerified, runWith, signInAs } from "@repo/auth/testing";
 import { APPLICATION, ROLE } from "@repo/config";
 import {
   MemberRpcs,
@@ -162,5 +156,68 @@ describe("handleForwardedAuth", () => {
 
   it("serves better-auth through the core auth proxy", ({ ok }) => {
     expect(ok).toBe(200);
+  });
+});
+
+describe("memberHandlers agreement RPC", () => {
+  const it = authTest()
+    .extend("signedIn", ({ auth }) =>
+      runWith(auth, () =>
+        Effect.gen(function* signedIn() {
+          yield* registerVerified("agreements@example.com");
+          return yield* signInAs(APPLICATION.user, "agreements@example.com");
+        }),
+      ),
+    )
+    .extend("listed", ({ signedIn }) =>
+      Effect.runPromise(
+        Effect.gen(function* listRpc() {
+          const client = yield* makeCoreClient(MemberRpcs, memberCore());
+          return yield* client
+            .listAgreements({})
+            .pipe(withForwardedCookies(signedIn.cookieHeaders()));
+        }).pipe(Effect.scoped),
+      ),
+    )
+    .extend("accepted", ({ signedIn, listed }) =>
+      Effect.runPromise(
+        Effect.gen(function* acceptRpc() {
+          const client = yield* makeCoreClient(MemberRpcs, memberCore());
+          return yield* client
+            .acceptAgreements({ versionIds: listed.pending.map((agreement) => agreement.id) })
+            .pipe(withForwardedCookies(signedIn.cookieHeaders()));
+        }).pipe(Effect.scoped),
+      ),
+    )
+    .extend("published", () =>
+      Effect.runPromise(
+        Effect.gen(function* publishedRpc() {
+          const client = yield* makeCoreClient(MemberRpcs, memberCore());
+          return yield* client.publishedAgreement({ kind: "terms" });
+        }).pipe(Effect.scoped),
+      ),
+    );
+
+  it("lists seeded pending agreements for the signed-in member", ({ listed }) => {
+    expect(listed.pending.map((agreement) => agreement.kind).toSorted()).toEqual([
+      "interview_history",
+      "privacy",
+      "terms",
+    ]);
+    expect(listed.accepted).toEqual([]);
+  });
+
+  it("accepts pending agreements through core", ({ accepted }) => {
+    expect(accepted.pending).toEqual([]);
+    expect(accepted.accepted.map((agreement) => agreement.kind).toSorted()).toEqual([
+      "interview_history",
+      "privacy",
+      "terms",
+    ]);
+  });
+
+  it("reads the published terms agreement without a session", ({ published }) => {
+    expect(published).toMatchObject({ kind: "terms", version: "terms-1" });
+    expect(published.body.length).toBeGreaterThan(0);
   });
 });

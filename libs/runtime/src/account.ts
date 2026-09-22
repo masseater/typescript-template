@@ -1,5 +1,5 @@
-import { InviteRejected, acceptInvitation, previewInvitation, verifyEmailToken } from "@repo/auth";
 import { httpStatus } from "@repo/config";
+import { EmailVerificationFailed, InviteRejected } from "@repo/core-api";
 import { Telemetry, ingestBrowser } from "@repo/observability";
 import { Effect } from "effect";
 
@@ -14,11 +14,16 @@ import {
   SessionView,
 } from "./contracts.ts";
 import { CoreHealth } from "./core-health.ts";
-import { forwardAuth, readSession } from "./core.ts";
+import {
+  acceptInvite as acceptInviteThroughCore,
+  forwardAuth,
+  previewInvite as previewInviteThroughCore,
+  readSession,
+  verifyEmail as verifyEmailThroughCore,
+} from "./core.ts";
 import { createApi, failureBy } from "./http.ts";
 
-import type { EmailVerificationFailed } from "@repo/auth";
-import type { SessionRpcError } from "./core.ts";
+import type { InviteRpcError, SessionRpcError, VerifyEmailRpcError } from "./core.ts";
 import type { Failure, FailureTable } from "./failures.ts";
 import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
@@ -58,12 +63,12 @@ function emailVerificationFailure(
 }
 
 const verificationFailures = {
-  ...authUnavailable,
+  ...coreUnavailable,
   EmailVerificationFailed: failureBy(
     [httpStatus.tooManyRequests, httpStatus.badRequest],
     emailVerificationFailure,
   ),
-};
+} as const satisfies FailureTable<VerifyEmailRpcError>;
 
 const inviteMessages = {
   missing: { message: "招待が無効か、有効期限が切れています。", status: httpStatus.notFound },
@@ -94,25 +99,23 @@ const privileged = {
   ...unavailable,
 } as const;
 
-const inviteFailures = { ...unavailable, InviteRejected: inviteRejected };
+const inviteFailures = {
+  ...coreUnavailable,
+  InviteRejected: inviteRejected,
+} as const satisfies FailureTable<InviteRpcError>;
 
 const openInvite = Effect.fn("openInvite")(function* openInvite(
   _request: Request,
   query: { readonly token: string },
 ) {
-  const preview = yield* previewInvitation(query.token);
-  if (preview === undefined) {
-    return yield* new InviteRejected({ reason: "missing" });
-  }
-  return { email: preview.email, permission: preview.permission };
+  return yield* previewInviteThroughCore(query.token);
 });
 
 const acceptOpenInvite = Effect.fn("acceptOpenInvite")(function* acceptOpenInvite(
   _request: Request,
   acceptance: typeof InviteAcceptance.Type,
 ) {
-  const created = yield* acceptInvitation(acceptance);
-  return { accepted: true, email: created.email } as const;
+  return yield* acceptInviteThroughCore(acceptance);
 });
 
 function inviteApi<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
@@ -153,7 +156,7 @@ function accountApi<Requirements = never>(api: ApiRoutes<AppServices | Requireme
       "/verify-email",
       ...api.route(
         { body: EmailVerificationRequest, response: EmailVerified },
-        (request, { token }) => verifyEmailToken(token, request.headers),
+        (request, { token }) => verifyEmailThroughCore(request, token),
         verificationFailures,
       ),
     );
@@ -167,7 +170,16 @@ export {
   forwardAuth,
   inviteApi,
   privileged,
+  readSession,
   sessionApi,
   sessionFailures,
   unavailable,
 };
+export {
+  Core,
+  acceptAgreements,
+  listAgreements,
+  publishedAgreement,
+  requireCurrentAgreements,
+  withdrawAgreement,
+} from "./core.ts";

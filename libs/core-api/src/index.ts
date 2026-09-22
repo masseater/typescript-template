@@ -1,4 +1,17 @@
 export {
+  AccountRpcs,
+  EmailVerificationFailed,
+  EmailVerified,
+  InviteAcceptance,
+  InviteAccepted,
+  InvitePreview,
+  InviteRejected,
+  InviteRpcs,
+  acceptInvite,
+  previewInvite,
+  verifyEmail,
+} from "./account-rpcs.ts";
+export {
   authApiPathPrefix,
   forwardAuthRequest,
   isAuthForwardPath,
@@ -8,6 +21,19 @@ export { AdminRpcs } from "./admin-rpcs.ts";
 export { makeCoreClient } from "./client.ts";
 export { cookieHeadersFrom, withForwardedCookies } from "./forward-cookies.ts";
 export { InternalRpcs } from "./internal-rpcs.ts";
+export {
+  AcceptedAgreement,
+  AgreementAcceptance,
+  AgreementsView,
+  MemberAgreementRpcs,
+  PendingAgreement,
+  PublishedAgreementView,
+  acceptAgreements,
+  listAgreements,
+  publishedAgreement,
+  requireCurrentAgreements,
+  withdrawAgreement,
+} from "./member-agreement-rpcs.ts";
 export { MemberRpcs } from "./member-rpcs.ts";
 export {
   MemberProfileNotFound,

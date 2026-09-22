@@ -7,12 +7,13 @@ import {
   type SessionIdentityView,
 } from "@repo/core-api";
 import { Effect, Layer } from "effect";
-import type * as HttpHeaders from "effect/unstable/http/Headers";
 
-import type { Application } from "@repo/config";
-import type { Auth } from "@repo/auth";
-import type { Database } from "@repo/db";
 import { authLayer } from "./auth-layer.ts";
+
+import type { Auth } from "@repo/auth";
+import type { Application } from "@repo/config";
+import type { Database } from "@repo/db";
+import type * as HttpHeaders from "effect/unstable/http/Headers";
 import type { CoreBindings } from "./bindings.ts";
 
 const webHeaders = (headers: HttpHeaders.Headers): Headers => new Headers(headers);

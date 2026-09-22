@@ -73,3 +73,10 @@ export { FileStore } from "./file-store.ts";
 export type { StoredFile } from "./file-store.ts";
 export { StorageFailed } from "./storage-failed.ts";
 export { Core, forwardAuth, readSession } from "./core.ts";
+export {
+  acceptAgreements,
+  listAgreements,
+  publishedAgreement,
+  requireCurrentAgreements,
+  withdrawAgreement,
+} from "./core.ts";

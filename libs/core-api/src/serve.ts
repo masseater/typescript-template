@@ -9,11 +9,7 @@ import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 const createRpcFetcher = <Rpcs extends Rpc.Any>(
   rpcContract: RpcGroup.RpcGroup<Rpcs>,
   handlerLayer: Layer.Layer<Rpc.ToHandler<Rpcs> | Rpc.Middleware<Rpcs>, never, never>,
-  ...handlerLayers: readonly Layer.Layer<
-    Rpc.ToHandler<Rpcs> | Rpc.Middleware<Rpcs>,
-    never,
-    never
-  >[]
+  ...handlerLayers: readonly Layer.Layer<Rpc.ToHandler<Rpcs> | Rpc.Middleware<Rpcs>, never, never>[]
 ): {
   readonly dispose: () => Promise<void>;
   readonly fetch: (httpRequest: Request) => Promise<Response>;
