@@ -1,3 +1,5 @@
+import { useSessionUser } from "@repo/auth-ui";
+import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
 import {
   NavigationLink,
   Table,
@@ -9,7 +11,7 @@ import {
 } from "@repo/ui";
 import { createColumnHelper, metaHelper, tableFeatures, useTable } from "@tanstack/react-table";
 
-import { roleLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
+import { accountStateLabels, verificationLabels } from "#pages/users/model/user-labels.ts";
 import { LoadingRow } from "./loading-row.tsx";
 import { UserRowActions } from "./user-row-actions.tsx";
 
@@ -18,6 +20,7 @@ import type { ReactElement } from "react";
 
 interface UsersTableMeta {
   readonly handleChanged: () => void;
+  readonly operator: boolean;
 }
 
 const usersTableFeatures = tableFeatures({
@@ -42,9 +45,9 @@ const usersTableColumns = columnHelper.columns([
     header: "名前",
   }),
   columnHelper.accessor("email", { header: "メールアドレス" }),
-  columnHelper.accessor("role", {
-    cell: (cellContext) => roleLabels[cellContext.getValue()],
-    header: "権限",
+  columnHelper.accessor("accountState", {
+    cell: (cellContext) => accountStateLabels[cellContext.getValue()],
+    header: "状態",
   }),
   columnHelper.accessor("emailVerified", {
     cell: (cellContext) =>
@@ -62,6 +65,9 @@ const usersTableColumns = columnHelper.columns([
       if (tableMeta === undefined) {
         throw new Error("利用者一覧の操作を実行できません。");
       }
+      if (!tableMeta.operator) {
+        return null;
+      }
       return <UserRowActions onChanged={tableMeta.handleChanged} user={cellContext.row.original} />;
     },
     header: "操作",
@@ -73,12 +79,14 @@ function UsersTable({
   onChanged,
   users,
 }: Readonly<{ onChanged: () => void; users: readonly ListedUser[] | undefined }>): ReactElement {
+  const { permission } = useSessionUser();
+  const operator = grantsAdminLevel(permission, ADMIN_PERMISSION.operator);
   const table = useTable({
     columns: usersTableColumns,
     data: users ?? emptyListedUsers,
     features: usersTableFeatures,
     getRowId: listedUserRowId,
-    meta: { handleChanged: onChanged },
+    meta: { handleChanged: onChanged, operator },
   });
   return (
     <Table>

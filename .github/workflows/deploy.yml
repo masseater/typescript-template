@@ -54,6 +54,9 @@ jobs:
           TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
+          TEMPLATE_STRIPE_PRICE_ID: ${{ secrets.TEMPLATE_STRIPE_PRICE_ID }}
+          TEMPLATE_STRIPE_SECRET_KEY: ${{ secrets.TEMPLATE_STRIPE_SECRET_KEY }}
+          TEMPLATE_STRIPE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_STRIPE_WEBHOOK_SECRET }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
@@ -94,6 +97,9 @@ jobs:
           TEMPLATE_RESERVE_USD: ${{ secrets.TEMPLATE_RESERVE_USD }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
+          TEMPLATE_STRIPE_PRICE_ID: ${{ secrets.TEMPLATE_STRIPE_PRICE_ID }}
+          TEMPLATE_STRIPE_SECRET_KEY: ${{ secrets.TEMPLATE_STRIPE_SECRET_KEY }}
+          TEMPLATE_STRIPE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_STRIPE_WEBHOOK_SECRET }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'

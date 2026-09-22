@@ -11,6 +11,16 @@ description: 応答の状態コードと監視へ送る対象、記録の流れ�
 
 秘密の値と個人を特定できる値を出力から落とす判断は、この文書の基準より先に当てる。
 
+## 利用者アプリの Google Analytics
+
+利用者アプリ（`service-member`）だけが Google Analytics を読み込む。管理アプリと Wiki には入れない。
+
+- 計測 ID は GitHub Environment の `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID` から Alchemy の `GOOGLE_ANALYTICS_MEASUREMENT_ID` binding として利用者 Worker だけへ渡す。未設定ならスクリプトは出さず、誤ったタグも載せない
+- ローカル開発と自動テストでは Google へ送らない。`readEnvironment` が local と判定した環境、または ID が無い環境では計測を止める
+- ページ URL に含まれる利用者 ID は Google へ送る前に `/users/_` など特定できない形へ置き換える。メールアドレスと利用者 ID を計測データに載せない
+- AI と bot の操作は計測から除外しない。User-Agent で区別する
+- Content-Security-Policy は、計測が有効なときだけ Google Analytics と Tag Manager のホストを許可する
+
 ## 監視へ送る対象を選ぶ
 
 送ってよいのは、こちらの変更で挙動が変わるものだけです。利用者の入力が不正であることも、対応していない要求を仕様どおり拒否したことも、こちらが直せる不具合ではありません。

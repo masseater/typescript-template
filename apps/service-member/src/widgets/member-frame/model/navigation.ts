@@ -1,4 +1,11 @@
-import { HomeIcon, SquareStackIcon, UserRoundIcon } from "lucide-react";
+import {
+  BellIcon,
+  HomeIcon,
+  MessageCircleIcon,
+  SearchIcon,
+  SquareStackIcon,
+  UserRoundIcon,
+} from "lucide-react";
 
 import { m } from "#shared/i18n/index.ts";
 
@@ -6,27 +13,65 @@ import type { LucideIcon } from "lucide-react";
 
 type MemberNavItem = Readonly<
   | {
+      badge?: number;
       icon: LucideIcon;
       id: "board";
       label: string;
       to: "/board";
     }
   | {
+      badge?: number;
       icon: LucideIcon;
       id: "home";
       label: string;
       to: "/home";
     }
   | {
+      badge?: number;
+      icon: LucideIcon;
+      id: "messages";
+      label: string;
+      to: "/messages";
+    }
+  | {
+      badge?: number;
+      icon: LucideIcon;
+      id: "notifications";
+      label: string;
+      to: "/notifications";
+    }
+  | {
+      badge?: number;
       icon: LucideIcon;
       id: "profile";
       label: string;
       params: { readonly id: string };
       to: "/users/$id";
     }
+  | {
+      badge?: number;
+      icon: LucideIcon;
+      id: "search";
+      label: string;
+      paid: true;
+      to: "/search" | "/upgrade";
+    }
 >;
 
-function memberNavItems(memberBoard: boolean, profileId: string): readonly MemberNavItem[] {
+const memberHasPaidPlan = false;
+
+type NavBadges = Readonly<{
+  notifications: number;
+}>;
+
+const emptyNavBadges: NavBadges = { notifications: 0 };
+
+function memberNavItems(
+  paid: boolean,
+  memberBoard: boolean,
+  profileId: string,
+  badges: NavBadges = emptyNavBadges,
+): readonly MemberNavItem[] {
   return [
     { icon: HomeIcon, id: "home", label: m.nav_home(), to: "/home" },
     {
@@ -35,6 +80,13 @@ function memberNavItems(memberBoard: boolean, profileId: string): readonly Membe
       label: m.nav_profile(),
       params: { id: profileId },
       to: "/users/$id",
+    },
+    {
+      icon: SearchIcon,
+      id: "search",
+      label: m.title_search(),
+      paid: true,
+      to: paid ? "/search" : "/upgrade",
     },
     ...(memberBoard
       ? [
@@ -46,10 +98,25 @@ function memberNavItems(memberBoard: boolean, profileId: string): readonly Membe
           } satisfies MemberNavItem,
         ]
       : []),
+    {
+      badge: 0,
+      icon: MessageCircleIcon,
+      id: "messages",
+      label: m.title_messages(),
+      to: "/messages",
+    },
+    {
+      badge: badges.notifications,
+      icon: BellIcon,
+      id: "notifications",
+      label: m.title_notifications(),
+      to: "/notifications",
+    },
   ];
 }
 
 const memberPageTitles = {
+  "/agreement": () => "規約への同意",
   "/board": m.nav_board,
   "/home": m.nav_home,
   "/messages": m.title_messages,
@@ -73,6 +140,9 @@ function titleForPath(pathname: string): string {
   if (pathname.startsWith("/messages/")) {
     return m.title_conversation();
   }
+  if (pathname.startsWith("/groups/")) {
+    return "グループ";
+  }
   if (pathname.startsWith("/support/")) {
     return m.title_support();
   }
@@ -82,4 +152,5 @@ function titleForPath(pathname: string): string {
   return m.title_member();
 }
 
-export { memberNavItems, titleForPath };
+export { memberHasPaidPlan, memberNavItems, titleForPath };
+export type { NavBadges };
