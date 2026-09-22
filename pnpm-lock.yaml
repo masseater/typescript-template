@@ -390,6 +390,9 @@ importers:
       '@mergifyio/vitest':
         specifier: 'catalog:'
         version: 0.3.7(vitest@4.1.11)
+      '@repo/ai-native':
+        specifier: workspace:*
+        version: link:tools/ai-native
       '@repo/config':
         specifier: workspace:*
         version: link:libs/config
