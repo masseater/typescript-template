@@ -5,7 +5,7 @@ description: ラベル付きの時系列を引き、分位点を計算する
 
 Prometheus は、ラベル付きの時系列を保存し、PromQL で読む。スクレイプは、相手が今持っている標本を Prometheus が引きに行く。HTTP のサーバ処理時間はヒストグラムで、バケットごとの件数から分位点を計算する。
 
-```promql
+```text
 histogram_quantile(
   0.99,
   sum by (le) (rate(http_server_request_duration_seconds_bucket[5m]))
