@@ -5,6 +5,7 @@ import { applicationOrigins, applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
+import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
 import { failure } from "./failure.ts";
 import { browserLaunchArguments } from "./lan-gateway.ts";
 import {
@@ -55,10 +56,15 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
   const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  yield* run("agent-browser", [...args, "open", `${origin}${applicationReadyPaths[app]}`], {
-    cwd: root,
-    env,
-  });
+  yield* run(
+    "agent-browser",
+    [...args, BROWSER_AGENT_COMMAND.open, `${origin}${applicationReadyPaths[app]}`],
+    {
+      cwd: root,
+      env,
+    },
+  );
+
   const report: BrowserReport = {
     event: "local.browser_opened",
     ok: true,

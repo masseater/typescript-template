@@ -3,6 +3,7 @@ import { getSchemaShape } from "@repo/db/testing";
 import { Effect, Schema } from "effect";
 import { expect } from "vite-plus/test";
 
+import { baselineProfileLayout } from "#shared/profile-layout/default.ts";
 import {
   MemberList,
   MemberListQuery,
@@ -19,10 +20,15 @@ type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserR
     : false
   : false;
 
+const derivedFields = ["photos"] as const;
+type DerivedField = (typeof derivedFields)[number];
+
 const profileViewMatchesRecord: Matches<
-  typeof ProfileView.Type,
+  Omit<typeof ProfileView.Type, DerivedField>,
   "email" | "id" | "name" | "profile" | "socialLinks"
 > = true;
+
+const noPhotos = { company: null, face: null };
 
 const encode = Schema.encodeUnknownEffect(MemberView);
 
@@ -30,21 +36,31 @@ describe("member view", () => {
   it.effect("drops everything the profile page does not show to others", () =>
     Effect.gen(function* program() {
       const encoded = yield* encode({
+        companyPhotoKey: "members/reader/company/1",
         email: "reader@example.com",
         emailVerified: true,
+        facePhotoKey: "members/reader/face/1",
         id: "reader",
         joined: "2026-08",
         name: "山田 花子",
+        photos: { company: "1", face: "1" },
         profile: "はじめまして。",
+        profileLayout: baselineProfileLayout,
         role: "admin",
+        searchable: false,
+        sheet: {},
         socialLinks: ["https://x.com/hanako"],
         twoFactorEnabled: true,
+        visibility: "self",
       });
       assert.deepStrictEqual(encoded, {
         id: "reader",
         joined: "2026-08",
         name: "山田 花子",
+        photos: { company: "1", face: "1" },
         profile: "はじめまして。",
+        profileLayout: baselineProfileLayout,
+        sheet: {},
         socialLinks: ["https://x.com/hanako"],
       });
     }),
@@ -58,7 +74,10 @@ describe("member view", () => {
           id: "reader",
           joined,
           name: "reader",
+          photos: noPhotos,
           profile: "",
+          profileLayout: baselineProfileLayout,
+          sheet: {},
           socialLinks: [],
         }).pipe(Effect.flip);
         assert.strictEqual(failure._tag, "SchemaError");
@@ -119,8 +138,11 @@ describe("member list response", () => {
             id: "a",
             joined: "2026-09",
             name: "a",
+            photos: noPhotos,
             profile: "",
+            profileLayout: baselineProfileLayout,
             role: "admin",
+            sheet: {},
             socialLinks: [],
           },
         ],
@@ -128,7 +150,18 @@ describe("member list response", () => {
         total: 1,
       });
       assert.deepStrictEqual(encoded, {
-        members: [{ id: "a", joined: "2026-09", name: "a", profile: "", socialLinks: [] }],
+        members: [
+          {
+            id: "a",
+            joined: "2026-09",
+            name: "a",
+            photos: noPhotos,
+            profile: "",
+            profileLayout: baselineProfileLayout,
+            sheet: {},
+            socialLinks: [],
+          },
+        ],
         pageSize: 24,
         total: 1,
       });
@@ -142,7 +175,7 @@ describe("profile view", () => {
     expect(profileViewMatchesRecord).toBe(true);
     const columns = new Set(getSchemaShape()["user"]);
     expect(Object.keys(ProfileView.fields).filter((field) => !columns.has(field))).toStrictEqual(
-      [],
+      derivedFields,
     );
   });
 });

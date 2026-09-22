@@ -1,0 +1,1 @@
+ALTER TABLE `audit_event` ADD `channel` text DEFAULT 'ui' NOT NULL;

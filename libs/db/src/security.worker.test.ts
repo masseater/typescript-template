@@ -1,10 +1,11 @@
-import { APPLICATION, ROLE } from "@repo/config";
+import { ACCOUNT_STATE, APPLICATION, ROLE } from "@repo/config";
 import { Effect, type Layer } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { deleteUser, setUserRole } from "./admin.ts";
+import { deleteUser } from "./admin.ts";
 import { addOAuthGrant, addSession, addUser, oauthGrantCounts } from "./records-fixture.ts";
 import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
+import { removeStaff } from "./staff.ts";
 import { TestDatabase } from "./testing.ts";
 
 const runTest = <Value>(
@@ -12,11 +13,11 @@ const runTest = <Value>(
 ): Promise<Value> => Effect.runPromise(program.pipe(Effect.provide(TestDatabase)));
 
 describe("findWikiReader", () => {
-  describe("a verified administrator", () => {
+  describe("a verified staff member", () => {
     const it = test.extend("wikiReader", () =>
       runTest(
-        Effect.gen(function* findAdministrator() {
-          yield* addUser({ role: ROLE.administrator, userId: "reader" });
+        Effect.gen(function* findStaff() {
+          yield* addUser({ role: ROLE.staff, userId: "reader" });
           return yield* findWikiReader("reader");
         }),
       ));
@@ -28,10 +29,16 @@ describe("findWikiReader", () => {
 
   describe.for([
     ["a member", { userId: "member" }, "member"],
+    ["an administrator", { role: ROLE.administrator, userId: "admin" }, "admin"],
     [
-      "an unverified administrator",
-      { emailVerified: false, role: ROLE.administrator, userId: "unverified" },
+      "an unverified staff member",
+      { emailVerified: false, role: ROLE.staff, userId: "unverified" },
       "unverified",
+    ],
+    [
+      "a suspended staff member",
+      { accountState: ACCOUNT_STATE.suspended, role: ROLE.staff, userId: "suspended" },
+      "suspended",
     ],
     ["a user who does not exist", undefined, "missing"],
   ] as const)("%s", ([, addedUser, readerId]) => {
@@ -48,17 +55,14 @@ describe("findWikiReader", () => {
     });
   });
 
-  describe("an administrator demoted to member", () => {
+  describe("a staff member who was removed", () => {
     const it = test.extend("wikiReader", () =>
       runTest(
-        Effect.gen(function* demoteReader() {
-          yield* addUser({ role: ROLE.administrator, userId: "actor" });
-          yield* addUser({ role: ROLE.administrator, userId: "reader" });
-          const sessionId = yield* addSession({
-            audience: APPLICATION.admin,
-            userId: "actor",
-          });
-          yield* setUserRole({ role: ROLE.member, sessionId, targetId: "reader" });
+        Effect.gen(function* removeReader() {
+          yield* addUser({ role: ROLE.staff, userId: "actor" });
+          yield* addUser({ role: ROLE.staff, userId: "reader" });
+          const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "actor" });
+          yield* removeStaff(sessionId, "reader");
           return yield* findWikiReader("reader");
         }),
       ));
@@ -70,18 +74,15 @@ describe("findWikiReader", () => {
 });
 
 describe("OAuth grants", () => {
-  describe("of an administrator demoted to member", () => {
+  describe("of a staff member who was removed", () => {
     const it = test.extend("grantCounts", () =>
       runTest(
-        Effect.gen(function* demoteGrantee() {
-          yield* addUser({ role: ROLE.administrator, userId: "actor" });
-          yield* addUser({ role: ROLE.administrator, userId: "reader" });
-          const sessionId = yield* addSession({
-            audience: APPLICATION.admin,
-            userId: "actor",
-          });
+        Effect.gen(function* removeGrantee() {
+          yield* addUser({ role: ROLE.staff, userId: "actor" });
+          yield* addUser({ role: ROLE.staff, userId: "reader" });
+          const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "actor" });
           yield* addOAuthGrant("reader");
-          yield* setUserRole({ role: ROLE.member, sessionId, targetId: "reader" });
+          yield* removeStaff(sessionId, "reader");
           return yield* oauthGrantCounts("reader");
         }),
       ));
@@ -95,7 +96,7 @@ describe("OAuth grants", () => {
     const it = test.extend("grantCounts", () =>
       runTest(
         Effect.gen(function* revokeGrantee() {
-          yield* addUser({ role: ROLE.administrator, userId: "reader" });
+          yield* addUser({ role: ROLE.staff, userId: "reader" });
           yield* addOAuthGrant("reader");
           yield* revokeUserSessions("reader");
           return yield* oauthGrantCounts("reader");
@@ -134,7 +135,7 @@ describe("revokeUserSessions", () => {
     const it = test.extend("revokedSession", () =>
       runTest(
         Effect.gen(function* revokeWiki() {
-          yield* addUser({ role: ROLE.administrator, userId: "reader" });
+          yield* addUser({ role: ROLE.staff, userId: "reader" });
           const sessionId = yield* addSession({
             audience: APPLICATION.wiki,
             userId: "reader",

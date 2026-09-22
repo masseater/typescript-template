@@ -1,6 +1,7 @@
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
 import {
-  allowAllEditors,
+  FlagEditorAccess,
+  FlagEditorRequired,
   flagshipFeatureFlagsLayer,
   memoryFeatureFlagsLayer,
 } from "@repo/feature-flags";
@@ -12,13 +13,20 @@ import { Embedder, embedWith } from "./embedder.ts";
 
 import type { AuthFailure } from "@repo/auth";
 import type { AppConfig, ConfigurationInvalid } from "@repo/config";
-import type { FeatureFlags, FlagEditorAccess } from "@repo/feature-flags";
+import type { FeatureFlags } from "@repo/feature-flags";
 import type { TelemetryInvalid } from "@repo/observability";
 import type { AppServices } from "@repo/runtime";
 
 const wikiService = APPLICATION.wiki;
 
 type WikiServices = AppServices | Embedder | FeatureFlags | FlagEditorAccess;
+
+const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
+  assertEditor: (user) =>
+    grantsStaffLevel(user.permission, STAFF_PERMISSION.editor)
+      ? Effect.void
+      : Effect.fail(new FlagEditorRequired()),
+});
 
 const featureFlagsLayer = (
   config: AppConfig & { readonly AI: unknown },
@@ -40,7 +48,7 @@ function wikiLayer(
           Layer.succeed(Embedder, embedder),
           configuredAppLayer(config, wikiService, routes),
           featureFlagsLayer(config),
-          allowAllEditors,
+          staffFlagEditors,
         );
       }),
     ),

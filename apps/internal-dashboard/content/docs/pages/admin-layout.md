@@ -49,6 +49,7 @@ description: 管理者アプリの全ページが共有する枠と、ページ�
 | 規約 | `/terms`・`/terms/{version}` | 設定・規約 | 見る | 見る・公開 | 見る・公開 |
 | 管理者 | `/admins` | 設定・管理者 | 出さない | 出さない | 見る・操作 |
 | セキュリティ | `/security` | 下端のメニュー | 見る・操作 | 見る・操作 | 見る・操作 |
+| AI 連携の許可 | `/consent` | 出さない | 出さない | 出さない | 出さない |
 
 - `/` を開いたときは、利用者の一覧へ移る
 - 利用者の詳細は、利用者の一覧の行を選ぶと開く。一覧の行からも操作できる
@@ -96,6 +97,7 @@ flowchart TD
   side --> terms["/terms"]
   side --> admins["/admins"]
   side -- 下端のメニュー --> security
+  side --> consent["/consent"]
   members -- 行を選ぶ --> member["/members/{id}"]
   inquiries --> inquiry["/inquiries/{id}"]
   inquiry --> member

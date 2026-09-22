@@ -9,6 +9,7 @@
     "@better-auth/passkey": "catalog:",
     "@effect/atom-react": "catalog:",
     "@repo/config": "workspace:*",
+    "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "better-auth": "catalog:",
     "effect": "catalog:",

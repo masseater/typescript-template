@@ -1,3 +1,4 @@
+import { GoogleAnalyticsMeasurementId } from "@repo/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Config, Effect, Option, Redacted } from "effect";
 
@@ -34,10 +35,15 @@ const otlpDestination = Config.all({
   endpoint: optional(Config.schema(HttpsUrl, deploymentKey.otlpEndpoint)),
 });
 
+const googleAnalyticsMeasurementId = optional(
+  Config.schema(GoogleAnalyticsMeasurementId, deploymentKey.googleAnalyticsMeasurementId),
+);
+
 const settings = Config.all({
   accountId: Config.schema(CloudflareId, deploymentKey.cloudflareAccountId),
   appDomain: Config.schema(Domain, deploymentKey.appDomain),
   budget,
+  googleAnalyticsMeasurementId,
   mailFrom: Config.schema(Email, deploymentKey.mailFrom),
   observabilitySampling: Config.schema(SamplingRate, deploymentKey.observabilitySampling),
   otlp: otlpDestination,
@@ -59,4 +65,10 @@ const authSecret = Config.schema(AuthSecret, deploymentKey.authSecret).pipe(
 
 const otlpAuthorization = optional(Config.redacted(deploymentKey.otlpAuthorization));
 
-export { authSecret, otlpAuthorization, settings };
+const stripeSettings = Config.all({
+  STRIPE_PRICE_ID: Config.redacted(deploymentKey.stripePriceId),
+  STRIPE_SECRET_KEY: Config.redacted(deploymentKey.stripeSecretKey),
+  STRIPE_WEBHOOK_SECRET: Config.redacted(deploymentKey.stripeWebhookSecret),
+});
+
+export { authSecret, otlpAuthorization, settings, stripeSettings };

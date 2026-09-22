@@ -1,10 +1,35 @@
-import { AUTHENTICATION_METHOD, applications } from "@repo/config";
+import {
+  AUTHENTICATION_METHOD,
+  ROLE,
+  accountPermissions,
+  applications,
+  auditActions,
+  clientKinds,
+  metricKeys,
+  metricPeriods,
+  roles,
+} from "@repo/config";
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
+import { apikey } from "./api-key-schema.ts";
+import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { boardPost, boardThread } from "./board-schema.ts";
 import { session, user } from "./identity-schema.ts";
+import { inquiry, inquiryMessage } from "./inquiry-schema.ts";
 import { interview } from "./interview-schema.ts";
+import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
+import { memberMcpGrant } from "./member-mcp-schema.ts";
 import { follow, memberOnboarding } from "./member-social-schema.ts";
+import {
+  conversation,
+  conversationParticipant,
+  directMessage,
+  groupInvite,
+  groupMembership,
+  memberGroup,
+} from "./messaging-schema.ts";
+import { notification, notificationPreference } from "./notification-schema.ts";
 import {
   jwks,
   oauthAccessToken,
@@ -15,6 +40,7 @@ import {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+import { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -108,20 +134,45 @@ const rateLimit = sqliteTable(
   (table) => [uniqueIndex("rate_limit_key_unique").on(table.key)],
 );
 
-/** @canonical-values db.audit-action */
-export const auditActions = ["flag_toggled", "role_changed", "user_deleted"] as const;
+/** @canonical-values db.audit-channel */
+export const auditChannels = ["ui", "mcp"] as const;
+export type AuditChannel = (typeof auditChannels)[number];
+export const AUDIT_CHANNEL = { mcp: auditChannels[1], ui: auditChannels[0] } as const;
+
 export type AuditAction = (typeof auditActions)[number];
-export const AUDIT_ACTION = {
-  flagToggled: auditActions[0],
-  roleChanged: auditActions[1],
-  userDeleted: auditActions[2],
-} as const;
+export type MetricKey = (typeof metricKeys)[number];
+export type MetricPeriod = (typeof metricPeriods)[number];
+
+const metricSnapshot = sqliteTable(
+  "metric_snapshot",
+  {
+    bucket: text("bucket").notNull(),
+    clientKind: text("client_kind", { enum: clientKinds }).notNull(),
+    computedAt: integer("computed_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey().notNull(),
+    metric: text("metric", { enum: metricKeys }).notNull(),
+    period: text("period", { enum: metricPeriods }).notNull(),
+    value: integer("value").notNull(),
+  },
+
+  (table) => [
+    index("metric_snapshot_metric_period_bucket_idx").on(table.metric, table.period, table.bucket),
+    uniqueIndex("metric_snapshot_unique").on(
+      table.metric,
+      table.period,
+      table.bucket,
+      table.clientKind,
+    ),
+  ],
+);
 
 const auditEvent = sqliteTable(
   "audit_event",
   {
     action: text("action", { enum: auditActions }).notNull(),
     actorId: text("actor_id").notNull(),
+    actorKind: text("actor_kind", { enum: roles }).notNull().default(ROLE.administrator),
+    channel: text("channel", { enum: auditChannels }).notNull().default(AUDIT_CHANNEL.ui),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     id: text("id").primaryKey(),
     targetId: text("target_id").notNull(),
@@ -130,14 +181,55 @@ const auditEvent = sqliteTable(
   (table) => [index("audit_event_created_at_idx").on(table.createdAt)],
 );
 
+const invite = sqliteTable(
+  "invite",
+  {
+    acceptedAt: integer("accepted_at", { mode: "timestamp_ms" }),
+    audience: text("audience", { enum: applications }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    email: text("email").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    id: text("id").primaryKey(),
+    inviterId: text("inviter_id").notNull(),
+    permission: text("permission", { enum: accountPermissions }).notNull(),
+    tokenHash: text("token_hash").notNull(),
+  },
+
+  (table) => [
+    uniqueIndex("invite_token_hash_unique").on(table.tokenHash),
+    index("invite_email_idx").on(table.audience, table.email),
+  ],
+);
+
 const schema = {
   account,
+  agreementAcceptance,
+  agreementVersion,
+  apikey,
   auditEvent,
   boardPost,
   boardThread,
+  conversation,
+  conversationParticipant,
+  directMessage,
+  metricSnapshot,
   follow,
+  groupInvite,
+  groupMembership,
+  inquiry,
+  inquiryMessage,
   interview,
+  invite,
+  leaveRequest,
+  memberBlock,
+  memberGroup,
+  memberMcpGrant,
   memberOnboarding,
+  memberReport,
+  moderationAction,
+  notification,
+  notificationPreference,
+  withdrawnMember,
   jwks,
   oauthAccessToken,
   oauthClient,
@@ -147,14 +239,28 @@ const schema = {
   oauthRefreshToken,
   oauthResource,
   passkey,
+  planSubscription,
   rateLimit,
   session,
+  stripeEvent,
   twoFactor,
   user,
   verification,
 };
 
-export { account, auditEvent, passkey, rateLimit, schema, twoFactor, verification };
+export {
+  account,
+  apikey,
+  auditEvent,
+  invite,
+  metricSnapshot,
+  passkey,
+  rateLimit,
+  schema,
+  twoFactor,
+  verification,
+};
+export { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 export {
   jwks,
   oauthAccessToken,
@@ -168,4 +274,35 @@ export {
 export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
+export {
+  INQUIRY_AUTHOR_KIND,
+  inquiry,
+  inquiryAuthorKinds,
+  inquiryMessage,
+} from "./inquiry-schema.ts";
+export type { InquiryAuthorKind } from "./inquiry-schema.ts";
+export { INQUIRY_STATUS, inquiryStatuses } from "@repo/config";
+export type { InquiryStatus } from "@repo/config";
+export { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
+export { memberMcpGrant } from "./member-mcp-schema.ts";
+export { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
+export { planSubscription, stripeEvent } from "./billing-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export { notification, notificationPreference } from "./notification-schema.ts";
+export { NOTIFICATION_KIND, notificationKinds } from "@repo/config";
+export type { NotificationKind } from "@repo/config";
+export { GROUP_JOIN_POLICY, groupJoinPolicies } from "@repo/config";
+export type { GroupJoinPolicy } from "@repo/config";
+export {
+  CONVERSATION_KIND,
+  GROUP_MEMBERSHIP_ROLE,
+  conversation,
+  conversationKinds,
+  conversationParticipant,
+  directMessage,
+  groupInvite,
+  groupMembership,
+  groupMembershipRoles,
+  memberGroup,
+} from "./messaging-schema.ts";
+export type { ConversationKind, GroupMembershipRole } from "./messaging-schema.ts";

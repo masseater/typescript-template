@@ -9,6 +9,7 @@ import { Cause, Clock, DateTime, Effect, Result } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
 import {
+  sendEmailChangeCompleted,
   sendEmailChangeNotice,
   sendEmailChangeVerification,
   sendExistingAccountNotice,
@@ -166,6 +167,19 @@ const createEmailChangeNotifier = (
     );
 };
 
+const createEmailChangeCompletedNotifier = (
+  authOptions: AuthOptions,
+  { origin, run }: Readonly<{ origin: string; run: Run }>,
+): ((email: string) => Promise<void>) => {
+  return (email) =>
+    run(
+      sendEmailChangeCompleted(authOptions.mail, {
+        email,
+        url: new URL("/settings/security", origin).href,
+      }),
+    );
+};
+
 const createLogger = (run: Run): NonNullable<BetterAuthOptions["logger"]> => {
   return {
     level: "warn",
@@ -282,6 +296,7 @@ export const createAuth = ({
     emailVerification: createEmailVerification(authOptions, { origin, run }),
     hooks: createRequestHooks({
       audience,
+      onEmailChangeCompleted: createEmailChangeCompletedNotifier(authOptions, { origin, run }),
       onEmailChangeRequested: createEmailChangeNotifier(authOptions, { origin, run }),
       run,
     }),

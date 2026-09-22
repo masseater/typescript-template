@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { TermsPage } from "#pages/terms/index.ts";
+import { TermsRoute } from "#pages/terms/index.ts";
 
 const Route = createFileRoute("/_admin/terms")({
-  component: TermsPage,
+  component: TermsRoute,
+  validateSearch: (search: Record<string, unknown>): Readonly<{ draft?: true }> =>
+    search["draft"] === true ? { draft: true } : {},
 });
 
 export { Route };
