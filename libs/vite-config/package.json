@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/features/vite-config/vite.ts",
+    ".": "./src/features/vite-config/index.ts",
     "./private-path": "./src/features/vite-config/private-path.ts",
     "./source-maps": "./src/features/vite-config/source-maps.ts"
   },

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/features/observability/server.ts",
+    ".": "./src/features/observability/index.ts",
     "./browser": "./src/features/observability/browser.ts",
     "./testing": "./src/features/observability/testing.ts",
     "./deployment-keys": "./src/features/observability/deployment-keys.ts"

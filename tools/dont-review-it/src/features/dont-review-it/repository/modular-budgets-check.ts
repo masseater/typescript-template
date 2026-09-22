@@ -67,6 +67,17 @@ const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[]> =>
     for (const entry of featureEntries) {
       if (!entry.isDirectory()) {
         findings.push(`features/${entry.name}: place slice code in a directory, not a loose file.`);
+        continue;
+      }
+      const sliceRoot = join(srcRoot, "features", entry.name);
+      const hasPublicApi = yield* Effect.tryPromise(async () => {
+        const names = await readdir(sliceRoot);
+        return names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name));
+      }).pipe(Effect.orElseSucceed(false));
+      if (!hasPublicApi) {
+        findings.push(
+          `features/${entry.name}: missing public API index (features/${entry.name}/index.ts).`,
+        );
       }
     }
     return findings.toSorted();

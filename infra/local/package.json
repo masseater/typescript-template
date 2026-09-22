@@ -6,7 +6,7 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/features/local/receiver.ts"
+    ".": "./src/features/local/index.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

@@ -1,3 +1,6 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { applications, architectureKindOf } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -51,6 +54,35 @@ describe("modular coverage", () => {
     );
     expect(checks.every((line) => line.endsWith(": quality-check-modular"))).toBe(true);
     expect(modularPackages.length).toBeGreaterThan(0);
+  });
+
+  it("requires a public API index on every modular feature slice", () => {
+    expect.hasAssertions();
+    const modularPackages = packagesWithSrc.filter(
+      (directory) => architectureKindOf(directory) === "modular",
+    );
+    const missing: string[] = [];
+    for (const directory of modularPackages) {
+      const featuresRoot = join(directory, "src/features");
+      let slices: ReturnType<typeof readdirSync>;
+      try {
+        slices = readdirSync(featuresRoot, { withFileTypes: true });
+      } catch {
+        missing.push(`${directory}/src/features`);
+        continue;
+      }
+      for (const slice of slices) {
+        if (!slice.isDirectory()) {
+          missing.push(`${directory}/src/features/${slice.name}`);
+          continue;
+        }
+        const names = readdirSync(join(featuresRoot, slice.name));
+        if (!names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name))) {
+          missing.push(`${directory}/src/features/${slice.name}/index.ts`);
+        }
+      }
+    }
+    expect(missing).toStrictEqual([]);
   });
 });
 

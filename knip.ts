@@ -1,5 +1,7 @@
 import type { KnipConfig, KnipConfiguration } from "knip";
 
+const modularFeaturePublicApi = ["src/features/*/index.ts", "src/features/*/index.tsx"] as const;
+
 const load = {
   entry: ["scenarios/*.ts!"],
   ignoreDependencies: ["k6"],
@@ -77,6 +79,7 @@ const workspaces = {
     },
   },
   "tools/ai-native": {
+    entry: [...modularFeaturePublicApi],
     ignoreDependencies: ["@tanstack/intent"],
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
@@ -97,7 +100,7 @@ const workspaces = {
     ],
   },
   "tools/e2e": {
-    entry: ["src/**/*.test.ts"],
+    entry: ["src/**/*.test.ts", ...modularFeaturePublicApi],
     project: ["src/**/*.ts"],
   },
 };
@@ -198,7 +201,7 @@ const config = ({
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
       "apps/*": app,
       "apps/core": {
-        entry: ["alchemy.run.ts!", "src/features/core/worker.ts!"],
+        entry: ["alchemy.run.ts!", "src/features/core/worker.ts!", ...modularFeaturePublicApi],
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
@@ -231,6 +234,7 @@ const config = ({
           ...productionOnly(...scripts["infra/cloudflare"]),
           "src/features/cloudflare/account-fixture.ts",
           "src/features/cloudflare/inspection-fixture.ts",
+          ...modularFeaturePublicApi,
         ],
         ignoreExportsUsedInFile: true,
         project: ["src/**/*.ts!"],
@@ -256,13 +260,17 @@ const config = ({
         ],
       },
       "tools/dev": {
-        entry: ["src/features/dev/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
+        entry: [
+          "src/features/dev/gateway.ts!",
+          ...productionOnly(...scripts["tools/dev"]),
+          ...modularFeaturePublicApi,
+        ],
         ignoreDependencies: ["agent-browser", "playwright"],
         project: ["src/**/*.ts!"],
       },
       "tools/load": {
         ...load,
-        entry: [...load.entry, ...productionOnly(...loadCommands)],
+        entry: [...load.entry, ...productionOnly(...loadCommands), ...modularFeaturePublicApi],
         ignoreBinaries: productionOnly("vp"),
       },
     },

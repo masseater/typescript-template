@@ -53,21 +53,53 @@ const moveTree = (from, to) => {
   }
 };
 
-const ensureIndex = (featureDirectory) => {
+const packageRootExport = (pkg) => {
+  const manifestPath = join(root, pkg.area, pkg.name, "package.json");
+  if (!existsSync(manifestPath)) return undefined;
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const exportsField = manifest.exports;
+  if (typeof exportsField === "string") return exportsField;
+  if (exportsField !== null && typeof exportsField === "object" && typeof exportsField["."] === "string") {
+    return exportsField["."];
+  }
+  return undefined;
+};
+
+const ensureIndex = (pkg, featureDirectory) => {
   const indexTs = join(featureDirectory, "index.ts");
   const indexTsx = join(featureDirectory, "index.tsx");
   if (existsSync(indexTs) || existsSync(indexTsx)) return;
-  const modules = readdirSync(featureDirectory, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.[cm]?[jt]sx?$/u.test(entry.name))
-    .map((entry) => entry.name)
-    .filter((name) => !/\.(?:test|spec|stories)\./u.test(name))
-    .filter((name) => name !== "index.ts" && name !== "index.tsx")
-    .toSorted();
-  if (modules.length === 0) return;
-  writeFileSync(
-    indexTs,
-    `${modules.map((name) => `export * from "./${name}";`).join("\n")}\n`,
-  );
+  const rootExport = packageRootExport(pkg);
+  const featurePrefix = `./src/features/${pkg.name}/`;
+  if (typeof rootExport === "string" && rootExport.startsWith(featurePrefix)) {
+    const relative = rootExport.slice(featurePrefix.length);
+    if (relative !== "index.ts" && relative !== "index.tsx") {
+      writeFileSync(indexTs, `export * from "./${relative}";\n`);
+      return;
+    }
+  }
+  writeFileSync(indexTs, "export {};\n");
+};
+
+const retargetPackageRootExport = (pkg) => {
+  const manifestPath = join(root, pkg.area, pkg.name, "package.json");
+  if (!existsSync(manifestPath)) return;
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const featurePrefix = `./src/features/${pkg.name}/`;
+  const indexExport = `${featurePrefix}index.ts`;
+  const apply = (target) => {
+    if (typeof target !== "string" || !target.startsWith(featurePrefix)) return target;
+    if (target === indexExport || target === `${featurePrefix}index.tsx`) return target;
+    return indexExport;
+  };
+  if (typeof manifest.exports === "string") {
+    manifest.exports = apply(manifest.exports);
+  } else if (manifest.exports !== null && typeof manifest.exports === "object") {
+    if (typeof manifest.exports["."] === "string") {
+      manifest.exports["."] = apply(manifest.exports["."]);
+    }
+  }
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 };
 
 const migratePackage = (pkg) => {
@@ -85,7 +117,8 @@ const migratePackage = (pkg) => {
   const feature = join(pkg.src, "features", pkg.name);
   mkdirSync(feature, { recursive: true });
   moveTree(staging, feature);
-  ensureIndex(feature);
+  ensureIndex(pkg, feature);
+  retargetPackageRootExport(pkg);
   rmSync(staging, { recursive: true, force: true });
   mkdirSync(join(pkg.src, "app"), { recursive: true });
   mkdirSync(join(pkg.src, "shared"), { recursive: true });
