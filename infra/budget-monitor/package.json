@@ -10,6 +10,7 @@
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
     "@repo/monitor": "workspace:*",
+    "@repo/observability": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },
