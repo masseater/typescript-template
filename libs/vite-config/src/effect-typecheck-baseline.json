@@ -1,28 +1,6 @@
 {
   "version": 1,
   "workspaces": {
-    ".": [
-      {
-        "file": "tools/dont-review-it/src/repository/lint.ts",
-        "code": "TS2345",
-        "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
-        "count": 1
-      }
-    ],
-    "infra/cloudflare": [
-      {
-        "file": "src/remote-command.test.ts",
-        "code": "TS377068",
-        "message": "This code constructs `new Date()`, date values are represented through `DateTime` from Effect. effect(globalDate)",
-        "count": 2
-      },
-      {
-        "file": "src/remote-command.test.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 8
-      }
-    ],
     "libs/config": [
       {
         "file": "src/index.test.ts",
