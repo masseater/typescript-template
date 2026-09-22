@@ -30,7 +30,7 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
-import { elysiaAot } from "./elysia-aot.ts";
+import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
@@ -325,6 +325,7 @@ const appConfig = (
       privateSourceMaps(app),
       devBoundary(app),
       elysiaAot(appRoot),
+      elysiaWorkerdJit(),
       cloudflare({
         auxiliaryWorkers: [coreDevWorker],
         config: (config) => ({
@@ -391,6 +392,7 @@ const appConfig = (
 export {
   appConfig,
   appRun,
+  elysiaWorkerdJit,
   appServer,
   clientReachableModules,
   defineConfig,

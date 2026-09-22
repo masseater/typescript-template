@@ -231,6 +231,7 @@ const lintOptions = {
     {
       files: ["libs/vite-config/src/elysia-aot.ts"],
       rules: {
+        "max-lines": LINT_SEVERITY.OFF,
         "project/effect-stack": LINT_SEVERITY.OFF,
         "typescript/no-deprecated": LINT_SEVERITY.OFF,
       },

@@ -9,7 +9,9 @@ import { layer } from "./platform.ts";
 
 const workflow = fileURLToPath(new URL("../../../.github/workflows/deploy.yml", import.meta.url));
 const viteConfig = fileURLToPath(new URL("../vite.config.ts", import.meta.url));
-const stackBuilds = [...applications, ...monitorStacks].map((unit) => `@repo/${unit}#build`);
+const stackBuilds = ["core", ...applications, ...monitorStacks].map(
+  (unit) => `@repo/${unit}#build`,
+);
 
 function readText(file: string): Effect.Effect<string> {
   return Effect.gen(function* readFile() {
@@ -41,11 +43,9 @@ it.effect("deploy workflow sends main to staging and promote to production", () 
 it.effect("deploy and preview tasks refuse to run without every stack build", () =>
   Effect.gen(function* program() {
     const source = yield* readText(viteConfig);
-    assert.include(
-      source,
-      "const stackBuilds = [...applications, ...monitorStacks].map((unit) => `@repo/${unit}#build`);",
-    );
+    assert.include(source, 'const stackBuilds = ["core", ...applications, ...monitorStacks].map(');
     assert.deepStrictEqual(stackBuilds, [
+      "@repo/core#build",
       "@repo/service-member#build",
       "@repo/service-admin#build",
       "@repo/internal-dashboard#build",
