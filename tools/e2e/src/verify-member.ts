@@ -33,7 +33,7 @@ type MailDelivery = {
 const mailDelivery = (settings: {
   readonly mailboxUrl?: string;
   readonly mailpitOrigin?: string;
-}): MailDelivery => {
+}): MailDelivery | undefined => {
   const { mailboxUrl, mailpitOrigin } = settings;
   if (mailboxUrl !== undefined) {
     return {
@@ -46,19 +46,18 @@ const mailDelivery = (settings: {
         }),
     };
   }
-  if (mailpitOrigin === undefined) {
-    throw new Error("VERIFY_MAIL_DELIVERY_UNAVAILABLE");
-  }
-  return {
-    mailpitOrigin,
-    waitForLink: (recipient, prefix) =>
-      waitForMailpitLink({
-        messageUrl: (messageId) => `${mailpitOrigin}/api/v1/message/${messageId}`,
-        prefix,
-        recipient,
-        searchUrl: `${mailpitOrigin}/api/v1/search?query=${encodeURIComponent(`to:${recipient}`)}`,
-      }),
-  };
+  return mailpitOrigin === undefined
+    ? undefined
+    : {
+        mailpitOrigin,
+        waitForLink: (recipient, prefix) =>
+          waitForMailpitLink({
+            messageUrl: (messageId) => `${mailpitOrigin}/api/v1/message/${messageId}`,
+            prefix,
+            recipient,
+            searchUrl: `${mailpitOrigin}/api/v1/search?query=${encodeURIComponent(`to:${recipient}`)}`,
+          }),
+      };
 };
 
 const completeWelcomeOnboarding = (onboarding: {
@@ -67,7 +66,7 @@ const completeWelcomeOnboarding = (onboarding: {
   readonly page: Page;
 }): Effect.Effect<void, JourneyFailure> =>
   Effect.gen(function* finishWelcome() {
-    yield* pageStep(() => onboarding.page.waitForURL((url) => url.pathname.includes("/welcome")));
+    yield* pageStep(() => onboarding.page.waitForURL(/\/welcome/u));
     yield* seeHeading(onboarding.page, "規約への同意");
     yield* press(onboarding.page, "同意して続ける");
     yield* seeHeading(onboarding.page, "プロフィールの作り方");
@@ -136,7 +135,7 @@ const secureMemberAccount = (visit: {
   readonly account: Account;
   readonly origin: string;
   readonly page: Page;
-}): Effect.Effect<{ readonly biography: string }, JourneyFailure> =>
+}): Effect.Effect<{ readonly biography: string }, JourneyFailure, Crypto.Crypto> =>
   Effect.gen(function* secureAccount() {
     const { biography } = yield* updateProfile(visit);
     const enrollment = yield* enrollTotp(visit);

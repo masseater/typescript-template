@@ -5,7 +5,7 @@ import { test } from "vite-plus/test";
 import { agentUserAgent } from "./agent-user-agent.ts";
 import { browserHeaders } from "./client-address.ts";
 import { type JourneyEnvironment, startJourneyEnvironment } from "./environment.ts";
-import { type JourneyFailure } from "./journey-failure.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { enableVirtualAuthenticator } from "./passkey.ts";
 import { pageStep } from "./screens.ts";
 
@@ -48,6 +48,12 @@ const scheduleStop = (environment: JourneyEnvironment, onCleanup: Cleanup): void
 const openedPage = (session: BrowserContext): Effect.Effect<Page, JourneyFailure> =>
   pageStep(() => session.newPage());
 
+const armPasskeyPage = (page: Page): Effect.Effect<void, JourneyFailure> =>
+  Effect.tryPromise({
+    catch: (cause) => failed("E2E_PAGE_STEP_FAILED", cause),
+    try: () => enableVirtualAuthenticator(page),
+  });
+
 const journeyTest = test
   .extend("browser", { scope: "worker" }, ({}, { onCleanup }) =>
     Effect.runPromise(
@@ -73,7 +79,7 @@ const journeyTest = test
         const session = yield* openedSession(browser);
         scheduleSessionClose(session, onCleanup);
         const page = yield* openedPage(session);
-        yield* pageStep(() => enableVirtualAuthenticator(page));
+        yield* armPasskeyPage(page);
         return page;
       }),
     ),

@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { chromium } from "playwright";
+import { chromium, type BrowserContext, type Page } from "playwright";
 
 import { agentUserAgent } from "../agent-user-agent.ts";
 import { browserHeaders } from "../client-address.ts";
@@ -8,6 +8,22 @@ import { mailDelivery, runVerifyMember } from "../verify-member.ts";
 import { failure } from "./failure.ts";
 
 import type { ResolvedVerifyEnvironment } from "./environments.ts";
+
+const openVerifiedPage = (browserSession: BrowserContext): Effect.Effect<Page> =>
+  Effect.gen(function* launchVerifiedPage() {
+    const openedPage = yield* Effect.tryPromise(() => browserSession.newPage());
+    yield* Effect.tryPromise(() => enableVirtualAuthenticator(openedPage));
+    return openedPage;
+  }).pipe(Effect.orDie);
+
+const closeBrowserSession = (
+  browserSession: BrowserContext,
+  browser: Awaited<ReturnType<typeof chromium.launch>>,
+): Effect.Effect<void> =>
+  Effect.gen(function* shutdownBrowser() {
+    yield* Effect.tryPromise(() => browserSession.close());
+    yield* Effect.tryPromise(() => browser.close());
+  }).pipe(Effect.orDie);
 
 const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
   resolved: ResolvedVerifyEnvironment,
@@ -38,22 +54,17 @@ const verifyMember = Effect.fn("verifyMember")(function* verifyMember(
         userAgent: agentUserAgent,
       }),
   });
-  const page = yield* Effect.tryPromise({
-    catch: () => failure("browser_start_failed"),
-    try: () =>
-      browserSession
-        .newPage()
-        .then((openedPage) => enableVirtualAuthenticator(openedPage).then(() => openedPage)),
-  });
+  const page = yield* openVerifiedPage(browserSession).pipe(
+    Effect.mapError(() => failure("browser_start_failed")),
+  );
   const verified = yield* runVerifyMember({
     mail,
     origin: resolved.memberOrigin,
     page,
   }).pipe(Effect.mapError(() => failure("browser_authentication_failed")));
-  yield* Effect.tryPromise({
-    catch: () => failure("browser_start_failed"),
-    try: () => browserSession.close().then(() => browser.close()),
-  });
+  yield* closeBrowserSession(browserSession, browser).pipe(
+    Effect.mapError(() => failure("browser_start_failed")),
+  );
   return {
     environment: resolved.environment,
     event: "verify.member_completed" as const,

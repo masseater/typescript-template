@@ -11,6 +11,7 @@ import {
   signOut,
   signUp,
 } from "./flows.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 import {
   appearanceTimeout,
   fill,
@@ -25,7 +26,6 @@ import { runVerifyMember } from "./verify-member.ts";
 
 import type { Page } from "playwright";
 import type { JourneyEnvironment } from "./environment.ts";
-import type { JourneyFailure } from "./journey-failure.ts";
 
 const saveAndOpenHome = (page: Page, origin: string): Effect.Effect<void, JourneyFailure> =>
   Effect.all(
@@ -388,13 +388,14 @@ const assertVerifyMemberObservability = (verified: {
   readonly requestIds: readonly string[];
   readonly sessionToken: string | undefined;
   readonly userId: string | undefined;
-}): void => {
+}): Effect.Effect<void, JourneyFailure> => {
   if (verified.requestIds.length === 0) {
-    throw new Error("VERIFY_OBSERVABILITY_MISSING");
+    return Effect.fail(failed("VERIFY_OBSERVABILITY_MISSING"));
   }
   if (verified.sessionToken === undefined || verified.userId === undefined) {
-    throw new Error("VERIFY_SESSION_MISSING");
+    return Effect.fail(failed("VERIFY_SESSION_MISSING"));
   }
+  return Effect.void;
 };
 
 const runVerifyMemberJourney = (
@@ -418,7 +419,7 @@ const runVerifyMemberJourney = (
       origin,
       page: stage.page,
     });
-    assertVerifyMemberObservability(verified);
+    yield* assertVerifyMemberObservability(verified);
     return {
       browserUserAgent: agentUserAgent,
       enrolledTotp: true as const,

@@ -1,5 +1,6 @@
-import { Effect } from "effect";
+import { Crypto, Effect } from "effect";
 
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 import {
   appearanceTimeout,
   field,
@@ -14,7 +15,6 @@ import { currentTotpCode } from "./totp.ts";
 
 import type { Page } from "playwright";
 import type { Account } from "./accounts.ts";
-import type { JourneyFailure } from "./journey-failure.ts";
 import type { MailSink } from "./mail.ts";
 
 type Visit = {
@@ -162,13 +162,13 @@ const assertPasskeyHttpOk = (
   httpExchange: Awaited<ReturnType<typeof waitForPasskeyOptions>>,
   failureLabel: string,
 ): Effect.Effect<void, JourneyFailure> =>
-  httpExchange.ok()
-    ? Effect.void
-    : pageStep(() =>
-        httpExchange.text().then((body) => {
-          throw new Error(`${failureLabel} ${httpExchange.status()} ${body}`);
-        }),
-      ).pipe(Effect.asVoid);
+  Effect.gen(function* assertPasskeyResponse() {
+    if (httpExchange.ok()) {
+      return;
+    }
+    const responseText = yield* pageStep(() => httpExchange.text());
+    return yield* failed(failureLabel, `${httpExchange.status()} ${responseText}`);
+  });
 
 const submitPasskeyRegistration = (
   visit: Visit,
@@ -199,9 +199,15 @@ const registerPasskey = (visit: Visit, passkeyLabel: string): Effect.Effect<void
 
 const updateProfile = (
   visit: Visit,
-): Effect.Effect<{ readonly biography: string; readonly profilePath: string }, JourneyFailure> =>
+): Effect.Effect<
+  { readonly biography: string; readonly profilePath: string },
+  JourneyFailure,
+  Crypto.Crypto
+> =>
   Effect.gen(function* saveVisitProfile() {
-    const biography = `verify ${crypto.randomUUID()}`;
+    const crypto = yield* Crypto.Crypto;
+    const identifier = yield* crypto.randomUUIDv4.pipe(Effect.orDie);
+    const biography = `verify ${identifier}`;
     yield* pageStep(() => visit.page.goto(`${visit.origin}/settings/profile`));
     yield* seeHeading(visit.page, "プロフィールの編集");
     yield* readyButton(visit.page, "保存");

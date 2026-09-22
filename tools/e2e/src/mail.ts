@@ -7,19 +7,6 @@ import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { loopbackOrigin } from "./ports.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
-const requestPath = (url: string): string => {
-  const path = url.startsWith("http") ? new URL(url).pathname : url;
-  return path.split("?")[0] ?? path;
-};
-
-const accepted = 202;
-
-const notFound = 404;
-
-const deliveryTimeout = 60_000;
-
-const mailLinkPattern = /https?:\/\/[^\s"'<>\\]+/gu;
-
 const recordDelivery = (
   deliveries: Ref.Ref<readonly string[]>,
 ): Effect.Effect<
@@ -28,7 +15,13 @@ const recordDelivery = (
   HttpServerRequest.HttpServerRequest
 > =>
   Effect.gen(function* acceptMail() {
+    const accepted = 202;
+    const notFound = 404;
     const incoming = yield* HttpServerRequest.HttpServerRequest;
+    const requestPath = (url: string): string => {
+      const path = url.startsWith("http") ? new URL(url).pathname : url;
+      return path.split("?")[0] ?? path;
+    };
     if (incoming.method !== "POST" || requestPath(incoming.url) !== mailpitSendPath) {
       return HttpServerResponse.text("", { status: notFound });
     }
@@ -39,18 +32,19 @@ const recordDelivery = (
     return HttpServerResponse.text("{}", { status: accepted });
   });
 
+const mailLinkPattern = /https?:\/\/[^\s"'<>\\]+/gu;
+
 const findLink = (search: {
   readonly deliveries: readonly string[];
   readonly prefix: string;
   readonly recipient: string;
-}): readonly string[] => {
-  return search.deliveries
+}): readonly string[] =>
+  search.deliveries
     .filter((delivery) => delivery.includes(search.recipient))
     .flatMap((delivery) => [...delivery.matchAll(mailLinkPattern)].map(([link]) => link))
     .filter((link) => link.startsWith(search.prefix));
-};
 
-const nextLink = (search: {
+const linkArrives = (search: {
   readonly deliveries: Ref.Ref<readonly string[]>;
   readonly prefix: string;
   readonly recipient: string;
@@ -65,13 +59,15 @@ const nextLink = (search: {
     ),
   );
 
-const linkArrives = (search: {
+const deliveryTimeout = 60_000;
+
+const waitForDeliveryLink = (search: {
   readonly deliveries: Ref.Ref<readonly string[]>;
   readonly prefix: string;
   readonly recipient: string;
 }): Effect.Effect<string, JourneyFailure> =>
   until({
-    attempt: () => nextLink(search),
+    attempt: () => linkArrives(search),
     deadline: deadlineIn(deliveryTimeout),
     reason: "E2E_VERIFICATION_MAIL_NOT_DELIVERED",
   });
@@ -93,7 +89,7 @@ const sinkOn = (opened: {
   origin: loopbackOrigin(opened.port),
   stop: opened.stop,
   waitForLink: (recipient: string, prefix: string) =>
-    linkArrives({ deliveries: opened.deliveries, prefix, recipient }),
+    waitForDeliveryLink({ deliveries: opened.deliveries, prefix, recipient }),
 });
 
 const listeningPort = (address: HttpServer.Address): Effect.Effect<number, JourneyFailure> =>

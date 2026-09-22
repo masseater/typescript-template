@@ -1,58 +1,69 @@
 import { httpStatus } from "@repo/observability/http-status";
 import { ErrorBody, InvitePreview } from "@repo/runtime/contracts";
-import { Result, Schema } from "effect";
+import { Effect, Option, Result, Schema } from "effect";
+import { FetchHttpClient, HttpClient, type HttpClientResponse } from "effect/unstable/http";
 
-import { decodeJson, errorMessage } from "./protocol.ts";
-
-const fetchInvitationResponse = (
-  fetchImpl: typeof fetch,
-  endpoint: string,
-  token: string,
-): Promise<Response> => {
-  const previewLocation = new URL(endpoint, globalThis.location.origin);
-  previewLocation.searchParams.set("token", token);
-  return fetchImpl(previewLocation, { cache: "no-store", credentials: "same-origin" });
-};
+import { browserHttp } from "./browser-http.ts";
+import { decodeJson } from "./protocol.ts";
 
 type Invitation =
   | Readonly<{ email: string; status: "available" }>
   | Readonly<{ message: string; status: "unavailable" }>;
 
-const unavailable = (message: string): Invitation => ({ message, status: "unavailable" });
+const unavailable = (unavailableDetail: string): Invitation => ({
+  message: unavailableDetail,
+  status: "unavailable",
+});
 
 const available = (email: string): Invitation => ({ email, status: "available" });
 
-const readFailure = (served: Response): Promise<unknown> =>
-  served.json().then(
-    (body: unknown): unknown => body,
-    (unreadableFailure: unknown) => ({ error: errorMessage(unreadableFailure) }),
-  );
+type ServedInvitation = Readonly<Pick<HttpClientResponse.HttpClientResponse, "json" | "status">>;
 
-const inviteFailureOf = (served: Response, fallback: string): Promise<string> =>
-  readFailure(served).then((failureBody) => {
+const readFailureMessage = (served: ServedInvitation, fallback: string): Effect.Effect<string> =>
+  Effect.gen(function* decodeFailureMessage() {
+    const failureBody = yield* served.json.pipe(Effect.orElseSucceed(() => ({ error: fallback })));
     const decoded = Schema.decodeUnknownResult(ErrorBody)(failureBody);
     return Result.isSuccess(decoded) ? decoded.success.error : fallback;
   });
 
-const readInvitation = (served: Response, closedMessage: string): Promise<Invitation> => {
-  if (served.status === httpStatus.notFound) {
-    return Promise.resolve(unavailable(closedMessage));
-  }
-  if (!served.ok) {
-    return inviteFailureOf(served, closedMessage).then(unavailable);
-  }
-  return served
-    .json()
-    .then((servedInvite: unknown) => available(decodeJson(InvitePreview, servedInvite).email));
-};
+const readInvitation = (
+  served: ServedInvitation,
+  closedMessage: string,
+): Effect.Effect<Invitation> =>
+  Effect.gen(function* decodeInvitation() {
+    if (served.status === httpStatus.notFound) {
+      return unavailable(closedMessage);
+    }
+    if (served.status < 200 || served.status >= 300) {
+      const failureDetail = yield* readFailureMessage(served, closedMessage);
+      return unavailable(failureDetail);
+    }
+    const servedInvite = yield* served.json.pipe(Effect.orDie);
+    return available(decodeJson(InvitePreview, servedInvite).email);
+  });
 
-const previewInvitation = (endpoint: string, token: string): Promise<Invitation> => {
-  const closedMessage =
-    "招待が無効か、有効期限が切れています。招待した人に再送を依頼してください。";
-  return fetchInvitationResponse(fetch, endpoint, token)
-    .then((served) => readInvitation(served, closedMessage))
-    .catch((previewFailure: unknown) => unavailable(errorMessage(previewFailure)));
-};
+const loadInvitation = (endpoint: string, token: string): Effect.Effect<Invitation> =>
+  Effect.gen(function* previewInvitationToken() {
+    const closedMessage =
+      "招待が無効か、有効期限が切れています。招待した人に再送を依頼してください。";
+    const previewLocation = new URL(endpoint, globalThis.location.origin);
+    previewLocation.searchParams.set("token", token);
+    const served = yield* HttpClient.get(previewLocation.toString()).pipe(
+      Effect.provide(browserHttp),
+      Effect.provideService(FetchHttpClient.RequestInit, {
+        cache: "no-store",
+        credentials: "same-origin",
+      }),
+      Effect.option,
+    );
+    if (Option.isNone(served)) {
+      return unavailable(closedMessage);
+    }
+    return yield* readInvitation(served.value, closedMessage);
+  });
 
-export { inviteFailureOf, previewInvitation };
+const previewInvitation = (endpoint: string, token: string): Promise<Invitation> =>
+  Effect.runPromise(loadInvitation(endpoint, token));
+
+export { previewInvitation, readFailureMessage };
 export type { Invitation };

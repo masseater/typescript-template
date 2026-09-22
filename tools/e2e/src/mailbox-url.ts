@@ -4,6 +4,9 @@ import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { deliveryTimeout, mailLinkPattern } from "./mail.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
+const linksInDelivery = (deliveryLink: string, linkPattern: Readonly<RegExp>): readonly string[] =>
+  [...deliveryLink.matchAll(linkPattern)].map(([matchedLink]) => matchedLink);
+
 type MailboxDelivery = {
   readonly link: string;
   readonly recipient: string;
@@ -40,20 +43,20 @@ const readMailboxDeliveries = (
     Effect.orElseSucceed(() => []),
   );
 
-const fetchMailboxDeliveries = (
-  fetchImpl: typeof fetch,
-  deliveriesUrl: string,
-  recipient: string,
-): Effect.Effect<readonly MailboxDelivery[], JourneyFailure> =>
+const fetchMailboxDeliveries = (deliverySearch: {
+  readonly deliveriesUrl: string;
+  readonly fetchImpl: typeof fetch;
+  readonly recipient: string;
+}): Effect.Effect<readonly MailboxDelivery[], JourneyFailure> =>
   Effect.gen(function* loadMailboxDeliveries() {
     const mailboxHttpReply = yield* Effect.tryPromise({
       catch: (cause) => failed("VERIFY_VERIFICATION_MAIL_NOT_DELIVERED", cause),
-      try: (signal) => fetchImpl(deliveriesUrl, { signal }),
+      try: (signal) => deliverySearch.fetchImpl(deliverySearch.deliveriesUrl, { signal }),
     });
     if (!mailboxHttpReply.ok) {
       return [];
     }
-    return yield* readMailboxDeliveries(mailboxHttpReply, recipient);
+    return yield* readMailboxDeliveries(mailboxHttpReply, deliverySearch.recipient);
   });
 
 const waitForMailboxLink = (linkSearch: {
@@ -63,13 +66,15 @@ const waitForMailboxLink = (linkSearch: {
 }): Effect.Effect<string, JourneyFailure> =>
   until({
     attempt: () =>
-      fetchMailboxDeliveries(fetch, linkSearch.deliveriesUrl, linkSearch.recipient).pipe(
+      fetchMailboxDeliveries({
+        deliveriesUrl: linkSearch.deliveriesUrl,
+        fetchImpl: fetch,
+        recipient: linkSearch.recipient,
+      }).pipe(
         Effect.map((mailboxDeliveries) =>
           mailboxDeliveries
-            .flatMap((mailboxDelivery) =>
-              [...mailboxDelivery.link.matchAll(mailLinkPattern)].map(([matched]) => matched),
-            )
-            .find((matched) => matched.startsWith(linkSearch.prefix)),
+            .flatMap((mailboxDelivery) => linksInDelivery(mailboxDelivery.link, mailLinkPattern))
+            .find((matchedLink) => matchedLink.startsWith(linkSearch.prefix)),
         ),
         Effect.orElseSucceed(() => undefined),
       ),

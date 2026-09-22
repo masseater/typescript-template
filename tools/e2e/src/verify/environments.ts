@@ -18,9 +18,9 @@ type ResolvedVerifyEnvironment = {
   readonly wikiOrigin: string;
 };
 
-const readOptionalEnv = (name: string): string | undefined =>
+const readOptionalEnv = (envKey: string): string | undefined =>
   Effect.runSync(
-    Config.option(Config.string(name)).pipe(
+    Config.option(Config.string(envKey)).pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.map(Option.getOrUndefined),
     ),
@@ -39,8 +39,8 @@ const resolveLocalVerifyEnvironment = (
   };
 };
 
-const requiredEnv = (name: string): Effect.Effect<string, VerifyCommandFailure> => {
-  const configuredOrigin = readOptionalEnv(name);
+const requiredEnv = (envKey: string): Effect.Effect<string, VerifyCommandFailure> => {
+  const configuredOrigin = readOptionalEnv(envKey);
   if (configuredOrigin === undefined || configuredOrigin === "") {
     return failure("credentials_invalid");
   }

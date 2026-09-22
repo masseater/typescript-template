@@ -1,5 +1,4 @@
 import {
-  InviteAcceptance as InviteAcceptanceBody,
   maximumNameLength,
   maximumPasswordLength,
   minimumPasswordLength,
@@ -16,36 +15,32 @@ import {
   useAction,
   useTextInput,
 } from "@repo/ui";
-import { Schema } from "effect";
+import { Effect } from "effect";
+import { HttpBody, HttpClient } from "effect/unstable/http";
 import { type ReactElement, type SyntheticEvent } from "react";
 
-import { inviteFailureOf, type Invitation } from "./invite-preview.ts";
+import { browserHttp } from "./browser-http.ts";
+import { readFailureMessage, type Invitation } from "./invite-preview.ts";
 
-const encodeAcceptance = Schema.encodePromise(Schema.fromJsonString(InviteAcceptanceBody));
-
-function postInvite(fetchImpl: typeof fetch, endpoint: string, body: string): Promise<Response> {
-  return fetchImpl(endpoint, {
-    body,
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-}
-
-const acceptInvite = (
+const postAcceptance = (
   endpoint: string,
   acceptance: Readonly<{ name: string; password: string; token: string }>,
-): Promise<void> =>
-  encodeAcceptance(acceptance).then((body) =>
-    postInvite(fetch, endpoint, body).then((served) => {
-      if (served.ok) {
-        return;
-      }
-      return inviteFailureOf(served, "招待を受け付けられませんでした。").then((message) => {
-        throw new Error(message);
-      });
-    }),
-  );
+): Effect.Effect<void> =>
+  Effect.gen(function* submitAcceptance() {
+    const requestPayload = yield* HttpBody.json(acceptance).pipe(Effect.orDie);
+    const served = yield* HttpClient.post(endpoint, { body: requestPayload }).pipe(
+      Effect.provide(browserHttp),
+      Effect.orDie,
+    );
+    if (served.status >= 200 && served.status < 300) {
+      return;
+    }
+    const failureDetail = yield* readFailureMessage(
+      served,
+      "招待を受け付けられませんでした。",
+    ).pipe(Effect.orDie);
+    return yield* Effect.die(new Error(failureDetail));
+  });
 
 const InviteForm = ({
   email,
@@ -64,11 +59,13 @@ const InviteForm = ({
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
     action.run(() =>
-      acceptInvite(endpoint, {
-        name: displayName.value,
-        password: password.value,
-        token,
-      }).then(onAccepted),
+      Effect.runPromise(
+        postAcceptance(endpoint, {
+          name: displayName.value,
+          password: password.value,
+          token,
+        }).pipe(Effect.tap(() => Effect.sync(onAccepted))),
+      ),
     );
   };
   return (

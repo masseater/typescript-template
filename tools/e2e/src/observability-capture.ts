@@ -79,8 +79,11 @@ const readSession = (
     if (!sessionHttpReply.ok()) {
       return { sessionToken: undefined, userId: undefined };
     }
-    const sessionJson = yield* Effect.promise(() =>
-      sessionHttpReply.json().then((sessionRaw) => decodeSessionBody(sessionRaw)),
+    const sessionRaw: unknown = yield* Effect.tryPromise(() => sessionHttpReply.json()).pipe(
+      Effect.orDie,
+    );
+    const sessionJson = yield* Effect.tryPromise(() => decodeSessionBody(sessionRaw)).pipe(
+      Effect.orDie,
     );
     const sessionOrigin = new URL(sessionUrl).origin;
     const cookies = yield* Effect.promise(() => page.context().cookies(sessionOrigin));

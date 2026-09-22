@@ -1,7 +1,8 @@
+import { Effect } from "effect";
 import { noop } from "es-toolkit";
 import { expect, fn, userEvent } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { FileField } from "./file-field";
 
 const meta = preview.meta({
@@ -22,12 +23,14 @@ export const Disabled = meta.story({ args: { disabled: true } });
 
 export const Picks = meta.story({
   args: { onFileChange: fn() },
-  play: ({ args, canvas }) => {
-    const picked = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], "me.jpg", {
-      type: "image/jpeg",
-    });
-    return userEvent
-      .upload(canvas.getByLabelText("顔写真"), picked)
-      .then(() => expect(args.onFileChange).toHaveBeenCalledWith(picked));
-  },
+  play: ({ args, canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* pickFile() {
+        const picked = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], "me.jpg", {
+          type: "image/jpeg",
+        });
+        yield* playTask(() => userEvent.upload(canvas.getByLabelText("顔写真"), picked));
+        yield* playTask(() => expect(args.onFileChange).toHaveBeenCalledWith(picked));
+      }),
+    ),
 });

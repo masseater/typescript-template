@@ -34,15 +34,15 @@ const readMessage = (
     return mailpitJson.Text ?? "";
   });
 
-const searchInbox = (
-  fetchImpl: typeof fetch,
-  searchUrl: string,
-  messageUrl: (messageId: string) => string,
-): Effect.Effect<readonly string[], JourneyFailure> =>
+const searchInbox = (inboxSearch: {
+  readonly fetchImpl: typeof fetch;
+  readonly messageUrl: (messageId: string) => string;
+  readonly searchUrl: string;
+}): Effect.Effect<readonly string[], JourneyFailure> =>
   Effect.gen(function* loadMailpitInbox() {
     const mailpitHttpReply = yield* Effect.tryPromise({
       catch: (cause) => failed("VERIFY_VERIFICATION_MAIL_NOT_DELIVERED", cause),
-      try: (signal) => fetchImpl(searchUrl, { signal }),
+      try: (signal) => inboxSearch.fetchImpl(inboxSearch.searchUrl, { signal }),
     });
     if (!mailpitHttpReply.ok) {
       return [];
@@ -55,7 +55,7 @@ const searchInbox = (
     };
     const inboxRows = mailpitJson.messages ?? [];
     return yield* Effect.forEach(inboxRows, (inboxRow) =>
-      readMessage(fetchImpl, messageUrl(inboxRow.ID)),
+      readMessage(inboxSearch.fetchImpl, inboxSearch.messageUrl(inboxRow.ID)),
     );
   });
 
@@ -67,7 +67,11 @@ const waitForMailpitLink = (linkSearch: {
 }): Effect.Effect<string, JourneyFailure> =>
   until({
     attempt: () =>
-      searchInbox(fetch, linkSearch.searchUrl, linkSearch.messageUrl).pipe(
+      searchInbox({
+        fetchImpl: fetch,
+        messageUrl: linkSearch.messageUrl,
+        searchUrl: linkSearch.searchUrl,
+      }).pipe(
         Effect.map((deliveries) =>
           findLink({
             deliveries,
