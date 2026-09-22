@@ -13,7 +13,6 @@ import {
 import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
-import { thinAppRoutesVisitor } from "./thin-app-routes.ts";
 import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
@@ -26,6 +25,7 @@ import {
   testImportGraphVisitor,
 } from "./test-import-graph.ts";
 import { runsInWorkerRuntime } from "./test-runtime.ts";
+import { thinAppRoutesVisitor } from "./thin-app-routes.ts";
 import { warekiFormatVisitor } from "./wareki-format.ts";
 
 const metadata = (violation: string): RuleMeta => {

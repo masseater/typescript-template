@@ -15,8 +15,7 @@ describe("steiger coverage", () => {
     expect(checks).toStrictEqual(
       applications
         .map(
-          (app) =>
-            `apps/${app}: steiger src --fail-on-warnings && quality-check-thin-app-routes`,
+          (app) => `apps/${app}: steiger src --fail-on-warnings && quality-check-thin-app-routes`,
         )
         .toSorted(),
     );

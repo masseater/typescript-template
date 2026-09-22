@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { ProfileFailed, ProfileMissing, ProfilePending, ProfileRoute, loadMember } from "#pages/profile/index.ts";
+import {
+  ProfileFailed,
+  ProfileMissing,
+  ProfilePending,
+  ProfileRoute,
+  loadMember,
+} from "#pages/profile/index.ts";
 
 const Route = createFileRoute("/_member/users/$id")({
   component: ProfileRoute,
