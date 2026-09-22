@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { chdir, cwd } from "node:process";
-
 import { compile } from "@inlang/paraglide-js";
 import { repositoryRoot } from "@repo/config/repository-root";
 
@@ -8,13 +6,14 @@ import { paths } from "./host.ts";
 import { paraglideCompileOptions } from "./paraglide-options.ts";
 
 const localizedApps = ["service-member", "service-admin"] as const;
-const startedIn = cwd();
 
-try {
-  for (const app of localizedApps) {
-    chdir(paths.join(repositoryRoot, "apps", app));
-    await compile(paraglideCompileOptions());
-  }
-} finally {
-  chdir(startedIn);
-}
+await Promise.all(
+  localizedApps.map((app) => {
+    const appRoot = paths.join(repositoryRoot, "apps", app);
+    return compile({
+      ...paraglideCompileOptions(),
+      outdir: paths.join(appRoot, ".paraglide"),
+      project: paths.join(appRoot, "project.inlang"),
+    });
+  }),
+);
