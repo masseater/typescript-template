@@ -161,7 +161,6 @@ function dnsPage(records: readonly string[], url: string): Response {
 }
 
 function scriptPage(scripts: readonly string[]): Response {
-  // oxlint-disable-next-line unicorn/no-null -- the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged
   return HttpResponse.json({ result: scripts.map((id) => ({ id })), result_info: null });
 }
 
@@ -173,11 +172,15 @@ function addressPage(addresses: readonly Address[], url: string): Response {
   });
 }
 
-async function migrationRows(applied: number): Promise<readonly unknown[]> {
-  const migrations = await Effect.runPromise(loadRemoteMigrations());
-  return migrations
-    .slice(0, applied)
-    .map((migration) => ({ hash: migration.hash, name: migration.name }));
+function migrationRows(applied: number): Effect.Effect<readonly unknown[]> {
+  return loadRemoteMigrations().pipe(
+    Effect.orDie,
+    Effect.map((migrations) =>
+      migrations
+        .slice(0, applied)
+        .map((migration) => ({ hash: migration.hash, name: migration.name })),
+    ),
+  );
 }
 
 function batchResult(results: readonly unknown[]): Response {
@@ -190,18 +193,22 @@ function migrationQuery(
   applied: number,
   tables: readonly string[] = [],
 ): ReturnType<typeof http.post> {
-  return http.post(`${account}/d1/database/${databaseId}/query`, async ({ request }) => {
-    const sent = await Effect.runPromise(
-      Schema.decodeUnknownEffect(Batch)(await request.json()).pipe(Effect.orDie),
-    );
-    if (sent.batch.some((query) => query.sql === MIGRATIONS_TABLE_PRESENT)) {
-      return batchResult(applied === 0 ? [] : [{ name: "__drizzle_migrations" }]);
-    }
-    if (sent.batch.some((query) => query.sql === APPLICATION_TABLES)) {
-      return batchResult(tables.map((name) => ({ name })));
-    }
-    return batchResult(await migrationRows(applied));
-  });
+  return http.post(`${account}/d1/database/${databaseId}/query`, ({ request }) =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        const sent = yield* Schema.decodeUnknownEffect(Batch)(
+          yield* Effect.promise(() => request.json()),
+        ).pipe(Effect.orDie);
+        if (sent.batch.some((query) => query.sql === MIGRATIONS_TABLE_PRESENT)) {
+          return batchResult(applied === 0 ? [] : [{ name: "__drizzle_migrations" }]);
+        }
+        if (sent.batch.some((query) => query.sql === APPLICATION_TABLES)) {
+          return batchResult(tables.map((name) => ({ name })));
+        }
+        return batchResult(yield* migrationRows(applied));
+      }),
+    ),
+  );
 }
 
 const deployedDatabases = [{ name: databaseName(config.prefix), uuid: databaseId }];

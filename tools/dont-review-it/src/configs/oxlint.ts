@@ -1,6 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
+import { recommended } from "@effect/tsgo/oxlint-presets";
 import { defineConfig, type OxlintConfig } from "oxlint";
 
 import { LINT_SEVERITY, type WorkspaceLintRule } from "../lint-rule-authoring/index.ts";
@@ -43,6 +43,14 @@ const SHARED_TSCONFIG_PRESETS = [
 const RE_EXPORT_ONLY_FILES = ["**/index.ts", "**/index.tsx"];
 
 const PLUGIN_NAME = "dont-review-it";
+const EFFECT_PLUGIN = "effecttsgo";
+
+const effectRules: NonNullable<OxlintConfig["rules"]> = Object.fromEntries(
+  Object.entries(recommended.rules ?? {}).map(([name, severity]) => [
+    name,
+    severity === LINT_SEVERITY.WARN ? LINT_SEVERITY.ERROR : severity,
+  ]),
+);
 
 const pluginSpecifier = fileURLToPath(new URL("../plugin.ts", import.meta.url));
 
@@ -51,7 +59,7 @@ const CONFIGURED_RULES: ReadonlyMap<string, RuleSetting> = new Map<string, RuleS
   [requireReExportOnlyFiles.name, [LINT_SEVERITY.ERROR, { targets: [...RE_EXPORT_ONLY_FILES] }]],
   [
     noUnregisteredRulePlugin.name,
-    [LINT_SEVERITY.ERROR, { plugins: [...UPSTREAM_PLUGINS, PLUGIN_NAME] }],
+    [LINT_SEVERITY.ERROR, { plugins: [...UPSTREAM_PLUGINS, EFFECT_PLUGIN, PLUGIN_NAME] }],
   ],
 ]);
 
@@ -120,11 +128,12 @@ export const oxlintFor = (selection: LintBundleSelection): OxlintConfig => {
 
   return defineConfig({
     categories: { correctness: LINT_SEVERITY.ERROR },
-    plugins: [...UPSTREAM_PLUGINS],
+    plugins: [...UPSTREAM_PLUGINS, EFFECT_PLUGIN],
     jsPlugins: [{ name: PLUGIN_NAME, specifier: pluginSpecifier }],
     options: {
       reportUnusedDisableDirectives: LINT_SEVERITY.ERROR,
       respectEslintDisableDirectives: false,
+      typeAware: true,
     },
     overrides: [
       ...(carriesWriting ? WRITING_OVERRIDES : []),
@@ -132,6 +141,7 @@ export const oxlintFor = (selection: LintBundleSelection): OxlintConfig => {
     ],
     rules: {
       ...(carriesWriting ? WRITING_RULES : {}),
+      ...effectRules,
       ...ruleEntriesOf(bundles),
     },
   });

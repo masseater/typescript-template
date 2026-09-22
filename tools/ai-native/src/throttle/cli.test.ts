@@ -1,15 +1,29 @@
-import { spawn } from "node:child_process";
-import { once } from "node:events";
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { text } from "node:stream/consumers";
-import { setTimeout as delay } from "node:timers/promises";
+import { env as processEnvironment } from "node:process";
 import { fileURLToPath } from "node:url";
 
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { waitEmitterEvent } from "../emitter-wait.ts";
+import { joinPath, readDirectory, removePath } from "../host.ts";
+import { CHILD_PROCESS_EVENT } from "../node-event-names.ts";
+import { spawnChild } from "../node-spawn.ts";
 import { ensureSlots, tryAcquireAny } from "./slots.ts";
+
+const nodeFs = process.getBuiltinModule("fs") as {
+  readonly mkdtempSync: (prefix: string) => string;
+  readonly realpathSync: (location: string) => string;
+};
+
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly tmpdir: () => string;
+};
+
+type ChildExit = readonly [number | null, NodeJS.Signals | null];
+
+const streamConsumers = process.getBuiltinModule("stream/consumers") as {
+  readonly text: (readable: unknown) => Promise<string>;
+};
 
 const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
 
@@ -18,18 +32,24 @@ const TWO_STREAM_SCRIPT =
 
 describe("cli", () => {
   describe("a call that names no command", () => {
-    const it = test.extend("theWayThrottleAnswersACallWithoutACommand", async ({}, {
-      onCleanup,
-    }) => {
-      const tmpRoot = mkdtempSync(join(tmpdir(), "throttle-cli-tmp-"));
+    const it = test.extend("theWayThrottleAnswersACallWithoutACommand", ({}, { onCleanup }) => {
+      const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
       onCleanup(() => {
-        rmSync(tmpRoot, { recursive: true, force: true });
+        removePath(tmpRoot);
       });
-      const child = spawn(process.execPath, [CLI_PATH], {
-        stdio: ["ignore", "pipe", "pipe"],
-        env: { ...process.env, TMPDIR: tmpRoot },
+      const child = spawnChild({
+        executable: process.execPath,
+        handed: [CLI_PATH],
+        spawnOptions: {
+          stdio: ["ignore", "pipe", "pipe"],
+          env: { ...processEnvironment, TMPDIR: tmpRoot },
+        },
       });
-      return Promise.all([once(child, "exit"), text(child.stdout), text(child.stderr)]);
+      return Promise.all([
+        waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+        streamConsumers.text(child.stdout),
+        streamConsumers.text(child.stderr),
+      ]);
     });
 
     it(
@@ -78,11 +98,19 @@ describe("cli", () => {
 
   describe("a command that writes to both of its streams", () => {
     describe("started without the wrapper", () => {
-      const it = test.extend("theWayNodeRunsItOnItsOwn", async () => {
-        const child = spawn(process.execPath, ["-e", TWO_STREAM_SCRIPT], {
-          stdio: ["ignore", "pipe", "pipe"],
+      const it = test.extend("theWayNodeRunsItOnItsOwn", () => {
+        const child = spawnChild({
+          executable: process.execPath,
+          handed: ["-e", TWO_STREAM_SCRIPT],
+          spawnOptions: {
+            stdio: ["ignore", "pipe", "pipe"],
+          },
         });
-        return Promise.all([once(child, "exit"), text(child.stdout), text(child.stderr)]);
+        return Promise.all([
+          waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+          streamConsumers.text(child.stdout),
+          streamConsumers.text(child.stderr),
+        ]);
       });
 
       it(
@@ -99,20 +127,24 @@ describe("cli", () => {
     });
 
     describe("started through the wrapper", () => {
-      const it = test.extend("theWayThrottleRunsIt", async ({}, { onCleanup }) => {
-        const tmpRoot = mkdtempSync(join(tmpdir(), "throttle-cli-tmp-"));
+      const it = test.extend("theWayThrottleRunsIt", ({}, { onCleanup }) => {
+        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
         onCleanup(() => {
-          rmSync(tmpRoot, { recursive: true, force: true });
+          removePath(tmpRoot);
         });
-        const child = spawn(
-          process.execPath,
-          [CLI_PATH, "--", process.execPath, "-e", TWO_STREAM_SCRIPT],
-          {
+        const child = spawnChild({
+          executable: process.execPath,
+          handed: [CLI_PATH, "--", process.execPath, "-e", TWO_STREAM_SCRIPT],
+          spawnOptions: {
             stdio: ["ignore", "pipe", "pipe"],
-            env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+            env: { ...processEnvironment, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
           },
-        );
-        return Promise.all([once(child, "exit"), text(child.stdout), text(child.stderr)]);
+        });
+        return Promise.all([
+          waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+          streamConsumers.text(child.stdout),
+          streamConsumers.text(child.stderr),
+        ]);
       });
 
       it(
@@ -131,38 +163,56 @@ describe("cli", () => {
 
   describe("a wrapper left waiting because the only slot is held", () => {
     describe("when a SIGTERM reaches it", () => {
-      const it = test.extend("theWayAWaitingWrapperEnds", async ({}, { onCleanup }) => {
-        const tmpRoot = mkdtempSync(join(tmpdir(), "throttle-cli-tmp-"));
-        const slotDir = join(tmpRoot, "mst-throttle", "mst");
-        ensureSlots(slotDir, 1);
-        const holdTheOnlySlot = async (): Promise<() => Promise<void>> => {
-          const held = await tryAcquireAny({ slotDir, limit: 1 });
-          if (held !== null) return held.release;
-          await delay(200);
-          return holdTheOnlySlot();
-        };
-        const release = await holdTheOnlySlot();
-        onCleanup(async () => {
-          await release();
-          rmSync(tmpRoot, { recursive: true, force: true });
+      const it = test.extend("theWayAWaitingWrapperEnds", ({}, { onCleanup }) => {
+        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
+        onCleanup(() => {
+          removePath(tmpRoot);
         });
-        const child = spawn(process.execPath, [CLI_PATH, "--", process.execPath, "-e", ""], {
-          stdio: ["ignore", "pipe", "pipe"],
-          env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
-        });
-        const waitersDir = join(slotDir, "waiters");
-        const ownEntries = (): string[] =>
-          readdirSync(waitersDir).filter((waiterFileName) =>
-            waiterFileName.includes(`-${String(child.pid)}-`),
-          );
-        const untilEnqueued = async (): Promise<void> => {
-          if (ownEntries().length === 1) return;
-          await delay(100);
-          return untilEnqueued();
-        };
-        await untilEnqueued();
-        child.kill("SIGTERM");
-        return Promise.all([once(child, "exit"), text(child.stdout)]);
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
+            ensureSlots(slotDir, 1);
+            const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
+              Effect.gen(function* () {
+                const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
+                if (held !== null) return held.release;
+                yield* Effect.sleep("200 millis");
+                return yield* holdTheOnlySlot();
+              });
+            const release = yield* holdTheOnlySlot();
+            const child = spawnChild({
+              executable: process.execPath,
+              handed: [CLI_PATH, "--", process.execPath, "-e", ""],
+              spawnOptions: {
+                stdio: ["ignore", "pipe", "pipe"],
+                env: { ...processEnvironment, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+              },
+            });
+            const waitersDir = joinPath(slotDir, "waiters");
+            const ownEntries = (): string[] =>
+              readDirectory(waitersDir).filter((waiterFileName) =>
+                waiterFileName.includes(`-${String(child.pid)}-`),
+              );
+            const untilEnqueued = (): Effect.Effect<void> =>
+              Effect.gen(function* () {
+                if (ownEntries().length === 1) return;
+                yield* Effect.sleep("100 millis");
+                return yield* untilEnqueued();
+              });
+            yield* untilEnqueued();
+            child.kill("SIGTERM");
+            const { stdout } = child;
+            if (stdout === null) throw new Error("stdout was not piped");
+            const ended = yield* Effect.promise(() =>
+              Promise.all([
+                waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+                streamConsumers.text(stdout),
+              ]),
+            );
+            yield* Effect.promise(() => release());
+            return ended;
+          }),
+        );
       });
 
       it(
@@ -175,45 +225,59 @@ describe("cli", () => {
     });
 
     describe("once a SIGTERM has ended it", () => {
-      const it = test.extend("theQueueEntriesOfAKilledWrapper", async ({}, { onCleanup }) => {
-        const tmpRoot = mkdtempSync(join(tmpdir(), "throttle-cli-tmp-"));
-        const slotDir = join(tmpRoot, "mst-throttle", "mst");
-        ensureSlots(slotDir, 1);
-        const holdTheOnlySlot = async (): Promise<() => Promise<void>> => {
-          const held = await tryAcquireAny({ slotDir, limit: 1 });
-          if (held !== null) return held.release;
-          await delay(200);
-          return holdTheOnlySlot();
-        };
-        const release = await holdTheOnlySlot();
-        onCleanup(async () => {
-          await release();
-          rmSync(tmpRoot, { recursive: true, force: true });
+      const it = test.extend("theQueueEntriesOfAKilledWrapper", ({}, { onCleanup }) => {
+        const tmpRoot = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "throttle-cli-tmp-"));
+        onCleanup(() => {
+          removePath(tmpRoot);
         });
-        const child = spawn(process.execPath, [CLI_PATH, "--", process.execPath, "-e", ""], {
-          stdio: ["ignore", "pipe", "pipe"],
-          env: { ...process.env, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
-        });
-        const waitersDir = join(slotDir, "waiters");
-        const ownEntries = (): string[] =>
-          readdirSync(waitersDir).filter((waiterFileName) =>
-            waiterFileName.includes(`-${String(child.pid)}-`),
-          );
-        const untilEnqueued = async (): Promise<void> => {
-          if (ownEntries().length === 1) return;
-          await delay(100);
-          return untilEnqueued();
-        };
-        await untilEnqueued();
-        child.kill("SIGTERM");
-        await once(child, "exit");
-        const untilDrained = async (): Promise<void> => {
-          if (ownEntries().length === 0) return;
-          await delay(100);
-          return untilDrained();
-        };
-        await untilDrained();
-        return ownEntries();
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            const slotDir = joinPath(tmpRoot, "mst-throttle", "mst");
+            ensureSlots(slotDir, 1);
+            const holdTheOnlySlot = (): Effect.Effect<() => Promise<void>> =>
+              Effect.gen(function* () {
+                const held = yield* Effect.promise(() => tryAcquireAny({ slotDir, limit: 1 }));
+                if (held !== null) return held.release;
+                yield* Effect.sleep("200 millis");
+                return yield* holdTheOnlySlot();
+              });
+            const release = yield* holdTheOnlySlot();
+            const child = spawnChild({
+              executable: process.execPath,
+              handed: [CLI_PATH, "--", process.execPath, "-e", ""],
+              spawnOptions: {
+                stdio: ["ignore", "pipe", "pipe"],
+                env: { ...processEnvironment, TMPDIR: tmpRoot, MST_THROTTLE_LIMIT: "1" },
+              },
+            });
+            const waitersDir = joinPath(slotDir, "waiters");
+            const ownEntries = (): string[] =>
+              readDirectory(waitersDir).filter((waiterFileName) =>
+                waiterFileName.includes(`-${String(child.pid)}-`),
+              );
+            const untilEnqueued = (): Effect.Effect<void> =>
+              Effect.gen(function* () {
+                if (ownEntries().length === 1) return;
+                yield* Effect.sleep("100 millis");
+                return yield* untilEnqueued();
+              });
+            yield* untilEnqueued();
+            child.kill("SIGTERM");
+            yield* Effect.promise(() =>
+              waitEmitterEvent<ChildExit>(child, CHILD_PROCESS_EVENT.exit),
+            );
+            const untilDrained = (): Effect.Effect<void> =>
+              Effect.gen(function* () {
+                if (ownEntries().length === 0) return;
+                yield* Effect.sleep("100 millis");
+                return yield* untilDrained();
+              });
+            yield* untilDrained();
+            const drained = ownEntries();
+            yield* Effect.promise(() => release());
+            return drained;
+          }),
+        );
       });
 
       it(

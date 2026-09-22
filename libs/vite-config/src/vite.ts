@@ -1,57 +1,81 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import {
+  applicationPorts,
+  grants,
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+  loopbackAddress,
+  type Application,
+} from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
+import { localUserInbox, userInboxClassName } from "@repo/config/realtime";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite-plus";
+import { Effect } from "effect";
+import {
+  defineConfig,
+  type ConfigEnv,
+  type Plugin,
+  type PluginOption,
+  type ServerOptions,
+  type UserConfig,
+} from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { filesystem, isNotFound, paths } from "./host.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
-import type { ConfigEnv, Plugin, PluginOption, ServerOptions, UserConfig } from "vite-plus";
+const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
+  filesystem.readFileString(paths.join(appRoot, ".dev.vars")).pipe(
+    Effect.catchIf(isNotFound, () => Effect.as(Effect.void, undefined as string | undefined)),
+    Effect.orDie,
+  );
 
-async function readDevVars(appRoot: string): Promise<string | undefined> {
-  try {
-    return await readFile(path.join(appRoot, ".dev.vars"), "utf-8");
-  } catch (error: unknown) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return undefined;
-    }
-    throw error;
-  }
-}
-
-function previewDevVars(appRoot: string): Plugin {
+const previewDevVars = (appRoot: string): Plugin => {
   return {
     apply: "build",
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
-    async generateBundle() {
-      const source = await readDevVars(appRoot);
-      if (source === undefined) {
-        return this.error(
-          `Missing ${path.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
-        );
-      }
-      this.emitFile({ fileName: ".dev.vars", source, type: "asset" });
+    generateBundle() {
+      const emitDevVarsFile = (
+        file: Readonly<{ fileName: string; source: string; type: "asset" }>,
+      ): void => {
+        this.emitFile(file);
+      };
+      const reportMissingDevVars = (missingDevVarsText: string): void => {
+        this.error(missingDevVarsText);
+      };
+      return Effect.runPromise(
+        Effect.gen(function* emitDevVars() {
+          const source = yield* readDevVars(appRoot);
+          if (source === undefined) {
+            reportMissingDevVars(
+              `Missing ${paths.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
+            );
+            return;
+          }
+          emitDevVarsFile({ fileName: ".dev.vars", source, type: "asset" });
+        }),
+      );
     },
     name: "template-preview-dev-vars",
   };
-}
+};
 
-const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
   "libs/runtime/src/contracts.ts",
   "libs/runtime/src/security.ts",
 ] as const;
+const serverOnlyPackages = ["auth", "db", "runtime"] as const;
 const serverOnlyFiles: (string | RegExp)[] = [
-  ...serverOnlyPackages.map((name) => `**/libs/${name}/src/**`),
+  ...serverOnlyPackages.map((packageDirectory) => `**/libs/${packageDirectory}/src/**`),
   "**/src/**/server-api/**",
 ];
 const clientReachableFiles: (string | RegExp)[] = [
@@ -75,44 +99,46 @@ const serverOnlyMarkers: readonly string[] = [
 
 const envFileLoader = "tanstack-start-core:load-env";
 
-function withoutEnvFileLoader(plugins: readonly PluginOption[]): PluginOption[] {
-  let removed = 0;
-  function strip(options: readonly PluginOption[]): PluginOption[] {
-    return options.flatMap((plugin: PluginOption): PluginOption[] => {
-      if (Array.isArray(plugin)) {
-        return [strip(plugin)];
-      }
-      if (
-        typeof plugin === "object" &&
-        plugin !== null &&
-        "name" in plugin &&
-        plugin.name === envFileLoader
-      ) {
-        removed += 1;
-        return [];
-      }
-      return [plugin];
-    });
-  }
-  const kept = strip(plugins);
+const pluginNamed = (plugin: PluginOption): string | undefined =>
+  typeof plugin === "object" &&
+  plugin !== null &&
+  "name" in plugin &&
+  typeof plugin.name === "string"
+    ? plugin.name
+    : undefined;
+
+const stripEnvFileLoader = (
+  pluginOptions: readonly PluginOption[],
+): readonly [PluginOption[], number] => {
+  const pieces = pluginOptions.map((plugin): readonly [PluginOption[], number] => {
+    if (Array.isArray(plugin)) {
+      const [nested, removedCount] = stripEnvFileLoader(plugin);
+      return [[...nested], removedCount];
+    }
+    return pluginNamed(plugin) === envFileLoader ? [[], 1] : [[plugin], 0];
+  });
+  return [
+    pieces.flatMap(([kept]) => kept),
+    pieces.reduce((removedSum, [, removedCount]) => removedSum + removedCount, 0),
+  ];
+};
+
+const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
+  const [kept, removed] = stripEnvFileLoader(plugins);
   if (removed === 0) {
-    throw new Error(`${envFileLoader} plugin not found`);
+    return Effect.runSync(Effect.die(`${envFileLoader} plugin not found`));
   }
-  return kept;
-}
+  return [...kept];
+};
 
-function reactCompiler(): PluginOption[] {
-  return react({ compiler: { logDiagnostics: true } });
-}
+const reactCompiler = (): PluginOption[] => react({ compiler: { logDiagnostics: true } });
 
-function appServer(app: Application): ServerOptions {
-  return {
-    allowedHosts: [".local"],
-    host: loopbackAddress,
-    port: applicationPorts[app],
-    strictPort: true,
-  };
-}
+const appServer = (app: Application): ServerOptions => ({
+  allowedHosts: [".local"],
+  host: loopbackAddress,
+  port: applicationPorts[app],
+  strictPort: true,
+});
 
 const generatedDirectories = [
   "node_modules",
@@ -124,95 +150,22 @@ const generatedDirectories = [
   ".spool",
 ] as const;
 
-const taskInput = [
-  { auto: true },
-  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-] as const;
-
-function withoutGenerated(...directories: readonly string[]): string[] {
-  return directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
-}
+const withoutGenerated = (...directories: readonly string[]): string[] =>
+  directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
 
 const withoutLocalState = [
   { base: "workspace", pattern: "!.local" },
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
-const typecheckInputs = [
-  ...taskInput,
-  { base: "workspace", pattern: "**/*.{ts,tsx}" },
-  { base: "workspace", pattern: "**/package.json" },
-  { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
-  { base: "workspace", pattern: "!**/node_modules/**" },
-  { base: "workspace", pattern: "!**/dist/**" },
-  { base: "workspace", pattern: "!**/.paraglide/**" },
-  { base: "workspace", pattern: "!**/.local/**" },
-] as const;
-
-const effectDiagnostics = {
-  "check:effect:gate": {
-    command: "check-effect-typecheck",
-    input: [...typecheckInputs],
-  },
-  "check:effect": {
-    command:
-      "effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-    dependsOn: ["check:effect:gate"],
-    input: [...typecheckInputs],
-  },
-} satisfies NonNullable<UserConfig["run"]>["tasks"];
-
 type RunConfig = NonNullable<UserConfig["run"]>;
 type Tasks = NonNullable<RunConfig["tasks"]>;
 
-const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
-type Lifecycle = (typeof lifecycles)[number];
-
-const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
-  precommit: [],
-  prepush: ["precommit"],
-  prepr: ["prepush"],
-  premerge: [],
-  prerelease: ["prepr", "premerge"],
-};
-
-type LifecycleTask = {
-  command: string[];
-  dependsOn: string[];
-};
-
-function lifecycle(stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {}): {
-  readonly precommit: LifecycleTask;
-  readonly prepush: LifecycleTask;
-  readonly prepr: LifecycleTask;
-  readonly premerge: LifecycleTask;
-  readonly prerelease: LifecycleTask;
-} {
-  return {
-    precommit: {
-      command: [],
-      dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
-    },
-    prepush: {
-      command: [],
-      dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
-    },
-    prepr: {
-      command: [],
-      dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
-    },
-    premerge: {
-      command: [],
-      dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
-    },
-    prerelease: {
-      command: [],
-      dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
-    },
-  };
-}
+const taskInput = [
+  { auto: true },
+  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
+] as const;
 
 const testRun = {
   test: {
@@ -235,6 +188,71 @@ const sliceBoundaries = {
 const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
+
+const typecheckInputs = [
+  ...taskInput,
+  { base: "workspace", pattern: "**/*.{ts,tsx}" },
+  { base: "workspace", pattern: "**/package.json" },
+  { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "!**/node_modules/**" },
+  { base: "workspace", pattern: "!**/dist/**" },
+  { base: "workspace", pattern: "!**/.paraglide/**" },
+  { base: "workspace", pattern: "!**/.local/**" },
+] as const;
+
+const effectDiagnostics = {
+  "check:effect": {
+    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
+    input: [...typecheckInputs],
+  },
+} satisfies NonNullable<UserConfig["run"]>["tasks"];
+
+const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
+type Lifecycle = (typeof lifecycles)[number];
+
+const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
+  precommit: [],
+  prepush: ["precommit"],
+  prepr: ["prepush"],
+  premerge: [],
+  prerelease: ["prepr", "premerge"],
+};
+
+type LifecycleTask = {
+  command: string[];
+  dependsOn: string[];
+};
+
+const lifecycle = (
+  stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {},
+): {
+  readonly precommit: LifecycleTask;
+  readonly prepush: LifecycleTask;
+  readonly prepr: LifecycleTask;
+  readonly premerge: LifecycleTask;
+  readonly prerelease: LifecycleTask;
+} => ({
+  precommit: {
+    command: [],
+    dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
+  },
+  prepush: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
+  },
+  prepr: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+  },
+  premerge: {
+    command: [],
+    dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
+  },
+  prerelease: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
+  },
+});
 
 const effectRun = {
   tasks: {
@@ -281,11 +299,12 @@ const toolTest: NonNullable<UserConfig["test"]> = {
 
 const noExtraPlugins: readonly PluginOption[] = [];
 
-function appConfig(
+const appConfig = (
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
-): (env: Readonly<ConfigEnv>) => UserConfig {
-  const appRoot = path.join(repositoryRoot, "apps", app);
+): ((env: Readonly<ConfigEnv>) => UserConfig) => {
+  const appRoot = paths.join(repositoryRoot, "apps", app);
+  const realtime = grants(app, "realtime");
   return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
     plugins: [
@@ -302,8 +321,34 @@ function appConfig(
           compatibility_date: workerCompatibility.date,
           compatibility_flags: [...workerCompatibility.flags],
           d1_databases: [localDatabase],
+          ...(realtime
+            ? {
+                durable_objects: {
+                  bindings: [localUserInbox],
+                },
+                migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
+              }
+            : {}),
           main: "./src/app/server.ts",
           name: `template-${app}`,
+          ...(grants(app, "jobs")
+            ? {
+                queues: {
+                  consumers: [{ queue: jobsQueueName }],
+                  producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
+                },
+                workflows: [
+                  {
+                    binding: jobsWorkflowBinding,
+                    class_name: jobsWorkflowClass,
+                    name: jobsWorkflowName,
+                  },
+                ],
+              }
+            : {}),
+          ...(grants(app, "storage")
+            ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
+            : {}),
         },
         inspectorPort: false,
         persistState: { path: localDatabaseDirectory() },
@@ -318,7 +363,7 @@ function appConfig(
     run: appRun,
     server: appServer(app),
   });
-}
+};
 
 export {
   appConfig,
@@ -344,6 +389,7 @@ export {
   toolTest,
   withoutEnvFileLoader,
 };
+export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };

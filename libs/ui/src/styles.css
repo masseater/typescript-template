@@ -28,6 +28,7 @@
 }
 
 :root {
+  color-scheme: light;
   --white: #fffdf8;
   --white-darken: #f3eee4;
   --grey-5: #f6f1e8;
@@ -90,6 +91,48 @@
   --ring: var(--grey-100);
   --overlay: var(--transparency-15);
   --scrim: var(--transparency-50);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: var(--grey-100);
+    --foreground: var(--grey-5);
+    --card: #342e28;
+    --card-foreground: var(--grey-5);
+    --card-hover: #2a2521;
+    --popover: #342e28;
+    --popover-foreground: var(--grey-5);
+    --primary: var(--main);
+    --primary-hover: var(--main-darken);
+    --primary-foreground: var(--white);
+    --secondary: #342e28;
+    --secondary-hover: #2a2521;
+    --secondary-foreground: var(--grey-5);
+    --muted: #2a2521;
+    --muted-foreground: var(--grey-20);
+    --accent: #2a2521;
+    --accent-foreground: var(--grey-5);
+    --destructive: #ff8fa3;
+    --destructive-hover: #f06d86;
+    --destructive-foreground: var(--grey-100);
+    --warning: var(--warning-yellow);
+    --warning-hover: var(--warning-yellow-darken);
+    --warning-foreground: var(--grey-100);
+    --success: #3d9a62;
+    --disabled-foreground: var(--grey-30);
+    --border: var(--grey-65);
+    --input: var(--grey-65);
+    --head: #2a2521;
+    --ring: var(--grey-5);
+    --overlay: rgba(0, 0, 0, 0.45);
+    --scrim: rgba(0, 0, 0, 0.72);
+    --link: var(--grey-5);
+    --link-darken: var(--grey-9);
+    --transparency-15: rgba(0, 0, 0, 0.35);
+    --transparency-30: rgba(0, 0, 0, 0.5);
+    --transparency-50: rgba(0, 0, 0, 0.72);
+  }
 }
 
 @theme inline {

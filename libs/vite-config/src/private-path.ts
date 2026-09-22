@@ -1,13 +1,13 @@
-import path from "node:path";
-
 import { APPLICATION, applications, type Application } from "@repo/config";
+
+import { paths } from "./host.ts";
 
 const applicationsExcept = (application: Application): Application[] =>
   applications.filter((candidate) => candidate !== application);
 
 const secretFileName = /^(?:\.env.*|\.dev\.vars.*|.*\.(?:pem|key))$/u;
 
-const isSecretFileName = (name: string): boolean => secretFileName.test(name);
+const isSecretFileName = (fileName: string): boolean => secretFileName.test(fileName);
 
 const privateAdminPath = (slashedPath: string, application: Application): boolean =>
   application !== APPLICATION.admin &&
@@ -24,7 +24,7 @@ const privatePath = ({
   repositoryRoot: string;
 }>): boolean => {
   const slashedPath = candidatePath.replaceAll("\\", "/");
-  const repositoryRelativePath = path.relative(repositoryRoot, slashedPath).replaceAll("\\", "/");
+  const repositoryRelativePath = paths.relative(repositoryRoot, slashedPath).replaceAll("\\", "/");
   const foreignApplications = applicationsExcept(application).join("|");
   return (
     /^(?:infra|tools)(?:\/|$)/u.test(repositoryRelativePath) ||

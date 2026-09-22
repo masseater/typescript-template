@@ -1,4 +1,4 @@
-import { SourceMap } from "node:module";
+const { SourceMap } = process.getBuiltinModule("module");
 
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
@@ -144,7 +144,7 @@ const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   const text = yield* withFileSystem((fs) => fs.readFileString(mapFile)).pipe(
     Effect.mapError(unreadable),
   );
-  const parsed = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Payload))(text).pipe(
+  const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Payload))(text).pipe(
     Effect.mapError(invalid),
   );
   return yield* Effect.try({

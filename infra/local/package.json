@@ -9,6 +9,7 @@
     ".": "./src/receiver.ts"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "effect": "catalog:"

@@ -3,14 +3,13 @@
   "compilerOptions": {
     "lib": ["esnext", "dom"],
     "types": ["node"],
-    "plugins": [
-      {
-        "name": "@effect/language-service"
-      }
-    ],
     "noPropertyAccessFromIndexSignature": true,
     "noFallthroughCasesInSwitch": true,
     "erasableSyntaxOnly": true
   },
-  "include": ["src/**/*.ts", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "vite.config.ts",
+    "../../tools/dont-review-it/src/vitest/parsed-fields.ts"
+  ]
 }

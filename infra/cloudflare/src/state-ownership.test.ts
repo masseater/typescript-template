@@ -11,10 +11,14 @@ it.effect("fails when a path the store has never held rather than inventing empt
   Effect.gen(function* program() {
     const store = InMemoryService({});
     const workers = yield* recordedWorkerNames(store, prefix).pipe(Effect.flip);
-    assert.strictEqual(workers._tag, "InvalidStatePath");
+    if (workers._tag !== "InvalidStatePath") {
+      return yield* Effect.die(workers);
+    }
     assert.strictEqual(workers.reason, "path does not exist");
     const databases = yield* recordedDatabaseIds(store, prefix).pipe(Effect.flip);
-    assert.strictEqual(databases._tag, "InvalidStatePath");
+    if (databases._tag !== "InvalidStatePath") {
+      return yield* Effect.die(databases);
+    }
     assert.strictEqual(databases.reason, "path does not exist");
   }),
 );
@@ -23,7 +27,9 @@ it.effect("fails when a parent path segment is present rather than inventing emp
   Effect.gen(function* program() {
     const store = InMemoryService({});
     const failure = yield* recordedWorkerNames(store, `${prefix}/../other`).pipe(Effect.flip);
-    assert.strictEqual(failure._tag, "InvalidStatePath");
+    if (failure._tag !== "InvalidStatePath") {
+      return yield* Effect.die(failure);
+    }
     assert.strictEqual(failure.reason, "parent path segments are not allowed");
   }),
 );

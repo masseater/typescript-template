@@ -1,4 +1,4 @@
-import { homedir, userInfo } from "node:os";
+const { homedir, userInfo } = process.getBuiltinModule("os");
 
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 
@@ -100,7 +100,7 @@ function serviceOf(
     const label = path.basename(plistFile, plistSuffix);
     return plistFile.endsWith(plistSuffix) && label !== ""
       ? { label, plistFile, root: path.resolve(root) }
-      : yield* Effect.fail(failure("ci_runner_service_invalid"));
+      : yield* failure("ci_runner_service_invalid");
   });
 }
 

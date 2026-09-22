@@ -173,11 +173,6 @@ const forbiddenCode = [
     "process-boundary",
   ],
   [
-    "libs/cli/src/cli.ts",
-    "export const write = (line: string) => process.stdout.write(line);",
-    "process-boundary",
-  ],
-  [
     "libs/observability/src/server.ts",
     'export const send = () => fetch("http://collector", { redirect: "error" });',
     "worker-fetch",
@@ -331,6 +326,8 @@ const validBoundaries = [
     "libs/cli/src/cli.ts",
     'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',
   ],
+  ["libs/cli/src/cli.ts", "export const write = (line: string) => process.stdout.write(line);"],
+  ["libs/cli/src/cli.ts", "export const warn = (line: string) => process.stderr.write(line);"],
   ["libs/ui/src/probe.ts", 'export * from "@repo/ui/button";'],
   [
     "libs/ui/src/probe.tsx",

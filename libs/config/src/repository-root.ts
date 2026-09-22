@@ -1,5 +1,6 @@
-import path from "node:path";
+import { Effect, Path } from "effect";
 
-const repositoryRoot = path.join(import.meta.dirname, "../../..");
+const paths = Effect.runSync(Effect.provide(Path.Path, Path.layer));
+const repositoryRoot = paths.join(import.meta.dirname, "../../..");
 
 export { repositoryRoot };

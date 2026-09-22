@@ -1,10 +1,8 @@
-import { readFile } from "node:fs/promises";
-
 import { monitorBinding } from "@repo/monitor";
 import { DurableObject, Email, Worker } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-import { fail, io } from "./artifact-io.ts";
+import { fail, fileSize } from "./artifact-io.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { settings } from "./settings.ts";
 
@@ -16,8 +14,7 @@ const assertArtifact = Effect.fn("assertArtifact")(function* assertArtifact(
   resource: MonitorResource,
   artifact: string,
 ) {
-  const content = yield* io(async () => readFile(artifact));
-  if (content.length === 0) {
+  if ((yield* fileSize(artifact)) === 0) {
     return yield* fail(`${resource}_worker_artifact_empty`);
   }
 });

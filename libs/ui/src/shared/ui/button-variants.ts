@@ -8,7 +8,7 @@ const buttonVariants = cva(
       size: {
         large: "px-4 py-3 text-lg leading-none",
         medium: "px-2 py-1.5 text-base leading-none",
-        small: "p-1 text-sm leading-none",
+        small: "min-h-6 min-w-6 p-1 text-sm leading-none",
       },
       variant: {
         danger:

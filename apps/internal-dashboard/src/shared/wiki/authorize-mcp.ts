@@ -24,7 +24,6 @@ function jsonRpcError(
   headers: Readonly<Record<string, string>>,
 ): Response {
   return Response.json(
-    // oxlint-disable-next-line unicorn/no-null -- JSON-RPC requires id to be null when the error is not tied to a request id
     { error: { code: JSON_RPC_SERVER_ERROR, message }, id: null, jsonrpc: "2.0" },
     { headers: { ...headers, "cache-control": "no-store" }, status },
   );
@@ -55,14 +54,17 @@ function bearerToken(authorization: string): Option.Option<string> {
     : Option.none();
 }
 
-async function fetchJwks(
+function fetchJwks(
   instance: Readonly<Pick<BetterAuthInstance, "handler">>,
   origin: string,
 ): ReturnType<typeof decodeJwks> {
-  const response = await instance.handler(new Request(`${origin}/api/auth/jwks`));
-  return response.ok
-    ? decodeJwks(await response.json())
-    : Promise.reject(new Error("WIKI_JWKS_UNAVAILABLE"));
+  return instance
+    .handler(new Request(`${origin}/api/auth/jwks`))
+    .then((response) =>
+      response.ok
+        ? response.json().then((body) => decodeJwks(body))
+        : Promise.reject(new Error("WIKI_JWKS_UNAVAILABLE")),
+    );
 }
 
 function verifiedClaims(
@@ -72,10 +74,10 @@ function verifiedClaims(
 ): Effect.Effect<TokenClaims, APIError> {
   return Effect.tryPromise({
     catch: () => unauthorized("ACCESS_TOKEN_INVALID"),
-    try: async () =>
+    try: () =>
       verifyJwsAccessToken(token, {
         jwksCacheKey: instance,
-        jwksFetch: async () => fetchJwks(instance, origin),
+        jwksFetch: () => fetchJwks(instance, origin),
         verifyOptions: { audience: `${origin}/mcp`, issuer: `${origin}/api/auth` },
       }),
   });

@@ -1,3 +1,5 @@
+import { env as processEnvironment } from "node:process";
+
 import { context, metrics, propagation, trace, type Context } from "@opentelemetry/api";
 import { logs } from "@opentelemetry/api-logs";
 import { AsyncLocalStorageContextManager } from "@opentelemetry/context-async-hooks";
@@ -22,14 +24,17 @@ import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs
 import { MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { BatchSpanProcessor, TracerProvider } from "@opentelemetry/sdk-trace";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
+import { Effect } from "effect";
 import { attemptAsync, once } from "es-toolkit";
+
+import { optionalSetting } from "./optional-setting.ts";
 
 const ENABLE_VARIABLE = "MST_TELEMETRY";
 
 const DISABLE_VARIABLE = "OTEL_SDK_DISABLED";
 
 const isEnabled = (): boolean =>
-  process.env[ENABLE_VARIABLE] !== undefined && process.env[DISABLE_VARIABLE] !== "true";
+  optionalSetting(ENABLE_VARIABLE) !== undefined && optionalSetting(DISABLE_VARIABLE) !== "true";
 
 const reasonOf = (thrown: unknown): string =>
   thrown instanceof Error ? thrown.message : JSON.stringify(thrown);
@@ -86,20 +91,32 @@ const registerLogging = (resource: Resource): LoggerProvider => {
   return provider;
 };
 
+const shutdownProviders = (providers: {
+  readonly tracerProvider: TracerProvider;
+  readonly meterProvider: MeterProvider;
+  readonly loggerProvider: LoggerProvider;
+}): Promise<readonly [Error | null, unknown]> =>
+  attemptAsync(() =>
+    Promise.all([
+      providers.tracerProvider.shutdown(),
+      providers.meterProvider.shutdown(),
+      providers.loggerProvider.shutdown(),
+    ]),
+  );
+
 const registerProviders = (resource: Resource): (() => Promise<void>) => {
-  const tracerProvider = registerTracing(resource);
-  const meterProvider = registerMetering(resource);
-  const loggerProvider = registerLogging(resource);
-  return async (): Promise<void> => {
-    const [failure] = await attemptAsync(async () => {
-      await Promise.all([
-        tracerProvider.shutdown(),
-        meterProvider.shutdown(),
-        loggerProvider.shutdown(),
-      ]);
-    });
-    if (failure !== null) reportExportFailure(failure);
+  const providers = {
+    tracerProvider: registerTracing(resource),
+    meterProvider: registerMetering(resource),
+    loggerProvider: registerLogging(resource),
   };
+  return (): Promise<void> =>
+    Effect.runPromise(
+      Effect.gen(function* stopProviders() {
+        const [failure] = yield* Effect.promise(() => shutdownProviders(providers));
+        if (failure !== null) reportExportFailure(failure);
+      }),
+    );
 };
 
 const stopAfterEveryOtherExitHandler = (stop: () => Promise<void>): (() => Promise<void>) => {
@@ -137,7 +154,7 @@ export const inheritedContext = (): Context =>
 
 const definedEnvironment = (): Record<string, string> =>
   Object.fromEntries(
-    Object.entries(process.env).flatMap(([variable, setting]) =>
+    Object.entries(processEnvironment).flatMap(([variable, setting]) =>
       setting === undefined ? [] : [[variable, setting] as const],
     ),
   );

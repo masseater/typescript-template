@@ -1,5 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
+import { readStorage } from "@repo/config/storage";
 import { otlpSignalUrl } from "@repo/observability";
 import { Effect } from "effect";
 
@@ -7,37 +8,74 @@ import { parseDeploymentCommand, traceDestination, workerObservability } from ".
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-import type { Ai, D1Database, SendEmail, Service } from "@cloudflare/workers-types";
+import type {
+  Ai,
+  D1Database,
+  DurableObjectNamespace,
+  KVNamespace,
+  R2Bucket,
+  SendEmail,
+  Service,
+} from "@cloudflare/workers-types";
+import type { Flagship } from "alchemy/Cloudflare";
 import type { AppBindings } from "./bindings.ts";
 
 const release = "0".repeat(16);
 const settings = verificationSettings;
 
-// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- the type parameter names the Cloudflare binding a partial stub stands in for in this config test
 function binding<Binding>(value: object): Binding {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the assertion is the cast that turns the partial stub into the Cloudflare binding this config test supplies
   return value as Binding;
 }
 
 const sharedBindings = {
   APP_ORIGIN: settings.origins["service-admin"],
   APP_RELEASE: release,
-  ASSETS: binding<Service>({ fetch: async (): Promise<Response> => new Response() }),
+  ASSETS: binding<Service>({ fetch: (): Promise<Response> => Promise.resolve(new Response()) }),
   AUTH_SECRET: "runtime-secret-of-at-least-32-characters",
   DB: binding<D1Database>({
-    batch: async (): Promise<never[]> => [],
+    batch: (): Promise<never[]> => Promise.resolve([]),
     prepare: (): undefined => undefined,
   }),
-  EMAIL: binding<SendEmail>({ send: async (): Promise<undefined> => undefined }),
+  EMAIL: binding<SendEmail>({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
   EMAIL_FROM: settings.mailFrom,
+  FLAGSHIP_ACCOUNT_ID: settings.accountId,
+  FLAGS: binding<Flagship.App>({
+    appId: "flagship-app-id",
+    getBooleanValue: (): Promise<boolean> => Promise.resolve(false),
+    getNumberValue: (): Promise<number> => Promise.resolve(0),
+    getObjectValue: (): Promise<object> => Promise.resolve({}),
+    getStringValue: (): Promise<string> => Promise.resolve(""),
+  }),
   OPS_EMAIL: settings.budget.recipients[0] ?? settings.mailFrom,
 };
 
 const adminBindings: AppBindings<"service-admin"> = sharedBindings;
 const userBindings: AppBindings<"service-member"> = {
   ...sharedBindings,
-  AI: binding<Ai>({ run: async (): Promise<{ data: never[] }> => ({ data: [] }) }),
+  AI: binding<Ai>({ run: (): Promise<{ data: never[] }> => Promise.resolve({ data: [] }) }),
   APP_ORIGIN: settings.origins["service-member"],
+  CACHE: binding<KVNamespace>({
+    delete: (): Promise<undefined> => Promise.resolve(undefined),
+    get: (): Promise<null> => Promise.resolve(null),
+    put: (): Promise<undefined> => Promise.resolve(undefined),
+  }),
+  FILES: binding<R2Bucket>({
+    delete: (): Promise<undefined> => Promise.resolve(undefined),
+    get: (): Promise<null> => Promise.resolve(null),
+    put: (): Promise<null> => Promise.resolve(null),
+  }),
+  JOBS: binding({ send: (): Promise<undefined> => Promise.resolve(undefined) }),
+  PROCESS: binding({
+    create: (): Promise<{ id: string }> => Promise.resolve({ id: "job" }),
+    get: (): Promise<{ status: () => Promise<{ status: string }> }> =>
+      Promise.resolve({
+        status: (): Promise<{ status: string }> => Promise.resolve({ status: "complete" }),
+      }),
+  }),
+  USER_INBOX: binding<DurableObjectNamespace>({
+    get: (): undefined => undefined,
+    idFromName: (): undefined => undefined,
+  }),
 };
 
 const confirmation = "0".repeat(16);
@@ -125,6 +163,10 @@ it.effect("every application reads exactly the bindings its Worker declares", ()
     assert.strictEqual(admin.APP_RELEASE, release);
     assert.isUndefined(yield* readAi(adminBindings));
     assert.isDefined(yield* readAi(userBindings));
+    assert.isUndefined((yield* readStorage(adminBindings)).files);
+    assert.isUndefined((yield* readStorage(adminBindings)).cache);
+    assert.isDefined((yield* readStorage(userBindings)).files);
+    assert.isDefined((yield* readStorage(userBindings)).cache);
     const missing = yield* readConfig({ ...userBindings, DB: undefined }).pipe(Effect.flip);
     assert.instanceOf(missing, ConfigurationInvalid);
   }),

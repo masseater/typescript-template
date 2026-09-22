@@ -17,6 +17,7 @@ import {
   deployTokenPermissions,
   missingPermissions,
 } from "./deploy-token.ts";
+import { encodeJson } from "./platform.ts";
 import { describeFailure } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -46,7 +47,6 @@ it.effect("reads an untouched account as free of the names this deployment claim
         }),
       ),
       unpagedCollection(`${account}/workers/scripts`, () =>
-        // oxlint-disable-next-line unicorn/no-null -- the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged
         HttpResponse.json({ result: [], result_info: null }),
       ),
       unpagedCollection(`${account}/workers/domains`, () =>
@@ -109,7 +109,7 @@ it.effect("names the read that failed and why, without naming the zone or the ho
       Effect.flip,
     );
     assert.deepStrictEqual(failure.keys, ["zones/{}/dns_records", `status_${FORBIDDEN_STATUS}`]);
-    const printed = JSON.stringify(describeFailure(failure, []));
+    const printed = yield* encodeJson(describeFailure(failure, []));
     for (const value of [access.accountId, verificationSettings.zoneId, hostname]) {
       assert.notInclude(printed, value);
     }
@@ -156,7 +156,6 @@ it.effect("reports an account another project already bootstrapped", () =>
   Effect.gen(function* program() {
     yield* mockServer(
       unpagedCollection(`${account}/workers/scripts`, () =>
-        // oxlint-disable-next-line unicorn/no-null -- the Cloudflare workers scripts list returns result_info as JSON null when the collection is unpaged
         HttpResponse.json({ result: [{ id: STATE_STORE_SCRIPT_NAME }], result_info: null }),
       ),
       pagedCollection(`${account}/secrets_store/stores`, SECRETS_STORE_PAGE_LIMIT, () =>

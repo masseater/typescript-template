@@ -1,3 +1,5 @@
+import { env as processEnvironment } from "node:process";
+
 import { APPLICATION, applicationOrigins } from "@repo/config";
 import { Effect } from "effect";
 import { URI } from "otpauth";
@@ -59,7 +61,7 @@ const agent = Effect.fn("agent")(function* agent(
   socketDirectory: string,
   args: readonly string[],
 ) {
-  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...(yield* sessionArguments(app, credentials)), ...args], {
     cwd: root,
     env,

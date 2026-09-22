@@ -4,6 +4,16 @@ import { Cause, Console, Effect } from "effect";
 const failedExitCode = 1;
 const firstUserArgumentIndex = 2;
 
+type WriteTarget = Readonly<{ write: (line: string) => unknown }>;
+
+const cliStdout: WriteTarget = {
+  write: (line) => process.stdout.write(line),
+};
+
+const cliStderr: WriteTarget = {
+  write: (line) => process.stderr.write(line),
+};
+
 const causeRecord = (
   eventName: string,
   failure: {
@@ -33,12 +43,23 @@ const runCli = <Failure>(
 ): void => {
   NodeRuntime.runMain(
     program.pipe(
-      Effect.catchCause((cause) =>
-        Cause.hasInterruptsOnly(cause) ? Effect.failCause(cause) : reportFailed(onFailure(cause)),
+      Effect.catchCauseIf(
+        (cause) => !Cause.hasInterruptsOnly(cause),
+        (cause) => reportFailed(onFailure(cause)),
       ),
     ),
     { disableErrorReporting: true },
   );
 };
 
-export { causeRecord, exitWith, firstUserArgumentIndex, markFailed, reportFailed, runCli };
+export {
+  causeRecord,
+  cliStderr,
+  cliStdout,
+  exitWith,
+  firstUserArgumentIndex,
+  markFailed,
+  reportFailed,
+  runCli,
+};
+export type { WriteTarget };

@@ -12,15 +12,19 @@ describe("worker api", () => {
     expect(() => generateCode("return 1")).toThrow(EvalError);
   });
 
-  it("answers a route", async () => {
+  it("answers a route", () => {
     expect.hasAssertions();
-    const response = await app.fetch(new Request(`http://worker.test${apiRoot}/probe`));
-    await expect(response.json()).resolves.toStrictEqual({ probed: true });
+    return Promise.resolve(app.fetch(new Request(`http://worker.test${apiRoot}/probe`))).then(
+      (response) => expect(response.json()).resolves.toStrictEqual({ probed: true }),
+    );
   });
 
-  it("answers an unknown route", async () => {
+  it("answers an unknown route", () => {
     expect.hasAssertions();
-    const response = await app.fetch(new Request(`http://worker.test${apiRoot}/absent`));
-    expect(response.status).toBe(httpStatus.notFound);
+    return Promise.resolve(app.fetch(new Request(`http://worker.test${apiRoot}/absent`))).then(
+      (response) => {
+        expect(response.status).toBe(httpStatus.notFound);
+      },
+    );
   });
 });

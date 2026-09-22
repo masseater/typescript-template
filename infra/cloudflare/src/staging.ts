@@ -1,15 +1,28 @@
-import { constants } from "node:fs";
-import { copyFile, lstat, mkdir } from "node:fs/promises";
-import path from "node:path";
+import { Effect, FileSystem } from "effect";
 
-import { Effect } from "effect";
+import {
+  ArtifactFailure,
+  assertRealDirectory,
+  fail,
+  fileInfo,
+  files,
+  isSymlink,
+  linkCount,
+  sameContent,
+} from "./artifact-io.ts";
+import { layer, path } from "./platform.ts";
 
-import { assertRealDirectory, fail, files, io, sameContent } from "./artifact-io.ts";
+function ioFailed(): ArtifactFailure {
+  return new ArtifactFailure({ code: "artifact_io_failed" });
+}
 
 const assertExistingStagedCopy = Effect.fn("assertExistingStagedCopy")(
   function* assertExistingStagedCopy(source: string, destination: string) {
-    const existing = yield* io(async () => lstat(destination));
-    if (!existing.isFile() || existing.nlink !== 1) {
+    if (yield* isSymlink(destination)) {
+      return yield* fail("artifact_staging_link_forbidden");
+    }
+    const existing = yield* fileInfo(destination);
+    if (existing.type !== "File" || linkCount(existing) !== 1) {
       return yield* fail("artifact_staging_link_forbidden");
     }
     if (!(yield* sameContent(source, destination))) {
@@ -19,23 +32,17 @@ const assertExistingStagedCopy = Effect.fn("assertExistingStagedCopy")(
   },
 );
 
-function isExistingFile(cause: unknown): boolean {
-  return cause instanceof Error && "code" in cause && cause.code === "EEXIST";
-}
-
 const stageFile = Effect.fn("stageFile")(function* stageFile(source: string, destination: string) {
-  yield* io(async () => mkdir(path.dirname(destination), { recursive: true }));
+  const filesystem = yield* FileSystem.FileSystem;
+  yield* filesystem
+    .makeDirectory(path.dirname(destination), { recursive: true })
+    .pipe(Effect.mapError(ioFailed));
   yield* assertRealDirectory(path.dirname(destination), "artifact_staging_symlink_forbidden");
-  yield* Effect.tryPromise({
-    catch: (cause) => ({ cause }),
-    try: async () => copyFile(source, destination, constants.COPYFILE_EXCL),
-  }).pipe(
-    Effect.catch(({ cause }) =>
-      isExistingFile(cause)
-        ? assertExistingStagedCopy(source, destination)
-        : fail("artifact_io_failed"),
-    ),
-  );
+  if (yield* filesystem.exists(destination).pipe(Effect.mapError(ioFailed))) {
+    return yield* assertExistingStagedCopy(source, destination);
+  }
+  yield* filesystem.copyFile(source, destination).pipe(Effect.mapError(ioFailed));
+  return destination;
 });
 
 const stageFiles = Effect.fn("stageFiles")(function* stageFiles(
@@ -43,10 +50,12 @@ const stageFiles = Effect.fn("stageFiles")(function* stageFiles(
   staging: string,
   sourceFiles: readonly string[],
 ) {
-  yield* io(async () => mkdir(staging, { recursive: true }));
+  const filesystem = yield* FileSystem.FileSystem;
+  yield* filesystem.makeDirectory(staging, { recursive: true }).pipe(Effect.mapError(ioFailed));
   yield* assertRealDirectory(staging, "artifact_staging_symlink_forbidden");
-  yield* Effect.all(
-    sourceFiles.map((file) => stageFile(file, path.join(staging, path.relative(source, file)))),
+  yield* Effect.forEach(
+    sourceFiles,
+    (file) => stageFile(file, path.join(staging, path.relative(source, file))),
     { concurrency: "unbounded", discard: true },
   );
   const stagedFiles = yield* files(staging);
@@ -58,4 +67,12 @@ const stageFiles = Effect.fn("stageFiles")(function* stageFiles(
   }
 });
 
-export { stageFiles };
+function stageFilesProvided(
+  source: string,
+  staging: string,
+  sourceFiles: readonly string[],
+): Effect.Effect<void, ArtifactFailure> {
+  return stageFiles(source, staging, sourceFiles).pipe(Effect.provide(layer));
+}
+
+export { stageFilesProvided as stageFiles };

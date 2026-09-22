@@ -1,15 +1,17 @@
+import { Process, consumeJobs } from "@repo/runtime/jobs";
 import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
 import { monitorWorker } from "./index.ts";
 
+import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
+import type { JobsBindings } from "@repo/config";
 import type { MonitorBindings } from "./index.ts";
 import type { SentMail } from "./mail-recorder.ts";
 
 type Outcome = "die" | "fail" | "notify" | "succeed";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace -- Cloudflare workers types merge the runtime Env through the Cloudflare namespace, and a module interface does not augment that binding
   namespace Cloudflare {
     interface Env {
       readonly ALERT_FROM: string;
@@ -30,7 +32,7 @@ const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 const probeMonitor = monitorWorker<MonitorBindings>({
   check({ ctx }, notify) {
     return Effect.gen(function* probe() {
-      const outcome = yield* Effect.promise(async () => ctx.storage.get<Outcome>("outcome"));
+      const outcome = yield* Effect.promise(() => ctx.storage.get<Outcome>("outcome"));
       if (outcome === "fail") {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
       }
@@ -48,10 +50,28 @@ const probeMonitor = monitorWorker<MonitorBindings>({
   failure: probeFailure,
 });
 
-const ProbeMonitor = probeMonitor.Worker;
+const ProbeMonitor: new (
+  ctx: DurableObjectState,
+  env: MonitorBindings,
+) => {
+  fetch(): Promise<Response>;
+} = probeMonitor.Worker;
+const probeHandler = probeMonitor.handler;
+const workersHandler: {
+  readonly fetch: () => Response;
+  readonly queue: (batch: MessageBatch, environment: unknown) => Promise<void>;
+  readonly scheduled: (
+    controller: unknown,
+    env: { readonly MONITOR: Pick<DurableObjectNamespace, "get" | "idFromName"> },
+  ) => Promise<void>;
+} = {
+  ...probeHandler,
+  queue: (batch: MessageBatch, environment: unknown) =>
+    consumeJobs(batch, environment as JobsBindings),
+};
 
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
-export { ProbeMonitor, probeAlert, probeEvent, probeFailure };
+export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
-export default probeMonitor.handler;
+export default workersHandler;

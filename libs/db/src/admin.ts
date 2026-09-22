@@ -1,7 +1,7 @@
 import { roles, type Role } from "@repo/config/identity";
 import { maximumAdminPageSize } from "@repo/config/paging";
 import { and, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import { Clock, DateTime, Effect, Schema } from "effect";
 
 import { liveAdmin, requireAdmin } from "./admin-session.ts";
 import { containsKeyword } from "./contains-keyword.ts";
@@ -83,11 +83,13 @@ const auditWhenTargeted = (
   {
     action,
     actorId,
+    createdAt,
     sessionId,
     targetId,
   }: Readonly<{
     action: AuditAction;
     actorId: string;
+    createdAt: number;
     sessionId: string;
     targetId: string;
   }>,
@@ -95,7 +97,7 @@ const auditWhenTargeted = (
   const auditColumns = [
     [auditEvent.action, action],
     [auditEvent.actorId, actorId],
-    [auditEvent.createdAt, Date.now()],
+    [auditEvent.createdAt, createdAt],
     [auditEvent.id, crypto.randomUUID()],
     [auditEvent.targetId, targetId],
   ] as const;
@@ -118,18 +120,21 @@ export const setUserRole = Effect.fn("setUserRole")(function* setUserRole(roleCh
 }) {
   const { role, sessionId, targetId } = roleChange;
   const actor = yield* requireAdmin(sessionId);
+  const createdAt = yield* Clock.currentTimeMillis;
+  const updatedAt = DateTime.toDate(yield* DateTime.now);
   const change = {
     action: AUDIT_ACTION.roleChanged,
     actorId: actor.user.id,
+    createdAt,
     sessionId,
     targetId,
   } as const;
 
-  const [, promotedUsers] = yield* query(async (database) => {
+  const [, promotedUsers] = yield* query((database) => {
     const audit = database.run(auditWhenTargeted(database, change));
     const promotion = database
       .update(user)
-      .set({ role, updatedAt: new Date() })
+      .set({ role, updatedAt })
       .where(and(eq(user.id, targetId), liveAdmin(database, sessionId)))
       .returning({ id: user.id, role: user.role });
     return database.batch([audit, promotion] as const);
@@ -149,11 +154,12 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
   const change = {
     action: AUDIT_ACTION.userDeleted,
     actorId: actor.user.id,
+    createdAt: yield* Clock.currentTimeMillis,
     sessionId,
     targetId,
   } as const;
 
-  const [, removedUsers] = yield* query(async (database) => {
+  const [, removedUsers] = yield* query((database) => {
     const audit = database.run(auditWhenTargeted(database, change));
     const removal = database
       .delete(user)

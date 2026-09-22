@@ -27,7 +27,7 @@ const toggleFlag = Effect.fn("toggleFlag")(function* toggleFlag(change: {
 });
 
 const toggleFlagRemote = Effect.fn("toggleFlagRemote")(function* toggleFlagRemote(
-  config: typeof FlagshipWriteConfig.Type,
+  config: FlagshipWriteConfig,
   change: {
     readonly actorId: string;
     readonly enabled: boolean;

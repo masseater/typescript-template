@@ -15,9 +15,14 @@ const workspaces = {
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
+      "oxlint",
+      "oxlint-tsgolint",
     ],
     project: ["*.{js,ts}"],
-    vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
+    vitest: {
+      config: ["vite.config.ts", "vitest.mutation.config.ts"],
+      entry: ["vitest.workers.main.ts"],
+    },
   },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
@@ -40,9 +45,6 @@ const workspaces = {
   },
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
-  },
-  "libs/vite-config": {
-    entry: ["src/effect-typecheck.ts"],
   },
   "libs/monitor": {
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
@@ -74,7 +76,6 @@ const workspaces = {
     },
   },
   "tools/ai-native": {
-    ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
@@ -87,7 +88,7 @@ const workspaces = {
       "src/repository/lint.ts!",
       "src/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@repo/observability!", "@tanstack/intent"],
+    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
     project: [
       "src/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
@@ -113,6 +114,7 @@ const cloudflareStacks = [
   "src/service-member.ts!",
   "src/service-admin.ts!",
   "src/internal-dashboard.ts!",
+  "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
 ];
@@ -168,23 +170,22 @@ const config = ({
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/inbox/binding.ts": ["exports"],
+      "apps/service-member/src/shared/inbox/client.ts": ["exports"],
+      "apps/service-member/src/shared/inbox/inbox.ts": ["types"],
+      "apps/service-member/src/shared/inbox/inbox.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/inbox/index.ts": ["exports", "types"],
+      "apps/service-member/src/shared/server-api/jobs-api.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/jobs-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/realtime-api.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
-      "infra/cloudflare/src/account-inspection.ts": ["types"],
-      "infra/cloudflare/src/account-lookup.ts": ["exports"],
-      "infra/cloudflare/src/account-read.ts": ["exports"],
-      "infra/cloudflare/src/ci-env.ts": ["types"],
-      "infra/cloudflare/src/config.ts": ["exports"],
-      "infra/cloudflare/src/credentials.ts": ["exports"],
-      "infra/cloudflare/src/deploy-token.ts": ["exports", "types"],
-      "infra/cloudflare/src/plan-confirmation.ts": ["types"],
-      "infra/cloudflare/src/secrets.ts": ["exports"],
-      "infra/cloudflare/src/stack-runner.ts": ["types"],
-      "infra/cloudflare/src/verification-fixture.ts": ["exports"],
       "libs/db/src/testing.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
       "libs/runtime/src/app-fixture.ts": ["unlisted"],
       "libs/runtime/src/bindings.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/jobs.ts": ["unlisted"],
+      "libs/runtime/src/storage.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
       "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
@@ -221,6 +222,7 @@ const config = ({
           "src/account-fixture.ts",
           "src/inspection-fixture.ts",
         ],
+        ignoreExportsUsedInFile: true,
         project: ["src/**/*.ts!"],
       },
       "infra/local": {
@@ -234,9 +236,6 @@ const config = ({
       "libs/db-local": {
         entry: productionOnly(...scripts["libs/db-local"]),
         project: ["src/**/*.ts!"],
-      },
-      "libs/vite-config": {
-        entry: productionOnly("src/effect-typecheck.ts!"),
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],

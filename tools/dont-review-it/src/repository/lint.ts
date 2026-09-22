@@ -1,4 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules -- this file runs in Node and calls a Node API that has no portable module
 import { fileURLToPath } from "node:url";
 
 import {
@@ -31,11 +30,9 @@ const awaitingPresetPackages = [
   "libs/auth/**",
   "libs/config/**",
   "libs/db/**",
-  "libs/db-local/**",
   "libs/monitor/**",
   "libs/observability/**",
   "libs/runtime/**",
-  "libs/vite-config/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -277,17 +274,18 @@ const lintOptions = {
       },
     },
     {
+      files: ["libs/db/src/testing.ts", "libs/monitor/src/monitor-fixture.ts"],
+      rules: {
+        "typescript/no-namespace": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: [
-        "infra/budget-monitor/**",
-        "infra/cloudflare/**",
-        "infra/local/**",
-        "libs/config/**",
-        "tools/dev/**",
-        "tools/dont-review-it/src/repository/client-bundle.ts",
+        "infra/cloudflare/src/unix-permission-bits.ts",
+        "tools/dev/src/unix-permission-bits.ts",
       ],
       rules: {
-        "import/no-nodejs-modules": LINT_SEVERITY.OFF,
-        "node/no-process-env": LINT_SEVERITY.OFF,
+        "no-bitwise": LINT_SEVERITY.OFF,
       },
     },
   ],
@@ -314,6 +312,7 @@ const lintOptions = {
           "vitest.config.ts",
           "vitest.mutation.config.ts",
           "vitest.workers.config.ts",
+          "vitest.workers.main.ts",
           "worker.ts",
         ],
       },
@@ -332,7 +331,14 @@ const lintOptions = {
     "dont-review-it/no-detached-test-file--move-beside-source": [
       LINT_SEVERITY.ERROR,
       {
-        testFileSuffixes: [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx", ".worker.test.ts"],
+        testFileSuffixes: [
+          ".test.ts",
+          ".test.tsx",
+          ".spec.ts",
+          ".spec.tsx",
+          ".worker.test.ts",
+          ".node.test.ts",
+        ],
       },
     ],
     "dont-review-it/no-fixture-forward-subject--yield-sut-output": [
@@ -369,7 +375,7 @@ const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
     .map((override) => override.rules ?? {}),
 );
 
-const builtInPlugins = new Set([
+const builtInPlugins: ReadonlySet<string> = new Set([
   "eslint",
   "import",
   "jest",
@@ -393,7 +399,7 @@ const overridePluginMismatches = (overrides: typeof lintOptions.overrides): read
     if (plugins === undefined) {
       return [];
     }
-    const enabled = new Set(plugins);
+    const enabled = new Set<string>(plugins);
     return Object.keys(override.rules ?? {}).flatMap((rule) => {
       const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
       if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {

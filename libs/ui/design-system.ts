@@ -56,8 +56,68 @@ const designTokens: Readonly<Record<string, string>> = {
 const untouchedTokens = ["--spacing"] as const;
 
 const declarationPattern = /(?<name>--[\w-]+)\s*:\s*(?<value>[^;}]+)[;}]/gu;
+const colorSchemePattern = /color-scheme:\s*(?<scheme>[\w-]+)/u;
+const variablePattern = /^var\((?<name>--[\w-]+)\)$/u;
+const darkMediaQuery = "(prefers-color-scheme: dark)";
 
-const declarations = (css: string): Map<string, string> => {
+type ColorSchemeName = "dark" | "light";
+
+type ColorSchemeProbe = {
+  readonly background: string;
+  readonly card: string;
+  readonly colorScheme: string;
+  readonly foreground: string;
+};
+
+const blockEnd = (css: string, open: number): number => {
+  let depth = 0;
+  for (let index = open; index < css.length; index += 1) {
+    const char = css[index];
+    if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+  throw new Error("unclosed CSS block");
+};
+
+const withoutMediaQueries = (css: string): string => {
+  const parts: string[] = [];
+  let cursor = 0;
+  while (cursor < css.length) {
+    const at = css.indexOf("@media", cursor);
+    if (at === -1) {
+      parts.push(css.slice(cursor));
+      break;
+    }
+    parts.push(css.slice(cursor, at));
+    const open = css.indexOf("{", at);
+    if (open === -1) {
+      throw new Error("media query missing a block");
+    }
+    cursor = blockEnd(css, open) + 1;
+  }
+  return parts.join("");
+};
+
+const mediaQueryBody = (css: string, query: string): string => {
+  const marker = `@media ${query}`;
+  const at = css.indexOf(marker);
+  if (at === -1) {
+    throw new Error(`missing @media ${query}`);
+  }
+  const open = css.indexOf("{", at + marker.length);
+  if (open === -1) {
+    throw new Error(`media query missing a block: ${query}`);
+  }
+  return css.slice(open + 1, blockEnd(css, open));
+};
+
+const declaredValues = (css: string): Map<string, string> => {
   const found = new Map<string, string>();
   for (const match of css.matchAll(declarationPattern)) {
     const { name, value } = match.groups ?? {};
@@ -66,6 +126,56 @@ const declarations = (css: string): Map<string, string> => {
     }
   }
   return found;
+};
+
+const declarations = (css: string): Map<string, string> => {
+  return declaredValues(withoutMediaQueries(css));
+};
+
+const schemeDeclarations = (css: string, scheme: ColorSchemeName): Map<string, string> => {
+  const light = declarations(css);
+  return scheme === "light"
+    ? light
+    : new Map([...light, ...declaredValues(mediaQueryBody(css, darkMediaQuery))]);
+};
+
+const resolvedDeclaration = (
+  declared: ReadonlyMap<string, string>,
+  name: string,
+  depth = 8,
+): string => {
+  const value = declared.get(name);
+  if (value === undefined) {
+    throw new Error(`${name} is not declared`);
+  }
+  const reference = variablePattern.exec(value)?.groups?.name;
+  if (reference === undefined) {
+    return value;
+  }
+  if (depth === 0) {
+    throw new Error(`${name} does not resolve to a value`);
+  }
+  return resolvedDeclaration(declared, reference, depth - 1);
+};
+
+const appliedColorScheme = (css: string, scheme: ColorSchemeName): string => {
+  const source =
+    scheme === "light" ? withoutMediaQueries(css) : mediaQueryBody(css, darkMediaQuery);
+  const found = colorSchemePattern.exec(source)?.groups?.scheme;
+  if (found === undefined) {
+    throw new Error(`${scheme} color-scheme is not declared`);
+  }
+  return found;
+};
+
+const colorSchemeProbe = (css: string, scheme: ColorSchemeName): ColorSchemeProbe => {
+  const declared = schemeDeclarations(css, scheme);
+  return {
+    background: resolvedDeclaration(declared, "--background"),
+    card: resolvedDeclaration(declared, "--card"),
+    colorScheme: appliedColorScheme(css, scheme),
+    foreground: resolvedDeclaration(declared, "--foreground"),
+  };
 };
 
 const read = (file: string): string => {
@@ -266,6 +376,7 @@ const tokenViolations = (css: string): string[] => {
 
 export {
   appStylesheetViolations,
+  colorSchemeProbe,
   indexedComponents,
   coverageViolations,
   designSystemComponents,

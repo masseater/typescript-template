@@ -1,4 +1,3 @@
-import "@inlang/paraglide-js/urlpattern-polyfill";
 /**
  * The project's base locale.
  *

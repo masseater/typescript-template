@@ -1,17 +1,19 @@
 import { homedir } from "node:os";
-import path from "node:path";
+import { env as processEnvironment } from "node:process";
+
+import { path } from "./platform.ts";
 
 const ENVIRONMENT_FILE_VARIABLE = "TEMPLATE_CLOUDFLARE_ENV_FILE";
 
 const environmentFile = (): string | undefined => {
-  const configured = process.env[ENVIRONMENT_FILE_VARIABLE];
+  const configured = processEnvironment[ENVIRONMENT_FILE_VARIABLE];
   return configured === undefined || configured === "" ? undefined : configured;
 };
 
 const secretsFileConfigured = (): boolean => environmentFile() !== undefined;
 
 const configurationHome = (project: string): string => {
-  const base = process.env["XDG_CONFIG_HOME"];
+  const base = processEnvironment["XDG_CONFIG_HOME"];
   return path.join(
     base === undefined || base === "" ? path.join(homedir(), ".config") : base,
     project,

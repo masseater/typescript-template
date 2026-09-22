@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
-import { Effect } from "effect";
+import { Clock, DateTime, Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { fetchUsage } from "./billing.ts";
@@ -14,6 +14,7 @@ const BILLED_COST_USD = 2;
 
 const account = "a".repeat(ACCOUNT_ID_LENGTH);
 const endpoint = `https://api.cloudflare.com/client/v4/accounts/${account}/billable-usage`;
+const measuredAt = DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-16T00:00:00Z"));
 
 function withServer(
   ...handlers: Parameters<Network["use"]>
@@ -57,7 +58,7 @@ it.effect("fetches the official V1 endpoint using bearer authentication", () =>
         });
       }),
     );
-    const usage = yield* fetchUsage(account, "test-token", new Date("2026-09-16T00:00:00Z"));
+    const usage = yield* fetchUsage(account, "test-token", measuredAt);
     assert.strictEqual(usage.usageUsd, BILLED_COST_USD);
   }).pipe(Effect.scoped),
 );
@@ -69,8 +70,13 @@ it.effect("does not return zero usage or expose response bodies on authorization
         HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
       ),
     );
-    const failure = yield* fetchUsage(account, "test-token", new Date()).pipe(Effect.flip);
+    const failure = yield* fetchUsage(account, "test-token", yield* Clock.currentTimeMillis).pipe(
+      Effect.flip,
+    );
     assert.strictEqual(failure.code, "billing_http_failed");
-    assert.notInclude(JSON.stringify(failure), "must-not-be-logged");
+    assert.notInclude(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
+      "must-not-be-logged",
+    );
   }).pipe(Effect.scoped),
 );
