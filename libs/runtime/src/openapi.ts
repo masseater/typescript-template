@@ -1,5 +1,5 @@
 import { scalarReferencePath, type Application } from "@repo/config";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { Result, Schema } from "effect";
 
 import { ErrorBody, type Decodable } from "./contracts.ts";
