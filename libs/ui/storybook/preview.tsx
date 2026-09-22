@@ -8,6 +8,7 @@ import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/
 import { Effect } from "effect";
 import msw from "msw-storybook-addon";
 
+import { BaseWebProvider } from "../src/baseweb-provider.tsx";
 import { FieldValidationMessageProvider } from "../src/shared/ui/field-validation-message-provider.tsx";
 
 import type { ReactElement } from "react";
@@ -24,21 +25,23 @@ const japaneseFieldValidationMessages = {
 
 const withProviders = (Story: () => ReactElement): ReactElement => {
   return (
-    <FieldValidationMessageProvider messages={japaneseFieldValidationMessages}>
-      <RegistryProvider>
-        <QueryClientProvider
-          client={
-            new QueryClient({
-              defaultOptions: { queries: { retry: false } },
-            })
-          }
-        >
-          <RouterContextProvider router={router}>
-            <Story />
-          </RouterContextProvider>
-        </QueryClientProvider>
-      </RegistryProvider>
-    </FieldValidationMessageProvider>
+    <BaseWebProvider>
+      <FieldValidationMessageProvider messages={japaneseFieldValidationMessages}>
+        <RegistryProvider>
+          <QueryClientProvider
+            client={
+              new QueryClient({
+                defaultOptions: { queries: { retry: false } },
+              })
+            }
+          >
+            <RouterContextProvider router={router}>
+              <Story />
+            </RouterContextProvider>
+          </QueryClientProvider>
+        </RegistryProvider>
+      </FieldValidationMessageProvider>
+    </BaseWebProvider>
   );
 };
 

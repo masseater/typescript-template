@@ -1,16 +1,46 @@
-import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
-import { CheckIcon } from "lucide-react";
+import { Checkbox as BaseCheckbox, type CheckboxOverrides } from "baseui/checkbox";
 
 import type { ReactElement } from "react";
 
-const indicator = (
-  <CheckboxPrimitive.Indicator
-    data-slot="checkbox-indicator"
-    className="grid place-content-center text-current [&>svg]:size-3"
-  >
-    <CheckIcon />
-  </CheckboxPrimitive.Indicator>
-);
+const checkboxOverrides = {
+  Root: {
+    props: {
+      "data-slot": "checkbox",
+    },
+    style: {
+      display: "inline-flex",
+      height: "24px",
+      minHeight: "24px",
+      minWidth: "24px",
+      position: "relative",
+      width: "24px",
+    },
+  },
+  Checkmark: {
+    style: {
+      height: "24px",
+      marginBottom: 0,
+      marginLeft: 0,
+      marginRight: 0,
+      marginTop: 0,
+      width: "24px",
+    },
+  },
+  Input: {
+    style: {
+      cursor: "pointer",
+      height: "24px",
+      left: 0,
+      margin: 0,
+      opacity: 0.01,
+      overflow: "hidden",
+      padding: 0,
+      position: "absolute",
+      top: 0,
+      width: "24px",
+    },
+  },
+} as const satisfies CheckboxOverrides;
 
 const Checkbox = ({
   "aria-label": ariaLabel,
@@ -25,18 +55,30 @@ const Checkbox = ({
   name?: string | undefined;
   onCheckedChange: (checked: boolean) => void;
 }>): ReactElement => {
+  if (name === undefined) {
+    return (
+      <BaseCheckbox
+        aria-label={ariaLabel}
+        checked={checked}
+        disabled={disabled}
+        overrides={checkboxOverrides}
+        onChange={(change) => {
+          onCheckedChange(change.currentTarget.checked);
+        }}
+      />
+    );
+  }
   return (
-    <CheckboxPrimitive.Root
-      data-slot="checkbox"
+    <BaseCheckbox
       aria-label={ariaLabel}
       checked={checked}
       disabled={disabled}
       name={name}
-      onCheckedChange={onCheckedChange}
-      className="box-border flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-input bg-card outline-none focus-visible:focus-indicator-outer disabled:cursor-not-allowed disabled:border-border/50 disabled:bg-card-hover data-invalid:border-destructive data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground"
-    >
-      {indicator}
-    </CheckboxPrimitive.Root>
+      overrides={checkboxOverrides}
+      onChange={(change) => {
+        onCheckedChange(change.currentTarget.checked);
+      }}
+    />
   );
 };
 

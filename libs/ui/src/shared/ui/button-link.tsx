@@ -1,24 +1,47 @@
 import { createLink } from "@tanstack/react-router";
+import { Button as BaseButton } from "baseui/button";
 
-import { buttonVariants } from "./button-variants";
+import { kindByVariant, sizeBySize } from "./button-kinds";
 
 import type { ComponentProps, ReactElement } from "react";
 
 const ButtonAnchor = ({
   children,
-  size,
-  variant,
-  ...anchor
+  href,
+  onClick,
+  size = "medium",
+  target,
+  variant = "secondary",
 }: Readonly<
-  ComponentProps<"a"> & {
+  Omit<ComponentProps<"a">, "ref"> & {
     size?: "large" | "medium" | "small";
     variant?: "danger" | "primary" | "secondary";
   }
 >): ReactElement => {
+  if (target === undefined) {
+    return (
+      <BaseButton
+        data-slot="button-link"
+        kind={kindByVariant[variant]}
+        size={sizeBySize[size]}
+        href={href ?? null}
+        onClick={onClick as never}
+      >
+        {children}
+      </BaseButton>
+    );
+  }
   return (
-    <a {...anchor} data-slot="button-link" className={buttonVariants({ size, variant })}>
+    <BaseButton
+      data-slot="button-link"
+      kind={kindByVariant[variant]}
+      size={sizeBySize[size]}
+      href={href ?? null}
+      target={target}
+      onClick={onClick as never}
+    >
       {children}
-    </a>
+    </BaseButton>
   );
 };
 

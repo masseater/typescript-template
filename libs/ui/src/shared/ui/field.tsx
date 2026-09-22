@@ -1,8 +1,26 @@
-import { Field as FieldPrimitive } from "@base-ui/react/field";
+import { FormControl } from "baseui/form-control";
+import { type ComponentProps, type ReactElement } from "react";
 
+import { localState } from "../../local-state";
 import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
+import {
+  fieldValidationMessageKinds,
+  useFieldValidationMessages,
+} from "./field-validation-messages";
 
-import type { ComponentProps, ReactElement } from "react";
+const useConstraintMessage = localState<string | undefined>(undefined);
+
+const messageForValidity = (
+  validity: globalThis.ValidityState,
+  validationMessages: ReturnType<typeof useFieldValidationMessages>,
+): string | undefined => {
+  for (const constraint of fieldValidationMessageKinds) {
+    if (validity[constraint]) {
+      return validationMessages[constraint];
+    }
+  }
+  return undefined;
+};
 
 const Field = ({
   autoComplete,
@@ -10,15 +28,21 @@ const Field = ({
   inputMode,
   label,
   maxLength,
+  minLength,
   multiline,
   name,
   onBlur,
   onValueChange,
+  pattern,
   readOnly,
+  required,
   type,
   value,
 }: Readonly<
-  Pick<ComponentProps<"input">, "inputMode" | "maxLength" | "name" | "readOnly" | "value"> & {
+  Pick<
+    ComponentProps<"input">,
+    "inputMode" | "maxLength" | "minLength" | "name" | "readOnly" | "required" | "value"
+  > & {
     autoComplete?:
       | "current-password"
       | "name"
@@ -29,35 +53,72 @@ const Field = ({
     error?: string | undefined;
     label: string;
     onBlur?: () => void;
-    onValueChange?: (value: string) => void;
+    onValueChange?: (nextValue: string) => void;
   }
 > &
   Readonly<
-    | { multiline: true; type?: never }
-    | { multiline?: false; type?: "email" | "password" | "search" | "text" }
+    | { multiline: true; pattern?: never; type?: never }
+    | { multiline?: false; pattern?: string; type?: "email" | "password" | "search" | "text" }
   >): ReactElement => {
-  return (
-    <FieldPrimitive.Root data-slot="field" invalid={error !== undefined} className={fieldClassName}>
-      <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
-      <FieldPrimitive.Control
-        render={multiline === true ? <textarea aria-label={label} /> : undefined}
+  const validationMessages = useFieldValidationMessages();
+  const [constraintMessage, setConstraintMessage] = useConstraintMessage();
+  const syncConstraintMessage = (validity: globalThis.ValidityState): void => {
+    setConstraintMessage(messageForValidity(validity, validationMessages));
+  };
+  const shownError = error ?? constraintMessage;
+  const control =
+    multiline === true ? (
+      <textarea
+        aria-label={label}
+        name={name}
+        value={value}
+        readOnly={readOnly}
+        required={required}
+        maxLength={maxLength}
+        minLength={minLength}
+        className={`block field-sizing-content min-h-16 ${controlClassName}`}
+        onBlur={(blur) => {
+          syncConstraintMessage(blur.currentTarget.validity);
+          onBlur?.();
+        }}
+        onChange={(change) => {
+          onValueChange?.(change.currentTarget.value);
+        }}
+      />
+    ) : (
+      <input
+        aria-label={label}
         type={type}
         name={name}
         value={value}
         autoComplete={autoComplete}
         inputMode={inputMode}
         maxLength={maxLength}
+        minLength={minLength}
+        pattern={pattern}
         readOnly={readOnly}
-        onBlur={onBlur}
-        onValueChange={onValueChange}
-        className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
+        required={required}
+        className={`inline-block leading-none ${controlClassName}`}
+        onBlur={(blur) => {
+          syncConstraintMessage(blur.currentTarget.validity);
+          onBlur?.();
+        }}
+        onChange={(change) => {
+          onValueChange?.(change.currentTarget.value);
+        }}
       />
-      {error === undefined ? undefined : (
-        <FieldPrimitive.Error match className={errorClassName}>
-          {error}
-        </FieldPrimitive.Error>
-      )}
-    </FieldPrimitive.Root>
+    );
+  return (
+    <div data-slot="field" className={fieldClassName}>
+      <FormControl
+        label={<span className={labelClassName}>{label}</span>}
+        error={
+          shownError === undefined ? null : <span className={errorClassName}>{shownError}</span>
+        }
+      >
+        {control}
+      </FormControl>
+    </div>
   );
 };
 
