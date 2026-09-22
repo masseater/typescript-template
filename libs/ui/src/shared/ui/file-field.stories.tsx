@@ -22,11 +22,12 @@ export const Disabled = meta.story({ args: { disabled: true } });
 
 export const Picks = meta.story({
   args: { onFileChange: fn() },
-  play: async ({ args, canvas }) => {
+  play: ({ args, canvas }) => {
     const picked = new File([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], "me.jpg", {
       type: "image/jpeg",
     });
-    await userEvent.upload(canvas.getByLabelText("顔写真"), picked);
-    await expect(args.onFileChange).toHaveBeenCalledWith(picked);
+    return userEvent.upload(canvas.getByLabelText("顔写真"), picked).then(() =>
+      expect(args.onFileChange).toHaveBeenCalledWith(picked),
+    );
   },
 });
