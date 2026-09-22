@@ -1,7 +1,6 @@
+import { applicationProgram } from "@repo/infra-cloudflare/application";
+import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
 import { Stack } from "alchemy";
-
-import { applicationProgram } from "./app.ts";
-import { stackName, stackOptions } from "./stacks.ts";
 
 export default Stack(
   stackName("service-member"),
