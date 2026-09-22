@@ -12,7 +12,7 @@ import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Path, Schema } from "effect";
 
 const readinessChecks = 120;
-const readinessInterval = "500 millis";
+const readinessInterval = "500 millis" as const;
 const loadAverageDigits = 2;
 
 const oneMinuteLoadAverage = (): number => {

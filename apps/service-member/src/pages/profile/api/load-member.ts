@@ -1,4 +1,4 @@
-import { absent, apiDataOrNone } from "@repo/runtime/client";
+import { absent, apiDataOrNoneFor } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -9,8 +9,8 @@ import type { Member } from "#pages/profile/model/member.ts";
 function loadMember(id: string): Promise<Member> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.member.get({ query: { id } }).then((response) => {
-      const member = apiDataOrNone(MemberView, response, absent.notFound);
-      if (member === undefined) {
+      const member = apiDataOrNoneFor(absent.notFound)(MemberView, response);
+      if (member == null) {
         throw notFound();
       }
       return member;

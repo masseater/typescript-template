@@ -118,7 +118,7 @@ describe("the migration status of a database reached over the D1 API", () => {
             d1Api.close();
           });
           const { apply, database } = remoteDatabase(d1Target);
-          yield* migrateDatabase(database, apply);
+          yield* migrateDatabase({ apply, database });
           return yield* readMigrationStatus(d1Target);
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
@@ -189,7 +189,7 @@ describe("a database whose tables were made without a recorded history", () => {
             { params: [], sql: "CREATE TABLE made_by_hand (id TEXT)" },
           ]);
           const { apply, database } = remoteDatabase(d1Target);
-          return yield* Effect.flip(migrateDatabase(database, apply));
+          return yield* Effect.flip(migrateDatabase({ apply, database }));
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ),
     );

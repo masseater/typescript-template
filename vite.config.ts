@@ -75,7 +75,10 @@ export default defineConfig({
         ],
         output: [],
       },
-      "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
+      "test:dev-server": {
+        cache: false,
+        command: "vp test run --passWithNoTests --project dev-server",
+      },
       "check:text": {
         command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
         input: [

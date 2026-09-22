@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
   },
   "scripts": {},
   "dependencies": {
@@ -18,7 +19,6 @@
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",

@@ -46,7 +46,7 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   }
   const { apply, database } = remoteDatabase({ ...target, apiToken: target.apiToken });
   if (operation === "migrate") {
-    const applied = yield* migrateDatabase(database, apply);
+    const applied = yield* migrateDatabase({ apply, database });
     return {
       applied,
       databaseId: target.databaseId,
@@ -57,7 +57,7 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   if (target.email === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  yield* bootstrapDatabase(database, target.email);
+  yield* bootstrapDatabase({ database: database, email: target.email });
   return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
 });
 
