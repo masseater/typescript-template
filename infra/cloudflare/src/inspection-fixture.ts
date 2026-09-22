@@ -252,7 +252,11 @@ function accountHandlers(options: AccountState): Parameters<typeof mockServer> {
       dnsPage(options.records ?? [], request.url),
     ),
     pagedCollection(`${account}/email/routing/addresses`, ADDRESS_PAGE_LIMIT, ({ request }) =>
-      addressPage(options.addresses ?? [], request.url),
+      addressPage(
+        options.addresses ??
+          config.budget.recipients.map((email) => ({ email, verified: "2026-01-01" })),
+        request.url,
+      ),
     ),
     unpagedCollection(`${zone}/email/sending/subdomains`, () =>
       HttpResponse.json({

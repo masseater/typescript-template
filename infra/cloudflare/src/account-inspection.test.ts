@@ -22,13 +22,32 @@ import {
   workers,
 } from "./inspection-fixture.ts";
 
+it.effect("blocks when budget alert recipients are not verified destination addresses", () =>
+  Effect.gen(function* program() {
+    yield* mockServer(...accountHandlers({ addresses: [], scripts: ["unrelated-worker"] }));
+    const inspection = yield* inspectAccount(access, config, emptyState());
+    assert.deepStrictEqual(blocked(inspection), ["alertQuota"]);
+    assert.deepInclude(inspection, {
+      alertQuota: "counted",
+      database: "free",
+      deployToken: [],
+      emailSending: "free",
+      senderDomain: "dedicated",
+      sendingSubdomain: "free",
+      stateStore: "absent",
+      workerDomains: "free",
+      workerNames: "free",
+    });
+  }).pipe(Effect.scoped),
+);
+
 it.effect("clears an account that holds nothing this deployment claims", () =>
   Effect.gen(function* program() {
     yield* mockServer(...accountHandlers({ scripts: ["unrelated-worker"] }));
     const inspection = yield* inspectAccount(access, config, emptyState());
     assert.deepStrictEqual(blocked(inspection), []);
     assert.deepInclude(inspection, {
-      alertQuota: "counted",
+      alertQuota: "free",
       database: "free",
       deployToken: [],
       emailSending: "free",

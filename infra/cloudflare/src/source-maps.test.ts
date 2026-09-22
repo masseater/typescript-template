@@ -54,3 +54,38 @@ it.effect("fails when the client source map directory contains no maps", () =>
     assert.deepStrictEqual(yield* archivedNames(root), []);
   }).pipe(Effect.scoped),
 );
+
+it.effect("fails when client maps exist but server maps are missing", () =>
+  Effect.gen(function* program() {
+    const root = yield* temporaryRoot();
+    const client = sourceMapDirectories(root, "service-member").client;
+    yield* Effect.gen(function* seedClient() {
+      const filesystem = yield* FileSystem.FileSystem;
+      yield* filesystem.makeDirectory(client, { recursive: true });
+      yield* filesystem.writeFileString(path.join(client, "index.js.map"), "{}");
+    }).pipe(Effect.orDie, Effect.provide(layer));
+    const failure = yield* archiveSourceMaps(root, "service-member", release).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "source_maps_missing");
+    assert.deepStrictEqual(yield* archivedNames(root), []);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("archives client and server maps together", () =>
+  Effect.gen(function* program() {
+    const root = yield* temporaryRoot();
+    const client = sourceMapDirectories(root, "service-member").client;
+    const server = path.join(root, "apps", "service-member", "dist", "server");
+    yield* Effect.gen(function* seedMaps() {
+      const filesystem = yield* FileSystem.FileSystem;
+      yield* filesystem.makeDirectory(client, { recursive: true });
+      yield* filesystem.makeDirectory(server, { recursive: true });
+      yield* filesystem.writeFileString(path.join(client, "index.js.map"), "{}");
+      yield* filesystem.writeFileString(path.join(server, "index.js.map"), "{}");
+    }).pipe(Effect.orDie, Effect.provide(layer));
+    assert.deepStrictEqual(yield* archiveSourceMaps(root, "service-member", release), {
+      client: 1,
+      server: 1,
+    });
+    assert.deepStrictEqual(yield* archivedNames(root), [release]);
+  }).pipe(Effect.scoped),
+);
