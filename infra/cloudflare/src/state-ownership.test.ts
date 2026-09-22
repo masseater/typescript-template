@@ -3,7 +3,10 @@ import { InMemoryService } from "alchemy/State";
 import { Effect } from "effect";
 
 import { recordedDatabaseIds, recordedWorkerNames } from "./state-ownership.ts";
+import { stackName } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
+
+import type { CreatedResourceState } from "alchemy/State/ResourceState";
 
 const prefix = verificationSettings.prefix;
 
@@ -20,6 +23,32 @@ it.effect("fails when a path the store has never held rather than inventing empt
       return yield* Effect.die(databases);
     }
     assert.strictEqual(databases.reason, "path does not exist");
+  }),
+);
+
+it.effect("reads workers from stacks that exist when another stack has no stage", () =>
+  Effect.gen(function* program() {
+    const workerName = `${prefix}-budget`;
+    const worker: CreatedResourceState = {
+      attr: { workerName },
+      bindings: [],
+      downstream: [],
+      fqn: "Worker",
+      instanceId: "instance",
+      logicalId: "Worker",
+      namespace: undefined,
+      props: { name: workerName },
+      providerVersion: 1,
+      resourceType: "Cloudflare.Worker",
+      status: "created",
+    };
+    const names = yield* recordedWorkerNames(
+      InMemoryService({
+        [stackName("zone")]: { [prefix]: { Worker: worker } },
+      }),
+      prefix,
+    );
+    assert.deepStrictEqual(names, [workerName]);
   }),
 );
 
