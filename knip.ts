@@ -249,7 +249,6 @@ const config = ({
       },
       "libs/vite-config": {
         entry: [
-          "src/cloudflare-workers-loader.mjs",
           "src/cloudflare-workers-stub.mjs",
           "src/cloudflare-workflows-stub.mjs",
           ...productionOnly(...scripts["libs/vite-config"]),
