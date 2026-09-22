@@ -12,12 +12,7 @@ const VerificationClaims = Schema.Struct({
 
 const decodeClaims = Schema.decodeUnknownResult(Schema.fromJsonString(VerificationClaims));
 
-const decodedClaims = (
-  token: string,
-): Result.Result<
-  { readonly email?: string; readonly updateTo?: string },
-  VerificationTokenInvalid
-> => {
+const decodedClaims = (token: string) => {
   const [, claims] = token.split(".");
   if (claims === undefined) {
     return Result.fail(new VerificationTokenInvalid());
@@ -31,13 +26,8 @@ const decodedClaims = (
 
 const emailChangeTarget = (
   token: string,
-): Result.Result<string | undefined, VerificationTokenInvalid> => {
-  const claims = decodedClaims(token);
-  if (Result.isFailure(claims)) {
-    return claims;
-  }
-  return Result.succeed(claims.success.updateTo);
-};
+): Result.Result<string | undefined, VerificationTokenInvalid> =>
+  Result.map(decodedClaims(token), (claims) => claims.updateTo);
 
 const emailChangePrevious = (token: string): string | undefined => {
   const claims = decodedClaims(token);

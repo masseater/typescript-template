@@ -267,8 +267,9 @@ const queryToken = function queryToken(
 const confirmsEmailChange = function confirmsEmailChange(
   ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
-  const token = queryToken(ctx);
-  if (ctx.path !== emailVerificationPath || token === undefined) {
+  const query: unknown = ctx.query;
+  const token = Predicate.isObject(query) && "token" in query ? query["token"] : undefined;
+  if (ctx.path !== emailVerificationPath || typeof token !== "string") {
     return false;
   }
   const target = emailChangeTarget(token);
