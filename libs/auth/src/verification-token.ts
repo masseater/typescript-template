@@ -26,15 +26,22 @@ const decodedClaims = (token: string) => {
 
 const emailChangeTarget = (
   token: string,
-): Result.Result<string | undefined, VerificationTokenInvalid> =>
-  Result.map(decodedClaims(token), (claims) => claims.updateTo);
-
-const emailChangePrevious = (token: string): string | undefined => {
+): Result.Result<string | undefined, VerificationTokenInvalid> => {
   const claims = decodedClaims(token);
   if (Result.isFailure(claims)) {
-    return undefined;
+    return Result.fail(claims.failure);
   }
-  return claims.success.updateTo === undefined ? undefined : claims.success.email;
+  return Result.succeed(claims.success.updateTo);
 };
 
-export { emailChangePrevious, emailChangeTarget };
+const emailChangePrevious = (
+  token: string,
+): Result.Result<string | undefined, VerificationTokenInvalid> => {
+  const claims = decodedClaims(token);
+  if (Result.isFailure(claims)) {
+    return Result.fail(claims.failure);
+  }
+  return Result.succeed(claims.success.updateTo === undefined ? undefined : claims.success.email);
+};
+
+export { emailChangePrevious, emailChangeTarget, VerificationTokenInvalid };

@@ -267,9 +267,8 @@ const queryToken = function queryToken(
 const confirmsEmailChange = function confirmsEmailChange(
   ctx: Readonly<Pick<HookContext, "path" | "query">>,
 ): boolean {
-  const query: unknown = ctx.query;
-  const token = Predicate.isObject(query) && "token" in query ? query["token"] : undefined;
-  if (ctx.path !== emailVerificationPath || typeof token !== "string") {
+  const token = queryToken(ctx);
+  if (ctx.path !== emailVerificationPath || token === undefined) {
     return false;
   }
   const target = emailChangeTarget(token);
@@ -292,10 +291,14 @@ const notifyEmailChangeCompleted = Effect.fn("notifyEmailChangeCompleted")(
     onEmailChangeCompleted: (email: string) => Promise<void>,
   ) {
     const token = queryToken(scope.ctx);
-    const previous = token === undefined ? undefined : emailChangePrevious(token);
-    if (previous !== undefined) {
-      yield* Effect.promise(() => onEmailChangeCompleted(previous));
+    if (token === undefined) {
+      return;
     }
+    const previous = emailChangePrevious(token);
+    if (Result.isFailure(previous) || previous.success === undefined) {
+      return;
+    }
+    yield* Effect.promise(() => onEmailChangeCompleted(previous.success));
   },
 );
 
