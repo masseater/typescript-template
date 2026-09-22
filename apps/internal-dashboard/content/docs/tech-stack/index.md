@@ -19,3 +19,4 @@ description: 主要技術の働きと、公式ドキュメント・サンプル�
 - [Feature-Sliced Design](/tech-stack/feature-sliced-design) — レイヤー、スライス、`index.ts`
 - [Alchemy](/tech-stack/alchemy) — 資源の宣言と `alchemy plan`
 - [Cloudflare](/tech-stack/cloudflare) — Workers、binding、D1、Durable Objects
+- [OpenFeature](/tech-stack/openfeature) — 機能フラグの評価 API。本テンプレートは Cloudflare Flagship を provider に使う
