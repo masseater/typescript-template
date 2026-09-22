@@ -26,11 +26,11 @@ const workspaces = {
     },
   },
   "infra/error-monitor": {
-    entry: ["alchemy.run.ts!", "src/worker.ts!"],
+    entry: ["alchemy.run.ts!"],
     project: ["src/**/*.ts!"],
   },
   "infra/health-monitor": {
-    entry: ["alchemy.run.ts!", "src/worker.ts!"],
+    entry: ["alchemy.run.ts!"],
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
