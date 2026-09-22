@@ -1,8 +1,4 @@
-import {
-  accountTokenRef,
-  monitorArtifact,
-  monitorProgram,
-} from "@repo/infra-cloudflare/monitor";
+import { accountTokenRef, monitorArtifact, monitorProgram } from "@repo/infra-cloudflare/monitor";
 import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/monitor/workers";
 import { Stack } from "alchemy";
