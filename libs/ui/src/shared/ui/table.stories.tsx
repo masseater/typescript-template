@@ -14,21 +14,21 @@ export const Default = meta.story({
       <>
         <TableHeader>
           <TableRow>
-            <TableHead>ユーザー名</TableHead>
-            <TableHead>メールアドレス</TableHead>
-            <TableHead>権限</TableHead>
+            <TableHead>{"ユーザー名"}</TableHead>
+            <TableHead>{"メールアドレス"}</TableHead>
+            <TableHead>{"権限"}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow>
-            <TableCell>山田 太郎</TableCell>
-            <TableCell>taro@example.com</TableCell>
-            <TableCell>管理者</TableCell>
+            <TableCell>{"山田 太郎"}</TableCell>
+            <TableCell>{"taro@example.com"}</TableCell>
+            <TableCell>{"管理者"}</TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>鈴木 花子</TableCell>
-            <TableCell>hanako@example.com</TableCell>
-            <TableCell>一般</TableCell>
+            <TableCell>{"鈴木 花子"}</TableCell>
+            <TableCell>{"hanako@example.com"}</TableCell>
+            <TableCell>{"一般"}</TableCell>
           </TableRow>
         </TableBody>
       </>

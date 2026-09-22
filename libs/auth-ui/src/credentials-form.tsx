@@ -73,7 +73,7 @@ const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
           onValueChange={password.handleChange}
         />
         <Button type="submit" variant="primary" disabled={action.blocked}>
-          ログイン
+          {"ログイン"}
         </Button>
       </FormColumn>
     </form>

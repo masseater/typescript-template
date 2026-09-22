@@ -22,7 +22,7 @@ const TotpEnrollment = ({
     <FormColumn>
       <Field multiline label="認証アプリ登録用 URI" readOnly value={enrollment.totpURI} />
       <div className="flex w-full flex-col gap-1">
-        <Heading size="block">バックアップコード</Heading>
+        <Heading size="block">{"バックアップコード"}</Heading>
         <BackupCodeList codes={enrollment.backupCodes} />
       </div>
       <CheckboxField

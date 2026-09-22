@@ -11,7 +11,7 @@ const SignOutButton = ({
   return (
     <>
       <Button type="button" disabled={action.blocked} onClick={signOut}>
-        ログアウト
+        {"ログアウト"}
       </Button>
       <ActionStatus action={action} />
     </>
