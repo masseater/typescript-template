@@ -1,6 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router";
 
-import { EmailPage } from "#pages/settings/index.ts";
+import { EmailPage } from "./email-page.tsx";
 
 import type { ReactElement } from "react";
 
