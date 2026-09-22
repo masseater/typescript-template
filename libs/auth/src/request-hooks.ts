@@ -291,14 +291,10 @@ const notifyEmailChangeCompleted = Effect.fn("notifyEmailChangeCompleted")(
     onEmailChangeCompleted: (email: string) => Promise<void>,
   ) {
     const token = queryToken(scope.ctx);
-    if (token === undefined) {
-      return;
+    const previous = token === undefined ? undefined : emailChangePrevious(token);
+    if (previous !== undefined) {
+      yield* Effect.promise(() => onEmailChangeCompleted(previous));
     }
-    const previous = emailChangePrevious(token);
-    if (Result.isFailure(previous) || previous.success === undefined) {
-      return;
-    }
-    yield* Effect.promise(() => onEmailChangeCompleted(previous.success));
   },
 );
 

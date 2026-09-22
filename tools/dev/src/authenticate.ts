@@ -35,7 +35,7 @@ interface AuthenticateReport {
 const loginSettleMilliseconds = "2500";
 
 const submitLoginForm = [
-  BROWSER_AGENT_COMMAND.eval,
+  "eval",
   "(() => { const form = document.querySelector('form'); if (form === null) { throw new Error('login_form_missing'); } form.requestSubmit(); return true; })()",
 ] as const;
 

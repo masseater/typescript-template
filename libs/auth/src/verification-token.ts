@@ -12,7 +12,9 @@ const VerificationClaims = Schema.Struct({
 
 const decodeClaims = Schema.decodeUnknownResult(Schema.fromJsonString(VerificationClaims));
 
-const decodedClaims = (token: string) => {
+const decodeTokenClaims = (
+  token: string,
+): Result.Result<typeof VerificationClaims.Type, VerificationTokenInvalid> => {
   const [, claims] = token.split(".");
   if (claims === undefined) {
     return Result.fail(new VerificationTokenInvalid());
@@ -27,21 +29,19 @@ const decodedClaims = (token: string) => {
 const emailChangeTarget = (
   token: string,
 ): Result.Result<string | undefined, VerificationTokenInvalid> => {
-  const claims = decodedClaims(token);
+  const claims = decodeTokenClaims(token);
   if (Result.isFailure(claims)) {
-    return Result.fail(claims.failure);
+    return claims;
   }
   return Result.succeed(claims.success.updateTo);
 };
 
-const emailChangePrevious = (
-  token: string,
-): Result.Result<string | undefined, VerificationTokenInvalid> => {
-  const claims = decodedClaims(token);
+const emailChangePrevious = (token: string): string | undefined => {
+  const claims = decodeTokenClaims(token);
   if (Result.isFailure(claims)) {
-    return Result.fail(claims.failure);
+    return undefined;
   }
-  return Result.succeed(claims.success.updateTo === undefined ? undefined : claims.success.email);
+  return claims.success.updateTo === undefined ? undefined : claims.success.email;
 };
 
-export { emailChangePrevious, emailChangeTarget, VerificationTokenInvalid };
+export { emailChangePrevious, emailChangeTarget };
