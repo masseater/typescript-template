@@ -17,13 +17,19 @@ import { spawnChild } from "../node-spawn.ts";
 import { failedWithCode } from "./failure-codes.ts";
 import {
   ensureSlots,
-  enqueueWaiter,
   removeWaiter,
+  reserveWaiterPath,
   slotStateFingerprint,
   sweepWaiters,
   tryAcquireAny,
+  writeWaiterEntry,
 } from "./slots.ts";
 
+const enqueueWaiter = (slotDir: string): string => {
+  const waiterPath = reserveWaiterPath(slotDir);
+  writeWaiterEntry(waiterPath);
+  return waiterPath;
+};
 const nodeFs = process.getBuiltinModule("fs") as {
   readonly chmodSync: (location: string, mode: number) => void;
   readonly mkdtempSync: (prefix: string) => string;

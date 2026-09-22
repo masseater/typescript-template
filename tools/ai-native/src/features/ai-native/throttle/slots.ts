@@ -75,12 +75,6 @@ export const writeWaiterEntry = (waiterPath: string): void => {
   writeFileString({ location: waiterPath, written: `${process.pid}\n` });
 };
 
-export const enqueueWaiter = (slotDir: string): string => {
-  const waiterPath = reserveWaiterPath(slotDir);
-  writeWaiterEntry(waiterPath);
-  return waiterPath;
-};
-
 export const removeWaiter = (waiterPath: string): void => {
   removePath(waiterPath);
 };
