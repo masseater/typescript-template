@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { drizzle as connectD1 } from "drizzle-orm/d1";
 import { migrate as applyD1MigrationFiles } from "drizzle-orm/d1/migrator";
 import { readMigrationFiles, type MigrationConfig } from "drizzle-orm/migrator";
-import { Effect, Schema } from "effect";
+import { Clock, Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement, type Email } from "./bootstrap-statement.ts";
 import { remoteDatabase, remoteExecutor, type DatabaseExecutor } from "./remote-http.ts";
@@ -231,7 +231,7 @@ const bootstrapDatabase = <Result>(
     }
     const bootstrappedRows = yield* queryValues(
       input.database,
-      bootstrapStatement(input.email),
+      bootstrapStatement(input.email, yield* Clock.currentTimeMillis),
     ).pipe(Effect.flatMap(decodeBootstrappedRows));
     const [bootstrappedAdministrator] = bootstrappedRows;
     if (bootstrappedRows.length !== 1 || bootstrappedAdministrator === undefined) {

@@ -93,39 +93,21 @@
     ],
     "apps/service-member": [
       {
-        "file": "src/app/server.ts",
-        "code": "TS2554",
-        "message": "Expected 1 arguments, but got 3.",
-        "count": 1
-      },
-      {
         "file": "src/pages/board/api/board.ts",
-        "code": "TS2554",
-        "message": "Expected 2 arguments, but got 3.",
+        "code": "TS2322",
+        "message": "Type 'Promise<{ readonly pageSize: 50; readonly posts: readonly { readonly author: { readonly id: string; readonly name: string; } | null; readonly body: string; readonly createdAt: number; readonly id: string; }[]; readonly thread: { ...; }; readonly total: number; } | {}>' is not assignable to type 'Promise<{ readonly pageSize: 50; readonly posts: readonly { readonly author: { readonly id: string; readonly name: string; } | null; readonly body: string; readonly createdAt: number; readonly id: string; }[]; readonly thread: { ...; }; readonly total: number; }>'.",
         "count": 1
       },
       {
         "file": "src/pages/profile-edit/api/profile.ts",
-        "code": "TS2554",
-        "message": "Expected 2 arguments, but got 3.",
+        "code": "TS2322",
+        "message": "Type 'Promise<{ readonly email: string; readonly id: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; } | {}>' is not assignable to type 'Promise<{ readonly email: string; readonly id: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; }>'.",
         "count": 1
       },
       {
         "file": "src/pages/profile/api/load-member.ts",
-        "code": "TS2554",
-        "message": "Expected 2 arguments, but got 3.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS2345",
-        "message": "Argument of type '(routeHandler: Handler<{ readonly memberBoard: boolean; }, Tagged, Requirements | FeatureFlags | AppServices>, failures: FailureTable<...>) => (runtimeContext: ElysiaContext) => Promise<...>' is not assignable to parameter of type 'InlineHandlerNonMacro<NoInfer<IntersectIfObjectSchema<...>>, NoInfer<{ ...; } & { ...; }>>'.",
-        "count": 1
-      },
-      {
-        "file": "src/shared/server-api/flags-api.ts",
-        "code": "TS2554",
-        "message": "Expected 1 arguments, but got 3.",
+        "code": "TS2322",
+        "message": "Type 'Promise<{ readonly id: string; readonly joined: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; } | {}>' is not assignable to type 'Promise<{ readonly id: string; readonly joined: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; }>'.",
         "count": 1
       }
     ],
@@ -144,18 +126,6 @@
       }
     ],
     "libs/db": [
-      {
-        "file": "src/bootstrap-statement.ts",
-        "code": "TS377066",
-        "message": "This code uses `Date.now()`, time access is represented through `Clock` from Effect. effect(globalDate)",
-        "count": 2
-      },
-      {
-        "file": "src/bootstrap-statement.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 2
-      },
       {
         "file": "src/bootstrap-statement.worker.test.ts",
         "code": "TS377068",

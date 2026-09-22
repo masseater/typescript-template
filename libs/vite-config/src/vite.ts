@@ -202,13 +202,8 @@ const typecheckInputs = [
 ] as const;
 
 const awaitingEffectDiagnostics = {
-  "check:effect:gate": {
-    command: "check-effect-typecheck",
-    input: [...typecheckInputs],
-  },
   "check:effect": {
-    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
-    dependsOn: ["check:effect:gate"],
+    command: "check-effect-typecheck",
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
