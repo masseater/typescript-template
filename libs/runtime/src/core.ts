@@ -1,22 +1,35 @@
 import { APPLICATION, type AgreementKind, type Application } from "@repo/config";
 import {
   AdminRpcs,
+  ApiKeyWriteForbidden,
   EmailVerificationFailed,
   InternalRpcs,
+  MemberProfileNotFound,
   MemberRpcs,
   SessionInvalid,
   SessionRequired,
+  StripeEventUnreadable,
   forwardAuthRequest,
   makeCoreClient,
   withForwardedCookies,
   type AgreementsView,
+  type BillingPlanView,
+  type MemberDirectoryList,
+  type MemberDirectoryView,
+  type MemberProfileUpdate,
+  type MemberProfileView,
+  type MemberSubscriptionView,
   type PublishedAgreementView,
+  type StripeEventPayload,
+  type WebhookOutcomeView,
 } from "@repo/core-api";
 import {
   AgreementRequired,
   AgreementVersionUnavailable,
   AgreementWithdrawalUnavailable,
   InviteRejected,
+  PaidPlanRequired,
+  UserNotFound,
 } from "@repo/db";
 import { Context, Effect } from "effect";
 
@@ -117,7 +130,7 @@ const acceptInvite = (
   Effect.gen(function* acceptInviteProgram() {
     const { audience, fetcher } = yield* Core;
     return yield* Effect.scoped(
-      Effect.gen(function* acceptInviteRpc() {
+      Effect.gen(function* inviteAcceptRpc() {
         if (audience === APPLICATION.admin) {
           const client = yield* makeCoreClient(AdminRpcs, fetcher);
           return yield* client.acceptInvite(acceptance);
@@ -242,25 +255,160 @@ const requireCurrentAgreements = (
     );
   });
 
+type MemberProfileRpcError =
+  | ApiKeyWriteForbidden
+  | MemberProfileNotFound
+  | SessionInvalid
+  | SessionRequired
+  | RpcClientError;
+
+type MemberDirectoryRpcError = SessionRpcError | UserNotFound | RpcClientError;
+
+const getMemberProfile = (
+  request: Request,
+): Effect.Effect<typeof MemberProfileView.Type, MemberProfileRpcError, Core> =>
+  Effect.gen(function* getMemberProfileProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* getMemberProfileRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client.getMemberProfile({}).pipe(withForwardedCookies(request.headers));
+      }),
+    );
+  });
+
+const updateMemberProfile = (
+  request: Request,
+  update: typeof MemberProfileUpdate.Type,
+): Effect.Effect<typeof MemberProfileView.Type, MemberProfileRpcError, Core> =>
+  Effect.gen(function* updateMemberProfileProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* updateMemberProfileRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client
+          .updateMemberProfile(update)
+          .pipe(withForwardedCookies(request.headers));
+      }),
+    );
+  });
+
+const getMember = (
+  request: Request,
+  id: string,
+): Effect.Effect<typeof MemberDirectoryView.Type, MemberDirectoryRpcError, Core> =>
+  Effect.gen(function* getMemberProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* getMemberRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client.getMember({ id }).pipe(withForwardedCookies(request.headers));
+      }),
+    );
+  });
+
+const listMembers = (
+  request: Request,
+  page: { readonly keyword?: string | undefined; readonly limit: number; readonly offset: number },
+): Effect.Effect<typeof MemberDirectoryList.Type, SessionRpcError, Core> =>
+  Effect.gen(function* listMembersProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* listMembersRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client
+          .listMembers({
+            ...(page.keyword === undefined ? {} : { keyword: page.keyword }),
+            limit: page.limit,
+            offset: page.offset,
+          })
+          .pipe(withForwardedCookies(request.headers));
+      }),
+    );
+  });
+
+type BillingRpcError = PaidPlanRequired | SessionRpcError;
+
+const getBillingPlan = (
+  request: Request,
+): Effect.Effect<typeof BillingPlanView.Type, SessionRpcError, Core> =>
+  Effect.gen(function* getBillingPlanProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* getBillingPlanRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client.getBillingPlan({}).pipe(withForwardedCookies(request.headers));
+      }),
+    );
+  });
+
+const getMemberSubscription = (
+  request: Request,
+): Effect.Effect<typeof MemberSubscriptionView.Type | null, SessionRpcError, Core> =>
+  Effect.gen(function* getMemberSubscriptionProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* getMemberSubscriptionRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client.getMemberSubscription({}).pipe(withForwardedCookies(request.headers));
+      }),
+    );
+  });
+
+const requirePaidMembership = (request: Request): Effect.Effect<void, BillingRpcError, Core> =>
+  Effect.gen(function* requirePaidMembershipProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* requirePaidMembershipRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client.requirePaidMembership({}).pipe(withForwardedCookies(request.headers));
+      }),
+    );
+  });
+
+const applyStripeEvent = (
+  event: typeof StripeEventPayload.Type,
+): Effect.Effect<typeof WebhookOutcomeView.Type, StripeEventUnreadable | RpcClientError, Core> =>
+  Effect.gen(function* applyStripeEventProgram() {
+    const { fetcher } = yield* Core;
+    return yield* Effect.scoped(
+      Effect.gen(function* applyStripeEventRpc() {
+        const client = yield* makeCoreClient(MemberRpcs, fetcher);
+        return yield* client.applyStripeEvent(event);
+      }),
+    );
+  });
+
 export {
   Core,
   acceptAgreements,
   acceptInvite,
+  applyStripeEvent,
   ensureCoreReady,
   forwardAuth,
+  getBillingPlan,
+  getMember,
+  getMemberProfile,
+  getMemberSubscription,
   listAgreements,
+  listMembers,
   previewInvite,
   publishedAgreement,
   readSession,
   requireCurrentAgreements,
+  requirePaidMembership,
+  updateMemberProfile,
   verifyEmail,
   withdrawAgreement,
 };
 export type {
   AgreementRpcError,
+  BillingRpcError,
   CoreReadyError,
   CoreShape,
   InviteRpcError,
+  MemberDirectoryRpcError,
+  MemberProfileRpcError,
   SessionRpcError,
   VerifyEmailRpcError,
 };

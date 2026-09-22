@@ -1,4 +1,4 @@
-import { checkDatabase, type Database, type DatabaseFailure } from "@repo/db";
+import { checkDatabase, type Database, type DatabaseFailure, UserNotFound } from "@repo/db";
 import { AgreementVersionUnavailable, AgreementWithdrawalUnavailable } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { Effect, Layer } from "effect";
@@ -14,17 +14,23 @@ import { SessionIdentity, SessionIdentityMiddleware, SessionRequired } from "./s
 
 const sessionlessHandlers = MemberRpcs.toLayer({
   acceptAgreements: () => Effect.succeed({ accepted: [], pending: [] }),
+  applyStripeEvent: () => Effect.succeed({ outcome: "ignored" as const }),
   databaseReady: (): Effect.Effect<boolean, DatabaseFailure, Database> =>
     checkDatabase().pipe(Effect.as(true)),
+  getBillingPlan: () => Effect.succeed({ cancelAtPeriodEnd: false, plan: "free" as const }),
+  getMember: () => Effect.fail(new UserNotFound()),
   getMemberProfile: () =>
     Effect.gen(function* getMemberProfile() {
       yield* SessionIdentity;
       return yield* new MemberProfileNotFound();
     }),
+  getMemberSubscription: () => Effect.succeed(null),
   getSession: () => SessionIdentity,
   listAgreements: () => Effect.succeed({ accepted: [], pending: [] }),
+  listMembers: () => Effect.succeed({ members: [], total: 0 }),
   publishedAgreement: () => Effect.fail(new AgreementVersionUnavailable()),
   requireCurrentAgreements: () => Effect.void,
+  requirePaidMembership: () => Effect.void,
   updateMemberProfile: () =>
     Effect.gen(function* updateMemberProfile() {
       yield* SessionIdentity;

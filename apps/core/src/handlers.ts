@@ -1,27 +1,37 @@
 import { APPLICATION, type AgreementKind } from "@repo/config";
 import {
   AdminRpcs,
-  EmailVerificationFailed,
+  type ApiKeyWriteForbidden,
+  type EmailVerificationFailed,
   InternalRpcs,
-  MemberProfileNotFound,
+  type MemberProfileNotFound,
   MemberRpcs,
   SessionIdentity,
+  type StripeEventUnreadable,
   type AgreementAcceptance,
   type AgreementsView,
+  type BillingPlanView,
   type EmailVerified,
   type InviteAcceptance,
   type InviteAccepted,
   type InvitePreview,
+  type MemberDirectoryList,
+  type MemberDirectoryView,
   type MemberProfileUpdate,
   type MemberProfileView,
+  type MemberSubscriptionView,
   type PublishedAgreementView,
   type SessionIdentityView,
+  type StripeEventPayload,
+  type WebhookOutcomeView,
 } from "@repo/core-api";
 import {
-  AgreementRequired,
-  AgreementVersionUnavailable,
-  AgreementWithdrawalUnavailable,
-  InviteRejected,
+  type AgreementRequired,
+  type AgreementVersionUnavailable,
+  type AgreementWithdrawalUnavailable,
+  type InviteRejected,
+  type PaidPlanRequired,
+  type UserNotFound,
   checkDatabase,
   type Database,
   type DatabaseFailure,
@@ -42,6 +52,16 @@ import {
   requireCurrentAgreements as requireCurrentAgreementsMember,
   withdrawAgreement as withdrawAgreementMember,
 } from "./member-agreements.ts";
+import {
+  applyStripeEvent as applyStripeEventMember,
+  getBillingPlan as getBillingPlanMember,
+  getMemberSubscription as getMemberSubscriptionMember,
+  requirePaidMembership as requirePaidMembershipMember,
+} from "./member-billing.ts";
+import {
+  getMember as getMemberDirectory,
+  listMembers as listMembersDirectory,
+} from "./member-directory.ts";
 import { readMemberProfile, writeMemberProfile } from "./member-profile.ts";
 import { sessionIdentityMiddleware } from "./session-middleware.ts";
 
@@ -83,17 +103,36 @@ const memberHandlers = (
         AgreementVersionUnavailable,
         SessionIdentity | Database
       > => acceptAgreementsMember(acceptance),
+      applyStripeEvent: (
+        event: typeof StripeEventPayload.Type,
+      ): Effect.Effect<typeof WebhookOutcomeView.Type, StripeEventUnreadable, Database> =>
+        applyStripeEventMember(event),
       databaseReady: (): Effect.Effect<boolean, DatabaseFailure, Database> =>
         checkDatabase().pipe(Effect.as(true)),
+      getBillingPlan: (): Effect.Effect<
+        typeof BillingPlanView.Type,
+        never,
+        SessionIdentity | Database
+      > => getBillingPlanMember(),
+      getMember: ({
+        id,
+      }: {
+        readonly id: string;
+      }): Effect.Effect<
+        typeof MemberDirectoryView.Type,
+        UserNotFound,
+        SessionIdentity | Database
+      > => getMemberDirectory(id),
       getMemberProfile: (): Effect.Effect<
         typeof MemberProfileView.Type,
         MemberProfileNotFound,
         SessionIdentity | Database
-      > =>
-        Effect.gen(function* getMemberProfile() {
-          const identity = yield* SessionIdentity;
-          return yield* readMemberProfile(identity.user.id);
-        }).pipe(Effect.catchTag("DatabaseFailure", (failure) => Effect.die(failure))),
+      > => readMemberProfile(),
+      getMemberSubscription: (): Effect.Effect<
+        typeof MemberSubscriptionView.Type | null,
+        never,
+        SessionIdentity | Database
+      > => getMemberSubscriptionMember(),
       getSession: (): Effect.Effect<typeof SessionIdentityView.Type, never, SessionIdentity> =>
         SessionIdentity,
       listAgreements: (): Effect.Effect<
@@ -101,6 +140,12 @@ const memberHandlers = (
         never,
         SessionIdentity | Database
       > => listAgreementsMember(),
+      listMembers: (page: {
+        readonly keyword?: string | undefined;
+        readonly limit: number;
+        readonly offset: number;
+      }): Effect.Effect<typeof MemberDirectoryList.Type, never, SessionIdentity | Database> =>
+        listMembersDirectory(page),
       publishedAgreement: ({
         kind,
       }: {
@@ -115,17 +160,18 @@ const memberHandlers = (
         AgreementRequired,
         SessionIdentity | Database
       > => requireCurrentAgreementsMember(),
+      requirePaidMembership: (): Effect.Effect<
+        void,
+        PaidPlanRequired,
+        SessionIdentity | Database
+      > => requirePaidMembershipMember(),
       updateMemberProfile: (
         update: typeof MemberProfileUpdate.Type,
       ): Effect.Effect<
         typeof MemberProfileView.Type,
-        MemberProfileNotFound,
+        ApiKeyWriteForbidden | MemberProfileNotFound,
         SessionIdentity | Database
-      > =>
-        Effect.gen(function* updateMemberProfile() {
-          const identity = yield* SessionIdentity;
-          return yield* writeMemberProfile(identity.user.id, update);
-        }).pipe(Effect.catchTag("DatabaseFailure", (failure) => Effect.die(failure))),
+      > => writeMemberProfile(update),
       verifyEmail: accountHandlers.verifyEmail,
       withdrawAgreement: ({
         kind,

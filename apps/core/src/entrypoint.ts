@@ -15,7 +15,7 @@ const entrypointClass = <Rpcs extends Rpc.Any>(
   audience: Application,
   handlerLayer: (
     bindings: CoreBindings,
-  ) => Layer.Layer<Rpc.ToHandler<Rpcs> | Rpc.Middleware<Rpcs>, never, never>,
+  ) => Layer.Layer<Rpc.ToHandler<Rpcs> | Rpc.Middleware<Rpcs>, never>,
 ): new (ctx: ExecutionContext, env: CoreBindings) => WorkerEntrypoint<CoreBindings> =>
   class extends WorkerEntrypoint<CoreBindings> {
     public override fetch(httpRequest: Request): Promise<Response> {

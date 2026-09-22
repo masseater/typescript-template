@@ -18,7 +18,12 @@ import {
 import {
   AgreementVersionUnavailable,
   AgreementWithdrawalUnavailable,
+  UserNotFound,
+  applyStripeWebhookEvent,
   checkDatabase,
+  findSubscription,
+  planOf,
+  requirePaid,
   Database,
   type DatabaseFailure,
 } from "@repo/db";
@@ -30,6 +35,7 @@ import { appLayer } from "./bindings.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
 import type { SendEmail } from "@cloudflare/workers-types";
+import type { StripeEventPayload } from "@repo/core-api";
 import type * as HttpHeaders from "effect/unstable/http/Headers";
 import type { AppServices } from "./index.ts";
 import type { WorkerRuntime } from "./worker-runtime.ts";
@@ -113,6 +119,61 @@ const agreementStubs = {
   withdrawAgreement: () => Effect.fail(new AgreementWithdrawalUnavailable()),
 } as const;
 
+const directoryStubs = {
+  getMember: () => Effect.fail(new UserNotFound()),
+  listMembers: () => Effect.succeed({ members: [], total: 0 }),
+} as const;
+
+const dieDatabase = {
+  DatabaseFailure: (failure: DatabaseFailure) => Effect.die(failure),
+} as const;
+
+const billingHandlers = {
+  applyStripeEvent: (event: typeof StripeEventPayload.Type) =>
+    applyStripeWebhookEvent(event).pipe(
+      Effect.map((outcome) => ({ outcome })),
+      Effect.catchTags(dieDatabase),
+    ),
+  getBillingPlan: () =>
+    Effect.gen(function* getBillingPlan() {
+      const identity = yield* SessionIdentity;
+      const plan = yield* planOf(identity.user.id).pipe(Effect.catchTags(dieDatabase));
+      return {
+        cancelAtPeriodEnd: plan.cancelAtPeriodEnd,
+        ...(plan.currentPeriodEnd === undefined
+          ? {}
+          : { currentPeriodEnd: plan.currentPeriodEnd.getTime() }),
+        plan: plan.plan,
+        ...(plan.status === undefined ? {} : { status: plan.status }),
+      };
+    }),
+  getMemberSubscription: () =>
+    Effect.gen(function* getMemberSubscription() {
+      const identity = yield* SessionIdentity;
+      const subscription = yield* findSubscription(identity.user.id).pipe(
+        Effect.catchTags(dieDatabase),
+      );
+      if (subscription === undefined) {
+        return null;
+      }
+      return {
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        ...(subscription.currentPeriodEnd === undefined
+          ? {}
+          : { currentPeriodEnd: subscription.currentPeriodEnd.getTime() }),
+        memberId: subscription.memberId,
+        status: subscription.status,
+        stripeCustomerId: subscription.stripeCustomerId,
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+      };
+    }),
+  requirePaidMembership: () =>
+    Effect.gen(function* requirePaidMembership() {
+      const identity = yield* SessionIdentity;
+      yield* requirePaid(identity.user.id).pipe(Effect.catchTags(dieDatabase));
+    }),
+} as const;
+
 const rpcFetcherFor = (
   audience: Application,
   database: D1Database,
@@ -152,6 +213,8 @@ const rpcFetcherFor = (
         Layer.mergeAll(
           MemberRpcs.toLayer({
             ...agreementStubs,
+            ...billingHandlers,
+            ...directoryStubs,
             databaseReady: (): Effect.Effect<boolean, DatabaseFailure, Database> =>
               checkDatabase().pipe(Effect.as(true)),
             getMemberProfile: () =>

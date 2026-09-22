@@ -121,6 +121,7 @@ describe("memberHandlers session RPC", () => {
     expect(profile).toMatchObject({
       email: "member@example.com",
       name: "member@example.com",
+      photos: { company: null, face: null },
       profile: "",
       socialLinks: [],
     });
@@ -130,6 +131,7 @@ describe("memberHandlers session RPC", () => {
     expect(updated).toMatchObject({
       email: "member@example.com",
       name: "Renamed",
+      photos: { company: null, face: null },
       profile: "hello",
       socialLinks: ["https://example.test"],
     });
@@ -199,17 +201,17 @@ describe("memberHandlers agreement RPC", () => {
     );
 
   it("lists seeded pending agreements for the signed-in member", ({ listed }) => {
-    expect(listed.pending.map((agreement) => agreement.kind).toSorted()).toEqual([
+    expect(listed.pending.map((agreement) => agreement.kind).toSorted()).toStrictEqual([
       "interview_history",
       "privacy",
       "terms",
     ]);
-    expect(listed.accepted).toEqual([]);
+    expect(listed.accepted).toStrictEqual([]);
   });
 
   it("accepts pending agreements through core", ({ accepted }) => {
-    expect(accepted.pending).toEqual([]);
-    expect(accepted.accepted.map((agreement) => agreement.kind).toSorted()).toEqual([
+    expect(accepted.pending).toStrictEqual([]);
+    expect(accepted.accepted.map((agreement) => agreement.kind).toSorted()).toStrictEqual([
       "interview_history",
       "privacy",
       "terms",

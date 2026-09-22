@@ -34,8 +34,31 @@ export {
   requireCurrentAgreements,
   withdrawAgreement,
 } from "./member-agreement-rpcs.ts";
+export {
+  BillingPlanView,
+  MemberBillingRpcs,
+  MemberSubscriptionView,
+  StripeEventPayload,
+  StripeEventUnreadable,
+  WebhookOutcomeView,
+  applyStripeEvent,
+  getBillingPlan,
+  getMemberSubscription,
+  requirePaidMembership,
+} from "./member-billing-rpcs.ts";
+export {
+  MemberDirectoryList,
+  MemberDirectoryListQuery,
+  MemberDirectoryQuery,
+  MemberDirectoryRpcs,
+  MemberDirectoryView,
+  getMember,
+  listMembers,
+  maximumListLimit,
+} from "./member-directory-rpcs.ts";
 export { MemberRpcs } from "./member-rpcs.ts";
 export {
+  ApiKeyWriteForbidden,
   MemberProfileNotFound,
   MemberProfileUpdate,
   MemberProfileView,

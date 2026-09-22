@@ -8,10 +8,11 @@ class EmailVerificationFailed extends Schema.TaggedError<EmailVerificationFailed
   { rateLimited: Schema.Boolean },
 ) {}
 
-const maximumTokenLength = 4096;
 const maximumNameLength = 100;
 const minimumPasswordLength = 12;
 const maximumPasswordLength = 128;
+
+const maximumTokenLength = 4096;
 
 const InviteToken = Schema.String.check(Schema.isLengthBetween(1, maximumTokenLength));
 

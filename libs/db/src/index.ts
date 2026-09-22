@@ -140,7 +140,9 @@ export {
   recordSubscription,
   requirePaid,
 } from "./billing.ts";
+export { StripeEventUnreadable, applyStripeWebhookEvent } from "./billing-events.ts";
 export type { StripeEventRecord, SubscriptionRecord } from "./billing.ts";
+export type { StripeWebhookEvent } from "./billing-events.ts";
 export {
   TrustSubjectNotFound,
   TrustTargetUnavailable,

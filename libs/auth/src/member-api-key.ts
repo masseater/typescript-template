@@ -15,6 +15,7 @@ type VerifiedMember = Readonly<{
     readonly email: string;
     readonly id: string;
     readonly name: string;
+    readonly permission: string | null;
     readonly role: string;
     readonly twoFactorEnabled: boolean;
   };
@@ -65,11 +66,11 @@ const verifyMemberApiKey = Effect.fn("verifyMemberApiKey")(function* verifyMembe
   }
   const owner = (yield* findUser(verified.key.referenceId)) ?? undefined;
   assertEligibleUser(owner, audience);
-  const { email, id, name, role, twoFactorEnabled } = owner;
+  const { email, id, name, permission, role, twoFactorEnabled } = owner;
   return {
     session: { id: `api-key:${presented}` },
     strong: false,
-    user: { email, id, name, role, twoFactorEnabled },
+    user: { email, id, name, permission, role, twoFactorEnabled },
   } satisfies VerifiedMember;
 });
 

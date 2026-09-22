@@ -5,9 +5,9 @@ import {
   type PublishedAgreementView,
 } from "@repo/core-api";
 import {
-  AgreementRequired,
+  type AgreementRequired,
   AgreementVersionUnavailable,
-  AgreementWithdrawalUnavailable,
+  type AgreementWithdrawalUnavailable,
   acceptAgreementVersions,
   acceptedAgreements,
   pendingAgreements,

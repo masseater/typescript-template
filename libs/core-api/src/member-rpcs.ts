@@ -4,6 +4,8 @@ import { Rpc, RpcGroup } from "effect/unstable/rpc";
 
 import { AccountRpcs } from "./account-rpcs.ts";
 import { MemberAgreementRpcs } from "./member-agreement-rpcs.ts";
+import { MemberBillingRpcs } from "./member-billing-rpcs.ts";
+import { MemberDirectoryRpcs } from "./member-directory-rpcs.ts";
 import { MemberSessionRpcs } from "./member-session-rpcs.ts";
 
 const databaseReady = Rpc.make("databaseReady", {
@@ -15,4 +17,6 @@ const databaseReady = Rpc.make("databaseReady", {
 export class MemberRpcs extends RpcGroup.make(databaseReady)
   .merge(MemberSessionRpcs)
   .merge(AccountRpcs)
-  .merge(MemberAgreementRpcs) {}
+  .merge(MemberAgreementRpcs)
+  .merge(MemberDirectoryRpcs)
+  .merge(MemberBillingRpcs) {}

@@ -75,8 +75,16 @@ export { StorageFailed } from "./storage-failed.ts";
 export { Core, forwardAuth, readSession } from "./core.ts";
 export {
   acceptAgreements,
+  applyStripeEvent,
+  getBillingPlan,
+  getMember,
+  getMemberProfile,
+  getMemberSubscription,
   listAgreements,
+  listMembers,
   publishedAgreement,
   requireCurrentAgreements,
+  requirePaidMembership,
+  updateMemberProfile,
   withdrawAgreement,
 } from "./core.ts";

@@ -1,7 +1,13 @@
-import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
+import { apiKeyWriteFailure } from "@repo/auth";
 import { APPLICATION } from "@repo/config";
-import { UserNotFound, requirePaid } from "@repo/db";
-import { accountApi } from "@repo/runtime/account";
+import {
+  accountApi,
+  getMember,
+  getMemberProfile,
+  listMembers,
+  requirePaidMembership,
+  updateMemberProfile,
+} from "@repo/runtime/account";
 import { apiDocs, apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -15,7 +21,6 @@ import {
   ProfileView,
   memberPageSize,
 } from "#shared/contracts/index.ts";
-import { getMember, getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
 import { agreementApi, consentGate } from "./agreement-api.ts";
 import { billingApi } from "./billing-api.ts";
 import { boardApi } from "./board-api.ts";
@@ -43,7 +48,12 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 import type { OpsMail } from "./ops-mail.ts";
 
-const failures = { ...memberFailures, ...apiKeyWriteFailure, ...paidFailures };
+const failures = {
+  ...memberFailures,
+  ...apiKeyWriteFailure,
+  ...paidFailures,
+  MemberProfileNotFound: memberFailures.UserNotFound,
+};
 
 function memberApi(
   api: ApiRoutes<
@@ -75,19 +85,7 @@ function memberApi(
     .use(visibilityApi(api))
     .get(
       "/profile",
-      ...api.route(
-        { response: ProfileView },
-        (request) =>
-          Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionOrApiKey(request.headers);
-            const profile = yield* getProfile(user.id);
-            if (profile === undefined) {
-              return yield* new UserNotFound();
-            }
-            return profile;
-          }),
-        failures,
-      ),
+      ...api.route({ response: ProfileView }, (request) => getMemberProfile(request), failures),
     )
     .get(
       "/member",
@@ -95,9 +93,8 @@ function memberApi(
         { response: MemberView },
         (request) =>
           Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionOrApiKey(request.headers);
             const { id } = yield* readSearchParams(MemberQuery, request);
-            return yield* getMember(user.id, id);
+            return yield* getMember(request, id);
           }),
         failures,
       ),
@@ -108,14 +105,12 @@ function memberApi(
         { response: MemberList },
         (request) =>
           Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionOrApiKey(request.headers);
-            yield* requirePaid(user.id);
+            yield* requirePaidMembership(request);
             const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
-            const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers(user.id, {
+            const list = yield* listMembers(request, {
               keyword,
               limit: memberPageSize,
-              offset,
+              offset: (page - 1) * memberPageSize,
             });
             return { ...list, pageSize: memberPageSize };
           }),
@@ -128,9 +123,8 @@ function memberApi(
         { response: ProfileView },
         (request) =>
           Effect.gen(function* handleRequest() {
-            const { user } = yield* verifySessionWriter(request.headers);
             const values = yield* readJsonBody(ProfileUpdate, request);
-            return yield* updateProfile(user.id, values);
+            return yield* updateMemberProfile(request, values);
           }),
         failures,
       ),

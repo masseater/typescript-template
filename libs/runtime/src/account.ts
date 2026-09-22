@@ -178,8 +178,16 @@ export {
 export {
   Core,
   acceptAgreements,
+  applyStripeEvent,
+  getBillingPlan,
+  getMember,
+  getMemberProfile,
+  getMemberSubscription,
   listAgreements,
+  listMembers,
   publishedAgreement,
   requireCurrentAgreements,
+  requirePaidMembership,
+  updateMemberProfile,
   withdrawAgreement,
 } from "./core.ts";

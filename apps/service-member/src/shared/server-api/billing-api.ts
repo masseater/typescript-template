@@ -1,11 +1,16 @@
-import { verifySession } from "@repo/auth";
-import { PLAN, httpStatus } from "@repo/config";
-import { PaidPlanRequired, findSubscription, planOf } from "@repo/db";
-import { sessionFailures } from "@repo/runtime/account";
+import { PLAN, httpStatus, subscriptionStatuses, type SubscriptionStatus } from "@repo/config";
+import { PaidPlanRequired } from "@repo/db";
+import {
+  applyStripeEvent,
+  getBillingPlan,
+  getMemberSubscription,
+  readSession,
+  sessionFailures,
+} from "@repo/runtime/account";
 import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
-import { PaidAlready, Stripe, handleStripeEvent, paidFailures } from "#shared/billing/index.ts";
+import { PaidAlready, Stripe, paidFailures } from "#shared/billing/index.ts";
 import {
   CHECKOUT_RETURN,
   HostedPage,
@@ -16,6 +21,7 @@ import {
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
+
 const Empty = Schema.Struct({});
 const unreadable = {
   message: "通知を読み取れませんでした。",
@@ -32,44 +38,68 @@ const failures = {
   StripeFailure: "unexpected",
   StripeSignatureInvalid: unreadable,
 } as const;
+
+const asSubscriptionStatus = (status: string | undefined): SubscriptionStatus | undefined =>
+  subscriptionStatuses.find((candidate) => candidate === status);
+
+const planToContract = (plan: {
+  readonly cancelAtPeriodEnd: boolean;
+  readonly currentPeriodEnd?: number | undefined;
+  readonly plan: typeof PLAN.free | typeof PLAN.paid;
+  readonly status?: string | undefined;
+}): typeof PlanView.Type => {
+  const status = asSubscriptionStatus(plan.status);
+  return {
+    cancelAtPeriodEnd: plan.cancelAtPeriodEnd,
+    ...(plan.currentPeriodEnd === undefined
+      ? {}
+      : { currentPeriodEnd: DateTime.toDate(DateTime.makeUnsafe(plan.currentPeriodEnd)) }),
+    plan: plan.plan,
+    ...(status === undefined ? {} : { status }),
+  };
+};
+
 const plan = Effect.fn("billing.api.plan")(function* plan(request: Request) {
-  const { user } = yield* verifySession(request.headers);
-  return yield* planOf(user.id);
+  return planToContract(yield* getBillingPlan(request));
 });
+
 const offer = Effect.fn("billing.api.offer")(function* offer(request: Request) {
-  yield* verifySession(request.headers);
+  yield* readSession(request);
   return yield* (yield* Stripe).offer;
 });
+
 const checkout = Effect.fn("billing.api.checkout")(function* checkout(request: Request) {
-  const { user } = yield* verifySession(request.headers);
+  const session = yield* readSession(request);
   yield* readJsonBody(Empty, request);
-  if ((yield* planOf(user.id)).plan === PLAN.paid) {
+  const planView = yield* getBillingPlan(request);
+  if (planView.plan === PLAN.paid) {
     return yield* new PaidAlready();
   }
   const origin = yield* AppOrigin;
-  const subscription = yield* findSubscription(user.id);
+  const subscription = yield* getMemberSubscription(request);
   const url = yield* (yield* Stripe).createCheckoutSession({
     cancelUrl: `${origin}/upgrade?checkout=${CHECKOUT_RETURN.cancel}`,
     customer:
-      subscription === undefined
+      subscription === null
         ? {
-            email: user.email,
+            email: session.user.email,
           }
         : {
             id: subscription.stripeCustomerId,
           },
-    memberId: user.id,
+    memberId: session.user.id,
     successUrl: `${origin}/settings/plan?checkout=${CHECKOUT_RETURN.success}`,
   });
   return {
     url,
   };
 });
+
 const portal = Effect.fn("billing.api.portal")(function* portal(request: Request) {
-  const { user } = yield* verifySession(request.headers);
+  yield* readSession(request);
   yield* readJsonBody(Empty, request);
-  const subscription = yield* findSubscription(user.id);
-  if (subscription === undefined) {
+  const subscription = yield* getMemberSubscription(request);
+  if (subscription === null) {
     return yield* new PaidPlanRequired();
   }
   const origin = yield* AppOrigin;
@@ -81,13 +111,13 @@ const portal = Effect.fn("billing.api.portal")(function* portal(request: Request
     url,
   };
 });
+
 const webhook = Effect.fn("billing.api.webhook")(function* webhook(request: Request) {
   const payload = yield* Effect.promise(() => request.text());
   const event = yield* (yield* Stripe).readEvent(payload, request.headers.get("stripe-signature"));
-  return {
-    outcome: yield* handleStripeEvent(event),
-  };
+  return yield* applyStripeEvent(event);
 });
+
 function billingApi(api: ApiRoutes<AppServices | Stripe>) {
   return createApi("")
     .get("/billing/plan", ...api.route({ response: PlanView }, plan, failures))
@@ -96,4 +126,5 @@ function billingApi(api: ApiRoutes<AppServices | Stripe>) {
     .post("/billing/portal", ...api.route({ response: HostedPage }, portal, failures))
     .post("/billing/webhook", ...api.route({ response: WebhookReceipt }, webhook, failures));
 }
+
 export { billingApi };

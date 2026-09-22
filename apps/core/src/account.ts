@@ -13,7 +13,6 @@ import type { Auth } from "@repo/auth";
 import type { Database } from "@repo/db";
 import type * as HttpHeaders from "effect/unstable/http/Headers";
 
-const webHeaders = (headers: HttpHeaders.Headers): Headers => new Headers(headers);
 
 const previewInvite = (
   token: string,
@@ -33,6 +32,8 @@ const acceptInvite = (
     const created = yield* acceptInvitation(acceptance);
     return { accepted: true as const, email: created.email };
   }).pipe(Effect.catchTag("DatabaseFailure", (failure) => Effect.die(failure)));
+
+const webHeaders = (headers: HttpHeaders.Headers): Headers => new Headers(headers);
 
 const verifyEmail = (
   token: string,
