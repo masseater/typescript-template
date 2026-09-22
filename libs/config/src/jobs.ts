@@ -19,27 +19,23 @@ type JobResult = {
   readonly stage: "complete";
 };
 
-type JobQueue = {
-  readonly send: (message: JobPayload) => Promise<unknown>;
-};
-
-type JobWorkflow = {
-  readonly create: (options: {
-    readonly id?: string;
-    readonly params?: JobPayload;
-  }) => Promise<{ readonly id: string }>;
-  readonly get: (id: string) => Promise<{
-    readonly status: () => Promise<{
-      readonly status: string;
-      readonly output?: unknown;
-      readonly error?: { readonly message: string } | null;
-    }>;
-  }>;
-};
-
 const JobsBindings = Schema.Struct({
-  [jobsQueueBinding]: bindingWith<JobQueue>("Queue", ["send"]),
-  [jobsWorkflowBinding]: bindingWith<JobWorkflow>("Workflow", ["create", "get"]),
+  [jobsQueueBinding]: bindingWith<{
+    readonly send: (message: JobPayload) => Promise<unknown>;
+  }>("Queue", ["send"]),
+  [jobsWorkflowBinding]: bindingWith<{
+    readonly create: (options: {
+      readonly id?: string;
+      readonly params?: JobPayload;
+    }) => Promise<{ readonly id: string }>;
+    readonly get: (id: string) => Promise<{
+      readonly status: () => Promise<{
+        readonly status: string;
+        readonly output?: unknown;
+        readonly error?: { readonly message: string } | null;
+      }>;
+    }>;
+  }>("Workflow", ["create", "get"]),
 });
 
 type JobsBindings = typeof JobsBindings.Type;

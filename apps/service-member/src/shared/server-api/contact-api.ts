@@ -30,11 +30,11 @@ function clientAddress(headers: Headers): string {
 
 const submitContact = Effect.fn("contact.submit")(function* submitContact(request: Request) {
   const submission = yield* readJsonBody(ContactSubmission, request);
-  yield* consumeRateLimit(
-    `${contactRateLimitPrefix}${clientAddress(request.headers)}`,
-    contactRateLimitMax,
-    contactRateLimitWindowMilliseconds,
-  );
+  yield* consumeRateLimit({
+    bucketKey: `${contactRateLimitPrefix}${clientAddress(request.headers)}`,
+    max: contactRateLimitMax,
+    windowMilliseconds: contactRateLimitWindowMilliseconds,
+  });
   const mail = yield* OpsMail;
   yield* sendContactEmail(mail, { submission, to: mail.OPS_EMAIL });
   return { ok: true as const };

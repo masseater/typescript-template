@@ -1,8 +1,8 @@
-import { effectRun } from "@repo/vite-config";
+import { awaitingEffectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  run: effectRun,
+  run: awaitingEffectRun,
   test: {
     coverage: {
       exclude: ["specs/**"],

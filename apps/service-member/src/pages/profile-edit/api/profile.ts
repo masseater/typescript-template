@@ -1,4 +1,4 @@
-import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
+import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -9,8 +9,8 @@ type Profile = typeof ProfileView.Type;
 function loadProfile(): Promise<Profile> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.profile.get().then((response) => {
-      const profile = apiDataOrNone(ProfileView, response, absent.notFound);
-      if (profile === undefined) {
+      const profile = apiDataOrNoneFor(absent.notFound)(ProfileView, response);
+      if (profile == null) {
         throw notFound();
       }
       return profile;

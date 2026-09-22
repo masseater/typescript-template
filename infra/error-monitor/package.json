@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./config": "./src/config.ts"
+    "./config": "./src/config.ts",
+    "./worker": "./src/worker.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
@@ -13,8 +14,6 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@effect/vitest": "catalog:",
-    "@msw/cloudflare": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:",
