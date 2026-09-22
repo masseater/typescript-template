@@ -26,7 +26,7 @@
     "@tanstack/ai": "0.54.0",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
-"alchemy": "catalog:",
+    "alchemy": "catalog:",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
     "effect": "catalog:",

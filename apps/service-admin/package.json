@@ -23,7 +23,7 @@
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@tanstack/react-table": "9.2.4",
-"alchemy": "catalog:",
+    "alchemy": "catalog:",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
     "effect": "catalog:",
