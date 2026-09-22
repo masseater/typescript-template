@@ -13,7 +13,6 @@ const workspaces = {
       "@effect/language-service",
       "@shadcn/lint",
       "@swc/core",
-      "dependency-cruiser",
       "oxlint",
       "oxlint-tsgolint",
       "textlint",
@@ -79,7 +78,6 @@ const workspaces = {
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
     entry: [
-      "dependency-cruiser.ts",
       "src/repository/dependency-cruiser.ts",
       "doctor.config.ts",
       "src/index.ts!",
@@ -137,6 +135,7 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db-local": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+  "libs/vite-config": ["src/compile-paraglide.ts!", "src/compile-workspace-paraglide.ts!"],
   "tools/dev": [
     "src/cli.ts!",
     "src/prepare-browser.ts!",
@@ -196,7 +195,7 @@ const config = ({
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
-      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
+      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
       "apps/*": app,
       "apps/core": {
         entry: ["src/worker.ts!"],
@@ -250,6 +249,7 @@ const config = ({
           "src/cloudflare-workers-loader.mjs",
           "src/cloudflare-workers-stub.mjs",
           "src/cloudflare-workflows-stub.mjs",
+          ...productionOnly(...scripts["libs/vite-config"]),
         ],
       },
       "tools/dev": {
