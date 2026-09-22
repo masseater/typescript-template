@@ -1,1 +1,1 @@
-export { WelcomeShell } from "./ui/welcome-shell.tsx";
+export { WelcomeLayout } from "./ui/welcome-layout.tsx";
