@@ -128,9 +128,10 @@ describe("paraglideAppRun", () => {
   const it = test.extend("localizedApplicationRun", () => paraglideAppRun("service-member"));
 
   it("compiles message catalogs before typecheck", ({ localizedApplicationRun }) => {
+    const tasks = appRun("service-member").tasks;
     expect(localizedApplicationRun).toStrictEqual({
       tasks: {
-        ...appRun("service-member").tasks,
+        ...tasks,
         "compile:paraglide": {
           command: "../../libs/vite-config/src/compile-paraglide.ts",
           input: [
@@ -144,6 +145,26 @@ describe("paraglideAppRun", () => {
         },
         "check:effect": {
           ...effectDiagnostics["check:effect"],
+          dependsOn: ["compile:paraglide"],
+        },
+        "check:code": {
+          ...tasks["check:code"],
+          dependsOn: ["compile:paraglide"],
+        },
+        "check:imports": {
+          ...tasks["check:imports"],
+          dependsOn: ["compile:paraglide"],
+        },
+        "check:client": {
+          ...tasks["check:client"],
+          dependsOn: ["compile:paraglide"],
+        },
+        "check:react": {
+          ...tasks["check:react"],
+          dependsOn: ["compile:paraglide"],
+        },
+        test: {
+          ...tasks.test,
           dependsOn: ["compile:paraglide"],
         },
       },

@@ -359,20 +359,43 @@ const paraglideCompileInputs = [
   { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
 ] as const;
 
-const paraglideAppRun = (app: Application): RunConfig => ({
-  tasks: {
-    ...appRun(app).tasks,
-    "compile:paraglide": {
-      command: "../../libs/vite-config/src/compile-paraglide.ts",
-      input: [...paraglideCompileInputs],
-      output: [".paraglide/**"],
+const paraglideAppRun = (app: Application): RunConfig => {
+  const tasks = appRun(app).tasks;
+  return {
+    tasks: {
+      ...tasks,
+      "compile:paraglide": {
+        command: "../../libs/vite-config/src/compile-paraglide.ts",
+        input: [...paraglideCompileInputs],
+        output: [".paraglide/**"],
+      },
+      "check:effect": {
+        ...effectDiagnostics["check:effect"],
+        dependsOn: ["compile:paraglide"],
+      },
+      "check:code": {
+        ...tasks["check:code"],
+        dependsOn: ["compile:paraglide"],
+      },
+      "check:imports": {
+        ...tasks["check:imports"],
+        dependsOn: ["compile:paraglide"],
+      },
+      "check:client": {
+        ...tasks["check:client"],
+        dependsOn: ["compile:paraglide"],
+      },
+      "check:react": {
+        ...tasks["check:react"],
+        dependsOn: ["compile:paraglide"],
+      },
+      test: {
+        ...tasks.test,
+        dependsOn: ["compile:paraglide"],
+      },
     },
-    "check:effect": {
-      ...effectDiagnostics["check:effect"],
-      dependsOn: ["compile:paraglide"],
-    },
-  },
-});
+  };
+};
 
 const coreDevWorker = {
   config: {
