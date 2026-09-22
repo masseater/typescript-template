@@ -28,8 +28,6 @@ const HttpsOrigin = Origin.check(
 );
 const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u));
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
-const localRelease = Effect.succeed("local");
-const withRelease = Release.pipe(Schema.withDecodingDefaultKey(localRelease));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 const NonEmpty = Schema.String.check(Schema.isMinLength(1));
 const appEnvKey = {
@@ -64,7 +62,7 @@ const bindingWith = <Binding>(
 
 const Scalars = Schema.Struct({
   [appEnvKey.appOrigin]: Origin,
-  [appEnvKey.appRelease]: withRelease,
+  [appEnvKey.appRelease]: Schema.optionalKey(Release),
   [appEnvKey.authSecret]: AuthSecret,
   [appEnvKey.emailFrom]: Email,
   [appEnvKey.flagshipAccountId]: Schema.optionalKey(NonEmpty),
@@ -147,6 +145,9 @@ const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(i
   const scalars = yield* decode(Scalars, input);
   yield* requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
+  if (scalars.APP_RELEASE === undefined && !local) {
+    return yield* invalid("APP_RELEASE is required outside local development");
+  }
   if (
     scalars.MAILPIT_URL !== undefined &&
     (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
@@ -162,6 +163,7 @@ const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(i
   }
   return {
     ...scalars,
+    APP_RELEASE: scalars.APP_RELEASE ?? "local",
     local,
     ...(scalars.MAILPIT_URL === undefined
       ? {}

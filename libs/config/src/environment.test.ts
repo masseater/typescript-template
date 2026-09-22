@@ -53,19 +53,38 @@ describe("readEnvironment", () => {
     const it = test.extend("publicEnvironment", () => {
       const { MAILPIT_URL: _mailpit, ...remoteBindings } = localBindings;
       return Effect.runPromise(
-        readEnvironment({ ...remoteBindings, APP_ORIGIN: "https://app.example.test" }),
+        readEnvironment({
+          ...remoteBindings,
+          APP_ORIGIN: "https://app.example.test",
+          APP_RELEASE: "1.2.3",
+        }),
       );
     });
 
     it("is not local development and sends no mail through Mailpit", ({ publicEnvironment }) => {
       expect(publicEnvironment).toStrictEqual({
         APP_ORIGIN: "https://app.example.test",
-        APP_RELEASE: "local",
+        APP_RELEASE: "1.2.3",
         AUTH_SECRET: localBindings.AUTH_SECRET,
         EMAIL_FROM: localBindings.EMAIL_FROM,
         OPS_EMAIL: localBindings.OPS_EMAIL,
         local: false,
       });
+    });
+  });
+
+  describe("a public HTTPS origin without a release", () => {
+    const it = test.extend("refusal", () => {
+      const { MAILPIT_URL: _mailpit, ...remoteBindings } = localBindings;
+      return Effect.runPromise(
+        Effect.flip(readEnvironment({ ...remoteBindings, APP_ORIGIN: "https://app.example.test" })),
+      );
+    });
+
+    it("is refused because release is required outside local development", ({ refusal }) => {
+      expect(refusal).toStrictEqual(
+        new ConfigurationInvalid({ reason: "APP_RELEASE is required outside local development" }),
+      );
     });
   });
 
@@ -82,12 +101,12 @@ describe("readEnvironment", () => {
     ],
     [
       "Mailpit behind a public origin",
-      { APP_ORIGIN: "https://app.example.test" },
+      { APP_ORIGIN: "https://app.example.test", APP_RELEASE: "1.2.3" },
       "Mailpit is restricted to local development",
     ],
     [
       "Mailpit and an OTLP switch that are both invalid",
-      { APP_ORIGIN: "https://app.example.test", OTLP_ENABLED: "true" },
+      { APP_ORIGIN: "https://app.example.test", APP_RELEASE: "1.2.3", OTLP_ENABLED: "true" },
       "Mailpit is restricted to local development",
     ],
     [
