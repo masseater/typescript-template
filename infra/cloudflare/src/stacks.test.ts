@@ -1,6 +1,9 @@
+import { pathToFileURL } from "node:url";
+
 import { Effect, Predicate } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { stackEntrypoint } from "./stack-entrypoints.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -12,23 +15,6 @@ import {
 } from "./stacks.ts";
 
 import type { StackName } from "./stacks.ts";
-
-const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
-  "./budget-monitor.ts",
-  "./core.ts",
-  "./database.ts",
-  "./email.ts",
-  "./error-monitor.ts",
-  "./flagship.ts",
-  "./health-monitor.ts",
-  "./internal-dashboard.ts",
-  "./observability.ts",
-  "./service-admin.ts",
-  "./service-member.ts",
-  "./storage.ts",
-  "./tokens.ts",
-  "./zone.ts",
-]);
 
 function defaultExport(module: unknown): unknown {
   return Predicate.isObject(module) ? Reflect.get(module, "default") : undefined;
@@ -81,9 +67,9 @@ describe("alchemy stacks", () => {
     Effect.runPromise(
       Effect.gen(function* program() {
         expect.hasAssertions();
-        const load = stackModules[`./${stack}.ts`];
-        const module: unknown =
-          load === undefined ? undefined : yield* Effect.promise(() => load());
+        const module: unknown = yield* Effect.promise(
+          () => import(pathToFileURL(stackEntrypoint(stack)).href),
+        );
         expect(Effect.isEffect(defaultExport(module))).toBe(true);
       }),
     ),

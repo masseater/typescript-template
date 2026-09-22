@@ -1,16 +1,17 @@
-import { register } from "node:module";
+import { registerHooks } from "node:module";
 import { fileURLToPath } from "node:url";
 
 import { Effect, Ref, Result, Schema } from "effect";
 import { aot } from "elysia/plugin/aot/vite";
 
+import { load, resolve } from "./cloudflare-workers-loader.ts";
 import { paths } from "./host.ts";
 
 import type { Plugin } from "vite-plus";
 
 const elysiaEntry = fileURLToPath(import.meta.resolve("elysia"));
 
-register(new URL("./cloudflare-workers-loader.mjs", import.meta.url).href);
+registerHooks({ load, resolve });
 
 class AotStartFailed extends Schema.TaggedError<AotStartFailed>()("AotStartFailed", {
   cause: Schema.optionalKey(Schema.Defect()),

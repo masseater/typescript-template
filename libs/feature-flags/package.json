@@ -6,7 +6,6 @@
     ".": "./src/index.ts",
     "./definitions": "./src/definitions.ts"
   },
-  "scripts": {},
   "dependencies": {
     "@cloudflare/flagship": "catalog:",
     "@cloudflare/workers-types": "catalog:",
