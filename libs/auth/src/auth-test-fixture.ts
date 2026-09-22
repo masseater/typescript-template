@@ -6,7 +6,7 @@ import {
   type AccountPermission,
   type Application,
   type Role,
-  httpStatus,
+  httpStatus
 } from "@repo/config";
 import {
   EmptyTestDatabase,

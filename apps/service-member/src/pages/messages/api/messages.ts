@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 

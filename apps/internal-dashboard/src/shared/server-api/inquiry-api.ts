@@ -1,5 +1,5 @@
 import { inquiryStaff } from "@repo/db/inquiry-staff";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";

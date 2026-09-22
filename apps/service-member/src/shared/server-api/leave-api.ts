@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { acceptRecovery, declineRecovery, findRecoveryOffer, withdrawMember } from "@repo/db";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";

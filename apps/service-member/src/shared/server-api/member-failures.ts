@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { unavailable } from "@repo/runtime/account";
 
 const memberFailures = {

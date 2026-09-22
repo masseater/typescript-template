@@ -6,7 +6,7 @@ import {
   readAgreementVersion,
   reviseAgreementDraft,
 } from "@repo/db/admin";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { privileged } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
