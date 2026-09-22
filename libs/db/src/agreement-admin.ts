@@ -12,8 +12,11 @@ import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 const requirePublishingAdmin = (sessionId: string): ReturnType<typeof requireAdmin> =>
   requireAdmin(sessionId, ADMIN_PERMISSION.operator);
 
-const livePublishingAdmin = (database: DrizzleDatabase, sessionId: string): SQL =>
-  liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
+const livePublishingAdmin = (
+  database: DrizzleDatabase,
+  sessionId: string,
+  checkedAt: Date,
+): SQL => liveAdmin(database, sessionId, checkedAt, ADMIN_PERMISSION.operator);
 
 const canPublishAgreements = Effect.fn("canPublishAgreements")(function* canPublishAgreements(
   sessionId: string,
@@ -132,7 +135,7 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     readonly sessionId: string;
   }) {
     const actor = yield* requirePublishingAdmin(published.sessionId);
-    const publishedAt = DateTime.toDate(DateTime.nowUnsafe());
+    const publishedAt = DateTime.toDate(yield* DateTime.now);
     const change = {
       action: AUDIT_ACTION.agreementPublished,
       actorId: actor.user.id,
@@ -143,12 +146,12 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
         eq(agreementVersion.id, published.id),
         isNull(agreementVersion.publishedAt),
       );
-      const targeted = sql`SELECT 1 FROM ${agreementVersion} WHERE ${unpublishedDraft} AND ${livePublishingAdmin(database, published.sessionId)}`;
+      const targeted = sql`SELECT 1 FROM ${agreementVersion} WHERE ${unpublishedDraft} AND ${livePublishingAdmin(database, published.sessionId, publishedAt)}`;
       const audit = database.run(auditWhen(change, targeted));
       const publication = database
         .update(agreementVersion)
         .set({ publishedAt, publishedBy: actor.user.id })
-        .where(and(unpublishedDraft, livePublishingAdmin(database, published.sessionId)))
+        .where(and(unpublishedDraft, livePublishingAdmin(database, published.sessionId, publishedAt)))
         .returning({
           id: agreementVersion.id,
           kind: agreementVersion.kind,

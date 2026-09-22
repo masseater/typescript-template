@@ -2,6 +2,7 @@ import { assert, it } from "@effect/vitest";
 import { ADMIN_PERMISSION, AGREEMENT_KIND, APPLICATION, AUDIT_ACTION, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
+import { TestClock } from "effect/testing";
 
 import {
   createAgreementDraft,
@@ -25,6 +26,10 @@ import { auditEvent } from "./schema.ts";
 import { TestDatabase } from "./testing.ts";
 
 const acceptedAt = DateTime.toDate(DateTime.makeUnsafe("2026-02-01T00:00:00.000Z"));
+const seededAgreementPublishedAt = 1_789_862_400_000;
+const afterSeededAgreements = Effect.fn("afterSeededAgreements")(function* afterSeededAgreements() {
+  yield* TestClock.setTime(seededAgreementPublishedAt + 86_400_000);
+});
 
 const clearVersions = query((database) => database.delete(agreementVersion));
 
@@ -61,6 +66,7 @@ it.effect(
   "seeds a published terms and privacy version so a fresh database can collect consent",
   () =>
     Effect.gen(function* program() {
+      yield* afterSeededAgreements();
       yield* addUser({ userId: "member" });
       assert.deepStrictEqual((yield* pendingAgreementKinds("member")).toSorted(), [
         AGREEMENT_KIND.interview_history,
@@ -73,6 +79,7 @@ it.effect(
 
 it.effect("has nothing pending when no version is published", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     yield* clearVersions;
     yield* addUser({ userId: "member" });
     assert.deepStrictEqual(yield* pendingAgreementKinds("member"), []);
@@ -84,6 +91,7 @@ it.effect("has nothing pending when no version is published", () =>
 
 it.effect("records who accepted which version and when, then clears the pending kinds", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     yield* addUser({ userId: "member" });
     const failure = yield* Effect.flip(requireSignupAgreements("member"));
     assert.strictEqual(failure._tag, "AgreementRequired");
@@ -120,6 +128,7 @@ it.effect("records who accepted which version and when, then clears the pending 
 
 it.effect("refuses to record acceptance of a draft or unknown version", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     yield* addUser({ userId: "member" });
     const sessionId = yield* adminSession("admin");
     const draft = yield* createAgreementDraft({
@@ -140,6 +149,7 @@ it.effect("refuses to record acceptance of a draft or unknown version", () =>
 
 it.effect("asks again only for the kind whose accepted version was superseded", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     yield* addUser({ userId: "member" });
     yield* acceptAllPending("member");
     const sessionId = yield* adminSession("admin");
@@ -165,6 +175,7 @@ it.effect("asks again only for the kind whose accepted version was superseded", 
 
 it.effect("reports canPublish for a strong admin and refuses a member", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     const sessionId = yield* adminSession("publisher");
     assert.strictEqual((yield* listAgreementVersions(sessionId)).canPublish, true);
     yield* addUser({ userId: "member" });
@@ -186,6 +197,7 @@ it.effect("reports canPublish for a strong admin and refuses a member", () =>
 
 it.effect("publishes once, records an audit event and refuses a second publication", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     const sessionId = yield* adminSession("admin");
     const created = yield* createAgreementDraft({
       body: "new terms",
@@ -221,6 +233,7 @@ it.effect("publishes once, records an audit event and refuses a second publicati
 
 it.effect("rejects a duplicate version label", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     const sessionId = yield* adminSession("admin");
     const failure = yield* Effect.flip(
       createAgreementDraft({
@@ -237,6 +250,7 @@ it.effect("rejects a duplicate version label", () =>
 
 it.effect("lets a view-only admin draft an agreement but not publish it", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     yield* addUser({
       permission: ADMIN_PERMISSION.viewer,
       role: ROLE.administrator,
@@ -259,6 +273,7 @@ it.effect("lets a view-only admin draft an agreement but not publish it", () =>
 
 it.effect("withdraws only agreement kinds marked withdrawable", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     yield* addUser({ userId: "member" });
     yield* acceptAllPending("member");
     yield* withdrawAgreementKind({ kind: AGREEMENT_KIND.interview_history, userId: "member" });
@@ -276,6 +291,7 @@ it.effect("withdraws only agreement kinds marked withdrawable", () =>
 
 it.effect("refuses drafting and publishing to members and to weak admin sessions", () =>
   Effect.gen(function* program() {
+      yield* afterSeededAgreements();
     yield* addUser({ userId: "member" });
     const memberSession = yield* addSession({ audience: APPLICATION.admin, userId: "member" });
     yield* addUser({ role: ROLE.administrator, userId: "weak" });
