@@ -1,7 +1,8 @@
 import { apiKeyWriteFailure, verifySessionOrApiKey, verifySessionWriter } from "@repo/auth";
+import { APPLICATION } from "@repo/config";
 import { UserNotFound, requirePaid } from "@repo/db";
 import { accountApi } from "@repo/runtime/account";
-import { apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
+import { apiDocs, apiRoot, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
 import { paidFailures } from "#shared/billing/index.ts";
@@ -56,6 +57,7 @@ function memberApi(
   >,
 ) {
   return createApi(apiRoot)
+    .use(apiDocs(APPLICATION.user))
     .use(accountApi(api))
     .use(contactApi(api))
     .use(flagsApi(api))
@@ -73,8 +75,8 @@ function memberApi(
     .use(visibilityApi(api))
     .get(
       "/profile",
-      api.route(
-        ProfileView,
+      ...api.route(
+        { response: ProfileView },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
@@ -89,8 +91,8 @@ function memberApi(
     )
     .get(
       "/member",
-      api.route(
-        MemberView,
+      ...api.route(
+        { response: MemberView },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
@@ -102,15 +104,19 @@ function memberApi(
     )
     .get(
       "/members",
-      api.route(
-        MemberList,
+      ...api.route(
+        { response: MemberList },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionOrApiKey(request.headers);
             yield* requirePaid(user.id);
             const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
             const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers(user.id, { keyword, limit: memberPageSize, offset });
+            const list = yield* listMembers(user.id, {
+              keyword,
+              limit: memberPageSize,
+              offset,
+            });
             return { ...list, pageSize: memberPageSize };
           }),
         failures,
@@ -118,8 +124,8 @@ function memberApi(
     )
     .patch(
       "/profile",
-      api.route(
-        ProfileView,
+      ...api.route(
+        { response: ProfileView },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySessionWriter(request.headers);

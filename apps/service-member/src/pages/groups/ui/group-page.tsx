@@ -145,7 +145,6 @@ function GroupPage({
               <Field
                 label="グループ名"
                 name="name"
-                required
                 maxLength={100}
                 value={rename.name}
                 onValueChange={rename.handleNameChange}

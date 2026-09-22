@@ -2,6 +2,7 @@ export { AGREEMENT_KIND, agreementKinds, agreementPolicies } from "./agreements.
 export type { AgreementKind, AgreementPolicy } from "./agreements.ts";
 export {
   APPLICATION,
+  scalarReferencePath,
   ApplicationName,
   applicationOrigins,
   applicationPorts,

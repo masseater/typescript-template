@@ -38,7 +38,6 @@ function CreateGroupForm(): ReactElement {
         <Field
           label="グループ名"
           name="name"
-          required
           maxLength={100}
           value={form.name}
           onValueChange={form.handleNameChange}

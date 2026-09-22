@@ -1,85 +1,95 @@
 import { authClient, requireSuccess } from "@repo/auth-ui";
 import { AUTHENTICATION_METHOD } from "@repo/config";
+import { type ActionState, Button, Field, FormColumn } from "@repo/ui";
+import { useForm } from "@tanstack/react-form";
+import { Schema } from "effect";
+
 import {
-  type ActionState,
-  Button,
-  Field,
-  FormColumn,
-  useTextInput,
-  type TextInput,
-} from "@repo/ui";
-import { Effect } from "effect";
+  SignUpSubmission,
+  maximumNameLength,
+  maximumPasswordLength,
+} from "#shared/contracts/index.ts";
+import { fieldError } from "#shared/forms/index.ts";
 
-import type { ReactElement, SyntheticEvent } from "react";
+import type { FormEvent, ReactElement } from "react";
 
-const signUp = (
-  fields: Readonly<{ email: TextInput; name: TextInput; password: TextInput }>,
-  onSent: () => void,
-): Promise<void> =>
-  Effect.runPromise(
-    Effect.gen(function* registerAccount() {
-      const { email, name, password } = fields;
-      requireSuccess(
-        yield* Effect.promise(() =>
-          authClient.signUp.email({
-            callbackURL: "/login",
-            email: email.value,
-            name: name.value,
-            password: password.value,
-          }),
-        ),
-      );
-      password.handleChange("");
+const signUpSchema = Schema.toStandardSchemaV1(SignUpSubmission);
+
+const signUp = (values: typeof SignUpSubmission.Type, onSent: () => void): Promise<void> =>
+  authClient.signUp
+    .email({
+      callbackURL: "/login",
+      email: values.email,
+      name: values.name,
+      password: values[AUTHENTICATION_METHOD.password],
+    })
+    .then(requireSuccess)
+    .then(() => {
       onSent();
-    }),
-  );
+    });
 
 const SignUpFields = ({
   action,
   onSent,
-}: {
-  readonly action: ActionState;
-  readonly onSent: () => void;
-}): ReactElement => {
-  const accountName = useTextInput();
-  const email = useTextInput();
-  const password = useTextInput();
-  const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
-    submitEvent.preventDefault();
-    action.run(() => signUp({ email, name: accountName, password }, onSent));
-  };
+}: Readonly<{
+  action: ActionState;
+  onSent: () => void;
+}>): ReactElement => {
+  const form = useForm({
+    defaultValues: { email: "", name: "", [AUTHENTICATION_METHOD.password]: "" },
+    onSubmit: ({ value }) => {
+      action.run(() => signUp(value, onSent));
+    },
+    validators: { onSubmit: signUpSchema },
+  });
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    event.stopPropagation();
+    void form.handleSubmit();
+  }
   return (
-    <form onSubmit={submit} aria-busy={action.pending}>
+    <form noValidate onSubmit={handleSubmit} aria-busy={action.pending}>
       <FormColumn>
-        <Field
-          label="ユーザー名"
-          name="name"
-          autoComplete="name"
-          required
-          maxLength={100}
-          value={accountName.value}
-          onValueChange={accountName.handleChange}
-        />
-        <Field
-          label="メールアドレス"
-          name="email"
-          type="email"
-          autoComplete="username"
-          required
-          value={email.value}
-          onValueChange={email.handleChange}
-        />
-        <Field
-          label="パスワード（12文字以上）"
-          name={AUTHENTICATION_METHOD.password}
-          type={AUTHENTICATION_METHOD.password}
-          autoComplete="new-password"
-          minLength={12}
-          maxLength={128}
-          required
-          value={password.value}
-          onValueChange={password.handleChange}
-        />
+        <form.Field name="name">
+          {(field) => (
+            <Field
+              label="ユーザー名"
+              name="name"
+              autoComplete="name"
+              maxLength={maximumNameLength}
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              error={fieldError(field.state.meta.errors)}
+            />
+          )}
+        </form.Field>
+        <form.Field name="email">
+          {(field) => (
+            <Field
+              label="メールアドレス"
+              name="email"
+              type="email"
+              autoComplete="username"
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              error={fieldError(field.state.meta.errors)}
+            />
+          )}
+        </form.Field>
+        <form.Field name={AUTHENTICATION_METHOD.password}>
+          {(field) => (
+            <Field
+              label="パスワード（12文字以上）"
+              name={AUTHENTICATION_METHOD.password}
+              type={AUTHENTICATION_METHOD.password}
+              autoComplete="new-password"
+              maxLength={maximumPasswordLength}
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              error={fieldError(field.state.meta.errors)}
+            />
+          )}
+        </form.Field>
         <Button type="submit" variant="primary" disabled={action.blocked}>
           登録する
         </Button>

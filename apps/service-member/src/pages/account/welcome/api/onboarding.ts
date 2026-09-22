@@ -1,4 +1,5 @@
 import { apiData } from "@repo/runtime/client";
+import { queryOptions } from "@tanstack/react-query";
 
 import { userClient } from "#shared/api/index.ts";
 import { OnboardingView } from "#shared/contracts/index.ts";
@@ -17,4 +18,10 @@ function saveOnboardingStep(step: OnboardingStep): Promise<OnboardingStep> {
   );
 }
 
-export { loadOnboardingStep, saveOnboardingStep };
+const onboardingOptions = queryOptions({
+  queryFn: loadOnboardingStep,
+  queryKey: ["onboarding"],
+  retry: false,
+});
+
+export { loadOnboardingStep, onboardingOptions, saveOnboardingStep };

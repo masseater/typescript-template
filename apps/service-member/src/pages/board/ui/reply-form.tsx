@@ -47,7 +47,6 @@ function ReplyForm({
           multiline
           label="返信"
           name="body"
-          required
           maxLength={maximumBoardBodyLength}
           value={form.body}
           onValueChange={form.handleBodyChange}

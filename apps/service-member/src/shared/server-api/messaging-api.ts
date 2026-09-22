@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -35,7 +35,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   ...paidFailures,
   MessagingConversationNotFound: {
     message: "会話が見つかりません。",
@@ -51,8 +51,8 @@ function messagingApi(api: ApiRoutes<AppServices>) {
   return createApi("/messages")
     .get(
       "/conversations",
-      api.route(
-        ConversationList,
+      ...api.route(
+        { response: ConversationList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -68,8 +68,8 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/conversation",
-      api.route(
-        ConversationView,
+      ...api.route(
+        { response: ConversationView },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -86,8 +86,8 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/lookup",
-      api.route(
-        ConversationLookupResult,
+      ...api.route(
+        { response: ConversationLookupResult },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -100,8 +100,8 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/unread",
-      api.route(
-        UnreadCount,
+      ...api.route(
+        { response: UnreadCount },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -112,8 +112,8 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/conversations",
-      api.route(
-        ConversationOpened,
+      ...api.route(
+        { response: ConversationOpened },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -126,8 +126,8 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/messages",
-      api.route(
-        MessageSent,
+      ...api.route(
+        { response: MessageSent },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -139,8 +139,8 @@ function messagingApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/read",
-      api.route(
-        ConversationRead,
+      ...api.route(
+        { response: ConversationRead },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

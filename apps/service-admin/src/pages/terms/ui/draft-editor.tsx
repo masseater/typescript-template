@@ -37,7 +37,6 @@ function DraftEditor({
           multiline
           name="body"
           onValueChange={form.handleBodyChange}
-          required
           value={form.body}
         />
         <Field

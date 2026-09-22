@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { acceptRecovery, declineRecovery, findRecoveryOffer, withdrawMember } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -16,7 +16,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   MemberLeaveUnavailable: {
     message: "退会できません。",
     status: httpStatus.forbidden,
@@ -64,10 +64,19 @@ const submitRecoveryDecline = Effect.fn("leave.recoveryDecline")(function* submi
 
 function leaveApi(api: ApiRoutes<AppServices>) {
   return createApi("")
-    .post("/leave", api.route(LeaveAccepted, submitLeave, failures))
-    .get("/recovery-offer", api.route(RecoveryOfferView, loadRecoveryOffer, failures))
-    .post("/recovery/accept", api.route(RecoveryAccepted, submitRecoveryAccept, failures))
-    .post("/recovery/decline", api.route(RecoveryAccepted, submitRecoveryDecline, failures));
+    .post("/leave", ...api.route({ response: LeaveAccepted }, submitLeave, failures))
+    .get(
+      "/recovery-offer",
+      ...api.route({ response: RecoveryOfferView }, loadRecoveryOffer, failures),
+    )
+    .post(
+      "/recovery/accept",
+      ...api.route({ response: RecoveryAccepted }, submitRecoveryAccept, failures),
+    )
+    .post(
+      "/recovery/decline",
+      ...api.route({ response: RecoveryAccepted }, submitRecoveryDecline, failures),
+    );
 }
 
 export { leaveApi };
