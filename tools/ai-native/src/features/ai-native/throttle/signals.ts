@@ -17,11 +17,14 @@ const raiseSignal = (signal: NodeJS.Signals): void => {
 };
 
 export const makeWaitingInterruptHandler = (input: {
-  entryPath: string;
+  entryPathOf: () => string | undefined;
   removeEntry: (entryPath: string) => void;
 }): ((signal: NodeJS.Signals) => void) => {
   return (signal) => {
-    input.removeEntry(input.entryPath);
+    const entryPath = input.entryPathOf();
+    if (entryPath !== undefined) {
+      input.removeEntry(entryPath);
+    }
     raiseSignal(signal);
   };
 };

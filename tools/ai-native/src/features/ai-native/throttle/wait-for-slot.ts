@@ -78,12 +78,13 @@ export const waitForSlot = (
 ): Promise<SlotHold | "budget-exhausted"> =>
   Effect.runPromise(
     Effect.gen(function* waitUntilFree() {
-      const waiterPath = enqueueWaiter(configuration.slotDir);
+      let waiterPath: string | undefined;
       const interruptHandler = makeWaitingInterruptHandler({
-        entryPath: waiterPath,
+        entryPathOf: () => waiterPath,
         removeEntry: removeWaiter,
       });
       installInterruptHandler(interruptHandler);
+      waiterPath = enqueueWaiter(configuration.slotDir);
       return yield* Effect.promise(() =>
         pollForSlot(configuration, {
           entryName: baseName(waiterPath),
@@ -93,7 +94,9 @@ export const waitForSlot = (
       ).pipe(
         Effect.ensuring(
           Effect.sync(() => {
-            removeWaiter(waiterPath);
+            if (waiterPath !== undefined) {
+              removeWaiter(waiterPath);
+            }
             dropInterruptHandler(interruptHandler);
           }),
         ),
