@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
 import { RequestRejected } from "@repo/observability";
-
 import { Cause, Effect } from "effect";
 
 import { failureResponse } from "./failures.ts";

@@ -1,5 +1,4 @@
 import { httpStatus } from "@repo/config";
-
 import { Duration, Effect, Predicate, Schema, SchemaIssue } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 

@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
 import { Telemetry } from "@repo/observability";
-
 import { Deferred, Effect, Layer, Queue, Schema, Stream } from "effect";
 
 import { apiServerClient } from "./client.ts";

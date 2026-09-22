@@ -1,5 +1,4 @@
 import { APPLICATION, type Application, type Role, httpStatus } from "@repo/config";
-
 import {
   EmptyTestDatabase,
   TestDatabase,
@@ -7,7 +6,6 @@ import {
   getSchemaShape,
   runStatement,
 } from "@repo/db/testing";
-
 import { getSchema } from "better-auth/db";
 import { Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 import { URI } from "otpauth";

@@ -1,6 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
-
 import { recordingSink } from "@repo/observability/testing";
 import { appEnvironment } from "@repo/runtime/testing";
 import { serveApp, workerRuntime } from "@repo/runtime/worker";

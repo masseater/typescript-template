@@ -1,7 +1,7 @@
+import { httpStatus } from "@repo/config";
 import { Cause, Effect, type LogLevel } from "effect";
 
 import { annotateLogs, type Attributes } from "./annotations.ts";
-import { httpStatus } from "@repo/config";
 
 const refusals: ReadonlySet<number> = new Set([
   httpStatus.unauthorized,

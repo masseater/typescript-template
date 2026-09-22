@@ -1,3 +1,4 @@
+import { httpStatus } from "@repo/config";
 import { Cause, Clock, Context, Effect, Fiber, Predicate, Tracer } from "effect";
 
 import { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
@@ -9,7 +10,6 @@ import {
   identifierPattern,
   type ErrorAttributes,
 } from "./errors.ts";
-import { httpStatus } from "@repo/config";
 import { httpMethod, parentContext, routeLabel, traceparentOf } from "./protocol.ts";
 import { logAt, statusSeverity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";

@@ -3,7 +3,6 @@ const { parseArgs } = process.getBuiltinModule("util");
 
 import { causeRecord, runCli } from "@repo/cli";
 import { APPLICATION, applicationOrigins, applications, httpStatus } from "@repo/config";
-
 import { Clock, Console, Effect, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 

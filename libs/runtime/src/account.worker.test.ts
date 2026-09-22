@@ -1,7 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { TestDatabase, runStatement } from "@repo/db/testing";
 import { httpStatus } from "@repo/config";
-
+import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
 import { Effect } from "effect";
 import { TestClock } from "effect/testing";

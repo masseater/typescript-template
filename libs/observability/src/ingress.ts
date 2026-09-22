@@ -1,8 +1,8 @@
+import { httpStatus } from "@repo/config";
 import { DateTime, Effect, HashSet, Ref, Result } from "effect";
 
 import { errorFingerprint } from "./errors.ts";
 import { parseBrowserEvents, type BrowserEvent } from "./events.ts";
-import { httpStatus } from "@repo/config";
 import { RequestEntropy } from "./request-span.ts";
 import { readJson, rejectionStatus, type JsonRequest } from "./request.ts";
 import { logAt, statusSeverity, type Severity } from "./severity.ts";

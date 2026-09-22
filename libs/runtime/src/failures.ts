@@ -1,6 +1,5 @@
 import { httpStatus } from "@repo/config";
 import { rejectionStatus, reportFailure, reportUnavailable } from "@repo/observability";
-
 import { Cause, Effect, Option, Schema } from "effect";
 
 import { jsonResponse } from "./responses.ts";

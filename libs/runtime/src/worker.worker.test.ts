@@ -1,6 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
-
 import { recordingSink } from "@repo/observability/testing";
 import { cspNonceHeader } from "@repo/runtime/security";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";

@@ -1,6 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
-
 import { Effect, Schema } from "effect";
 
 import { apiData, apiServerClient } from "./client.ts";
