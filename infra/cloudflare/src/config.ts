@@ -34,6 +34,7 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
     "deploy_token_permissions_missing",
     "mail_from_outside_deployment",
     "otlp_enabled_without_endpoint",
+    "otlp_endpoint_without_enabled",
     "origins_must_differ",
     "plan_adopts_existing_resources",
     "plan_confirmation_mismatch",
@@ -122,9 +123,15 @@ const checkOtlpSettings = Effect.fn("checkOtlpSettings")(function* checkOtlpSett
       deploymentKey.otlpEndpoint,
     ]);
   }
-  return otlp.endpoint === undefined
+  if (otlp.endpoint !== undefined && otlp.enabled === undefined) {
+    return yield* fail("otlp_endpoint_without_enabled", [
+      deploymentKey.otlpEnabled,
+      deploymentKey.otlpEndpoint,
+    ]);
+  }
+  return otlp.endpoint === undefined || otlp.enabled === undefined
     ? undefined
-    : { enabled: otlp.enabled ?? true, endpoint: otlp.endpoint };
+    : { enabled: otlp.enabled, endpoint: otlp.endpoint };
 });
 
 function deriveOrigins(prefix: string, appDomain: string): SharedConfig["origins"] {
