@@ -6,6 +6,7 @@ class ErrorMonitorFailure extends Schema.TaggedError<ErrorMonitorFailure>()("Err
   code: Schema.Literals([
     "error_monitor_config_invalid",
     "telemetry_account_invalid",
+    "telemetry_groups_dropped",
     "telemetry_http_failed",
     "telemetry_response_invalid",
   ]),

@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
 import { ConfigurationInvalid, readAi, readConfig } from "@repo/config";
-import { readStorage } from "@repo/config/storage";
+import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { otlpSignalUrl } from "@repo/observability";
 import { Effect } from "effect";
 
@@ -165,8 +165,10 @@ it.effect("every application reads exactly the bindings its Worker declares", ()
     assert.strictEqual(admin.APP_RELEASE, release);
     assert.isUndefined(yield* readAi(adminBindings));
     assert.isDefined(yield* readAi(userBindings));
-    assert.isUndefined((yield* readStorage(adminBindings)).files);
-    assert.isUndefined((yield* readStorage(adminBindings)).cache);
+    assert.isUndefined((yield* readOptionalStorage(adminBindings)).files);
+    assert.isUndefined((yield* readOptionalStorage(adminBindings)).cache);
+    const adminStorage = yield* readStorage(adminBindings).pipe(Effect.flip);
+    assert.instanceOf(adminStorage, ConfigurationInvalid);
     assert.isDefined((yield* readStorage(userBindings)).files);
     assert.isDefined((yield* readStorage(userBindings)).cache);
     const missing = yield* readConfig({ ...userBindings, DB: undefined }).pipe(Effect.flip);

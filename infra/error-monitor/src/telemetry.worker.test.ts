@@ -1,4 +1,4 @@
-import { assert, it } from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import { setupNetwork } from "@msw/cloudflare";
 import { Effect, Schema } from "effect";
 import { HttpResponse, http } from "msw";
@@ -97,13 +97,36 @@ function recordQuery(requests: unknown[]): Effect.Effect<Network, never, Scope.S
   );
 }
 
+describe("error monitor telemetry", () => {
 it.effect("groups fingerprinted error logs through the Workers Observability query API", () =>
   Effect.gen(function* program() {
     const requests: unknown[] = [];
-    yield* recordQuery(requests);
+    yield* withServer(
+      http.post(endpoint, ({ request }) => {
+        if (request.headers.get("authorization") !== `Bearer ${token}`) {
+          return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
+        }
+        return request.json().then((body) => {
+          requests.push(body);
+          return HttpResponse.json({
+            ...queryResult,
+            result: {
+              ...queryResult.result,
+              calculations: [
+                {
+                  aggregates: [fingerprintedAggregate],
+                  calculation: "count",
+                  series: [{ data: [1], time: [1] }],
+                },
+              ],
+            },
+          });
+        });
+      }),
+    );
     const result = yield* fetchErrorGroups(window);
     assert.deepStrictEqual(result, {
-      dropped: 1,
+      dropped: 0,
       groups: [
         {
           count: GROUPED_EVENTS,
@@ -115,10 +138,6 @@ it.effect("groups fingerprinted error logs through the Workers Observability que
         },
       ],
     });
-    assert.notInclude(
-      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(result),
-      "private@example.com",
-    );
     const [body] = requests;
     assert.deepInclude(body, {
       chartType: "aggregate",
@@ -137,6 +156,19 @@ it.effect("groups fingerprinted error logs through the Workers Observability que
         { type: "string", value: "error.type" },
       ],
     });
+  }).pipe(Effect.scoped),
+);
+
+it.effect("an invalid fingerprint is a check failure rather than a successful drop", () =>
+  Effect.gen(function* program() {
+    yield* recordQuery([]);
+    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "telemetry_groups_dropped");
+    assert.deepStrictEqual(failure.keys, ["dropped:1"]);
+    assert.notInclude(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
+      "private@example.com",
+    );
   }).pipe(Effect.scoped),
 );
 
@@ -256,3 +288,4 @@ it.effect("query failures are errors rather than an empty result", () =>
     assert.deepStrictEqual(failure.keys, []);
   }).pipe(Effect.scoped),
 );
+});

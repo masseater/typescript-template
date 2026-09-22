@@ -44,21 +44,32 @@ describe("file storage and read cache", () => {
     }).pipe(Effect.provide(storageLayer)),
   );
 
-  it.effect("reports unavailable when the file binding is missing", () =>
+  it.effect("refuses to start when the file binding is missing from the environment", () =>
+    Effect.gen(function* program() {
+      const failure = yield* Layer.build(FileStore.fromEnvironment({})).pipe(
+        Effect.scoped,
+        Effect.flip,
+      );
+      assert.strictEqual(failure._tag, "ConfigurationInvalid");
+    }),
+  );
+
+  it.effect("refuses to start when the cache binding is missing from the environment", () =>
+    Effect.gen(function* program() {
+      const failure = yield* Layer.build(ReadCache.fromEnvironment({})).pipe(
+        Effect.scoped,
+        Effect.flip,
+      );
+      assert.strictEqual(failure._tag, "ConfigurationInvalid");
+    }),
+  );
+
+  it.effect("reports unavailable only when a store is intentionally omitted", () =>
     Effect.gen(function* program() {
       const store = yield* FileStore;
       const failure = yield* store.get("missing").pipe(Effect.flip);
       assert.instanceOf(failure, StorageFailed);
       assert.strictEqual(failure.reason, "unavailable");
     }).pipe(Effect.provide(FileStore.layer(undefined))),
-  );
-
-  it.effect("reports unavailable when the cache binding is missing", () =>
-    Effect.gen(function* program() {
-      const cache = yield* ReadCache;
-      const failure = yield* cache.get("missing").pipe(Effect.flip);
-      assert.instanceOf(failure, StorageFailed);
-      assert.strictEqual(failure.reason, "unavailable");
-    }).pipe(Effect.provide(ReadCache.layer(undefined))),
   );
 });

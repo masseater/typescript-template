@@ -75,7 +75,9 @@ class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runt
   }
 
   public static fromEnvironment(env: unknown): Layer.Layer<FileStore, ConfigurationInvalid> {
-    return Layer.unwrap(Effect.map(readStorage(env), (storage) => FileStore.layer(storage.files)));
+    return Layer.unwrap(
+      Effect.map(readStorage(env), (storage) => FileStore.layer(storage.files)),
+    );
   }
 }
 
