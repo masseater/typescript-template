@@ -92,10 +92,31 @@ describe("effect diagnostics coverage", () => {
   });
 
   it("every workspace runs the same diagnostics command", () => {
-    expect.assertions(1);
-    expect(declarations).toStrictEqual(
-      declarations.map(() => effectDiagnostics["check:effect"] as unknown),
+    expect.assertions(2);
+    expect(
+      declarations.map((task) => ({
+        command: field(task, "command"),
+        input: field(task, "input"),
+      })),
+    ).toStrictEqual(
+      declarations.map(() => ({
+        command: effectDiagnostics["check:effect"].command,
+        input: effectDiagnostics["check:effect"].input,
+      })),
     );
+    expect(
+      declarations.flatMap((task) => {
+        const dependsOn = field(task, "dependsOn");
+        if (dependsOn === undefined) {
+          return [];
+        }
+        return Array.isArray(dependsOn) &&
+          dependsOn.length === 1 &&
+          dependsOn[0] === "compile:paraglide"
+          ? []
+          : [dependsOn];
+      }),
+    ).toStrictEqual([]);
   });
 
   it("typechecks with effect-tsgo before the bundle", () => {
