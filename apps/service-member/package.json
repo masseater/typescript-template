@@ -7,10 +7,6 @@
     "#paraglide/*": "./.paraglide/*",
     "#*": "./src/*"
   },
-  "scripts": {
-    "dev": "vp dev",
-    "preview": "vp preview"
-  },
   "dependencies": {
     "@better-auth/api-key": "catalog:",
     "@cloudflare/tanstack-ai": "0.2.1",
