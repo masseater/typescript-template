@@ -31,7 +31,7 @@ const emailChangeTarget = (
 ): Result.Result<string | undefined, VerificationTokenInvalid> => {
   const claims = decodeTokenClaims(token);
   if (Result.isFailure(claims)) {
-    return claims;
+    return Result.fail(new VerificationTokenInvalid());
   }
   return Result.succeed(claims.success.updateTo);
 };
