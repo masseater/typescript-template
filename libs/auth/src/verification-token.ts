@@ -28,13 +28,8 @@ const decodeTokenClaims = (
 
 const emailChangeTarget = (
   token: string,
-): Result.Result<string | undefined, VerificationTokenInvalid> => {
-  const claims = decodeTokenClaims(token);
-  if (Result.isFailure(claims)) {
-    return claims;
-  }
-  return Result.succeed(claims.success.updateTo);
-};
+): Result.Result<string | undefined, VerificationTokenInvalid> =>
+  Result.map(decodeTokenClaims(token), (claims) => claims.updateTo);
 
 const emailChangePrevious = (token: string): string | undefined => {
   const claims = decodeTokenClaims(token);
