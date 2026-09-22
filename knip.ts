@@ -105,6 +105,7 @@ const workspaces = {
 };
 
 const cloudflareStacks = [
+  "src/core.ts!",
   "src/database.ts!",
   "src/flagship.ts!",
   "src/email.ts!",
@@ -168,8 +169,10 @@ const config = ({
     ignoreIssues: {
       "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/server-app.ts": ["exports"],
       "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/service-admin/src/shared/server-api/server-app.ts": ["exports"],
       "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/inbox/binding.ts": ["exports"],
@@ -181,6 +184,7 @@ const config = ({
       "apps/service-member/src/shared/server-api/jobs-api.worker.test.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/realtime-api.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/server-app.ts": ["exports"],
       "libs/db/src/testing.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
@@ -197,6 +201,11 @@ const config = ({
       ...workspaces,
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
       "apps/*": app,
+      "apps/core": {
+        entry: ["src/worker.ts!"],
+        ignoreDependencies: ["cloudflare"],
+        project: ["src/**/*.ts!"],
+      },
       "apps/internal-dashboard": {
         ...app,
         project: [
@@ -238,6 +247,13 @@ const config = ({
       "libs/db-local": {
         entry: productionOnly(...scripts["libs/db-local"]),
         project: ["src/**/*.ts!"],
+      },
+      "libs/vite-config": {
+        entry: [
+          "src/cloudflare-workers-loader.mjs",
+          "src/cloudflare-workers-stub.mjs",
+          "src/cloudflare-workflows-stub.mjs",
+        ],
       },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],

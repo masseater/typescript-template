@@ -13,7 +13,7 @@ import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";
-import { paths } from "@repo/vite-config";
+import { elysiaWorkerdJit, paths } from "@repo/vite-config";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
@@ -30,6 +30,7 @@ const migrations = loaded.map((migration) => ({
 
 export default defineProject({
   plugins: [
+    elysiaWorkerdJit(),
     cloudflareTest({
       additionalExports: {
         [jobsWorkflowClass]: "WorkflowEntrypoint",
