@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import { Effect } from "effect";
 
