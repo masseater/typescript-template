@@ -3,7 +3,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
-import { baselineProfileLayout, ProfileLayoutRenderer } from "#shared/profile-layout/index.ts";
+import { baselineProfileLayout } from "#shared/profile-layout/default.ts";
+import { ProfileLayoutRenderer } from "#shared/profile-layout/renderer.tsx";
 
 import type { Member } from "#pages/profile/model/member.ts";
 

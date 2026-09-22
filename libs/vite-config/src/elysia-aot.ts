@@ -19,17 +19,30 @@ const elysiaAot = (appRoot: string): Plugin => {
   });
   const { apply: _buildOnly, ...hooks } = compiled;
   void _buildOnly;
-  const start = (): Promise<void> =>
-    Effect.runPromise(
-      Effect.as(
-        Effect.promise(() => Promise.resolve(compiled.buildStart())),
-        undefined,
+  let startFailure: unknown;
+  const start = (): Promise<void> => {
+    startFailure = undefined;
+    return Effect.runPromise(
+      Effect.promise(() => Promise.resolve(compiled.buildStart())).pipe(
+        Effect.tapError((failure) =>
+          Effect.sync(() => {
+            startFailure = failure;
+          }),
+        ),
+        Effect.asVoid,
       ),
     );
+  };
   return {
     ...hooks,
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
     buildStart: start,
+    buildEnd: () => {
+      if (startFailure !== undefined) {
+        throw startFailure;
+      }
+      hooks.buildEnd?.();
+    },
     configureServer: start,
     resolveId: (specifier: string): string | undefined => {
       if (specifier === "elysia") {
