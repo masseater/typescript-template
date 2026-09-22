@@ -19,11 +19,10 @@ describe("pull request check scope", () => {
     expect(workflow).not.toContain("paths-ignore");
     expect(workflow).not.toContain("paths:");
     expect(workflow).not.toMatch(/^ {6}run: vp check$/mu);
-    expect(vite).toContain('prepr: ["check:imports"]');
-    expect(vite).toContain('premerge: ["test", "test:dev-server"]');
-    expect(vite).toContain('"apps/**/*.test.ts"');
-    expect(vite).toContain('"infra/**/*.test.ts"');
-    expect(vite).toContain('"libs/**/*.test.ts"');
+    expect(vite).toContain('premerge: ["test", "test:dev-server", "test:workers"]');
+    expect(vite).not.toContain('"apps/**/*.test.ts"');
+    expect(vite).not.toContain('"infra/**/*.test.ts"');
+    expect(vite).not.toContain('"libs/**/*.test.ts"');
   });
 
   it("records a stuck pull-request check as a failure before the runner sits pending", () => {

@@ -21,7 +21,6 @@
     "@swc/core": "1.16.2",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "dependency-cruiser": "catalog:",
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "catalog:",
