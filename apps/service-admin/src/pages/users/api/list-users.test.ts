@@ -3,7 +3,10 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { userListKey, userListOptions } from "./list-users.ts";
 
-import type { ListedUsers } from "./load-users.ts";
+interface ListedUsers {
+  readonly total: number;
+  readonly users: readonly never[];
+}
 
 describe("admin user list queries", () => {
   it("invalidates every search when a row changes the list", () => {
