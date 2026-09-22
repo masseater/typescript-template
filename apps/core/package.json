@@ -5,6 +5,8 @@
   "dependencies": {
     "@repo/core-api": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/infra-cloudflare": "workspace:*",
+    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
