@@ -276,6 +276,7 @@ const MAX_NESTED_DESCRIBE = 4;
 
 export const UPSTREAM_TEST_RULES: NonNullable<OxlintConfig["rules"]> = {
   "no-empty-pattern": LINT_SEVERITY.OFF,
+  "react/no-multi-comp": LINT_SEVERITY.OFF,
   "typescript/require-await": LINT_SEVERITY.OFF,
   "typescript/unbound-method": LINT_SEVERITY.OFF,
   "vitest/consistent-each-for": LINT_SEVERITY.ERROR,
