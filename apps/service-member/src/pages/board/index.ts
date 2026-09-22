@@ -1,10 +1,8 @@
 export { BoardFailed } from "./ui/board-failed.tsx";
-export { BoardPage } from "./ui/board-page.tsx";
 export { BoardPending } from "./ui/board-pending.tsx";
 export { BoardRoute } from "./ui/board-route.tsx";
 export { ThreadFailed } from "./ui/thread-failed.tsx";
 export { ThreadMissing } from "./ui/thread-missing.tsx";
-export { ThreadPage } from "./ui/thread-page.tsx";
 export { ThreadPending } from "./ui/thread-pending.tsx";
 export { ThreadRoute } from "./ui/thread-route.tsx";
 export { loadThread, loadThreads } from "./api/board.ts";

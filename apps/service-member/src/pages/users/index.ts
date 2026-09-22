@@ -1,5 +1,4 @@
 export { UsersFailed } from "./ui/users-failed.tsx";
-export { UsersPage } from "./ui/users-page.tsx";
 export { UsersPending } from "./ui/users-pending.tsx";
 export { UsersRoute } from "./ui/users-route.tsx";
 export { loadMembers } from "./api/load-members.ts";
