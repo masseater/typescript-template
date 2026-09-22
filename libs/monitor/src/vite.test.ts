@@ -12,7 +12,7 @@ describe("monitorWorkerVite", () => {
     expect(workerVite).toStrictEqual({
       pack: {
         deps: {
-          alwaysBundle: ["effect", "@repo/monitor"],
+          alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
           onlyBundle: ["effect", "@repo/monitor"],
         },
         dts: false,
