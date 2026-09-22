@@ -40,7 +40,7 @@ erDiagram
 
 - プランは `free` か `paid` の 2 つで、PlanSubscription からその場で導く。契約が無い MemberAccount は `free` である
 - `status` は Stripe の subscription status（`active` / `trialing` / `past_due` / `canceled` など）をそのまま持つ。`active` か `trialing` で、`currentPeriodEnd` が未来（または未設定）のときだけ `paid` になる
-- 有料かどうかの判定は `isPaidMember` / `requirePaid` の 1 か所で行い、画面・API キー・MCP のどの経路もそこを通る。無料の会員が有料の操作を呼ぶと `PaidPlanRequired`（HTTP 402）で拒む
+- 有料かどうかの判定は `isPaidMember` / `requirePaid` の 1 か所で行い、画面・API キー・MCP のどの呼び出しもそこを通る。無料の会員が有料の操作を呼ぶと `PaidPlanRequired`（HTTP 402）で拒む
 - 解約は Billing Portal で `cancelAtPeriodEnd` を立て、現在期間の末に Stripe が `customer.subscription.deleted` を送った時点で `free` に戻る。引き止めの段階は持たない
 - StripeEvent は処理した Webhook の ID を持つ。同じ ID の通知が再び届いても何も変えない。古い通知が後から届いても、`updatedAt` より前の内容では上書きしない
 - Stripe の設定（`STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID`）が無いと利用者アプリは起動時の設定検証で止まる。「設定が無ければ全員無料」という状態は無い。ローカル開発では test モードの鍵だけを受け付ける

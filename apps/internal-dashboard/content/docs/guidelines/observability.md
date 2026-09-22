@@ -15,7 +15,7 @@ description: 応答の状態コードと監視へ送る対象、記録の流れ�
 
 利用者アプリ（`service-member`）だけが Google Analytics を読み込む。管理アプリと Wiki には入れない。
 
-- 計測 ID は GitHub Environment の `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID` から Alchemy の `GOOGLE_ANALYTICS_MEASUREMENT_ID` binding として利用者 Worker だけへ渡す。未設定ならスクリプトは出さず、壊れたタグも載せない
+- 計測 ID は GitHub Environment の `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID` から Alchemy の `GOOGLE_ANALYTICS_MEASUREMENT_ID` binding として利用者 Worker だけへ渡す。未設定ならスクリプトは出さず、誤ったタグも載せない
 - ローカル開発と自動テストでは Google へ送らない。`readEnvironment` が local と判定した環境、または ID が無い環境では計測を止める
 - ページ URL に含まれる利用者 ID は Google へ送る前に `/users/_` など特定できない形へ置き換える。メールアドレスと利用者 ID を計測データに載せない
 - AI と bot の操作は計測から除外しない。User-Agent で区別する
