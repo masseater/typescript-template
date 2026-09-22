@@ -2,8 +2,8 @@ import {
   googleAnalyticsConnectSrc,
   googleAnalyticsImgSrc,
   googleAnalyticsScriptSrc,
+  httpStatus,
 } from "@repo/config";
-import { httpStatus } from "@repo/observability";
 import { strictTransportSecurity } from "@repo/runtime/security";
 
 const nonceBytes = 16;

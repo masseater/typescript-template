@@ -5,7 +5,7 @@ import {
   listMemberInquiries,
   replyAsMember,
 } from "@repo/db";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";

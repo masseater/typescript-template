@@ -2,7 +2,7 @@ import { Auth } from "@repo/auth";
 import { AuthApps, authTest, authTestSecret, runWith } from "@repo/auth/testing";
 import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS } from "@repo/config";
 import { eq, query, recordSubscription, schema } from "@repo/db";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { unavailable } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";

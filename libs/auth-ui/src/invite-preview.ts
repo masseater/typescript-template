@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { ErrorBody, InvitePreview } from "@repo/runtime/contracts";
 import { Effect, Option, Result, Schema } from "effect";
 import { FetchHttpClient, HttpClient, type HttpClientResponse } from "effect/unstable/http";

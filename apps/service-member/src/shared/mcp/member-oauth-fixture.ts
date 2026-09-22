@@ -8,7 +8,7 @@ import {
   type BrowserClient,
 } from "@repo/auth/testing";
 import { APPLICATION, memberMcpScopes } from "@repo/config";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { Data, Effect, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";

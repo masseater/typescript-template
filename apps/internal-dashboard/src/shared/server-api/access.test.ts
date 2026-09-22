@@ -1,5 +1,5 @@
 import { AdminMfaRequired } from "@repo/auth";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { Option } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 

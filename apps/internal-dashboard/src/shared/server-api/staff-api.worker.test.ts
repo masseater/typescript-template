@@ -4,7 +4,7 @@ import { APPLICATION, ROLE, STAFF_PERMISSION } from "@repo/config";
 import { AUDIT_CHANNEL, Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
 import { FLAG_KEY } from "@repo/feature-flags";
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";

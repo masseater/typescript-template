@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 
 import type { PaidPlanRequired } from "@repo/db";
 import type { FailureTable } from "@repo/runtime/http";

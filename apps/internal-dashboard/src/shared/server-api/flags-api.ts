@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
+import { httpStatus } from "@repo/config";
 import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
-import { httpStatus } from "@repo/observability";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";

@@ -1,3 +1,4 @@
+import { httpStatus } from "@repo/config";
 import { Duration, Effect, Layer, Logger } from "effect";
 import {
   FetchHttpClient,
@@ -12,7 +13,6 @@ import {
   OtlpTracer,
 } from "effect/unstable/observability";
 
-import { httpStatus } from "./http-status.ts";
 import { logAt } from "./severity.ts";
 import { redactedLogger } from "./structured-logs.ts";
 
