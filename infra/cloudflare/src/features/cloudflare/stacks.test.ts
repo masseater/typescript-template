@@ -62,6 +62,19 @@ describe("alchemy stacks", () => {
     ]);
   });
 
+
+  it("points application stacks at apps alchemy entrypoints", () => {
+    expect.hasAssertions();
+    for (const [stack, relative] of [
+      ["core", "apps/core/alchemy.run.ts"],
+      ["service-admin", "apps/service-admin/alchemy.run.ts"],
+      ["service-member", "apps/service-member/alchemy.run.ts"],
+      ["internal-dashboard", "apps/internal-dashboard/alchemy.run.ts"],
+    ] as const) {
+      expect(stackEntrypoint(stack).endsWith(relative)).toBe(true);
+    }
+  });
+
   it.for(stackNames)("%s exports the program the CLI runs", (stack) =>
     Effect.runPromise(
       Effect.gen(function* program() {

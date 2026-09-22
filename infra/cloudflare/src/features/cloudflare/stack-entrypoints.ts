@@ -7,7 +7,7 @@ import { path } from "./platform.ts";
 import type { Application } from "@repo/config";
 import type { StackName } from "./stacks.ts";
 
-const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
+const repositoryRoot = fileURLToPath(new URL("../../../../../", import.meta.url));
 const cloudflareSrc = fileURLToPath(new URL(".", import.meta.url));
 
 const applicationEntrypoints = {
