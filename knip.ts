@@ -200,13 +200,12 @@ const config = ({
       "apps/core": {
         entry: ["alchemy.run.ts!", "src/worker.ts!"],
         ignoreDependencies: ["cloudflare"],
-        project: ["alchemy.run.ts!", "src/**/*.ts!"],
+        project: ["src/**/*.ts!"],
       },
       "apps/internal-dashboard": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
         project: [
-          "alchemy.run.ts!",
           "src/**/*.{ts,tsx,mdx}!",
           "src/**/*.css",
           "!src/shared/wiki/wiki-oauth-fixture.ts!",
@@ -215,12 +214,12 @@ const config = ({
       "apps/service-admin": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
-        project: ["alchemy.run.ts!", "src/**/*.{ts,tsx}!"],
+        project: ["src/**/*.{ts,tsx}!"],
       },
       "apps/service-member": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
-        project: ["alchemy.run.ts!", "src/**/*.{ts,tsx}!"],
+        project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
