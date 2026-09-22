@@ -614,7 +614,15 @@ const lintOptions = {
     "dont-review-it/no-detached-test-file--move-beside-source": [
       LINT_SEVERITY.ERROR,
       {
-        testFileSuffixes: [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx", ".worker.test.ts"],
+        testFileSuffixes: [
+          ".test.ts",
+          ".test.tsx",
+          ".spec.ts",
+          ".spec.tsx",
+          ".worker.test.ts",
+          ".node.test.ts",
+          ".isolated.test.ts",
+        ],
       },
     ],
     "dont-review-it/no-fixture-forward-subject--yield-sut-output": [
