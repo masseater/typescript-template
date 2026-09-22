@@ -135,14 +135,6 @@ const detected: readonly Case[] = [
     },
   ],
   [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export type { Db } from "@repo/db";\n' },
-  ],
-  [
     "no-deployment-config-in-shipped-code",
     { "apps/service-member/src/index.ts": 'export * from "@repo/infra-cloudflare/deployment";\n' },
   ],
@@ -263,10 +255,6 @@ const accepted: readonly Case[] = [
       "libs/auth/src/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/session.test.ts": 'export * from "./helper.test.ts";\n',
     },
-  ],
-  [
-    "no-wiki-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
   ],
   [
     "no-browser-to-server",

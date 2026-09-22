@@ -12,7 +12,7 @@ import type { Enrollment, SettingsContext } from "./mfa-types";
 
 const adminLocked = (session: SessionView, recovery: string | undefined): boolean => {
   return (
-    session.user.role === ROLE.administrator &&
+    session.user.role !== ROLE.member &&
     (session.user.twoFactorEnabled || (recovery === "1" && !session.strong))
   );
 };
@@ -88,7 +88,6 @@ const TotpPasswordForm = ({
           name={AUTHENTICATION_METHOD.password}
           type={AUTHENTICATION_METHOD.password}
           autoComplete="current-password"
-          required
           value={password.value}
           onValueChange={password.handleChange}
         />

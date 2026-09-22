@@ -17,6 +17,33 @@ type SettledStatus =
   | typeof httpStatus.ok;
 type HttpStatus = (typeof httpStatus)[keyof typeof httpStatus];
 type FailureStatus = Exclude<HttpStatus, SettledStatus>;
+interface Failure<Status extends FailureStatus = FailureStatus> {
+  readonly status: Status;
+  readonly message: string;
+  readonly details?: Readonly<Record<string, unknown>>;
+}
+const mapped = Symbol("FailureMapping");
+interface FailureMapping<Error> {
+  readonly [mapped]: true;
+  readonly statuses: readonly FailureStatus[];
+  failureOf(error: Error): Failure;
+}
+type FailureEntry<Error> =
+  | Failure
+  | "unexpected"
+  | FailureMapping<Error>
+  | ((error: Error) => Failure);
+type FailureTable<Failures extends Tagged> = {
+  readonly [Tag in Failures["_tag"]]: FailureEntry<Extract<Failures, { readonly _tag: Tag }>>;
+};
+type ExactFailureTable<_Failures extends Tagged, Table> = Table;
+type AnyFailureEntry = Failure | "unexpected" | FailureMapping<any> | ((error: any) => Failure);
+type AnyFailureTable = Readonly<Record<string, AnyFailureEntry>>;
+type InputKind = "body" | "none" | "query";
+
+const invalidInput = "入力内容を確認してください。";
+const forbidden = "この操作は許可されていません。";
+const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 const settledStatuses: ReadonlySet<HttpStatus> = new Set([
   httpStatus.accepted,
   httpStatus.found,
@@ -26,28 +53,8 @@ const settledStatuses: ReadonlySet<HttpStatus> = new Set([
 const failureStatuses = Object.values(httpStatus).filter(
   (code): code is FailureStatus => !settledStatuses.has(code),
 );
-interface Failure {
-  readonly status: FailureStatus;
-  readonly message: string;
-}
-type FailureTable<Failures extends Tagged> = {
-  readonly [Tag in Failures["_tag"]]:
-    | Failure
-    | "unexpected"
-    | ((error: Extract<Failures, { readonly _tag: Tag }>) => Failure);
-};
-type CommonFailure =
-  | RequestRejected
-  | InputInvalid
-  | { readonly _tag: "SessionRequired" }
-  | { readonly _tag: "SessionInvalid" }
-  | { readonly _tag: "AdminRequired" }
-  | { readonly _tag: "AdminMfaRequired" };
-
-const invalidInput = "入力内容を確認してください。";
-const forbidden = "この操作は許可されていません。";
-const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 const FailureShape = Schema.Struct({
+  details: Schema.optionalKey(Schema.Record(Schema.String, Schema.Unknown)),
   message: Schema.String,
   status: Schema.Literals(failureStatuses),
 });
@@ -55,36 +62,79 @@ const TaggedShape = Schema.Struct({ _tag: Schema.String });
 const isFailure = Schema.is(FailureShape);
 const isTagged = Schema.is(TaggedShape);
 
-const commonFailures: FailureTable<CommonFailure> = {
-  AdminMfaRequired: { message: forbidden, status: httpStatus.forbidden },
-  AdminRequired: { message: forbidden, status: httpStatus.forbidden },
+function failureBy<const Statuses extends readonly FailureStatus[], Error>(
+  statuses: Statuses,
+  failureOf: (error: Error) => Failure<Statuses[number]>,
+): FailureMapping<Error> {
+  return { [mapped]: true, failureOf, statuses };
+}
+
+const queryFailures: FailureTable<InputInvalid> = {
   InputInvalid: { message: invalidInput, status: httpStatus.badRequest },
-  RequestRejected: (error) => ({
-    message: error.reason === "invalid_json" ? invalidInput : forbidden,
-    status: rejectionStatus[error.reason],
-  }),
-  SessionInvalid: { message: forbidden, status: httpStatus.forbidden },
-  SessionRequired: { message: "ログインしてください。", status: httpStatus.unauthorized },
 };
 
-function toFailure(table: object, error: unknown): Failure | undefined {
-  if (!isTagged(error)) {
+const bodyFailures: FailureTable<InputInvalid | RequestRejected> = {
+  ...queryFailures,
+  RequestRejected: failureBy(
+    Object.values(rejectionStatus),
+    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+    (rejection: RequestRejected) => ({
+      message: rejection.reason === "invalid_json" ? invalidInput : forbidden,
+      status: rejectionStatus[rejection.reason],
+    }),
+  ),
+};
+
+const inputFailures: Readonly<Record<InputKind, AnyFailureTable>> = {
+  body: bodyFailures,
+  none: {},
+  query: queryFailures,
+};
+
+function entryStatuses(entry: AnyFailureEntry): readonly FailureStatus[] {
+  if (entry === "unexpected") {
+    return [httpStatus.internalServerError];
+  }
+  if (typeof entry === "function") {
+    return [];
+  }
+  return mapped in entry ? entry.statuses : [entry.status];
+}
+
+function declaredStatuses(table: AnyFailureTable): readonly FailureStatus[] {
+  const statuses = new Set([
+    ...Object.values(table).flatMap(entryStatuses),
+    httpStatus.internalServerError,
+    httpStatus.serviceUnavailable,
+  ]);
+  return [...statuses].toSorted((left, right) => left - right);
+}
+
+function failureOf(table: AnyFailureTable, error: unknown): Failure | undefined {
+  if (!isTagged(error) || !Object.hasOwn(table, error._tag)) {
     return undefined;
   }
-  const entry: unknown = Reflect.get(table, error._tag);
-  const failure: unknown =
-    typeof entry === "function" ? Reflect.apply(entry, undefined, [error]) : entry;
-  return isFailure(failure) ? failure : undefined;
+  const entry = table[error._tag];
+  if (entry === undefined || entry === "unexpected") {
+    return undefined;
+  }
+  if (typeof entry === "function") {
+    const resolved: unknown = Reflect.apply(entry, undefined, [error]);
+    return isFailure(resolved) ? resolved : undefined;
+  }
+  if (mapped in entry) {
+    const resolved: unknown = Reflect.apply(entry.failureOf, entry, [error]);
+    return isFailure(resolved) ? resolved : undefined;
+  }
+  return entry;
 }
 
 function reportedFailure(
-  table: object,
+  table: AnyFailureTable,
   cause: Readonly<Cause.Cause<unknown>>,
 ): Effect.Effect<Failure> {
   const error = Cause.findErrorOption(cause);
-  const failure = Option.isSome(error)
-    ? toFailure({ ...commonFailures, ...table }, error.value)
-    : undefined;
+  const failure = Option.isSome(error) ? failureOf(table, error.value) : undefined;
   if (failure !== undefined) {
     return Effect.succeed(failure);
   }
@@ -92,12 +142,18 @@ function reportedFailure(
   return reportFailure(cause).pipe(Effect.as(unexpected));
 }
 
+type FailureBody = Readonly<Record<string, unknown>> & { readonly error: string };
+
+function failureBody(failure: Failure): FailureBody {
+  return { ...failure.details, error: failure.message };
+}
+
 function failureResponse(
-  table: object,
+  table: AnyFailureTable,
   cause: Readonly<Cause.Cause<unknown>>,
 ): Effect.Effect<Response> {
   return reportedFailure(table, cause).pipe(
-    Effect.map((failure) => jsonResponse({ error: failure.message }, failure.status)),
+    Effect.map((failure) => jsonResponse(failureBody(failure), failure.status)),
   );
 }
 
@@ -110,5 +166,22 @@ function runtimeUnavailable(
   );
 }
 
-export { failureResponse, reportedFailure, runtimeUnavailable };
-export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };
+export {
+  declaredStatuses,
+  failureBody,
+  failureBy,
+  failureResponse,
+  inputFailures,
+  reportedFailure,
+  runtimeUnavailable,
+};
+export type {
+  AnyFailureTable,
+  ExactFailureTable,
+  Failure,
+  FailureBody,
+  FailureStatus,
+  FailureTable,
+  InputKind,
+  Tagged,
+};

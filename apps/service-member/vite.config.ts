@@ -1,8 +1,13 @@
 import { APPLICATION } from "@repo/config";
 import { appConfig, paraglideAppPlugin, paraglideAppRun } from "@repo/vite-config";
+import { devtools } from "@tanstack/devtools-vite";
 import { defineConfig } from "vite-plus";
 
-export default defineConfig((env) => ({
-  ...appConfig(APPLICATION.user, [paraglideAppPlugin()])(env),
-  run: paraglideAppRun,
-}));
+export default defineConfig((env) => {
+  const config = appConfig(APPLICATION.user, [paraglideAppPlugin()])(env);
+  return {
+    ...config,
+    plugins: [devtools(), ...(config.plugins ?? [])],
+    run: paraglideAppRun(APPLICATION.user),
+  };
+});

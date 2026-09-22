@@ -1,30 +1,24 @@
-import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { requestAtom, resultError } from "@repo/ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Effect } from "effect";
-import { AsyncResult } from "effect/unstable/reactivity";
 
-import { authTask } from "./browser-http.ts";
-import { authClient } from "./client.ts";
-import { requireSuccess } from "./protocol.ts";
+import { passkeysKey, passkeysOptions } from "./api/passkeys.ts";
+import { errorMessage } from "./protocol.ts";
 
 import type { PasskeySummary } from "./mfa-types.ts";
-
-const passkeysAtom = requestAtom(() =>
-  Effect.runPromise(
-    authTask(() => authClient.passkey.listUserPasskeys()).pipe(Effect.map(requireSuccess)),
-  ),
-);
 
 const usePasskeys = (): {
   readonly listError: string | undefined;
   readonly passkeys: readonly PasskeySummary[] | undefined;
   readonly reload: () => void;
 } => {
-  const listing = useAtomValue(passkeysAtom);
-  const reload = useAtomRefresh(passkeysAtom);
+  const queries = useQueryClient();
+  const listed = useQuery(passkeysOptions);
+  const reload = (): void => {
+    Effect.runFork(Effect.promise(() => queries.invalidateQueries({ queryKey: passkeysKey })));
+  };
   return {
-    listError: resultError(listing),
-    passkeys: AsyncResult.isSuccess(listing) ? listing.value : undefined,
+    listError: listed.error === null ? undefined : errorMessage(listed.error),
+    passkeys: listed.data,
     reload,
   };
 };

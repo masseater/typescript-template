@@ -1,24 +1,27 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect, Schema } from "effect";
 
-import { InterviewView, Utterance } from "#shared/interview/contracts.ts";
+import { InterviewView, Utterance } from "#shared/interview/index.ts";
 import {
   openInterview,
+  respondHistoryConsent,
   restartInterview,
   saveInterview,
   takeTurn,
-} from "#shared/interview/index.ts";
+} from "#shared/interview/server.ts";
 
-import type { Interviewer } from "#shared/interview/index.ts";
+import type { Interviewer } from "#shared/interview/server.ts";
+import type { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const Empty = Schema.Struct({});
+const HistoryConsent = Schema.Struct({ accept: Schema.Boolean });
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   InterviewConflict: {
     message: "別の画面で会話が進んでいます。読み込み直してください。",
     status: httpStatus.conflict,
@@ -28,6 +31,10 @@ const failures = {
     status: httpStatus.tooManyRequests,
   },
   TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
+  AgreementVersionUnavailable: {
+    message: "同意の対象となる規約が見つかりません。",
+    status: httpStatus.notFound,
+  },
 };
 
 const open = Effect.fn("interview.api.open")(function* open(request: Request) {
@@ -52,12 +59,24 @@ const restart = Effect.fn("interview.api.restart")(function* restart(request: Re
   return yield* restartInterview(user.id);
 });
 
-function interviewApi(api: ApiRoutes<AppServices | Interviewer>) {
+const historyConsent = Effect.fn("interview.api.historyConsent")(function* historyConsent(
+  request: Request,
+) {
+  const { user } = yield* verifySession(request.headers);
+  const { accept } = yield* readJsonBody(HistoryConsent, request);
+  return yield* respondHistoryConsent(user.id, accept);
+});
+
+function interviewApi(api: ApiRoutes<AppServices | Interviewer | ProfileLayoutAssembler>) {
   return createApi("")
-    .get("/interview", api.route(InterviewView, open, failures))
-    .post("/interview/turns", api.route(InterviewView, turn, failures))
-    .post("/interview/sheet", api.route(InterviewView, saveSheet, failures))
-    .post("/interview/restart", api.route(InterviewView, restart, failures));
+    .get("/interview", ...api.route({ response: InterviewView }, open, failures))
+    .post("/interview/turns", ...api.route({ response: InterviewView }, turn, failures))
+    .post("/interview/sheet", ...api.route({ response: InterviewView }, saveSheet, failures))
+    .post(
+      "/interview/history-consent",
+      ...api.route({ response: InterviewView }, historyConsent, failures),
+    )
+    .post("/interview/restart", ...api.route({ response: InterviewView }, restart, failures));
 }
 
 export { interviewApi };

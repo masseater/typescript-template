@@ -1,6 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
@@ -11,8 +12,8 @@ import { readWikiConfig } from "#shared/wiki/wiki-config.ts";
 import type { WikiServices } from "#shared/wiki/index.ts";
 
 const failures = {
+  ...sessionFailures,
   ConfigurationInvalid: "unexpected",
-  DatabaseFailure: "unexpected",
   FlagEditorRequired: {
     message: "機能フラグの変更権限がありません。",
     status: httpStatus.forbidden,
@@ -50,8 +51,8 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
   return createApi("")
-    .get("/flags", api.route(FlagList, listFlags, { DatabaseFailure: "unexpected" }))
-    .patch("/flags", api.route(FlagToggled, patchFlag, failures));
+    .get("/flags", ...api.route({ response: FlagList }, listFlags, failures))
+    .patch("/flags", ...api.route({ response: FlagToggled }, patchFlag, failures));
 }
 
 export { flagsApi };

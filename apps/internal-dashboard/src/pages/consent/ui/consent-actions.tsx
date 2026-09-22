@@ -1,5 +1,4 @@
 import { Button, FormColumn, STATUS_VARIANT, StatusMessage, localState, useAction } from "@repo/ui";
-import { Effect } from "effect";
 
 import { submitDecision } from "#pages/consent/api/consent.ts";
 import { serviceName } from "#shared/config/index.ts";
@@ -8,20 +7,11 @@ import type { ReactElement } from "react";
 
 const useDecided = localState(false);
 
-function recordDecision(accept: boolean, setDecided: (decided: boolean) => void): Promise<void> {
-  return Effect.runPromise(
-    Effect.gen(function* decideConsent() {
-      yield* submitDecision(accept);
-      setDecided(true);
-    }),
-  );
-}
-
 function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement {
   const action = useAction();
   const [decided, setDecided] = useDecided();
   function decide(accept: boolean): void {
-    action.run(() => recordDecision(accept, setDecided));
+    action.run(() => submitDecision(accept).then(() => setDecided(true)));
   }
   function allow(): void {
     decide(true);

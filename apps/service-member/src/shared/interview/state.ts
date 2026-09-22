@@ -6,7 +6,15 @@ import { FieldKey, Reply, Sheet, maximumOptions } from "./sheet.ts";
 const maximumUtterance = 500;
 
 const roles = ["interviewer", ROLE.member] as const;
-const settledPhases = ["summary", "saved"] as const;
+const settledPhases = ["summary", "history_consent", "saved"] as const;
+
+/** @canonical-values interview.field-status */
+export const fieldStatuses = ["unanswered", "answered", "skipped"] as const;
+export const FIELD_STATUS = {
+  answered: fieldStatuses[1],
+  skipped: fieldStatuses[2],
+  unanswered: fieldStatuses[0],
+} as const;
 
 const Progress = Schema.Struct({ sheet: Sheet, skipped: Schema.Array(FieldKey) });
 const Message = Schema.Struct({
@@ -41,5 +49,5 @@ const Utterance = Schema.Union([
 type InterviewState = typeof State.Type;
 type MemberUtterance = typeof Utterance.Type;
 
-export { State, Utterance, roles, settledPhases };
+export { State, Utterance, maximumUtterance, roles, settledPhases };
 export type { InterviewState, MemberUtterance };

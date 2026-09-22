@@ -26,10 +26,17 @@ type SharedEnv = Readonly<{
   EMAIL_FROM: string;
   FLAGSHIP_ACCOUNT_ID: string;
   FLAGS: Flagship.App;
+  GOOGLE_ANALYTICS_MEASUREMENT_ID?: string;
   OPS_EMAIL: string;
   OTLP_AUTHORIZATION?: Redacted.Redacted;
   OTLP_ENABLED?: string;
   OTLP_ENDPOINT?: string;
+}>;
+
+type BillingEnv = Readonly<{
+  STRIPE_PRICE_ID: Redacted.Redacted;
+  STRIPE_SECRET_KEY: Redacted.Redacted;
+  STRIPE_WEBHOOK_SECRET: Redacted.Redacted;
 }>;
 
 type WikiEnv = SharedEnv &
@@ -39,7 +46,7 @@ type WikiEnv = SharedEnv &
   }>;
 
 interface CapabilityEnv {
-  readonly ai: Readonly<{ AI: AIBinding }>;
+  readonly billing: BillingEnv;
   readonly jobs: Readonly<{
     JOBS: Queues.Queue;
     PROCESS: WorkflowLike<{ jobId: string }>;
@@ -48,6 +55,7 @@ interface CapabilityEnv {
   readonly storage: Readonly<
     Record<typeof fileBucketBinding, R2.Bucket> & Record<typeof cacheNamespaceBinding, KV.Namespace>
   >;
+  readonly "workers-ai": Readonly<{ AI: AIBinding }>;
 }
 
 type UnionToIntersection<Union> = (Union extends unknown ? (value: Union) => void : never) extends (
@@ -65,4 +73,4 @@ type DeclaredEnv = SharedEnv & Partial<UnionToIntersection<CapabilityEnv[Capabil
 
 type AppBindings<App extends Application> = InferEnv<AppEnv<App> & Readonly<{ ASSETS: Assets }>>;
 
-export type { AppBindings, AppEnv, CapabilityEnv, DeclaredEnv, SharedEnv, WikiEnv };
+export type { AppBindings, AppEnv, BillingEnv, CapabilityEnv, DeclaredEnv, SharedEnv, WikiEnv };

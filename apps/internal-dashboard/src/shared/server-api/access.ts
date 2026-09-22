@@ -17,11 +17,15 @@ const publicPaths: ReadonlySet<string> = new Set([
   "/api/telemetry",
   "/api/health",
   "/api/session",
+  "/api/invite",
 ]);
 
 function isPublic(path: string): boolean {
   return (
-    publicPaths.has(path) || path.startsWith("/api/auth/") || path.startsWith("/.well-known/oauth-")
+    publicPaths.has(path) ||
+    path.startsWith("/api/auth/") ||
+    path.startsWith("/invite/") ||
+    path.startsWith("/.well-known/oauth-")
   );
 }
 

@@ -1,4 +1,5 @@
 import { assert, it } from "@effect/vitest";
+import { NOTIFICATION_KIND } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 
@@ -18,7 +19,7 @@ it.effect("stores a notification and a feed post for one user", () =>
     const userId = "member-1";
     const notification = yield* publishNotification(env, userId, {
       id: "n1",
-      kind: "follow",
+      kind: NOTIFICATION_KIND.follow,
       subjectId: "actor-1",
     });
     const post = yield* publishFeedPost(env, userId, {

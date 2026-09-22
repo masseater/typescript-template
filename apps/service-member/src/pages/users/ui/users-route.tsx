@@ -4,10 +4,10 @@ import { UsersPage } from "./users-page.tsx";
 
 import type { ReactElement } from "react";
 
-const route = getRouteApi("/_member/users/");
+const route = getRouteApi("/_member/search");
 
-function UsersRoute(): ReactElement {
-  return <UsersPage list={route.useLoaderData()} search={route.useSearch()} />;
+function SearchRoute(): ReactElement {
+  return <UsersPage search={route.useSearch()} />;
 }
 
-export { UsersRoute };
+export { SearchRoute };

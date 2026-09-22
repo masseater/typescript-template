@@ -1,5 +1,8 @@
-import { Email } from "@repo/config";
+import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
 import { Effect, Schema, SchemaGetter } from "effect";
+
+import { Sheet } from "#shared/interview/sheet.ts";
+import { ProfileLayout } from "#shared/profile-layout/schema.ts";
 
 const maximumIdentifierLength = 256;
 const maximumNameLength = 100;
@@ -12,8 +15,16 @@ const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
 const maximumContactNameLength = 100;
 const maximumContactMessageLength = 4000;
+const minimumPasswordLength = 12;
+const maximumPasswordLength = 128;
 
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
+
+const MemberName = Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength));
+
+const MemberPassword = Schema.String.check(
+  Schema.isLengthBetween(minimumPasswordLength, maximumPasswordLength),
+);
 
 const SocialLink = Schema.String.check(
   Schema.isMaxLength(maximumSocialLinkLength),
@@ -23,10 +34,15 @@ const SocialLink = Schema.String.check(
 );
 const SocialLinks = Schema.Array(SocialLink).check(Schema.isMaxLength(maximumSocialLinks));
 
+const PhotoSlot = Schema.Literals(photoSlots);
+const PhotoVersion = Schema.NullOr(Schema.String.check(Schema.isPattern(/^[0-9a-f-]{1,64}$/u)));
+const PhotoVersions = Schema.Struct({ company: PhotoVersion, face: PhotoVersion });
+
 const ProfileView = Schema.Struct({
   email: Schema.String,
   id: Schema.String,
   name: Schema.String,
+  photos: PhotoVersions,
   profile: Schema.String,
   socialLinks: SocialLinks,
 });
@@ -37,13 +53,39 @@ const ProfileUpdate = Schema.Struct({
   socialLinks: SocialLinks,
 });
 
+const SignUpSubmission = Schema.Struct({
+  email: Email,
+  name: MemberName,
+  password: MemberPassword,
+});
+
+const VisibilityView = Schema.Struct({
+  searchable: Schema.Boolean,
+  visibility: Schema.Literals(profileVisibilities),
+});
+
+const PhotoQuery = Schema.Struct({ slot: PhotoSlot });
+
+const PhotoView = Schema.Struct({ slot: PhotoSlot, version: PhotoVersion });
+
 const MemberQuery = Schema.Struct({ id: Identifier });
 
+const MemberPhotoQuery = Schema.Struct({
+  id: Identifier,
+  slot: PhotoSlot,
+  version: Schema.optionalKey(Schema.String),
+});
+
 const MemberView = Schema.Struct({
+  blocked: Schema.optionalKey(Schema.Boolean),
+  following: Schema.optionalKey(Schema.Boolean),
   id: Schema.String,
   joined: Schema.String.check(Schema.isPattern(/^\d{4}-\d{2}$/u)),
   name: Schema.String,
+  photos: PhotoVersions,
   profile: Schema.String,
+  profileLayout: ProfileLayout,
+  sheet: Sheet,
   socialLinks: SocialLinks,
 });
 
@@ -94,25 +136,53 @@ const ContactSubmission = Schema.Struct({
 
 const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
 
+const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
+
+const LeaveAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
+const RecoveryOfferAvailable = Schema.Struct({
+  available: Schema.Literal(true),
+  previousName: Schema.String,
+});
+
+const RecoveryOfferUnavailable = Schema.Struct({
+  available: Schema.Literal(false),
+});
+
+const RecoveryOfferView = Schema.Union([RecoveryOfferAvailable, RecoveryOfferUnavailable]);
+
+const RecoveryAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+
 export {
   ContactAccepted,
   ContactSubmission,
   Identifier,
+  LeaveAccepted,
+  LeaveRequest,
   MemberList,
   MemberListQuery,
+  MemberPhotoQuery,
   MemberQuery,
   MemberView,
+  PhotoQuery,
+  PhotoView,
   ProfileUpdate,
   ProfileView,
+  RecoveryAccepted,
+  RecoveryOfferView,
   SearchKeyword,
+  SignUpSubmission,
+  VisibilityView,
   laterPage,
   maximumContactMessageLength,
   maximumContactNameLength,
   maximumKeywordLength,
   maximumMemberPage,
   maximumNameLength,
+  maximumPasswordLength,
   maximumProfileLength,
   maximumSocialLinks,
   memberPageSize,
+  memberRetentionDays,
   pageNumber,
 };
