@@ -1,7 +1,11 @@
 import { tmpdir } from "node:os";
 
 import { assert, it } from "@effect/vitest";
-import { deploymentKeys } from "@repo/observability/deployment-keys";
+import {
+  budgetKeys,
+  deploymentKeys,
+  optionalDeploymentKeys,
+} from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 
 import { writeCiSecretsFile } from "./ci-env.ts";
@@ -123,5 +127,39 @@ it.effect("refuses retired per-app origin secrets even when TEMPLATE_APP_DOMAIN 
     }).pipe(Effect.flip);
     assert.strictEqual(failure.code, "ci_env_retired_origins");
     assert.deepStrictEqual([...failure.keys], ["TEMPLATE_SERVICE_MEMBER_ORIGIN"]);
+  }).pipe(Effect.scoped),
+);
+
+it.effect("carries optional budget amounts and drops the ones left empty", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const carried = budgetKeys.filter(
+      (key) => !deploymentKeys.some((requiredKey) => requiredKey === key),
+    );
+    const [kept, dropped] = [carried[0], carried[1]];
+    if (kept === undefined || dropped === undefined) {
+      return yield* Effect.die("budget keys to carry");
+    }
+    const preparation = yield* writeCiSecretsFile({
+      ...required,
+      [kept]: verificationEnvironment[kept] ?? "1",
+      RUNNER_TEMP: path.join(directory, "runner"),
+    });
+    assert.strictEqual(preparation.status, "ready");
+    if (preparation.status !== "ready") {
+      return;
+    }
+    const contents = yield* Effect.gen(function* readContents() {
+      const filesystem = yield* FileSystem.FileSystem;
+      return yield* filesystem.readFileString(preparation.filename);
+    }).pipe(Effect.orDie, Effect.provide(layer));
+    assert.include(contents, `${kept}=`);
+    assert.notInclude(contents, `${dropped}=`);
+    for (const key of optionalDeploymentKeys) {
+      assert.notInclude(contents, `${key}=`);
+    }
   }).pipe(Effect.scoped),
 );
