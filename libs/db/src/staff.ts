@@ -42,7 +42,6 @@ const staffPermissionOf = (permission: string | null): StaffPermission | undefin
 
 export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: string) {
   yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const staff = yield* query((database) =>
     database
       .select({
@@ -54,10 +53,7 @@ export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: s
       })
       .from(user)
       .where(
-        and(
-          eq(user.role, ROLE.staff),
-          liveStaff(database, sessionId, checkedAt, STAFF_PERMISSION.editor),
-        ),
+        and(eq(user.role, ROLE.staff), liveStaff(database, sessionId, STAFF_PERMISSION.editor)),
       )
       .orderBy(desc(user.createdAt), user.id),
   );
@@ -88,7 +84,7 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
     const actor = yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
     const updatedAt = DateTime.toDate(yield* DateTime.now);
     const [, changedStaff] = yield* query((database) => {
-      const live = liveStaff(database, sessionId, updatedAt, STAFF_PERMISSION.editor);
+      const live = liveStaff(database, sessionId, STAFF_PERMISSION.editor);
       const audit = database.run(
         auditWhenTargeted(
           database,
@@ -119,9 +115,8 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
   if (actor.user.id === staffId) {
     return yield* new TargetUnavailable();
   }
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [, removedStaff] = yield* query((database) => {
-    const live = liveStaff(database, sessionId, checkedAt, STAFF_PERMISSION.editor);
+    const live = liveStaff(database, sessionId, STAFF_PERMISSION.editor);
     const audit = database.run(
       auditWhenTargeted(
         database,

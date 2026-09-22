@@ -158,7 +158,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget(
   const accountState = suspended ? ACCOUNT_STATE.suspended : ACCOUNT_STATE.active;
   const action = suspended ? AUDIT_ACTION.memberSuspended : AUDIT_ACTION.memberUnsuspended;
   const [, updated] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, now, ADMIN_PERMISSION.operator);
+    const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
     const audit = database.run(
       auditWhenTargeted(
         database,

@@ -69,13 +69,11 @@ const auditInquiryReply = (
   {
     action,
     actorId,
-    checkedAt,
     inquiryId,
     sessionId,
   }: Readonly<{
     action: AuditAction;
     actorId: string;
-    checkedAt: Date;
     inquiryId: string;
     sessionId: string;
   }>,
@@ -83,7 +81,7 @@ const auditInquiryReply = (
   const auditColumns = [
     [auditEvent.action, action],
     [auditEvent.actorId, actorId],
-    [auditEvent.createdAt, checkedAt.getTime()],
+    [auditEvent.createdAt, DateTime.toEpochMillis(DateTime.nowUnsafe())],
     [auditEvent.id, crypto.randomUUID()],
     [auditEvent.targetId, inquiryId],
   ] as const;
@@ -95,7 +93,7 @@ const auditInquiryReply = (
     auditColumns.map(([, columnValue]) => sql`${columnValue}`),
     sql`, `,
   );
-  const targeted = sql`SELECT 1 FROM ${inquiry} WHERE ${inquiry.id} = ${inquiryId} AND ${liveAdmin(database, sessionId, checkedAt, ADMIN_PERMISSION.operator)}`;
+  const targeted = sql`SELECT 1 FROM ${inquiry} WHERE ${inquiry.id} = ${inquiryId} AND ${liveAdmin(database, sessionId, ADMIN_PERMISSION.operator)}`;
   return sql`INSERT INTO ${auditEvent} (${columnNames}) SELECT ${columnValues} WHERE EXISTS (${targeted})`;
 };
 
@@ -327,7 +325,6 @@ const replyAsAdmin = Effect.fn("replyAsAdmin")(function* replyAsAdmin(
   const change = {
     action: AUDIT_ACTION.inquiryReplied,
     actorId: actor.user.id,
-    checkedAt: now,
     inquiryId,
     sessionId,
   } as const;

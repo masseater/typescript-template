@@ -10,7 +10,6 @@ import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { DateTime, Effect, Layer, Schema } from "effect";
-import { TestClock } from "effect/testing";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
@@ -178,7 +177,6 @@ it.effect(
       assert.strictEqual(yield* browser.status("/onboarding", { step: "choose" }), httpStatus.ok);
 
       const sessionId = yield* strongAdminSession();
-      yield* TestClock.setTime(1_789_862_400_000 + 86_400_000);
       const draft = yield* createAgreementDraft({
         body: "revised terms",
         kind: AGREEMENT_KIND.terms,
@@ -234,7 +232,6 @@ it.effect("does not record acceptance of a draft that is not published yet", () 
     const { app, runtime } = memberApp();
     const { browser, userId } = yield* signedInMember(app);
     const sessionId = yield* strongAdminSession();
-    yield* TestClock.setTime(1_789_862_400_000 + 86_400_000);
     const draft = yield* createAgreementDraft({
       body: "draft",
       kind: AGREEMENT_KIND.terms,

@@ -72,13 +72,12 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
   page: typeof UserPage.Type,
 ) {
   yield* requireAdmin(sessionId);
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
 
   const users = yield* query((database) =>
     database
       .select(memberColumns)
       .from(user)
-      .where(and(liveAdmin(database, sessionId, checkedAt), matchesPage(page)))
+      .where(and(liveAdmin(database, sessionId), matchesPage(page)))
       .orderBy(desc(user.createdAt), user.id)
       .limit(page.limit)
       .offset(page.offset),
@@ -88,7 +87,7 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
     database
       .select({ count: count() })
       .from(user)
-      .where(and(liveAdmin(database, sessionId, checkedAt), matchesPage(page))),
+      .where(and(liveAdmin(database, sessionId), matchesPage(page))),
   );
   return { total: matching?.count ?? 0, users };
 });
@@ -114,12 +113,11 @@ export const getMember = Effect.fn("getMember")(function* getMember(
   memberId: string,
 ) {
   yield* requireAdmin(sessionId);
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [member] = yield* query((database) =>
     database
       .select(memberColumns)
       .from(user)
-      .where(and(eq(user.id, memberId), eq(user.role, ROLE.member), liveAdmin(database, sessionId, checkedAt)))
+      .where(and(eq(user.id, memberId), eq(user.role, ROLE.member), liveAdmin(database, sessionId)))
       .limit(1),
   );
   if (!member) {
@@ -142,7 +140,7 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
       : AUDIT_ACTION.memberUnsuspended;
   const updatedAt = DateTime.toDate(yield* DateTime.now);
   const [, changedMembers] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.operator);
+    const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
     const audit = database.run(
       auditWhenTargeted(database, adminEntry(actor, action, memberId, channel), live),
     );
@@ -166,9 +164,8 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
   channel: AuditChannel = AUDIT_CHANNEL.ui,
 ) {
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [, removedUsers] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, checkedAt, ADMIN_PERMISSION.operator);
+    const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.operator);
     const audit = database.run(
       auditWhenTargeted(
         database,
@@ -194,7 +191,6 @@ const adminPermissionOf = (permission: string | null): AdminPermission | undefin
 
 export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId: string) {
   yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
   const admins = yield* query((database) =>
     database
       .select({
@@ -209,7 +205,7 @@ export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId
       .where(
         and(
           eq(user.role, ROLE.administrator),
-          liveAdmin(database, sessionId, checkedAt, ADMIN_PERMISSION.owner),
+          liveAdmin(database, sessionId, ADMIN_PERMISSION.owner),
         ),
       )
       .orderBy(desc(user.createdAt), user.id),
@@ -247,7 +243,7 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
     const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
     const updatedAt = DateTime.toDate(yield* DateTime.now);
     const [, changedAdmins] = yield* query((database) => {
-      const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.owner);
+      const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.owner);
       const audit = database.run(
         auditWhenTargeted(
           database,
@@ -287,7 +283,7 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
       : AUDIT_ACTION.adminEnabled;
   const updatedAt = DateTime.toDate(yield* DateTime.now);
   const [, changedAdmins] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.owner);
+    const live = liveAdmin(database, sessionId, ADMIN_PERMISSION.owner);
     const audit = database.run(
       auditWhenTargeted(database, adminEntry(actor, action, adminId, channel), live),
     );
