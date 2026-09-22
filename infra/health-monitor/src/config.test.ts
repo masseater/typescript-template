@@ -10,10 +10,8 @@ const valid = {
 } as const;
 
 describe("parseHealthMonitorConfig", () => {
-  const it = test.extend("healthProbeTargets", async () => {
-    const config = await Effect.runPromise(parseHealthMonitorConfig(valid));
-    return healthTargets(config);
-  });
+  const it = test.extend("healthProbeTargets", () =>
+    Effect.runPromise(Effect.map(parseHealthMonitorConfig(valid), healthTargets)));
 
   it("accepts distinct https origins", ({ healthProbeTargets }) => {
     expect(healthProbeTargets).toStrictEqual([

@@ -399,12 +399,6 @@
         "count": 1
       },
       {
-        "file": "src/request.ts",
-        "code": "TS377116",
-        "message": "`Effect.catchIf` expresses selective recovery more directly than `Effect.catch` with a conditional `Effect.fail` passthrough. effect(catchConditionalRefailToCatchIf)",
-        "count": 1
-      },
-      {
         "file": "src/server-testing.ts",
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
