@@ -1,6 +1,5 @@
-import { Field as FieldPrimitive } from "@base-ui/react/field";
-
-import { controlClassName, fieldClassName, labelClassName } from "./control";
+import { FormControl } from "baseui/form-control";
+import { Select, type Value as SelectValue } from "baseui/select";
 
 import type { ReactElement } from "react";
 
@@ -13,30 +12,31 @@ const SelectField = ({
 }: Readonly<{
   label: string;
   name: string;
-  onValueChange: (value: string) => void;
+  onValueChange: (selectedValue: string) => void;
   options: readonly Readonly<{ label: string; value: string }>[];
   value: string;
 }>): ReactElement => {
-  const select = (
-    <select aria-label={label}>
-      {options.map((selectOption) => (
-        <option key={selectOption.value} value={selectOption.value}>
-          {selectOption.label}
-        </option>
-      ))}
-    </select>
-  );
+  const match = options.find((choice) => choice.value === value);
+  const selected: SelectValue =
+    match === undefined ? [] : [{ id: match.value, label: match.label }];
   return (
-    <FieldPrimitive.Root data-slot="field" validationMode="onBlur" className={fieldClassName}>
-      <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
-      <FieldPrimitive.Control
-        render={select}
-        name={name}
-        value={value}
-        onValueChange={onValueChange}
-        className={`inline-block leading-none ${controlClassName}`}
+    <FormControl label={label}>
+      <Select
+        aria-label={label}
+        clearable={false}
+        creatable={false}
+        escapeClearsValue={false}
+        id={name}
+        options={options.map((choice) => ({ id: choice.value, label: choice.label }))}
+        value={selected}
+        onChange={(change) => {
+          const selectedId = change.value[0]?.id;
+          if (typeof selectedId === "string" || typeof selectedId === "number") {
+            onValueChange(String(selectedId));
+          }
+        }}
       />
-    </FieldPrimitive.Root>
+    </FormControl>
   );
 };
 
