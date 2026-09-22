@@ -43,7 +43,12 @@ export default defineConfig({
     unstubGlobals: true,
   },
   pack: {
-    entry: ["src/throttle/cli.ts", "src/spool/cli.ts", "src/unabridged/cli.ts"],
+    entry: [
+      "src/throttle/cli.ts",
+      "src/spool/cli.ts",
+      "src/sync-base/cli.ts",
+      "src/unabridged/cli.ts",
+    ],
     dts: { generator: "tsgo" },
   },
 });
