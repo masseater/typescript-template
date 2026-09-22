@@ -1,7 +1,6 @@
-import { onboardingSteps } from "@repo/db";
 import { Schema } from "effect";
 
-const OnboardingStep = Schema.Literals(onboardingSteps);
+const OnboardingStep = Schema.Literals(["agreement", "choose", "profile", "interview", "done"]);
 type OnboardingStep = typeof OnboardingStep.Type;
 
 const OnboardingView = Schema.Struct({
