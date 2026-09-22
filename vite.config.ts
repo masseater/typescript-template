@@ -48,15 +48,22 @@ export default defineConfig({
         ],
         output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
       },
-      "check:code": { command: "vp check", input: [...taskInput] },
+      "check:code": {
+        command: "vp check",
+        dependsOn: ["compile:paraglide"],
+        input: [...taskInput],
+      },
       ...effectDiagnostics,
       "check:types": {
         command: "dont-review-it-typecheck",
         dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
-      "check:imports":
-        "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+      "check:imports": {
+        command:
+          "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+        dependsOn: ["compile:paraglide"],
+      },
       "check:react": {
         command: "quality-check-react",
         dependsOn: ["compile:paraglide"],
