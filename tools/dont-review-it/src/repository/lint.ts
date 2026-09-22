@@ -98,12 +98,6 @@ const lintOptions = {
       },
     },
     {
-      files: cloudflareSourceFiles,
-      rules: {
-        "new-cap": [LINT_SEVERITY.ERROR, cloudflareNewCapExceptions],
-      },
-    },
-    {
       files: templateWorkspaces,
       rules: {
         "import/no-cycle": LINT_SEVERITY.ERROR,
@@ -227,6 +221,12 @@ const lintOptions = {
       },
     },
     {
+      files: cloudflareSourceFiles,
+      rules: {
+        "new-cap": [LINT_SEVERITY.ERROR, cloudflareNewCapExceptions],
+      },
+    },
+    {
       files: ["libs/vite-config/src/elysia-aot.ts"],
       rules: {
         "max-lines": LINT_SEVERITY.OFF,
@@ -321,6 +321,7 @@ const lintOptions = {
       LINT_SEVERITY.ERROR,
       {
         toolRequiredFileNames: [
+          "alchemy.run.ts",
           "doctor.config.ts",
           "drizzle.config.ts",
           "knip.ts",
