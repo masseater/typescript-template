@@ -1,6 +1,7 @@
-import { Progress, Stack as StackRoute, layer } from "alchemy/Alchemist";
+import { Progress, Stack as StackRoute } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 
+import { layer } from "./alchemist.ts";
 import { ArtifactWrites } from "./artifacts.ts";
 import { stateStore } from "./deployment-access.ts";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";

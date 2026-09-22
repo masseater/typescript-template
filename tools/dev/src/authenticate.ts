@@ -34,6 +34,11 @@ interface AuthenticateReport {
 
 const loginSettleMilliseconds = "2500";
 
+const submitLoginForm = [
+  "eval",
+  "(() => { const form = document.querySelector('form'); if (form === null) { throw new Error('login_form_missing'); } form.requestSubmit(); return true; })()",
+] as const;
+
 function sessionName(app: App): string {
   return `template-local-${app}`;
 }
@@ -93,10 +98,7 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     BROWSER_AGENT_COMMAND.fill,
     operator.password,
   ]);
-  yield* agent(app, credentials, socketDirectory, [
-    BROWSER_AGENT_COMMAND.eval,
-    "document.querySelector('form')?.requestSubmit(); true",
-  ]);
+  yield* agent(app, credentials, socketDirectory, [...submitLoginForm]);
   yield* agent(app, credentials, socketDirectory, [
     BROWSER_AGENT_COMMAND.wait,
     loginSettleMilliseconds,
@@ -108,10 +110,7 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     BROWSER_AGENT_COMMAND.fill,
     URI.parse(operator.totpURI).generate(),
   ]);
-  yield* agent(app, credentials, socketDirectory, [
-    BROWSER_AGENT_COMMAND.eval,
-    "document.querySelector('form')?.requestSubmit(); true",
-  ]);
+  yield* agent(app, credentials, socketDirectory, [...submitLoginForm]);
   yield* agent(app, credentials, socketDirectory, [
     BROWSER_AGENT_COMMAND.wait,
     loginSettleMilliseconds,
