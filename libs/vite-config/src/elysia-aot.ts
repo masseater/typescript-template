@@ -76,8 +76,8 @@ const elysiaWorkerdJit = (): Plugin => ({
   applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name !== "client",
   enforce: "pre",
   name: "elysia-workerd-jit",
-  transform: (code: string, id: string): { code: string; map: null } | undefined => {
-    if (!id.includes("/elysia/") || !id.includes("/compile/handler/jit.")) {
+  transform: (code: string, moduleUrl: string): { code: string; map: null } | undefined => {
+    if (!moduleUrl.includes("/elysia/") || !moduleUrl.includes("/compile/handler/jit.")) {
       return undefined;
     }
     if (!code.includes(jitCompile)) {
