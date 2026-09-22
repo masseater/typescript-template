@@ -15,7 +15,7 @@ import {
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { DateTime, Effect, Predicate } from "effect";
 
-import { emailChangePath } from "./email-change.ts";
+import { emailChangePath } from "./email-change-path.ts";
 import {
   deny,
   enrollmentPaths,
@@ -27,7 +27,6 @@ import { emailChangeTarget } from "./verification-token.ts";
 
 import type { BetterAuthOptions } from "better-auth";
 import type { Run } from "./runner.ts";
-
 
 const emailVerificationPath = "/verify-email";
 const sessionRevokingPaths = new Set([
@@ -51,7 +50,10 @@ const runSessionLookup = Effect.fn("runSessionLookup")(function* runSessionLooku
   run,
 }: HookScope) {
   const token = yield* Effect.promise(() =>
-    hookContext.getSignedCookie(hookContext.context.authCookies.sessionToken.name, hookContext.context.secret),
+    hookContext.getSignedCookie(
+      hookContext.context.authCookies.sessionToken.name,
+      hookContext.context.secret,
+    ),
   );
   if (typeof token !== "string" || token === "") {
     return null;
@@ -65,7 +67,9 @@ const currentSessionOf = Effect.fn("currentSessionOf")(function* currentSessionO
   const { hookContext, run } = scope;
   const issuedSession = hookContext.context.newSession;
   if (issuedSession) {
-    return (yield* Effect.promise(() => run(lookupSessionByToken(issuedSession.session.token)))) ?? null;
+    return (
+      (yield* Effect.promise(() => run(lookupSessionByToken(issuedSession.session.token)))) ?? null
+    );
   }
   return yield* runSessionLookup(scope);
 });
@@ -105,7 +109,9 @@ const revokeSessionsAfterFactorChange = Effect.fn("revokeSessionsAfterFactorChan
   },
 );
 
-const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(redirectCandidate: unknown): boolean {
+const isLoopbackHttpRedirect = function isLoopbackHttpRedirect(
+  redirectCandidate: unknown,
+): boolean {
   const url = typeof redirectCandidate === "string" ? URL.parse(redirectCandidate) : undefined;
   return url?.protocol === "http:" && loopbackHosts.includes(url.hostname);
 };

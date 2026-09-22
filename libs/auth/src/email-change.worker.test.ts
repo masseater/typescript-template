@@ -134,8 +134,10 @@ describe("email change", () => {
             const client = yield* strongMember();
             yield* requestEmailChange(client, NEW_EMAIL);
             const link = yield* receivedLink(NEW_EMAIL, mailSubjects.emailChangeVerification);
-            return new URLSearchParams(link.hash.slice(1)).get("token") !== null &&
-              new URLSearchParams(link.hash.slice(1)).get("token") !== "";
+            return (
+              new URLSearchParams(link.hash.slice(1)).get("token") !== null &&
+              new URLSearchParams(link.hash.slice(1)).get("token") !== ""
+            );
           }),
         ),
       )

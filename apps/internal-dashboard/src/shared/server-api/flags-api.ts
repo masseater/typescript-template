@@ -50,8 +50,8 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {
   return createApi("")
-    .get("/flags", api.route(FlagList, listFlags, { DatabaseFailure: "unexpected" }))
-    .patch("/flags", api.route(FlagToggled, patchFlag, failures));
+    .get("/flags", api.route(FlagList)(listFlags, { DatabaseFailure: "unexpected" }))
+    .patch("/flags", api.route(FlagToggled)(patchFlag, failures));
 }
 
 export { flagsApi };

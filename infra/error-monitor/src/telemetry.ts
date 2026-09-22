@@ -84,11 +84,15 @@ const telemetryFailure =
   () =>
     new ErrorMonitorFailure({ code, keys: [] });
 
-const queryTelemetry = (
-  fetchImpl: typeof fetch,
-  queryWindow: QueryWindow,
-  offsetBy: number,
-): Effect.Effect<Response, ErrorMonitorFailure> =>
+const queryTelemetry = ({
+  fetchImpl,
+  offsetBy,
+  queryWindow,
+}: {
+  readonly fetchImpl: typeof fetch;
+  readonly offsetBy: number;
+  readonly queryWindow: QueryWindow;
+}): Effect.Effect<Response, ErrorMonitorFailure> =>
   Effect.tryPromise({
     catch: telemetryFailure("telemetry_http_failed"),
     try: (signal) =>
@@ -113,7 +117,7 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
   readonly (typeof Aggregate.Type)[],
   never
 > {
-  const telemetryResponse = yield* queryTelemetry(fetch, queryWindow, offsetBy);
+  const telemetryResponse = yield* queryTelemetry({ fetchImpl: fetch, offsetBy, queryWindow });
   if (!telemetryResponse.ok) {
     return yield* telemetryFailure("telemetry_http_failed")();
   }

@@ -1,6 +1,6 @@
-import type { BrowserClient } from "./browser-client.ts";
+import { emailChangePath } from "./email-change-path.ts";
 
-const emailChangePath = "/change-email";
+import type { BrowserClient } from "./browser-client.ts";
 
 const requestEmailChange = (
   client: BrowserClient,

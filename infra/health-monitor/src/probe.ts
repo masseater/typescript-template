@@ -24,16 +24,6 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
-const observedProbe = (asked: {
-  readonly healthTarget: HealthTarget;
-  readonly healthy: boolean;
-  readonly detail: string;
-}): ProbeResult => ({
-  detail: asked.detail,
-  healthy: asked.healthy,
-  service: asked.healthTarget.service,
-});
-
 const requestHealth = (
   fetchImpl: typeof fetch,
   healthTarget: HealthTarget,
@@ -47,6 +37,16 @@ const requestHealth = (
         signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
       }),
   }).pipe(Effect.option);
+
+const observedProbe = (asked: {
+  readonly healthTarget: HealthTarget;
+  readonly healthy: boolean;
+  readonly detail: string;
+}): ProbeResult => ({
+  detail: asked.detail,
+  healthy: asked.healthy,
+  service: asked.healthTarget.service,
+});
 
 const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHealthPayload(
   healthTarget: HealthTarget,

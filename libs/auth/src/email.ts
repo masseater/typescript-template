@@ -86,7 +86,11 @@ const deliver = (
   const addressed: OutboundEmail = { ...outbound, from: settings.EMAIL_FROM };
   return settings.MAILPIT_SEND_URL === undefined
     ? sendThroughBinding(settings.EMAIL, addressed)
-    : sendThroughMailpit({ fetchImpl: fetch, mailpitSendUrl: settings.MAILPIT_SEND_URL, outbound: addressed });
+    : sendThroughMailpit({
+        fetchImpl: fetch,
+        mailpitSendUrl: settings.MAILPIT_SEND_URL,
+        outbound: addressed,
+      });
 };
 
 type LinkedMail = {

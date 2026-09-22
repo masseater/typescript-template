@@ -1,7 +1,4 @@
 import { Auth } from "@repo/auth";
-import { APPLICATION } from "@repo/config";
-import { Effect, Schema } from "effect";
-
 import {
   AuthApps,
   redirectUri,
@@ -9,6 +6,9 @@ import {
   wikiAdministrator,
   wikiOrigin,
 } from "@repo/auth/testing";
+import { APPLICATION } from "@repo/config";
+import { Effect, Schema } from "effect";
+
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 import type { AuthorizationFlow, BrowserClient } from "@repo/auth/testing";

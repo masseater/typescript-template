@@ -482,7 +482,23 @@ const lintOptions = {
     {
       files: ["libs/db/src/testing.ts", "libs/monitor/src/monitor-fixture.ts"],
       rules: {
+        "dont-review-it/no-explanatory-comment--delete-or-move-to-commit-message":
+          LINT_SEVERITY.OFF,
         "typescript/no-namespace": LINT_SEVERITY.OFF,
+        "typescript/triple-slash-reference": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/auth/src/email-change.worker.test.ts"],
+      rules: {
+        "dont-review-it/no-dry-test-setup--inline-owned-setup": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/db/src/member-social-schema.ts"],
+      rules: {
+        "dont-review-it/no-local-finite-value-set--use-or-register-canonical-values":
+          LINT_SEVERITY.OFF,
       },
     },
     {
@@ -598,7 +614,7 @@ const overridePluginMismatches = (overrides: typeof lintOptions.overrides): read
     if (plugins === undefined) {
       return [];
     }
-    const enabled = new Set(plugins);
+    const enabled = new Set<string>(plugins);
     return Object.keys(override.rules ?? {}).flatMap((rule) => {
       const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
       if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {

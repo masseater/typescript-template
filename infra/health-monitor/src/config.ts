@@ -67,6 +67,7 @@ const healthTargets = (
   });
 
 export {
+  HealthMonitorFailure,
   healthEndpointFor,
   healthMonitorWorker,
   healthOriginKey,

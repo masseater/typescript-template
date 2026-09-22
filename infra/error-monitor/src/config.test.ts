@@ -24,8 +24,7 @@ describe.for([
   [{ OBSERVABILITY_TOKEN: "short" }],
 ] as const)("invalid settings %s", ([override]) => {
   const it = test.extend("configFailure", () =>
-    Effect.runPromise(Effect.flip(parseErrorMonitorConfig({ ...valid, ...override }))),
-  );
+    Effect.runPromise(Effect.flip(parseErrorMonitorConfig({ ...valid, ...override }))));
 
   it("refuses without echoing the invalid value", ({ configFailure }) => {
     expect(configFailure).toStrictEqual(
