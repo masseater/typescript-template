@@ -2,8 +2,8 @@ import { assert, it } from "@effect/vitest";
 import { InMemoryService } from "alchemy/State";
 import { Effect } from "effect";
 
-import { recordedDatabaseIds, recordedWorkerNames } from "./state-ownership.ts";
 import { stackName } from "./stacks.ts";
+import { recordedDatabaseIds, recordedWorkerNames } from "./state-ownership.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { CreatedResourceState } from "alchemy/State/ResourceState";
