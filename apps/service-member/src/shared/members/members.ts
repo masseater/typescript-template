@@ -29,6 +29,8 @@ const { follow, user } = schema;
 type PhotoVersions = Readonly<{ company: string | null; face: string | null }>;
 
 type Member = Readonly<{
+  blocked?: boolean;
+  following?: boolean;
   id: string;
   joined: string;
   name: string;

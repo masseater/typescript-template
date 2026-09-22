@@ -3,7 +3,6 @@ import { useAction } from "@repo/ui";
 import { removePhoto, uploadPhoto } from "#pages/profile-edit/api/photo.ts";
 
 import type { PhotoSlot } from "@repo/config";
-
 interface PhotoForm {
   readonly blocked: boolean;
   readonly error: string | undefined;
@@ -11,23 +10,16 @@ interface PhotoForm {
   readonly handleRemove: () => void;
   readonly pending: boolean;
 }
-
 function usePhotoForm(slot: PhotoSlot, onChanged: () => Promise<void>): PhotoForm {
   const action = useAction();
   function handleFile(file: File | undefined): void {
     if (file === undefined) {
       return;
     }
-    action.run(async () => {
-      await uploadPhoto(slot, file);
-      await onChanged();
-    });
+    action.run(() => uploadPhoto(slot, file).then(() => onChanged().then(() => undefined)));
   }
   function handleRemove(): void {
-    action.run(async () => {
-      await removePhoto(slot);
-      await onChanged();
-    });
+    action.run(() => removePhoto(slot).then(() => onChanged().then(() => undefined)));
   }
   return {
     blocked: action.blocked,
@@ -37,5 +29,4 @@ function usePhotoForm(slot: PhotoSlot, onChanged: () => Promise<void>): PhotoFor
     pending: action.pending,
   };
 }
-
 export { usePhotoForm };

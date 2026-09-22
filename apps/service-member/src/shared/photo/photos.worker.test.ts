@@ -11,7 +11,7 @@ import { TestDatabase } from "@repo/db/testing";
 import { FileStore } from "@repo/runtime";
 import { AppOrigin } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, DateTime } from "effect";
 
 import { containsExifMarker, jpegWithExif, pngWithText } from "./image-fixture.ts";
 import { PhotoStore } from "./photo-store.ts";
@@ -44,18 +44,21 @@ function addUser(
   id: string,
   visibility: ProfileVisibility = PROFILE_VISIBILITY.allMembers,
 ): Effect.Effect<void, DatabaseFailure, Database> {
-  return query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: new Date(),
-      email: `${id}@example.com`,
-      emailVerified: true,
-      id,
-      name: id,
-      role: ROLE.member,
-      updatedAt: new Date(),
-      visibility,
-    });
-  });
+  return query((database) =>
+    database
+      .insert(user)
+      .values({
+        createdAt: DateTime.toDate(DateTime.nowUnsafe()),
+        email: `${id}@example.com`,
+        emailVerified: true,
+        id,
+        name: id,
+        role: ROLE.member,
+        updatedAt: DateTime.toDate(DateTime.nowUnsafe()),
+        visibility,
+      })
+      .then(() => undefined),
+  );
 }
 
 function storedBytes(

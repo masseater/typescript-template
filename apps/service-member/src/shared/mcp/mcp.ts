@@ -37,10 +37,6 @@ const MessageInput = Schema.toStandardJSONSchemaV1(
   ),
 );
 
-const toolText = (value: unknown): { content: [{ type: "text"; text: string }] } => ({
-  content: [{ text: JSON.stringify(value), type: "text" }],
-});
-
 const toolFailure = (
   message: string,
 ): { content: [{ type: "text"; text: string }]; isError: true } => ({
@@ -66,9 +62,18 @@ const runTool =
   <Value>(
     program: Effect.Effect<Value, unknown, AppServices>,
   ): Promise<{ content: [{ type: "text"; text: string }]; isError?: true }> =>
-    runMember(program)
-      .then(toolText)
-      .catch((failure: { readonly _tag?: string }) => toolFailure(failureText(failure)));
+    runMember(
+      program.pipe(
+        Effect.flatMap((value) =>
+          Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(
+            Effect.map((text): { content: [{ type: "text"; text: string }] } => ({
+              content: [{ text, type: "text" }],
+            })),
+            Effect.orDie,
+          ),
+        ),
+      ),
+    ).catch((failure: { readonly _tag?: string }) => toolFailure(failureText(failure)));
 
 const requireMemberSession = Effect.fn("requireMemberSession")(function* requireMemberSession(
   actor: MemberMcpActor,
@@ -120,7 +125,7 @@ function createServer(
   server.registerTool(
     "get_profile",
     { description: "Read the signed-in member's own profile." },
-    async () => {
+    () => {
       if (!actor.scopes.has(MEMBER_MCP_SCOPE.profileRead)) {
         return denied(MEMBER_MCP_SCOPE.profileRead);
       }
@@ -143,7 +148,7 @@ function createServer(
       description: "Update the signed-in member's name, profile text, and links.",
       inputSchema: ProfileInput,
     },
-    async (values) => {
+    (values) => {
       if (!actor.scopes.has(MEMBER_MCP_SCOPE.profileUpdate)) {
         return denied(MEMBER_MCP_SCOPE.profileUpdate);
       }
@@ -162,7 +167,7 @@ function createServer(
       description: "List or search members who opted into search. Paid members only.",
       inputSchema: MemberSearch,
     },
-    async (filters) => {
+    (filters) => {
       if (!actor.scopes.has(MEMBER_MCP_SCOPE.search)) {
         return denied(MEMBER_MCP_SCOPE.search);
       }
@@ -192,7 +197,7 @@ function createServer(
         "Send a direct message. Opening a new conversation requires a paid plan. Replying does not.",
       inputSchema: MessageInput,
     },
-    async ({ body, conversationId, recipientId }) => {
+    ({ body, conversationId, recipientId }) => {
       if (!actor.scopes.has(MEMBER_MCP_SCOPE.messageSend)) {
         return denied(MEMBER_MCP_SCOPE.messageSend);
       }
@@ -229,9 +234,9 @@ const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
   const context = yield* Effect.context<AppServices>();
   const runMember = <Value, Failure>(
     program: Effect.Effect<Value, Failure, AppServices>,
-  ): Promise<Value> => Effect.runPromise(program.pipe(Effect.provideContext(context)));
+  ): Promise<Value> => Effect.runPromiseWith(context)(program);
   const handler = createMcpHandler(() => createServer(authorized, runMember));
-  const response = yield* Effect.promise(async () => handler.fetch(request));
+  const response = yield* Effect.promise(() => Promise.resolve(handler.fetch(request)));
   return secureResponse(request, response);
 });
 

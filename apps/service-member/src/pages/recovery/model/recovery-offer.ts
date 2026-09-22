@@ -5,15 +5,12 @@ import { AsyncResult } from "effect/unstable/reactivity";
 import { loadRecoveryOffer } from "#pages/recovery/api/recovery.ts";
 
 import type { RecoveryOfferView } from "#shared/contracts/index.ts";
-
 interface RecoveryOfferState {
   readonly error: string | undefined;
   readonly offer: typeof RecoveryOfferView.Type | undefined;
   readonly reload: () => void;
 }
-
-const recoveryOfferAtom = requestAtom(async () => loadRecoveryOffer());
-
+const recoveryOfferAtom = requestAtom(() => loadRecoveryOffer());
 function useRecoveryOffer(): RecoveryOfferState {
   const loaded = useAtomValue(recoveryOfferAtom);
   const reload = useAtomRefresh(recoveryOfferAtom);
@@ -23,5 +20,4 @@ function useRecoveryOffer(): RecoveryOfferState {
     reload,
   };
 }
-
 export { useRecoveryOffer };

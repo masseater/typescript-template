@@ -1,7 +1,6 @@
 import { useAction } from "@repo/ui";
 
 import { acceptRecovery, declineRecovery } from "#pages/recovery/api/recovery.ts";
-
 interface RecoveryChoiceState {
   readonly blocked: boolean;
   readonly error: string;
@@ -9,20 +8,13 @@ interface RecoveryChoiceState {
   readonly handleDecline: () => void;
   readonly pending: boolean;
 }
-
 function useRecoveryChoice(onDecided: () => void): RecoveryChoiceState {
   const action = useAction();
   function handleAccept(): void {
-    action.run(async () => {
-      await acceptRecovery();
-      onDecided();
-    });
+    action.run(() => acceptRecovery().then(() => onDecided()));
   }
   function handleDecline(): void {
-    action.run(async () => {
-      await declineRecovery();
-      onDecided();
-    });
+    action.run(() => declineRecovery().then(() => onDecided()));
   }
   return {
     blocked: action.blocked,
@@ -32,5 +24,4 @@ function useRecoveryChoice(onDecided: () => void): RecoveryChoiceState {
     pending: action.pending,
   };
 }
-
 export { useRecoveryChoice };

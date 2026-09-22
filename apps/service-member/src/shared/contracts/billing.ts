@@ -11,8 +11,8 @@ const PlanView = Schema.Struct({
 const OfferView = Schema.Struct({
   currency: Schema.String,
   interval: Schema.Literals(priceIntervals),
-  intervalCount: Schema.Number,
-  unitAmount: Schema.Number,
+  intervalCount: Schema.Finite,
+  unitAmount: Schema.Finite,
 });
 
 const HostedPage = Schema.Struct({ url: Schema.String });

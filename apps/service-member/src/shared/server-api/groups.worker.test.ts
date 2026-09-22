@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { ROLE, type Role } from "@repo/config";
 import { blockMember, GROUP_JOIN_POLICY, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { Effect } from "effect";
+import { Effect, DateTime, Schema } from "effect";
 import { TestClock } from "effect/testing";
 
 import { createGroup, findGroup, joinGroup, leaveGroup, renameGroup } from "./groups.ts";
@@ -15,7 +15,7 @@ import { findConversation, listInbox, sendConversationMessage } from "./messagin
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 const wholePage = { limit: 50, offset: 0 };
 
 const addUser = (added: {
@@ -24,17 +24,20 @@ const addUser = (added: {
   readonly emailVerified?: boolean;
   readonly name?: string;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: recordedAt,
-      email: `${added.userId}@example.com`,
-      emailVerified: added.emailVerified ?? true,
-      id: added.userId,
-      name: added.name ?? added.userId,
-      role: added.role ?? ROLE.member,
-      updatedAt: recordedAt,
-    });
-  });
+  query((database) =>
+    database
+      .insert(user)
+      .values({
+        createdAt: recordedAt,
+        email: `${added.userId}@example.com`,
+        emailVerified: added.emailVerified ?? true,
+        id: added.userId,
+        name: added.name ?? added.userId,
+        role: added.role ?? ROLE.member,
+        updatedAt: recordedAt,
+      })
+      .then(() => undefined),
+  );
 
 function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
   effect: Effect.Effect<Value, Failure, Requirements>,
@@ -262,7 +265,8 @@ describe("ownership and posting", () => {
       yield* sendConversationMessage("guest", created.conversationId, hiddenBody);
       yield* blockMember("owner", "guest");
       const thread = yield* findConversation("owner", created.conversationId, wholePage);
-      assert.strictEqual(JSON.stringify(thread).includes(hiddenBody), false);
+      const threadJson = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(thread);
+      assert.strictEqual(threadJson.includes(hiddenBody), false);
       const listed = yield* listInbox("owner", { limit: 20, offset: 0 });
       assert.strictEqual(listed.conversations[0]?.lastMessagePreview.includes(hiddenBody), false);
     }).pipe(Effect.provide(TestDatabase)),

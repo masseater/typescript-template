@@ -4,7 +4,7 @@ import { Schema } from "effect";
 const NotificationKind = Schema.Literals(notificationKinds);
 
 const NotificationItem = Schema.Struct({
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   href: Schema.String,
   id: Schema.String,
   kind: NotificationKind,

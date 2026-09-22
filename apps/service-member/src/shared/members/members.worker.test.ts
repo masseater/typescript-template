@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { ACCOUNT_STATE, ROLE } from "@repo/config";
 import { eq, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { Effect } from "effect";
+import { Effect, DateTime } from "effect";
 
 import { homeFeed } from "../server-api/member-social.ts";
 import { getMember, listMembers } from "./members.ts";
@@ -11,7 +11,7 @@ import type { AccountState, Role } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 const followMember = (followerId: string, followeeId: string) =>
   query((database) =>
@@ -26,19 +26,22 @@ const addUser = (added: {
   readonly role?: Role;
   readonly accountState?: AccountState;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      accountState: added.accountState ?? ACCOUNT_STATE.active,
-      createdAt: new Date(),
-      email: `${added.id}@example.com`,
-      emailVerified: true,
-      id: added.id,
-      name: added.id,
-      role: added.role ?? ROLE.member,
-      searchable: true,
-      updatedAt: new Date(),
-    });
-  });
+  query((database) =>
+    database
+      .insert(user)
+      .values({
+        accountState: added.accountState ?? ACCOUNT_STATE.active,
+        createdAt: DateTime.toDate(DateTime.nowUnsafe()),
+        email: `${added.id}@example.com`,
+        emailVerified: true,
+        id: added.id,
+        name: added.id,
+        role: added.role ?? ROLE.member,
+        searchable: true,
+        updatedAt: DateTime.toDate(DateTime.nowUnsafe()),
+      })
+      .then(() => undefined),
+  );
 
 const community = Effect.gen(function* community() {
   yield* addUser({ id: "viewer" });

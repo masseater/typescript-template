@@ -6,9 +6,10 @@ const GroupsSearchParams = Schema.Struct({
 
 type GroupsSearch = typeof GroupsSearchParams.Type;
 
-class InvalidGroupsSearch extends Error {
-  override readonly name = "InvalidGroupsSearch";
-}
+class InvalidGroupsSearch extends Schema.TaggedError<InvalidGroupsSearch>()(
+  "InvalidGroupsSearch",
+  {},
+) {}
 
 const decodeGroupsSearch = Schema.decodeUnknownOption(GroupsSearchParams);
 

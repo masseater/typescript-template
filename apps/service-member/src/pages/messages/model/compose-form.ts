@@ -20,15 +20,15 @@ function useComposeForm(
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      const opened = await openConversation(peerId, body.value);
-      if (opened.paidRequired) {
-        await onPaidRequired();
-        return;
-      }
-      body.handleChange("");
-      await onOpened(opened.conversationId);
-    });
+    action.run(() =>
+      openConversation(peerId, body.value).then((opened) => {
+        if (opened.paidRequired) {
+          return onPaidRequired();
+        }
+        body.handleChange("");
+        return onOpened(opened.conversationId);
+      }),
+    );
   }
   return {
     blocked: action.blocked,

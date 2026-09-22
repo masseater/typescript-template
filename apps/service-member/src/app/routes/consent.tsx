@@ -24,18 +24,16 @@ const Route = createFileRoute("/consent")({
   loaderDeps: ({ search }: Readonly<{ search: ConsentSearch }>) => ({
     clientId: search.client_id,
   }),
-  loader: async ({ deps }: Readonly<{ deps: Readonly<{ clientId: string | undefined }> }>) => {
+  loader: ({ deps }: Readonly<{ deps: Readonly<{ clientId: string | undefined }> }>) => {
     if (deps.clientId === undefined) {
-      return undefined;
+      return Promise.resolve(undefined);
     }
-    try {
-      return await loadClientName(deps.clientId);
-    } catch (error) {
-      if (error instanceof ConsentClientUnavailable) {
+    return loadClientName(deps.clientId).catch((error: unknown) => {
+      if (Schema.is(ConsentClientUnavailable)(error)) {
         return undefined;
       }
       throw error;
-    }
+    });
   },
 });
 

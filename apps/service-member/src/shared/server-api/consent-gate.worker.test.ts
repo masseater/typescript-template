@@ -9,7 +9,7 @@ import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Effect, Layer, Schema } from "effect";
+import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { AgreementsView } from "#shared/contracts/index.ts";
 import { memberApi } from "./member-api.ts";
@@ -20,6 +20,7 @@ const reporting = { log: recordingSink().sink, service: APPLICATION.user } as co
 const password = "consent-gate-password-123";
 const email = "member@example.test";
 const adminEmail = "admin@example.test";
+const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 const ConsentRequiredBody = Schema.Struct({
   error: Schema.String,
@@ -53,18 +54,26 @@ class Browser {
     body?: unknown,
     method: "GET" | "POST" = body === undefined ? "GET" : "POST",
   ): Effect.Effect<Response> {
-    const cookie = [...this.#cookies].map(([name, value]) => `${name}=${value}`).join("; ");
-    return Effect.promise(async () => {
-      const response = await this.#app.fetch(
-        new Request(`${fixtureOrigin}${apiRoot}${path}`, {
-          headers: {
-            "content-type": "application/json",
-            cookie,
-            origin: fixtureOrigin,
-          },
-          method,
-          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        }),
+    const app = this.#app;
+    const cookies = this.#cookies;
+    const cookie = [...cookies].map(([name, value]) => `${name}=${value}`).join("; ");
+    return Effect.gen(function* sendConsent() {
+      const encoded =
+        body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(body);
+      const response = yield* Effect.promise(() =>
+        Promise.resolve(
+          app.fetch(
+            new Request(`${fixtureOrigin}${apiRoot}${path}`, {
+              headers: {
+                "content-type": "application/json",
+                cookie,
+                origin: fixtureOrigin,
+              },
+              method,
+              ...(encoded === undefined ? {} : { body: encoded }),
+            }),
+          ),
+        ),
       );
       for (const header of response.headers.getSetCookie()) {
         const [pair] = header.split(";");
@@ -72,14 +81,14 @@ class Browser {
         if (pair !== undefined && separator > 0) {
           const value = pair.slice(separator + 1);
           if (value === "") {
-            this.#cookies.delete(pair.slice(0, separator));
+            cookies.delete(pair.slice(0, separator));
           } else {
-            this.#cookies.set(pair.slice(0, separator), value);
+            cookies.set(pair.slice(0, separator), value);
           }
         }
       }
       return response;
-    });
+    }).pipe(Effect.orDie);
   }
 
   public status(path: string, body?: unknown): Effect.Effect<number> {
@@ -88,7 +97,7 @@ class Browser {
 
   public json(path: string, body?: unknown): Effect.Effect<unknown> {
     return this.call(path, body).pipe(
-      Effect.flatMap((response) => Effect.promise(async (): Promise<unknown> => response.json())),
+      Effect.flatMap((response) => Effect.promise(() => response.json() as Promise<unknown>)),
     );
   }
 }
@@ -105,13 +114,13 @@ const signedInMember = Effect.fn("signedInMember")(function* signedInMember(app:
     httpStatus.ok,
   );
   const [row] = (yield* runStatement("SELECT id FROM user WHERE email = ?", email)).results;
-  const userId = Schema.decodeUnknownSync(Schema.Struct({ id: Schema.String }))(row).id;
+  const userId = (yield* Schema.decodeUnknownEffect(Schema.Struct({ id: Schema.String }))(row)).id;
   return { browser, userId };
 });
 
 const strongAdminSession = Effect.fn("strongAdminSession")(function* strongAdminSession() {
   const sessionId = crypto.randomUUID();
-  const now = Date.now();
+  const now = DateTime.toEpochMillis(DateTime.nowUnsafe());
   yield* runStatement(
     "INSERT INTO user (id, email, email_verified, name, role, permission, created_at, updated_at) VALUES ('admin', ?, 1, 'admin', ?, ?, ?, ?)",
     adminEmail,
@@ -180,7 +189,7 @@ it.effect(
       const refused = yield* browser.call("/profile");
       assert.strictEqual(refused.status, httpStatus.preconditionRequired);
       const body = yield* Schema.decodeUnknownEffect(ConsentRequiredBody)(
-        yield* Effect.promise(async (): Promise<unknown> => refused.json()),
+        yield* Effect.promise(() => refused.json() as Promise<unknown>),
       );
       assert.deepStrictEqual(body.kinds, [AGREEMENT_KIND.terms]);
       assert.strictEqual(yield* browser.status("/home/feed"), httpStatus.preconditionRequired);
@@ -198,7 +207,7 @@ it.effect(
       ]);
       assert.strictEqual(yield* browser.status("/profile"), httpStatus.ok);
       assert.strictEqual(yield* browser.status("/home/feed"), httpStatus.ok);
-      yield* Effect.promise(async () => runtime.dispose());
+      yield* Effect.promise(() => Promise.resolve(runtime.dispose()).then(() => undefined));
     }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -214,7 +223,7 @@ it.effect("lets anonymous and public requests through to the route's own answer"
       yield* browser.status("/agreements/published?kind=cookies"),
       httpStatus.badRequest,
     );
-    yield* Effect.promise(async () => runtime.dispose());
+    yield* Effect.promise(() => Promise.resolve(runtime.dispose()).then(() => undefined));
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -241,6 +250,6 @@ it.effect("does not record acceptance of a draft that is not published yet", () 
     ]);
     const failure = yield* Effect.flip(requireCurrentAgreements(userId));
     assert.instanceOf(failure, AgreementRequired);
-    yield* Effect.promise(async () => runtime.dispose());
+    yield* Effect.promise(() => Promise.resolve(runtime.dispose()).then(() => undefined));
   }).pipe(Effect.provide(TestDatabase)),
 );

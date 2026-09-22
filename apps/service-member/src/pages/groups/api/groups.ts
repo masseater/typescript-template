@@ -6,41 +6,46 @@ import { GroupInviteRefreshed, GroupJoined, GroupView } from "#shared/contracts/
 
 type GroupDetail = typeof GroupView.Type;
 
-async function loadGroup(id: string, invite?: string): Promise<GroupDetail> {
-  const { api } = await userClient();
-  const group = apiDataOrNone(
-    GroupView,
-    await api.groups.view.get({ query: invite === undefined ? { id } : { id, invite } }),
-    absent.notFound,
+function loadGroup(id: string, invite?: string): Promise<GroupDetail> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.groups.view
+      .get({ query: invite === undefined ? { id } : { id, invite } })
+      .then((response) => {
+        const group = apiDataOrNone(GroupView, response, absent.notFound);
+        if (group === undefined) {
+          throw notFound();
+        }
+        return group;
+      }),
   );
-  if (group === undefined) {
-    throw notFound();
-  }
-  return group;
 }
 
-async function joinGroup(id: string, invite?: string): Promise<string> {
-  const { api } = await userClient();
-  const joined = apiData(
-    GroupJoined,
-    await api.groups.join.post(invite === undefined ? { id } : { id, invite }),
+function joinGroup(id: string, invite?: string): Promise<string> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.groups.join
+      .post(invite === undefined ? { id } : { id, invite })
+      .then((response) => apiData(GroupJoined, response).conversationId),
   );
-  return joined.conversationId;
 }
 
-async function leaveGroup(id: string): Promise<void> {
-  const { api } = await userClient();
-  await api.groups.leave.post({ id });
+function leaveGroup(id: string): Promise<void> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.groups.leave.post({ id }).then(() => undefined),
+  );
 }
 
-async function renameGroup(id: string, name: string): Promise<void> {
-  const { api } = await userClient();
-  await api.groups.rename.post({ id, name });
+function renameGroup(id: string, name: string): Promise<void> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.groups.rename.post({ id, name }).then(() => undefined),
+  );
 }
 
-async function refreshInvite(id: string): Promise<string> {
-  const { api } = await userClient();
-  return apiData(GroupInviteRefreshed, await api.groups.invite.post({ id })).inviteToken;
+function refreshInvite(id: string): Promise<string> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.groups.invite
+      .post({ id })
+      .then((response) => apiData(GroupInviteRefreshed, response).inviteToken),
+  );
 }
 
 export { joinGroup, leaveGroup, loadGroup, refreshInvite, renameGroup };

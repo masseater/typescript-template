@@ -11,7 +11,7 @@ const GroupOwner = Schema.Struct({ id: Schema.String, name: Schema.String });
 
 const GroupMemberView = Schema.Struct({
   id: Schema.String,
-  joinedAt: Schema.Number,
+  joinedAt: Schema.Finite,
   name: Schema.String,
 });
 

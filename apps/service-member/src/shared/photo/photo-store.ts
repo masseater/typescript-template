@@ -29,7 +29,7 @@ class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
               Effect.mapError(mapFailure),
               Effect.flatMap((stored) => {
                 if (stored === undefined) {
-                  return Effect.succeed(undefined);
+                  return Effect.as(Effect.void, undefined);
                 }
                 if (!isPhotoContentType(stored.contentType)) {
                   return Effect.fail(

@@ -14,7 +14,6 @@ import {
   localState,
   requestAtom,
   resultError,
-  useAction,
 } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
@@ -23,10 +22,8 @@ import { useApiKeyForm } from "#pages/settings/model/api-key-form.ts";
 import { scopeLabel } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
-
 const useRevokeConfirming = localState(false);
 const apiKeysAtom = requestAtom(loadApiKeys);
-
 function ApiKeyItem({
   action,
   entry,
@@ -40,10 +37,7 @@ function ApiKeyItem({
   const label = entry.name ?? "名前のない API キー";
   const revoke = (): void => {
     setConfirming(false);
-    action.run(async () => {
-      await revokeApiKey(entry.id);
-      onRevoked();
-    });
+    action.run(() => revokeApiKey(entry.id).then(() => onRevoked()));
   };
   return (
     <li>
@@ -72,7 +66,6 @@ function ApiKeyItem({
     </li>
   );
 }
-
 function AiPage(): ReactElement {
   const listed = useAtomValue(apiKeysAtom);
   const reload = useAtomRefresh(apiKeysAtom);
@@ -83,7 +76,6 @@ function AiPage(): ReactElement {
     form.issued === undefined
       ? undefined
       : `発行した API キー（この画面を離れると再表示できません）: ${form.issued.key}`;
-
   return (
     <Page title="AI と API">
       <FormColumn>
@@ -130,5 +122,4 @@ function AiPage(): ReactElement {
     </Page>
   );
 }
-
 export { AiPage };

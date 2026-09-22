@@ -17,7 +17,7 @@ import {
   schema,
   sql,
 } from "@repo/db";
-import { Clock, Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { maySendGroupMessage } from "#shared/messaging/index.ts";
 import { canReadGroupConversation } from "./groups.ts";
@@ -95,7 +95,7 @@ interface ConversationView {
 }
 
 const messagingMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 function directKeyFor(memberA: string, memberB: string): string {
   return [memberA, memberB].sort((left, right) => left.localeCompare(right)).join(":");
@@ -255,7 +255,7 @@ const unreadCountFor = Effect.fn("unreadCountFor")(function* unreadCountFor(
       )
       .limit(1),
   );
-  const readAt = membership?.lastReadAt ?? new Date(0);
+  const readAt = membership?.lastReadAt ?? DateTime.toDate(DateTime.makeUnsafe(0));
   const [row] = yield* query((database) =>
     database
       .select({ unread: count() })

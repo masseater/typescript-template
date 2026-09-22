@@ -17,63 +17,72 @@ type ConversationListView = typeof ConversationList.Type;
 type ConversationThread = typeof ConversationView.Type;
 type GroupJoinPolicy = (typeof GroupCreate.Type)["joinPolicy"];
 
-async function loadConversations(page: number): Promise<ConversationListView> {
-  const { api } = await userClient();
-  return apiData(
-    ConversationList,
-    await api.messages.conversations.get({ query: { page: String(page) } }),
+function loadConversations(page: number): Promise<ConversationListView> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.messages.conversations
+      .get({ query: { page: String(page) } })
+      .then((response) => apiData(ConversationList, response)),
   );
 }
 
-async function loadConversation(id: string, page: number): Promise<ConversationThread> {
-  const { api } = await userClient();
-  const conversation = apiDataOrNone(
-    ConversationView,
-    await api.messages.conversation.get({ query: { id, page: String(page) } }),
-    absent.notFound,
+function loadConversation(id: string, page: number): Promise<ConversationThread> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.messages.conversation.get({ query: { id, page: String(page) } }).then((response) => {
+      const conversation = apiDataOrNone(ConversationView, response, absent.notFound);
+      if (conversation === undefined) {
+        throw notFound();
+      }
+      return conversation;
+    }),
   );
-  if (conversation === undefined) {
-    throw notFound();
-  }
-  return conversation;
 }
 
-async function sendMessage(conversationId: string, body: string): Promise<string> {
-  const { api } = await userClient();
-  return apiData(MessageSent, await api.messages.messages.post({ body, conversationId })).id;
+function sendMessage(conversationId: string, body: string): Promise<string> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.messages.messages
+      .post({ body, conversationId })
+      .then((response) => apiData(MessageSent, response).id),
+  );
 }
 
-async function createGroup(
+function createGroup(
   name: string,
   joinPolicy: GroupJoinPolicy,
 ): Promise<{ conversationId: string; groupId: string; inviteToken: string }> {
-  const { api } = await userClient();
-  const created = apiData(GroupCreated, await api.groups.create.post({ joinPolicy, name }));
-  return {
-    conversationId: created.conversationId,
-    groupId: created.groupId,
-    inviteToken: created.inviteToken,
-  };
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.groups.create.post({ joinPolicy, name }).then((response) => {
+      const created = apiData(GroupCreated, response);
+      return {
+        conversationId: created.conversationId,
+        groupId: created.groupId,
+        inviteToken: created.inviteToken,
+      };
+    }),
+  );
 }
 
-async function lookupConversation(peerId: string): Promise<string | null> {
-  const { api } = await userClient();
-  return apiData(ConversationLookupResult, await api.messages.lookup.get({ query: { peerId } }))
-    .conversationId;
+function lookupConversation(peerId: string): Promise<string | null> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.messages.lookup
+      .get({ query: { peerId } })
+      .then((response) => apiData(ConversationLookupResult, response).conversationId),
+  );
 }
 
 type OpenedConversation =
   | { readonly conversationId: string; readonly paidRequired: false }
   | { readonly paidRequired: true };
 
-async function openConversation(recipientId: string, body: string): Promise<OpenedConversation> {
-  const { api } = await userClient();
-  const reply = await api.messages.conversations.post({ body, recipientId });
-  if (reply.error?.status === httpStatus.paymentRequired) {
-    return { paidRequired: true };
-  }
-  const opened = apiData(ConversationOpened, reply);
-  return { conversationId: opened.conversationId, paidRequired: false };
+function openConversation(recipientId: string, body: string): Promise<OpenedConversation> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.messages.conversations.post({ body, recipientId }).then((reply) => {
+      if (reply.error?.status === httpStatus.paymentRequired) {
+        return { paidRequired: true };
+      }
+      const opened = apiData(ConversationOpened, reply);
+      return { conversationId: opened.conversationId, paidRequired: false };
+    }),
+  );
 }
 
 export {

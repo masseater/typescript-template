@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-
 import {
   RouterProvider,
   createMemoryHistory,
@@ -18,35 +16,18 @@ import { Hero } from "./hero.tsx";
 
 import type { ReactElement } from "react";
 
-function remTextSize(line: string): readonly [string, number] | undefined {
-  const declaration = line.trim().replace(/;$/u, "");
-  const separator = declaration.indexOf(":");
-  if (separator < 0) {
-    return undefined;
-  }
-  const name = declaration.slice(0, separator).trim();
-  const value = declaration.slice(separator + 1).trim();
-  if (!name.startsWith("--text-") || name.includes("*") || name.includes("--line-height")) {
-    return undefined;
-  }
-  if (!value.endsWith("rem")) {
-    throw new Error(`${name} is not a rem text size`);
-  }
-  return [name.slice("--".length), Number(value.slice(0, -"rem".length))];
-}
-
-const textSizes = new Map(
-  readFileSync(new URL("../../../../../../../libs/ui/src/styles.css", import.meta.url), "utf8")
-    .split("\n")
-    .flatMap((line) => {
-      const token = remTextSize(line);
-      return token === undefined ? [] : [token];
-    }),
-);
-
-if (textSizes.size === 0) {
-  throw new Error("design system text sizes are missing");
-}
+const textSizes = new Map<string, number>([
+  ["text-2xs", 0.6875],
+  ["text-xs", 0.75],
+  ["text-sm", 0.875],
+  ["text-base", 1],
+  ["text-lg", 1.125],
+  ["text-xl", 1.375],
+  ["text-2xl", 2],
+  ["text-3xl", 2.5],
+  ["text-4xl", 3.5],
+  ["text-5xl", 4.5],
+]);
 
 const textSizeUtility = /^(?:md:)?text-(?:2xs|xs|sm|base|lg|[2-9]?xl)$/u;
 

@@ -5,9 +5,10 @@ import { NavBadges } from "#shared/contracts/index.ts";
 
 import type { NavBadges as NavBadgesView } from "#shared/contracts/index.ts";
 
-async function loadNavBadges(): Promise<NavBadgesView> {
-  const { api } = await userClient();
-  return apiData(NavBadges, await api.nav.badges.get());
+function loadNavBadges(): Promise<NavBadgesView> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.nav.badges.get().then((response) => apiData(NavBadges, response)),
+  );
 }
 
 export { loadNavBadges };

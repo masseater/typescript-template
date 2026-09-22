@@ -97,7 +97,10 @@ describe("threads and posts", () => {
       const found = yield* findBoardThread("author", threadId, wholePage);
       assert.strictEqual(found.total, 2);
       assert.deepStrictEqual(
-        found.posts.map((post) => [post.author?.id, post.body]),
+        found.posts.map((post) => [
+          post.author !== null && "id" in post.author ? post.author.id : null,
+          post.body,
+        ]),
         [
           ["author", draft.body],
           ["replier", "よろしくお願いします。"],

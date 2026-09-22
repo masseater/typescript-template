@@ -5,24 +5,32 @@ import { fileReport } from "#shared/api/index.ts";
 
 import type { ReportReason, ReportSubject } from "@repo/config";
 import type { FormEvent, ReactElement } from "react";
-
 const reasonOptions = [
-  { label: "迷惑行為", value: REPORT_REASON.harassment },
-  { label: "スパム", value: REPORT_REASON.spam },
-  { label: "その他", value: REPORT_REASON.other },
+  {
+    label: "迷惑行為",
+    value: REPORT_REASON.harassment,
+  },
+  {
+    label: "スパム",
+    value: REPORT_REASON.spam,
+  },
+  {
+    label: "その他",
+    value: REPORT_REASON.other,
+  },
 ] as const;
-
 const useOpenId = localState<string | undefined>(undefined);
 const useReason = localState<string>(REPORT_REASON.harassment);
-
 function isReason(value: string): value is ReportReason {
   return reportReasons.some((reason) => reason === value);
 }
-
 function ReportControl({
   subjectId,
   subjectKind,
-}: Readonly<{ subjectId: string; subjectKind: ReportSubject }>): ReactElement {
+}: Readonly<{
+  subjectId: string;
+  subjectKind: ReportSubject;
+}>): ReactElement {
   const action = useAction();
   const [openId, setOpenId] = useOpenId();
   const [reason, setReason] = useReason();
@@ -44,10 +52,7 @@ function ReportControl({
     if (!isReason(reason)) {
       return;
     }
-    action.run(async () => {
-      await fileReport(subjectKind, subjectId, reason);
-      setOpenId(undefined);
-    });
+    action.run(() => fileReport(subjectKind, subjectId, reason).then(() => setOpenId(undefined)));
   }
   return (
     <form className="flex flex-col gap-2" onSubmit={submit}>
@@ -65,5 +70,4 @@ function ReportControl({
     </form>
   );
 }
-
 export { ReportControl };

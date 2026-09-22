@@ -8,28 +8,28 @@ import {
   InquiryThread,
 } from "#shared/contracts/index.ts";
 
-async function loadInquiries(): Promise<typeof InquiryList.Type> {
-  const { api } = await userClient();
-  return apiData(InquiryList, await api.support.get());
+function loadInquiries(): Promise<typeof InquiryList.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.support.get().then((response) => apiData(InquiryList, response)),
+  );
 }
 
-async function loadInquiry(id: string): Promise<typeof InquiryThread.Type> {
-  const { api } = await userClient();
-  return apiData(InquiryThread, await api.support.detail.get({ query: { id } }));
+function loadInquiry(id: string): Promise<typeof InquiryThread.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.support.detail.get({ query: { id } }).then((response) => apiData(InquiryThread, response)),
+  );
 }
 
-async function createInquiry(
-  values: typeof InquiryCreate.Type,
-): Promise<typeof InquiryThread.Type> {
-  const { api } = await userClient();
-  return apiData(InquiryThread, await api.support.post(values));
+function createInquiry(values: typeof InquiryCreate.Type): Promise<typeof InquiryThread.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.support.post(values).then((response) => apiData(InquiryThread, response)),
+  );
 }
 
-async function replyToInquiry(
-  values: typeof InquiryReply.Type,
-): Promise<typeof InquiryThread.Type> {
-  const { api } = await userClient();
-  return apiData(InquiryThread, await api.support.reply.post(values));
+function replyToInquiry(values: typeof InquiryReply.Type): Promise<typeof InquiryThread.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.support.reply.post(values).then((response) => apiData(InquiryThread, response)),
+  );
 }
 
 export { createInquiry, loadInquiry, loadInquiries, replyToInquiry };

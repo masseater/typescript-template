@@ -31,12 +31,16 @@ function leaveApp() {
   return createApi(apiRoot).use(leaveApi(apiRoutes(runtime, reporting)));
 }
 
-async function postRecoveryAccept(app: ReturnType<typeof leaveApp>): Promise<Response> {
-  return app.fetch(
-    new Request(`${fixtureOrigin}${apiRoot}/recovery/accept`, {
-      headers: { "content-type": "application/json", origin: fixtureOrigin },
-      method: "POST",
-    }),
+function postRecoveryAccept(app: ReturnType<typeof leaveApp>): Effect.Effect<Response> {
+  return Effect.promise(() =>
+    Promise.resolve(
+      app.fetch(
+        new Request(`${fixtureOrigin}${apiRoot}/recovery/accept`, {
+          headers: { "content-type": "application/json", origin: fixtureOrigin },
+          method: "POST",
+        }),
+      ),
+    ),
   );
 }
 
@@ -44,7 +48,7 @@ it.effect("rejects unauthenticated recovery acceptance", () =>
   Effect.gen(function* program() {
     yield* migrated;
     const app = leaveApp();
-    const response = yield* Effect.promise(async () => postRecoveryAccept(app));
+    const response = yield* postRecoveryAccept(app);
     assert.strictEqual(response.status, httpStatus.unauthorized);
   }),
 );

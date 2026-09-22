@@ -118,7 +118,7 @@ const followMember = Effect.fn("followMember")(function* followMember(
   if (yield* pairBlocked(followerId, followeeId)) {
     return yield* new UserNotFound();
   }
-  const now = new Date();
+  const now = DateTime.toDate(yield* DateTime.now);
   const inserted = yield* query((database) =>
     database
       .insert(follow)

@@ -6,19 +6,24 @@ import { AgreementsView } from "#shared/contracts/index.ts";
 import type { Agreements } from "#entities/agreement/model/agreements.ts";
 import type { AgreementKind } from "@repo/config";
 
-async function loadAgreements(): Promise<Agreements> {
-  const { api } = await userClient();
-  return apiData(AgreementsView, await api.agreements.get());
+function loadAgreements(): Promise<Agreements> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.agreements.get().then((response) => apiData(AgreementsView, response)),
+  );
 }
 
-async function acceptAgreements(versionIds: readonly string[]): Promise<Agreements> {
-  const { api } = await userClient();
-  return apiData(AgreementsView, await api.agreements.accept.post({ versionIds }));
+function acceptAgreements(versionIds: readonly string[]): Promise<Agreements> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.agreements.accept
+      .post({ versionIds })
+      .then((response) => apiData(AgreementsView, response)),
+  );
 }
 
-async function withdrawAgreement(kind: AgreementKind): Promise<Agreements> {
-  const { api } = await userClient();
-  return apiData(AgreementsView, await api.agreements.withdraw.post({ kind }));
+function withdrawAgreement(kind: AgreementKind): Promise<Agreements> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.agreements.withdraw.post({ kind }).then((response) => apiData(AgreementsView, response)),
+  );
 }
 
 export { acceptAgreements, loadAgreements, withdrawAgreement };

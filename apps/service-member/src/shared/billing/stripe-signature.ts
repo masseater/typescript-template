@@ -48,7 +48,7 @@ const signPayload = Effect.fn("signStripePayload")(function* signStripePayload(
   signedPayload: string,
 ) {
   const encoder = new TextEncoder();
-  const key = yield* Effect.promise(async () =>
+  const key = yield* Effect.promise(() =>
     crypto.subtle.importKey(
       "raw",
       encoder.encode(secret),
@@ -57,7 +57,7 @@ const signPayload = Effect.fn("signStripePayload")(function* signStripePayload(
       ["sign"],
     ),
   );
-  const digest = yield* Effect.promise(async () =>
+  const digest = yield* Effect.promise(() =>
     crypto.subtle.sign("HMAC", key, encoder.encode(signedPayload)),
   );
   return hex(digest);

@@ -49,21 +49,21 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
   };
   const say = (utterance: MemberUtterance): void => {
     setFailedTurn(utterance);
-    turnAction.run(async () => {
-      publish(await submitTurn(utterance));
-    });
+    turnAction.run(() => submitTurn(utterance).then(publish));
   };
   return {
     busy:
       turnAction.pending || saveAction.pending || restartAction.pending || consentAction.pending,
     consent: (accept: boolean) => {
-      consentAction.run(async () => {
-        const next = await respondHistoryConsent(accept);
-        publish(next);
-        if (next.phase === "saved" && onSaved !== undefined) {
-          await onSaved();
-        }
-      });
+      consentAction.run(() =>
+        respondHistoryConsent(accept).then((next) => {
+          publish(next);
+          if (next.phase === "saved" && onSaved !== undefined) {
+            return onSaved();
+          }
+          return undefined;
+        }),
+      );
     },
     failure: turnAction.error ?? saveAction.error ?? restartAction.error ?? consentAction.error,
     heard: failedTurn === undefined ? undefined : spoken(failedTurn),
@@ -74,9 +74,7 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
       refresh();
     },
     restart: () => {
-      restartAction.run(async () => {
-        publish(await restartInterviewSession());
-      });
+      restartAction.run(() => restartInterviewSession().then(publish));
     },
     retry: () => {
       if (failedTurn !== undefined) {
@@ -84,13 +82,15 @@ function useInterview(onSaved?: () => Promise<void>): InterviewSession {
       }
     },
     save: () => {
-      saveAction.run(async () => {
-        const next = await saveInterviewSheet();
-        publish(next);
-        if (next.phase === "saved" && onSaved !== undefined) {
-          await onSaved();
-        }
-      });
+      saveAction.run(() =>
+        saveInterviewSheet().then((next) => {
+          publish(next);
+          if (next.phase === "saved" && onSaved !== undefined) {
+            return onSaved();
+          }
+          return undefined;
+        }),
+      );
     },
     say,
     turnFailed: turnAction.error !== undefined,

@@ -3,7 +3,6 @@ import { useAction, useTextInput } from "@repo/ui";
 import { createInquiry } from "#pages/support/api/support.ts";
 
 import type { SubmitEventHandler } from "react";
-
 interface NewInquiryForm {
   readonly blocked: boolean;
   readonly body: string;
@@ -14,17 +13,22 @@ interface NewInquiryForm {
   readonly pending: boolean;
   readonly subject: string;
 }
-
 function useNewInquiryForm(onCreated: (inquiryId: string) => void): NewInquiryForm {
   const subject = useTextInput();
   const body = useTextInput();
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
+  function handleSubmit(
+    event: Readonly<{
+      preventDefault: () => void;
+    }>,
+  ): void {
     event.preventDefault();
-    action.run(async () => {
-      const created = await createInquiry({ body: body.value, subject: subject.value });
-      onCreated(created.id);
-    });
+    action.run(() =>
+      createInquiry({
+        body: body.value,
+        subject: subject.value,
+      }).then((created) => onCreated(created.id)),
+    );
   }
   return {
     blocked: action.blocked,
@@ -37,5 +41,4 @@ function useNewInquiryForm(onCreated: (inquiryId: string) => void): NewInquiryFo
     subject: subject.value,
   };
 }
-
 export { useNewInquiryForm };

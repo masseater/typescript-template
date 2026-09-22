@@ -14,15 +14,19 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useCreateGroupForm } from "#pages/messages/model/create-group-form.ts";
 
 import type { ReactElement } from "react";
-
 function CreateGroupForm(): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showCreated(groupId: string): Promise<void> {
-    await router.invalidate();
-    await navigate({ params: { id: groupId }, to: "/groups/$id" });
-    notify("success", "グループを作りました。");
+  function showCreated(groupId: string): Promise<void> {
+    return router.invalidate().then(() =>
+      navigate({
+        params: {
+          id: groupId,
+        },
+        to: "/groups/$id",
+      }).then(() => notify("success", "グループを作りました。")),
+    );
   }
   const form = useCreateGroupForm(showCreated);
   return (
@@ -66,5 +70,4 @@ function CreateGroupForm(): ReactElement {
     </section>
   );
 }
-
 export { CreateGroupForm };

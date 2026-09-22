@@ -5,11 +5,14 @@ import { PhotoSlotEditor } from "./photo-slot-editor.tsx";
 
 import type { Profile } from "#pages/profile-edit/api/profile.ts";
 import type { ReactElement } from "react";
-
-function PhotoEditor({ profile }: Readonly<{ profile: Profile }>): ReactElement {
+function PhotoEditor({
+  profile,
+}: Readonly<{
+  profile: Profile;
+}>): ReactElement {
   const router = useRouter();
-  async function refresh(): Promise<void> {
-    await router.invalidate();
+  function refresh(): Promise<void> {
+    return router.invalidate().then(() => undefined);
   }
   return (
     <div className="flex flex-col gap-6">
@@ -26,5 +29,4 @@ function PhotoEditor({ profile }: Readonly<{ profile: Profile }>): ReactElement 
     </div>
   );
 }
-
 export { PhotoEditor };

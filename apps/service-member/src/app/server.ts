@@ -4,7 +4,7 @@ import { Process, consumeJobs } from "@repo/runtime/jobs";
 import { appServerEntry, withQueue } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 import { env } from "cloudflare:workers";
-import { Effect } from "effect";
+import { Effect, DateTime } from "effect";
 
 import { paraglideMiddleware } from "#paraglide/server.js";
 import { UserInbox } from "#shared/inbox/index.ts";
@@ -39,15 +39,15 @@ export default {
         }).pipe(Effect.orDie),
       ),
   ),
-  scheduled: async (
+  scheduled: (
     _controller: ScheduledController,
     _environment: unknown,
     context: ExecutionContext,
-  ): Promise<void> => {
+  ): void => {
     context.waitUntil(
       runtime.runPromise(
         Effect.gen(function* purgeWithdrawnMembers() {
-          const purged = yield* purgeExpiredWithdrawnMembers(new Date());
+          const purged = yield* purgeExpiredWithdrawnMembers(DateTime.toDate(yield* DateTime.now));
           yield* Effect.log(`member_leave.purged count=${purged.count}`);
         }),
       ),

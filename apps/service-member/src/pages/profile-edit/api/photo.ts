@@ -7,14 +7,20 @@ import type { PhotoSlot } from "@repo/config";
 
 type PhotoState = typeof PhotoView.Type;
 
-async function uploadPhoto(slot: PhotoSlot, file: File): Promise<PhotoState> {
-  const { api } = await userClient();
-  return apiData(PhotoView, await api.profile.photo.put({ file }, { query: { slot } }));
+function uploadPhoto(slot: PhotoSlot, file: File): Promise<PhotoState> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.profile.photo
+      .put({ file }, { query: { slot } })
+      .then((response) => apiData(PhotoView, response)),
+  );
 }
 
-async function removePhoto(slot: PhotoSlot): Promise<PhotoState> {
-  const { api } = await userClient();
-  return apiData(PhotoView, await api.profile.photo.delete(undefined, { query: { slot } }));
+function removePhoto(slot: PhotoSlot): Promise<PhotoState> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.profile.photo
+      .delete(undefined, { query: { slot } })
+      .then((response) => apiData(PhotoView, response)),
+  );
 }
 
 export { removePhoto, uploadPhoto };

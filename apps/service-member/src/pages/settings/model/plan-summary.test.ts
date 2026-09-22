@@ -1,9 +1,10 @@
 import { PLAN, SUBSCRIPTION_STATUS } from "@repo/config";
+import { DateTime } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { summarizePlan } from "./plan-summary.ts";
 
-const periodEnd = new Date("2026-10-20T00:00:00Z");
+const periodEnd = DateTime.toDate(DateTime.makeUnsafe("2026-10-20T00:00:00Z"));
 
 describe("summarizePlan", () => {
   it("offers the upgrade and nothing to manage to a member without any contract", () => {

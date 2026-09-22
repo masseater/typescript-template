@@ -22,11 +22,14 @@ function useLeaveForm(): LeaveFormState {
   const [immediate, setImmediate] = useLeaveImmediate();
   const action = useAction();
   function handleConfirm(): void {
-    action.run(async () => {
-      await submitLeave({ immediate });
-      requireSuccess(await authClient.signOut());
-      globalThis.location.assign("/");
-    });
+    action.run(() =>
+      submitLeave({ immediate })
+        .then(() => authClient.signOut())
+        .then((result) => {
+          requireSuccess(result);
+          globalThis.location.assign("/");
+        }),
+    );
   }
   return {
     blocked: action.blocked,

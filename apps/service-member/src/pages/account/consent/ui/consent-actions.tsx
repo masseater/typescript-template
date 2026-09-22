@@ -7,11 +7,13 @@ import { serviceName } from "#shared/config/index.ts";
 import { McpScopeFields, requestedToolScopes, useChosenScopes } from "./mcp-scope-fields.tsx";
 
 import type { ReactElement } from "react";
-
 const consentRoute = getRouteApi("/consent");
 const useDecided = localState(false);
-
-function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement {
+function ConsentActions({
+  client,
+}: Readonly<{
+  client: string;
+}>): ReactElement {
   const search = consentRoute.useSearch();
   const requested = requestedToolScopes(search.scope);
   const [chosen] = useChosenScopes();
@@ -23,10 +25,7 @@ function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement 
       accept && search.scope?.split(" ").includes(MEMBER_MCP_SCOPE.offlineAccess)
         ? [...selected, MEMBER_MCP_SCOPE.offlineAccess]
         : selected;
-    action.run(async () => {
-      await submitDecision(accept, scopes);
-      setDecided(true);
-    });
+    action.run(() => submitDecision(accept, scopes).then(() => setDecided(true)));
   }
   const disabled = action.blocked || decided;
   return (
@@ -62,5 +61,4 @@ function ConsentActions({ client }: Readonly<{ client: string }>): ReactElement 
     </FormColumn>
   );
 }
-
 export { ConsentActions };

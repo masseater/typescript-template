@@ -6,7 +6,7 @@ import type { ReactElement } from "react";
 
 const Route = createFileRoute("/_member/notifications")({
   component: NotificationsRoute,
-  loader: async () => ({ items: await loadNotifications() }),
+  loader: () => loadNotifications().then((items) => ({ items })),
 });
 
 function NotificationsRoute(): ReactElement {

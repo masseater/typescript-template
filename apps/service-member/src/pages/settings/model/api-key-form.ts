@@ -2,7 +2,6 @@ import { localState, useAction, useTextInput, type ActionState } from "@repo/ui"
 import { Option } from "effect";
 
 import { createApiKey, type CreatedApiKey } from "#pages/settings/api/api-keys.ts";
-
 interface ApiKeyForm {
   readonly action: ActionState;
   readonly handleMessageSendChange: (checked: boolean) => void;
@@ -14,11 +13,9 @@ interface ApiKeyForm {
   readonly name: string;
   readonly profileUpdate: boolean;
 }
-
 const useIssued = localState(Option.none<CreatedApiKey>());
 const useMessageSend = localState(false);
 const useProfileUpdate = localState(false);
-
 function useApiKeyForm(onIssued: () => void): ApiKeyForm {
   const name = useTextInput();
   const [issued, setIssued] = useIssued();
@@ -30,12 +27,20 @@ function useApiKeyForm(onIssued: () => void): ApiKeyForm {
     if (trimmed === "") {
       return;
     }
-    action.run(async () => {
-      const created = await createApiKey(trimmed, { messageSend, profileUpdate });
-      setIssued(Option.some(created));
-      name.handleChange("");
-      onIssued();
-    });
+    action.run(() =>
+      createApiKey(trimmed, {
+        messageSend,
+        profileUpdate,
+      }).then((created) =>
+        Promise.resolve().then(() => {
+          setIssued(Option.some(created));
+          return Promise.resolve().then(() => {
+            name.handleChange("");
+            return onIssued();
+          });
+        }),
+      ),
+    );
   }
   return {
     action,
@@ -49,5 +54,4 @@ function useApiKeyForm(onIssued: () => void): ApiKeyForm {
     profileUpdate,
   };
 }
-
 export { useApiKeyForm };

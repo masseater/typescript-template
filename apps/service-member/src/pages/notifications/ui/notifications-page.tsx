@@ -1,13 +1,16 @@
 import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { DateTime } from "effect";
 
 import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "#pages/notifications/api/notifications.ts";
 
-import type { NotificationItem } from "#shared/contracts/index.ts";
+import type { NotificationList } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
+
+type NotificationItem = (typeof NotificationList.Type)["items"][number];
 
 const updatedAtLabel = new Intl.DateTimeFormat("ja", {
   dateStyle: "medium",
@@ -17,32 +20,28 @@ const updatedAtLabel = new Intl.DateTimeFormat("ja", {
 
 function NotificationsPage({
   initialItems,
-}: Readonly<{ initialItems: readonly NotificationItem[] }>): ReactElement {
+}: Readonly<{
+  initialItems: readonly NotificationItem[];
+}>): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
   const readAllAction = useAction();
   const openAction = useAction();
-
   const readAll = (): void => {
-    readAllAction.run(async () => {
-      await markAllNotificationsRead();
-      await router.invalidate();
-    });
+    readAllAction.run(() =>
+      markAllNotificationsRead().then(() => router.invalidate().then(() => undefined)),
+    );
   };
-
   const openItem = (item: NotificationItem): void => {
-    openAction.run(async () => {
-      if (!item.read) {
-        await markNotificationRead(item.id);
-        await router.invalidate();
-      }
-      await navigate({ href: item.href });
+    openAction.run(() => {
+      const mark = item.read
+        ? Promise.resolve()
+        : markNotificationRead(item.id).then(() => router.invalidate().then(() => undefined));
+      return mark.then(() => navigate({ href: item.href }).then(() => undefined));
     });
   };
-
   const items = initialItems;
   const error = readAllAction.error ?? openAction.error;
-
   return (
     <main className="mx-auto flex w-full max-w-page flex-col gap-4 px-4 py-8">
       <div className="flex items-center justify-between gap-4">
@@ -74,7 +73,7 @@ function NotificationsPage({
               >
                 <p className="text-sm leading-normal">{item.label}</p>
                 <p className="text-xs leading-normal text-muted-foreground">
-                  {updatedAtLabel.format(new Date(item.createdAt))}
+                  {updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(item.createdAt)))}
                 </p>
               </button>
             </li>

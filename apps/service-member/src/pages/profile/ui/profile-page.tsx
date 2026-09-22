@@ -23,30 +23,24 @@ function ProfilePage({ member, own }: Readonly<{ member: Member; own: boolean }>
   const blocked = blockedOverride ?? member.blocked ?? false;
 
   const toggleFollow = (): void => {
-    followAction.run(async () => {
-      if (following) {
-        await unfollowMember(member.id);
-        setFollowingOverride(false);
-      } else {
-        await followMember(member.id);
-        setFollowingOverride(true);
-      }
-      await router.invalidate();
-    });
+    followAction.run(() =>
+      (following ? unfollowMember(member.id) : followMember(member.id)).then(() => {
+        setFollowingOverride(!following);
+        return router.invalidate().then(() => undefined);
+      }),
+    );
   };
 
   const toggleBlock = (): void => {
-    blockAction.run(async () => {
-      if (blocked) {
-        await unblockMember(member.id);
-        setBlockedOverride(false);
-      } else {
-        await blockMember(member.id);
-        setBlockedOverride(true);
-        setFollowingOverride(false);
-      }
-      await router.invalidate();
-    });
+    blockAction.run(() =>
+      (blocked ? unblockMember(member.id) : blockMember(member.id)).then(() => {
+        setBlockedOverride(!blocked);
+        if (!blocked) {
+          setFollowingOverride(false);
+        }
+        return router.invalidate().then(() => undefined);
+      }),
+    );
   };
 
   const actions = own ? (

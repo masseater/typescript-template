@@ -8,7 +8,7 @@ import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Context, Effect, Layer } from "effect";
+import { Context, DateTime, Effect, Layer, Schema } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { routes } from "#shared/telemetry/index.ts";
@@ -25,6 +25,7 @@ import {
 const { user } = schema;
 const secretBody = "MCP_SECRET_BODY_NOT_FOR_OTHER_TOOLS";
 const reporting = { service: APPLICATION.user } as const;
+const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
   const member = (yield* AuthApps)[APPLICATION.user];
@@ -32,13 +33,14 @@ const discovery = Effect.fn("discovery")(function* discovery(path: string) {
   if (typeof handler !== "function") {
     return yield* Effect.die("MEMBER_HANDLER_UNAVAILABLE");
   }
-  const response: unknown = yield* Effect.promise(async () =>
-    handler(new Request(`${memberOrigin}${path}`)),
+  const response: unknown = yield* Effect.promise(() =>
+    Promise.resolve(handler(new Request(`${memberOrigin}${path}`))),
   );
   if (!(response instanceof Response)) {
     return yield* Effect.die("MEMBER_HANDLER_UNAVAILABLE");
   }
-  const body = yield* Effect.promise(async (): Promise<unknown> => response.json());
+  const text = yield* Effect.promise(() => response.text());
+  const body = yield* Schema.decodeEffect(JsonUnknown)(text);
   return { body, status: response.status };
 });
 
@@ -62,8 +64,11 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
   const api = apiRoutes(runtime, reporting);
   const app = createApi("").all("/mcp", api.raw(serveMcp, unavailable));
   const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
-    Effect.promise(async () => app.fetch(request));
-  return { fetchMcp, stop: Effect.promise(async () => runtime.dispose()) };
+    Effect.promise(() => Promise.resolve(app.fetch(request)));
+  return {
+    fetchMcp,
+    stop: Effect.promise(() => Promise.resolve(runtime.dispose()).then(() => undefined)),
+  };
 }
 
 const toolText = (body: unknown): string => {
@@ -90,8 +95,8 @@ const toolText = (body: unknown): string => {
 describe("member MCP authorization", () => {
   const it = authTest();
 
-  it("publishes OAuth discovery for the member MCP resource", async ({ auth }) => {
-    const result = await runWith(auth, () =>
+  it("publishes OAuth discovery for the member MCP resource", ({ auth }) =>
+    runWith(auth, () =>
       Effect.gen(function* program() {
         const app = memberMcpApp(auth);
         const resource = yield* discovery("/.well-known/oauth-protected-resource/mcp");
@@ -107,34 +112,33 @@ describe("member MCP authorization", () => {
           server,
         };
       }),
-    );
-    expect(result.resource.status).toBe(httpStatus.ok);
-    expect(result.resource.body).toMatchObject({
-      authorization_servers: [`${memberOrigin}/api/auth`],
-      resource: `${memberOrigin}/mcp`,
-    });
-    expect(result.server.body).toMatchObject({
-      issuer: `${memberOrigin}/api/auth`,
-      registration_endpoint: `${memberOrigin}/api/auth/oauth2/register`,
-    });
-    expect(result.challengeStatus).toBe(httpStatus.unauthorized);
-    expect(result.header).toContain(
-      `resource_metadata="${memberOrigin}/.well-known/oauth-protected-resource/mcp"`,
-    );
-  });
+    ).then((result) => {
+      expect(result.resource.status).toBe(httpStatus.ok);
+      expect(result.resource.body).toMatchObject({
+        authorization_servers: [`${memberOrigin}/api/auth`],
+        resource: `${memberOrigin}/mcp`,
+      });
+      expect(result.server.body).toMatchObject({
+        issuer: `${memberOrigin}/api/auth`,
+        registration_endpoint: `${memberOrigin}/api/auth/oauth2/register`,
+      });
+      expect(result.challengeStatus).toBe(httpStatus.unauthorized);
+      expect(result.header).toContain(
+        `resource_metadata="${memberOrigin}/.well-known/oauth-protected-resource/mcp"`,
+      );
+    }));
 
-  it("rejects tools the member did not permit and allows the scopes they granted", async ({
-    auth,
-  }) => {
-    const result = await runWith(auth, () =>
+  it("rejects tools the member did not permit and allows the scopes they granted", ({ auth }) =>
+    runWith(auth, () =>
       Effect.gen(function* program() {
         yield* tokenFor("peer@example.com", MEMBER_MCP_SCOPE.profileRead);
-        yield* query(async (database) => {
-          await database
+        yield* query((database) =>
+          database
             .update(user)
             .set({ name: "peer", searchable: true })
-            .where(eq(user.email, "peer@example.com"));
-        });
+            .where(eq(user.email, "peer@example.com"))
+            .then(() => undefined),
+        );
         const [peer] = yield* query((database) =>
           database.select({ id: user.id }).from(user).where(eq(user.email, "peer@example.com")),
         );
@@ -153,10 +157,14 @@ describe("member MCP authorization", () => {
         const scope = [MEMBER_MCP_SCOPE.search, MEMBER_MCP_SCOPE.messageSend].join(" ");
         const granted = yield* tokenFor("sender@example.com", scope);
         yield* recordSubscription(
-          { createdAt: new Date("2026-09-20T00:00:00.000Z"), id: "evt_sender", type: "updated" },
+          {
+            createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
+            id: "evt_sender",
+            type: "updated",
+          },
           {
             cancelAtPeriodEnd: false,
-            currentPeriodEnd: new Date("2099-01-01T00:00:00.000Z"),
+            currentPeriodEnd: DateTime.toDate(DateTime.makeUnsafe("2099-01-01T00:00:00.000Z")),
             memberId: granted.userId,
             status: SUBSCRIPTION_STATUS.active,
             stripeCustomerId: "cus_sender",
@@ -176,26 +184,32 @@ describe("member MCP authorization", () => {
           socialLinks: [],
         });
         yield* app.stop;
+        const profileText = toolText(profile);
+        const searchedText = toolText(searched);
+        const sentText = toolText(sent);
         return {
           deniedProfile: toolText(deniedProfile),
           deniedSearch: toolText(deniedSearch),
           deniedSend: toolText(deniedSend),
           peerId: peer?.id,
-          profile: toolText(profile),
-          searched: toolText(searched),
-          sent: toolText(sent),
+          profile: yield* Schema.decodeEffect(JsonUnknown)(profileText || "{}"),
+          searched: yield* Schema.decodeEffect(JsonUnknown)(searchedText || "{}"),
+          sent: yield* Schema.decodeEffect(JsonUnknown)(sentText || "{}"),
+          sentText,
           userId: grantedRead.userId,
         };
       }),
-    );
-    expect(JSON.parse(result.profile)).toMatchObject({ id: result.userId });
-    expect(result.deniedSearch).toBe(`permission_required:${MEMBER_MCP_SCOPE.search}`);
-    expect(result.deniedSend).toBe(`permission_required:${MEMBER_MCP_SCOPE.messageSend}`);
-    expect(
-      JSON.parse(result.searched).members.map((member: { id: string }) => member.id),
-    ).toContain(result.peerId);
-    expect(JSON.parse(result.sent)).toMatchObject({ conversationId: expect.any(String) });
-    expect(result.sent).not.toContain(secretBody);
-    expect(result.deniedProfile).toBe(`permission_required:${MEMBER_MCP_SCOPE.profileUpdate}`);
-  });
+    ).then((result) => {
+      expect(result.profile).toMatchObject({ id: result.userId });
+      expect(result.deniedSearch).toBe(`permission_required:${MEMBER_MCP_SCOPE.search}`);
+      expect(result.deniedSend).toBe(`permission_required:${MEMBER_MCP_SCOPE.messageSend}`);
+      expect(
+        (result.searched as { members: readonly { id: string }[] }).members.map(
+          (member) => member.id,
+        ),
+      ).toContain(result.peerId);
+      expect(result.sent).toMatchObject({ conversationId: expect.any(String) });
+      expect(result.sentText).not.toContain(secretBody);
+      expect(result.deniedProfile).toBe(`permission_required:${MEMBER_MCP_SCOPE.profileUpdate}`);
+    }));
 });

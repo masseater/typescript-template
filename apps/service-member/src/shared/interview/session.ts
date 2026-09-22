@@ -9,7 +9,7 @@ import {
   storeInterview,
 } from "@repo/db";
 import { logAt } from "@repo/observability";
-import { Clock, Effect, Option, Schema } from "effect";
+import { DateTime, Effect, Option, Schema } from "effect";
 
 import { assembleProfileLayout } from "#shared/profile-layout/assembler.ts";
 import { writeSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
@@ -163,7 +163,7 @@ const respondHistoryConsent = Effect.fn("interview.respondHistoryConsent")(
       if (pending === undefined) {
         return yield* replace(userId, version, { state: save(state) });
       }
-      const acceptedAt = yield* Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+      const acceptedAt = DateTime.toDate(yield* DateTime.now);
       yield* acceptAgreementVersions({
         acceptedAt,
         userId,

@@ -169,4 +169,3 @@ const runVerifyMember = (settings: {
   });
 
 export { mailDelivery, runVerifyMember };
-export type { MailDelivery };

@@ -14,9 +14,10 @@ const ConversationSearchParams = Schema.Struct({
 type MessagesSearch = typeof MessagesSearchParams.Type;
 type ConversationSearch = typeof ConversationSearchParams.Type;
 
-class InvalidMessagesSearch extends Error {
-  override readonly name = "InvalidMessagesSearch";
-}
+class InvalidMessagesSearch extends Schema.TaggedError<InvalidMessagesSearch>()(
+  "InvalidMessagesSearch",
+  {},
+) {}
 
 const decodeMessagesSearch = Schema.decodeUnknownOption(MessagesSearchParams);
 const decodeConversationSearch = Schema.decodeUnknownOption(ConversationSearchParams);

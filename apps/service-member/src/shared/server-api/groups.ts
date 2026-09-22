@@ -10,7 +10,7 @@ import {
   query,
   schema,
 } from "@repo/db";
-import { Clock, Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { mayCreateGroup } from "#shared/messaging/index.ts";
 import { GroupInviteExpired } from "./group-invite-expired.ts";
@@ -52,7 +52,7 @@ interface GroupView {
 }
 
 const messagingMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
-const clockDate = Effect.map(Clock.currentTimeMillis, (millis) => new Date(millis));
+const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 const requireMessagingMember = Effect.fn("requireMessagingMember")(function* requireMessagingMember(
   userId: string,
@@ -206,7 +206,7 @@ const createGroup = Effect.fn("createGroup")(function* createGroup(
   const groupId = crypto.randomUUID();
   const inviteId = crypto.randomUUID();
   const inviteToken = crypto.randomUUID();
-  const expiresAt = new Date(now.getTime() + inviteTtlMillis);
+  const expiresAt = DateTime.toDate(DateTime.makeUnsafe(now.getTime() + inviteTtlMillis));
   yield* query((database) =>
     database.batch([
       database.insert(conversation).values({
@@ -403,7 +403,7 @@ const refreshGroupInvite = Effect.fn("refreshGroupInvite")(function* refreshGrou
   }
   const now = yield* clockDate;
   const inviteToken = crypto.randomUUID();
-  const expiresAt = new Date(now.getTime() + inviteTtlMillis);
+  const expiresAt = DateTime.toDate(DateTime.makeUnsafe(now.getTime() + inviteTtlMillis));
   yield* query((database) =>
     database.batch([
       database.delete(groupInvite).where(eq(groupInvite.groupId, groupId)),

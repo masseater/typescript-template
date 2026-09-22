@@ -18,50 +18,63 @@ import { GroupBody } from "./group-body.tsx";
 import type { GroupDetail } from "#pages/groups/api/groups.ts";
 import type { GroupsSearch } from "#pages/groups/model/groups-search.ts";
 import type { ReactElement } from "react";
-
 function invitePath(groupId: string, token: string): string {
   return `/groups/${groupId}?invite=${token}`;
 }
-
-function MemberRow({ id, name }: Readonly<{ id: string; name: string }>): ReactElement {
+function MemberRow({
+  id,
+  name,
+}: Readonly<{
+  id: string;
+  name: string;
+}>): ReactElement {
   return (
     <li>
-      <TextLink to="/users/$id" params={{ id }}>
+      <TextLink
+        to="/users/$id"
+        params={{
+          id,
+        }}
+      >
         {name}
       </TextLink>
     </li>
   );
 }
-
 function GroupPage({
   group,
   search,
-}: Readonly<{ group: GroupDetail; search: GroupsSearch }>): ReactElement {
+}: Readonly<{
+  group: GroupDetail;
+  search: GroupsSearch;
+}>): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
   const join = useJoinGroup(
     group.id,
-    async (conversationId) => {
-      await router.invalidate();
-      await navigate({ params: { id: conversationId }, to: "/messages/$id" });
-      notify("success", "グループに参加しました。");
-    },
+    (conversationId) =>
+      router.invalidate().then(() =>
+        navigate({
+          params: {
+            id: conversationId,
+          },
+          to: "/messages/$id",
+        }).then(() => notify("success", "グループに参加しました。")),
+      ),
     search.invite,
   );
-  const leave = useLeaveGroup(group.id, async () => {
-    await router.invalidate();
-    notify("success", "グループから退席しました。");
-  });
+  const leave = useLeaveGroup(group.id, () =>
+    router.invalidate().then(() => notify("success", "グループから退席しました。")),
+  );
   const copyInvite = useCopyInvite(group.id, (token) => {
     const link = `${globalThis.location.origin}${invitePath(group.id, token)}`;
     void navigator.clipboard.writeText(link);
     notify("success", "招待リンクをコピーしました。");
   });
-  const rename = useRenameGroupForm(group.id, group.name, async () => {
-    await router.invalidate();
-    notify("success", "グループ名を変更しました。");
-  });
+  const rename = useRenameGroupForm(group.id, group.name, () =>
+    router.invalidate().then(() => notify("success", "グループ名を変更しました。")),
+  );
   const inviteExpired = group.inviteExpired && !group.isMember;
   return (
     <GroupBody>
@@ -71,7 +84,12 @@ function GroupPage({
         </Heading>
         <p className="text-base leading-normal">
           所有者:{" "}
-          <TextLink to="/users/$id" params={{ id: group.owner.id }}>
+          <TextLink
+            to="/users/$id"
+            params={{
+              id: group.owner.id,
+            }}
+          >
             {group.owner.name}
           </TextLink>
         </p>
@@ -96,7 +114,9 @@ function GroupPage({
             <>
               <ButtonLink
                 to="/messages/$id"
-                params={{ id: group.conversationId }}
+                params={{
+                  id: group.conversationId,
+                }}
                 variant="primary"
               >
                 会話を開く
@@ -164,5 +184,4 @@ function GroupPage({
     </GroupBody>
   );
 }
-
 export { GroupPage };

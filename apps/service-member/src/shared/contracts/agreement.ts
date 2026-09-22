@@ -8,13 +8,13 @@ const AgreementKind = Schema.Literals(agreementKinds);
 const PendingAgreement = Schema.Struct({
   id: Schema.String,
   kind: AgreementKind,
-  publishedAt: Schema.Number,
+  publishedAt: Schema.Finite,
   summary: Schema.NullOr(Schema.String),
   version: Schema.String,
 });
 
 const AcceptedAgreement = Schema.Struct({
-  acceptedAt: Schema.Number,
+  acceptedAt: Schema.Finite,
   kind: AgreementKind,
   version: Schema.String,
   versionId: Schema.String,
@@ -38,7 +38,7 @@ const PublishedAgreementQuery = Schema.Struct({ kind: AgreementKind });
 const PublishedAgreementView = Schema.Struct({
   body: Schema.String,
   kind: AgreementKind,
-  publishedAt: Schema.Number,
+  publishedAt: Schema.Finite,
   summary: Schema.NullOr(Schema.String),
   version: Schema.String,
 });

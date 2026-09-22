@@ -11,7 +11,7 @@ const measurementId = "G-DEVSERVERMEASURE";
 const origin = "https://member.example.test";
 
 describe("service-member analytics document output", () => {
-  it("names google analytics hosts in csp only when analytics is configured", async () => {
+  it("names google analytics hosts in csp only when analytics is configured", () => {
     const enabled = startRoute(
       {
         fetch: (rendered: Request): Response =>
@@ -30,23 +30,24 @@ describe("service-member analytics document output", () => {
           headers: { "content-type": "text/html; charset=utf-8" },
         }),
     });
-    const enabledPolicy =
-      (await Effect.runPromise(enabled(new Request(`${origin}/`)))).headers.get(
-        "content-security-policy",
-      ) ?? "";
-    const disabledPolicy =
-      (await Effect.runPromise(disabled(new Request(`${origin}/`)))).headers.get(
-        "content-security-policy",
-      ) ?? "";
-    for (const host of googleAnalyticsConnectSrc) {
-      expect(enabledPolicy).toContain(host);
-    }
-    for (const host of googleAnalyticsScriptSrc) {
-      expect(enabledPolicy).toContain(host);
-    }
-    for (const host of googleAnalyticsConnectSrc) {
-      expect(disabledPolicy).not.toContain(host);
-    }
+    return Effect.runPromise(enabled(new Request(`${origin}/`)))
+      .then((enabledResponse) =>
+        Effect.runPromise(disabled(new Request(`${origin}/`))).then((disabledResponse) => ({
+          disabledPolicy: disabledResponse.headers.get("content-security-policy") ?? "",
+          enabledPolicy: enabledResponse.headers.get("content-security-policy") ?? "",
+        })),
+      )
+      .then(({ disabledPolicy, enabledPolicy }) => {
+        for (const host of googleAnalyticsConnectSrc) {
+          expect(enabledPolicy).toContain(host);
+        }
+        for (const host of googleAnalyticsScriptSrc) {
+          expect(enabledPolicy).toContain(host);
+        }
+        for (const host of googleAnalyticsConnectSrc) {
+          expect(disabledPolicy).not.toContain(host);
+        }
+      });
   });
 
   it("describes gtag scripts in the head only when a measurement id is configured", () => {

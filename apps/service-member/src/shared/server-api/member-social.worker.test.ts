@@ -1,4 +1,5 @@
 import { assert, it } from "@effect/vitest";
+import { type MailSettings } from "@repo/auth";
 import { PROFILE_VISIBILITY, ROLE } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
@@ -19,7 +20,7 @@ const testLayer = Layer.merge(
   TestDatabase,
   Layer.succeed(OpsMail, {
     APP_ORIGIN: fixtureOrigin,
-    EMAIL: env.EMAIL,
+    EMAIL: env.EMAIL as unknown as NonNullable<MailSettings["EMAIL"]>,
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",
   }),
@@ -39,8 +40,6 @@ const addUser = (added: {
       id: added.userId,
       name: added.userId,
       profile: added.profile ?? "",
-      role: ROLE.member,
-      updatedAt: recordedAt,
       role: ROLE.member,
       updatedAt: recordedAt,
       visibility: added.visibility ?? PROFILE_VISIBILITY.allMembers,

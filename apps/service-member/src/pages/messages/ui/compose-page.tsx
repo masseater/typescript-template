@@ -6,20 +6,31 @@ import { maximumMessageBodyLength } from "#shared/contracts/index.ts";
 import { ConversationBody } from "./conversation-body.tsx";
 
 import type { ReactElement } from "react";
-
 function ComposePage({
   peerId,
   peerName,
-}: Readonly<{ peerId: string; peerName: string }>): ReactElement {
+}: Readonly<{
+  peerId: string;
+  peerName: string;
+}>): ReactElement {
   const router = useRouter();
   const form = useComposeForm(
     peerId,
-    async (conversationId) => {
-      await router.navigate({ params: { id: conversationId }, to: "/messages/$id" });
-    },
-    async () => {
-      await router.navigate({ to: "/upgrade" });
-    },
+    (conversationId) =>
+      router
+        .navigate({
+          params: {
+            id: conversationId,
+          },
+          to: "/messages/$id",
+        })
+        .then(() => undefined),
+    () =>
+      router
+        .navigate({
+          to: "/upgrade",
+        })
+        .then(() => undefined),
   );
   return (
     <ConversationBody>
@@ -50,5 +61,4 @@ function ComposePage({
     </ConversationBody>
   );
 }
-
 export { ComposePage };

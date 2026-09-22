@@ -9,9 +9,7 @@ function useJoinGroup(
 ) {
   const action = useAction();
   function handleJoin(): void {
-    action.run(async () => {
-      await onJoined(await joinGroup(groupId, invite));
-    });
+    action.run(() => joinGroup(groupId, invite).then(onJoined));
   }
   return { error: action.error, handleJoin, pending: action.pending };
 }
@@ -19,10 +17,7 @@ function useJoinGroup(
 function useLeaveGroup(groupId: string, onLeft: () => Promise<void>) {
   const action = useAction();
   function handleLeave(): void {
-    action.run(async () => {
-      await leaveGroup(groupId);
-      await onLeft();
-    });
+    action.run(() => leaveGroup(groupId).then(onLeft));
   }
   return { error: action.error, handleLeave, pending: action.pending };
 }
@@ -30,9 +25,7 @@ function useLeaveGroup(groupId: string, onLeft: () => Promise<void>) {
 function useCopyInvite(groupId: string, onRefreshed: (token: string) => void) {
   const action = useAction();
   function handleCopyInvite(): void {
-    action.run(async () => {
-      onRefreshed(await refreshInvite(groupId));
-    });
+    action.run(() => refreshInvite(groupId).then(onRefreshed));
   }
   return { error: action.error, handleCopyInvite, pending: action.pending };
 }

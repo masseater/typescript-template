@@ -14,7 +14,7 @@ const MessageSender = Schema.Struct({
 
 const MessageView = Schema.Struct({
   body: Schema.String,
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   id: Schema.String,
   mine: Schema.Boolean,
   sender: MessageSender,
@@ -29,7 +29,7 @@ const ConversationPeer = Schema.Struct({
 const DirectConversationSummary = Schema.Struct({
   id: Schema.String,
   kind: Schema.Literal("direct"),
-  lastMessageAt: Schema.Number,
+  lastMessageAt: Schema.Finite,
   lastMessagePreview: Schema.String,
   peer: ConversationPeer,
   unreadCount: Schema.Finite,
@@ -39,7 +39,7 @@ const GroupConversationSummary = Schema.Struct({
   group: Schema.Struct({ id: Schema.String, name: Schema.String }),
   id: Schema.String,
   kind: Schema.Literal("group"),
-  lastMessageAt: Schema.Number,
+  lastMessageAt: Schema.Finite,
   lastMessagePreview: Schema.String,
   unreadCount: Schema.Finite,
 });

@@ -5,15 +5,18 @@ import { HostedPage, PlanView } from "#shared/contracts/index.ts";
 
 type Plan = typeof PlanView.Type;
 
-async function loadPlan(): Promise<Plan> {
-  const { api } = await userClient();
-  return apiData(PlanView, await api.billing.plan.get());
+function loadPlan(): Promise<Plan> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.billing.plan.get().then((response) => apiData(PlanView, response)),
+  );
 }
 
-async function openPortal(): Promise<void> {
-  const { api } = await userClient();
-  const { url } = apiData(HostedPage, await api.billing.portal.post({}));
-  globalThis.location.assign(url);
+function openPortal(): Promise<void> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.billing.portal.post({}).then((response) => {
+      globalThis.location.assign(apiData(HostedPage, response).url);
+    }),
+  );
 }
 
 export { loadPlan, openPortal };

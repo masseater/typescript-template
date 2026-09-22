@@ -14,7 +14,7 @@ import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Effect, Layer, Schema } from "effect";
+import { DateTime, Effect, Layer, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 import { describe, expect } from "vite-plus/test";
 
@@ -38,6 +38,7 @@ const millisecondsPerSecond = 1000;
 const monthInSeconds = 30 * 24 * 60 * 60;
 const hexRadix = 16;
 const byteWidth = 2;
+const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 const routes = { "/api/billing/*": "billing-api", "/api/members": "members-api" };
 const reporting = { log: recordingSink().sink, service: APPLICATION.user } as const;
@@ -67,26 +68,31 @@ function call(
   path: string,
   body?: unknown,
 ): Effect.Effect<Response> {
-  return Effect.promise(async () =>
-    app.fetch(
-      new Request(`${origin}${apiRoot}${path}`, {
-        headers: {
-          ...Object.fromEntries(client.cookieHeaders()),
-          ...(body === undefined ? {} : { "content-type": "application/json" }),
-        },
-        method: body === undefined ? "GET" : "POST",
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      }),
-    ),
-  );
+  return Effect.gen(function* sendBilling() {
+    const encoded = body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(body);
+    return yield* Effect.promise(() =>
+      Promise.resolve(
+        app.fetch(
+          new Request(`${origin}${apiRoot}${path}`, {
+            headers: {
+              ...Object.fromEntries(client.cookieHeaders()),
+              ...(encoded === undefined ? {} : { "content-type": "application/json" }),
+            },
+            method: encoded === undefined && body === undefined ? "GET" : "POST",
+            ...(encoded === undefined ? {} : { body: encoded }),
+          }),
+        ),
+      ),
+    );
+  }).pipe(Effect.orDie);
 }
 
 function json(response: Response): Effect.Effect<unknown> {
-  return Effect.promise(async (): Promise<unknown> => response.json());
+  return Effect.promise(() => response.json() as Promise<unknown>);
 }
 
 function nowSeconds(): number {
-  return Math.floor(Date.now() / millisecondsPerSecond);
+  return Math.floor(DateTime.toEpochMillis(DateTime.nowUnsafe()) / millisecondsPerSecond);
 }
 
 function hex(bytes: ArrayBuffer): string {
@@ -96,17 +102,12 @@ function hex(bytes: ArrayBuffer): string {
 }
 
 function signature(payload: string, secret: string, timestamp: number): Effect.Effect<string> {
-  return Effect.promise(async () => {
+  return Effect.promise(() => {
     const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      "raw",
-      encoder.encode(secret),
-      { hash: "SHA-256", name: "HMAC" },
-      false,
-      ["sign"],
-    );
-    const digest = await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}.${payload}`));
-    return `t=${timestamp},v1=${hex(digest)}`;
+    return crypto.subtle
+      .importKey("raw", encoder.encode(secret), { hash: "SHA-256", name: "HMAC" }, false, ["sign"])
+      .then((key) => crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}.${payload}`)))
+      .then((digest) => `t=${timestamp},v1=${hex(digest)}`);
   });
 }
 
@@ -115,23 +116,25 @@ function deliver(
   event: Readonly<Record<string, unknown>>,
   sign: Readonly<{ secret?: string; timestamp?: number }> = {},
 ): Effect.Effect<Response> {
-  const payload = JSON.stringify(event);
   return Effect.gen(function* post() {
+    const payload = yield* Schema.encodeEffect(JsonUnknown)(event);
     const header = yield* signature(
       payload,
       sign.secret ?? webhookSecret,
       sign.timestamp ?? nowSeconds(),
     );
-    return yield* Effect.promise(async () =>
-      app.fetch(
-        new Request(`${origin}${apiRoot}/billing/webhook`, {
-          body: payload,
-          headers: { "content-type": "application/json", "stripe-signature": header },
-          method: "POST",
-        }),
+    return yield* Effect.promise(() =>
+      Promise.resolve(
+        app.fetch(
+          new Request(`${origin}${apiRoot}/billing/webhook`, {
+            body: payload,
+            headers: { "content-type": "application/json", "stripe-signature": header },
+            method: "POST",
+          }),
+        ),
       ),
     );
-  });
+  }).pipe(Effect.orDie);
 }
 
 function checkoutCompleted(memberId: string, id = "evt_checkout"): Record<string, unknown> {
@@ -176,18 +179,24 @@ function subscriptionEvent(
 }
 
 const stripeHandlers = [
-  http.post(`${stripeApi}/checkout/sessions`, async ({ request }) => {
-    const form = await request.formData();
-    return form.get("mode") === "subscription" && form.get("line_items[0][price]") === priceId
-      ? HttpResponse.json({ url: checkoutUrl })
-      : HttpResponse.json({ error: { message: "unexpected checkout form" } }, { status: 400 });
-  }),
-  http.post(`${stripeApi}/billing_portal/sessions`, async ({ request }) => {
-    const form = await request.formData();
-    return form.get("customer") === customerId
-      ? HttpResponse.json({ url: portalUrl })
-      : HttpResponse.json({ error: { message: "unknown customer" } }, { status: 400 });
-  }),
+  http.post(`${stripeApi}/checkout/sessions`, ({ request }) =>
+    request
+      .formData()
+      .then((form) =>
+        form.get("mode") === "subscription" && form.get("line_items[0][price]") === priceId
+          ? HttpResponse.json({ url: checkoutUrl })
+          : HttpResponse.json({ error: { message: "unexpected checkout form" } }, { status: 400 }),
+      ),
+  ),
+  http.post(`${stripeApi}/billing_portal/sessions`, ({ request }) =>
+    request
+      .formData()
+      .then((form) =>
+        form.get("customer") === customerId
+          ? HttpResponse.json({ url: portalUrl })
+          : HttpResponse.json({ error: { message: "unknown customer" } }, { status: 400 }),
+      ),
+  ),
   http.get(`${stripeApi}/prices/${priceId}`, () =>
     HttpResponse.json({
       currency: "jpy",
@@ -220,10 +229,10 @@ const member = Effect.fn("member")(function* member(app: App) {
 describe("billing api", () => {
   const it = authTest();
 
-  it("keeps a free member out of the member list and lets them in once Stripe confirms the checkout", async ({
+  it("keeps a free member out of the member list and lets them in once Stripe confirms the checkout", ({
     auth,
-  }) => {
-    const result = await runWith(auth, () =>
+  }) =>
+    runWith(auth, () =>
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
@@ -248,25 +257,25 @@ describe("billing api", () => {
           started: started.status,
         };
       }),
-    );
-    expect(result.refused).toBe(httpStatus.paymentRequired);
-    expect(result.freePlan).toStrictEqual({ cancelAtPeriodEnd: false, plan: PLAN.free });
-    expect(result.started).toBe(httpStatus.ok);
-    expect(result.checkout).toStrictEqual({ url: checkoutUrl });
-    expect(result.outcome).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
-    expect(result.admitted).toBe(httpStatus.ok);
-    expect(result.paidPlan).toStrictEqual({
-      cancelAtPeriodEnd: false,
-      plan: PLAN.paid,
-      status: SUBSCRIPTION_STATUS.active,
-    });
-    expect(result.repeated).toBe(httpStatus.conflict);
-  });
+    ).then((result) => {
+      expect(result.refused).toBe(httpStatus.paymentRequired);
+      expect(result.freePlan).toStrictEqual({ cancelAtPeriodEnd: false, plan: PLAN.free });
+      expect(result.started).toBe(httpStatus.ok);
+      expect(result.checkout).toStrictEqual({ url: checkoutUrl });
+      expect(result.outcome).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
+      expect(result.admitted).toBe(httpStatus.ok);
+      expect(result.paidPlan).toStrictEqual({
+        cancelAtPeriodEnd: false,
+        plan: PLAN.paid,
+        status: SUBSCRIPTION_STATUS.active,
+      });
+      expect(result.repeated).toBe(httpStatus.conflict);
+    }));
 
-  it("treats a replayed event as a no-op and drops the member back to free when the subscription ends", async ({
+  it("treats a replayed event as a no-op and drops the member back to free when the subscription ends", ({
     auth,
-  }) => {
-    const result = await runWith(auth, () =>
+  }) =>
+    runWith(auth, () =>
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
@@ -292,22 +301,22 @@ describe("billing api", () => {
           stillPaid: stillPaid.status,
         };
       }),
-    );
-    expect(result.replayed).toStrictEqual({ outcome: WEBHOOK_OUTCOME.duplicate });
-    expect(result.stillPaid).toBe(httpStatus.ok);
-    expect(result.portal).toStrictEqual({ url: portalUrl });
-    expect(result.deleted).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
-    expect(result.refusedAgain).toBe(httpStatus.paymentRequired);
-    expect(result.lapsedPlan).toMatchObject({
-      plan: PLAN.free,
-      status: SUBSCRIPTION_STATUS.canceled,
-    });
-  });
+    ).then((result) => {
+      expect(result.replayed).toStrictEqual({ outcome: WEBHOOK_OUTCOME.duplicate });
+      expect(result.stillPaid).toBe(httpStatus.ok);
+      expect(result.portal).toStrictEqual({ url: portalUrl });
+      expect(result.deleted).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
+      expect(result.refusedAgain).toBe(httpStatus.paymentRequired);
+      expect(result.lapsedPlan).toMatchObject({
+        plan: PLAN.free,
+        status: SUBSCRIPTION_STATUS.canceled,
+      });
+    }));
 
-  it("rejects webhooks whose signature is wrong, stale or missing without touching the plan", async ({
+  it("rejects webhooks whose signature is wrong, stale or missing without touching the plan", ({
     auth,
-  }) => {
-    const result = await runWith(auth, () =>
+  }) =>
+    runWith(auth, () =>
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
@@ -316,13 +325,16 @@ describe("billing api", () => {
         const stale = yield* deliver(app, checkoutCompleted(id), {
           timestamp: nowSeconds() - 2 * 60 * 60,
         });
-        const unsigned = yield* Effect.promise(async () =>
-          app.fetch(
-            new Request(`${origin}${apiRoot}/billing/webhook`, {
-              body: JSON.stringify(checkoutCompleted(id)),
-              headers: { "content-type": "application/json" },
-              method: "POST",
-            }),
+        const payload = yield* Schema.encodeEffect(JsonUnknown)(checkoutCompleted(id));
+        const unsigned = yield* Effect.promise(() =>
+          Promise.resolve(
+            app.fetch(
+              new Request(`${origin}${apiRoot}/billing/webhook`, {
+                body: payload,
+                headers: { "content-type": "application/json" },
+                method: "POST",
+              }),
+            ),
           ),
         );
         const stillRefused = yield* call(app, client, "/members?page=1");
@@ -333,36 +345,36 @@ describe("billing api", () => {
           unsigned: unsigned.status,
         };
       }),
-    );
-    expect(result.forged).toBe(httpStatus.badRequest);
-    expect(result.stale).toBe(httpStatus.badRequest);
-    expect(result.unsigned).toBe(httpStatus.badRequest);
-    expect(result.stillRefused).toBe(httpStatus.paymentRequired);
-  });
+    ).then((result) => {
+      expect(result.forged).toBe(httpStatus.badRequest);
+      expect(result.stale).toBe(httpStatus.badRequest);
+      expect(result.unsigned).toBe(httpStatus.badRequest);
+      expect(result.stillRefused).toBe(httpStatus.paymentRequired);
+    }));
 
-  it("refuses the portal to a member who never checked out and the offer to a visitor", async ({
+  it("refuses the portal to a member who never checked out and the offer to a visitor", ({
     auth,
-  }) => {
-    const result = await runWith(auth, () =>
+  }) =>
+    runWith(auth, () =>
       Effect.gen(function* program() {
         (yield* MockNetwork).use(...stripeHandlers);
         const app = billingApp();
         const { client } = yield* member(app);
         const portal = yield* call(app, client, "/billing/portal", {});
         const offer = yield* json(yield* call(app, client, "/billing/offer"));
-        const visitor = yield* Effect.promise(async () =>
-          app.fetch(new Request(`${origin}${apiRoot}/billing/offer`)),
+        const visitor = yield* Effect.promise(() =>
+          Promise.resolve(app.fetch(new Request(`${origin}${apiRoot}/billing/offer`))),
         );
         return { offer, portal: portal.status, visitor: visitor.status };
       }),
-    );
-    expect(result.portal).toBe(httpStatus.paymentRequired);
-    expect(result.offer).toStrictEqual({
-      currency: "jpy",
-      interval: "month",
-      intervalCount: 1,
-      unitAmount: 980,
-    });
-    expect(result.visitor).toBe(httpStatus.unauthorized);
-  });
+    ).then((result) => {
+      expect(result.portal).toBe(httpStatus.paymentRequired);
+      expect(result.offer).toStrictEqual({
+        currency: "jpy",
+        interval: "month",
+        intervalCount: 1,
+        unitAmount: 980,
+      });
+      expect(result.visitor).toBe(httpStatus.unauthorized);
+    }));
 });

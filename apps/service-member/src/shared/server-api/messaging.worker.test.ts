@@ -9,7 +9,7 @@ import {
 } from "@repo/config";
 import { eq, query, recordSubscription, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { Effect } from "effect";
+import { Effect, DateTime, Schema } from "effect";
 import { TestClock } from "effect/testing";
 
 import {
@@ -25,8 +25,8 @@ const withdrawnSenderLabel = "退会した会員";
 const secretBody = "OUTSIDER_MUST_NOT_READ_THIS_MESSAGE";
 
 const { user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
-const monthLater = new Date("2026-10-20T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
+const monthLater = DateTime.toDate(DateTime.makeUnsafe("2026-10-20T00:00:00.000Z"));
 const firstPage = { limit: 20, offset: 0 };
 const wholePage = { limit: 50, offset: 0 };
 const greeting = secretBody;
@@ -48,19 +48,22 @@ const addUser = (added: {
   readonly emailVerified?: boolean;
   readonly name?: string;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
-  query(async (database): Promise<void> => {
+  query((database) => {
     const role = added.role ?? ROLE.member;
     const permission = permissionFor(role);
-    await database.insert(user).values({
-      createdAt: recordedAt,
-      email: `${added.userId}@example.com`,
-      emailVerified: added.emailVerified ?? true,
-      id: added.userId,
-      name: added.name ?? added.userId,
-      role,
-      updatedAt: recordedAt,
-      ...(permission === undefined ? {} : { permission }),
-    });
+    return database
+      .insert(user)
+      .values({
+        createdAt: recordedAt,
+        email: `${added.userId}@example.com`,
+        emailVerified: added.emailVerified ?? true,
+        id: added.userId,
+        name: added.name ?? added.userId,
+        role,
+        updatedAt: recordedAt,
+        ...(permission === undefined ? {} : { permission }),
+      })
+      .then(() => undefined);
   });
 
 function failureTag<Value, Failure extends { readonly _tag: string }, Requirements>(
@@ -73,9 +76,13 @@ function failureTag<Value, Failure extends { readonly _tag: string }, Requiremen
 }
 
 const makePaid = Effect.fn("makePaid")(function* makePaid(memberId: string) {
-  yield* TestClock.setTime(new Date("2026-09-20T00:00:00.000Z").getTime());
+  yield* TestClock.setTime(DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")));
   yield* recordSubscription(
-    { createdAt: new Date("2026-09-20T00:00:00.000Z"), id: `evt_${memberId}`, type: "updated" },
+    {
+      createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
+      id: `evt_${memberId}`,
+      type: "updated",
+    },
     {
       cancelAtPeriodEnd: false,
       currentPeriodEnd: monthLater,
@@ -174,9 +181,12 @@ describe("withdrawn senders", () => {
       yield* addUser({ userId: "free" });
       yield* makePaid("paid");
       const opened = yield* startConversation("paid", "free", greeting);
-      yield* query(async (database) => {
-        await database.delete(user).where(eq(user.id, "paid"));
-      });
+      yield* query((database) =>
+        database
+          .delete(user)
+          .where(eq(user.id, "paid"))
+          .then(() => undefined),
+      );
       const thread = yield* findConversation("free", opened.conversationId, wholePage);
       assert.deepStrictEqual(
         thread.messages.map((message) => message.sender),
@@ -210,7 +220,8 @@ describe("conversation access", () => {
         yield* failureTag(sendDirectMessage("stranger", opened.conversationId, reply)),
         "MessagingConversationNotFound",
       );
-      assert.isFalse(JSON.stringify(listed).includes(secretBody));
+      const listedJson = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(listed);
+      assert.isFalse(listedJson.includes(secretBody));
     }).pipe(Effect.provide(TestDatabase)),
   );
 

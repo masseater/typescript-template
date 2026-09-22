@@ -13,7 +13,7 @@ const stripeApi = "https://api.stripe.com/v1";
 const patience = "15 seconds";
 
 const StripeEvent = Schema.Struct({
-  created: Schema.Number,
+  created: Schema.Finite,
   data: Schema.Struct({ object: Schema.Unknown }),
   id: Schema.String,
   type: Schema.String,
@@ -26,9 +26,9 @@ const RecurringPrice = Schema.Struct({
   currency: Schema.String,
   recurring: Schema.Struct({
     interval: Schema.Literals(priceIntervals),
-    interval_count: Schema.Number,
+    interval_count: Schema.Finite,
   }),
-  unit_amount: Schema.Number,
+  unit_amount: Schema.Finite,
 });
 
 interface Offer {
@@ -53,7 +53,7 @@ interface PortalInput {
 interface StripeShape {
   readonly createCheckoutSession: (input: CheckoutInput) => Effect.Effect<string, StripeFailure>;
   readonly createPortalSession: (input: PortalInput) => Effect.Effect<string, StripeFailure>;
-  readonly offer: () => Effect.Effect<Offer, StripeFailure>;
+  readonly offer: Effect.Effect<Offer, StripeFailure>;
   readonly readEvent: (
     payload: string,
     signature: string | null,
@@ -72,15 +72,16 @@ function decodeStripe<Contract extends Decodable>(
 }
 
 function request(
+  fetchImpl: typeof fetch,
   secretKey: string,
   path: string,
   form: URLSearchParams | undefined,
 ): Effect.Effect<unknown, StripeFailure> {
   return Effect.tryPromise({
     catch: (cause) => new StripeFailure({ cause, reason: "request_failed" }),
-    try: async () =>
-      fetch(`${stripeApi}${path}`, {
-        body: form,
+    try: () =>
+      fetchImpl(`${stripeApi}${path}`, {
+        ...(form === undefined ? {} : { body: form }),
         headers: {
           authorization: `Bearer ${secretKey}`,
           ...(form === undefined
@@ -97,7 +98,7 @@ function request(
       response.ok
         ? Effect.tryPromise({
             catch: (cause) => new StripeFailure({ cause, reason: "response_invalid" }),
-            try: async (): Promise<unknown> => response.json(),
+            try: (): Promise<unknown> => response.json(),
           })
         : Effect.fail(new StripeFailure({ reason: "request_failed", status: response.status })),
     ),
@@ -124,9 +125,9 @@ function checkoutForm(priceId: string, input: CheckoutInput): URLSearchParams {
   });
 }
 
-function stripeService(config: StripeConfig): StripeShape {
+function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeShape {
   const send = (path: string, form?: URLSearchParams): Effect.Effect<unknown, StripeFailure> =>
-    request(config.secretKey, path, form);
+    request(fetchImpl, config.secretKey, path, form);
   return {
     createCheckoutSession: (input) =>
       send("/checkout/sessions", checkoutForm(config.priceId, input)).pipe(
@@ -141,23 +142,21 @@ function stripeService(config: StripeConfig): StripeShape {
         Effect.flatMap((body) => decodeStripe(HostedSession, body)),
         Effect.map((session) => session.url),
       ),
-    offer: () =>
-      send(`/prices/${config.priceId}`).pipe(
-        Effect.flatMap((body) => decodeStripe(RecurringPrice, body)),
-        Effect.map((price): Offer => ({
-          currency: price.currency,
-          interval: price.recurring.interval,
-          intervalCount: price.recurring.interval_count,
-          unitAmount: price.unit_amount,
-        })),
-      ),
+    offer: send(`/prices/${config.priceId}`).pipe(
+      Effect.flatMap((body) => decodeStripe(RecurringPrice, body)),
+      Effect.map((price): Offer => ({
+        currency: price.currency,
+        interval: price.recurring.interval,
+        intervalCount: price.recurring.interval_count,
+        unitAmount: price.unit_amount,
+      })),
+    ),
     readEvent: (payload, signature) =>
       verifyStripeSignature(config.webhookSecret, payload, signature).pipe(
         Effect.flatMap(() =>
-          Effect.try({
-            catch: () => new StripeEventUnreadable(),
-            try: (): unknown => JSON.parse(payload),
-          }),
+          Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(payload).pipe(
+            Effect.mapError(() => new StripeEventUnreadable()),
+          ),
         ),
         Effect.flatMap((json) =>
           Schema.decodeUnknownEffect(StripeEvent)(json).pipe(
@@ -170,7 +169,7 @@ function stripeService(config: StripeConfig): StripeShape {
 
 class Stripe extends Context.Service<Stripe, StripeShape>()("#shared/billing/Stripe") {
   public static layer(config: StripeConfig): Layer.Layer<Stripe> {
-    return Layer.succeed(Stripe, Stripe.of(stripeService(config)));
+    return Layer.succeed(Stripe, Stripe.of(stripeService(fetch, config)));
   }
 
   public static fromEnvironment(env: unknown): Layer.Layer<Stripe, ConfigurationInvalid> {
@@ -178,4 +177,5 @@ class Stripe extends Context.Service<Stripe, StripeShape>()("#shared/billing/Str
   }
 }
 
-export { Stripe, StripeEvent };
+export { Stripe };
+export type { CheckoutInput, Offer, PortalInput, StripeEvent };

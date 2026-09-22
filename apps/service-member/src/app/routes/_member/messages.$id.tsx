@@ -1,4 +1,5 @@
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+import { Schema } from "effect";
 
 import {
   ConversationFailed,
@@ -18,7 +19,7 @@ function requireConversationSearch(raw: unknown): ConversationSearch {
   try {
     return normalizeConversationSearch(raw);
   } catch (error) {
-    if (error instanceof InvalidMessagesSearch) {
+    if (Schema.is(InvalidMessagesSearch)(error)) {
       throw redirect({ replace: true, search: {}, to: "/messages" });
     }
     throw error;
@@ -43,7 +44,7 @@ const Route = createFileRoute("/_member/messages/$id")({
       throw redirect({ params, replace: true, search, to: "/messages/$id" });
     }
   },
-  loader: async ({
+  loader: ({
     deps,
     params,
   }: Readonly<{ deps: Readonly<{ page: number }>; params: ConversationParams }>) =>

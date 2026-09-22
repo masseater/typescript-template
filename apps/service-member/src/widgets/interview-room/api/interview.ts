@@ -5,29 +5,36 @@ import { InterviewView } from "#shared/interview/index.ts";
 
 import type { InterviewViewData, MemberUtterance } from "#shared/interview/index.ts";
 
-async function loadInterview(): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.get());
+function loadInterview(): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.get().then((response) => apiData(InterviewView, response)),
+  );
 }
 
-async function submitTurn(utterance: MemberUtterance): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.turns.post(utterance));
+function submitTurn(utterance: MemberUtterance): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.turns.post(utterance).then((response) => apiData(InterviewView, response)),
+  );
 }
 
-async function saveInterviewSheet(): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.sheet.post({}));
+function saveInterviewSheet(): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.sheet.post({}).then((response) => apiData(InterviewView, response)),
+  );
 }
 
-async function restartInterviewSession(): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview.restart.post({}));
+function restartInterviewSession(): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview.restart.post({}).then((response) => apiData(InterviewView, response)),
+  );
 }
 
-async function respondHistoryConsent(accept: boolean): Promise<InterviewViewData> {
-  const { api } = await userClient();
-  return apiData(InterviewView, await api.interview["history-consent"].post({ accept }));
+function respondHistoryConsent(accept: boolean): Promise<InterviewViewData> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.interview["history-consent"]
+      .post({ accept })
+      .then((response) => apiData(InterviewView, response)),
+  );
 }
 
 export {

@@ -3,19 +3,22 @@ import { apiData } from "@repo/runtime/client";
 import { userClient } from "#shared/api/index.ts";
 import { RecoveryAccepted, RecoveryOfferView } from "#shared/contracts/index.ts";
 
-async function loadRecoveryOffer(): Promise<typeof RecoveryOfferView.Type> {
-  const { api } = await userClient();
-  return apiData(RecoveryOfferView, await api["recovery-offer"].get());
+function loadRecoveryOffer(): Promise<typeof RecoveryOfferView.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api["recovery-offer"].get().then((response) => apiData(RecoveryOfferView, response)),
+  );
 }
 
-async function acceptRecovery(): Promise<typeof RecoveryAccepted.Type> {
-  const { api } = await userClient();
-  return apiData(RecoveryAccepted, await api.recovery.accept.post());
+function acceptRecovery(): Promise<typeof RecoveryAccepted.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.recovery.accept.post().then((response) => apiData(RecoveryAccepted, response)),
+  );
 }
 
-async function declineRecovery(): Promise<typeof RecoveryAccepted.Type> {
-  const { api } = await userClient();
-  return apiData(RecoveryAccepted, await api.recovery.decline.post());
+function declineRecovery(): Promise<typeof RecoveryAccepted.Type> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.recovery.decline.post().then((response) => apiData(RecoveryAccepted, response)),
+  );
 }
 
 export { acceptRecovery, declineRecovery, loadRecoveryOffer };

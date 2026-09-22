@@ -1,11 +1,11 @@
 import { assert, it } from "@effect/vitest";
-import { notificationMailSubjects } from "@repo/auth";
+import { notificationMailSubjects, type MailSettings } from "@repo/auth";
 import { ROLE } from "@repo/config";
 import { NOTIFICATION_KIND, and, eq, query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
 import { fixtureOrigin } from "@repo/runtime/testing";
 import { env } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
+import { DateTime, Effect, Layer } from "effect";
 
 import { followMember, listFollowers, listFollowing, unfollowMember } from "./member-social.ts";
 import {
@@ -22,7 +22,7 @@ import { OpsMail } from "./ops-mail.ts";
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { follow, user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 type DeliveredMail = Readonly<{
   readonly subject: string;
@@ -50,7 +50,7 @@ const testLayer = Layer.merge(
   TestDatabase,
   Layer.succeed(OpsMail, {
     APP_ORIGIN: fixtureOrigin,
-    EMAIL: env.EMAIL,
+    EMAIL: env.EMAIL as unknown as NonNullable<MailSettings["EMAIL"]>,
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",
   }),
@@ -61,17 +61,20 @@ const addUser = (added: {
   readonly emailVerified?: boolean;
   readonly userId: string;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: recordedAt,
-      email: added.email ?? `${added.userId}@example.com`,
-      emailVerified: added.emailVerified ?? true,
-      id: added.userId,
-      name: added.userId,
-      role: ROLE.member,
-      updatedAt: recordedAt,
-    });
-  });
+  query((database) =>
+    database
+      .insert(user)
+      .values({
+        createdAt: recordedAt,
+        email: added.email ?? `${added.userId}@example.com`,
+        emailVerified: added.emailVerified ?? true,
+        id: added.userId,
+        name: added.userId,
+        role: ROLE.member,
+        updatedAt: recordedAt,
+      })
+      .then(() => undefined),
+  );
 
 function drainMailbox(): Effect.Effect<
   ReadonlyArray<{
@@ -80,7 +83,7 @@ function drainMailbox(): Effect.Effect<
     readonly to: string | readonly string[];
   }>
 > {
-  return Effect.promise(async () => deliveredMail(env));
+  return Effect.promise(() => deliveredMail(env));
 }
 
 it.effect("follows a member and notifies the followee", () =>

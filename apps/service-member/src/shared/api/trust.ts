@@ -5,23 +5,32 @@ import { userClient } from "./client.ts";
 
 import type { ReportReason, ReportSubject } from "@repo/config";
 
-async function blockMember(memberId: string): Promise<void> {
-  const { api } = await userClient();
-  apiData(Blocked, await api.trust.block.put({ memberId }));
+function blockMember(memberId: string): Promise<void> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.trust.block.put({ memberId }).then((response) => {
+      apiData(Blocked, response);
+    }),
+  );
 }
 
-async function unblockMember(memberId: string): Promise<void> {
-  const { api } = await userClient();
-  apiData(Blocked, await api.trust.block.delete({ memberId }));
+function unblockMember(memberId: string): Promise<void> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.trust.block.delete({ memberId }).then((response) => {
+      apiData(Blocked, response);
+    }),
+  );
 }
 
-async function fileReport(
+function fileReport(
   subjectKind: ReportSubject,
   subjectId: string,
   reason: ReportReason,
 ): Promise<void> {
-  const { api } = await userClient();
-  apiData(ReportFiled, await api.trust.report.post({ reason, subjectId, subjectKind }));
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.trust.report.post({ reason, subjectId, subjectKind }).then((response) => {
+      apiData(ReportFiled, response);
+    }),
+  );
 }
 
 export { blockMember, fileReport, unblockMember };

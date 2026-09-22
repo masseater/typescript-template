@@ -3,7 +3,6 @@ import { useAction, useTextInput } from "@repo/ui";
 import { sendMessage } from "#pages/messages/api/messages.ts";
 
 import type { SubmitEventHandler } from "react";
-
 interface ReplyForm {
   readonly blocked: boolean;
   readonly body: string;
@@ -12,17 +11,23 @@ interface ReplyForm {
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
   readonly pending: boolean;
 }
-
 function useReplyForm(conversationId: string, onSent: () => Promise<void>): ReplyForm {
   const body = useTextInput();
   const action = useAction();
-  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
+  function handleSubmit(
+    event: Readonly<{
+      preventDefault: () => void;
+    }>,
+  ): void {
     event.preventDefault();
-    action.run(async () => {
-      await sendMessage(conversationId, body.value);
-      body.handleChange("");
-      await onSent();
-    });
+    action.run(() =>
+      sendMessage(conversationId, body.value).then(() =>
+        Promise.resolve().then(() => {
+          body.handleChange("");
+          return onSent().then(() => undefined);
+        }),
+      ),
+    );
   }
   return {
     blocked: action.blocked,
@@ -33,5 +38,4 @@ function useReplyForm(conversationId: string, onSent: () => Promise<void>): Repl
     pending: action.pending,
   };
 }
-
 export { useReplyForm };

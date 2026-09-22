@@ -79,7 +79,7 @@ it.effect("hides a profile from the person who was blocked, and redacts it for t
     yield* blockMember("viewer", "quiet");
     assert.strictEqual(yield* failureTag(getMember("viewer", "guard")), "UserNotFound");
     const redacted = yield* getMember("viewer", "quiet");
-    assert.strictEqual(redacted.blocked, true);
+    assert.isTrue("blocked" in redacted && redacted.blocked === true);
     assert.strictEqual(redacted.profile, "");
     assert.deepStrictEqual(redacted.sheet, {});
     assert.deepStrictEqual(redacted.profileLayout, baselineProfileLayout);

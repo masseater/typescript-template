@@ -42,10 +42,11 @@ const finishInterview = Effect.fn("finishInterview")(function* finishInterview(u
   return yield* saveInterview(userId);
 });
 
-const messageCount = (state: unknown): number => {
-  const decoded = Schema.decodeUnknownSync(State)(state);
-  return decoded.messages.length;
-};
+const messageCount = (state: unknown): Effect.Effect<number> =>
+  Schema.decodeUnknownEffect(State)(state).pipe(
+    Effect.map((decoded) => decoded.messages.length),
+    Effect.orDie,
+  );
 
 it.effect("declining history consent removes conversation while keeping the saved sheet", () =>
   Effect.gen(function* program() {
@@ -53,12 +54,12 @@ it.effect("declining history consent removes conversation while keeping the save
     const saved = yield* finishInterview("member");
     assert.strictEqual(saved.phase, "history_consent");
     const beforeDecline = yield* findInterview("member");
-    assert.isAbove(messageCount(beforeDecline?.state), 1);
+    assert.isAbove(yield* messageCount(beforeDecline?.state), 1);
     const declined = yield* respondHistoryConsent("member", false);
     assert.strictEqual(declined.phase, "saved");
     const stored = yield* findInterview("member");
     assert.deepStrictEqual(readSavedSheet(stored?.savedSheet).sheet, { nickname: "たろう" });
-    assert.strictEqual(messageCount(stored?.state), 1);
+    assert.strictEqual(yield* messageCount(stored?.state), 1);
     assert.isFalse(yield* hasAcceptedLatestAgreement("member", AGREEMENT_KIND.interview_history));
   }).pipe(Effect.provide(withoutModel)),
 );
@@ -69,12 +70,12 @@ it.effect("accepting history consent keeps conversation and records agreement ac
     const saved = yield* finishInterview("member");
     assert.strictEqual(saved.phase, "history_consent");
     const beforeAccept = yield* findInterview("member");
-    const messagesBefore = messageCount(beforeAccept?.state);
+    const messagesBefore = yield* messageCount(beforeAccept?.state);
     const accepted = yield* respondHistoryConsent("member", true);
     assert.strictEqual(accepted.phase, "saved");
     assert.isAbove(accepted.messages.length, 1);
     const stored = yield* findInterview("member");
-    assert.strictEqual(messageCount(stored?.state), messagesBefore + 1);
+    assert.strictEqual(yield* messageCount(stored?.state), messagesBefore + 1);
     assert.deepStrictEqual(readSavedSheet(stored?.savedSheet).sheet, { nickname: "たろう" });
     assert.isTrue(yield* hasAcceptedLatestAgreement("member", AGREEMENT_KIND.interview_history));
     const history = yield* acceptedAgreements("member");
@@ -91,14 +92,14 @@ it.effect("withdrawing consent deletes stored conversation history", () =>
     yield* finishInterview("member");
     yield* respondHistoryConsent("member", true);
     const beforeWithdraw = yield* findInterview("member");
-    assert.isAbove(messageCount(beforeWithdraw?.state), 1);
+    assert.isAbove(yield* messageCount(beforeWithdraw?.state), 1);
     yield* withdrawAgreementKind({
       kind: AGREEMENT_KIND.interview_history,
       userId: "member",
     });
     yield* withdrawInterviewHistoryConsent("member");
     const stored = yield* findInterview("member");
-    assert.strictEqual(messageCount(stored?.state), 1);
+    assert.strictEqual(yield* messageCount(stored?.state), 1);
     assert.deepStrictEqual(readSavedSheet(stored?.savedSheet).sheet, { nickname: "たろう" });
     assert.isFalse(yield* hasAcceptedLatestAgreement("member", AGREEMENT_KIND.interview_history));
   }).pipe(Effect.provide(withoutModel)),

@@ -5,11 +5,14 @@ import { useReplyForm } from "#pages/messages/model/reply-form.ts";
 import { maximumMessageBodyLength } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
-
-function ReplyForm({ conversationId }: Readonly<{ conversationId: string }>): ReactElement {
+function ReplyForm({
+  conversationId,
+}: Readonly<{
+  conversationId: string;
+}>): ReactElement {
   const router = useRouter();
-  async function showSent(): Promise<void> {
-    await router.invalidate();
+  function showSent(): Promise<void> {
+    return router.invalidate().then(() => undefined);
   }
   const form = useReplyForm(conversationId, showSent);
   return (
@@ -36,5 +39,4 @@ function ReplyForm({ conversationId }: Readonly<{ conversationId: string }>): Re
     </form>
   );
 }
-
 export { ReplyForm };

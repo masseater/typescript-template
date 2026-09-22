@@ -1,4 +1,5 @@
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+import { Schema } from "effect";
 
 import {
   InvalidMessagesSearch,
@@ -15,7 +16,7 @@ function requireMessagesSearch(raw: unknown): MessagesSearch {
   try {
     return normalizeMessagesSearch(raw);
   } catch (error) {
-    if (error instanceof InvalidMessagesSearch) {
+    if (Schema.is(InvalidMessagesSearch)(error)) {
       throw redirect({ replace: true, search: {}, to: "/messages" });
     }
     throw error;
@@ -36,7 +37,7 @@ const Route = createFileRoute("/_member/messages/")({
       throw redirect({ replace: true, search, to: "/messages" });
     }
   },
-  loader: async ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) =>
+  loader: ({ deps }: Readonly<{ deps: Readonly<{ page: number }> }>) =>
     loadConversations(deps.page),
   component: MessagesRoute,
   errorComponent: MessagesFailed,

@@ -1,4 +1,5 @@
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+import { Schema } from "effect";
 
 import {
   GroupFailed,
@@ -18,7 +19,7 @@ function requireGroupsSearch(raw: unknown): GroupsSearch {
   try {
     return normalizeGroupsSearch(raw);
   } catch (error) {
-    if (error instanceof InvalidGroupsSearch) {
+    if (Schema.is(InvalidGroupsSearch)(error)) {
       throw redirect({ replace: true, search: {}, to: "/home" });
     }
     throw error;
@@ -41,7 +42,7 @@ const Route = createFileRoute("/_member/groups/$id")({
       throw redirect({ params, replace: true, search, to: "/groups/$id" });
     }
   },
-  loader: async ({ deps, params }: Readonly<{ deps: GroupsSearch; params: GroupParams }>) =>
+  loader: ({ deps, params }: Readonly<{ deps: GroupsSearch; params: GroupParams }>) =>
     loadGroup(params.id, deps.invite),
   component: GroupRoute,
   errorComponent: GroupFailed,

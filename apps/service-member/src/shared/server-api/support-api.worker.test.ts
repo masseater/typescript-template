@@ -8,7 +8,7 @@ import {
   type DatabaseFailure,
 } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { Effect } from "effect";
+import { Effect, DateTime } from "effect";
 
 const { user } = schema;
 
@@ -22,17 +22,20 @@ function failureTag<Value, Failure extends { readonly _tag: string }, Requiremen
 }
 
 function addUser(id: string): Effect.Effect<void, DatabaseFailure, Database> {
-  return query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: new Date(),
-      email: `${id}@example.com`,
-      emailVerified: true,
-      id,
-      name: id,
-      role: "member",
-      updatedAt: new Date(),
-    });
-  });
+  return query((database) =>
+    database
+      .insert(user)
+      .values({
+        createdAt: DateTime.toDate(DateTime.nowUnsafe()),
+        email: `${id}@example.com`,
+        emailVerified: true,
+        id,
+        name: id,
+        role: "member",
+        updatedAt: DateTime.toDate(DateTime.nowUnsafe()),
+      })
+      .then(() => undefined),
+  );
 }
 
 it.effect("keeps member inquiries isolated through the support data layer", () =>

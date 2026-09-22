@@ -5,8 +5,8 @@ import { loadInquiries } from "#pages/support/api/support.ts";
 
 import type { InquirySummary } from "./inquiry.ts";
 
-const inquiryListAtom = requestAtom(
-  async (): Promise<readonly InquirySummary[]> => (await loadInquiries()).inquiries,
+const inquiryListAtom = requestAtom((): Promise<readonly InquirySummary[]> =>
+  loadInquiries().then((list) => list.inquiries),
 );
 
 function useInquiryList(): RequestResult<readonly InquirySummary[]> {
