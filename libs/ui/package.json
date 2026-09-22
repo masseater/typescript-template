@@ -12,13 +12,13 @@
     "./styles.css": "./src/styles.css"
   },
   "dependencies": {
-    "@base-ui/react": "catalog:",
     "@effect/atom-react": "catalog:",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@smarthr/wareki": "catalog:",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "baseui": "catalog:",
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "effect": "catalog:",
@@ -28,6 +28,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "shadcn": "catalog:",
+    "styletron-engine-monolithic": "catalog:",
+    "styletron-react": "catalog:",
     "tailwindcss": "catalog:",
     "temporal-polyfill": "catalog:"
   },

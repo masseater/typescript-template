@@ -10,6 +10,7 @@ const retiredImports = [
   ["require", 'import legacy = require("valtio"); export { legacy };'],
   ["type-only", 'export type Store = import("@tanstack/store").Store<number>;'],
   ["design-system", 'import "smarthr-ui";'],
+  ["base-ui", 'import "@base-ui/react/button";'],
   ["auth-react-entry", 'export { createAuthClient } from "better-auth/react";'],
   ["atom-react-subpath", 'export { make } from "@effect/atom-react/ScopedAtom";'],
   ["reactivity-subpath", 'export * as Atom from "effect/unstable/reactivity/Atom";'],

@@ -1,21 +1,18 @@
-import { Toast as ToastPrimitive } from "@base-ui/react/toast";
+import { toaster } from "baseui/toast";
 
 import { STATUS_VARIANT } from "./status-variants.ts";
 
-type ToastVariant =
-  | "error"
-  | (typeof STATUS_VARIANT)[keyof Omit<typeof STATUS_VARIANT, "empty" | "info" | "pending">];
-
-const useToast = (): ((variant: ToastVariant, title: string) => void) => {
-  const { add } = ToastPrimitive.useToastManager();
-  const notify = (variant: ToastVariant, title: string): void => {
-    add({
-      priority: variant === STATUS_VARIANT.success ? "low" : "high",
-      title,
-      type: variant,
-    });
+const useToast = (): ((
+  variant: "error" | (typeof STATUS_VARIANT)["failure" | "success"],
+  title: string,
+) => void) => {
+  return (variant, title) => {
+    if (variant === "error" || variant === STATUS_VARIANT.failure) {
+      toaster.negative(title);
+      return;
+    }
+    toaster.positive(title);
   };
-  return notify;
 };
 
 export { useToast };
