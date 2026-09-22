@@ -3,34 +3,50 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { emailChangeTarget } from "./verification-token.ts";
 
-const claimsToken = (claims: unknown): string =>
-  `hdr.${Encoding.encodeBase64Url(JSON.stringify(claims))}.sig`;
-
-const failureTag = (token: string): string => {
-  const target = emailChangeTarget(token);
-  return Result.isFailure(target) ? target.failure._tag : "success";
-};
-
 describe("emailChangeTarget", () => {
-  const it = test
-    .extend("signupTarget", () => emailChangeTarget(claimsToken({})))
-    .extend("changeTarget", () => emailChangeTarget(claimsToken({ updateTo: "next@example.com" })))
-    .extend("undecodableTag", () => failureTag("hdr.!!!not-base64!!!.sig"))
-    .extend("opaqueTag", () => failureTag("opaque-token"));
+  describe("a decoded token without updateTo", () => {
+    const it = test.extend("signupDestination", () =>
+      emailChangeTarget(`hdr.${Encoding.encodeBase64Url(JSON.stringify({}))}.sig`),
+    );
 
-  it("treats a decoded token without updateTo as signup verification", ({ signupTarget }) => {
-    expect(signupTarget).toStrictEqual(Result.succeed(undefined));
+    it("treats the token as signup verification", ({ signupDestination }) => {
+      expect(signupDestination).toStrictEqual(Result.succeed(undefined));
+    });
   });
 
-  it("returns the email-change destination when updateTo is present", ({ changeTarget }) => {
-    expect(changeTarget).toStrictEqual(Result.succeed("next@example.com"));
+  describe("a decoded token carrying updateTo", () => {
+    const it = test.extend("emailChangeDestination", () =>
+      emailChangeTarget(
+        `hdr.${Encoding.encodeBase64Url(JSON.stringify({ updateTo: "next@example.com" }))}.sig`,
+      ),
+    );
+
+    it("returns the email-change destination", ({ emailChangeDestination }) => {
+      expect(emailChangeDestination).toStrictEqual(Result.succeed("next@example.com"));
+    });
   });
 
-  it("fails closed when the claims segment cannot be decoded", ({ undecodableTag }) => {
-    expect(undecodableTag).toBe("VerificationTokenInvalid");
+  describe("a token whose claims segment cannot be decoded", () => {
+    const it = test.extend("undecodableClaimsRefusal", () =>
+      emailChangeTarget("hdr.!!!not-base64!!!.sig"),
+    );
+
+    it("fails closed", ({ undecodableClaimsRefusal }) => {
+      expect(undecodableClaimsRefusal).toStrictEqual({
+        _tag: "Failure",
+        failure: { _tag: "VerificationTokenInvalid" },
+      });
+    });
   });
 
-  it("fails closed when the token has no claims segment", ({ opaqueTag }) => {
-    expect(opaqueTag).toBe("VerificationTokenInvalid");
+  describe("a token with no claims segment", () => {
+    const it = test.extend("opaqueTokenRefusal", () => emailChangeTarget("opaque-token"));
+
+    it("fails closed", ({ opaqueTokenRefusal }) => {
+      expect(opaqueTokenRefusal).toStrictEqual({
+        _tag: "Failure",
+        failure: { _tag: "VerificationTokenInvalid" },
+      });
+    });
   });
 });
