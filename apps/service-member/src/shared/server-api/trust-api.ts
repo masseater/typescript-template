@@ -26,8 +26,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
   return createApi("/trust")
     .put(
       "/block",
-      api.route(
-        Blocked,
+      ...api.route(
+        { response: Blocked },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -40,8 +40,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
     )
     .delete(
       "/block",
-      api.route(
-        Blocked,
+      ...api.route(
+        { response: Blocked },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -54,8 +54,8 @@ function trustApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/report",
-      api.route(
-        ReportFiled,
+      ...api.route(
+        { response: ReportFiled },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

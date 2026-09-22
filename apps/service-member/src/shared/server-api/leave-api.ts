@@ -64,10 +64,19 @@ const submitRecoveryDecline = Effect.fn("leave.recoveryDecline")(function* submi
 
 function leaveApi(api: ApiRoutes<AppServices>) {
   return createApi("")
-    .post("/leave", api.route(LeaveAccepted, submitLeave, failures))
-    .get("/recovery-offer", api.route(RecoveryOfferView, loadRecoveryOffer, failures))
-    .post("/recovery/accept", api.route(RecoveryAccepted, submitRecoveryAccept, failures))
-    .post("/recovery/decline", api.route(RecoveryAccepted, submitRecoveryDecline, failures));
+    .post("/leave", ...api.route({ response: LeaveAccepted }, submitLeave, failures))
+    .get(
+      "/recovery-offer",
+      ...api.route({ response: RecoveryOfferView }, loadRecoveryOffer, failures),
+    )
+    .post(
+      "/recovery/accept",
+      ...api.route({ response: RecoveryAccepted }, submitRecoveryAccept, failures),
+    )
+    .post(
+      "/recovery/decline",
+      ...api.route({ response: RecoveryAccepted }, submitRecoveryDecline, failures),
+    );
 }
 
 export { leaveApi };
