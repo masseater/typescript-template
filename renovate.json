@@ -47,7 +47,6 @@
         "baseui",
         "styletron-engine-monolithic",
         "styletron-react",
-        "styletron-standard",
         "shadcn",
         "@shadcn/**",
         "cn",

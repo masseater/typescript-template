@@ -332,9 +332,6 @@ catalogs:
     styletron-react:
       specifier: 6.1.1
       version: 6.1.1
-    styletron-standard:
-      specifier: 3.1.0
-      version: 3.1.0
     tailwindcss:
       specifier: 4.3.3
       version: 4.3.3
@@ -1478,9 +1475,6 @@ importers:
       styletron-react:
         specifier: 'catalog:'
         version: 6.1.1(react@19.3.0)
-      styletron-standard:
-        specifier: 'catalog:'
-        version: 3.1.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
