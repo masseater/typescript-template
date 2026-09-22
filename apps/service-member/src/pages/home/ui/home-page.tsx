@@ -1,9 +1,7 @@
-import { useAtomValue } from "@effect/atom-react";
-import { requestAtom, resultError } from "@repo/ui";
-import { DateTime, Effect } from "effect";
-import { AsyncResult } from "effect/unstable/reactivity";
+import { useQuery } from "@tanstack/react-query";
+import { DateTime } from "effect";
 
-import { loadHomeFeed } from "#pages/home/api/feed.ts";
+import { homeFeedOptions } from "#pages/home/api/feed.ts";
 import { getLocale } from "#shared/i18n/index.ts";
 import { HomeFeed, presentFeed } from "./home-feed.tsx";
 
@@ -22,26 +20,15 @@ const feedTimeLabels: Readonly<Record<Locale, Intl.DateTimeFormat>> = {
   ja: new Intl.DateTimeFormat("ja", feedTimeOptions),
 };
 
-const feedAtom = requestAtom((): Promise<readonly HomeEntry[]> =>
-  Effect.runPromise(
-    Effect.gen(function* labeledFeed() {
-      const updatedAtLabel = feedTimeLabels[getLocale()];
-      const feed = yield* Effect.promise(() => loadHomeFeed());
-      return presentFeed(feed, (updatedAt) =>
-        updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(updatedAt))),
-      );
-    }),
-  ),
-);
-
 function homeState(
   failure: string | undefined,
   entries: readonly HomeEntry[] | undefined,
+  pending: boolean,
 ): HomeFeedState {
   if (failure !== undefined) {
     return { message: failure, status: "failure" };
   }
-  if (entries === undefined) {
+  if (pending || entries === undefined) {
     return { status: "pending" };
   }
   if (entries.length === 0) {
@@ -51,10 +38,15 @@ function homeState(
 }
 
 function HomePage(): ReactElement {
-  const feedState = useAtomValue(feedAtom);
-  const failure = resultError(feedState);
-  const entries = AsyncResult.isSuccess(feedState) ? feedState.value : undefined;
-  return <HomeFeed state={homeState(failure, entries)} />;
+  const feed = useQuery(homeFeedOptions);
+  const updatedAtLabel = feedTimeLabels[getLocale()];
+  const entries =
+    feed.data === undefined
+      ? undefined
+      : presentFeed(feed.data, (updatedAt) =>
+          updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(updatedAt))),
+        );
+  return <HomeFeed state={homeState(feed.error?.message, entries, feed.isPending)} />;
 }
 
 export { HomePage };

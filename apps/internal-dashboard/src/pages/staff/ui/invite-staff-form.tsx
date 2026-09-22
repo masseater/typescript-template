@@ -61,7 +61,6 @@ function InviteStaffForm({ onInvited }: Readonly<{ onInvited: () => void }>): Re
             name="email"
             type="email"
             autoComplete="off"
-            required
             value={email.value}
             onValueChange={email.handleChange}
           />

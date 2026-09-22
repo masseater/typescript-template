@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 const route = getRouteApi("/_member/search");
 
 function SearchRoute(): ReactElement {
-  return <UsersPage list={route.useLoaderData()} search={route.useSearch()} />;
+  return <UsersPage search={route.useSearch()} />;
 }
 
 export { SearchRoute };

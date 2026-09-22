@@ -3,6 +3,7 @@ import { RegistryProvider } from "@effect/atom-react";
 import a11y from "@storybook/addon-a11y";
 import vitest from "@storybook/addon-vitest";
 import { definePreview } from "@storybook/react-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/react-router";
 import { Effect } from "effect";
 import msw from "msw-storybook-addon";
@@ -25,9 +26,17 @@ const withProviders = (Story: () => ReactElement): ReactElement => {
   return (
     <FieldValidationMessageProvider messages={japaneseFieldValidationMessages}>
       <RegistryProvider>
-        <RouterContextProvider router={router}>
-          <Story />
-        </RouterContextProvider>
+        <QueryClientProvider
+          client={
+            new QueryClient({
+              defaultOptions: { queries: { retry: false } },
+            })
+          }
+        >
+          <RouterContextProvider router={router}>
+            <Story />
+          </RouterContextProvider>
+        </QueryClientProvider>
       </RegistryProvider>
     </FieldValidationMessageProvider>
   );
