@@ -14,8 +14,8 @@ const meta = preview.meta({
   args: {
     children: (
       <>
-        <DropdownMenuItem onClick={noop}>権限を変更</DropdownMenuItem>
-        <DropdownMenuItem onClick={noop}>確認メールを再送</DropdownMenuItem>
+        <DropdownMenuItem onClick={noop}>{"権限を変更"}</DropdownMenuItem>
+        <DropdownMenuItem onClick={noop}>{"確認メールを再送"}</DropdownMenuItem>
       </>
     ),
   },
@@ -32,7 +32,7 @@ const meta = preview.meta({
     ),
   render: ({ children }): ReactElement => (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label="利用者の操作">操作</DropdownMenuTrigger>
+      <DropdownMenuTrigger aria-label="利用者の操作">{"操作"}</DropdownMenuTrigger>
       <DropdownMenuContent>{children}</DropdownMenuContent>
     </DropdownMenu>
   ),

@@ -9,6 +9,10 @@ type PageTarget = {
   readonly text: string;
 };
 
+type NavigationEntry =
+  | Readonly<{ kind: "gap"; after: number }>
+  | Readonly<{ kind: "page"; target: PageTarget }>;
+
 const PageNavigation = ({
   current,
   last,
@@ -21,32 +25,51 @@ const PageNavigation = ({
   if (last <= 1) {
     return undefined;
   }
-  const navigationTargets: readonly (PageTarget | undefined)[] = [
-    ...(current > 1 ? [{ current: false, label: "前のページ", page: current - 1, text: "‹" }] : []),
-    ...pageItems({ current, last }).map((pageItem) =>
+  const navigationEntries: readonly NavigationEntry[] = [
+    ...(current > 1
+      ? [
+          {
+            kind: "page" as const,
+            target: { current: false, label: "前のページ", page: current - 1, text: "‹" },
+          },
+        ]
+      : []),
+    ...pageItems({ current, last }).map((pageItem): NavigationEntry =>
       pageItem.kind === "gap"
-        ? undefined
+        ? pageItem
         : {
-            current: pageItem.page === current,
-            label: `${pageItem.page} ページ目`,
-            page: pageItem.page,
-            text: String(pageItem.page),
+            kind: "page",
+            target: {
+              current: pageItem.page === current,
+              label: `${pageItem.page} ページ目`,
+              page: pageItem.page,
+              text: String(pageItem.page),
+            },
           },
     ),
     ...(current < last
-      ? [{ current: false, label: "次のページ", page: current + 1, text: "›" }]
+      ? [
+          {
+            kind: "page" as const,
+            target: { current: false, label: "次のページ", page: current + 1, text: "›" },
+          },
+        ]
       : []),
   ];
   return (
     <nav data-slot="page-navigation" aria-label="ページ送り">
       <ul className="flex flex-wrap items-center gap-1">
-        {navigationTargets.map((navigationTarget, index) =>
-          navigationTarget === undefined ? (
-            <li key={`gap-${index}`} aria-hidden="true" className="px-1 text-muted-foreground">
-              …
+        {navigationEntries.map((navigationEntry) =>
+          navigationEntry.kind === "gap" ? (
+            <li
+              key={`gap-after-${String(navigationEntry.after)}`}
+              aria-hidden="true"
+              className="px-1 text-muted-foreground"
+            >
+              {"…"}
             </li>
           ) : (
-            <li key={navigationTarget.label}>{renderLink(navigationTarget)}</li>
+            <li key={navigationEntry.target.label}>{renderLink(navigationEntry.target)}</li>
           ),
         )}
       </ul>

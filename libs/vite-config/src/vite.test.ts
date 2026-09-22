@@ -136,6 +136,27 @@ describe("appConfig", () => {
         });
       return pluginNamesOf(appConfig("service-admin")(serve).plugins ?? []);
     })
+    .extend("adminElysiaAotPlugins", () => {
+      const pluginRecordsOf = (
+        plugins: readonly PluginOption[],
+      ): readonly (readonly [string, unknown])[] =>
+        plugins.flatMap((plugin): readonly (readonly [string, unknown])[] => {
+          if (Array.isArray(plugin)) {
+            return pluginRecordsOf(plugin);
+          }
+          if (
+            typeof plugin === "object" &&
+            plugin !== null &&
+            "name" in plugin &&
+            typeof plugin.name === "string" &&
+            plugin.name === "elysia-aot"
+          ) {
+            return [[plugin.name, "apply" in plugin ? plugin.apply : undefined]];
+          }
+          return [];
+        });
+      return pluginRecordsOf(appConfig("service-admin")(serve).plugins ?? []);
+    })
     .extend("adminPluginsWithMarker", () => {
       const marker = { name: "app-specific" };
       const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
@@ -170,5 +191,9 @@ describe("appConfig", () => {
     adminPluginsWithMarker,
   }) => {
     expect(adminPluginsWithMarker).toStrictEqual(adminPlugins);
+  });
+
+  it("runs Elysia AOT on the admin worker while Vite is serving", ({ adminElysiaAotPlugins }) => {
+    expect(adminElysiaAotPlugins).toStrictEqual([["elysia-aot", undefined]]);
   });
 });

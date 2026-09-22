@@ -5,15 +5,19 @@ import { Effect } from "effect";
 import { settings } from "./settings.ts";
 import { stackName, stackOptions } from "./stacks.ts";
 
+const flagshipWritePermission = {
+  id: "521a41dc78f94eaba5e643528846cb7b",
+} satisfies ApiToken.PermissionGroupRef;
+
 const accountTokens = {
   BillingRead: { permission: "Billing Read", slug: "billing-read" },
   FlagshipWrite: {
-    permission: "Flagship Write" as ApiToken.PermissionGroupName,
+    permission: flagshipWritePermission,
     slug: "flagship-write",
   },
   ObservabilityQuery: { permission: "Workers Observability Write", slug: "observability-query" },
 } as const satisfies Readonly<
-  Record<string, { permission: ApiToken.PermissionGroupName; slug: string }>
+  Record<string, { permission: ApiToken.PermissionGroupRef; slug: string }>
 >;
 
 type TokenResource = keyof typeof accountTokens;

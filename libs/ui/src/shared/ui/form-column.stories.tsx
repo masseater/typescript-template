@@ -14,7 +14,7 @@ export const Default = meta.story({
         <Field label="メールアドレス" name="email" type="email" value="" onValueChange={noop} />
         <Field label="パスワード" name="password" type="password" value="" onValueChange={noop} />
         <Button type="submit" variant="primary">
-          ログイン
+          {"ログイン"}
         </Button>
       </>
     ),

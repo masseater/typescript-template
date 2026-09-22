@@ -27,7 +27,7 @@ const meta = preview.meta({
     ),
   render: ({ children }): ReactElement => (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label="アカウント">メニュー</DropdownMenuTrigger>
+      <DropdownMenuTrigger aria-label="アカウント">{"メニュー"}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLinkItem to="/">{children}</DropdownMenuLinkItem>
       </DropdownMenuContent>

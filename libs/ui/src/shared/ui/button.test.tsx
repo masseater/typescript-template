@@ -9,7 +9,7 @@ describe("small button target size", () => {
   const it = test.extend("theSmallButtonTarget", () => {
     const markup = renderToStaticMarkup(
       <Button size="small" type="button">
-        編集
+        {"編集"}
       </Button>,
     );
     return [markup].map((rendered) => {

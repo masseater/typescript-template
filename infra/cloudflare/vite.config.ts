@@ -4,7 +4,9 @@ import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/monitors.ts";
 
-const stackBuilds = [...applications, ...monitorStacks].map((unit) => `@repo/${unit}#build`);
+const stackBuilds = ["core", ...applications, ...monitorStacks].map(
+  (unit) => `@repo/${unit}#build`,
+);
 
 export default defineConfig({
   run: {

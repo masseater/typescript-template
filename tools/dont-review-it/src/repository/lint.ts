@@ -52,6 +52,7 @@ const apiBoundaryFiles = [
 ];
 
 const authUiServerReadsAwaitingQuery = [
+  "libs/auth-ui/src/email-change-confirmation.tsx",
   "libs/auth-ui/src/email-change-verification.tsx",
   "libs/auth-ui/src/email-verification.tsx",
   "libs/auth-ui/src/use-passkeys.ts",
@@ -396,6 +397,32 @@ const lintOptions = {
           },
         ],
         "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/vite-config/src/elysia-aot.ts"],
+      rules: {
+        "max-lines": LINT_SEVERITY.OFF,
+        "project/effect-stack": LINT_SEVERITY.OFF,
+        "typescript/no-deprecated": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/vite-config/src/cloudflare-workers-loader.mjs"],
+      rules: {
+        "max-params": LINT_SEVERITY.OFF,
+        "typescript/no-unsafe-call": LINT_SEVERITY.OFF,
+        "typescript/no-unsafe-return": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/vite-config/src/cloudflare-workers-stub.mjs",
+        "libs/vite-config/src/cloudflare-workflows-stub.mjs",
+      ],
+      rules: {
+        "max-classes-per-file": LINT_SEVERITY.OFF,
+        "typescript/no-extraneous-class": LINT_SEVERITY.OFF,
       },
     },
     {

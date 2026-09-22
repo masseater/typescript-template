@@ -19,11 +19,11 @@ const PasskeyList = ({
   }
   if (passkeys === undefined) {
     return (
-      <StatusMessage variant={STATUS_VARIANT.pending}>パスキーを取得しています。</StatusMessage>
+      <StatusMessage variant={STATUS_VARIANT.pending}>{"パスキーを取得しています。"}</StatusMessage>
     );
   }
   if (passkeys.length === 0) {
-    return <StatusMessage>登録されたパスキーはありません。</StatusMessage>;
+    return <StatusMessage>{"登録されたパスキーはありません。"}</StatusMessage>;
   }
   return (
     <ul>

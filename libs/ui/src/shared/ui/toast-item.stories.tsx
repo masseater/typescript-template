@@ -24,7 +24,7 @@ const Raise = ({
   };
   return (
     <Button type="button" variant="primary" onClick={show}>
-      通知を出す
+      {"通知を出す"}
     </Button>
   );
 };

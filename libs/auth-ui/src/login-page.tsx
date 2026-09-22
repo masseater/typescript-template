@@ -17,7 +17,7 @@ const LoginPage = ({
   return (
     <Page title={title}>
       <LoginForm onAuthenticated={onAuthenticated} />
-      {signUp && <a href="/signup">新規登録</a>}
+      {signUp && <a href="/signup">{"新規登録"}</a>}
     </Page>
   );
 };

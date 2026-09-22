@@ -20,12 +20,12 @@ export const Default = meta.story({
     children: (
       <>
         <TableRow>
-          <TableCell>山田 太郎</TableCell>
-          <TableCell>管理者</TableCell>
+          <TableCell>{"山田 太郎"}</TableCell>
+          <TableCell>{"管理者"}</TableCell>
         </TableRow>
         <TableRow>
-          <TableCell>鈴木 花子</TableCell>
-          <TableCell>一般</TableCell>
+          <TableCell>{"鈴木 花子"}</TableCell>
+          <TableCell>{"一般"}</TableCell>
         </TableRow>
       </>
     ),

@@ -9,6 +9,26 @@
         "count": 1
       }
     ],
+    "apps/service-admin": [
+      {
+        "file": "src/shared/server-api/server-app.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/server-app.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/server-app.ts",
+        "code": "TS7006",
+        "message": "Parameter 'request' implicitly has an 'any' type.",
+        "count": 3
+      }
+    ],
     "apps/service-member": [
       {
         "file": "src/pages/board/api/board.ts",
@@ -27,6 +47,114 @@
         "code": "TS2322",
         "message": "Type 'Promise<{ readonly id: string; readonly joined: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; } | {}>' is not assignable to type 'Promise<{ readonly id: string; readonly joined: string; readonly name: string; readonly profile: string; readonly socialLinks: readonly string[]; }>'.",
         "count": 1
+      },
+      {
+        "file": "src/shared/server-api/board-api.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/board-api.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/board-api.ts",
+        "code": "TS7006",
+        "message": "Parameter 'request' implicitly has an 'any' type.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/contact-api.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/contact-api.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/flags-api.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/interview-api.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/interview-api.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/jobs-api.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/jobs-api.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 2
+      },
+      {
+        "file": "src/shared/server-api/jobs-api.ts",
+        "code": "TS7006",
+        "message": "Parameter 'request' implicitly has an 'any' type.",
+        "count": 1
+      },
+      {
+        "file": "src/shared/server-api/server-app.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/server-app.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/server-app.ts",
+        "code": "TS7006",
+        "message": "Parameter 'request' implicitly has an 'any' type.",
+        "count": 4
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS2554",
+        "message": "Expected 1 arguments, but got 2.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS2554",
+        "message": "Expected 3 arguments, but got 1.",
+        "count": 3
+      },
+      {
+        "file": "src/shared/server-api/social-api.ts",
+        "code": "TS7006",
+        "message": "Parameter 'request' implicitly has an 'any' type.",
+        "count": 3
       }
     ],
     "infra/cloudflare": [
@@ -297,16 +425,16 @@
     ],
     "libs/runtime": [
       {
+        "file": "src/account.ts",
+        "code": "TS4058",
+        "message": "Return type of exported function has or is using name 'ElysiaContext' from external module \"<repo>/libs/runtime/src/http\" but cannot be named.",
+        "count": 2
+      },
+      {
         "file": "src/client.test.ts",
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
         "count": 2
-      },
-      {
-        "file": "src/http.ts",
-        "code": "TS377017",
-        "message": "This Effect.gen contains a single return statement. effect(unnecessaryEffectGen)",
-        "count": 1
       },
       {
         "file": "src/read-cache.ts",
