@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -217,6 +217,32 @@ function uncoveredToolTestPackages(): string[] {
       !reachesTest(directory, ["prepr", "premerge"]),
   );
 }
+
+describe("cloud agent environment", () => {
+  it("installs dependencies and reconnects pre-push through the agent hook dispatcher", () => {
+    expect.hasAssertions();
+    const root = fileURLToPath(new URL("../../../..", import.meta.url));
+    const environment = JSON.parse(
+      readFileSync(join(root, ".cursor/environment.json"), "utf8"),
+    ) as {
+      install: string;
+      start: string;
+    };
+    expect(environment).toStrictEqual({
+      install: "bash .cursor/install.sh",
+      start: "bash .cursor/start.sh",
+    });
+    const install = readFileSync(join(root, ".cursor/install.sh"), "utf8");
+    const start = readFileSync(join(root, ".cursor/start.sh"), "utf8");
+    expect(install).toContain("mise.run");
+    expect(install).toContain("mise install");
+    expect(install).toContain("seed-mergify-auth.sh");
+    expect(install).toContain("vp install");
+    expect(start).toContain("seed-mergify-auth.sh");
+    expect(start).toContain("pre-push");
+    expect(start).toContain(".cursor-original-hooks-path");
+  });
+});
 
 describe("lifecycle entry points", () => {
   it("each hook runs its lifecycle task in every workspace", () => {
