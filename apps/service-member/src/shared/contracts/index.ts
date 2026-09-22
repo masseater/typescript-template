@@ -97,7 +97,6 @@ export {
 export {
   NavBadges,
   NotificationId,
-  NotificationItem,
   NotificationList,
   NotificationPreferences,
   NotificationUnread,

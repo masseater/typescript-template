@@ -34,11 +34,4 @@ const NotificationPreferences = Schema.Struct({
   messageMail: Schema.Boolean,
 });
 
-export {
-  NavBadges,
-  NotificationId,
-  NotificationItem,
-  NotificationList,
-  NotificationPreferences,
-  NotificationUnread,
-};
+export { NavBadges, NotificationId, NotificationList, NotificationPreferences, NotificationUnread };
