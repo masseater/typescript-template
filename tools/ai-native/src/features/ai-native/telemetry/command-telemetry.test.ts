@@ -812,9 +812,9 @@ describe("the package surface", () => {
         directory: "tools/ai-native",
       },
       bin: {
-        spool: "./src/spool/cli.ts",
-        throttle: "./src/throttle/cli.ts",
-        unabridged: "./src/unabridged/cli.ts",
+        spool: "./src/features/ai-native/spool/cli.ts",
+        throttle: "./src/features/ai-native/throttle/cli.ts",
+        unabridged: "./src/features/ai-native/unabridged/cli.ts",
       },
       files: ["dist", "skills"],
       type: "module",
