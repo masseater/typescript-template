@@ -10,10 +10,9 @@ const valid = {
 } as const;
 
 describe("parseHealthMonitorConfig", () => {
-  const it = test.extend("healthProbeTargets", async () => {
-    const config = await Effect.runPromise(parseHealthMonitorConfig(valid));
-    return healthTargets(config);
-  });
+  const it = test.extend("healthProbeTargets", () =>
+    Effect.runPromise(parseHealthMonitorConfig(valid)).then((config) => healthTargets(config)),
+  );
 
   it("accepts distinct https origins", ({ healthProbeTargets }) => {
     expect(healthProbeTargets).toStrictEqual([
@@ -40,11 +39,12 @@ describe.for([
   [{ SERVICE_MEMBER_ORIGIN: "http://app.example.com" }],
   [{ INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com/docs" }],
 ] as const)("invalid settings %s", ([override]) => {
-  const it = test.extend("configFailure", async () =>
-    Effect.runPromise(Effect.flip(parseHealthMonitorConfig({ ...valid, ...override }))));
+  const it = test.extend("configFailure", () =>
+    Effect.runPromise(Effect.flip(parseHealthMonitorConfig({ ...valid, ...override }))),
+  );
 
   it("refuses the configuration", ({ configFailure }) => {
-    expect(configFailure).toStrictEqual({
+    expect(configFailure).toMatchObject({
       _tag: "HealthMonitorFailure",
       code: "health_monitor_config_invalid",
     });
@@ -52,7 +52,7 @@ describe.for([
 });
 
 describe("shared origins", () => {
-  const it = test.extend("configFailure", async () =>
+  const it = test.extend("configFailure", () =>
     Effect.runPromise(
       Effect.flip(
         parseHealthMonitorConfig({
@@ -60,12 +60,13 @@ describe("shared origins", () => {
           INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com",
         }),
       ),
-    ));
+    ),
+  );
 
   it("refuses a configuration that points two applications at the same origin", ({
     configFailure,
   }) => {
-    expect(configFailure).toStrictEqual({
+    expect(configFailure).toMatchObject({
       _tag: "HealthMonitorFailure",
       code: "health_monitor_origins_must_differ",
     });

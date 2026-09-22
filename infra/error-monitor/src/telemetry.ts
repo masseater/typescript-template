@@ -85,13 +85,14 @@ const telemetryFailure =
     new ErrorMonitorFailure({ code, keys: [] });
 
 const queryTelemetry = (
+  fetchImpl: typeof fetch,
   queryWindow: QueryWindow,
   offsetBy: number,
 ): Effect.Effect<Response, ErrorMonitorFailure> =>
   Effect.tryPromise({
     catch: telemetryFailure("telemetry_http_failed"),
-    try: async (signal) =>
-      fetch(queryWindow.queryEndpoint, {
+    try: (signal) =>
+      fetchImpl(queryWindow.queryEndpoint, {
         body: queryBody(queryWindow, offsetBy),
         headers: {
           Accept: "application/json",
@@ -112,13 +113,13 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
   readonly (typeof Aggregate.Type)[],
   never
 > {
-  const telemetryResponse = yield* queryTelemetry(queryWindow, offsetBy);
+  const telemetryResponse = yield* queryTelemetry(fetch, queryWindow, offsetBy);
   if (!telemetryResponse.ok) {
     return yield* telemetryFailure("telemetry_http_failed")();
   }
   const telemetryPayload = yield* Effect.tryPromise({
     catch: telemetryFailure("telemetry_response_invalid"),
-    try: async (): Promise<unknown> => telemetryResponse.json(),
+    try: () => telemetryResponse.json(),
   });
   const telemetryEnvelope = yield* Schema.decodeUnknownEffect(QueryEnvelope)(telemetryPayload).pipe(
     Effect.mapError(

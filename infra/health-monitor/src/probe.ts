@@ -24,15 +24,6 @@ const HealthPayload = Schema.Struct({
   service: Schema.String,
 });
 
-const requestHealth = (healthTarget: HealthTarget): Effect.Effect<Option.Option<ProbeResponse>> =>
-  Effect.tryPromise(async (signal): Promise<ProbeResponse> =>
-    fetch(healthTarget.healthEndpoint, {
-      headers: { accept: "application/json" },
-      redirect: "manual",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
-    }),
-  ).pipe(Effect.option);
-
 const observedProbe = (asked: {
   readonly healthTarget: HealthTarget;
   readonly healthy: boolean;
@@ -43,13 +34,25 @@ const observedProbe = (asked: {
   service: asked.healthTarget.service,
 });
 
+const requestHealth = (
+  fetchImpl: typeof fetch,
+  healthTarget: HealthTarget,
+): Effect.Effect<Option.Option<ProbeResponse>> =>
+  Effect.tryPromise({
+    catch: () => "unreachable" as const,
+    try: (signal) =>
+      fetchImpl(healthTarget.healthEndpoint, {
+        headers: { accept: "application/json" },
+        redirect: "manual",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]),
+      }),
+  }).pipe(Effect.option);
+
 const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHealthPayload(
   healthTarget: HealthTarget,
   healthResponse: ProbeResponse,
 ) {
-  const responseBody = yield* Effect.tryPromise(async (): Promise<unknown> =>
-    healthResponse.json(),
-  ).pipe(Effect.option);
+  const responseBody = yield* Effect.tryPromise(() => healthResponse.json()).pipe(Effect.option);
   if (Option.isNone(responseBody)) {
     return observedProbe({ detail: "body_unreadable", healthTarget, healthy: false });
   }
@@ -67,7 +70,7 @@ const decodeHealthPayload = Effect.fn("decodeHealthPayload")(function* decodeHea
 });
 
 const probeService = Effect.fn("probeService")(function* probeService(healthTarget: HealthTarget) {
-  const healthResponse = yield* requestHealth(healthTarget);
+  const healthResponse = yield* requestHealth(fetch, healthTarget);
   if (Option.isNone(healthResponse)) {
     return observedProbe({ detail: "unreachable", healthTarget, healthy: false });
   }

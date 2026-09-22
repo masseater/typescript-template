@@ -12,8 +12,7 @@ const valid = {
 } as const;
 
 describe("parseErrorMonitorConfig", () => {
-  const it = test.extend("acceptedConfig", async () =>
-    Effect.runPromise(parseErrorMonitorConfig(valid)));
+  const it = test.extend("acceptedConfig", () => Effect.runPromise(parseErrorMonitorConfig(valid)));
 
   it("accepts a scoped token", ({ acceptedConfig }) => {
     expect(acceptedConfig).toStrictEqual(valid);
@@ -24,8 +23,9 @@ describe.for([
   [{ CLOUDFLARE_ACCOUNT_ID: "private-not-an-account" }],
   [{ OBSERVABILITY_TOKEN: "short" }],
 ] as const)("invalid settings %s", ([override]) => {
-  const it = test.extend("configFailure", async () =>
-    Effect.runPromise(Effect.flip(parseErrorMonitorConfig({ ...valid, ...override }))));
+  const it = test.extend("configFailure", () =>
+    Effect.runPromise(Effect.flip(parseErrorMonitorConfig({ ...valid, ...override }))),
+  );
 
   it("refuses without echoing the invalid value", ({ configFailure }) => {
     expect(configFailure).toStrictEqual(

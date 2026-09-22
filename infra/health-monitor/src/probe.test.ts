@@ -14,7 +14,7 @@ const healthTarget = {
 } as const;
 
 describe("a healthy application", () => {
-  const it = test.extend("healthProbe", async ({}, { onCleanup }) => {
+  const it = test.extend("healthProbe", ({}, { onCleanup }) => {
     const healthApi = setupServer(
       http.get(healthEndpoint, () =>
         HttpResponse.json({ ok: true, release, service: "service-member" }),
@@ -54,7 +54,7 @@ describe.for([
   ],
   ["unreachable", "unreachable", (): Response => HttpResponse.error()],
 ] as const)("an application %s", ([, detail, healthResponse]) => {
-  const it = test.extend("healthProbe", async ({}, { onCleanup }) => {
+  const it = test.extend("healthProbe", ({}, { onCleanup }) => {
     const healthApi = setupServer(http.get(healthEndpoint, healthResponse));
     healthApi.listen({ onUnhandledRequest: "error" });
     onCleanup(() => {
