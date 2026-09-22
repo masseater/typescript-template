@@ -36,7 +36,12 @@ export default defineConfig({
     unstubGlobals: true,
   },
   pack: {
-    entry: ["src/features/ai-native/throttle/cli.ts", "src/features/ai-native/spool/cli.ts", "src/features/ai-native/unabridged/cli.ts"],
+    entry: [
+      "src/features/ai-native/throttle/cli.ts",
+      "src/features/ai-native/spool/cli.ts",
+      "src/features/ai-native/sync-base/cli.ts",
+      "src/features/ai-native/unabridged/cli.ts",
+    ],
     dts: { generator: "tsgo" },
   },
 });
