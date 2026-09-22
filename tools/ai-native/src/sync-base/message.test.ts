@@ -14,7 +14,8 @@ describe("sync-base instruction message", () => {
     it("names the pull request, the base, and the way to catch up", ({
       theInstructionForABehindPullRequest,
     }) => {
-      expect(theInstructionForABehindPullRequest).toBe(`sync-base: pull request #42 is behind its base branch \`main\`.
+      expect(theInstructionForABehindPullRequest)
+        .toBe(`sync-base: pull request #42 is behind its base branch \`main\`.
 The base moved ahead of this head. Bring the latest base into this branch before you continue:
 - fetch the base (\`git fetch origin main\`) and rebase or merge onto it
 - or run \`mergify stack sync\` when this pull request is part of a stack

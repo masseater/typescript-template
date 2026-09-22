@@ -21,16 +21,7 @@ const nodeOs = process.getBuiltinModule("os") as {
   readonly tmpdir: () => string;
 };
 
-const stopPayloadFor = (cwd: string): string =>
-  JSON.stringify({
-    cwd,
-    hook_event_name: "Stop",
-    session_id: "session",
-    stop_hook_active: false,
-    transcript_path: `${cwd}/transcript.jsonl`,
-  });
-
-const behindGhScript = `#!/bin/sh
+const BEHIND_GH_SCRIPT = `#!/bin/sh
 echo '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":11,"url":"https://example.com/11"}'
 `;
 
@@ -54,8 +45,7 @@ describe("sync-base cli", () => {
   describe("a Stop where gh finds no pull request", () => {
     const it = test
       .extend("theWorkTreeWithoutAPullRequest", () =>
-        nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-no-pr-")),
-      )
+        nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-no-pr-")))
       .extend("theRunOverAStopWithoutAPullRequest", ({ theWorkTreeWithoutAPullRequest }) =>
         spawnChildSync({
           executable: process.execPath,
@@ -66,14 +56,23 @@ describe("sync-base cli", () => {
               ...processEnvironment,
               PATH: `/nonexistent-gh-bin:${processEnvironment.PATH ?? ""}`,
             },
-            input: stopPayloadFor(theWorkTreeWithoutAPullRequest),
+            input: JSON.stringify({
+              cwd: theWorkTreeWithoutAPullRequest,
+              hook_event_name: "Stop",
+              session_id: "session",
+              stop_hook_active: false,
+              transcript_path: `${theWorkTreeWithoutAPullRequest}/transcript.jsonl`,
+            }),
           },
         }),
       )
-      .extend("theExitCodeOverAStopWithoutAPullRequest", ({ theRunOverAStopWithoutAPullRequest }) => {
-        const { status } = theRunOverAStopWithoutAPullRequest;
-        return status;
-      })
+      .extend(
+        "theExitCodeOverAStopWithoutAPullRequest",
+        ({ theRunOverAStopWithoutAPullRequest }) => {
+          const { status } = theRunOverAStopWithoutAPullRequest;
+          return status;
+        },
+      )
       .extend(
         "theStandardOutputOverAStopWithoutAPullRequest",
         ({ theRunOverAStopWithoutAPullRequest }) => {
@@ -105,7 +104,7 @@ describe("sync-base cli", () => {
       .extend("theBinWithABehindGh", () => {
         const directory = nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-gh-"));
         const ghPath = joinPath(directory, "gh");
-        writeFileString({ location: ghPath, written: behindGhScript });
+        writeFileString({ location: ghPath, written: BEHIND_GH_SCRIPT });
         nodeFs.chmodSync(ghPath, 0o755);
         return directory;
       })
@@ -119,7 +118,13 @@ describe("sync-base cli", () => {
               ...processEnvironment,
               PATH: `${theBinWithABehindGh}:${processEnvironment.PATH ?? ""}`,
             },
-            input: stopPayloadFor(theWorkTree),
+            input: JSON.stringify({
+              cwd: theWorkTree,
+              hook_event_name: "Stop",
+              session_id: "session",
+              stop_hook_active: false,
+              transcript_path: `${theWorkTree}/transcript.jsonl`,
+            }),
           },
         }),
       )

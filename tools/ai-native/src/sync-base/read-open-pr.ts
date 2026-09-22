@@ -14,28 +14,27 @@ export type CommandResult = {
   readonly stdout: string;
 };
 
-export type CommandRunner = (launch: CommandLaunch) => CommandResult;
+export type CommandRunner = (commandLaunch: CommandLaunch) => CommandResult;
 
-export const defaultCommandRunner: CommandRunner = (launch) =>
+export const defaultCommandRunner: CommandRunner = (commandLaunch) =>
   spawnChildSync({
-    executable: launch.executable,
-    handed: launch.handed,
+    executable: commandLaunch.executable,
+    handed: commandLaunch.handed,
     spawnOptions: {
-      cwd: launch.cwd,
+      cwd: commandLaunch.cwd,
       encoding: "utf8",
       env: processEnvironment,
     },
   });
 
-
 export const openPullRequestOf = (
   cwd: string,
   run: CommandRunner = defaultCommandRunner,
 ): OpenPullRequest | undefined => {
-  const result = run({
+  const prViewExit = run({
     cwd,
     executable: "gh",
     handed: ["pr", "view", "--json", "number,url,baseRefName,mergeStateStatus"],
   });
-  return result.status === 0 ? parseOpenPullRequest(result.stdout) : undefined;
+  return prViewExit.status === 0 ? parseOpenPullRequest(prViewExit.stdout) : undefined;
 };

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vite-plus/test";
 
 import { instructionOf } from "./instruction.ts";
+import { instructionFor } from "./message.ts";
 
 describe("instructionOf", () => {
   describe("an open pull request whose head is behind its base", () => {
@@ -13,8 +14,13 @@ describe("instructionOf", () => {
       }));
 
     it("hands back the catch-up instruction", ({ theInstructionForABehindPullRequest }) => {
-      expect(theInstructionForABehindPullRequest).toContain("pull request #9");
-      expect(theInstructionForABehindPullRequest).toContain("`main`");
+      expect(theInstructionForABehindPullRequest).toBe(
+        instructionFor({
+          baseRefName: "main",
+          number: 9,
+          url: "https://example.com/9",
+        }),
+      );
     });
   });
 

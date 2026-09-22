@@ -13,7 +13,11 @@ export const hookFor = (
       UserPromptSubmit: true,
     },
     run: (hookContext) => {
-      const decision = decisionOf(hookContext.input.hook_event_name, hookContext.input.cwd, run);
+      const decision = decisionOf({
+        cwd: hookContext.input.cwd,
+        hookEventName: hookContext.input.hook_event_name,
+        run,
+      });
       if (decision === undefined) {
         return hookContext.success({});
       }

@@ -1,48 +1,28 @@
 import { instructionOf } from "./instruction.ts";
 import { openPullRequestOf, type CommandRunner } from "./read-open-pr.ts";
 
-export type SyncBaseEvent = "SessionStart" | "Stop" | "UserPromptSubmit";
+export type DecisionInquiry = {
+  readonly cwd: string;
+  readonly hookEventName: string;
+  readonly run?: CommandRunner;
+};
 
-export type SyncBaseDecision =
-  | {
-      readonly event: "SessionStart";
-      readonly output: {
-        readonly hookSpecificOutput: {
-          readonly additionalContext: string;
-          readonly hookEventName: "SessionStart";
-        };
-      };
+/** @canonical-values sync-base.hook-event */
+export const SYNC_BASE_HOOK_EVENTS = ["SessionStart", "Stop", "UserPromptSubmit"] as const;
+
+export type SyncBaseEvent = (typeof SYNC_BASE_HOOK_EVENTS)[number];
+
+const syncBaseEventOf = (hookEventName: string): SyncBaseEvent | undefined => {
+  for (const knownHookEvent of SYNC_BASE_HOOK_EVENTS) {
+    if (knownHookEvent === hookEventName) {
+      return knownHookEvent;
     }
-  | {
-      readonly event: "Stop";
-      readonly output: {
-        readonly hookSpecificOutput: {
-          readonly additionalContext: string;
-          readonly hookEventName: "Stop";
-        };
-      };
-    }
-  | {
-      readonly event: "UserPromptSubmit";
-      readonly output: {
-        readonly hookSpecificOutput: {
-          readonly additionalContext: string;
-          readonly hookEventName: "UserPromptSubmit";
-        };
-      };
-    };
+  }
+  return undefined;
+};
 
-const syncBaseEvents: ReadonlySet<string> = new Set([
-  "SessionStart",
-  "Stop",
-  "UserPromptSubmit",
-]);
-
-const syncBaseEventOf = (eventName: string): SyncBaseEvent | undefined =>
-  syncBaseEvents.has(eventName) ? (eventName as SyncBaseEvent) : undefined;
-
-const decisionFor = (event: SyncBaseEvent, instruction: string): SyncBaseDecision => {
-  switch (event) {
+const decisionFor = (hookEvent: SyncBaseEvent, instruction: string) => {
+  switch (hookEvent) {
     case "SessionStart":
       return {
         event: "SessionStart",
@@ -52,7 +32,7 @@ const decisionFor = (event: SyncBaseEvent, instruction: string): SyncBaseDecisio
             hookEventName: "SessionStart",
           },
         },
-      };
+      } as const;
     case "Stop":
       return {
         event: "Stop",
@@ -62,7 +42,7 @@ const decisionFor = (event: SyncBaseEvent, instruction: string): SyncBaseDecisio
             hookEventName: "Stop",
           },
         },
-      };
+      } as const;
     case "UserPromptSubmit":
       return {
         event: "UserPromptSubmit",
@@ -72,19 +52,17 @@ const decisionFor = (event: SyncBaseEvent, instruction: string): SyncBaseDecisio
             hookEventName: "UserPromptSubmit",
           },
         },
-      };
+      } as const;
   }
 };
 
-export const decisionOf = (
-  eventName: string,
-  cwd: string,
-  run?: CommandRunner,
-): SyncBaseDecision | undefined => {
-  const event = syncBaseEventOf(eventName);
-  if (event === undefined) {
+export type SyncBaseDecision = ReturnType<typeof decisionFor>;
+
+export const decisionOf = (inquiry: DecisionInquiry): SyncBaseDecision | undefined => {
+  const hookEvent = syncBaseEventOf(inquiry.hookEventName);
+  if (hookEvent === undefined) {
     return undefined;
   }
-  const instruction = instructionOf(openPullRequestOf(cwd, run));
-  return instruction === undefined ? undefined : decisionFor(event, instruction);
+  const instruction = instructionOf(openPullRequestOf(inquiry.cwd, inquiry.run));
+  return instruction === undefined ? undefined : decisionFor(hookEvent, instruction);
 };
