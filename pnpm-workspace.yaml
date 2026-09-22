@@ -46,11 +46,10 @@ catalog:
   "@opentelemetry/exporter-trace-otlp-http": 0.221.0
   shell-quote: 1.10.0
   alchemy: 2.0.0-beta.77
-  "@base-ui/react": 1.8.0
-  "@better-auth/api-key": 1.7.5
   baseui: 18.2.0
   styletron-engine-monolithic: 1.0.0
   styletron-react: 6.1.1
+  "@better-auth/api-key": 1.7.5
   "@better-auth/passkey": 1.7.5
   "@cloudflare/vitest-plugin": 1.1.12
   "@cloudflare/workers-types": 5.20260916.1
