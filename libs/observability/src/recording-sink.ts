@@ -1,27 +1,21 @@
-import { Effect, Predicate, Ref, Schema } from "effect";
+import { Effect, Predicate, Ref } from "effect";
 
 import type { LogSink } from "./structured-logs.ts";
-
-const decodeJson = (line: string): unknown =>
-  Effect.runSync(
-    Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(line).pipe(Effect.orDie),
-  );
-
 const parsedLine = (line: string): Readonly<Record<string, unknown>> => {
-  const decoded: unknown = decodeJson(line);
+  const decoded: unknown = JSON.parse(line);
   if (!Predicate.isObject(decoded)) {
     return { "log.unparsed": line };
   }
   return decoded;
 };
-
 type RecordedLines = {
   readonly stderr: readonly Readonly<Record<string, unknown>>[];
   readonly stdout: readonly Readonly<Record<string, unknown>>[];
   readonly stdwarn: readonly Readonly<Record<string, unknown>>[];
 };
-
-const recordingSink = (): RecordedLines & { readonly sink: LogSink } => {
+const recordingSink = (): RecordedLines & {
+  readonly sink: LogSink;
+} => {
   const lines = Ref.makeUnsafe<RecordedLines>({ stderr: [], stdout: [], stdwarn: [] });
   const recordInto =
     (stream: keyof RecordedLines) =>
@@ -46,5 +40,4 @@ const recordingSink = (): RecordedLines & { readonly sink: LogSink } => {
     },
   };
 };
-
 export { recordingSink };

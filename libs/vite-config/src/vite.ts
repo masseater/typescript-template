@@ -199,15 +199,16 @@ const typecheckInputs = [
   { base: "workspace", pattern: "**/*.{ts,tsx}" },
   { base: "workspace", pattern: "**/package.json" },
   { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
   { base: "workspace", pattern: "!**/node_modules/**" },
   { base: "workspace", pattern: "!**/dist/**" },
   { base: "workspace", pattern: "!**/.paraglide/**" },
   { base: "workspace", pattern: "!**/.local/**" },
 ] as const;
 
-const effectDiagnostics = {
+const awaitingEffectDiagnostics = {
   "check:effect": {
-    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
+    command: "check-effect-typecheck",
     input: [...typecheckInputs],
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
@@ -259,6 +260,13 @@ const lifecycle = (
   },
 });
 
+const effectDiagnostics = {
+  "check:effect": {
+    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
+    input: [...typecheckInputs],
+  },
+} satisfies NonNullable<UserConfig["run"]>["tasks"];
+
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
@@ -266,9 +274,16 @@ const effectRun = {
   },
 } satisfies RunConfig;
 
+const awaitingEffectRun = {
+  tasks: {
+    ...awaitingEffectDiagnostics,
+    ...lifecycle({ prepush: ["check:effect"] }),
+  },
+} satisfies RunConfig;
+
 const appRun = {
   tasks: {
-    ...effectDiagnostics,
+    ...awaitingEffectDiagnostics,
     check: sliceBoundaries.check,
     build: {
       command: "vp build",
@@ -433,6 +448,8 @@ export {
   appRun,
   elysiaWorkerdJit,
   appServer,
+  awaitingEffectDiagnostics,
+  awaitingEffectRun,
   clientReachableModules,
   defineConfig,
   effectDiagnostics,
@@ -458,5 +475,6 @@ export {
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
+export { runTypecheckGate } from "./effect-typecheck.ts";
 export type { Tasks };
 export { devBoundary };

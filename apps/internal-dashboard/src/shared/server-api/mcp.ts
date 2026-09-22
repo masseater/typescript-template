@@ -33,7 +33,7 @@ const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
   if (authorized instanceof Response) {
     return authorized;
   }
-  return secureResponse(request, yield* handleMcp(request));
+  return secureResponse({ httpRequest: request, httpResponse: yield* handleMcp(request) });
 });
 
 export { serveMcp };

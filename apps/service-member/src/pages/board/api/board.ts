@@ -1,4 +1,4 @@
-import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
+import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -23,11 +23,11 @@ function loadThreads(page: number): Promise<ThreadList> {
 function loadThread(id: string, page: number): Promise<Thread> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.board.thread.get({ query: { id, page: String(page) } }).then((response) => {
-      const thread = apiDataOrNone(BoardThreadView, response, absent.notFound);
-      if (thread === undefined) {
+      const thread = apiDataOrNoneFor(absent.notFound)(BoardThreadView, response);
+      if (thread == null) {
         throw notFound();
       }
-      return thread;
+      return thread as Thread;
     }),
   );
 }

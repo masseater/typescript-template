@@ -1,32 +1,8 @@
+import { awaitingEffectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-const typecheckInput = [
-  { auto: true },
-  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-  { base: "workspace", pattern: "**/*.{ts,tsx}" },
-  { base: "workspace", pattern: "**/package.json" },
-  { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "!**/node_modules/**" },
-  { base: "workspace", pattern: "!**/dist/**" },
-  { base: "workspace", pattern: "!**/.paraglide/**" },
-  { base: "workspace", pattern: "!**/.local/**" },
-] as const;
-
 export default defineConfig({
-  run: {
-    tasks: {
-      "check:effect": {
-        command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
-        input: [...typecheckInput],
-      },
-      precommit: { command: [], dependsOn: [] },
-      prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
-      prepr: { command: [], dependsOn: ["prepush"] },
-      premerge: { command: [], dependsOn: [] },
-      prerelease: { command: [], dependsOn: ["prepr", "premerge"] },
-    },
-  },
+  run: awaitingEffectRun,
   test: {
     coverage: {
       exclude: ["specs/**"],

@@ -11,11 +11,11 @@ import { evaluateBudget } from "./decision.ts";
 runCli(
   Effect.gen(function* program() {
     const config = yield* parseBudgetConfig(processEnvironment);
-    const usage = yield* fetchUsage(
-      config.CLOUDFLARE_ACCOUNT_ID,
-      config.BILLING_READ_TOKEN,
-      yield* Clock.currentTimeMillis,
-    );
+    const usage = yield* fetchUsage({
+      accountId: config.CLOUDFLARE_ACCOUNT_ID,
+      observedAt: yield* Clock.currentTimeMillis,
+      token: config.BILLING_READ_TOKEN,
+    });
     const decision = yield* evaluateBudget(usage, config);
     yield* Console.log(
       yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({

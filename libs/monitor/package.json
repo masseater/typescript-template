@@ -15,7 +15,6 @@
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
-    "@effect/vitest": "catalog:",
     "@repo/runtime": "workspace:*",
     "typescript": "catalog:"
   }

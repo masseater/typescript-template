@@ -6,21 +6,22 @@ import {
   type JobsBindings,
 } from "@repo/config";
 import { WorkflowEntrypoint } from "cloudflare:workers";
-import { Effect, Schema } from "effect";
-
+import { Crypto, Effect, Schema } from "effect";
 class Process extends WorkflowEntrypoint<JobsBindings, JobPayload> {
   override run(
-    event: Readonly<{ payload: JobPayload }>,
-    step: {
-      do: <Value>(name: string, work: () => Promise<Value>) => Promise<Value>;
-    },
+    logEvent: Readonly<{
+      payload: JobPayload;
+    }>,
+    step: Readonly<{
+      do: <Value>(spelled: string, work: () => Promise<Value>) => Promise<Value>;
+    }>,
   ): Promise<JobResult> {
     return Effect.runPromise(
       Effect.gen(function* processJob() {
         const prepared = yield* Effect.promise(() =>
           step.do("prepare", () =>
             Promise.resolve({
-              jobId: event.payload.jobId,
+              jobId: logEvent.payload.jobId,
               stage: "prepared" as const,
             }),
           ),
@@ -45,31 +46,34 @@ class Process extends WorkflowEntrypoint<JobsBindings, JobPayload> {
     );
   }
 }
-
-function consumeJobs(batch: MessageBatch<unknown>, env: JobsBindings): Promise<void> {
-  return Effect.runPromise(
+const consumeJobs = (batch: Readonly<MessageBatch>, env: JobsBindings): Promise<void> =>
+  Effect.runPromise(
     Effect.gen(function* consume() {
-      for (const message of batch.messages) {
-        const payload = yield* Schema.decodeUnknownEffect(JobPayload)(message.body);
+      for (const logMessage of batch.messages) {
+        const packet = yield* Schema.decodeUnknownEffect(JobPayload)(logMessage.body);
         yield* Effect.promise(() =>
-          env[jobsWorkflowBinding].create({ id: payload.jobId, params: payload }),
+          env[jobsWorkflowBinding].create({ id: packet.jobId, params: packet }),
         );
-        message.ack();
+        logMessage.ack();
       }
     }),
   );
-}
-
+const jobsCrypto = Crypto.make({
+  digest: (algorithmName, digestInput) =>
+    Effect.tryPromise(() => crypto.subtle.digest(algorithmName, Uint8Array.from(digestInput))).pipe(
+      Effect.map((digestBytes) => new Uint8Array(digestBytes)),
+      Effect.orDie,
+    ),
+  randomBytes: (byteCount) => crypto.getRandomValues(new Uint8Array(byteCount)),
+});
 const enqueueJob = Effect.fn("jobs.enqueue")(function* enqueueJob(env: JobsBindings) {
-  const jobId = crypto.randomUUID();
-  const payload = { jobId };
-  yield* Effect.promise(() => env[jobsQueueBinding].send(payload));
-  return payload;
+  const jobId = yield* jobsCrypto.randomUUIDv4.pipe(Effect.orDie);
+  const packet = { jobId };
+  yield* Effect.promise(() => env[jobsQueueBinding].send(packet));
+  return packet;
 });
-
 const jobStatus = Effect.fn("jobs.status")(function* jobStatus(env: JobsBindings, jobId: string) {
-  const instance = yield* Effect.promise(() => env[jobsWorkflowBinding].get(jobId));
-  return yield* Effect.promise(() => instance.status());
+  const runtimeInstance = yield* Effect.promise(() => env[jobsWorkflowBinding].get(jobId));
+  return yield* Effect.promise(() => runtimeInstance.status());
 });
-
 export { Process, consumeJobs, enqueueJob, jobStatus };

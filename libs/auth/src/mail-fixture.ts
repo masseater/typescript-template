@@ -51,7 +51,7 @@ const receiveMail = (deliveries: Mailbox["Service"]) => {
           subject: mailpitMessage.Subject,
         }));
         yield* Ref.update(deliveries, (earlier) => [...earlier, ...delivered]);
-        return HttpResponse.json({ ID: crypto.randomUUID() });
+        return HttpResponse.json({ ID: "11111111-1111-4111-8111-111111111111" });
       }),
     );
 };
