@@ -1,5 +1,5 @@
+import { httpStatus } from "@repo/config";
 import {
-  httpStatus,
   rejectionStatus,
   reportFailure,
   reportUnavailable,

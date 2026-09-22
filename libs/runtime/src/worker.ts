@@ -1,6 +1,6 @@
+import { httpStatus } from "@repo/config";
 import {
   flushTelemetry,
-  httpStatus,
   observeRequest,
   type CurrentRequest,
   type Reporting,

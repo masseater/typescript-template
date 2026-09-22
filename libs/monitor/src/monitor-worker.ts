@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability/http-status";
+import { httpStatus } from "@repo/config";
 import { Effect } from "effect";
 
 import { monitorCheckUrl } from "./binding.ts";
