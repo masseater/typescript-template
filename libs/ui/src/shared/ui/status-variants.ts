@@ -1,13 +1,14 @@
 /** @canonical-values ui.status-variant */
-const statusVariants = ["failure", "info", "pending", "success"] as const;
+const statusVariants = ["empty", "failure", "info", "pending", "success"] as const;
 
 type StatusVariant = (typeof statusVariants)[number];
 
 const STATUS_VARIANT = {
-  failure: statusVariants[0],
-  info: statusVariants[1],
-  pending: statusVariants[2],
-  success: statusVariants[3],
+  empty: statusVariants[0],
+  failure: statusVariants[1],
+  info: statusVariants[2],
+  pending: statusVariants[3],
+  success: statusVariants[4],
 } as const;
 
 export { STATUS_VARIANT };

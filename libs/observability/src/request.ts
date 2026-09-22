@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, Stream } from "effect";
+import { Chunk, Effect, Option, Schema, Stream } from "effect";
 
 import { httpStatus } from "./http-status.ts";
 
@@ -47,36 +47,43 @@ const headerRejection = (received: {
     : Option.none();
 };
 
-const parseJson = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Unknown));
+const parseJson = Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown));
+
+const decodeChunks = (chunks: Chunk.Chunk<Uint8Array>): string => {
+  const decoder = new TextDecoder();
+  return `${Chunk.toReadonlyArray(chunks)
+    .map((bodyChunk) => decoder.decode(bodyChunk, { stream: true }))
+    .join("")}${decoder.decode()}`;
+};
 
 const readBody = (bounded: {
   readonly body: Readonly<AsyncIterable<Uint8Array>>;
   readonly limit: number;
 }): Effect.Effect<unknown, RequestRejected> =>
-  Stream.fromAsyncIterable(
-    bounded.body,
-    () => new RequestRejected({ reason: "invalid_json" }),
-  ).pipe(
+  Stream.fromAsyncIterable(bounded.body, (cause): never => {
+    throw cause instanceof Error ? cause : new Error(String(cause));
+  }).pipe(
     Stream.runFoldEffect(
-      (): { readonly byteLength: number; readonly chunks: readonly Uint8Array[] } => ({
+      (): { readonly byteLength: number; readonly chunks: Chunk.Chunk<Uint8Array> } => ({
         byteLength: 0,
-        chunks: [],
+        chunks: Chunk.empty(),
       }),
       (collected, bodyChunk) => {
         const byteLength = collected.byteLength + bodyChunk.byteLength;
         return byteLength > bounded.limit
           ? Effect.fail(new RequestRejected({ reason: "body_too_large" }))
-          : Effect.succeed({ byteLength, chunks: [...collected.chunks, bodyChunk] });
+          : Effect.succeed({ byteLength, chunks: Chunk.append(collected.chunks, bodyChunk) });
       },
     ),
-    Effect.map(({ chunks }) => {
-      const decoder = new TextDecoder();
-      return `${chunks.map((bodyChunk) => decoder.decode(bodyChunk, { stream: true })).join("")}${decoder.decode()}`;
-    }),
+    Effect.map(({ chunks }) => decodeChunks(chunks)),
     Effect.flatMap((bodyText) =>
       parseJson(bodyText).pipe(
         Effect.mapError(() => new RequestRejected({ reason: "invalid_json" })),
       ),
+    ),
+    Effect.catchIf(
+      (cause) => !Schema.is(RequestRejected)(cause),
+      (cause) => Effect.die(cause),
     ),
   );
 

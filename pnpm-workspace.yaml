@@ -9,8 +9,9 @@ overrides:
   effect@*: "catalog:"
   drizzle-orm@*: "catalog:"
   drizzle-kit@*: "catalog:"
+  "valibot@*": 1.5.0
   "@effect/platform-node-shared@*": 4.0.0-rc.112
-  eslint-plugin-react-hooks>zod-validation-error: ^4.0.2
+  eslint-plugin-react-hooks>zod-validation-error: 4.0.2
 allowBuilds:
   esbuild: true
   workerd: true
@@ -59,7 +60,8 @@ catalog:
   "@effect/atom-react": 4.0.0-rc.112
   "@effect/platform-node": 4.0.0-rc.112
   "@effect/vitest": 4.0.0-rc.112
-  "@shadcn/lint": 0.1.0
+  "@mergifyio/vitest": 0.3.7
+  "@shadcn/lint": 0.1.1
   "@tailwindcss/vite": 4.3.3
   "@tanstack/intent": 0.3.6
   "@tanstack/react-form": 1.33.5
@@ -77,11 +79,11 @@ catalog:
   class-variance-authority: 0.7.1
   cn: 0.3.0
   dependency-cruiser: 18.3.1
-  drizzle-kit: 1.0.0-rc.4
-  drizzle-orm: 1.0.0-rc.4
+  drizzle-kit: 1.0.0-rc.5-ab785fc
+  drizzle-orm: 1.0.0-rc.5-ab785fc
   effect: 4.0.0-rc.112
   es-toolkit: 1.52.0
-  lucide-react: 1.46.0
+  lucide-react: 1.47.0
   miniflare: 5.20260917.0-alpha
   motion: 13.4.0
   msw: 2.15.0
@@ -92,6 +94,7 @@ catalog:
   oxc-parser: 0.149.0
   oxc-transform-react: 0.145.0
   oxlint: 1.82.0
+  oxlint-tsgolint: 7.0.2001
   playwright: 1.63.0
   react: 19.3.0
   react-dom: 19.3.0

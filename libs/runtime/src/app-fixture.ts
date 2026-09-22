@@ -18,7 +18,7 @@ function appEnvironment(
     ...env,
     APP_ORIGIN: fixtureOrigin,
     APP_RELEASE: "test",
-    ASSETS: { fetch: async (): Promise<Response> => new Response(undefined) },
+    ASSETS: { fetch: (): Promise<Response> => Promise.resolve(new Response(undefined)) },
     AUTH_SECRET: fixtureAuthSecret,
     EMAIL_FROM: "sender@example.test",
     OPS_EMAIL: "ops@example.test",

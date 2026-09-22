@@ -5,9 +5,11 @@
   "exports": {
     ".": "./src/index.ts",
     "./local-database-path": "./src/local-database-path.ts",
+    "./realtime": "./src/realtime.ts",
     "./repository-root": "./src/repository-root.ts",
     "./storage": "./src/storage.ts",
     "./paging": "./src/paging.ts",
+    "./storage": "./src/storage.ts",
     "./worker": "./src/worker.ts",
     "./identity": "./src/identity.ts"
   },
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",

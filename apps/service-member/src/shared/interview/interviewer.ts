@@ -58,14 +58,13 @@ function request(state: InterviewState, utterance: string): string {
 }
 
 function complete(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   access: ModelAccess,
   state: InterviewState,
   utterance: string,
 ): Effect.Effect<UnderstandingData, UnderstandingFailed> {
   return Effect.tryPromise({
     catch: (cause) => new UnderstandingFailed({ cause, reason: "model_failed" }),
-    try: async () =>
+    try: () =>
       chat({
         adapter: createWorkersAiChat(model, access),
         messages: [{ content: request(state, utterance), role: "user" }],
@@ -85,7 +84,6 @@ function complete(
 class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
   "#shared/interview/Interviewer",
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public static layer(access?: ModelAccess): Layer.Layer<Interviewer> {
     return Layer.succeed(
       Interviewer,

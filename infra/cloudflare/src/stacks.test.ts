@@ -15,6 +15,7 @@ import type { StackName } from "./stacks.ts";
 
 const stackModules: Readonly<Record<string, () => Promise<unknown>>> = import.meta.glob([
   "./budget-monitor.ts",
+  "./core.ts",
   "./database.ts",
   "./email.ts",
   "./error-monitor.ts",
@@ -50,6 +51,7 @@ describe("alchemy stacks", () => {
     expect.hasAssertions();
     expect(violationsWhenLast(onboardingStack)).toStrictEqual([...sendingStacks].toSorted());
     expect(violationsWhenLast("database")).toStrictEqual([
+      "core",
       "internal-dashboard",
       "service-admin",
       "service-member",
@@ -60,16 +62,30 @@ describe("alchemy stacks", () => {
       "service-admin",
       "service-member",
     ]);
+    expect(violationsWhenLast("core")).toStrictEqual([
+      "internal-dashboard",
+      "service-admin",
+      "service-member",
+    ]);
+    expect(violationsWhenLast("storage")).toStrictEqual(["service-member"]);
+
     expect(violationsWhenLast(traceDestinationStack)).toStrictEqual([
+      "core",
       "internal-dashboard",
       "service-admin",
       "service-member",
     ]);
   });
 
-  it.for(stackNames)("%s exports the program the CLI runs", async (stack) => {
-    expect.hasAssertions();
-    const module: unknown = await stackModules[`./${stack}.ts`]?.();
-    expect(Effect.isEffect(defaultExport(module))).toBe(true);
-  });
+  it.for(stackNames)("%s exports the program the CLI runs", (stack) =>
+    Effect.runPromise(
+      Effect.gen(function* program() {
+        expect.hasAssertions();
+        const load = stackModules[`./${stack}.ts`];
+        const module: unknown =
+          load === undefined ? undefined : yield* Effect.promise(() => load());
+        expect(Effect.isEffect(defaultExport(module))).toBe(true);
+      }),
+    ),
+  );
 });

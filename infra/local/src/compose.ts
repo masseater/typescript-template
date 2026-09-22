@@ -1,15 +1,10 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
-import { spawn } from "node:child_process";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { constants } from "node:fs";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { access } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
+import { NodeServices } from "@effect/platform-node";
 import { causeRecord, runCli } from "@repo/cli";
-import { Effect, Schema } from "effect";
+import { Effect, FileSystem, Schema } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 const FIRST_USER_ARGUMENT_INDEX = 2;
 
@@ -39,30 +34,34 @@ function composeArguments(
 }
 
 const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly string[]) {
-  const bundled = yield* Effect.promise(async () =>
-    access(bundledCompose, constants.X_OK).then(
-      () => true,
-      () => false,
-    ),
-  );
+  const filesystem = yield* FileSystem.FileSystem;
+  const bundled = yield* filesystem.exists(bundledCompose).pipe(Effect.orElseSucceed(() => false));
   const failed = new LocalServicesFailure({ code: "compose_command_failed" });
-  return yield* Effect.callback<undefined, LocalServicesFailure>((resume) => {
-    const child = spawn(
-      bundled ? bundledCompose : "docker",
-      [...(bundled ? [] : ["compose"]), "-f", composeFile, ...args],
-      { cwd: root, stdio: "inherit" },
-    );
-    child.once("error", () => {
-      resume(Effect.fail(failed));
-    });
-    child.once("exit", (code) => {
-      resume(code === 0 ? Effect.undefined : Effect.fail(failed));
-    });
-  });
+  const command = bundled ? bundledCompose : "docker";
+  const commandArgs = [...(bundled ? [] : ["compose"]), "-f", composeFile, ...args];
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const exitCode = yield* spawner
+    .exitCode(
+      ChildProcess.make(command, commandArgs, {
+        cwd: root,
+        stderr: "inherit",
+        stdin: "inherit",
+        stdout: "inherit",
+      }),
+    )
+    .pipe(Effect.mapError(() => failed));
+  if (exitCode !== 0) {
+    return yield* failed;
+  }
 });
 
-runCli(composeArguments(action).pipe(Effect.flatMap(runCompose)), (cause) =>
-  causeRecord("local.services_command_failed", cause, {
-    remediation: "Check the Docker daemon, then retry the requested action.",
-  }),
+runCli(
+  composeArguments(action).pipe(Effect.flatMap(runCompose), Effect.provide(NodeServices.layer)),
+  (cause) =>
+    causeRecord("local.services_command_failed", {
+      cause,
+      fields: {
+        remediation: "Check the Docker daemon, then retry the requested action.",
+      },
+    }),
 );

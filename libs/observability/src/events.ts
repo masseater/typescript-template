@@ -11,8 +11,7 @@ const minimumHttpStatus = 100;
 
 export const maximumMeasurement = 600_000;
 
-const Measurement = Schema.Number.check(
-  Schema.isFinite(),
+const Measurement = Schema.Finite.check(
   Schema.isBetween({ maximum: maximumMeasurement, minimum: 0 }),
 );
 const sharedFields = {
@@ -21,7 +20,7 @@ const sharedFields = {
   requestId: RequestId,
   route: Schema.String,
   spanId: SpanId,
-  start: Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0)),
+  start: Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0)),
   traceId: TraceId,
   value: Measurement,
 };

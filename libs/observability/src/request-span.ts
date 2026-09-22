@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, Predicate, Tracer } from "effect";
+import { Cause, Clock, Context, Effect, Fiber, Predicate, Tracer } from "effect";
 
 import { annotateLogs, annotateSpan, withSpan } from "./annotations.ts";
 import { CurrentRequest, type RequestContext } from "./current-request.ts";
@@ -20,10 +20,21 @@ type Entropy = {
   readonly monotonicMilliseconds: () => number;
 };
 
+const nanosPerMillisecond = 1_000_000n;
+
+const activeClock = (): Clock.Clock => {
+  const fiber = Fiber.getCurrent();
+  if (fiber === undefined) {
+    throw new Error("time was read outside an Effect fiber");
+  }
+  return fiber.getRef(Clock.Clock);
+};
+
 export const RequestEntropy = Context.Reference<Entropy>("@repo/observability/RequestEntropy", {
   defaultValue: (): Entropy => ({
-    epochMilliseconds: (): number => Date.now(),
-    monotonicMilliseconds: (): number => performance.now(),
+    epochMilliseconds: (): number => activeClock().currentTimeMillisUnsafe(),
+    monotonicMilliseconds: (): number =>
+      Number(activeClock().monotonicTimeNanosUnsafe() / nanosPerMillisecond),
     requestId: (): string => crypto.randomUUID(),
   }),
 });
@@ -87,11 +98,22 @@ export const failureAttributesOf = (
   return { ...attributes, "error.fingerprint": fingerprint, "error.tag": failureTag };
 };
 
-export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> =>
-  logAt("Error", {
-    attributes: failureAttributesOf(Cause.squash(cause)),
+export const reportFailure = (cause: Readonly<Cause.Cause<unknown>>): Effect.Effect<void> => {
+  const attributes = failureAttributesOf(Cause.squash(cause));
+  return logAt("Error", {
+    attributes: {
+      "error.fingerprint": attributes["error.fingerprint"],
+      "error.locations": attributes["error.locations"],
+      ...(typeof attributes["error.type"] === "string"
+        ? { "error.type": attributes["error.type"] }
+        : {}),
+      ...(typeof attributes["error.tag"] === "string"
+        ? { "error.tag": attributes["error.tag"] }
+        : {}),
+    },
     eventName: "application.error",
   });
+};
 
 const failureMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 

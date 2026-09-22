@@ -4,7 +4,7 @@ import { STATUS_VARIANT } from "./status-variants.ts";
 
 type ToastVariant =
   | "error"
-  | (typeof STATUS_VARIANT)[keyof Omit<typeof STATUS_VARIANT, "info" | "pending">];
+  | (typeof STATUS_VARIANT)[keyof Omit<typeof STATUS_VARIANT, "empty" | "info" | "pending">];
 
 const useToast = (): ((variant: ToastVariant, title: string) => void) => {
   const { add } = ToastPrimitive.useToastManager();

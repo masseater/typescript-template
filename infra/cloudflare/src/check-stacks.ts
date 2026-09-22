@@ -1,12 +1,22 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
-import { isDeepStrictEqual } from "node:util";
+const { isDeepStrictEqual } = process.getBuiltinModule("util");
 
 import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
-import { APPLICATION, appEnvKey, applications, grants } from "@repo/config";
-import { photoBucketBinding } from "@repo/config/storage";
+import {
+  APPLICATION,
+  appEnvKey,
+  applications,
+  grants,
+  jobsQueueBinding,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  userInboxBinding,
+  userInboxClassName,
+} from "@repo/config";
+import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
+import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
 import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
@@ -14,13 +24,14 @@ import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
 import { hstsSetting } from "./config.ts";
+import { assertCoreNotPublic } from "./core-guard.ts";
 import {
   applyVerificationEnvironment,
   bindsSendEmail,
   compileStack,
   describeCause,
 } from "./inventory.ts";
-import { memberLeavePurgeCron } from "./member-leave-purge.ts";
+import { encodeJson } from "./platform.ts";
 import {
   applyOrderViolations,
   onboardingStack,
@@ -29,7 +40,7 @@ import {
   stackNames,
   stackReferences,
 } from "./stacks.ts";
-import { photoBucketName } from "./storage.ts";
+import { cacheNamespaceTitle, fileBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
 import type { Application } from "@repo/config";
@@ -98,6 +109,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.appOrigin, origins[app]),
       plainText(appEnvKey.appRelease, release),
       `${appEnvKey.authSecret}:secret_text:text=$${deploymentKey.authSecret}`,
+      `CORE:service:entrypoint=${coreEntrypoints[app]}:service=${stackName("core")}.Worker.workerName`,
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText(appEnvKey.emailFrom, mailFrom),
@@ -107,16 +119,19 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...(grants(app, "ai") ? ["AI:ai"] : []),
-      ...(grants(app, "billing")
+      ...(grants(app, "jobs")
         ? [
-            `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
-            `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
-            `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
+            `${jobsQueueBinding}:queue:queueId=<unresolved PropExpr>:queueName=<unresolved PropExpr>`,
+            `${jobsWorkflowBinding}:workflow:className=${jobsWorkflowClass}:workflowName=<unresolved EffectExpr>`,
           ]
+        : []),
+      ...(grants(app, "realtime")
+        ? [`${userInboxBinding}:durable_object_namespace:className=${userInboxClassName}`]
         : []),
       ...(grants(app, "storage")
         ? [
-            `${photoBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Photos.bucketName:jurisdiction=<unresolved ApplyExpr>`,
+            `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
+            `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
           ]
         : []),
     ].toSorted(),
@@ -127,15 +142,49 @@ function applicationResource(app: Application, release: string): ResourceInvento
         runWorkerFirst: true,
       },
       bundle: false,
-      ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
       domain: { name: new URL(origins[app]).hostname, zoneId: verificationSettings.zoneId },
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,
       rules: [{ globs: ["**/*.js", "**/*.mjs", "**/*.txt", "**/*.wasm", "**/*.map"] }],
-      ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
     },
     removalPolicy: "destroy",
     type: "Cloudflare.Worker",
+  };
+}
+
+function jobsResources(app: Application): Readonly<Record<string, ResourceInventory>> {
+  if (!grants(app, "jobs")) {
+    return {};
+  }
+  return {
+    Jobs: {
+      adopt: false,
+      bindings: [],
+      declared: {},
+      removalPolicy: "destroy",
+      type: "Cloudflare.Queues.Queue",
+    },
+    JobsConsumer: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        queueId: "<unresolved PropExpr>",
+        scriptName: "<unresolved PropExpr>",
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Queues.Consumer",
+    },
+    Process: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        className: jobsWorkflowClass,
+        scriptName: "<unresolved PropExpr>",
+        workflowName: "<unresolved EffectExpr>",
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Workflow",
+    },
   };
 }
 
@@ -202,10 +251,34 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
   app: Application,
 ) {
   const artifacts = yield* loadArtifacts(repositoryRoot, app);
-  return declaredStack(app, { Worker: applicationResource(app, artifacts.release) });
+  return declaredStack(app, {
+    ...jobsResources(app),
+    Worker: applicationResource(app, artifacts.release),
+  });
 });
 
-const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInventory>> = {
+const staticExpected: Readonly<
+  Record<Exclude<StackName, Application | "flagship">, StackInventory>
+> = {
+  core: declaredStack("core", {
+    Worker: {
+      adopt: false,
+      bindings: [
+        `${appEnvKey.authSecret}:secret_text:text=$${deploymentKey.authSecret}`,
+        `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
+        `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
+        plainText(appEnvKey.emailFrom, mailFrom),
+      ].toSorted(),
+      declared: {
+        ...sharedWorker,
+        bundle: false,
+        main: "apps/core/dist/index.js",
+        name: `${prefix}-core`,
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Worker",
+    },
+  }),
   "budget-monitor": declaredStack("budget-monitor", {
     Worker: monitorResource({
       artifact: "infra/budget-monitor/dist/index.js",
@@ -265,15 +338,6 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       ],
     }),
   }),
-  storage: declaredStack("storage", {
-    Photos: {
-      adopt: false,
-      bindings: [],
-      declared: { name: photoBucketName(prefix) },
-      removalPolicy: "retain",
-      type: "Cloudflare.R2.Bucket",
-    },
-  }),
   observability: declaredStack("observability", {
     Traces: {
       adopt: false,
@@ -287,6 +351,22 @@ const staticExpected: Readonly<Record<Exclude<StackName, Application>, StackInve
       },
       removalPolicy: "destroy",
       type: "Cloudflare.Workers.ObservabilityDestination",
+    },
+  }),
+  storage: declaredStack("storage", {
+    Cache: {
+      adopt: false,
+      bindings: [],
+      declared: { title: cacheNamespaceTitle(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.KV.Namespace",
+    },
+    Files: {
+      adopt: false,
+      bindings: [],
+      declared: { name: fileBucketName(prefix) },
+      removalPolicy: "retain",
+      type: "Cloudflare.R2.Bucket",
     },
   }),
   tokens: declaredStack("tokens", {
@@ -328,7 +408,7 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
     !isDeepStrictEqual(senders.toSorted(), [...sendingStacks].toSorted());
   if (differs) {
     yield* Console.error(
-      JSON.stringify({ event: "stacks.roles_differ", onboarding, senders, violations }),
+      yield* encodeJson({ event: "stacks.roles_differ", onboarding, senders, violations }),
     );
   }
   return differs;
@@ -337,24 +417,34 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const expected = yield* expectedStack(stack);
-  const matches = isDeepStrictEqual(inventory, expected);
-  if (!matches) {
+  const coreViolation = stack === "core" ? assertCoreNotPublic(inventory) : undefined;
+  const matches = coreViolation === undefined && isDeepStrictEqual(inventory, expected);
+  if (coreViolation !== undefined) {
     yield* Console.error(
-      JSON.stringify({ actual: inventory, event: "stacks.differs", expected, stack }),
+      yield* encodeJson({ event: "core.public_entry", stack, violation: coreViolation }),
     );
   }
-  return { matches, onboards: onboards(inventory), sends: bindsSendEmail(inventory) } as const;
+  if (!matches) {
+    yield* Console.error(
+      yield* encodeJson({ actual: inventory, event: "stacks.differs", expected, stack }),
+    );
+  }
+  return {
+    matches,
+    onboards: onboards(inventory),
+    sends: bindsSendEmail(inventory),
+  } as const;
 });
 
 runCli(
   Effect.gen(function* program() {
-    const verified = yield* Effect.all(stackNames.map((stack) => verifyStack(stack)));
+    const verified = yield* Effect.forEach(stackNames, (stack) => verifyStack(stack));
     const differs = yield* rolesDiffer(verified);
     if (differs || verified.some((entry) => !entry.matches)) {
       yield* markFailed;
       return;
     }
-    yield* Console.log(JSON.stringify({ event: "stacks.verified", stacks: stackNames.length }));
+    yield* Console.log(yield* encodeJson({ event: "stacks.verified", stacks: stackNames.length }));
   }).pipe(
     Effect.catchTag("InventoryFailure", (failure) =>
       reportFailed({

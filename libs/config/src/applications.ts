@@ -12,7 +12,7 @@ export const APPLICATION = {
 
 export const ApplicationName = Schema.Literals(applications);
 export type Application = (typeof applications)[number];
-export type ServiceName = Application | "commander";
+export type ServiceName = Application;
 
 const SERVICE_MEMBER_PORT = 3001;
 const SERVICE_ADMIN_PORT = 3002;
@@ -28,12 +28,12 @@ export const applicationReadyPaths: Readonly<Record<Application, string>> = {
   "service-member": "/login",
 };
 
-const capabilities = ["ai", "billing", "storage"] as const;
+const capabilities = ["ai", "billing", "jobs", "realtime", "storage"] as const;
 export type Capability = (typeof capabilities)[number];
 const applicationCapabilities = {
   "internal-dashboard": ["ai"],
   "service-admin": [],
-  "service-member": ["ai", "billing", "storage"],
+  "service-member": ["ai", "billing", "jobs", "realtime", "storage"],
 } as const satisfies Readonly<Record<Application, readonly Capability[]>>;
 
 export type CapabilityOf<App extends Application> = (typeof applicationCapabilities)[App][number];
@@ -48,6 +48,12 @@ export const audienceRoles: Readonly<Record<Application, Role>> = {
   "service-admin": ROLE.administrator,
   "service-member": ROLE.member,
 };
+
+export const coreEntrypoints = {
+  [APPLICATION.admin]: "AdminApi",
+  [APPLICATION.user]: "MemberApi",
+  [APPLICATION.wiki]: "InternalApi",
+} as const satisfies Readonly<Record<Application, string>>;
 
 export const loopbackAddress = "127.0.0.1";
 export const loopbackHosts: readonly string[] = ["localhost", loopbackAddress, "[::1]"];
@@ -69,5 +75,6 @@ export const storybookOrigin = `http://localhost:${STORYBOOK_PORT}`;
 const MAILPIT_PORT = 8025;
 export const mailpitPort = MAILPIT_PORT;
 export const mailpitOrigin = loopbackOrigin(MAILPIT_PORT);
+export const mailpitSendPath = "/api/v1/send";
 
 export const scalarReferencePath = "/assets/scalar-api-reference.js";

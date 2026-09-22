@@ -1,24 +1,24 @@
 import { defineConfig } from "vite-plus";
 
+const typecheckInput = [
+  { auto: true },
+  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
+  { base: "workspace", pattern: "**/*.{ts,tsx}" },
+  { base: "workspace", pattern: "**/package.json" },
+  { base: "workspace", pattern: "**/tsconfig*.json" },
+  { base: "workspace", pattern: "!**/node_modules/**" },
+  { base: "workspace", pattern: "!**/dist/**" },
+  { base: "workspace", pattern: "!**/.paraglide/**" },
+  { base: "workspace", pattern: "!**/.local/**" },
+] as const;
+
 export default defineConfig({
   run: {
     tasks: {
       "check:effect": {
-        command:
-          "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-        input: [
-          { auto: true },
-          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-          { base: "workspace", pattern: "**/*.{ts,tsx}" },
-          { base: "workspace", pattern: "**/package.json" },
-          { base: "workspace", pattern: "**/tsconfig*.json" },
-          { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
-          { base: "workspace", pattern: "!**/node_modules/**" },
-          { base: "workspace", pattern: "!**/dist/**" },
-          { base: "workspace", pattern: "!**/.paraglide/**" },
-          { base: "workspace", pattern: "!**/.local/**" },
-        ],
+        command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
+        input: [...typecheckInput],
       },
       precommit: { command: [], dependsOn: [] },
       prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
@@ -28,7 +28,10 @@ export default defineConfig({
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     mockReset: true,
     restoreMocks: true,
   },

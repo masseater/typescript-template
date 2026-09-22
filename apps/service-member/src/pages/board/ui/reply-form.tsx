@@ -1,11 +1,28 @@
 import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { pageSearch } from "#pages/board/model/board-search.ts";
 import { useReplyForm } from "#pages/board/model/reply-form.ts";
 import { maximumBoardBodyLength } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
+
+function showPosted(
+  threadId: string,
+  lastPage: number,
+  goToThread: (threadId: string, lastPage: number) => Promise<unknown>,
+  invalidate: () => Promise<unknown>,
+  notify: (kind: "success", message: string) => void,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* afterReply() {
+      yield* Effect.promise(() => goToThread(threadId, lastPage));
+      yield* Effect.promise(() => invalidate());
+      notify("success", "投稿しました。");
+    }),
+  );
+}
 
 function ReplyForm({
   lastPage,
@@ -14,12 +31,15 @@ function ReplyForm({
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showPosted(): Promise<void> {
-    await navigate({ params: { id: threadId }, search: pageSearch(lastPage), to: "/board/$id" });
-    await router.invalidate();
-    notify("success", "投稿しました。");
-  }
-  const form = useReplyForm(threadId, showPosted);
+  const form = useReplyForm(threadId, () =>
+    showPosted(
+      threadId,
+      lastPage,
+      (id, page) => navigate({ params: { id }, search: pageSearch(page), to: "/board/$id" }),
+      () => router.invalidate(),
+      notify,
+    ),
+  );
   return (
     <form onSubmit={form.handleSubmit} aria-busy={form.pending}>
       <FormColumn>

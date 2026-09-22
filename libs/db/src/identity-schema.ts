@@ -12,6 +12,7 @@ import { getAuthTables } from "better-auth/db";
 import { sql } from "drizzle-orm";
 import { createSelectSchema } from "drizzle-orm/effect-schema";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { Schema } from "effect";
 
 const { session: sessionModel, user: userModel } = getAuthTables({});
 
@@ -87,7 +88,9 @@ const session = sqliteTable(
   ],
 );
 
-const UserRow = createSelectSchema(user);
+const UserRow = createSelectSchema(user, {
+  socialLinks: Schema.Array(Schema.String),
+});
 
 type UserRecord = typeof UserRow.Type;
 

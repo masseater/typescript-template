@@ -1,6 +1,10 @@
 import { Field as FieldPrimitive } from "@base-ui/react/field";
 
 import { controlClassName, errorClassName, fieldClassName, labelClassName } from "./control";
+import {
+  fieldValidationMessageKinds,
+  useFieldValidationMessages,
+} from "./field-validation-messages";
 
 import type { ComponentProps, ReactElement } from "react";
 
@@ -36,6 +40,7 @@ const Field = ({
     | { multiline: true; type?: never }
     | { multiline?: false; type?: "email" | "password" | "search" | "text" }
   >): ReactElement => {
+  const validationMessages = useFieldValidationMessages();
   return (
     <FieldPrimitive.Root data-slot="field" invalid={error !== undefined} className={fieldClassName}>
       <FieldPrimitive.Label className={labelClassName}>{label}</FieldPrimitive.Label>
@@ -52,6 +57,11 @@ const Field = ({
         onValueChange={onValueChange}
         className={`${multiline === true ? "block field-sizing-content min-h-16" : "inline-block leading-none"} ${controlClassName}`}
       />
+      {fieldValidationMessageKinds.map((constraint) => (
+        <FieldPrimitive.Error key={constraint} match={constraint} className={errorClassName}>
+          {validationMessages[constraint]}
+        </FieldPrimitive.Error>
+      ))}
       {error === undefined ? undefined : (
         <FieldPrimitive.Error match className={errorClassName}>
           {error}

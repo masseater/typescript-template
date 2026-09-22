@@ -1,4 +1,14 @@
-import { Array as Arr, Console, Effect, Queue, Ref, Schema, Semaphore, type Cause } from "effect";
+import {
+  Array as Arr,
+  Clock,
+  Console,
+  Effect,
+  Queue,
+  Ref,
+  Schema,
+  Semaphore,
+  type Cause,
+} from "effect";
 
 import { maximumBatchSize, type BrowserEvent } from "./events.ts";
 
@@ -26,13 +36,14 @@ export type EventQueue = {
   readonly close: () => void;
 };
 
-const reportExportFailure = Console.error(
-  JSON.stringify({ event: "browser.telemetry_export_failed" }),
-);
+const encodeJson = (value: unknown): string =>
+  Effect.runSync(
+    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(Effect.orDie),
+  );
 
-const reportBatchDropped = Console.error(
-  JSON.stringify({ event: "browser.telemetry_batch_dropped" }),
-);
+const reportExportFailure = Console.error(encodeJson({ event: "browser.telemetry_export_failed" }));
+
+const reportBatchDropped = Console.error(encodeJson({ event: "browser.telemetry_batch_dropped" }));
 
 const settled = (
   delivery: Effect.Effect<void, DeliveryRefused | Cause.Done>,
@@ -52,7 +63,7 @@ export const makeEventQueue = (
   const giveUpOrRetry = (batch: readonly BrowserEvent[]): Effect.Effect<void> =>
     Effect.gen(function* giveUpOrRetryProgram() {
       const refused = yield* Ref.modify(refusals, (counted) => [counted + 1, counted + 1]);
-      yield* Ref.set(retryAt, Date.now() + backoffAfter(refused));
+      yield* Ref.set(retryAt, (yield* Clock.currentTimeMillis) + backoffAfter(refused));
       if (refused < maximumDeliveryAttempts) {
         return yield* Ref.set(retrying, batch);
       }
@@ -62,7 +73,7 @@ export const makeEventQueue = (
   const delivered = (batch: readonly BrowserEvent[]): Effect.Effect<void, DeliveryRefused> =>
     Effect.tryPromise({
       catch: (cause) => new DeliveryRefused({ cause }),
-      try: async () => deliver(batch),
+      try: () => deliver(batch),
     }).pipe(
       Effect.tapError(() => giveUpOrRetry(batch)),
       Effect.tap(() => Effect.andThen(Ref.set(refusals, 0), Ref.set(retryAt, 0))),
@@ -71,7 +82,7 @@ export const makeEventQueue = (
     Effect.gen(function* drainProgram() {
       const held = yield* Ref.getAndSet(retrying, []);
       if (
-        Date.now() < (yield* Ref.get(retryAt)) ||
+        (yield* Clock.currentTimeMillis) < (yield* Ref.get(retryAt)) ||
         (held.length === 0 && Queue.sizeUnsafe(pending) === 0)
       ) {
         yield* Ref.set(retrying, held);
@@ -89,10 +100,10 @@ export const makeEventQueue = (
     },
     enqueue: (browserEvent) => {
       if (!Queue.offerUnsafe(pending, browserEvent) && Queue.isFullUnsafe(pending)) {
-        Effect.runSync(Console.error(JSON.stringify({ event: "browser.telemetry_queue_full" })));
+        Effect.runSync(Console.error(encodeJson({ event: "browser.telemetry_queue_full" })));
       }
     },
-    flush: async () => Effect.runPromise(drainOnce),
+    flush: () => Effect.runPromise(drainOnce),
     flushBeforeUnload: () => {
       const unsent = [
         ...Effect.runSync(Ref.getAndSet(retrying, [])),
@@ -104,7 +115,7 @@ export const makeEventQueue = (
           settled(
             Effect.tryPromise({
               catch: (cause) => new DeliveryRefused({ cause }),
-              try: async () => delivery,
+              try: () => delivery,
             }),
           ),
         );

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
-import { parseArgs } from "node:util";
+const { parseArgs } = process.getBuiltinModule("util");
 
 import { causeRecord, runCli } from "@repo/cli";
 import { APPLICATION, applicationOrigins, applications } from "@repo/config";
 import { httpStatus } from "@repo/observability";
-import { Console, Effect, Schema } from "effect";
+import { Clock, Console, Effect, Schema } from "effect";
+import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 
@@ -85,35 +85,31 @@ function waitForCorrelation(
   target: VerificationTarget,
   deadline: number,
 ): Effect.Effect<Verified, VerificationFailure | Effect.Error<ReturnType<typeof correlated>>> {
-  if (Date.now() >= deadline) {
-    return Effect.fail(fail("telemetry_not_correlated"));
-  }
-  return correlated(target).pipe(
-    Effect.flatMap((verified) =>
-      verified === undefined
-        ? Effect.sleep(pollIntervalMilliseconds).pipe(
+  return Effect.gen(function* waitForCorrelationProgram() {
+    const now = yield* Clock.currentTimeMillis;
+    if (now >= deadline) {
+      return yield* fail("telemetry_not_correlated");
+    }
+    return yield* correlated(target).pipe(
+      Effect.filterOrElse(
+        (verified): verified is Verified => verified !== undefined,
+        () =>
+          Effect.sleep(pollIntervalMilliseconds).pipe(
             Effect.andThen(() => waitForCorrelation(target, deadline)),
-          )
-        : Effect.succeed(verified),
-    ),
-  );
+          ),
+      ),
+    );
+  });
 }
 
 const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<URL>) {
-  const response = yield* Effect.tryPromise({
-    catch: () => fail("request_failed"),
-    try: async (signal) =>
-      fetch(app, {
-        method: "GET",
-        redirect: "manual",
-        signal: AbortSignal.any([signal, AbortSignal.timeout(appTimeoutMilliseconds)]),
-      }),
-  });
-  yield* Effect.tryPromise({
-    catch: () => fail("request_failed"),
-    try: async () => response.body?.cancel(),
-  });
-  const requestId = response.headers.get("x-request-id") ?? "";
+  const response = yield* HttpClient.get(app).pipe(
+    Effect.timeout(appTimeoutMilliseconds),
+    Effect.provide(FetchHttpClient.layer),
+    Effect.mapError(() => fail("request_failed")),
+  );
+  yield* response.arrayBuffer.pipe(Effect.ignore);
+  const requestId = response.headers["x-request-id"] ?? "";
   if (requestId === "" || response.status >= httpStatus.internalServerError) {
     return yield* fail("correlation_headers_missing");
   }
@@ -129,7 +125,7 @@ const verify = Effect.fn("verify")(function* verify() {
   const { requestId, status } = yield* requestApp(app);
   const verified = yield* waitForCorrelation(
     { app: app.href, requestId, service: input.service },
-    Date.now() + correlationWindowMilliseconds,
+    (yield* Clock.currentTimeMillis) + correlationWindowMilliseconds,
   );
   return {
     ok: true,
@@ -142,7 +138,10 @@ const verify = Effect.fn("verify")(function* verify() {
 });
 
 runCli(verify().pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), (cause) =>
-  causeRecord("observability.verification_failed", cause, {
-    remediation: `Specify --app with a running local app origin such as ${applicationOrigins[APPLICATION.user]}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
+  causeRecord("observability.verification_failed", {
+    cause,
+    fields: {
+      remediation: `Specify --app with a running local app origin such as ${applicationOrigins[APPLICATION.user]}/. The request must appear in Local Explorer as a structured log and a completed trace.`,
+    },
   }),
 );

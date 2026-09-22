@@ -12,10 +12,8 @@
     "./local": "./src/local.ts",
     "./dashboard-literals": "./src/dashboard-literals.ts"
   },
-  "scripts": {
-    "db:generate": "drizzle-kit generate"
-  },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/config": "workspace:*",
     "better-auth": "catalog:",
     "drizzle-orm": "catalog:",

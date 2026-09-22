@@ -1,10 +1,16 @@
 import { assert, describe, it } from "@effect/vitest";
-import { SessionRequired } from "@repo/auth";
 import { Telemetry, httpStatus } from "@repo/observability";
 import { cspNonceHeader, strictTransportSecurity } from "@repo/runtime/security";
 import { Effect, Layer, Schema } from "effect";
 
-import { AppOrigin, apiRoutes, createApi, elysiaServer, secureResponse } from "./http.ts";
+import {
+  AppOrigin,
+  apiRoutes,
+  createApi,
+  elysiaServer,
+  readJsonBody,
+  secureResponse,
+} from "./http.ts";
 import { startRoute, workerRuntime } from "./worker.ts";
 
 import type { AnyElysia } from "elysia";
@@ -32,7 +38,6 @@ const telemetry = Telemetry.layer({ release: "test", routes: {}, serviceName: "s
 const context = Layer.succeed(AppOrigin, origin).pipe(Layer.provideMerge(telemetry));
 const runtime = workerRuntime(() => context);
 const api = apiRoutes(runtime, { service: "service-member" });
-const loginRequired = { message: "ログインしてください。", status: httpStatus.unauthorized };
 
 function mutation(headers: Readonly<Record<string, string>>, body: string): Request {
   return new Request(`${origin}/api/profile`, { body, headers, method: "PATCH" });
@@ -41,14 +46,14 @@ function mutation(headers: Readonly<Record<string, string>>, body: string): Requ
 function servedThroughStart(app: AnyElysia): (request: Request) => Effect.Effect<Response> {
   const { handlers } = elysiaServer(app);
   return startRoute({
-    fetch: async (request: Request): Promise<Response> => {
+    fetch: (request: Request): Promise<Response> => {
       const handle = request.method === "HEAD" ? handlers.HEAD : handlers.ANY;
       return handle({ request });
     },
   });
 }
 
-async function callApi(app: AnyElysia, request: Request): Promise<Response> {
+function callApi(app: AnyElysia, request: Request): Promise<Response> {
   return Effect.runPromise(servedThroughStart(app)(request));
 }
 
@@ -111,22 +116,69 @@ const rejections = [
   { body: "x".repeat(oversizedBody), headers: jsonHeaders, reason: "body_too_large" },
 ] as const;
 
-describe("api routes behind a start server route", () => {
-  const echo = api.route(
-    { body: EchoBody, response: EchoBody },
-    (_request, body) => Effect.succeed(body),
-    {},
+describe("json request bodies", () => {
+  it.effect("reads a bounded same-origin JSON mutation", () =>
+    Effect.gen(function* program() {
+      const body = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        name: " 利用者 ",
+        profile: "自己紹介です。",
+        socialLinks: ["https://github.com/example"],
+      });
+      const decoded = yield* readJsonBody(EchoBody, mutation(jsonHeaders, body));
+      assert.deepStrictEqual(decoded, {
+        name: "利用者",
+        profile: "自己紹介です。",
+        socialLinks: ["https://github.com/example"],
+      });
+    }).pipe(Effect.provide(context)),
   );
+
+  for (const { headers, body, reason } of rejections) {
+    it.effect(`rejects mutation because of ${reason}`, () =>
+      Effect.gen(function* program() {
+        const failure = yield* readJsonBody(EchoBody, mutation(headers, body)).pipe(Effect.flip);
+        assert.deepStrictEqual(
+          { reason: "reason" in failure ? failure.reason : undefined, tag: failure._tag },
+          { reason, tag: "RequestRejected" },
+        );
+      }).pipe(Effect.provide(context)),
+    );
+  }
+
+  it.effect("rejects unknown fields such as a self-assigned role", () =>
+    Effect.gen(function* program() {
+      const body = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        name: "reader",
+        profile: "",
+        role: "admin",
+        socialLinks: [],
+      });
+      const failure = yield* readJsonBody(EchoBody, mutation(jsonHeaders, body)).pipe(Effect.flip);
+      assert.strictEqual(failure._tag, "InputInvalid");
+    }).pipe(Effect.provide(context)),
+  );
+});
+
+describe("api routes behind a start server route", () => {
+  const echo = api.route(EchoBody, (request) => readJsonBody(EchoBody, request), {});
 
   it.effect("return validation errors without echoing submitted values", () =>
     Effect.gen(function* program() {
-      const app = createApi("").patch("/api/profile", ...echo);
+      const app = createApi("").patch("/api/profile", echo);
       const name = "private-profile-text".repeat(repeatedPrivateText);
-      const body = JSON.stringify({ name, profile: 1 });
-      const response = yield* Effect.promise(async () => callApi(app, mutation(jsonHeaders, body)));
+      const body = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        name,
+        profile: 1,
+      });
+      const response = yield* Effect.promise(() => callApi(app, mutation(jsonHeaders, body)));
       assert.strictEqual(response.status, httpStatus.badRequest);
-      const text = yield* Effect.promise(async () => response.text());
-      assert.deepStrictEqual(JSON.parse(text), { error: "入力内容を確認してください。" });
+      const text = yield* Effect.promise(() => response.text());
+      assert.deepStrictEqual(
+        yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(text),
+        {
+          error: "入力内容を確認してください。",
+        },
+      );
       assert.notInclude(text, "private-profile-text");
     }),
   );
@@ -134,45 +186,24 @@ describe("api routes behind a start server route", () => {
   for (const { headers, body, reason } of rejections) {
     it.effect(`keeps the request body readable so ${reason} is still rejected`, () =>
       Effect.gen(function* program() {
-        const app = createApi("").patch("/api/profile", ...echo);
-        const response = yield* Effect.promise(async () => callApi(app, mutation(headers, body)));
+        const app = createApi("").patch("/api/profile", echo);
+        const response = yield* Effect.promise(() => callApi(app, mutation(headers, body)));
         assert.isAtLeast(response.status, httpStatus.badRequest);
         assert.isBelow(response.status, httpStatus.internalServerError);
       }),
     );
   }
-
-  it.effect("rejects an invalid body before asking for a session", () =>
-    Effect.gen(function* program() {
-      const guarded = api.route(
-        { body: EchoBody, response: EchoBody },
-        () => Effect.fail(new SessionRequired()),
-        { SessionRequired: loginRequired },
-      );
-      const app = createApi("").patch("/api/profile", ...guarded);
-      const response = yield* Effect.promise(async () =>
-        callApi(app, mutation(jsonHeaders, JSON.stringify({ name: 1 }))),
-      );
-      assert.strictEqual(response.status, httpStatus.badRequest);
-    }),
-  );
 });
 
 describe("api responses behind a start server route", () => {
   it.effect("encode the response contract and drop fields outside it", () =>
     Effect.gen(function* program() {
       const View = Schema.Struct({ id: Schema.String });
-      const handler = api.route(
-        { response: View },
-        () => Effect.succeed({ id: "visible", profile: "x" }),
-        {},
-      );
-      const app = createApi("").get("/api/view", ...handler);
-      const response = yield* Effect.promise(async () =>
-        callApi(app, new Request(`${origin}/api/view`)),
-      );
+      const handler = api.route(View, () => Effect.succeed({ id: "visible", profile: "x" }), {});
+      const app = createApi("").get("/api/view", handler);
+      const response = yield* Effect.promise(() => callApi(app, new Request(`${origin}/api/view`)));
       assert.strictEqual(response.status, httpStatus.ok);
-      assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), { id: "visible" });
+      assert.deepStrictEqual(yield* Effect.promise(() => response.json()), { id: "visible" });
       assert.deepStrictEqual(
         [
           response.headers.get("x-frame-options"),
@@ -188,11 +219,11 @@ describe("api responses behind a start server route", () => {
   it.effect("turn unexpected failures into a generic 500 response", () =>
     Effect.gen(function* program() {
       const broken = { _tag: "Broken" } as const;
-      const handler = api.route({ response: Schema.Struct({}) }, () => Effect.fail(broken), {
+      const handler = api.route(Schema.Struct({}), () => Effect.fail(broken), {
         Broken: "unexpected",
       });
-      const app = createApi("").get("/api/broken", ...handler);
-      const response = yield* Effect.promise(async () =>
+      const app = createApi("").get("/api/broken", handler);
+      const response = yield* Effect.promise(() =>
         callApi(app, new Request(`${origin}/api/broken`)),
       );
       assert.strictEqual(response.status, httpStatus.internalServerError);
@@ -204,12 +235,12 @@ describe("api methods behind a start server route", () => {
   it.effect("answer HEAD on every route that answers GET", () =>
     Effect.gen(function* program() {
       const handler = api.route(
-        { response: Schema.Struct({ id: Schema.String }) },
+        Schema.Struct({ id: Schema.String }),
         () => Effect.succeed({ id: "visible" }),
         {},
       );
-      const app = createApi("").get("/api/view", ...handler);
-      const response = yield* Effect.promise(async () =>
+      const app = createApi("").get("/api/view", handler);
+      const response = yield* Effect.promise(() =>
         callApi(app, new Request(`${origin}/api/view`, { method: "HEAD" })),
       );
       assert.strictEqual(response.status, httpStatus.ok);
@@ -220,14 +251,14 @@ describe("api methods behind a start server route", () => {
     Effect.gen(function* program() {
       const app = createApi("").get(
         "/api/view",
-        ...api.route({ response: Schema.Struct({}) }, () => Effect.succeed({}), {}),
+        api.route(Schema.Struct({}), () => Effect.succeed({}), {}),
       );
-      const response = yield* Effect.promise(async () =>
+      const response = yield* Effect.promise(() =>
         callApi(app, new Request(`${origin}/api/missing`)),
       );
       assert.strictEqual(response.status, httpStatus.notFound);
       assert.include(response.headers.get("content-type") ?? "", "application/json");
-      assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), {
+      assert.deepStrictEqual(yield* Effect.promise(() => response.json()), {
         error: "見つかりませんでした。",
       });
     }),
@@ -242,7 +273,7 @@ describe("secure responses", () => {
         Response.json({ ready: true }, { status: created }),
       );
       assert.strictEqual(response.status, created);
-      assert.deepStrictEqual(yield* Effect.promise(async () => response.json()), { ready: true });
+      assert.deepStrictEqual(yield* Effect.promise(() => response.json()), { ready: true });
       assert.deepStrictEqual(
         [response.headers.get("cache-control"), response.headers.get("referrer-policy")],
         ["no-store", "no-referrer"],

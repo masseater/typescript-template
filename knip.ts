@@ -10,14 +10,19 @@ const loadCommands = ["src/cli.ts!", "src/ci.ts!"];
 const workspaces = {
   ".": {
     ignoreDependencies: [
-      "@effect/tsgo",
       "@effect/language-service",
+      "@effect/tsgo",
       "@shadcn/lint",
       "@swc/core",
       "dependency-cruiser",
+      "oxlint",
+      "oxlint-tsgolint",
     ],
     project: ["*.{js,ts}"],
-    vitest: { config: ["vite.config.ts", "vitest.mutation.config.ts"] },
+    vitest: {
+      config: ["vite.config.ts", "vitest.mutation.config.ts"],
+      entry: ["vitest.workers.main.ts"],
+    },
   },
   "infra/error-monitor": {
     entry: ["src/worker.ts!"],
@@ -32,6 +37,7 @@ const workspaces = {
       "src/auth-test-fixture.ts",
       "src/browser-client.ts",
       "src/mail-fixture.ts",
+      "src/testing.ts",
       "src/unexpected-status.ts",
       "src/wiki-oauth-fixture.ts",
     ],
@@ -41,12 +47,13 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/monitor": {
-    ignoreDependencies: ["cloudflare"],
     entry: ["src/mail-recorder.ts", "src/monitor-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
+  "libs/observability": {
+    entry: ["src/browser-testing.ts", "src/server-testing.ts"],
+  },
   "libs/runtime": {
-    ignoreDependencies: ["cloudflare"],
     entry: ["src/*-fixture.ts"],
     project: ["src/**/*.ts!"],
   },
@@ -69,12 +76,12 @@ const workspaces = {
     },
   },
   "tools/ai-native": {
-    ignoreBinaries: ["mkfifo"],
     ignoreDependencies: ["@tanstack/intent"],
   },
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
     entry: [
+      "dependency-cruiser.ts",
       "src/repository/dependency-cruiser.ts",
       "doctor.config.ts",
       "src/index.ts!",
@@ -96,6 +103,7 @@ const workspaces = {
 };
 
 const cloudflareStacks = [
+  "src/core.ts!",
   "src/database.ts!",
   "src/flagship.ts!",
   "src/email.ts!",
@@ -114,7 +122,7 @@ const cloudflareStacks = [
 
 const application = {
   entry: ["src/app/{router,server,start}.{ts,tsx}!", "src/app/routes/**/*.{ts,tsx}!"],
-  ignoreDependencies: ["cloudflare", "steiger"],
+  ignoreDependencies: ["steiger"],
   project: ["src/**/*.{ts,tsx}!", "src/**/*.css"],
 };
 
@@ -131,7 +139,6 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db-local": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
-  "tools/commander": ["src/app/cli.ts!", "src/app/check-start.ts!"],
   "tools/dev": [
     "src/cli.ts!",
     "src/prepare-browser.ts!",
@@ -141,16 +148,6 @@ const scripts = {
     "src/observe/symbolicate.ts!",
     "src/observe/receiver-check.ts!",
   ],
-};
-
-const commanderWorkspace = (
-  only: (...files: readonly string[]) => string[],
-): NonNullable<KnipConfiguration["workspaces"]>[string] => {
-  return {
-    entry: [...application.entry, ...only(...scripts["tools/commander"])],
-    ignoreDependencies: [...only("playwright"), "steiger"],
-    ignoreExportsUsedInFile: { interface: true },
-  };
 };
 
 const config = ({
@@ -166,8 +163,35 @@ const config = ({
     ignore: productionOnly("src/app/routeTree.gen.ts", ".paraglide/**"),
   };
   return {
-    ignoreDependencies: ["vite", "vitest"],
+    ignoreDependencies: ["vite"],
     ignoreIssues: {
+      "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/server-app.ts": ["exports"],
+      "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
+      "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/service-admin/src/shared/server-api/server-app.ts": ["exports"],
+      "apps/service-member/src/shared/server-api/board-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/contact-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/inbox/binding.ts": ["exports"],
+      "apps/service-member/src/shared/inbox/client.ts": ["exports"],
+      "apps/service-member/src/shared/inbox/inbox.ts": ["types"],
+      "apps/service-member/src/shared/inbox/inbox.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/inbox/index.ts": ["exports", "types"],
+      "apps/service-member/src/shared/server-api/jobs-api.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/jobs-api.worker.test.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/realtime-api.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/service-member/src/shared/server-api/server-app.ts": ["exports"],
+      "libs/db/src/testing.ts": ["unlisted"],
+      "libs/monitor/src/mail-recorder.ts": ["unlisted"],
+      "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/app-fixture.ts": ["unlisted"],
+      "libs/runtime/src/bindings.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/jobs.ts": ["unlisted"],
+      "libs/runtime/src/storage.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/worker-telemetry.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
     },
     treatConfigHintsAsErrors: true,
@@ -175,6 +199,11 @@ const config = ({
       ...workspaces,
       ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
       "apps/*": app,
+      "apps/core": {
+        entry: ["src/worker.ts!"],
+        ignoreDependencies: ["cloudflare"],
+        project: ["src/**/*.ts!"],
+      },
       "apps/internal-dashboard": {
         ...app,
         project: [
@@ -185,12 +214,11 @@ const config = ({
       },
       "apps/service-admin": {
         ...app,
-        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+        project: ["src/**/*.{ts,tsx}!"],
       },
       "apps/service-member": {
         ...app,
-        entry: [...app.entry, "src/shared/photo/image-fixture.ts"],
-        ignoreDependencies: [...application.ignoreDependencies, "tailwindcss"],
+        project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
         entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
@@ -212,17 +240,22 @@ const config = ({
       },
       "libs/db": {
         entry: ["src/records-fixture.ts"],
-        ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
       "libs/db-local": {
         entry: productionOnly(...scripts["libs/db-local"]),
         project: ["src/**/*.ts!"],
       },
-      "tools/commander": { ...app, ...commanderWorkspace(productionOnly) },
+      "libs/vite-config": {
+        entry: [
+          "src/cloudflare-workers-loader.mjs",
+          "src/cloudflare-workers-stub.mjs",
+          "src/cloudflare-workflows-stub.mjs",
+        ],
+      },
       "tools/dev": {
         entry: ["src/gateway.ts!", ...productionOnly(...scripts["tools/dev"])],
-        ignoreDependencies: ["playwright"],
+        ignoreDependencies: ["agent-browser", "playwright"],
         project: ["src/**/*.ts!"],
       },
       "tools/load": {

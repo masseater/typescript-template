@@ -1,8 +1,7 @@
-import { setTimeout as wait } from "node:timers/promises";
-
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { recordedDeliveries } from "./testing.ts";
+import { recordedDeliveries } from "./browser-testing.ts";
 
 const retryBackoffMilliseconds = 1000;
 const secondAttempt = 2;
@@ -23,14 +22,16 @@ const vitalEvent = {
   value: 1,
 } as const;
 
+const wait = (milliseconds: number): Promise<void> =>
+  Effect.runPromise(Effect.sleep(`${milliseconds} millis`));
+
 describe("a batch whose delivery is refused", () => {
-  const it = test.extend("deliveredBatches", async () =>
+  const it = test.extend("deliveredBatches", () =>
     recordedDeliveries({
       refuse: true,
-      exercise: async ({ flush, queue }) => {
+      exercise: ({ flush, queue }) => {
         queue.enqueue(vitalEvent);
-        await flush();
-        await flush();
+        return flush().then(() => flush());
       },
     }));
 
@@ -40,15 +41,15 @@ describe("a batch whose delivery is refused", () => {
 });
 
 describe("a batch flushed again once the backoff has passed", () => {
-  const it = test.extend("deliveredBatches", async () =>
+  const it = test.extend("deliveredBatches", () =>
     recordedDeliveries({
       refuse: true,
-      exercise: async ({ flush, queue }) => {
+      exercise: ({ flush, queue }) => {
         queue.enqueue(vitalEvent);
-        await flush();
-        await flush();
-        await wait(retryBackoffMilliseconds + settleMilliseconds);
-        await flush();
+        return flush()
+          .then(() => flush())
+          .then(() => wait(retryBackoffMilliseconds + settleMilliseconds))
+          .then(() => flush());
       },
     }));
 
@@ -58,18 +59,20 @@ describe("a batch flushed again once the backoff has passed", () => {
 });
 
 describe("a batch refused as many times as the queue allows", () => {
-  const it = test.extend("deliveredBatches", async () =>
+  const it = test.extend("deliveredBatches", () =>
     recordedDeliveries({
       refuse: true,
-      exercise: async ({ flush, queue }) => {
+      exercise: ({ flush, queue }) => {
         queue.enqueue(vitalEvent);
-        await flush();
-        await wait(retryBackoffMilliseconds + settleMilliseconds);
-        await flush();
-        await wait(retryBackoffMilliseconds * secondAttempt + settleMilliseconds);
-        await flush();
-        queue.flushBeforeUnload();
-        await wait(settleMilliseconds);
+        return flush()
+          .then(() => wait(retryBackoffMilliseconds + settleMilliseconds))
+          .then(() => flush())
+          .then(() => wait(retryBackoffMilliseconds * secondAttempt + settleMilliseconds))
+          .then(() => flush())
+          .then(() => {
+            queue.flushBeforeUnload();
+            return wait(settleMilliseconds);
+          });
       },
     }));
 

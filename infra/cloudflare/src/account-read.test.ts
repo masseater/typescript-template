@@ -21,7 +21,6 @@ const url = `https://api.cloudflare.com/client/v4/zones/${access.accountId}/dns_
 const Rows = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
 
 function mockServer(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ...handlers: Parameters<typeof setupServer>
 ): Effect.Effect<SetupServer, never, Scope.Scope> {
   return Effect.acquireRelease(
@@ -161,17 +160,18 @@ it.effect("reports a read the network never completed", () =>
 it.effect("reads an abort raised by a request deadline as a timeout", () =>
   Effect.gen(function* program() {
     yield* mockServer(
-      http.get(url, async () => {
-        await delay(RESPONSE_DELAY_MS);
-        return HttpResponse.json({ result: [] });
-      }),
+      http.get(url, () => delay(RESPONSE_DELAY_MS).then(() => HttpResponse.json({ result: [] }))),
     );
-    const aborted = yield* Effect.promise(async () =>
-      fetch(url, { signal: AbortSignal.any([AbortSignal.timeout(ABORT_DEADLINE_MS)]) }).then(
-        () => "completed",
-        (error: unknown) => error,
-      ),
-    );
+    const aborted = yield* Effect.callback<unknown>((resume) => {
+      const signal = AbortSignal.timeout(ABORT_DEADLINE_MS);
+      if (signal.aborted) {
+        resume(Effect.succeed(signal.reason));
+        return;
+      }
+      signal.addEventListener("abort", () => {
+        resume(Effect.succeed(signal.reason));
+      });
+    });
     assert.strictEqual(requestReason(aborted), "timeout");
     assert.strictEqual(requestReason(new TypeError("fetch failed")), "request_failed");
   }).pipe(Effect.scoped),

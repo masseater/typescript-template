@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { recordedDeliveries } from "./testing.ts";
+import { recordedDeliveries } from "./browser-testing.ts";
 import { stoppableVitals } from "./vital-reporting.ts";
 
 const vitalEvent = {
@@ -18,16 +18,16 @@ const vitalEvent = {
 } as const;
 
 describe("vitals reported around the stop", () => {
-  const it = test.extend("deliveredBatches", async () =>
+  const it = test.extend("deliveredBatches", () =>
     recordedDeliveries({
-      exercise: async ({ flush, queue }) => {
+      exercise: ({ flush, queue }) => {
         const vitals = stoppableVitals((metric) => {
           queue.enqueue({ ...vitalEvent, name: metric.name, value: metric.value });
         });
         vitals.report({ name: "INP", value: 1 });
         vitals.stop();
         vitals.report({ name: "LCP", value: 2 });
-        await flush();
+        return flush();
       },
     }));
 

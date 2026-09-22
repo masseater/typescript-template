@@ -1,20 +1,22 @@
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Schema } from "effect";
+import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
-import {
-  CurrentRequest,
-  RequestEntropy,
-  Telemetry,
-  ingestBrowser,
-  observeRequest,
-} from "./server.ts";
-import { fixedSpans, recordedLogs } from "./testing.ts";
+import { RequestEntropy } from "./request-span.ts";
+import { fixedSpans, recordedLogs } from "./server-testing.ts";
+import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
 
-const fixedEntropy = Layer.succeed(RequestEntropy, {
-  epochMilliseconds: () => 1_800_000_000_000,
-  monotonicMilliseconds: () => 0,
-  requestId: () => "22222222-2222-4222-8222-222222222222",
-});
+const fixedNow = 1_800_000_000_000;
+const clockEntropy = RequestEntropy.defaultValue();
+
+const fixedEntropy = Layer.merge(
+  Layer.succeed(RequestEntropy, {
+    epochMilliseconds: () => clockEntropy.epochMilliseconds(),
+    monotonicMilliseconds: () => clockEntropy.monotonicMilliseconds(),
+    requestId: () => "22222222-2222-4222-8222-222222222222",
+  }),
+  Layer.effectDiscard(TestClock.setTime(fixedNow)).pipe(Layer.provideMerge(TestClock.layer())),
+);
 
 const testOrigin = new URL("http://localhost");
 
@@ -39,7 +41,7 @@ const requestEvent = {
 
 describe("observeRequest", () => {
   describe("a request whose handler answers", () => {
-    const it = test.extend("observedResponse", async () =>
+    const it = test.extend("observedResponse", () =>
       Effect.runPromise(
         observeRequest(new Request(new URL("/?token=private", testOrigin)), () =>
           Effect.succeed(
@@ -59,10 +61,10 @@ describe("observeRequest", () => {
         ),
       ));
 
-    it("keeps the body, status and headers and adds the correlation headers", async ({
+    it("keeps the body, status and headers and adds the correlation headers", ({
       observedResponse,
-    }) => {
-      await expect(observedResponse).toHaveParsedFields({
+    }) =>
+      expect(observedResponse).toHaveParsedFields({
         status: 201,
         headers: {
           "content-type": "text/plain;charset=UTF-8",
@@ -70,12 +72,11 @@ describe("observeRequest", () => {
           ...correlationHeaders,
         },
         body: "actual response",
-      });
-    });
+      }));
   });
 
   describe("a request whose handler dies", () => {
-    const it = test.extend("observedResponse", async () =>
+    const it = test.extend("observedResponse", () =>
       Effect.runPromise(
         observeRequest(new Request(testOrigin), () =>
           Effect.die(new Error("sensitive application error")),
@@ -90,8 +91,8 @@ describe("observeRequest", () => {
         ),
       ));
 
-    it("answers a generic 500 that leaves the error message out", async ({ observedResponse }) => {
-      await expect(observedResponse).toHaveParsedFields({
+    it("answers a generic 500 that leaves the error message out", ({ observedResponse }) =>
+      expect(observedResponse).toHaveParsedFields({
         status: 500,
         headers: {
           "cache-control": "no-store",
@@ -99,12 +100,11 @@ describe("observeRequest", () => {
           ...correlationHeaders,
         },
         body: { error: "処理に失敗しました。リクエスト ID でログを確認してください。" },
-      });
-    });
+      }));
   });
 
   describe("a request carrying a browser traceparent and a request id of its own", () => {
-    const it = test.extend("observedResponse", async () =>
+    const it = test.extend("observedResponse", () =>
       Effect.runPromise(
         observeRequest(
           new Request(testOrigin, {
@@ -128,10 +128,8 @@ describe("observeRequest", () => {
         ),
       ));
 
-    it("continues the browser trace under a request id of its own", async ({
-      observedResponse,
-    }) => {
-      await expect(observedResponse).toHaveParsedFields({
+    it("continues the browser trace under a request id of its own", ({ observedResponse }) =>
+      expect(observedResponse).toHaveParsedFields({
         status: 200,
         headers: {
           "content-type": "application/json",
@@ -144,8 +142,7 @@ describe("observeRequest", () => {
           traceId: "a".repeat(32),
           traceparent: `00-${"a".repeat(32)}-${"c".repeat(16)}-01`,
         },
-      });
-    });
+      }));
   });
 });
 
@@ -181,7 +178,11 @@ describe("ingestBrowser", () => {
     [
       "a POST carrying a field the schema does not know",
       {
-        body: JSON.stringify([{ ...requestEvent, token: "private" }]),
+        body: Effect.runSync(
+          Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+            { ...requestEvent, token: "private" },
+          ]),
+        ),
         headers: { "content-type": "application/json", origin: "http://localhost" },
         method: "POST",
       },
@@ -189,7 +190,7 @@ describe("ingestBrowser", () => {
       { "cache-control": "no-store" },
     ],
   ] as const)("%s", ([, requestInit, expectedStatus, expectedHeaders]) => {
-    const it = test.extend("ingressResponse", async () =>
+    const it = test.extend("ingressResponse", () =>
       Effect.runPromise(
         ingestBrowser(new Request(new URL("/api/telemetry", testOrigin), requestInit)).pipe(
           Effect.provide(
@@ -206,13 +207,12 @@ describe("ingestBrowser", () => {
         ),
       ));
 
-    it("is refused without a body", async ({ ingressResponse }) => {
-      await expect(ingressResponse).toHaveParsedFields({
+    it("is refused without a body", ({ ingressResponse }) =>
+      expect(ingressResponse).toHaveParsedFields({
         status: expectedStatus,
         headers: expectedHeaders,
         body: null,
-      });
-    });
+      }));
   });
 
   describe.for([
@@ -224,11 +224,15 @@ describe("ingestBrowser", () => {
     [500, "stderr", "6666666666666666"],
     [0, "stderr", "7777777777777777"],
   ] as const)("a browser client span answered with %s", ([answeredStatus, stream, spanId]) => {
-    const it = test.extend("recordedStreams", async () =>
+    const it = test.extend("recordedStreams", () =>
       recordedLogs((sink) =>
         ingestBrowser(
           new Request(new URL("/api/telemetry", testOrigin), {
-            body: JSON.stringify([{ ...requestEvent, spanId, status: answeredStatus }]),
+            body: Effect.runSync(
+              Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+                { ...requestEvent, spanId, status: answeredStatus },
+              ]),
+            ),
             headers: { "content-type": "application/json", origin: "http://localhost" },
             method: "POST",
           }),
@@ -278,11 +282,13 @@ describe("ingestBrowser", () => {
   });
 
   describe("the same batch posted twice", () => {
-    const it = test.extend("reportedLogs", async () =>
+    const it = test.extend("reportedLogs", () =>
       recordedLogs((sink) => {
         const resend = ingestBrowser(
           new Request(new URL("/api/telemetry", testOrigin), {
-            body: JSON.stringify([requestEvent]),
+            body: Effect.runSync(
+              Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([requestEvent]),
+            ),
             headers: { "content-type": "application/json", origin: "http://localhost" },
             method: "POST",
           }),
@@ -330,12 +336,12 @@ describe("ingestBrowser", () => {
 });
 
 describe("browser events followed by a failing request", () => {
-  const it = test.extend("reportedLogs", async () =>
+  const it = test.extend("reportedLogs", () =>
     recordedLogs((sink) =>
       Effect.gen(function* probe() {
         yield* ingestBrowser(
           new Request(new URL("/api/telemetry", testOrigin), {
-            body: JSON.stringify([
+            body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
               { ...requestEvent, spanId: "c1c1c1c1c1c1c1c1" },
               {
                 ...requestEvent,
@@ -348,7 +354,7 @@ describe("browser events followed by a failing request", () => {
                 status: 0,
                 value: 1,
               },
-            ]),
+            ]).pipe(Effect.orDie),
             headers: { "content-type": "application/json", origin: "http://localhost" },
             method: "POST",
           }),

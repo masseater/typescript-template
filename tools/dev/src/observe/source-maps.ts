@@ -1,20 +1,19 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile, readdir } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { SourceMap } from "node:module";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
+const { SourceMap } = process.getBuiltinModule("module");
 
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
-import { Effect, Schema } from "effect";
+import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
 
-// oxlint-disable-next-line import/no-nodejs-modules
-import type { Dirent } from "node:fs";
+import { isNotFound, withFileSystem } from "../platform.ts";
+
 import type { Application } from "@repo/config";
 
 type App = Application;
 type Runtime = "client" | "server";
-type DirectoryEntry = Readonly<Pick<Dirent, "isDirectory" | "isFile" | "name">>;
+type DirectoryEntry = Readonly<{
+  readonly isDirectory: () => boolean;
+  readonly isFile: () => boolean;
+  readonly name: string;
+}>;
 type Frame =
   | {
       readonly location: string;
@@ -73,39 +72,47 @@ function invalid(): SourceMapFailure {
   return new SourceMapFailure({ reason: "source_map_invalid" });
 }
 
-function isMissing(cause: unknown): boolean {
-  return cause instanceof Error && "code" in cause && cause.code === "ENOENT";
-}
-
-function directoryEntries(directory: string): Effect.Effect<Dirent[], SourceMapFailure> {
-  return Effect.tryPromise({
-    catch: (cause): Readonly<{ missing: boolean }> => ({ missing: isMissing(cause) }),
-    try: async () => readdir(directory, { withFileTypes: true }),
-  }).pipe(
-    Effect.matchEffect({
-      onFailure: ({ missing }) => (missing ? Effect.succeed([]) : Effect.fail(unreadable())),
-      onSuccess: (entries) => Effect.succeed(entries),
-    }),
-  );
-}
-
-function entryMap(
+function directoryEntries(
   directory: string,
-  entry: DirectoryEntry,
-  filename: string,
-): Effect.Effect<string | undefined, SourceMapFailure> {
-  const candidate = path.join(directory, entry.name);
-  if (entry.isFile() && entry.name === `${filename}.map`) {
-    return Effect.succeed(candidate);
-  }
-  // oxlint-disable-next-line typescript/no-use-before-define
-  return entry.isDirectory() ? findMap(candidate, filename) : Effect.undefined;
+): Effect.Effect<DirectoryEntry[], SourceMapFailure, FileSystem.FileSystem | Path.Path> {
+  return Effect.gen(function* directoryEntriesProgram() {
+    const path = yield* Path.Path;
+    const fs = yield* FileSystem.FileSystem;
+    const names = yield* fs.readDirectory(directory).pipe(
+      Effect.catchIf(
+        (error): error is PlatformError.PlatformError => isNotFound(error),
+        () => Effect.succeed([]),
+      ),
+    );
+    return yield* Effect.forEach(names, (name) =>
+      fs.stat(path.join(directory, name)).pipe(
+        Effect.map((info) => ({
+          isDirectory: () => info.type === "Directory",
+          isFile: () => info.type === "File",
+          name,
+        })),
+      ),
+    );
+  }).pipe(Effect.mapError(() => unreadable()));
 }
 
 function findMap(
   directory: string,
   filename: string,
-): Effect.Effect<string | undefined, SourceMapFailure> {
+): Effect.Effect<string | undefined, SourceMapFailure, FileSystem.FileSystem | Path.Path> {
+  const entryMap = (
+    entryDirectory: string,
+    entry: DirectoryEntry,
+    mapFilename: string,
+  ): Effect.Effect<string | undefined, SourceMapFailure, FileSystem.FileSystem | Path.Path> =>
+    Effect.gen(function* entryMapProgram() {
+      const path = yield* Path.Path;
+      const candidate = path.join(entryDirectory, entry.name);
+      if (entry.isFile() && entry.name === `${mapFilename}.map`) {
+        return candidate;
+      }
+      return entry.isDirectory() ? yield* findMap(candidate, mapFilename) : undefined;
+    });
   return directoryEntries(directory).pipe(
     Effect.flatMap((entries) =>
       Effect.forEach(entries, (entry: DirectoryEntry) => entryMap(directory, entry, filename)),
@@ -134,11 +141,10 @@ const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   mapFile: string,
   filename: string,
 ) {
-  const text = yield* Effect.tryPromise({
-    catch: unreadable,
-    try: async () => readFile(mapFile, "utf-8"),
-  });
-  const parsed = yield* Schema.decodeUnknownEffect(Schema.fromJsonString(Payload))(text).pipe(
+  const text = yield* withFileSystem((fs) => fs.readFileString(mapFile)).pipe(
+    Effect.mapError(unreadable),
+  );
+  const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Payload))(text).pipe(
     Effect.mapError(invalid),
   );
   return yield* Effect.try({
@@ -156,18 +162,32 @@ const loadSourceMap = Effect.fn("loadSourceMap")(function* loadSourceMap(
   });
 });
 
-function repositorySource(request: Symbolication, lookup: MapLookup, fileName: string): string {
-  const builtFile = path.join(
-    request.repositoryRoot,
-    "apps",
-    request.app,
-    "dist",
-    lookup.runtime,
-    path.relative(lookup.runtimeDirectory, lookup.mapFile),
-  );
-  return path
-    .relative(request.repositoryRoot, path.resolve(path.dirname(builtFile), fileName))
-    .replaceAll(path.sep, "/");
+function repositorySource(
+  request: Symbolication,
+  lookup: MapLookup,
+  fileName: string,
+): Effect.Effect<string, never, Path.Path> {
+  return Effect.gen(function* repositorySourceProgram() {
+    const path = yield* Path.Path;
+    return path
+      .relative(
+        request.repositoryRoot,
+        path.resolve(
+          path.dirname(
+            path.join(
+              request.repositoryRoot,
+              "apps",
+              request.app,
+              "dist",
+              lookup.runtime,
+              path.relative(lookup.runtimeDirectory, lookup.mapFile),
+            ),
+          ),
+          fileName,
+        ),
+      )
+      .replaceAll(path.sep, "/");
+  });
 }
 
 const resolveWithMap = Effect.fn("resolveWithMap")(function* resolveWithMap(
@@ -189,7 +209,7 @@ const resolveWithMap = Effect.fn("resolveWithMap")(function* resolveWithMap(
     location,
     ...(name === "" ? {} : { name }),
     resolved: true,
-    source: repositorySource(request, lookup, origin.fileName),
+    source: yield* repositorySource(request, lookup, origin.fileName),
   };
   return frame;
 });
@@ -197,16 +217,20 @@ const resolveWithMap = Effect.fn("resolveWithMap")(function* resolveWithMap(
 function findCandidate(
   releaseDirectory: string,
   parsed: ParsedLocation,
-): Effect.Effect<MapCandidate | undefined, SourceMapFailure> {
+): Effect.Effect<MapCandidate | undefined, SourceMapFailure, FileSystem.FileSystem | Path.Path> {
   const runtimes: readonly Runtime[] = parsed.client ? ["client"] : ["server", "client"];
-  return Effect.forEach(runtimes, (runtime) => {
-    const runtimeDirectory = path.join(releaseDirectory, runtime);
-    return findMap(runtimeDirectory, parsed.filename).pipe(
-      Effect.map((mapFile): MapCandidate | undefined =>
-        mapFile === undefined ? undefined : { mapFile, runtime, runtimeDirectory },
-      ),
-    );
-  }).pipe(Effect.map((candidates) => candidates.find((candidate) => candidate !== undefined)));
+  return Effect.gen(function* findCandidateProgram() {
+    const path = yield* Path.Path;
+    const candidates = yield* Effect.forEach(runtimes, (runtime) => {
+      const runtimeDirectory = path.join(releaseDirectory, runtime);
+      return findMap(runtimeDirectory, parsed.filename).pipe(
+        Effect.map((mapFile): MapCandidate | undefined =>
+          mapFile === undefined ? undefined : { mapFile, runtime, runtimeDirectory },
+        ),
+      );
+    });
+    return candidates.find((candidate) => candidate !== undefined);
+  });
 }
 
 const symbolicateLocation = Effect.fn("symbolicateLocation")(function* symbolicateLocation(
@@ -218,6 +242,7 @@ const symbolicateLocation = Effect.fn("symbolicateLocation")(function* symbolica
     const invalidLocation: Frame = { location, reason: "location_invalid", resolved: false };
     return invalidLocation;
   }
+  const path = yield* Path.Path;
   const releaseDirectory = path.join(
     sourceMapDirectories(request.repositoryRoot, request.app).releases,
     request.release,
@@ -233,7 +258,7 @@ const symbolicateLocation = Effect.fn("symbolicateLocation")(function* symbolica
 function symbolicate(
   request: Symbolication,
   locations: readonly string[],
-): Effect.Effect<Frame[], SourceMapFailure> {
+): Effect.Effect<Frame[], SourceMapFailure, FileSystem.FileSystem | Path.Path> {
   return Effect.forEach(locations, (location) => symbolicateLocation(request, location), {
     concurrency: "unbounded",
   });

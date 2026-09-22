@@ -1,12 +1,19 @@
-import path from "node:path";
-
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
-import { localPhotoBucket } from "@repo/config/storage";
+import {
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+} from "@repo/config";
+import { userInboxBinding, userInboxClassName } from "@repo/config/realtime";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { localDatabase } from "@repo/db/local";
 import { loadRemoteMigrations } from "@repo/db/migrations";
 import { workerTests } from "@repo/dont-review-it";
 import { monitorBinding } from "@repo/monitor";
+import { elysiaWorkerdJit, paths } from "@repo/vite-config";
 import { Effect } from "effect";
 import { kCurrentWorker } from "miniflare";
 import { defineProject } from "vite-plus/test/config";
@@ -23,9 +30,13 @@ const migrations = loaded.map((migration) => ({
 
 export default defineProject({
   plugins: [
+    elysiaWorkerdJit(),
     cloudflareTest({
-      additionalExports: { [mailRecorder]: "WorkerEntrypoint" },
-      main: path.join(root, "libs/monitor/src/monitor-fixture.ts"),
+      additionalExports: {
+        [jobsWorkflowClass]: "WorkflowEntrypoint",
+        [mailRecorder]: "WorkerEntrypoint",
+      },
+      main: paths.join(root, "vitest.workers.main.ts"),
       miniflare: {
         bindings: {
           ALERT_FROM: "monitor@example.test",
@@ -35,11 +46,25 @@ export default defineProject({
         compatibilityDate: workerCompatibility.date,
         compatibilityFlags: [...workerCompatibility.flags],
         d1Databases: { [localDatabase.binding]: localDatabase.database_id },
-        durableObjects: { [monitorBinding]: { className: probeMonitor, useSQLite: true } },
+        durableObjects: {
+          [monitorBinding]: { className: probeMonitor, useSQLite: true },
+          [userInboxBinding]: { className: userInboxClassName, useSQLite: true },
+        },
+        kvNamespaces: { [localCacheNamespace.binding]: localCacheNamespace.id },
         outboundService: (outbound: { readonly url: string }) =>
           Response.json({ blocked: outbound.url }, { status: 403 }),
-        r2Buckets: { [localPhotoBucket.binding]: localPhotoBucket.bucket_name },
+        queueConsumers: {
+          [jobsQueueName]: { maxBatchSize: 10, maxRetries: 3 },
+        },
+        queueProducers: { [jobsQueueBinding]: jobsQueueName },
+        r2Buckets: { [localFileBucket.binding]: localFileBucket.bucket_name },
         serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
+        workflows: {
+          [jobsWorkflowBinding]: {
+            className: jobsWorkflowClass,
+            name: jobsWorkflowName,
+          },
+        },
       },
     }),
   ],
@@ -47,7 +72,7 @@ export default defineProject({
     include: [`libs/${workerTests}`, `infra/${workerTests}`, `apps/${workerTests}`],
     name: "workers",
     root,
-    setupFiles: [path.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
+    setupFiles: [paths.join(root, "tools/dont-review-it/src/vitest/parsed-fields.ts")],
     testTimeout: 30_000,
   },
 });

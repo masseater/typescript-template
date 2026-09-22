@@ -1,8 +1,3 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { readFile, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
 import { fileURLToPath } from "node:url";
 
 import { serverOnlyMarkers } from "@repo/vite-config";
@@ -13,11 +8,13 @@ import {
   assertRealDirectory,
   fail,
   fileSha256,
+  fileSize,
   files,
-  io,
   jsonSha256,
+  readFileString,
   sameContent,
 } from "./artifact-io.ts";
+import { path } from "./platform.ts";
 import { retainGenerations } from "./retention.ts";
 import {
   archiveSourceMaps,
@@ -37,6 +34,10 @@ function monitorArtifact(unit: string): string {
   return path.join(repositoryRoot, "infra", unit, "dist", MAIN_MODULE);
 }
 
+function coreArtifact(): string {
+  return path.join(repositoryRoot, "apps", "core", "dist", MAIN_MODULE);
+}
+
 const RELEASE_LENGTH = 16;
 const STAGED_DIGESTS_KEPT = 1;
 
@@ -46,11 +47,21 @@ const ArtifactWrites = Context.Reference<ArtifactMode>("@repo/infra-cloudflare/A
   defaultValue: (): ArtifactMode => "describe",
 });
 const MODULE_EXTENSIONS: ReadonlySet<string> = new Set([".js", ".mjs", ".txt", ".wasm"]);
+const PUBLIC_ASSET_EXTENSIONS: ReadonlySet<string> = new Set([
+  ".css",
+  ".eot",
+  ".otf",
+  ".ttf",
+  ".woff",
+  ".woff2",
+]);
 
 interface WorkerModule {
   readonly contentFile: string;
   readonly name: string;
 }
+
+const isPublicAsset = (file: string): boolean => PUBLIC_ASSET_EXTENSIONS.has(path.extname(file));
 
 const workerModuleGlobs = [
   ...[...MODULE_EXTENSIONS].map((extension) => `**/*${extension}`),
@@ -80,7 +91,7 @@ function privateArtifact(relative: string): boolean {
 }
 
 function carriesServerOnlyCode(file: string): Effect.Effect<boolean, ArtifactFailure> {
-  return io(async () => readFile(file, "utf-8")).pipe(
+  return readFileString(file).pipe(
     Effect.map((source) => serverOnlyMarkers.some((marker) => source.includes(marker))),
   );
 }
@@ -96,8 +107,9 @@ const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArt
   if (clientFiles.length === 0) {
     return yield* fail("client_artifacts_empty");
   }
-  const scripts = yield* Effect.all(
-    clientFiles.filter((file) => /\.m?js$/u.test(file)).map((file) => carriesServerOnlyCode(file)),
+  const scripts = yield* Effect.forEach(
+    clientFiles.filter((file) => /\.m?js$/u.test(file)),
+    (file) => carriesServerOnlyCode(file),
     { concurrency: "unbounded" },
   );
   if (scripts.includes(true)) {
@@ -106,13 +118,14 @@ const clientArtifactFiles = Effect.fn("clientArtifactFiles")(function* clientArt
   return clientFiles;
 });
 
-function assertServerCssPublished(
+function assertServerPublicAssetsPublished(
   output: BuildOutput,
-  cssFiles: readonly string[],
+  assetFiles: readonly string[],
   clientFiles: readonly string[],
 ): Effect.Effect<void, ArtifactFailure> {
-  return Effect.all(
-    cssFiles.map((file) => {
+  return Effect.forEach(
+    assetFiles,
+    (file) => {
       const publicFile = path.join(output.client, path.relative(output.server, file));
       const published = clientFiles.includes(publicFile)
         ? sameContent(file, publicFile)
@@ -120,7 +133,7 @@ function assertServerCssPublished(
       return published.pipe(
         Effect.flatMap((same) => (same ? Effect.void : fail("server_css_without_public_asset"))),
       );
-    }),
+    },
     { concurrency: "unbounded", discard: true },
   );
 }
@@ -159,14 +172,13 @@ const loadWorkerModules = Effect.fn("loadWorkerModules")(function* loadWorkerMod
   if (!serverFiles.includes(path.join(output.server, MAIN_MODULE))) {
     return yield* fail("worker_entry_missing_index_js");
   }
-  const cssFiles = serverFiles.filter((file) => path.extname(file) === ".css");
-  const code = yield* Effect.all(
-    serverFiles
-      .filter((file) => path.extname(file) !== ".css")
-      .map((file) => workerModule(output.server, file)),
+  const publicAssets = serverFiles.filter((file) => isPublicAsset(file));
+  const code = yield* Effect.forEach(
+    serverFiles.filter((file) => !isPublicAsset(file)),
+    (file) => workerModule(output.server, file),
   );
-  yield* assertServerCssPublished(output, cssFiles, clientFiles);
-  if ((yield* io(async () => stat(path.join(output.server, MAIN_MODULE)))).size === 0) {
+  yield* assertServerPublicAssetsPublished(output, publicAssets, clientFiles);
+  if ((yield* fileSize(path.join(output.server, MAIN_MODULE))) === 0) {
     return yield* fail("worker_entry_empty");
   }
   return { code, sourceMaps: sourceMapModules(output.server, allServerFiles, code) };
@@ -176,10 +188,9 @@ function manifestDigest(
   root: string,
   contentFiles: readonly string[],
 ): Effect.Effect<string, ArtifactFailure> {
-  return Effect.all(
-    contentFiles.map((file) =>
-      fileSha256(file).pipe(Effect.map((hash) => [path.relative(root, file), hash])),
-    ),
+  return Effect.forEach(
+    contentFiles,
+    (file) => fileSha256(file).pipe(Effect.map((hash) => [path.relative(root, file), hash])),
     { concurrency: "unbounded" },
   ).pipe(Effect.flatMap(jsonSha256));
 }
@@ -193,10 +204,9 @@ const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
     client: path.join(root, "client"),
     server: path.join(root, "server"),
   };
-  yield* Effect.all(
-    [root, output.server, output.client].map((directory) =>
-      assertRealDirectory(directory, "artifact_directory_symlink_forbidden"),
-    ),
+  yield* Effect.forEach(
+    [root, output.server, output.client],
+    (directory) => assertRealDirectory(directory, "artifact_directory_symlink_forbidden"),
     { discard: true },
   );
   return output;
@@ -282,5 +292,12 @@ const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
   return artifacts;
 });
 
-export { ArtifactWrites, loadArtifacts, monitorArtifact, repositoryRoot, workerModuleGlobs };
+export {
+  ArtifactWrites,
+  coreArtifact,
+  loadArtifacts,
+  monitorArtifact,
+  repositoryRoot,
+  workerModuleGlobs,
+};
 export type { ArtifactMode };

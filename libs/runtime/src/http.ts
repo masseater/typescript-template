@@ -1,44 +1,30 @@
-import { openapi } from "@elysiajs/openapi";
 import { httpStatus, readJson } from "@repo/observability";
 import { Effect, Exit, Schema, Stream } from "effect";
-import { Elysia, sse, status } from "elysia";
-import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
+import { Elysia, NotFound, sse, status } from "elysia";
+import { WebStandardAdapter } from "elysia/adapter/web-standard";
 
 import { AppOrigin } from "./app-origin.ts";
-import { failureResponse, inputFailures, reportedFailure, runtimeUnavailable } from "./failures.ts";
+import { failureResponse, reportedFailure, runtimeUnavailable } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
-import { docsPath, hidden, referencePage, routeDetail } from "./openapi.ts";
 import { jsonResponse } from "./responses.ts";
 
-import type { Application } from "@repo/config";
 import type { Reporting, RequestRejected } from "@repo/observability";
 import type { Cause } from "effect";
 import type { AnyElysia } from "elysia";
-import type { Decodable } from "./contracts.ts";
-import type {
-  AnyFailureTable,
-  ExactFailureTable,
-  Failure,
-  FailureStatus,
-  FailureTable,
-  InputKind,
-  Tagged,
-} from "./failures.ts";
-import type { Guard, RouteDetail, RouteSpec } from "./openapi.ts";
+import type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged } from "./failures.ts";
 import type { WorkerRuntime } from "./worker-runtime.ts";
 
+type Decodable = Schema.Top & { readonly DecodingServices: never };
 type Handler<Value, Failures, Requirements> = (
   request: Request,
-) => Effect.Effect<Value, Failures, Requirements>;
-type InputHandler<Input, Value, Failures, Requirements> = (
-  request: Request,
-  input: Input,
 ) => Effect.Effect<Value, Failures, Requirements>;
 interface ElysiaContext {
   readonly request: Request;
 }
 interface ElysiaStreamContext extends ElysiaContext {
-  readonly set: { readonly headers: Record<string, string | number> };
+  readonly set: {
+    readonly headers: { readonly [header: string]: string | number | string[] | undefined };
+  };
 }
 interface ServerSentEvent {
   readonly data: unknown;
@@ -52,45 +38,25 @@ type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, { readonly error: string }>>;
 type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
 interface ApiRoutes<Requirements> {
-  readonly events: <
-    Value,
-    Encoded extends ServerSentEvent,
-    Failures extends Tagged,
-    const Table extends FailureTable<Failures>,
-  >(
+  readonly events: <Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ) => readonly [
-    (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>,
-    RouteDetail,
-  ];
-  readonly guard: <Failures extends Tagged, const Table extends FailureTable<Failures>>(
-    check: Handler<unknown, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
-  ) => Guard;
-  readonly raw: <Failures extends Tagged, const Table extends FailureTable<Failures>>(
+  ) => (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>;
+  readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
-  ) => readonly [ElysiaHandler, RouteDetail];
-  readonly route: <
-    Input extends Decodable,
-    Value,
-    Encoded,
-    Failures extends Tagged,
-    const Table extends FailureTable<Failures>,
-  >(
-    spec: RouteSpec<Input, Value, Encoded>,
-    handler: InputHandler<Input["Type"], Value, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
-  ) => readonly [(context: ElysiaContext) => Promise<Encoded | Failed>, RouteDetail];
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ) => ElysiaHandler;
+  readonly route: <Value, Encoded, Failures extends Tagged>(
+    response: Schema.Codec<Value, Encoded>,
+    handler: Handler<Value, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ) => (context: ElysiaContext) => Promise<Encoded | Failed>;
 }
 
 const missingMessage = "見つかりませんでした。";
 const eventStreamType = "text/event-stream";
-const unreadBody = { unread: true } as const;
-const absentInput = undefined;
 
 function decodeInput<Contract extends Decodable>(
   schema: Contract,
@@ -121,24 +87,13 @@ function readSearchParams<Contract extends Decodable>(
 const apiRoot = "/api";
 
 function createApi<const Prefix extends string>(prefix: Prefix) {
-  return new Elysia({ adapter: CloudflareAdapter, aot: false, prefix })
-    .onParse(() => unreadBody)
-    .onError(({ code }) =>
-      code === "NOT_FOUND" ? status(httpStatus.notFound, { error: missingMessage }) : undefined,
+  return new Elysia({ adapter: WebStandardAdapter, prefix })
+    .guard({ parse: "none" })
+    .error(({ error }) =>
+      error instanceof NotFound
+        ? status(httpStatus.notFound, { error: missingMessage })
+        : undefined,
     );
-}
-
-function apiDocs(audience: Application, guard?: Guard) {
-  const documentation = openapi({
-    documentation: {
-      info: { description: `${audience} の HTTP API`, title: audience, version: "1" },
-    },
-    path: docsPath,
-    // oxlint-disable-next-line unicorn/no-null
-    provider: null,
-  });
-  const docs = new Elysia().use(documentation).get(docsPath, () => referencePage(audience), hidden);
-  return guard === undefined ? docs : new Elysia().onBeforeHandle(guard).use(docs);
 }
 
 function elysiaServer(app: AnyElysia): {
@@ -147,24 +102,30 @@ function elysiaServer(app: AnyElysia): {
     HEAD: ElysiaHandler;
   }>;
 } {
-  async function handle(context: ElysiaContext): Promise<Response> {
-    return app.fetch(context.request);
+  function handle(context: ElysiaContext): Promise<Response> {
+    return Promise.resolve(app.fetch(context.request));
   }
-  async function handleHead(context: ElysiaContext): Promise<Response> {
-    const { headers: asked, url } = context.request;
-    const response = await app.fetch(new Request(url, { headers: asked, method: "GET" }));
-    const headers = new Headers(response.headers);
-    if (headers.get("content-type")?.startsWith(eventStreamType) === true) {
-      void response.body?.cancel();
-    } else {
-      const body = await response.arrayBuffer();
-      headers.set("content-length", String(body.byteLength));
-    }
-    return new Response(undefined, {
-      headers,
-      status: response.status,
-      statusText: response.statusText,
-    });
+  function handleHead(context: ElysiaContext): Promise<Response> {
+    return Effect.runPromise(
+      Effect.gen(function* handleHeadProgram() {
+        const { headers: asked, url } = context.request;
+        const response = yield* Effect.promise(() =>
+          Promise.resolve(app.fetch(new Request(url, { headers: asked, method: "GET" }))),
+        );
+        const headers = new Headers(response.headers);
+        if (headers.get("content-type")?.startsWith(eventStreamType) === true) {
+          void response.body?.cancel();
+        } else {
+          const body = yield* Effect.promise(() => response.arrayBuffer());
+          headers.set("content-length", String(body.byteLength));
+        }
+        return new Response(undefined, {
+          headers,
+          status: response.status,
+          statusText: response.statusText,
+        });
+      }),
+    );
   }
   return {
     handlers: {
@@ -194,33 +155,18 @@ function unavailableStatus(
   return runtimeUnavailable(cause, reporting).pipe(Effect.map(failedStatus));
 }
 
-function passed(): undefined {
-  return undefined;
-}
-
 function respondRaw<Failures extends Tagged, Requirements>(
   handler: Handler<Response, Failures, Requirements>,
-  failures: AnyFailureTable,
+  failures: FailureTable<Exclude<Failures, CommonFailure>>,
 ): (request: Request) => Effect.Effect<Response, never, Requirements> {
   return (request) =>
     handler(request).pipe(Effect.catchCause((cause) => failureResponse(failures, cause)));
 }
 
-function respondGuard<Failures extends Tagged, Requirements>(
-  check: Handler<unknown, Failures, Requirements>,
-  failures: AnyFailureTable,
-): (request: Request) => Effect.Effect<Response | undefined, never, Requirements> {
-  return (request) =>
-    check(request).pipe(
-      Effect.map(passed),
-      Effect.catchCause((cause) => failureResponse(failures, cause)),
-    );
-}
-
 function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
   response: Schema.Codec<Value, Encoded>,
   handler: Handler<Value, Failures, Requirements>,
-  failures: AnyFailureTable,
+  failures: FailureTable<Exclude<Failures, CommonFailure>>,
 ): (request: Request) => Effect.Effect<Encoded | Failed, never, Requirements> {
   const encode = Schema.encodeEffect(response);
   return (request) =>
@@ -230,31 +176,6 @@ function respondValue<Value, Encoded, Failures extends Tagged, Requirements>(
     );
 }
 
-function inputKind<Input extends Decodable, Value, Encoded>(
-  spec: RouteSpec<Input, Value, Encoded>,
-): InputKind {
-  if (spec.body !== undefined) {
-    return "body";
-  }
-  return spec.query === undefined ? "none" : "query";
-}
-
-function withInput<Input extends Decodable, Value, Encoded, Failures, Requirements>(
-  spec: RouteSpec<Input, Value, Encoded>,
-  handler: InputHandler<Input["Type"], Value, Failures, Requirements>,
-): Handler<Value, Failures | RequestRejected | InputInvalid, Requirements | AppOrigin> {
-  const { body, query } = spec;
-  if (body !== undefined) {
-    return (request) =>
-      readJsonBody(body, request).pipe(Effect.flatMap((input) => handler(request, input)));
-  }
-  if (query !== undefined) {
-    return (request) =>
-      readSearchParams(query, request).pipe(Effect.flatMap((input) => handler(request, input)));
-  }
-  return (request) => handler(request, absentInput);
-}
-
 class EventFeed<Encoded extends ServerSentEvent> implements EventStream<Encoded> {
   private readonly source: AsyncIterator<Encoded>;
 
@@ -262,21 +183,24 @@ class EventFeed<Encoded extends ServerSentEvent> implements EventStream<Encoded>
     this.source = events[Symbol.asyncIterator]();
   }
 
-  public async next(): Promise<IteratorResult<Encoded, void>> {
-    const step = await this.source.next();
-    if (step.done === true) {
-      return { done: true, value: undefined };
-    }
-    const frame = sse({ data: step.value.data, event: step.value.event });
-    return { done: false, value: { ...step.value, ...frame } };
+  public next(): Promise<IteratorResult<Encoded, void>> {
+    return this.source.next().then((step) => {
+      if (step.done === true) {
+        return { done: true as const, value: undefined };
+      }
+      const frame = sse({ data: step.value.data, event: step.value.event });
+      return { done: false as const, value: { ...step.value, ...frame } };
+    });
   }
 
-  public async return(): Promise<IteratorResult<Encoded, void>> {
-    await this.source.return?.();
-    return { done: true, value: undefined };
+  public return(): Promise<IteratorResult<Encoded, void>> {
+    return Promise.resolve(this.source.return?.()).then(() => ({
+      done: true as const,
+      value: undefined,
+    }));
   }
 
-  public async throw(): Promise<IteratorResult<Encoded, void>> {
+  public throw(): Promise<IteratorResult<Encoded, void>> {
     return this.return();
   }
 
@@ -284,15 +208,15 @@ class EventFeed<Encoded extends ServerSentEvent> implements EventStream<Encoded>
     return this;
   }
 
-  public async [Symbol.asyncDispose](): Promise<void> {
-    await this.return();
+  public [Symbol.asyncDispose](): Promise<void> {
+    return this.return().then(() => undefined);
   }
 }
 
 function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tagged, Requirements>(
   event: Schema.Codec<Value, Encoded>,
   handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
-  failures: AnyFailureTable,
+  failures: FailureTable<Exclude<Failures, CommonFailure>>,
 ): (
   request: Request,
 ) => Effect.Effect<EventStream<Encoded | FailedEvent> | Failed, never, Requirements> {
@@ -323,90 +247,61 @@ function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tag
 const streamHeaders = { "cache-control": "no-store", "content-encoding": "identity" };
 
 function apiRoutes<Requirements>(
-  runtime: WorkerRuntime<AppOrigin | Requirements, unknown>,
+  runtime: WorkerRuntime<Requirements, unknown>,
   reporting: Reporting,
-): ApiRoutes<AppOrigin | Requirements> {
-  type Services = AppOrigin | Requirements;
-  async function settle<Value>(
+): ApiRoutes<Requirements> {
+  function settle<Value>(
     context: ElysiaContext,
-    program: (request: Request) => Effect.Effect<Value, never, Services>,
+    program: (request: Request) => Effect.Effect<Value, never, Requirements>,
     unavailable: (cause: Readonly<Cause.Cause<unknown>>) => Effect.Effect<Value>,
   ): Promise<Value> {
-    const exit = await runtime.runPromiseExit(program(context.request));
-    return Exit.isSuccess(exit) ? exit.value : Effect.runPromise(unavailable(exit.cause));
+    return runtime
+      .runPromiseExit(program(context.request))
+      .then((exit) =>
+        Exit.isSuccess(exit) ? exit.value : Effect.runPromise(unavailable(exit.cause)),
+      );
   }
-  function guard<Failures extends Tagged, const Table extends FailureTable<Failures>>(
-    check: Handler<unknown, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
-  ): Guard {
-    const program = respondGuard(check, failures);
-    return async (context) =>
-      settle(context, program, (cause) => unavailableResponse(cause, reporting));
+  function raw<Failures extends Tagged>(
+    handler: Handler<Response, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ): ElysiaHandler {
+    return (context): Promise<Response> =>
+      settle(context, respondRaw(handler, failures), (cause) =>
+        unavailableResponse(cause, reporting),
+      );
   }
-  function raw<Failures extends Tagged, const Table extends FailureTable<Failures>>(
-    handler: Handler<Response, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
-  ): readonly [ElysiaHandler, RouteDetail] {
-    const program = respondRaw(handler, failures);
-    return [
-      async (context): Promise<Response> =>
-        settle(context, program, (cause) => unavailableResponse(cause, reporting)),
-      hidden,
-    ];
+  function route<Value, Encoded, Failures extends Tagged>(
+    response: Schema.Codec<Value, Encoded>,
+    handler: Handler<Value, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
+  ): (context: ElysiaContext) => Promise<Encoded | Failed> {
+    return (context): Promise<Encoded | Failed> =>
+      settle(context, respondValue(response, handler, failures), (cause) =>
+        unavailableStatus(cause, reporting),
+      );
   }
-  function route<
-    Input extends Decodable,
-    Value,
-    Encoded,
-    Failures extends Tagged,
-    const Table extends FailureTable<Failures>,
-  >(
-    spec: RouteSpec<Input, Value, Encoded>,
-    handler: InputHandler<Input["Type"], Value, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
-  ): readonly [(context: ElysiaContext) => Promise<Encoded | Failed>, RouteDetail] {
-    const table: AnyFailureTable = { ...inputFailures[inputKind(spec)], ...failures };
-    const program = respondValue(spec.response, withInput(spec, handler), table);
-    return [
-      async (context): Promise<Encoded | Failed> =>
-        settle(context, program, (cause) => unavailableStatus(cause, reporting)),
-      routeDetail(spec, table),
-    ];
-  }
-  function events<
-    Value,
-    Encoded extends ServerSentEvent,
-    Failures extends Tagged,
-    const Table extends FailureTable<Failures>,
-  >(
+  function events<Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
     event: Schema.Codec<Value, Encoded>,
-    handler: Handler<Stream.Stream<Value, never, Services>, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
+    handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
+    failures: FailureTable<Exclude<Failures, CommonFailure>>,
     // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-  ): readonly [
-    (context: ElysiaStreamContext) => Promise<EventStream<Encoded> | Failed>,
-    RouteDetail,
-  ] {
+  ): (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed> {
     const open = openStream(event, handler, failures);
-    return [
-      async (context): Promise<EventStream<Encoded> | Failed> => {
-        const opened = await settle(context, open, (cause) => unavailableStatus(cause, reporting));
+    return (context): Promise<EventStream<Encoded | FailedEvent> | Failed> =>
+      settle(context, open, (cause) => unavailableStatus(cause, reporting)).then((opened) => {
         if (opened instanceof EventFeed) {
           Object.assign(context.set.headers, streamHeaders);
         }
         return opened;
-      },
-      hidden,
-    ];
+      });
   }
-  return { events, guard, raw, route };
+  return { events, raw, route };
 }
 
 export { AppOrigin } from "./app-origin.ts";
 export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
-export { failureBy } from "./failures.ts";
-export { apiDocs, apiRoot, apiRoutes, createApi, elysiaServer, readJsonBody, readSearchParams };
+export { apiRoot, apiRoutes, createApi, elysiaServer, readJsonBody, readSearchParams };
 export type { ApiRoutes };
 export type { Failure, FailureTable } from "./failures.ts";

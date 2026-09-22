@@ -26,7 +26,7 @@ function handleMcp(request: Request): Effect.Effect<Response, never, WikiService
   return Effect.gen(function* handleMcpRequest() {
     const context = yield* Effect.context<WikiServices>();
     const handler = createMcpHandler(() => createServer(context));
-    return yield* Effect.promise(async () => handler.fetch(request));
+    return yield* Effect.promise(() => handler.fetch(request));
   });
 }
 

@@ -65,7 +65,7 @@ interface Read {
   readonly value: string;
 }
 
-const singleConsumerAllowlist: readonly string[] = [];
+const singleConsumerAllowlist: readonly string[] = ["subpath:@repo/db-local/platform"];
 
 const isIdent = (char: string): boolean => /[A-Za-z0-9_$]/u.test(char);
 

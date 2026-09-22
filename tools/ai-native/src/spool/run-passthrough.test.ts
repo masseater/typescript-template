@@ -1,4 +1,5 @@
 import { standardIoTest } from "@repo/dont-review-it";
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { isPassthroughSignalled, runPassthrough } from "./run-passthrough.ts";
@@ -52,21 +53,27 @@ describe("isPassthroughSignalled", () => {
 describe("runPassthrough", () => {
   describe("a command exiting with a code of its own", () => {
     const it = standardIoTest
-      .extend("theCodeOfAPassedThroughRun", async () =>
+      .extend("theCodeOfAPassedThroughRun", () =>
         runPassthrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
           stdout: process.stdout,
           stderr: process.stderr,
           monotonicNow: () => 0,
         }),
       )
-      .extend("theSummaryOfAPassedThroughRun", async ({ stdout }) => {
-        await runPassthrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          monotonicNow: () => 0,
-        });
-        return stdout.text();
-      });
+      .extend("theSummaryOfAPassedThroughRun", ({ stdout }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              runPassthrough([NODE, "-e", EXIT_FIVE_SCRIPT], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                monotonicNow: () => 0,
+              }),
+            );
+            return stdout.text();
+          }),
+        ),
+      );
 
     it("hands the code of the command back unchanged", ({ theCodeOfAPassedThroughRun }) => {
       expect(theCodeOfAPassedThroughRun).toBe(5);
@@ -81,29 +88,41 @@ describe("runPassthrough", () => {
 
   describe("a command that cannot be started at all", () => {
     const it = standardIoTest
-      .extend("theCodeOfAPassedThroughMissingExecutable", async () =>
+      .extend("theCodeOfAPassedThroughMissingExecutable", () =>
         runPassthrough([MISSING_EXECUTABLE], {
           stdout: process.stdout,
           stderr: process.stderr,
           monotonicNow: () => 0,
         }),
       )
-      .extend("theStderrOfAPassedThroughMissingExecutable", async ({ stderr }) => {
-        await runPassthrough([MISSING_EXECUTABLE], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          monotonicNow: () => 0,
-        });
-        return stderr.text();
-      })
-      .extend("theStdoutOfAPassedThroughMissingExecutable", async ({ stdout }) => {
-        await runPassthrough([MISSING_EXECUTABLE], {
-          stdout: process.stdout,
-          stderr: process.stderr,
-          monotonicNow: () => 0,
-        });
-        return stdout.text();
-      });
+      .extend("theStderrOfAPassedThroughMissingExecutable", ({ stderr }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              runPassthrough([MISSING_EXECUTABLE], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                monotonicNow: () => 0,
+              }),
+            );
+            return stderr.text();
+          }),
+        ),
+      )
+      .extend("theStdoutOfAPassedThroughMissingExecutable", ({ stdout }) =>
+        Effect.runPromise(
+          Effect.gen(function* () {
+            yield* Effect.promise(() =>
+              runPassthrough([MISSING_EXECUTABLE], {
+                stdout: process.stdout,
+                stderr: process.stderr,
+                monotonicNow: () => 0,
+              }),
+            );
+            return stdout.text();
+          }),
+        ),
+      );
 
     it("is refused with the code kept for a command that cannot start", ({
       theCodeOfAPassedThroughMissingExecutable,
@@ -127,15 +146,21 @@ describe("runPassthrough", () => {
   });
 
   describe("a command measured just under a minute", () => {
-    const it = standardIoTest.extend("theSummaryOfARunJustUnderAMinute", async ({ stdout }) => {
-      const ticks = [0, 59_999].values();
-      await runPassthrough([NODE, "-e", SILENT_SCRIPT], {
-        stdout: process.stdout,
-        stderr: process.stderr,
-        monotonicNow: () => ticks.next().value ?? 0,
-      });
-      return stdout.text();
-    });
+    const it = standardIoTest.extend("theSummaryOfARunJustUnderAMinute", ({ stdout }) =>
+      Effect.runPromise(
+        Effect.gen(function* () {
+          const ticks = [0, 59_999].values();
+          yield* Effect.promise(() =>
+            runPassthrough([NODE, "-e", SILENT_SCRIPT], {
+              stdout: process.stdout,
+              stderr: process.stderr,
+              monotonicNow: () => ticks.next().value ?? 0,
+            }),
+          );
+          return stdout.text();
+        }),
+      ),
+    );
 
     it("keeps the elapsed time in seconds", ({ theSummaryOfARunJustUnderAMinute }) => {
       expect(theSummaryOfARunJustUnderAMinute).toBe(

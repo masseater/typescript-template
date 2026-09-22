@@ -1,6 +1,8 @@
 import { AUTHENTICATION_METHOD, ROLE } from "@repo/config";
 import { Button, Field, FormColumn, useTextInput } from "@repo/ui";
+import { Effect } from "effect";
 
+import { authTask } from "./browser-http.ts";
 import { CHALLENGE_MODE } from "./challenge-modes.ts";
 import { authClient } from "./client";
 import { requireSuccess, type SessionView } from "./protocol";
@@ -15,13 +17,43 @@ const adminLocked = (session: SessionView, recovery: string | undefined): boolea
   );
 };
 
-const enrollTotp = async (password: string): Promise<Enrollment> => {
-  const enabled = requireSuccess(await authClient.twoFactor.enable({ password }));
-  if (enabled.method !== CHALLENGE_MODE.totp) {
-    throw new Error("サーバーで TOTP 登録が有効になっていません。");
-  }
-  return { backupCodes: enabled.backupCodes, totpURI: enabled.totpURI };
-};
+const enrollTotp = (password: string): Effect.Effect<Enrollment> =>
+  Effect.gen(function* enableTotp() {
+    const enabled = requireSuccess(
+      yield* authTask(() => authClient.twoFactor.enable({ password })),
+    );
+    if (enabled.method !== CHALLENGE_MODE.totp) {
+      return yield* Effect.die(new Error("サーバーで TOTP 登録が有効になっていません。"));
+    }
+    return { backupCodes: enabled.backupCodes, totpURI: enabled.totpURI };
+  });
+
+const changeTotp = ({
+  onEnroll,
+  onNoticeClear,
+  password,
+  recovery,
+  session,
+}: {
+  readonly onEnroll: (enrollment: Enrollment) => void;
+  readonly onNoticeClear: () => void;
+  readonly password: { readonly value: string; readonly handleChange: (next: string) => void };
+  readonly recovery: string | undefined;
+  readonly session: SessionView;
+}): Effect.Effect<void> =>
+  Effect.gen(function* updateTotp() {
+    onNoticeClear();
+    if (session.user.twoFactorEnabled) {
+      requireSuccess(
+        yield* authTask(() => authClient.twoFactor.disable({ password: password.value })),
+      );
+      password.handleChange("");
+      globalThis.location.assign(recovery === "1" ? "/login?recovery=setup" : "/login");
+      return;
+    }
+    onEnroll(yield* enrollTotp(password.value));
+    password.handleChange("");
+  });
 
 const TotpPasswordForm = ({
   context,
@@ -36,17 +68,9 @@ const TotpPasswordForm = ({
   const password = useTextInput();
   const submit = (submitEvent: Readonly<Pick<SyntheticEvent, "preventDefault">>): void => {
     submitEvent.preventDefault();
-    action.run(async () => {
-      onNoticeClear();
-      if (session.user.twoFactorEnabled) {
-        requireSuccess(await authClient.twoFactor.disable({ password: password.value }));
-        password.handleChange("");
-        globalThis.location.assign(recovery === "1" ? "/login?recovery=setup" : "/login");
-        return;
-      }
-      onEnroll(await enrollTotp(password.value));
-      password.handleChange("");
-    });
+    action.run(() =>
+      Effect.runPromise(changeTotp({ onEnroll, onNoticeClear, password, recovery, session })),
+    );
   };
   return (
     <form onSubmit={submit} aria-busy={action.pending}>

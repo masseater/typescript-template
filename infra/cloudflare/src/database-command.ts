@@ -7,6 +7,7 @@ import { CloudflareFailure } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
+import { encodeJson } from "./platform.ts";
 import { runRemoteDatabaseCommand } from "./remote-command.ts";
 import { causeRecord, reportCause } from "./secrets.ts";
 
@@ -17,22 +18,18 @@ function inputInvalid(): CloudflareFailure {
   return new CloudflareFailure({ code: "database_input_invalid", keys: [] });
 }
 
-const readBootstrapEmail = Effect.tryPromise({
-  catch: inputInvalid,
-  try: async () => {
-    const chunks: unknown[] = [];
-    for await (const chunk of process.stdin) {
-      chunks.push(chunk);
-    }
-    return chunks;
-  },
-}).pipe(
-  Effect.flatMap((chunks) =>
-    chunks.every((chunk) => Buffer.isBuffer(chunk))
-      ? Effect.succeed(Buffer.concat(chunks).toString("utf-8").trim())
-      : Effect.fail(inputInvalid()),
-  ),
-);
+const readBootstrapEmail = Effect.callback<string, CloudflareFailure>((resume) => {
+  const chunks: Buffer[] = [];
+  process.stdin.on("data", (chunk: Buffer) => {
+    chunks.push(chunk);
+  });
+  process.stdin.on("error", () => {
+    resume(inputInvalid());
+  });
+  process.stdin.on("end", () => {
+    resume(Effect.succeed(Buffer.concat(chunks).toString("utf-8").trim()));
+  });
+});
 
 runCli(
   Effect.gen(function* program() {
@@ -48,7 +45,7 @@ runCli(
         databaseId,
         ...(email === "" ? {} : { email }),
       });
-      yield* Console.info(JSON.stringify(result));
+      yield* Console.info(yield* encodeJson(result));
     }).pipe(
       Effect.provide(layer()),
       Effect.scoped,

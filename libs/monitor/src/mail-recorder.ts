@@ -7,17 +7,15 @@ interface SentMail {
   readonly to: readonly string[];
 }
 
-const sent: SentMail[] = [];
-
 class MailRecorder extends WorkerEntrypoint {
-  // oxlint-disable-next-line eslint/class-methods-use-this
+  static readonly #mailbox: SentMail[] = [];
+
   public send(message: SentMail): void {
-    sent.push(message);
+    (this.constructor as typeof MailRecorder).#mailbox.push(message);
   }
 
-  // oxlint-disable-next-line eslint/class-methods-use-this
   public taken(): SentMail[] {
-    return sent.splice(0);
+    return (this.constructor as typeof MailRecorder).#mailbox.splice(0);
   }
 }
 

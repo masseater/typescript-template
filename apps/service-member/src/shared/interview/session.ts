@@ -123,7 +123,6 @@ const saveInterview = Effect.fn("interview.save")(function* saveInterview(userId
 
 const restartInterview = Effect.fn("interview.restart")(function* restartInterview(userId: string) {
   const { version } = yield* current(userId);
-  // oxlint-disable-next-line unicorn/no-null
   return yield* replace(userId, version, { savedSheet: null, state: begin() });
 });
 

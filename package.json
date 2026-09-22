@@ -3,11 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "vp config --no-agent && vp run --filter @repo/dev prepare-browser"
+    "prepare": "vp config --no-agent && vp run --filter @repo/dev prepare-browser && effect-tsgo patch --typescript --oxlint"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/tsgo": "0.45.0",
+    "@mergifyio/vitest": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/db-local": "workspace:*",
@@ -24,6 +25,8 @@
     "effect": "catalog:",
     "knip": "6.35.1",
     "miniflare": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
@@ -39,7 +42,7 @@
   "engines": {
     "node": ">=26.9.0"
   },
-  "packageManager": "pnpm@12.4.1",
+  "packageManager": "pnpm@12.4.2",
   "normativeDocuments": {
     "fileName": "AGENTS.md",
     "directories": [

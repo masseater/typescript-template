@@ -1,14 +1,7 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { randomBytes } from "node:crypto";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { mkdir, stat } from "node:fs/promises";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
-
 import { applications } from "@repo/config";
-import { Effect, Schema } from "effect";
+import { Crypto, Effect, FileSystem, Path, PlatformError, Schema } from "effect";
 
-import { failure, fileIo } from "./failure.ts";
+import { failure } from "./failure.ts";
 import {
   OriginMode,
   credentialsFile,
@@ -16,13 +9,13 @@ import {
   readCredentials,
   refreshBrowserConfig,
 } from "./local-environment.ts";
+import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
+import { privateDirectoryMode, replacePrivateFile, writePrivateFile } from "./private-files.ts";
 import {
-  isErrorCode,
-  privateDirectoryMode,
-  replacePrivateFile,
-  writePrivateFile,
-} from "./private-files.ts";
-import { appVariables, sharedRunnerCredentials } from "./shared-runner-credentials.ts";
+  appVariables,
+  ciCredentials,
+  sharedRunnerCredentials,
+} from "./shared-runner-credentials.ts";
 
 import type { LocalCommandFailure } from "./failure.ts";
 import type { App, Credentials } from "./local-environment.ts";
@@ -37,26 +30,37 @@ interface SetupReport {
 }
 
 const authSecretBytes = 48;
-const jsonIndentation = 2;
 
-function credentialsExist(): Effect.Effect<boolean, LocalCommandFailure> {
-  return Effect.tryPromise({
-    catch: (cause): Readonly<{ missing: boolean }> => ({ missing: isErrorCode(cause, "ENOENT") }),
-    try: async () => stat(credentialsFile),
-  }).pipe(
-    Effect.matchEffect({
-      onFailure: ({ missing }) =>
-        missing ? Effect.succeed(false) : Effect.fail(failure("file_io_failed")),
-      onSuccess: () => Effect.succeed(true),
-    }),
+function credentialsExist(): Effect.Effect<
+  boolean,
+  LocalCommandFailure,
+  FileSystem.FileSystem | Path.Path
+> {
+  return urlPath(credentialsFile).pipe(
+    Effect.flatMap((path) =>
+      FileSystem.FileSystem.pipe(
+        Effect.flatMap((fs) => fs.stat(path)),
+        Effect.as(true),
+        Effect.catchIf(
+          (error): error is PlatformError.PlatformError => isNotFound(error),
+          () => Effect.succeed(false),
+        ),
+      ),
+    ),
   );
 }
 
 const loadOrCreateCredentials = Effect.fn("loadOrCreateCredentials")(
   function* loadOrCreateCredentials() {
     if (!(yield* credentialsExist())) {
-      const authSecret = randomBytes(authSecretBytes).toString("base64url");
-      const content = JSON.stringify({ authSecret }, undefined, jsonIndentation);
+      const bytes = yield* Crypto.Crypto.pipe(
+        Effect.flatMap((crypto) => crypto.randomBytes(authSecretBytes)),
+        Effect.mapError(() => failure("file_io_failed")),
+      );
+      const authSecret = Buffer.from(bytes).toString("base64url");
+      const content = yield* Schema.encodeEffect(
+        Schema.fromJsonString(Schema.Struct({ authSecret: Schema.String })),
+      )({ authSecret }).pipe(Effect.orDie);
       yield* writePrivateFile(credentialsFile, `${content}\n`);
     }
     return yield* readCredentials();
@@ -67,7 +71,7 @@ function writeAppVariables(
   app: App,
   credentials: Credentials,
   mode: typeof OriginMode.Type,
-): Effect.Effect<void, LocalCommandFailure> {
+): Effect.Effect<void, LocalCommandFailure, FileSystem.FileSystem | Path.Path> {
   const content = `${Object.entries(appVariables(app, credentials, mode))
     .map(([key, value]: readonly [string, string]) => `${key}=${JSON.stringify(value)}`)
     .join("\n")}\n`;
@@ -84,27 +88,37 @@ const rememberOrigins = Effect.fn("rememberOrigins")(function* rememberOrigins(
   );
   const credentials = { ...stored, origins };
   if (stored.origins !== origins) {
-    yield* replacePrivateFile(
-      credentialsFile,
-      `${JSON.stringify(credentials, undefined, jsonIndentation)}\n`,
-    );
+    const content = yield* Schema.encodeEffect(
+      Schema.fromJsonString(
+        Schema.Struct({
+          authSecret: Schema.String,
+          origins: OriginMode,
+        }),
+      ),
+    )(credentials).pipe(Effect.orDie);
+    yield* replacePrivateFile(credentialsFile, `${content}\n`);
   }
   return credentials;
 });
 
 const setup = Effect.fn("setup")(function* setup(args: readonly string[]) {
-  yield* fileIo(async () => mkdir(local, { mode: privateDirectoryMode, recursive: true }));
-  yield* fileIo(async () =>
-    mkdir(new URL("logs/", local), { mode: privateDirectoryMode, recursive: true }),
+  const localPath = yield* urlPath(local);
+  yield* withFileSystem((fs) =>
+    fs.makeDirectory(localPath, { mode: privateDirectoryMode, recursive: true }),
+  );
+  const logsPath = yield* urlPath(new URL("logs/", local));
+  yield* withFileSystem((fs) =>
+    fs.makeDirectory(logsPath, { mode: privateDirectoryMode, recursive: true }),
   );
   yield* refreshBrowserConfig();
-  const credentials =
-    "CI" in process.env ? sharedRunnerCredentials() : yield* rememberOrigins(args);
+  const credentials = ciCredentials()
+    ? yield* sharedRunnerCredentials()
+    : yield* rememberOrigins(args);
   yield* Effect.forEach(applications, (app) =>
     writeAppVariables(app, credentials, credentials.origins),
   );
   const report: SetupReport = {
-    credentialsFile: fileURLToPath(credentialsFile),
+    credentialsFile: yield* urlPath(credentialsFile),
     event: "local.app_configuration_ready",
     ok: true,
     origins: credentials.origins,

@@ -1,6 +1,7 @@
+import { Effect } from "effect";
 import { expect, screen, userEvent } from "storybook/test";
 
-import preview from "../../../storybook/preview";
+import preview, { playTask } from "../../../storybook/preview";
 import { Button } from "./button";
 import { STATUS_VARIANT } from "./status-variants.ts";
 import { ToastProvider } from "./toast-provider";
@@ -34,8 +35,14 @@ export const Default = meta.story();
 
 export const Success = meta.story({
   parameters: { a11y: { config: { rules: [{ enabled: false, id: "aria-hidden-focus" }] } } },
-  play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("button", { name: "成功の通知を出す" }));
-    await expect(await screen.findByText("利用者の権限を変更しました。")).toBeInTheDocument();
-  },
+  play: ({ canvas }) =>
+    Effect.runPromise(
+      Effect.gen(function* showSuccessToast() {
+        yield* playTask(() =>
+          userEvent.click(canvas.getByRole("button", { name: "成功の通知を出す" })),
+        );
+        const toast = yield* playTask(() => screen.findByText("利用者の権限を変更しました。"));
+        yield* playTask(() => expect(toast).toBeInTheDocument());
+      }),
+    ),
 });

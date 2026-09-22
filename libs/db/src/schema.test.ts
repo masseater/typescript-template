@@ -20,19 +20,19 @@ const snapshots: Readonly<Record<string, Parameters<typeof generateMigration>[0]
 describe("the applied migrations", () => {
   describe("compared with a database built from the models alone", () => {
     const it = test
-      .extend("appliedDatabase", async () =>
+      .extend("appliedDatabase", () =>
         Effect.runPromise(
           Effect.gen(function* fromMigrations() {
             yield* migrateD1(yield* TestBinding);
             return yield* describeDatabase();
           }).pipe(Effect.provide(EmptyTestDatabase)),
         ))
-      .extend("modelledDatabase", async () =>
+      .extend("modelledDatabase", () =>
         Effect.runPromise(
           Effect.gen(function* fromModels() {
-            const modelled = yield* Effect.promise(async () =>
-              generateMigration(await generateDrizzleJson({}), await generateDrizzleJson(schema)),
-            );
+            const empty = yield* Effect.promise(() => generateDrizzleJson({}));
+            const modelledSchema = yield* Effect.promise(() => generateDrizzleJson(schema));
+            const modelled = yield* Effect.promise(() => generateMigration(empty, modelledSchema));
             yield* Effect.forEach(modelled, (statement) => runStatement(statement), {
               discard: true,
             });
@@ -55,7 +55,7 @@ describe("the applied migrations", () => {
   });
 
   describe("the triggers they install", () => {
-    const it = test.extend("appliedTriggers", async () =>
+    const it = test.extend("appliedTriggers", () =>
       Effect.runPromise(
         Effect.gen(function* triggersOf() {
           yield* migrateD1(yield* TestBinding);
@@ -83,7 +83,7 @@ describe("the applied migrations", () => {
   });
 
   describe("the primary keys they declare", () => {
-    const it = test.extend("primaryKeyNotNull", async () =>
+    const it = test.extend("primaryKeyNotNull", () =>
       Effect.runPromise(
         Effect.gen(function* primaryKeysOf() {
           yield* migrateD1(yield* TestBinding);
@@ -99,16 +99,21 @@ describe("the applied migrations", () => {
 
 describe("the models", () => {
   describe("compared with the latest migration snapshot", () => {
-    const it = test.extend("pendingStatements", async () => {
-      const latestMigration = (await Effect.runPromise(loadRemoteMigrations())).at(-1);
-      const applied =
-        latestMigration === undefined
-          ? undefined
-          : snapshots[`../migrations/${latestMigration.name}/snapshot.json`];
-      return applied === undefined
-        ? ["no migration snapshot found"]
-        : generateMigration(applied, await generateDrizzleJson(schema));
-    });
+    const it = test.extend("pendingStatements", () =>
+      Effect.runPromise(
+        Effect.gen(function* pending() {
+          const latestMigration = (yield* loadRemoteMigrations()).at(-1);
+          const applied =
+            latestMigration === undefined
+              ? undefined
+              : snapshots[`../migrations/${latestMigration.name}/snapshot.json`];
+          if (applied === undefined) {
+            return ["no migration snapshot found"];
+          }
+          const drizzleJson = yield* Effect.promise(() => generateDrizzleJson(schema));
+          return yield* Effect.promise(() => generateMigration(applied, drizzleJson));
+        }),
+      ));
 
     it("need no further migration", ({ pendingStatements }) => {
       expect(pendingStatements).toStrictEqual([]);
@@ -116,10 +121,13 @@ describe("the models", () => {
   });
 
   describe("compared with what drizzle-kit reads from the module exports", () => {
-    const it = test.extend("driftStatements", async () =>
-      generateMigration(
-        await generateDrizzleJson(schemaModule),
-        await generateDrizzleJson(schema),
+    const it = test.extend("driftStatements", () =>
+      Effect.runPromise(
+        Effect.gen(function* drift() {
+          const fromModule = yield* Effect.promise(() => generateDrizzleJson(schemaModule));
+          const fromSchema = yield* Effect.promise(() => generateDrizzleJson(schema));
+          return yield* Effect.promise(() => generateMigration(fromModule, fromSchema));
+        }),
       ));
 
     it("expose every table, so generate never drops one", ({ driftStatements }) => {

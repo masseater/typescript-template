@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,26 +16,12 @@ concurrency:
 jobs:
   check:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'mergify/merge-queue/')
-    runs-on: &runner ${{ fromJSON(vars.CI_RUNNER || '"ubuntu-latest"') }}
+    runs-on: &runner ubuntu-latest
     timeout-minutes: 15
     steps:
       - &checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          clean: ${{ vars.CI_RUNNER == '' }}
-      - &stop-leftovers
-        if: vars.CI_RUNNER != ''
-        run: |
-          pkill -9 -f "${GITHUB_WORKSPACE}/node_modules/.pnpm/.*/bin/workerd " || true
-          pkill -9 -f "${GITHUB_WORKSPACE}/node_modules/.pnpm/vite-plus.*/dist/bin.js run" || true
-      - &clean-workspace
-        if: vars.CI_RUNNER != ''
-        run: git clean -ffdx -e node_modules -e .local -e dist -e .wrangler -e .alchemy -e .artifacts -e .spool
-      - &reset-local-database
-        if: vars.CI_RUNNER != ''
-        run: rm -rf .local/d1
       - &browser-cache
-        if: vars.CI_RUNNER == ''
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
@@ -43,28 +30,40 @@ jobs:
         uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
         with:
           node-version-file: package.json
-          cache: ${{ vars.CI_RUNNER == '' }}
+          cache: true
       - &vite-task-cache
         id: vite-task-cache
-        if: vars.CI_RUNNER == ''
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
           key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             vite-task-${{ runner.os }}-${{ runner.arch }}-
-      - &task-cache-share
-        if: vars.CI_TASK_CACHE_DIR != ''
+      - id: affected
         env:
-          SHARED_TASK_CACHE: ${{ vars.CI_TASK_CACHE_DIR }}
-        run: |
-          mkdir -p "$SHARED_TASK_CACHE" node_modules/.vite
-          rm -rf node_modules/.vite/task-cache
-          ln -s "$SHARED_TASK_CACHE" node_modules/.vite/task-cache
-      - run: vp check
-      - run: vp run -r prepr
+          GH_TOKEN: ${{ github.token }}
+          PR_FILES_PATH: ${{ runner.temp }}/pr-files.txt
+        run: gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[] | .filename, .previous_filename // empty' > "$PR_FILES_PATH" && vp run --filter @repo/dont-review-it pr-affected
+      - if: steps.affected.outputs.scope == 'all'
+        run: vp run -r prepr
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+      - if: steps.affected.outputs.scope == 'subset'
+        run: vp run -w prepr
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+      - if: steps.affected.outputs.scope == 'subset'
+        env:
+          AFFECTED_FILTERS: ${{ steps.affected.outputs.filters }}
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+        run: vp run --fail-if-no-match $AFFECTED_FILTERS prepr
+      - if: steps.affected.outputs.scope == 'subset'
+        env:
+          AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+        run: vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && vars.CI_RUNNER == ''
+        if: always()
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
@@ -72,17 +71,20 @@ jobs:
   merge-queue:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - *checkout
-      - *stop-leftovers
-      - *clean-workspace
-      - *reset-local-database
       - *browser-cache
       - *setup
       - *vite-task-cache
-      - *task-cache-share
       - run: vp run -r premerge
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always()
+        with:
+          path: node_modules/.vite/task-cache
+          key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
 
   e2e:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
@@ -90,24 +92,24 @@ jobs:
     timeout-minutes: 15
     steps:
       - *checkout
-      - *stop-leftovers
-      - *clean-workspace
       - *browser-cache
       - *setup
       - *vite-task-cache
-      - *task-cache-share
       - run: vp run --filter @repo/e2e test:e2e
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
 
   cache:
-    if: github.event_name == 'push' && vars.CI_RUNNER == ''
+    if: github.event_name == 'push'
     runs-on: *runner
     timeout-minutes: 15
     steps:
       - *checkout
       - *browser-cache
       - *setup
-      - run: vp check
       - run: vp run -r prepr
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache

@@ -28,7 +28,7 @@ const origin = "http://localhost:3001";
 const bucket: R2Bucket = await Effect.runPromise(
   Effect.map(readStorage(env), (found) => {
     if (found === undefined) {
-      throw new TypeError("the worker test pool has no PHOTOS bucket");
+      throw new TypeError("the worker test pool has no FILES bucket");
     }
     return found;
   }),

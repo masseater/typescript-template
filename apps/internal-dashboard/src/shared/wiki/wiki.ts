@@ -10,17 +10,16 @@ import { readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
 import { Embedder, embedWith } from "./embedder.ts";
-import { readWikiConfig, type WikiConfig } from "./wiki-config.ts";
 
 import type { AuthFailure } from "@repo/auth";
 import type { AppConfig, ConfigurationInvalid } from "@repo/config";
-import type { FeatureFlags } from "@repo/feature-flags";
+import type { FeatureFlags, FlagEditorAccess } from "@repo/feature-flags";
 import type { TelemetryInvalid } from "@repo/observability";
 import type { AppServices } from "@repo/runtime";
 
 const wikiService = APPLICATION.wiki;
 
-type WikiServices = AppServices | Embedder | FeatureFlags;
+type WikiServices = AppServices | Embedder | FeatureFlags | FlagEditorAccess;
 
 const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
   assertEditor: (user) =>

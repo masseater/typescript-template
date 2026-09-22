@@ -73,7 +73,9 @@ class PhotoStore extends Context.Service<PhotoStore, PhotoStoreShape>()(
   }
 
   public static fromEnvironment(env: unknown): Layer.Layer<PhotoStore, ConfigurationInvalid> {
-    return Layer.unwrap(Effect.map(readStorage(env), (bucket) => PhotoStore.layer(bucket)));
+    return Layer.unwrap(
+      Effect.map(readStorage(env), (storage) => PhotoStore.layer(storage.files)),
+    );
   }
 }
 

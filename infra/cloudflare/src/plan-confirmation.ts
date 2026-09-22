@@ -1,8 +1,6 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { createHash } from "node:crypto";
-
+import { NodeServices } from "@effect/platform-node";
 import { ExprSymbol, isExpr as isOutputExpr } from "alchemy/Output";
-import { Effect, Predicate, Redacted } from "effect";
+import { Crypto, Effect, Predicate, Redacted } from "effect";
 
 import { CONFIRMATION_LENGTH, CloudflareFailure } from "./config.ts";
 
@@ -47,54 +45,52 @@ type PlannedStack = Pick<StackRoute.PlanSnapshot, "actions" | "resources" | "sta
   readonly props: Readonly<Record<string, unknown>>;
 };
 
+const crypto = Effect.runSync(Effect.provide(Crypto.Crypto, NodeServices.layer));
+
 function digest(value: unknown): string {
-  return createHash("sha256")
-    .update(JSON.stringify({ value }))
-    .digest("hex")
-    .slice(0, CONFIRMATION_LENGTH);
+  const encoded = new TextEncoder().encode(JSON.stringify({ value }));
+  const hash = Effect.runSync(crypto.digest("SHA-256", encoded));
+  return Buffer.from(hash).toString("hex").slice(0, CONFIRMATION_LENGTH);
 }
 
 const EXPRESSION_FIELDS = ["expr", "f", "identifier", "kind", "resourceId", "stack", "stage"];
 
-function stableExpression(value: object, seen: ReadonlySet<unknown>): unknown {
-  const node: unknown = Reflect.get(value, ExprSymbol);
-  if (!Predicate.isObject(node)) {
-    return { kind: "expression" };
-  }
-  const nested = new Set([...seen, value, node]);
-  const source: unknown = Reflect.get(node, "src");
-  const logicalId: unknown = Predicate.isObject(source)
-    ? Reflect.get(source, "LogicalId")
-    : undefined;
-  return {
-    ...Object.fromEntries(
-      EXPRESSION_FIELDS.flatMap((field) => {
-        const found: unknown = Reflect.get(node, field);
-        // oxlint-disable-next-line typescript/no-use-before-define
-        return found === undefined ? [] : [[field, stable(found, nested)] as const];
-      }),
-    ),
-    ...(typeof logicalId === "string" ? { logicalId } : {}),
-  };
-}
-
-function stableEntries(value: object, seen: ReadonlySet<unknown>): unknown {
-  const nested = new Set([...seen, value]);
-  if (Array.isArray(value)) {
-    // oxlint-disable-next-line typescript/no-use-before-define
-    return value.map((item: unknown) => stable(item, nested));
-  }
-  return Object.fromEntries(
-    Object.entries(value)
-      .toSorted(([left]: readonly [string, unknown], [right]: readonly [string, unknown]) =>
-        left.localeCompare(right),
-      )
-      // oxlint-disable-next-line typescript/no-use-before-define
-      .map(([key, item]: readonly [string, unknown]) => [key, stable(item, nested)] as const),
-  );
-}
-
 function stable(value: unknown, seen: ReadonlySet<unknown>): unknown {
+  const stableExpression = (expression: object, expressionSeen: ReadonlySet<unknown>): unknown => {
+    const node: unknown = Reflect.get(expression, ExprSymbol);
+    if (!Predicate.isObject(node)) {
+      return { kind: "expression" };
+    }
+    const nested = new Set([...expressionSeen, expression, node]);
+    const source: unknown = Reflect.get(node, "src");
+    const logicalId: unknown = Predicate.isObject(source)
+      ? Reflect.get(source, "LogicalId")
+      : undefined;
+    return {
+      ...Object.fromEntries(
+        EXPRESSION_FIELDS.flatMap((field) => {
+          const found: unknown = Reflect.get(node, field);
+          return found === undefined ? [] : [[field, stable(found, nested)] as const];
+        }),
+      ),
+      ...(typeof logicalId === "string" ? { logicalId } : {}),
+    };
+  };
+
+  const stableEntries = (entries: object, entriesSeen: ReadonlySet<unknown>): unknown => {
+    const nested = new Set([...entriesSeen, entries]);
+    if (Array.isArray(entries)) {
+      return entries.map((item: unknown) => stable(item, nested));
+    }
+    return Object.fromEntries(
+      Object.entries(entries)
+        .toSorted(([left]: readonly [string, unknown], [right]: readonly [string, unknown]) =>
+          left.localeCompare(right),
+        )
+        .map(([key, item]: readonly [string, unknown]) => [key, stable(item, nested)] as const),
+    );
+  };
+
   if (Redacted.isRedacted(value)) {
     return { redacted: digest(String(Redacted.value(value))) };
   }
@@ -193,19 +189,15 @@ function refusedRows(planned: PlannedStack): readonly Refusal[] {
   ];
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function resourceProps(nodes: Plan["resources"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ([fqn, node]: readonly [string, Plan["resources"][string]]) =>
       [fqn, node.action === "noop" ? undefined : node.props] as const,
   );
 }
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
 function actionInputs(nodes: Plan["actions"]): readonly (readonly [string, unknown])[] {
   return Object.entries(nodes).map(
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
     ([fqn, node]: readonly [string, Plan["actions"][string]]) =>
       [fqn, node.action === "run" ? node.input : undefined] as const,
   );
@@ -232,20 +224,16 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   const refusals = refusedRows(planned);
   const code = refusals[0]?.code;
   if (code !== undefined) {
-    return yield* Effect.fail(
-      new CloudflareFailure({
-        code,
-        keys: refusals.filter((row) => row.code === code).map((row) => row.id),
-      }),
-    );
+    return yield* new CloudflareFailure({
+      code,
+      keys: refusals.filter((row) => row.code === code).map((row) => row.id),
+    });
   }
   if (planConfirmation(planned, approval.accountId) !== approval.confirmation) {
-    return yield* Effect.fail(
-      new CloudflareFailure({
-        code: "plan_confirmation_mismatch",
-        keys: [planned.stack.name],
-      }),
-    );
+    return yield* new CloudflareFailure({
+      code: "plan_confirmation_mismatch",
+      keys: [planned.stack.name],
+    });
   }
 });
 

@@ -91,15 +91,15 @@ function pageNumber(
   fallback: number,
   minimum: number,
   maximum: number,
-): Schema.withDecodingDefaultKey<Schema.NumberFromString> {
+): Schema.withDecodingDefaultKey<Schema.FiniteFromString> {
   const range = Schema.isBetween({ maximum, minimum });
-  const bounded = Schema.NumberFromString.check(Schema.isInt(), range);
+  const bounded = Schema.FiniteFromString.check(Schema.isInt(), range);
   const fallbackText = Effect.succeed(String(fallback));
   return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
 }
 
 const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
-const JsonScalar = Schema.Union([Schema.String, Schema.Number, Schema.Boolean, Schema.Null]);
+const JsonScalar = Schema.Union([Schema.String, Schema.Finite, Schema.Boolean, Schema.Null]);
 const ScalarText = JsonScalar.pipe(
   Schema.decodeTo(Schema.String, {
     decode: SchemaGetter.transform<string, string | number | boolean | null>(String),
@@ -109,7 +109,7 @@ const ScalarText = JsonScalar.pipe(
 const SearchKeyword = ScalarText.pipe(Schema.decodeTo(UserKeyword));
 
 function laterPage(maximum: number): Schema.Codec<number, number | string> {
-  return Schema.Union([Schema.Number, Schema.NumberFromString]).check(
+  return Schema.Union([Schema.Finite, Schema.FiniteFromString]).check(
     Schema.isInt(),
     Schema.isBetween({ maximum, minimum: secondPage }),
   );

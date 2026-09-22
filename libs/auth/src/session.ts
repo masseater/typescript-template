@@ -1,6 +1,6 @@
 import { audienceRoles, type Application } from "@repo/config";
 import { lookupSessionByToken } from "@repo/db";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
 import { AdminRequired } from "./admin-required.ts";
@@ -19,12 +19,15 @@ const requireSessionSecurity = Effect.fn("requireSessionSecurity")(function* req
   if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
     return yield* new SessionRequired();
   }
-  const token = yield* Effect.promise(async () => sessionTokenFrom(headers, cookiePrefix, secret));
+  const token = yield* sessionTokenFrom(headers, cookiePrefix, secret);
   if (token === undefined) {
     return yield* new SessionRequired();
   }
   const current = yield* lookupSessionByToken(token);
-  if (current === undefined || current.session.expiresAt <= new Date()) {
+  if (
+    current === undefined ||
+    current.session.expiresAt.getTime() <= DateTime.toEpochMillis(yield* DateTime.now)
+  ) {
     return yield* new SessionRequired();
   }
   if (!sessionIsLive(current, audience)) {

@@ -1,5 +1,4 @@
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
+import { env as processEnvironment } from "node:process";
 
 import { APPLICATION, applicationOrigins } from "@repo/config";
 import { Effect } from "effect";
@@ -15,7 +14,8 @@ import {
   root,
   run,
 } from "./local-environment.ts";
-import { ensureOperators, operatorFile } from "./operator-account.ts";
+import { ensureOperator, operatorFile } from "./operator-account.ts";
+import { urlPath } from "./platform.ts";
 
 import type { App, Credentials } from "./local-environment.ts";
 import type { Operator } from "./operator-account.ts";
@@ -37,11 +37,9 @@ function sessionName(app: App): string {
   return `template-local-${app}`;
 }
 
-const postLoginPaths: Readonly<Record<App, string>> = {
-  [APPLICATION.admin]: "/members",
-  [APPLICATION.user]: "/home",
-  [APPLICATION.wiki]: "/",
-};
+function postLoginPath(app: App): string {
+  return app === APPLICATION.admin ? "/members" : "/home";
+}
 
 function configuredOrigin(app: App, credentials: Credentials): string {
   return credentials.origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
@@ -53,7 +51,8 @@ const sessionArguments = Effect.fn("sessionArguments")(function* sessionArgument
 ) {
   const launch =
     credentials.origins === "loopback" ? ([] as const) : yield* browserLaunchArguments();
-  return ["--config", fileURLToPath(browserConfig), ...launch, "--session", sessionName(app)];
+  const config = yield* urlPath(browserConfig);
+  return ["--config", config, ...launch, "--session", sessionName(app)];
 });
 
 const agent = Effect.fn("agent")(function* agent(
@@ -62,8 +61,7 @@ const agent = Effect.fn("agent")(function* agent(
   socketDirectory: string,
   args: readonly string[],
 ) {
-  // oxlint-disable-next-line node/no-process-env
-  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run("agent-browser", [...(yield* sessionArguments(app, credentials)), ...args], {
     cwd: root,
     env,
@@ -109,7 +107,7 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
     "document.querySelector('form')?.requestSubmit(); true",
   ]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
-  yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPaths[app]}`]);
+  yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPath(app)}`]);
   yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   return origin;
 });
@@ -119,7 +117,7 @@ const authenticate = Effect.fn("authenticate")(function* authenticate(
   _args: readonly string[] = [],
 ) {
   const credentials = yield* readCredentials();
-  const operator = (yield* ensureOperators())[app];
+  const operator = yield* ensureOperator();
   const origin = yield* signInThroughBrowser(app, credentials, operator).pipe(
     Effect.mapError(() => failure("browser_authentication_failed")),
   );
@@ -128,7 +126,7 @@ const authenticate = Effect.fn("authenticate")(function* authenticate(
     email: operator.email,
     event: "local.browser_authenticated",
     ok: true,
-    operatorFile: fileURLToPath(operatorFile),
+    operatorFile: yield* urlPath(operatorFile),
     origin,
     secretsPrinted: false,
     session: sessionName(app),

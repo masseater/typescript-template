@@ -7,10 +7,6 @@
     "#paraglide/*": "./.paraglide/*",
     "#*": "./src/*"
   },
-  "scripts": {
-    "dev": "vp dev",
-    "preview": "vp preview"
-  },
   "dependencies": {
     "@effect/atom-react": "catalog:",
     "@inlang/paraglide-js": "catalog:",
@@ -41,7 +37,6 @@
     "@types/react-dom": "catalog:",
     "jiti": "2.7.0",
     "steiger": "catalog:",
-    "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"

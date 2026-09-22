@@ -1,5 +1,9 @@
 import { APPLICATION } from "@repo/config";
-import { flagshipFeatureFlagsLayer, memoryFeatureFlagsLayer } from "@repo/feature-flags";
+import {
+  type FeatureFlags,
+  flagshipFeatureFlagsLayer,
+  memoryFeatureFlagsLayer,
+} from "@repo/feature-flags";
 import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
@@ -10,7 +14,7 @@ import { Interviewer } from "#shared/interview/server.ts";
 import { PhotoStore } from "#shared/photo/index.ts";
 import { ProfileLayoutAssembler } from "#shared/profile-layout/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
-import { opsMailLayer } from "./ops-mail.ts";
+import { OpsMail, opsMailLayer } from "./ops-mail.ts";
 
 import type { Reporting } from "@repo/observability";
 
@@ -21,7 +25,7 @@ const runtime = workerRuntime(() =>
     appLayer(env, service, routes),
     Layer.unwrap(
       readWorkerConfig(env).pipe(
-        Effect.map((config) =>
+        Effect.map((config): Layer.Layer<FeatureFlags | OpsMail> =>
           Layer.mergeAll(
             opsMailLayer(config),
             config.FLAGS === undefined
