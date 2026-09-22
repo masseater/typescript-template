@@ -8,11 +8,12 @@ class RequiredMergifyReporter extends MergifyReporter {
     reason: "passed" | "failed" | "interrupted",
   ): Promise<void> {
     await super.onTestRunEnd(testModules, unhandledErrors, reason);
-    const token = process.env.MERGIFY_TOKEN;
+    const token = process.env["MERGIFY_TOKEN"];
     if (!token) {
       return;
     }
-    if (process.env.CI === undefined || process.env.CI === "") {
+    const ci = process.env["CI"];
+    if (ci === undefined || ci === "") {
       return;
     }
     if (this.getSink() === undefined) {
