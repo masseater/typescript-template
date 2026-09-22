@@ -36,11 +36,7 @@ type FailureTable<Failures extends Tagged> = {
   readonly [Tag in Failures["_tag"]]: FailureEntry<Extract<Failures, { readonly _tag: Tag }>>;
 };
 type ExactFailureTable<_Failures extends Tagged, Table> = Table;
-type AnyFailureEntry =
-  | Failure
-  | "unexpected"
-  | FailureMapping<any>
-  | ((error: any) => Failure);
+type AnyFailureEntry = Failure | "unexpected" | FailureMapping<any> | ((error: any) => Failure);
 type AnyFailureTable = Readonly<Record<string, AnyFailureEntry>>;
 type InputKind = "body" | "none" | "query";
 

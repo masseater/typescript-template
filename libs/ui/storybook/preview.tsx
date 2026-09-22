@@ -23,23 +23,23 @@ const japaneseFieldValidationMessages = {
   valueMissing: "入力してください。",
 } as const;
 
+const withQueryRouter = (story: ReactElement): ReactElement => (
+  <QueryClientProvider
+    client={
+      new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+      })
+    }
+  >
+    <RouterContextProvider router={router}>{story}</RouterContextProvider>
+  </QueryClientProvider>
+);
+
 const withProviders = (Story: () => ReactElement): ReactElement => {
   return (
     <BaseWebProvider>
       <FieldValidationMessageProvider messages={japaneseFieldValidationMessages}>
-        <RegistryProvider>
-          <QueryClientProvider
-            client={
-              new QueryClient({
-                defaultOptions: { queries: { retry: false } },
-              })
-            }
-          >
-            <RouterContextProvider router={router}>
-              <Story />
-            </RouterContextProvider>
-          </QueryClientProvider>
-        </RegistryProvider>
+        <RegistryProvider>{withQueryRouter(<Story />)}</RegistryProvider>
       </FieldValidationMessageProvider>
     </BaseWebProvider>
   );

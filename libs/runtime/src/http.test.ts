@@ -212,7 +212,10 @@ describe("api responses behind a start server route", () => {
   it.effect("encode the response contract and drop fields outside it", () =>
     Effect.gen(function* program() {
       const View = Schema.Struct({ id: Schema.String });
-      const app = createApi("").get("/api/view", ...api.route({ response: View }, () => Effect.succeed({ id: "visible", profile: "x" }), {}));
+      const app = createApi("").get(
+        "/api/view",
+        ...api.route({ response: View }, () => Effect.succeed({ id: "visible", profile: "x" }), {}),
+      );
       const response = yield* Effect.promise(() => callApi(app, new Request(`${origin}/api/view`)));
       assert.strictEqual(response.status, httpStatus.ok);
       assert.deepStrictEqual(yield* Effect.promise(() => response.json()), { id: "visible" });
@@ -231,9 +234,12 @@ describe("api responses behind a start server route", () => {
   it.effect("turn unexpected failures into a generic 500 response", () =>
     Effect.gen(function* program() {
       const broken = { _tag: "Broken" } as const;
-      const app = createApi("").get("/api/broken", ...api.route({ response: Schema.Struct({}) }, () => Effect.fail(broken), {
-        Broken: "unexpected",
-      }));
+      const app = createApi("").get(
+        "/api/broken",
+        ...api.route({ response: Schema.Struct({}) }, () => Effect.fail(broken), {
+          Broken: "unexpected",
+        }),
+      );
       const response = yield* Effect.promise(() =>
         callApi(app, new Request(`${origin}/api/broken`)),
       );

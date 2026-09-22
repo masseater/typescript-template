@@ -9,21 +9,18 @@ import type { SettingsContext } from "./mfa-types";
 
 const PasskeySettings = ({ context }: Readonly<{ context: SettingsContext }>): ReactElement => {
   const { listError, passkeys, reload } = usePasskeys();
-  const refresh = (): void => {
-    void reload();
-  };
   return (
     <>
       <PasskeyRegisterForm
         context={context}
         onRegistered={() => {
-          void reload();
+          reload();
           return Promise.resolve();
         }}
       />
       <PasskeyList action={context.action} listError={listError} passkeys={passkeys} />
-      <Button type="button" disabled={context.action.blocked} onClick={refresh}>
-        パスキー一覧を更新
+      <Button type="button" disabled={context.action.blocked} onClick={reload}>
+        {"パスキー一覧を更新"}
       </Button>
     </>
   );

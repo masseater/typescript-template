@@ -1,4 +1,3 @@
-import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import {
   applicationPorts,
@@ -10,7 +9,6 @@ import {
   jobsWorkflowClass,
   jobsWorkflowName,
   loopbackAddress,
-  scalarReferencePath,
   type Application,
 } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
@@ -35,6 +33,7 @@ import { devBoundary } from "./dev-boundary.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
+import { scalarReference } from "./scalar-reference.ts";
 
 const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
   filesystem.readFileString(paths.join(appRoot, ".dev.vars")).pipe(
@@ -71,43 +70,6 @@ const previewDevVars = (appRoot: string): Plugin => {
     name: "template-preview-dev-vars",
   };
 };
-
-const scalarReferenceEntry = fileURLToPath(import.meta.resolve("@scalar/api-reference"));
-const scalarReferenceSource = paths.join(
-  paths.dirname(scalarReferenceEntry),
-  "browser/standalone.js",
-);
-
-const readScalarReference = (): Effect.Effect<string> =>
-  filesystem.readFileString(scalarReferenceSource).pipe(Effect.orDie);
-
-const scalarReference = (): Plugin => ({
-  applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "client",
-  configureServer(server) {
-    server.middlewares.use(scalarReferencePath, (_request, response, next) => {
-      void Effect.runPromise(readScalarReference()).then(
-        (source) => {
-          response.setHeader("content-type", "text/javascript");
-          response.end(source);
-        },
-        next,
-      );
-    });
-  },
-  generateBundle() {
-    const emit = (file: Readonly<{ fileName: string; source: string; type: "asset" }>): void => {
-      this.emitFile(file);
-    };
-    return Effect.runPromise(
-      readScalarReference().pipe(
-        Effect.map((source) => {
-          emit({ fileName: scalarReferencePath.slice(1), source, type: "asset" });
-        }),
-      ),
-    );
-  },
-  name: "template-scalar-reference",
-});
 
 const clientReachableModules = [
   "libs/runtime/src/client.ts",
@@ -483,10 +445,8 @@ export {
   lifecycles,
   paraglideAppRun,
   previewDevVars,
-  readScalarReference,
   workspaceParaglideCompile,
   reactCompiler,
-  scalarReference,
   serverOnlyMarkers,
   serverOnlyPackages,
   generatedDirectories,
@@ -500,5 +460,6 @@ export {
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
+export { readScalarReference, scalarReference } from "./scalar-reference.ts";
 export type { Tasks };
 export { devBoundary };

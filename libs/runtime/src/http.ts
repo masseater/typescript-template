@@ -4,7 +4,13 @@ import { Elysia, NotFound, sse, status } from "elysia";
 import { WebStandardAdapter } from "elysia/adapter/web-standard";
 
 import { AppOrigin } from "./app-origin.ts";
-import { failureBody, failureResponse, inputFailures, reportedFailure, runtimeUnavailable } from "./failures.ts";
+import {
+  failureBody,
+  failureResponse,
+  inputFailures,
+  reportedFailure,
+  runtimeUnavailable,
+} from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
 import { docsPath, hidden, openApiDocument, referencePage, routeDetail } from "./openapi.ts";
 import { jsonResponse } from "./responses.ts";

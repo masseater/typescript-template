@@ -66,7 +66,10 @@ function staffApi<Requirements = never>(api: ApiRoutes<AppServices | Requirement
     .use(inviteApi(api))
     .get("/staff", ...api.route({ response: StaffList }, listMembers, failures))
     .post("/staff/invites", ...api.route({ response: StaffInvited }, inviteMember, failures))
-    .patch("/staff", ...api.route({ response: StaffPermissionChanged }, changeMemberPermission, failures))
+    .patch(
+      "/staff",
+      ...api.route({ response: StaffPermissionChanged }, changeMemberPermission, failures),
+    )
     .delete("/staff", ...api.route({ response: StaffRemoved }, removeMember, failures));
 }
 

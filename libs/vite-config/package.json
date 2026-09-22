@@ -13,13 +13,13 @@
     "@effect/tsgo": "0.45.0",
     "@inlang/paraglide-js": "catalog:",
     "@repo/config": "workspace:*",
+    "@scalar/api-reference": "1.69.0",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "effect": "catalog:",
     "elysia": "2.0.0-beta.16",
-    "vite-plus": "catalog:",
-    "@scalar/api-reference": "1.69.0"
+    "vite-plus": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

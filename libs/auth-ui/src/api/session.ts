@@ -5,12 +5,6 @@ import { Effect } from "effect";
 import { browserGet } from "../browser-http.ts";
 import { SessionView, decodeJson, type SessionView as SessionData } from "../protocol.ts";
 
-type SessionLoader = () => Promise<SessionData | undefined>;
-
-const sessionEndpoint = "/api/session";
-
-const sessionKey = ["auth", "session"] as const;
-
 const requestSession = (endpoint: string): Effect.Effect<SessionData | undefined> =>
   Effect.gen(function* readSession() {
     const served = yield* browserGet(endpoint, { cache: "no-store", credentials: "same-origin" });
@@ -25,8 +19,14 @@ const requestSession = (endpoint: string): Effect.Effect<SessionData | undefined
     return decodeJson(SessionView, yield* served.json.pipe(Effect.orDie));
   });
 
+type SessionLoader = () => Promise<SessionData | undefined>;
+
+const sessionEndpoint = "/api/session";
+
 const loadBrowserSession: SessionLoader = (): Promise<SessionData | undefined> =>
   Effect.runPromise(requestSession(sessionEndpoint));
+
+const sessionKey = ["auth", "session"] as const;
 
 const sessionOptions = queryOptions<
   SessionData | undefined,

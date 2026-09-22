@@ -23,7 +23,10 @@ it.effect("documents every route the api serves", () =>
         Telemetry.layer({ release: "test", routes: {}, serviceName: APPLICATION.user }),
       ),
     );
-    const api = apiRoutes(workerRuntime(() => context), { service: APPLICATION.user });
+    const api = apiRoutes(
+      workerRuntime(() => context),
+      { service: APPLICATION.user },
+    );
     const app = createApi(apiRoot)
       .use(apiDocs(APPLICATION.user))
       .get("/profile", ...api.route({ response: ProfileView }, () => Effect.succeed(stored), {}));

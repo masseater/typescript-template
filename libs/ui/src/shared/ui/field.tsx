@@ -62,10 +62,10 @@ const Field = ({
   >): ReactElement => {
   const validationMessages = useFieldValidationMessages();
   const [constraintMessage, setConstraintMessage] = useConstraintMessage();
+  const shownError = error ?? constraintMessage;
   const syncConstraintMessage = (validity: globalThis.ValidityState): void => {
     setConstraintMessage(messageForValidity(validity, validationMessages));
   };
-  const shownError = error ?? constraintMessage;
   const control =
     multiline === true ? (
       <textarea

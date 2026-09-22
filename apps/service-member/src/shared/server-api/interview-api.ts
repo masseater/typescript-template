@@ -72,7 +72,10 @@ function interviewApi(api: ApiRoutes<AppServices | Interviewer | ProfileLayoutAs
     .get("/interview", ...api.route({ response: InterviewView }, open, failures))
     .post("/interview/turns", ...api.route({ response: InterviewView }, turn, failures))
     .post("/interview/sheet", ...api.route({ response: InterviewView }, saveSheet, failures))
-    .post("/interview/history-consent", ...api.route({ response: InterviewView }, historyConsent, failures))
+    .post(
+      "/interview/history-consent",
+      ...api.route({ response: InterviewView }, historyConsent, failures),
+    )
     .post("/interview/restart", ...api.route({ response: InterviewView }, restart, failures));
 }
 
