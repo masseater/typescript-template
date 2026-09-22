@@ -1,0 +1,57 @@
+import { createLightTheme, type Theme } from "baseui";
+
+const appTheme: Theme = createLightTheme({
+  colors: {
+    accent: "#9a3412",
+    accent50: "#f3eee4",
+    accent100: "#e6dfd2",
+    accent200: "#d9d0c1",
+    accent300: "#b3a794",
+    accent400: "#8d8376",
+    accent500: "#9a3412",
+    accent600: "#7c2a0e",
+    accent700: "#7c2a0e",
+    backgroundPrimary: "#fffdf8",
+    backgroundSecondary: "#f6f1e8",
+    backgroundTertiary: "#efe9de",
+    borderOpaque: "#d9d0c1",
+    borderSelected: "#1c1916",
+    borderTransparent: "rgba(28, 25, 22, 0.15)",
+    buttonPrimaryFill: "#9a3412",
+    buttonPrimaryHover: "#7c2a0e",
+    buttonPrimaryText: "#fffdf8",
+    buttonSecondaryFill: "#fffdf8",
+    buttonSecondaryHover: "#f3eee4",
+    buttonSecondaryText: "#1c1916",
+    contentPrimary: "#1c1916",
+    contentSecondary: "#5e574e",
+    contentTertiary: "#8d8376",
+    negative: "#b01d3a",
+    negative50: "#f6f1e8",
+    negative100: "#e6dfd2",
+    negative200: "#d9d0c1",
+    negative300: "#b3a794",
+    negative400: "#931832",
+    negative500: "#b01d3a",
+    negative600: "#931832",
+    negative700: "#931832",
+    positive: "#1c6b40",
+    warning: "#e6b000",
+  },
+  typography: {
+    ParagraphMedium: {
+      fontFamily: '"Zen Kaku Gothic New", sans-serif',
+      fontSize: "1rem",
+      fontWeight: 400,
+      lineHeight: "1.5",
+    },
+    LabelMedium: {
+      fontFamily: '"Zen Kaku Gothic New", sans-serif',
+      fontSize: "1rem",
+      fontWeight: 700,
+      lineHeight: "1.25",
+    },
+  },
+});
+
+export { appTheme };

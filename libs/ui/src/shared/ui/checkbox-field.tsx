@@ -1,7 +1,4 @@
-import { Field as FieldPrimitive } from "@base-ui/react/field";
-
 import { Checkbox } from "./checkbox";
-import { labelClassName } from "./control";
 
 import type { ReactElement } from "react";
 
@@ -21,7 +18,7 @@ const CheckboxField = ({
   onCheckedChange: (checked: boolean) => void;
 }>): ReactElement => {
   return (
-    <FieldPrimitive.Root data-slot="field" className="flex w-fit items-center gap-2">
+    <label data-slot="field" className="flex w-fit cursor-pointer items-center gap-2">
       <Checkbox
         aria-label={ariaLabel ?? label}
         checked={checked}
@@ -29,10 +26,8 @@ const CheckboxField = ({
         name={name}
         onCheckedChange={onCheckedChange}
       />
-      <FieldPrimitive.Label className={`cursor-pointer ${labelClassName}`}>
-        {label}
-      </FieldPrimitive.Label>
-    </FieldPrimitive.Root>
+      <span className="text-base leading-none font-bold text-foreground">{label}</span>
+    </label>
   );
 };
 
