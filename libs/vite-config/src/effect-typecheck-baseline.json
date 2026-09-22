@@ -358,6 +358,3212 @@
         "message": "Argument of type 'string' is not assignable to parameter of type '\"react\"'.",
         "count": 1
       }
+    ],
+    "tools/dont-review-it": [
+      {
+        "file": "specs/canonical-literal-types.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/canonical-literal-types.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/canonical-literal-types.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 9
+      },
+      {
+        "file": "specs/canonical-values.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/canonical-values.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/canonical-values.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 8
+      },
+      {
+        "file": "specs/check-entry.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 2
+      },
+      {
+        "file": "specs/dependency-declarations.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/dependency-declarations.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/dependency-declarations.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 10
+      },
+      {
+        "file": "specs/duplicated-bodies.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/duplicated-bodies.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/duplicated-bodies.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 5
+      },
+      {
+        "file": "specs/lint-bundles.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/lint-bundles.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/lint-bundles.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 8
+      },
+      {
+        "file": "specs/preset-adoption.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/preset-adoption.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/preset-adoption.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 9
+      },
+      {
+        "file": "specs/required-file-form.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/required-file-form.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/required-file-form.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 17
+      },
+      {
+        "file": "specs/scan-trace.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/scan-trace.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/scan-trace.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 9
+      },
+      {
+        "file": "specs/shippable-packages.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/shippable-packages.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/shippable-packages.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 10
+      },
+      {
+        "file": "specs/shipped-skill-versions.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/shipped-skill-versions.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/shipped-skill-versions.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 10
+      },
+      {
+        "file": "specs/telemetry-wiring.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/telemetry-wiring.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/telemetry-wiring.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 10
+      },
+      {
+        "file": "specs/workflow-definitions.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/workflow-definitions.spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "specs/workflow-definitions.spec.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 17
+      },
+      {
+        "file": "src/canonical-literal-types/run-as-task.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/canonical-literal-types/run-canonical-literal-type-checks.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/check-command.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/check-command.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 1
+      },
+      {
+        "file": "src/check-repository-command.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/check-repository-command.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 2
+      },
+      {
+        "file": "src/cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/configs/git-excludes/git-exclude-patterns.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/configs/git-excludes/git-exclude-patterns.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/configs/git-excludes/git-exclude-patterns.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 6
+      },
+      {
+        "file": "src/configs/git-excludes/git-exclude-patterns.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/configs/upstream-react-rules.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/configs/upstream-react-rules.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dependency-catalog/manifest-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dependency-catalog/manifest-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dependency-catalog/manifest-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dependency-catalog/manifest-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 2
+      },
+      {
+        "file": "src/dependency-catalog/run-dependency-catalog-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dependency-catalog/run-dependency-catalog-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dependency-catalog/run-dependency-catalog-checks.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dont-review-it-command.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dont-review-it-command.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/dont-review-it-command.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 63
+      },
+      {
+        "file": "src/entry-composition/entry-composition-problems.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/entry-composition/entry-composition-problems.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/entry-composition/entry-manifests.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/entry-composition/entry-manifests.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 2
+      },
+      {
+        "file": "src/entry-composition/write-entry-composition.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/entry-composition/write-entry-composition.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/entry-composition/write-entry-composition.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/shipped-skills.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/shipped-skills.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/shipped-skills.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/shipped-versions.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/shipped-versions.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/shipped-versions.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/shipped-versions.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/skill-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/skill-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/write-skill-versions.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/write-skill-versions.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/write-skill-versions.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/intent-skills/write-skill-versions.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/lint-telemetry.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 14
+      },
+      {
+        "file": "src/lint-rule-authoring/reconcile-generated-file.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/reconcile-generated-file.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/reconcile-rule-doc.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/reconcile-rule-doc.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/reconcile-rule-doc.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/reconcile-rule-doc.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/render-rule-doc.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/rule-examples.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/rule-examples.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/rule-examples.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-docs/rule-examples.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/lint-rule-workspaces.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/lint-rule-workspaces.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/lint-rule-workspaces.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/lint-rule-workspaces.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/read-text.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/read-text.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/read-text.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/reconcile-guideline-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/reconcile-guideline-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/reconcile-guideline-index.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/reconcile-guideline-index.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/reconcile-rule-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/reconcile-rule-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/reconcile-rule-index.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/related-guidelines.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/related-guidelines.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/related-guidelines.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/related-guidelines.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-bundle.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-facts.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-facts.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-facts.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-facts.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-source-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-source-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-source-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/rule-source-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/shipped-rule-reference.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/shipped-rule-reference.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/shipped-rule-reference.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/shipped-rule-reference.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/rule-index/workspace-rules.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/run-cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/run-cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/run-cli.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/run-cli.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint-rule-authoring/symbol-prefixed-segments.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/annotated-declaration.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/annotated-declaration.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/annotated-sources.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/annotated-sources.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/builder.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache-fingerprint.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache-fingerprint.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache-fingerprint.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `crypto` module, the corresponding Effect API is `Crypto` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache-fingerprint.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache-validation.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `crypto` module, the corresponding Effect API is `Crypto` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache-validation.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `crypto` module, the corresponding Effect API is `Crypto` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/catalog-cache.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/consumer-package.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/consumer-package.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/consumer-package.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/export-specifier-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/export-specifier-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/export-specifier-index.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/export-specifier-index.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/fingerprint.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `crypto` module, the corresponding Effect API is `Crypto` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-resolution.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-resolution.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-resolution.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-resolution.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-source-identity.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-source-identity.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-source-identity.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route-source-identity.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/import-route.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/package-export-target.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/package-export-target.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/package-export-target.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/read-json-file.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/read-json-file.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/resolved-entries.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/resolved-entries.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/resolved-entries.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/source-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/source-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/source-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/source-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/typescript-program.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/typescript-program.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/typescript-program.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/verify.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/verify.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/workspace-root.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/workspace-root.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/canonical-values/workspace-root.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/declared-coverage/reconciliation.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/declared-coverage/scope-closure.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/dependency-catalog/catalog-entries.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/dependency-catalog/declaring-workspace.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/dependency-catalog/shared-dependency-index.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/dependency-catalog/workspace-manifests.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/duplicated-bodies/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/duplicated-bodies/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/duplicated-bodies/builder.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/external-io-boundary.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/external-io-boundary.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/external-io-boundary.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-ignored-source.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-ignored-source.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-ignored-source.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-ignored-source.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-output.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-output.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-output.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-output.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 2
+      },
+      {
+        "file": "src/lint/oxlint/lib/git-output.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/glob-path-match.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/dependency-types.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/dependency-types.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/dependency-types.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/harvester.test.ts",
+        "code": "TS377055",
+        "message": "This class extends the native `Error` type directly. Untagged native errors lose distinction in the Effect failure channel. effect(extendsNativeError)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/harvester.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/harvester.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/harvester.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/open-api.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/library-vocabulary/open-api.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/mutable-cell-classes/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/mutable-cell-classes/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/mutable-cell-classes/builder.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/nearest-tsconfig.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/nearest-tsconfig.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/nearest-tsconfig.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/out-of-scope-source.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/out-of-scope-source.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/out-of-scope-source.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/out-of-scope-source.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/package-surface/declared-surfaces.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/package-surface/declared-surfaces.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/package-surface/declared-surfaces.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/path-failure.test.ts",
+        "code": "TS377055",
+        "message": "This class extends the native `Error` type directly. Untagged native errors lose distinction in the Effect failure channel. effect(extendsNativeError)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/path-is-inside.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/receiver-mutation/class-modules.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/receiver-mutation/class-modules.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/registered-files/unmet-registrations.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/registered-files/unmet-registrations.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/registered-files/unmet-registrations.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/repository-scan/worktree-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/repository-scan/worktree-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/repository-scan/worktree-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/repository-scan/worktree-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/restricted-targets/relayed-reach.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/restricted-targets/relayed-reach.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/restricted-targets/restricted-entries.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/restricted-targets/restricted-entries.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/allowlist-entries.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/entry-reachability.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/entry-reachability.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/export-specifier-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/export-specifier-index.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/export-specifier-index.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/package-entries.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/package-entries.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/package-entries.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/setup-module-verdict.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/setup-module-verdict.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/setup-module-verdict.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/specifier-resolution.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/specifier-resolution.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/specifier-resolution.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/setup-modules/specifier-resolution.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/shared-setup/registered-setup-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/shared-setup/registered-setup-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/shared-setup/registered-setup-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-directory-contents/foreign-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-directory-contents/foreign-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-directory-contents/foreign-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/module-declarations.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/module-declarations.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/module-declarations.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/module-declarations.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/reached-assets.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/reached-assets.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/snapshot-records.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/snapshot-records.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/spec-syntax/snapshot-records.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/split-type-authority/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/split-type-authority/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/split-type-authority/builder.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/style-classes/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/style-classes/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/style-classes/builder.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/tracked-paths/ignore-listing.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/tsconfig-path-aliases.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/tsconfig-path-aliases.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/tsconfig-path-aliases.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/value-declarations/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/value-declarations/builder.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/value-declarations/builder.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/lib/value-declarations/import-routes.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/forbid-declared-command-invocation--use-designated-replacement.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/forbid-restricted-target-relay--delete-the-relay.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/forbid-restricted-target-relay--delete-the-relay.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/forbid-restricted-target-relay--delete-the-relay.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/no-blanket-suppression--name-and-record.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/no-blanket-suppression--name-and-record.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/no-blanket-suppression--name-and-record.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/no-inline-suppression-of-protected-rule--register-the-exception-in-configuration.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/no-rule-suppression--fix-the-violation.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/no-rule-suppression--fix-the-violation.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/governance/no-rule-suppression--fix-the-violation.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/mutation-and-failure/no-class-as-mutable-cell--decide-in-an-iife.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/mutation-and-failure/no-class-as-mutable-cell--decide-in-an-iife.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/mutation-and-failure/no-receiver-mutation--derive-new-value.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/mutation-and-failure/require-query-options-in-api-segment--move-query-options-to-api.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/no-barrel-import--import-from-the-owning-module.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/no-barrel-module--declare-in-the-owning-module.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/no-mixed-package-surface--declare-one-surface.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/no-mixed-package-surface--declare-one-surface.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/require-spec-or-assets-only-in-spec-directory--move-out-or-inline.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/require-spec-or-assets-only-in-spec-directory--move-out-or-inline.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-duplicate-value-declaration--reuse-authoritative-value.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-duplicate-value-declaration--reuse-authoritative-value.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-duplicated-body--import-the-existing-declaration.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-duplicated-body--import-the-existing-declaration.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-local-finite-value-set--use-or-register-canonical-values.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-split-type-authority--rename-or-unify.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-split-type-authority--rename-or-unify.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-twin-declaration--merge-into-one-owner.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/single-ownership/no-twin-declaration--merge-into-one-owner.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/forbid-test-adjacent-file--inline-its-setup-into-the-test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/forbid-test-hook--move-setup-into-fixture.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/forbid-test-hook--move-setup-into-fixture.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-cross-spec-assets-import--use-own-assets.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-cross-spec-assets-import--use-own-assets.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-cross-spec-assets-import--use-own-assets.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-detached-test-file--move-beside-source.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-detached-test-file--move-beside-source.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-detached-test-file--move-beside-source.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-detached-test-file--move-beside-source.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-dry-test-setup--inline-owned-setup.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-dry-test-setup--inline-owned-setup.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-dry-test-setup--inline-owned-setup.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-normalize-sut-output--assert-natural-shape.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-normalize-sut-output--assert-natural-shape.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-spec-specific-shared-setup--keep-setup-uniform.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-spec-specific-shared-setup--keep-setup-uniform.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-spec-specific-shared-setup--keep-setup-uniform.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-undersized-external-snapshot--use-inline-snapshot.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-undersized-external-snapshot--use-inline-snapshot.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-vacuous-host-object-equality--assert-parsed-value.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/no-vacuous-host-object-equality--assert-parsed-value.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/require-spec-file-for-assets--create-matching-spec.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/require-spec-file-for-assets--create-matching-spec.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/require-spec-file-for-assets--create-matching-spec.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/require-spec-lint-coverage--lint-every-spec-file.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/require-spec-lint-coverage--lint-every-spec-file.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/testing/require-spec-lint-coverage--lint-every-spec-file.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 2
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/no-standalone-tsconfig--extend-shared-preset.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/no-standalone-tsconfig--extend-shared-preset.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/no-unchecked-authored-path--include-it-in-every-declared-check.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/no-unchecked-authored-path--include-it-in-every-declared-check.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/no-unchecked-authored-path--include-it-in-every-declared-check.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/no-version-range--pin-the-exact-version.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/no-version-range--pin-the-exact-version.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/require-catalog-entry--register-shared-dependency.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/require-catalog-entry--register-shared-dependency.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/require-registered-file--restore-it-at-the-registered-path.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/require-registered-file--restore-it-at-the-registered-path.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/toolchain/require-registered-file--restore-it-at-the-registered-path.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/no-default-export--use-named-export.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/no-unused-style-class--delete-or-reference-it.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/no-unused-style-class--delete-or-reference-it.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/preset-adoption/run-preset-adoption-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/preset-adoption/run-preset-adoption-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/preset-adoption/run-preset-adoption-checks.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/check-telemetry.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 7
+      },
+      {
+        "file": "src/repository-checks/check-telemetry.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/check-telemetry.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 3
+      },
+      {
+        "file": "src/repository-checks/cli-result.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/git-executable.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/git-executable.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/git-executable.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/git-executable.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/normative-document-places.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/normative-document-places.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/normative-document-places.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/normative-document-places.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/path-failure.test.ts",
+        "code": "TS377055",
+        "message": "This class extends the native `Error` type directly. Untagged native errors lose distinction in the Effect failure channel. effect(extendsNativeError)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/path-failure.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository-checks/path-failure.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/ai-operable-ui.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/ai-operable-ui.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/clean-shared-task-cache.ts",
+        "code": "TS377021",
+        "message": "The `catch` callback in `Effect.tryPromise` returns `unknown`, so the Effect error type stays untyped. A specific typed error preserves error-channel information, for example by narrowing the value or wrapping it in `Data.TaggedError`. effect(unknownInEffectCatch)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/clean-shared-task-cache.ts",
+        "code": "TS377026",
+        "message": "This code uses `JSON.parse` or `JSON.stringify`. Use `Schema.UnknownFromJsonString` for unknown shapes, `Schema.fromJsonString(schema)` for known ones, or `Schema.toCodecJson(schema)` when working with JSON values instead of strings. effect(preferSchemaOverJson)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/clean-shared-task-cache.ts",
+        "code": "TS377077",
+        "message": "This Effect code reads from `process.env`, environment configuration in Effect code is represented through `Config` from Effect. effect(processEnvInEffect)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/client-bundle.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 8
+      },
+      {
+        "file": "src/repository/credentials.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/credentials.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/credentials.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 17
+      },
+      {
+        "file": "src/repository/credentials.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/credentials.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/credentials.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 2
+      },
+      {
+        "file": "src/repository/dependency-cruiser-fixture.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/dependency-cruiser-fixture.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/dependency-cruiser-fixture.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 8
+      },
+      {
+        "file": "src/repository/dependency-cruiser.sandbox-unsafe.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/dependency-cruiser.sandbox-unsafe.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 6
+      },
+      {
+        "file": "src/repository/effect-diagnostics.sandbox-unsafe.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/hooks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/hooks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/lint-ownership.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/paraglide-messages.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/paraglide-messages.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/pr-affected.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/pr-affected.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/pr-affected.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/pr-check-scope.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/pr-check-scope.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/react-doctor.ts",
+        "code": "TS377026",
+        "message": "This code uses `JSON.parse` or `JSON.stringify`. Use `Schema.UnknownFromJsonString` for unknown shapes, `Schema.fromJsonString(schema)` for known ones, or `Schema.toCodecJson(schema)` when working with JSON values instead of strings. effect(preferSchemaOverJson)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/react-doctor.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/react-doctor.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/react-doctor.ts",
+        "code": "TS377080",
+        "message": "This code constructs `new Promise(...)`, prefer Effect APIs such as `Effect.async`, `Effect.promise`, or `Effect.tryPromise` instead of manual Promise construction. effect(newPromise)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/react-doctor.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/react-doctor.ts",
+        "code": "TS377098",
+        "message": "This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line. effect(schemaNumber)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/react-doctor.ts",
+        "code": "TS377112",
+        "message": "This input is already assignable to the schema's Encoded type. Use `decodeEffect` to preserve compile-time type checking instead of discarding the input type through `decodeUnknownEffect`. effect(preferTypedSchemaDecoder)",
+        "count": 3
+      },
+      {
+        "file": "src/repository/repository-path.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/shared-task-cache.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/shared-task-cache.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/shared-task-cache.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 2
+      },
+      {
+        "file": "src/repository/shared-task-cache.ts",
+        "code": "TS377055",
+        "message": "This class extends the native `Error` type directly. Untagged native errors lose distinction in the Effect failure channel. effect(extendsNativeError)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/shared-task-cache.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/shared-task-cache.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/single-consumer.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/single-consumer.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/staged-fixture.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/staged-fixture.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/staged-fixture.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/staged-fixture.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 10
+      },
+      {
+        "file": "src/repository/staged.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 15
+      },
+      {
+        "file": "src/repository/staged.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/staged.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/staged.ts",
+        "code": "TS377098",
+        "message": "This Schema number API accepts `NaN`, `Infinity`, and `-Infinity`. Use `Schema.Finite` for finite domain numbers. If non-finite values are intentional, disable this diagnostic for that line. effect(schemaNumber)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/stryker-sandbox.sandbox-unsafe.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/thin-app-routes-check.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/thin-app-routes-check.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/tool-test-projects.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/typecheck-projects.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/typecheck-projects.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/typecheck-workspaces.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/repository/typecheck-workspaces.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/required-file-form/agent-instruction-links.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/required-file-form/agent-instruction-links.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/required-file-form/agent-instruction-links.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/required-file-form/agent-instruction-links.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 2
+      },
+      {
+        "file": "src/required-file-form/foreign-tool-configs.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/required-file-form/foreign-tool-configs.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/required-file-form/foreign-tool-configs.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 2
+      },
+      {
+        "file": "src/required-file-form/package-roots.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/run-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/run-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/run-checks.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/shippable-packages/shippable-packages.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/shippable-packages/shippable-packages.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/shippable-packages/workspace-manifests.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/no-removal-verification.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/no-removal-verification.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/no-removal-verification.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/no-removal-verification.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/no-removal-verification.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 18
+      },
+      {
+        "file": "src/stop-ai-slop/checks/scoped-call-expressions.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/scoped-call-expressions.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/scoped-call-expressions.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/checks/scoped-call-expressions.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 13
+      },
+      {
+        "file": "src/stop-ai-slop/checks/scoped-call-expressions.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 13
+      },
+      {
+        "file": "src/stop-ai-slop/checks/verification-source.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/comparison-range.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/comparison-range.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/comparison-range.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/comparison-range.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 4
+      },
+      {
+        "file": "src/stop-ai-slop/comparison-range.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 4
+      },
+      {
+        "file": "src/stop-ai-slop/comparison-range.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 4
+      },
+      {
+        "file": "src/stop-ai-slop/git-text.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/git-text.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/git-text.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 3
+      },
+      {
+        "file": "src/stop-ai-slop/github-comparison.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 16
+      },
+      {
+        "file": "src/stop-ai-slop/github-comparison.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 2
+      },
+      {
+        "file": "src/stop-ai-slop/github-request.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 3
+      },
+      {
+        "file": "src/stop-ai-slop/github-request.ts",
+        "code": "TS377061",
+        "message": "This code uses the global `fetch` function, HTTP requests are represented through `HttpClient` from `effect/unstable/http`. effect(globalFetch)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/github-request.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-comparison.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-comparison.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-comparison.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-comparison.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-comparison.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 11
+      },
+      {
+        "file": "src/stop-ai-slop/repository-comparison.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-comparison.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 8
+      },
+      {
+        "file": "src/stop-ai-slop/repository-diff.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-diff.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-diff.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/repository-diff.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 2
+      },
+      {
+        "file": "src/stop-ai-slop/resolved-comparison.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/resolved-comparison.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/resolved-comparison.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/resolved-comparison.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 6
+      },
+      {
+        "file": "src/stop-ai-slop/resolved-comparison.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 8
+      },
+      {
+        "file": "src/stop-ai-slop/resolved-comparison.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 2
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.test.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 2
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.test.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 14
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.ts",
+        "code": "TS377076",
+        "message": "This code reads from `process.env`, environment configuration is represented through `Config` from Effect. effect(processEnv)",
+        "count": 2
+      },
+      {
+        "file": "src/stop-ai-slop/run-cli.ts",
+        "code": "TS377081",
+        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
+        "count": 2
+      },
+      {
+        "file": "src/telemetry-wiring/run-telemetry-wiring-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/telemetry-wiring/run-telemetry-wiring-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/telemetry-wiring/run-telemetry-wiring-checks.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/action-updates.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/action-updates.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/action-updates.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/action-updates.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/run-workflow-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/run-workflow-checks.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/workflow-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/workflow-files.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/workflow-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/workflow-files.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/workflow-outcomes.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/workflows/workflow-outcomes.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      }
     ]
   }
 }
