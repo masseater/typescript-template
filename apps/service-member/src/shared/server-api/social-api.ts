@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
-import { requireSignupAgreements } from "@repo/db";
 import { httpStatus } from "@repo/config";
+import { requireSignupAgreements } from "@repo/db";
 import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
