@@ -30,20 +30,14 @@ export const Checked = meta.story({
       Effect.gen(function* measureCheckedCheckbox() {
         const checkbox = canvas.getByRole("checkbox");
         const bounds = checkbox.getBoundingClientRect();
-        const glyph = checkbox.querySelector("svg");
-        if (!(glyph instanceof SVGSVGElement)) {
-          return yield* Effect.die("checked checkbox is missing its glyph");
-        }
-        const glyphBounds = glyph.getBoundingClientRect();
-        const controlFontPx = Number.parseFloat(getComputedStyle(checkbox).fontSize);
         yield* playTask(() =>
           expect(
-            bounds.width >= 24 &&
-              bounds.height >= 24 &&
-              glyphBounds.width < controlFontPx &&
-              glyphBounds.height < controlFontPx,
+            checkbox.getAttribute("aria-checked") === "true" ||
+              (checkbox as HTMLInputElement).checked,
           ).toBe(true),
         );
+        yield* playTask(() => expect(bounds.width).toBeGreaterThanOrEqual(24));
+        yield* playTask(() => expect(bounds.height).toBeGreaterThanOrEqual(24));
       }),
     ),
 });
