@@ -13,30 +13,31 @@ function dashboardApp() {
   return createApi(apiRoot).use(inquiryApi(api));
 }
 
-async function postInquiry(path: string): Promise<number> {
+function postInquiry(path: string): Promise<number> {
   const app = dashboardApp();
-  const response = await app.fetch(
-    new Request(`${fixtureOrigin}${apiRoot}${path}`, {
-      body: "{}",
-      headers: { "content-type": "application/json", origin: fixtureOrigin },
-      method: "POST",
-    }),
-  );
-  return response.status;
+  return Promise.resolve(
+    app.fetch(
+      new Request(`${fixtureOrigin}${apiRoot}${path}`, {
+        body: "{}",
+        headers: { "content-type": "application/json", origin: fixtureOrigin },
+        method: "POST",
+      }),
+    ),
+  ).then((response) => response.status);
 }
 
 it.effect("rejects write requests on inquiry routes", () =>
   Effect.gen(function* program() {
     assert.strictEqual(
-      yield* Effect.promise(async () => postInquiry("/inquiries/counts")),
+      yield* Effect.promise(() => postInquiry("/inquiries/counts")),
       httpStatus.notFound,
     );
     assert.strictEqual(
-      yield* Effect.promise(async () => postInquiry("/inquiries/member")),
+      yield* Effect.promise(() => postInquiry("/inquiries/member")),
       httpStatus.notFound,
     );
     assert.strictEqual(
-      yield* Effect.promise(async () => postInquiry("/inquiries/detail")),
+      yield* Effect.promise(() => postInquiry("/inquiries/detail")),
       httpStatus.notFound,
     );
   }),

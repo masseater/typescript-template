@@ -32,20 +32,20 @@ function InviteStaffForm({ onInvited }: Readonly<{ onInvited: () => void }>): Re
       return;
     }
     setNotice(Option.none());
-    action.run(async () => {
-      const { api } = await wikiClient();
-      const invited = apiData(
-        StaffInvited,
-        await api.staff.invites.post({ email: email.value, permission }),
-      );
-      setNotice(
-        Option.some(
-          `${invited.email} に招待メールを送りました。${formatWarekiDate(invited.expiresAt)} まで有効です。`,
-        ),
-      );
-      email.handleChange("");
-      onInvited();
-    });
+    action.run(() =>
+      Promise.resolve(wikiClient())
+        .then(({ api }) => api.staff.invites.post({ email: email.value, permission }))
+        .then((response) => {
+          const invited = apiData(StaffInvited, response);
+          setNotice(
+            Option.some(
+              `${invited.email} に招待メールを送りました。${formatWarekiDate(invited.expiresAt)} まで有効です。`,
+            ),
+          );
+          email.handleChange("");
+          onInvited();
+        }),
+    );
   }
   return (
     <form

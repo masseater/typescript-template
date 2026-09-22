@@ -7,19 +7,26 @@ import {
   StaffInquiryThread,
 } from "#shared/contracts/index.ts";
 
-async function loadInquiryCounts(): Promise<typeof StaffInquiryCounts.Type> {
-  const { api } = await wikiClient();
-  return apiData(StaffInquiryCounts, await api.inquiries.counts.get());
+function loadInquiryCounts(): Promise<typeof StaffInquiryCounts.Type> {
+  return Promise.resolve(wikiClient()).then(({ api }) =>
+    api.inquiries.counts.get().then((response) => apiData(StaffInquiryCounts, response)),
+  );
 }
 
-async function loadMemberInquiries(memberId: string): Promise<typeof StaffInquiryList.Type> {
-  const { api } = await wikiClient();
-  return apiData(StaffInquiryList, await api.inquiries.member.get({ query: { id: memberId } }));
+function loadMemberInquiries(memberId: string): Promise<typeof StaffInquiryList.Type> {
+  return Promise.resolve(wikiClient()).then(({ api }) =>
+    api.inquiries.member
+      .get({ query: { id: memberId } })
+      .then((response) => apiData(StaffInquiryList, response)),
+  );
 }
 
-async function loadInquiry(id: string): Promise<typeof StaffInquiryThread.Type> {
-  const { api } = await wikiClient();
-  return apiData(StaffInquiryThread, await api.inquiries.detail.get({ query: { id } }));
+function loadInquiry(id: string): Promise<typeof StaffInquiryThread.Type> {
+  return Promise.resolve(wikiClient()).then(({ api }) =>
+    api.inquiries.detail
+      .get({ query: { id } })
+      .then((response) => apiData(StaffInquiryThread, response)),
+  );
 }
 
 export { loadInquiry, loadInquiryCounts, loadMemberInquiries };

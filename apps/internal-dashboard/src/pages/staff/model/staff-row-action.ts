@@ -8,6 +8,7 @@ import { wikiClient } from "#shared/api/index.ts";
 import { StaffPermission, StaffPermissionChanged, StaffRemoved } from "#shared/contracts/index.ts";
 import { isStaffPermission, staffPermissionLabels } from "./staff-labels.ts";
 
+import type { Exit } from "effect";
 import type { ListedStaff } from "./staff-list.ts";
 
 type RowOperation =
@@ -23,21 +24,21 @@ interface StaffRowAction {
   readonly pending: boolean;
 }
 
-async function perform(member: ListedStaff, operation: RowOperation): Promise<string> {
-  const {
-    api: { staff },
-  } = await wikiClient();
-  if (operation.kind === "permission") {
-    const changed = apiData(
-      StaffPermissionChanged,
-      await staff.patch({ id: member.id, permission: operation.permission }),
-    );
-    const label =
-      changed.permission === undefined ? "未設定" : staffPermissionLabels[changed.permission];
-    return `${member.email} の権限を「${label}」にしました。`;
-  }
-  apiData(StaffRemoved, await staff.delete({ id: member.id }));
-  return `${member.email} を削除しました。`;
+function perform(member: ListedStaff, operation: RowOperation): Promise<string> {
+  return Promise.resolve(wikiClient()).then(({ api: { staff } }) => {
+    if (operation.kind === "permission") {
+      return staff.patch({ id: member.id, permission: operation.permission }).then((response) => {
+        const changed = apiData(StaffPermissionChanged, response);
+        const label =
+          changed.permission === undefined ? "未設定" : staffPermissionLabels[changed.permission];
+        return `${member.email} の権限を「${label}」にしました。`;
+      });
+    }
+    return staff.delete({ id: member.id }).then((response) => {
+      apiData(StaffRemoved, response);
+      return `${member.email} を削除しました。`;
+    });
+  });
 }
 
 const useRowConfirming = localState(Option.none<RowOperation>());
@@ -46,9 +47,35 @@ const changeAtom = Atom.family((staffId: string) => {
   void staffId;
   return Atom.fn(
     ({ member, operation }: Readonly<{ member: ListedStaff; operation: RowOperation }>) =>
-      request(async () => perform(member, operation)),
+      request(() => perform(member, operation)),
   );
 });
+
+function executeChange(
+  run: (
+    input: Readonly<{ member: ListedStaff; operation: RowOperation }>,
+  ) => Promise<Exit.Exit<string, unknown>>,
+  notify: (
+    kind: typeof STATUS_VARIANT.success | typeof STATUS_VARIANT.failure,
+    message: string,
+  ) => void,
+  onChanged: () => void,
+  member: ListedStaff,
+  operation: RowOperation,
+): Promise<void> {
+  return run({ member, operation }).then((exit) => {
+    const change = AsyncResult.fromExit(exit);
+    if (AsyncResult.isSuccess(change)) {
+      notify(STATUS_VARIANT.success, change.value);
+      onChanged();
+      return;
+    }
+    const failure = resultError(change);
+    if (failure !== undefined) {
+      notify(STATUS_VARIANT.failure, failure);
+    }
+  });
+}
 
 function useStaffRowAction(member: ListedStaff, onChanged: () => void): StaffRowAction {
   const notify = useToast();
@@ -67,24 +94,15 @@ function useStaffRowAction(member: ListedStaff, onChanged: () => void): StaffRow
       setConfirming(Option.none());
     }
   }
-  async function execute(operation: RowOperation): Promise<void> {
-    const change = AsyncResult.fromExit(await run({ member, operation }));
-    if (AsyncResult.isSuccess(change)) {
-      notify(STATUS_VARIANT.success, change.value);
-      onChanged();
-      return;
-    }
-    const failure = resultError(change);
-    if (failure !== undefined) {
-      notify(STATUS_VARIANT.failure, failure);
-    }
+  function execute(operation: RowOperation): void {
+    void executeChange(run, notify, onChanged, member, operation);
   }
   function handleConfirm(): void {
     if (Option.isNone(confirming)) {
       return;
     }
     setConfirming(Option.none());
-    void execute(confirming.value);
+    execute(confirming.value);
   }
   return {
     confirming: Option.getOrUndefined(confirming),

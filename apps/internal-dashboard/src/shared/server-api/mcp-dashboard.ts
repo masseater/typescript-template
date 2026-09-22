@@ -11,6 +11,13 @@ const EmptyInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(Schem
 const AuditToolInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(AuditPageQuery));
 const TrendToolInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(TrendQuery));
 
+const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
+
+const encodeToolResult = (value: unknown): Promise<{ content: [{ text: string; type: "text" }] }> =>
+  Schema.encodePromise(JsonUnknown)(value).then((text) => ({
+    content: [{ text, type: "text" as const }],
+  }));
+
 function registerDashboardTools(server: McpServer, context: Context.Context<WikiServices>): void {
   server.registerTool(
     "overview_metrics",
@@ -18,12 +25,7 @@ function registerDashboardTools(server: McpServer, context: Context.Context<Wiki
       description: "Read aggregate service metrics for the internal dashboard overview.",
       inputSchema: EmptyInput,
     },
-    async () => {
-      const overview = await Effect.runPromiseWith(context)(dashboardStaff.overview());
-      return {
-        content: [{ text: JSON.stringify(overview), type: "text" as const }],
-      };
-    },
+    () => Effect.runPromiseWith(context)(dashboardStaff.overview()).then(encodeToolResult),
   );
   server.registerTool(
     "metric_trend",
@@ -31,12 +33,8 @@ function registerDashboardTools(server: McpServer, context: Context.Context<Wiki
       description: "Read aggregate metric trends over daily or weekly buckets.",
       inputSchema: TrendToolInput,
     },
-    async (input) => {
-      const trend = await Effect.runPromiseWith(context)(dashboardStaff.metricTrend(input));
-      return {
-        content: [{ text: JSON.stringify(trend), type: "text" as const }],
-      };
-    },
+    (input) =>
+      Effect.runPromiseWith(context)(dashboardStaff.metricTrend(input)).then(encodeToolResult),
   );
   server.registerTool(
     "audit_log",
@@ -44,12 +42,8 @@ function registerDashboardTools(server: McpServer, context: Context.Context<Wiki
       description: "Read paginated audit events without personal identifiers.",
       inputSchema: AuditToolInput,
     },
-    async (input) => {
-      const events = await Effect.runPromiseWith(context)(dashboardStaff.auditEvents(input));
-      return {
-        content: [{ text: JSON.stringify(events), type: "text" as const }],
-      };
-    },
+    (input) =>
+      Effect.runPromiseWith(context)(dashboardStaff.auditEvents(input)).then(encodeToolResult),
   );
 }
 

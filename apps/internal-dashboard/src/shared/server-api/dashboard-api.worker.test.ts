@@ -13,32 +13,30 @@ function dashboardApp() {
   return createApi(apiRoot).use(dashboardApi(api));
 }
 
-async function postDashboard(path: string): Promise<number> {
+function postDashboard(path: string): Promise<number> {
   const app = dashboardApp();
-  const response = await app.fetch(
-    new Request(`${fixtureOrigin}${apiRoot}${path}`, {
-      body: "{}",
-      headers: { "content-type": "application/json", origin: fixtureOrigin },
-      method: "POST",
-    }),
-  );
-  return response.status;
+  return Promise.resolve(
+    app.fetch(
+      new Request(`${fixtureOrigin}${apiRoot}${path}`, {
+        body: "{}",
+        headers: { "content-type": "application/json", origin: fixtureOrigin },
+        method: "POST",
+      }),
+    ),
+  ).then((response) => response.status);
 }
 
 it.effect("rejects write requests on dashboard routes", () =>
   Effect.gen(function* program() {
     assert.strictEqual(
-      yield* Effect.promise(async () => postDashboard("/overview")),
+      yield* Effect.promise(() => postDashboard("/overview")),
       httpStatus.notFound,
     );
     assert.strictEqual(
-      yield* Effect.promise(async () => postDashboard("/metrics/trend")),
+      yield* Effect.promise(() => postDashboard("/metrics/trend")),
       httpStatus.notFound,
     );
-    assert.strictEqual(
-      yield* Effect.promise(async () => postDashboard("/audit")),
-      httpStatus.notFound,
-    );
+    assert.strictEqual(yield* Effect.promise(() => postDashboard("/audit")), httpStatus.notFound);
   }),
 );
 

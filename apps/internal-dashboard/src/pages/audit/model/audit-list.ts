@@ -39,7 +39,7 @@ function auditPageQuery(filter: AuditFilter): typeof AuditPageQuery.Type {
 }
 
 const auditPageAtom = Atom.family((filter: AuditFilter) =>
-  requestAtom(async () => loadAuditPage(auditPageQuery(filter))),
+  requestAtom(() => loadAuditPage(auditPageQuery(filter))),
 );
 
 const useDraftFilter = localState<AuditFilter>(emptyFilter);

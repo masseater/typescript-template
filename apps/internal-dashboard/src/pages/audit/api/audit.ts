@@ -5,9 +5,10 @@ import { StaffAuditPage, type StaffAuditPageView } from "#shared/contracts/index
 
 import type { AuditPageQuery } from "#shared/contracts/index.ts";
 
-async function loadAuditPage(query: typeof AuditPageQuery.Type): Promise<StaffAuditPageView> {
-  const { api } = await wikiClient();
-  return apiData(StaffAuditPage, await api.audit.get({ query }));
+function loadAuditPage(query: typeof AuditPageQuery.Type): Promise<StaffAuditPageView> {
+  return Promise.resolve(wikiClient()).then(({ api }) =>
+    api.audit.get({ query }).then((response) => apiData(StaffAuditPage, response)),
+  );
 }
 
 export { loadAuditPage };

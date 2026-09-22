@@ -34,14 +34,12 @@ interface InquiryLookup {
 const countsAtom = requestAtom(loadInquiryCounts);
 
 const memberInquiriesAtom = Atom.fn((memberId: string) =>
-  request(async (): Promise<readonly StaffInquirySummary[]> => {
-    return (await loadMemberInquiries(memberId)).inquiries;
-  }),
+  request((): Promise<readonly StaffInquirySummary[]> =>
+    loadMemberInquiries(memberId).then((result) => result.inquiries),
+  ),
 );
 
-const selectedInquiryAtom = Atom.fn((inquiryId: string) =>
-  request(async () => loadInquiry(inquiryId)),
-);
+const selectedInquiryAtom = Atom.fn((inquiryId: string) => request(() => loadInquiry(inquiryId)));
 
 function useInquiryLookup(): InquiryLookup {
   const counts = useAtomValue(countsAtom);

@@ -29,6 +29,7 @@ type Call = Readonly<{
 const reporting = { log: recordingSink().sink, service: wikiService } as const;
 const invitee = "colleague@example.com";
 const inviteePassword = "invited-password-safe-123";
+const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
 
 type DeliveredMail = Readonly<{
   readonly text: string;
@@ -75,25 +76,31 @@ function wikiApp() {
   const routesFor = apiRoutes(runtime, reporting);
   const app = createApi(apiRoot).use(staffApi(routesFor)).use(flagsApi(routesFor));
   const cookieOf = (actor: Actor): Effect.Effect<string> =>
-    Effect.promise(async () => runtime.runPromise(signedSessionCookie(tokenOf(actor))));
+    Effect.promise(() => runtime.runPromise(signedSessionCookie(tokenOf(actor))));
   const send = (call: Call, cookie?: string): Effect.Effect<Response> =>
-    Effect.promise(async () =>
-      app.fetch(
-        new Request(`${fixtureOrigin}${apiRoot}${call.path}`, {
-          ...(call.body === undefined ? {} : { body: JSON.stringify(call.body) }),
-          headers: {
-            "content-type": "application/json",
-            origin: fixtureOrigin,
-            ...(cookie === undefined ? {} : { cookie }),
-          },
-          method: call.method,
-        }),
-      ),
-    );
+    Effect.gen(function* sendCall() {
+      const body =
+        call.body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(call.body);
+      return yield* Effect.promise(() =>
+        Promise.resolve(
+          app.fetch(
+            new Request(`${fixtureOrigin}${apiRoot}${call.path}`, {
+              ...(body === undefined ? {} : { body }),
+              headers: {
+                "content-type": "application/json",
+                origin: fixtureOrigin,
+                ...(cookie === undefined ? {} : { cookie }),
+              },
+              method: call.method,
+            }),
+          ),
+        ),
+      );
+    }).pipe(Effect.orDie);
   const as = Effect.fn("as")(function* as(actor: Actor, call: Call) {
     return yield* send(call, yield* cookieOf(actor));
   });
-  return { as, send, stop: Effect.promise(async () => runtime.dispose()) };
+  return { as, send, stop: Effect.promise(() => runtime.dispose()) };
 }
 
 const removal: Call = { body: { id: "target" }, method: "DELETE", path: "/staff" };
@@ -186,13 +193,13 @@ const inviteTokenOf = (text: string): string => {
 };
 
 const readJson = (response: Response): Effect.Effect<unknown> =>
-  Effect.promise(async (): Promise<unknown> => response.json());
+  Effect.promise(() => response.json() as Promise<unknown>);
 
 describe("staff invitation through the API", () => {
   it.effect("creates the account once from the mailed link and burns the token", () =>
     Effect.gen(function* program() {
       yield* seedAccounts;
-      yield* Effect.promise(async () => deliveredMail(env));
+      yield* Effect.promise(() => deliveredMail(env));
       const app = wikiApp();
       const invited = yield* app.as("editor", {
         body: { email: invitee, permission: STAFF_PERMISSION.editor },
@@ -200,7 +207,7 @@ describe("staff invitation through the API", () => {
         path: "/staff/invites",
       });
       assert.strictEqual(invited.status, httpStatus.ok);
-      const [mail] = yield* Effect.promise(async () => deliveredMail(env));
+      const [mail] = yield* Effect.promise(() => deliveredMail(env));
       assert.isDefined(mail);
       assert.strictEqual(mail.to, invitee);
       const token = inviteTokenOf(mail.text);

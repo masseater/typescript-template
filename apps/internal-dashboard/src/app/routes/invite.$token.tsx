@@ -8,7 +8,7 @@ import { InvitePage } from "#pages/invite/index.ts";
 import type { ReactElement } from "react";
 
 const Route = createFileRoute("/invite/$token")({
-  loader: async ({ params }) => previewInvitation("/api/invite", params.token),
+  loader: ({ params }) => previewInvitation("/api/invite", params.token),
   head: () => ({ links: [{ href: uiStyles, rel: "stylesheet" }] }),
   pendingComponent: InvitePending,
   component: InviteRoute,

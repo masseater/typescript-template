@@ -16,20 +16,22 @@ interface ListedStaff {
   readonly registeredOn: string;
 }
 
-async function listStaff(): Promise<readonly ListedStaff[]> {
-  try {
-    const { api } = await wikiClient();
-    const staff = apiData(StaffList, await api.staff.get());
-    return staff.map(({ createdAt, ...member }) => ({
-      ...member,
-      registeredOn: formatWarekiDate(createdAt),
-    }));
-  } catch (failure) {
-    throw new Error(errorMessage(failure));
-  }
+function listStaff(): Promise<readonly ListedStaff[]> {
+  return Promise.resolve(wikiClient())
+    .then(({ api }) => api.staff.get())
+    .then((response) => {
+      const staff = apiData(StaffList, response);
+      return staff.map(({ createdAt, ...member }) => ({
+        ...member,
+        registeredOn: formatWarekiDate(createdAt),
+      }));
+    })
+    .catch((failure: unknown) => {
+      throw new Error(errorMessage(failure));
+    });
 }
 
-const staffListAtom = requestAtom(async () => listStaff());
+const staffListAtom = requestAtom(() => listStaff());
 
 function useStaffList(): Readonly<{
   listing: RequestResult<readonly ListedStaff[]>;
