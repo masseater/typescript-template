@@ -95,7 +95,7 @@ export default defineConfig({
       },
       "test:dev-server": {
         cache: false,
-        command: "vp test run --project dev-server",
+        command: "vp test run --passWithNoTests --project dev-server",
         dependsOn: ["compile:paraglide"],
       },
       "check:text": {

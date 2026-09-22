@@ -1,16 +1,13 @@
-import { Effect, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { appliedField, redactSecrets, redactedField } from "./redact.ts";
-
+import { redactSecrets, redactedField } from "./redact.ts";
 const secret = "worker-test-secret-at-least-32-characters";
-const encodeJson = (value: unknown): string =>
-  Effect.runSync(
-    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(Effect.orDie),
-  );
-
 describe.for([
-  ["a secret name in JSON", encodeJson({ AUTH_SECRET: secret }), '{"AUTH_SECRET":"[redacted]"}'],
+  [
+    "a secret name in JSON",
+    JSON.stringify({ AUTH_SECRET: secret }),
+    '{"AUTH_SECRET":"[redacted]"}',
+  ],
   ["a secret name in an assignment", `AUTH_SECRET=${secret}`, "AUTH_SECRET=[redacted]"],
   [
     "a prefixed secret name after a colon",
@@ -19,7 +16,7 @@ describe.for([
   ],
   [
     "a deployment token in JSON",
-    encodeJson({ CLOUDFLARE_API_TOKEN: secret }),
+    JSON.stringify({ CLOUDFLARE_API_TOKEN: secret }),
     '{"CLOUDFLARE_API_TOKEN":"[redacted]"}',
   ],
   [
@@ -35,12 +32,12 @@ describe.for([
   ["a bearer credential", `authorization: Bearer ${secret}`, "authorization: [redacted]"],
   [
     "two secret names in one object",
-    encodeJson({ clientSecret: secret, password: secret }),
+    JSON.stringify({ clientSecret: secret, password: secret }),
     '{"clientSecret":"[redacted]","password":"[redacted]"}',
   ],
   [
     "a quote inside the secret value",
-    encodeJson({ AUTH_SECRET: `pre"${secret}` }),
+    JSON.stringify({ AUTH_SECRET: `pre"${secret}` }),
     '{"AUTH_SECRET":"[redacted]"}',
   ],
   ["an account identifier", `CLOUDFLARE_ACCOUNT_ID=${secret}`, "CLOUDFLARE_ACCOUNT_ID=[redacted]"],
@@ -101,16 +98,16 @@ describe.for([
   ],
   [
     "a cookie list inside an encoded message",
-    encodeJson({ headers: `set-cookie: a=1, session=${secret}`, reason: "boom" }),
+    JSON.stringify({ headers: `set-cookie: a=1, session=${secret}`, reason: "boom" }),
     '{"headers":"set-cookie: [redacted]","reason":"boom"}',
   ],
   [
     "query parameters inside an encoded message",
-    encodeJson({
+    JSON.stringify({
       message: `Failed query: select 1\nparams: ${secret}\n    at run`,
       name: "Error",
     }),
-    encodeJson({
+    JSON.stringify({
       message: "Failed query: select 1\nparams: [redacted]\n    at run",
       name: "Error",
     }),
@@ -132,12 +129,10 @@ describe.for([
   ],
 ] as const)("%s", ([, written, expectedLine]) => {
   const it = test.extend("redactedLine", () => redactSecrets(written));
-
   it("leaves the line readable with the secret hidden", ({ redactedLine }) => {
     expect(redactedLine).toBe(expectedLine);
   });
 });
-
 describe.for([
   ["an environment secret", "AUTH_SECRET", "[redacted]"],
   ["a camel-cased secret", "clientSecret", "[redacted]"],
@@ -146,18 +141,13 @@ describe.for([
   ["a query", "query", { nested: secret }],
 ] as const)("a field named after %s", ([, fieldName, expectedValue]) => {
   const it = test.extend("redactedValue", () => redactedField(fieldName, { nested: secret }));
-
   it("is settled by the name alone", ({ redactedValue }) => {
     expect(redactedValue).toStrictEqual(expectedValue);
   });
 });
-
 describe("an error a field holds", () => {
   const it = test.extend("encodedError", () =>
-    encodeJson(
-      appliedField({ cause: new Error(`AUTH_SECRET="${secret}" is rejected`) }, redactedField),
-    ));
-
+    JSON.stringify({ cause: new Error(`AUTH_SECRET="${secret}" is rejected`) }, redactedField));
   it("keeps the name and the message, minus the secret", ({ encodedError }) => {
     expect(encodedError).toBe(
       String.raw`{"cause":{"message":"AUTH_SECRET=\"[redacted]\" is rejected","name":"Error"}}`,

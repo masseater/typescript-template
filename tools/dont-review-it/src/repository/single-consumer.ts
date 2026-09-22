@@ -65,6 +65,11 @@ interface Read {
   readonly value: string;
 }
 
+const singleConsumerAllowlist: readonly string[] = [
+  "subpath:@repo/auth/testing",
+  "subpath:@repo/runtime/contracts",
+];
+
 const isIdent = (char: string): boolean => /[A-Za-z0-9_$]/u.test(char);
 
 const boundaryBefore = (text: string, index: number): boolean => {

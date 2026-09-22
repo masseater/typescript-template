@@ -4,6 +4,7 @@ import { describe, expect, test } from "vite-plus/test";
 import {
   appConfig,
   appRun,
+  awaitingEffectDiagnostics,
   effectDiagnostics,
   effectRun,
   lifecycle,
@@ -63,7 +64,7 @@ describe("appRun", () => {
   it("type-checks, builds, and starts before the stages that ship an app", ({ applicationRun }) => {
     expect(applicationRun).toStrictEqual({
       tasks: {
-        ...effectDiagnostics,
+        ...awaitingEffectDiagnostics,
         check: sliceBoundaries.check,
         build: {
           command: "vp build",
@@ -115,7 +116,7 @@ describe("paraglideAppRun", () => {
           output: [".paraglide/**"],
         },
         "check:effect": {
-          ...effectDiagnostics["check:effect"],
+          ...awaitingEffectDiagnostics["check:effect"],
           dependsOn: ["compile:paraglide"],
         },
       },

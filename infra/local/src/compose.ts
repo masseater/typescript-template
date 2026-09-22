@@ -1,22 +1,18 @@
 #!/usr/bin/env node
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Effect, FileSystem, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-
-const FIRST_USER_ARGUMENT_INDEX = 2;
 
 class LocalServicesFailure extends Schema.TaggedError<LocalServicesFailure>()(
   "LocalServicesFailure",
   { code: Schema.Literals(["local_action_unknown", "compose_command_failed"]) },
 ) {}
 
-const root = fileURLToPath(new URL("../../../", import.meta.url));
-const composeFile = fileURLToPath(new URL("../compose.yaml", import.meta.url));
+const composeFile = new URL("../compose.yaml", import.meta.url).pathname;
 const bundledCompose = "/Applications/OrbStack.app/Contents/MacOS/xbin/docker-compose";
-const [action] = process.argv.slice(FIRST_USER_ARGUMENT_INDEX);
+const [requestedAction] = process.argv.slice(firstUserArgumentIndex);
 const actions: Readonly<Record<string, readonly string[]>> = {
   config: ["config", "--quiet"],
   logs: ["logs", "--no-color", "--tail", "100", "mailpit"],
@@ -24,26 +20,29 @@ const actions: Readonly<Record<string, readonly string[]>> = {
   up: ["up", "-d", "--wait"],
 };
 
-function composeArguments(
-  name: string | undefined,
-): Effect.Effect<readonly string[], LocalServicesFailure> {
-  const args = name === undefined || !Object.hasOwn(actions, name) ? undefined : actions[name];
-  return args === undefined
+const composeArguments = (
+  actionName: string | undefined,
+): Effect.Effect<readonly string[], LocalServicesFailure> => {
+  const composeArgs =
+    actionName === undefined || !Object.hasOwn(actions, actionName)
+      ? undefined
+      : actions[actionName];
+  return composeArgs === undefined
     ? Effect.fail(new LocalServicesFailure({ code: "local_action_unknown" }))
-    : Effect.succeed(args);
-}
+    : Effect.succeed(composeArgs);
+};
 
-const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly string[]) {
+const runCompose = Effect.fn("runCompose")(function* runCompose(composeArgs: readonly string[]) {
   const filesystem = yield* FileSystem.FileSystem;
   const bundled = yield* filesystem.exists(bundledCompose).pipe(Effect.orElseSucceed(() => false));
   const failed = new LocalServicesFailure({ code: "compose_command_failed" });
   const command = bundled ? bundledCompose : "docker";
-  const commandArgs = [...(bundled ? [] : ["compose"]), "-f", composeFile, ...args];
+  const commandArgs = [...(bundled ? [] : ["compose"]), "-f", composeFile, ...composeArgs];
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const exitCode = yield* spawner
     .exitCode(
       ChildProcess.make(command, commandArgs, {
-        cwd: root,
+        cwd: repositoryRoot,
         stderr: "inherit",
         stdin: "inherit",
         stdout: "inherit",
@@ -56,7 +55,10 @@ const runCompose = Effect.fn("runCompose")(function* runCompose(args: readonly s
 });
 
 runCli(
-  composeArguments(action).pipe(Effect.flatMap(runCompose), Effect.provide(NodeServices.layer)),
+  composeArguments(requestedAction).pipe(
+    Effect.flatMap(runCompose),
+    Effect.provide(NodeServices.layer),
+  ),
   (cause) =>
     causeRecord("local.services_command_failed", {
       cause,

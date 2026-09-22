@@ -1,15 +1,17 @@
+import { readJobs } from "@repo/config";
 import { Process, consumeJobs } from "@repo/runtime/jobs";
 import { Effect } from "effect";
 
 import { MonitorFailure } from "./failure.ts";
-import { monitorWorker } from "./index.ts";
+import { monitorWorker, type MonitorBindings } from "./index.ts";
+import { type SentMail } from "./mail-recorder.ts";
 
-import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
-import type { JobsBindings } from "@repo/config";
-import type { MonitorBindings } from "./index.ts";
-import type { SentMail } from "./mail-recorder.ts";
+import type { DurableObjectNamespace } from "@cloudflare/workers-types";
 
-type Outcome = "die" | "fail" | "notify" | "succeed";
+/** @canonical-values monitor.probe-outcome */
+const probeOutcomes = ["die", "fail", "notify", "succeed"] as const;
+
+type Outcome = (typeof probeOutcomes)[number];
 
 declare global {
   namespace Cloudflare {
@@ -17,8 +19,8 @@ declare global {
       readonly ALERT_FROM: string;
       readonly ALERT_TO: string;
       readonly EMAIL: {
-        readonly send: (message: SentMail) => void;
-        readonly taken: () => Promise<SentMail[]>;
+        readonly send: (sentMail: SentMail) => void;
+        readonly taken: () => readonly SentMail[];
       };
       readonly MONITOR: DurableObjectNamespace;
     }
@@ -32,46 +34,41 @@ const probeFailure = { subject: "probe failed", text: "probe failed" } as const;
 const probeMonitor = monitorWorker<MonitorBindings>({
   check({ ctx }, notify) {
     return Effect.gen(function* probe() {
-      const outcome = yield* Effect.promise(() => ctx.storage.get<Outcome>("outcome"));
-      if (outcome === "fail") {
+      const recordedProbe = yield* Effect.promise(() => ctx.storage.get<Outcome>("outcome"));
+      if (recordedProbe === probeOutcomes[1]) {
         return yield* new MonitorFailure({ code: "alert_config_invalid" });
       }
-      if (outcome === "die") {
+      if (recordedProbe === probeOutcomes[0]) {
         return yield* Effect.die("the probe was asked to defect");
       }
-      if (outcome === "notify") {
+      if (recordedProbe === probeOutcomes[2]) {
         yield* notify(probeAlert);
       }
-      return { outcome: outcome ?? "succeed" };
+      return { outcome: recordedProbe ?? probeOutcomes[3] };
     });
   },
-  className: "ProbeMonitor",
   event: probeEvent,
   failure: probeFailure,
 });
 
-const ProbeMonitor: new (
-  ctx: DurableObjectState,
-  env: MonitorBindings,
-) => {
-  fetch(): Promise<Response>;
-} = probeMonitor.Worker;
-const probeHandler = probeMonitor.handler;
-const workersHandler: {
-  readonly fetch: () => Response;
-  readonly queue: (batch: MessageBatch, environment: unknown) => Promise<void>;
-  readonly scheduled: (
-    controller: unknown,
-    env: { readonly MONITOR: Pick<DurableObjectNamespace, "get" | "idFromName"> },
-  ) => Promise<void>;
-} = {
-  ...probeHandler,
-  queue: (batch: MessageBatch, environment: unknown) =>
-    consumeJobs(batch, environment as JobsBindings),
-};
-
 export { MailRecorder } from "./mail-recorder.ts";
 export type { SentMail } from "./mail-recorder.ts";
+
+class ProbeMonitor extends probeMonitor.Worker {}
+
 export { ProbeMonitor, Process, probeAlert, probeEvent, probeFailure };
 export type { Outcome };
+const probeHandler = probeMonitor.handler;
+
+const workersHandler = {
+  ...probeHandler,
+  queue: (batch: MessageBatch, environment: unknown): Promise<void> =>
+    Effect.runPromise(
+      Effect.gen(function* queueJobs() {
+        const jobs = yield* readJobs(environment);
+        yield* Effect.promise(() => consumeJobs(batch, jobs));
+      }),
+    ),
+};
+
 export default workersHandler;

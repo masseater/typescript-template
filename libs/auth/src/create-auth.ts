@@ -59,20 +59,20 @@ const createDatabaseHooks = (
   };
 };
 
-const SECONDS_PER_MINUTE = 60;
+const minuteInSeconds = 60;
 const MINUTES_PER_HOUR = 60;
-const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
+const SECONDS_PER_HOUR = minuteInSeconds * MINUTES_PER_HOUR;
 const ADMIN_SESSION_HOURS = 8;
 const ADMIN_SESSION_SECONDS = ADMIN_SESSION_HOURS * SECONDS_PER_HOUR;
 const HOURS_PER_DAY = 24;
 const USER_SESSION_DAYS = 7;
 const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOUR;
 const FRESH_SESSION_MINUTES = 5;
-const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
+const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * minuteInSeconds;
 const EXISTING_ACCOUNT_NOTICE_MINUTES = 10;
-const MILLISECONDS_PER_SECOND = 1000;
+const secondInMilliseconds = 1000;
 const EXISTING_ACCOUNT_NOTICE_MILLISECONDS =
-  EXISTING_ACCOUNT_NOTICE_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+  EXISTING_ACCOUNT_NOTICE_MINUTES * minuteInSeconds * secondInMilliseconds;
 
 const verificationLink = (origin: string, token: string): string => {
   return new URL(`/verify-email#${new URLSearchParams({ token }).toString()}`, origin).href;

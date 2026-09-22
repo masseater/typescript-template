@@ -44,7 +44,7 @@ type App = ReturnType<typeof boardApp>;
 
 function boardApp() {
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer(appEnvironment(), APPLICATION.user, routes)),
+    Layer.orDie(appLayer({ env: appEnvironment(), audience: APPLICATION.user, routes })),
   );
   const api = apiRoutes(runtime, reporting);
   return createApi(apiRoot).use(accountApi(api)).use(boardApi(api));
