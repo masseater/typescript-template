@@ -1,6 +1,6 @@
 import { assert, it } from "@effect/vitest";
-import { AlchemyContext } from "alchemy/AlchemyContext";
 import { layer as alchemistRuntime } from "alchemy/Alchemist";
+import { AlchemyContext } from "alchemy/AlchemyContext";
 import { Effect } from "effect";
 
 import { layer } from "./alchemist.ts";
@@ -16,10 +16,7 @@ it.effect("turns on state-store recovery for every Alchemist call site", () =>
 
 it.effect("differs from Alchemy's default Alchemist layer", () =>
   Effect.gen(function* program() {
-    const restored = yield* AlchemyContext.pipe(
-      Effect.provide(alchemistRuntime()),
-      Effect.scoped,
-    );
+    const restored = yield* AlchemyContext.pipe(Effect.provide(alchemistRuntime()), Effect.scoped);
     assert.isFalse(restored.updateStateStore);
   }),
 );
