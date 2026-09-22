@@ -83,7 +83,7 @@ export const auditActionsOf = Effect.fn("auditActionsOf")(function* auditActions
 
 export const addCredential = (userId: string): Effect.Effect<void, DatabaseFailure, Database> => {
   return Effect.gen(function* addCredentialProgram() {
-    const createdAt = DateTime.toDate(yield* DateTime.now);
+    const createdAt = DateTime.toDate(DateTime.nowUnsafe());
     yield* query((database) =>
       database
         .insert(account)
@@ -114,9 +114,9 @@ export const addSession = Effect.fn("addSession")(function* addSession(opened: {
     database.select().from(user).where(eq(user.id, opened.userId)),
   );
   const securityVersion = owners.at(0)?.securityVersion ?? 0;
-  const createdAt = DateTime.toDate(yield* DateTime.now);
+  const createdAt = DateTime.toDate(DateTime.nowUnsafe());
   const expiresAt = DateTime.toDate(
-    DateTime.makeUnsafe(DateTime.toEpochMillis(yield* DateTime.now) + SESSION_LIFETIME_MS),
+    DateTime.makeUnsafe(DateTime.toEpochMillis(DateTime.nowUnsafe()) + SESSION_LIFETIME_MS),
   );
   yield* query((database) =>
     database

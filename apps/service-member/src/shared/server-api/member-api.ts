@@ -112,7 +112,11 @@ function memberApi(
             yield* requirePaid(user.id);
             const { keyword, page } = yield* readSearchParams(MemberListQuery, request);
             const offset = (page - 1) * memberPageSize;
-            const list = yield* listMembers(user.id, { keyword, limit: memberPageSize, offset });
+            const list = yield* listMembers(user.id, {
+              keyword,
+              limit: memberPageSize,
+              offset,
+            });
             return { ...list, pageSize: memberPageSize };
           }),
         failures,

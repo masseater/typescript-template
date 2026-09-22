@@ -114,7 +114,32 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     .post("/agreements/withdraw", ...api.route({ response: AgreementsView }, withdraw, failures));
 }
 
+const consentExempt = (request: Request): boolean => {
+  const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
+  const relative = path.startsWith("/api/") ? path.slice("/api".length) : path;
+  if (
+    relative.startsWith("/auth") ||
+    relative.startsWith("/agreements") ||
+    relative === "/session" ||
+    relative === "/health" ||
+    relative === "/telemetry" ||
+    relative.startsWith("/invite") ||
+    relative === "/contact" ||
+    relative === "/flags" ||
+    relative === "/leave" ||
+    relative.startsWith("/recovery") ||
+    relative.startsWith("/billing") ||
+    relative.startsWith("/support")
+  ) {
+    return true;
+  }
+  return relative === "/onboarding" && request.method === "GET";
+};
+
 const enforceAgreements = Effect.fn("consent.gate")(function* enforceAgreements(request: Request) {
+  if (consentExempt(request)) {
+    return;
+  }
   yield* verifySession(request.headers).pipe(
     Effect.flatMap(({ user }) => requireCurrentAgreements(user.id)),
     Effect.catchTags({
