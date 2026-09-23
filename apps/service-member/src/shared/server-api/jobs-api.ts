@@ -34,8 +34,8 @@ function jobsApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .post(
       "/jobs",
-      api.route(
-        JobAccepted,
+      ...api.route(
+        { response: JobAccepted },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySession(request.headers);
@@ -49,8 +49,8 @@ function jobsApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/jobs/:id",
-      api.route(
-        JobStatusView,
+      ...api.route(
+        { response: JobStatusView },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySession(request.headers);
