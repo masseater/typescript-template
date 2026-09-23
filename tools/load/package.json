@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@repo/ai-native-telemetry": "workspace:*",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/k6": "2.2.1",
     "@types/node": "catalog:",

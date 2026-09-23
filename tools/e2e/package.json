@@ -5,8 +5,8 @@
   "devDependencies": {
     "@effect/platform-node": "catalog:",
     "@mergifyio/vitest": "catalog:",
-    "@repo/ai-native-telemetry": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "effect": "catalog:",

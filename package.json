@@ -11,7 +11,6 @@
     "@effect/tsgo": "catalog:",
     "@mergifyio/vitest": "catalog:",
     "@repo/ai-native": "workspace:*",
-    "@repo/ai-native-telemetry": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/db-local": "workspace:*",

@@ -370,9 +370,6 @@ importers:
       '@repo/ai-native':
         specifier: workspace:*
         version: link:tools/ai-native
-      '@repo/ai-native-telemetry':
-        specifier: workspace:*
-        version: link:tools/ai-native-telemetry
       '@repo/config':
         specifier: workspace:*
         version: link:libs/config
@@ -2178,12 +2175,12 @@ importers:
       '@mergifyio/vitest':
         specifier: 'catalog:'
         version: 0.3.7(vitest@5.0.1)
-      '@repo/ai-native-telemetry':
-        specifier: workspace:*
-        version: link:../ai-native-telemetry
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
+      '@repo/telemetry':
+        specifier: workspace:*
+        version: link:../../libs/telemetry
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config
@@ -2230,9 +2227,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.117(effect@4.0.0-rc.117)(vitest@5.0.1)
-      '@repo/ai-native-telemetry':
+      '@repo/telemetry':
         specifier: workspace:*
-        version: link:../ai-native-telemetry
+        version: link:../../libs/telemetry
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../../libs/vite-config
