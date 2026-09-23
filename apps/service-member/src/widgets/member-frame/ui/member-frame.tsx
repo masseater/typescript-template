@@ -19,15 +19,13 @@ function memberDestinationTo(item: ReturnType<typeof memberNavItems>[number]): s
 
 function MemberFrame({
   children,
-  memberBoard,
   user,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-  memberBoard: boolean;
   user: SessionView["user"];
 }>): ReactElement {
   const { pathname } = useLocation();
-  const destinations = memberNavItems(memberBoard, user.id).map((item) => ({
+  const destinations = memberNavItems(user.id).map((item) => ({
     exact: item.id === "home",
     icon: <Icon icon={item.icon} />,
     label: item.label,

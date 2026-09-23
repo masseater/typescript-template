@@ -44,7 +44,6 @@ function markup(locale: Locale, path: string): Promise<string> {
             null,
             createElement(MemberFrame, {
               children: createElement("p", null, "本文"),
-              memberBoard: true,
               user: member,
             }),
           ),

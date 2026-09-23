@@ -1,7 +1,7 @@
 import { Effect, type Redacted } from "effect";
 
 import { recordFlagToggle } from "./audit.ts";
-import { flagDefinitionByKey, type FlagKey } from "./definitions.ts";
+import { flagDefinitionFor, type FlagKey } from "./definitions.ts";
 import { type FlagshipWriteConfig, writeFlag } from "./flagship-write.ts";
 import { FeatureFlags } from "./service.ts";
 
@@ -13,7 +13,7 @@ const toggleFlag = Effect.fn("toggleFlag")(function* toggleFlag(change: {
   const featureFlags = yield* FeatureFlags;
   const previousEnabled = yield* featureFlags.getBoolean(change.key);
   if (previousEnabled === change.enabled) {
-    const definition = flagDefinitionByKey[change.key];
+    const definition = flagDefinitionFor(change.key);
     return { description: definition.description, enabled: previousEnabled, key: change.key };
   }
   const toggledFlag = yield* featureFlags.setBoolean(change.key, change.enabled);
