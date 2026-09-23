@@ -12,6 +12,7 @@ export default defineConfig({
       ...testRun,
       "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
       "pr-affected": { cache: false, command: "./src/repository/pr-affected.ts" },
+      "can-not-now": { cache: false, command: "./src/repository/can-not-now.ts" },
       "clean:shared-task-cache": {
         cache: false,
         command: "./src/repository/clean-shared-task-cache.ts",
@@ -44,6 +45,6 @@ export default defineConfig({
   pack: {
     entry: ["src/cli.ts", "src/canonical-literal-types/run-as-task.ts", "src/index.ts"],
     external: [/^vite-plus/],
-    dts: { generator: "tsgo" },
+    dts: { generator: "tsgo", tsconfig: "tsconfig.pack.json" },
   },
 });

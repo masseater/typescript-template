@@ -101,10 +101,13 @@ function needsModel(utterance: MemberUtterance): boolean {
 function interpret(
   state: InterviewState,
   utterance: MemberUtterance,
-  understood?: UnderstandingData,
+  understood: UnderstandingData | undefined,
 ): UnderstandingData {
   if (utterance.kind === "text") {
-    return understood ?? understandByRules(state, utterance.text);
+    if (understood === undefined) {
+      return understandByRules(state, utterance.text);
+    }
+    return understood;
   }
   if (utterance.kind === "choice" && state.phase === "asking") {
     const values = readValue(state.current, utterance.values);
