@@ -1,10 +1,7 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
 import { NodeServices } from "@effect/platform-node";
-import { Effect } from "effect";
-import { describe, expect, it, onTestFinished } from "vite-plus/test";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { expect } from "vite-plus/test";
 
 import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
 import { scanTraceFor } from "../src/features/dont-review-it/scan-trace/scan-trace-report.ts";
@@ -20,89 +17,99 @@ jobs:
       - run: vp run guard
 `;
 
-const repositoryWith = async (files: Readonly<Record<string, string>>): Promise<string> => {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), "dont-review-it-scan-trace-"));
-  onTestFinished(async () => rm(repositoryRoot, { recursive: true, force: true }));
+const repositoryWith = (files: Readonly<Record<string, string>>) =>
+  Effect.gen(function* repositoryWith() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+      prefix: "dont-review-it-scan-trace-",
+    });
+    yield* Effect.forEach(
+      Object.entries(files),
+      ([fileName, source]) =>
+        Effect.gen(function* writeFixture() {
+          const absolutePath = paths.join(repositoryRoot, fileName);
+          yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+          yield* filesystem.writeFileString(absolutePath, source);
+        }),
+      { discard: true },
+    );
+    return repositoryRoot;
+  });
 
-  await Promise.all(
-    Object.entries(files).map(async ([fileName, source]) => {
-      const absolutePath = join(repositoryRoot, fileName);
-      await mkdir(dirname(absolutePath), { recursive: true });
-      await writeFile(absolutePath, source, "utf-8");
+layer(NodeServices.layer)("検査の走査証跡", (it) => {
+  it.effect("観点ごとに、開いた対象の数を残す", () =>
+    Effect.gen(function* program() {
+      const repositoryRoot = yield* repositoryWith({
+        "renovate.json": `{}\n`,
+        ".github/workflows/ci.yml": GATED_WORKFLOW,
+      });
+
+      const scanned = (yield* runChecks(repositoryRoot)).outcomes.map((ranCheck) => [
+        ranCheck.check,
+        ranCheck.count,
+      ]);
+
+      expect(scanned).toStrictEqual([
+        ["entry-composition", 0],
+        ["canonical-values", 0],
+        ["equivalent-concepts", 0],
+        ["canonical-literal-types", 0],
+        ["duplicated-bodies", 0],
+        ["workflow-definitions", 1],
+        ["action-updates", 1],
+        ["lint-rule-index", 0],
+        ["lint-rule-docs", 0],
+        ["dependency-declarations", 0],
+        ["required-file-form", 1],
+        ["preset-adoption", 0],
+        ["telemetry-wiring", 0],
+        ["shippable-packages", 0],
+        ["intent-skills", 0],
+      ]);
     }),
   );
-  return repositoryRoot;
-};
 
-describe("検査の走査証跡", () => {
-  it("観点ごとに、開いた対象の数を残す", async () => {
-    const repositoryRoot = await repositoryWith({
-      "renovate.json": `{}\n`,
-      ".github/workflows/ci.yml": GATED_WORKFLOW,
-    });
+  it.effect("対象を持てなかった観点に、開かなかった理由を持たせる", () =>
+    Effect.gen(function* program() {
+      const repositoryRoot = yield* repositoryWith({ "package.json": `{"name": "solo"}` });
 
-    const scanned = (
-      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
-    ).outcomes.map((ranCheck) => [ranCheck.check, ranCheck.count]);
+      const skipped = (yield* runChecks(repositoryRoot)).outcomes
+        .filter((ranCheck) => ranCheck.skippedReason !== null)
+        .map((ranCheck) => [ranCheck.check, ranCheck.skippedReason]);
 
-    expect(scanned).toStrictEqual([
-      ["entry-composition", 0],
-      ["canonical-values", 0],
-      ["equivalent-concepts", 0],
-      ["canonical-literal-types", 0],
-      ["duplicated-bodies", 0],
-      ["workflow-definitions", 1],
-      ["action-updates", 1],
-      ["lint-rule-index", 0],
-      ["lint-rule-docs", 0],
-      ["dependency-declarations", 0],
-      ["required-file-form", 1],
-      ["preset-adoption", 0],
-      ["telemetry-wiring", 0],
-      ["shippable-packages", 0],
-      ["intent-skills", 0],
-    ]);
-  });
+      expect(skipped).toStrictEqual([
+        ["action-updates", "no workflow definition"],
+        ["dependency-declarations", "no workspace definition"],
+        ["preset-adoption", "no toolchain configuration"],
+      ]);
+    }),
+  );
 
-  it("対象を持てなかった観点に、開かなかった理由を持たせる", async () => {
-    const repositoryRoot = await repositoryWith({ "package.json": `{"name": "solo"}` });
+  it.effect("設定を持つリポジトリでは preset adoption を走査済みとして残す", () =>
+    Effect.gen(function* program() {
+      const repositoryRoot = yield* repositoryWith({
+        "package.json": `{"name": "solo"}`,
+        "vite.config.ts": "export default defineConfig({ lint: { rules: {} } });\n",
+      });
 
-    const skipped = (
-      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
-    ).outcomes
-      .filter((ranCheck) => ranCheck.skippedReason !== null)
-      .map((ranCheck) => [ranCheck.check, ranCheck.skippedReason]);
+      const presetAdoption = (yield* runChecks(repositoryRoot)).outcomes.find(
+        (presetAdoptionRun) => presetAdoptionRun.check === "preset-adoption",
+      );
 
-    expect(skipped).toStrictEqual([
-      ["action-updates", "no workflow definition"],
-      ["dependency-declarations", "no workspace definition"],
-      ["preset-adoption", "no toolchain configuration"],
-    ]);
-  });
+      expect(presetAdoption?.skippedReason).toBeNull();
+    }),
+  );
 
-  it("設定を持つリポジトリでは preset adoption を走査済みとして残す", async () => {
-    const repositoryRoot = await repositoryWith({
-      "package.json": `{"name": "solo"}`,
-      "vite.config.ts": "export default defineConfig({ lint: { rules: {} } });\n",
-    });
+  it.effect("人間が読む形では、状態の記号と対象の規模を観点ごとに桁で揃えて並べる", () =>
+    Effect.gen(function* program() {
+      const repositoryRoot = yield* repositoryWith({
+        "renovate.json": `{}\n`,
+        ".github/workflows/ci.yml": GATED_WORKFLOW,
+      });
+      const { outcomes } = yield* runChecks(repositoryRoot);
 
-    const presetAdoption = (
-      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
-    ).outcomes.find((presetAdoptionRun) => presetAdoptionRun.check === "preset-adoption");
-
-    expect(presetAdoption?.skippedReason).toBeNull();
-  });
-
-  it("人間が読む形では、状態の記号と対象の規模を観点ごとに桁で揃えて並べる", async () => {
-    const repositoryRoot = await repositoryWith({
-      "renovate.json": `{}\n`,
-      ".github/workflows/ci.yml": GATED_WORKFLOW,
-    });
-    const { outcomes } = await Effect.runPromise(
-      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
-    );
-
-    expect(scanTraceFor({ outcomes, readByAgent: false, colored: false })).toMatchInlineSnapshot(`
+      expect(scanTraceFor({ outcomes, readByAgent: false, colored: false })).toMatchInlineSnapshot(`
       "  ✓ entry-composition        0 manifests
         ✓ canonical-values         0 source files
         ✓ equivalent-concepts      0 concepts
@@ -122,18 +129,18 @@ describe("検査の走査証跡", () => {
         15 checks ran, nothing to report
       "
     `);
-  });
+    }),
+  );
 
-  it("AI が読む形では、記号も桁揃えも持たせずに 1 行 1 観点で並べる", async () => {
-    const repositoryRoot = await repositoryWith({
-      "renovate.json": `{}\n`,
-      ".github/workflows/ci.yml": GATED_WORKFLOW,
-    });
-    const { outcomes } = await Effect.runPromise(
-      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
-    );
+  it.effect("AI が読む形では、記号も桁揃えも持たせずに 1 行 1 観点で並べる", () =>
+    Effect.gen(function* program() {
+      const repositoryRoot = yield* repositoryWith({
+        "renovate.json": `{}\n`,
+        ".github/workflows/ci.yml": GATED_WORKFLOW,
+      });
+      const { outcomes } = yield* runChecks(repositoryRoot);
 
-    expect(scanTraceFor({ outcomes, readByAgent: true, colored: false })).toMatchInlineSnapshot(`
+      expect(scanTraceFor({ outcomes, readByAgent: true, colored: false })).toMatchInlineSnapshot(`
       "checked entry-composition 0 manifests 0 problems 0 warnings
       checked canonical-values 0 source files 0 problems 0 warnings
       checked equivalent-concepts 0 concepts 0 problems 0 warnings
@@ -151,20 +158,21 @@ describe("検査の走査証跡", () => {
       checked intent-skills 0 manifests 0 problems 0 warnings
       "
     `);
-  });
+    }),
+  );
 
-  it("違反を見つけた観点を、その件数とともに残す", async () => {
-    const repositoryRoot = await repositoryWith({
-      "renovate.json": `{}\n`,
-      ".github/workflows/ci.yml": "jobs:\n  build:\n    steps: []\n",
-    });
+  it.effect("違反を見つけた観点を、その件数とともに残す", () =>
+    Effect.gen(function* program() {
+      const repositoryRoot = yield* repositoryWith({
+        "renovate.json": `{}\n`,
+        ".github/workflows/ci.yml": "jobs:\n  build:\n    steps: []\n",
+      });
 
-    const reported = (
-      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
-    ).outcomes
-      .filter((ranCheck) => ranCheck.problems.length > 0)
-      .map((ranCheck) => [ranCheck.check, ranCheck.problems.length]);
+      const reported = (yield* runChecks(repositoryRoot)).outcomes
+        .filter((ranCheck) => ranCheck.problems.length > 0)
+        .map((ranCheck) => [ranCheck.check, ranCheck.problems.length]);
 
-    expect(reported).toStrictEqual([["workflow-definitions", 1]]);
-  });
+      expect(reported).toStrictEqual([["workflow-definitions", 1]]);
+    }),
+  );
 });
