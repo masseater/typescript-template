@@ -53,4 +53,4 @@ const fetchJpyPerUsd = Effect.fn("fetchJpyPerUsd")(function* fetchJpyPerUsd(now:
   return quote.rates.JPY;
 });
 
-export { exchangeRateEndpoint, fetchJpyPerUsd };
+export { fetchJpyPerUsd };

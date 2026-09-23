@@ -6,7 +6,7 @@ import { HttpResponse, http } from "msw";
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
-import { exchangeRateEndpoint, fetchJpyPerUsd } from "./exchange-rate.ts";
+import { fetchJpyPerUsd } from "./exchange-rate.ts";
 
 import type { UsageSnapshot } from "./billing.ts";
 import type { BudgetFailure } from "./config.ts";
@@ -236,7 +236,7 @@ function rateFrom(respond: () => Response, date: number): Effect.Effect<number, 
     Effect.sync(() => {
       const network = setupNetwork();
       network.configure({ onUnhandledFrame: "error" });
-      network.use(http.get(exchangeRateEndpoint, respond));
+      network.use(http.get("https://api.frankfurter.dev/v1/latest", respond));
       network.enable();
       return network;
     }),
