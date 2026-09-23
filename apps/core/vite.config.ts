@@ -1,4 +1,11 @@
-import { effectDiagnostics, lifecycle, modularBoundaries, taskInput } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+  taskInput,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -16,11 +23,13 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
       ...lifecycle({
-        precommit: [],
-        prepush: ["check:effect", "check:modular"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check:modular"],
         prepr: ["build"],
         premerge: [],
         prerelease: [],
