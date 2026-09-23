@@ -1,8 +1,7 @@
-import { join } from "node:path";
-
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { createNoClassAsMutableCell } from "./no-class-as-mutable-cell--decide-in-an-iife.ts";
 
@@ -12,7 +11,7 @@ const repositoryRoot = findWorkspaceRoot(process.cwd());
 
 const SUBJECT_PATH = "packages/dont-review-it/src/subject.ts";
 
-const subjectFilename = join(repositoryRoot, SUBJECT_PATH);
+const subjectFilename = path.join(repositoryRoot, SUBJECT_PATH);
 
 const TALLY = `class Tally {
   total = 0;
@@ -56,12 +55,12 @@ describe("dont-review-it/no-class-as-mutable-cell--decide-in-an-iife", () => {
       {
         name: "a class the index knows nothing about at this path is left alone",
         code: TALLY,
-        filename: join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
       },
       {
         name: "a test file is never indexed, so it is never reported",
         code: TALLY,
-        filename: join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
       },
       {
         name: "a class expression carries no declared name to match",

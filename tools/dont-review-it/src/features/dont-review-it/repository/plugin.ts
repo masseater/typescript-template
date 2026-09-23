@@ -12,6 +12,7 @@ import {
 } from "./effect-rules.ts";
 import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
+import { lazyMotionVisitor } from "./lazy-motion.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { modularImportsVisitor } from "./modular-imports.ts";
 import { modularLayersVisitor } from "./modular-layers.ts";
@@ -341,6 +342,12 @@ const projectPlugin = definePlugin({
       create: logVisitor,
       meta: metadata(
         "Effect.log / logError / logWarning / logInfo などを直接呼べません。水準の判定を迂回すると、同じ事象が宛先によって違う厳しさで出ます。libs/observability の logAt / logCause を通してください。",
+      ),
+    },
+    "lazy-motion": {
+      create: lazyMotionVisitor,
+      meta: metadata(
+        'motion/react から motion と m は import できません。@repo/ui の MotionProvider は画面全体を LazyMotion strict で包みます。motion.div などは開発時のブラウザでだけ例外になり、本番では黙って全機能を同梱します。React Bits から追加した部品も含め、import * as m from "motion/react-m" の m.div などを使ってください。',
       ),
     },
     "no-internal-mocks": {

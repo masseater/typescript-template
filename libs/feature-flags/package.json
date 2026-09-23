@@ -11,6 +11,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@openfeature/server-sdk": "catalog:",
     "@repo/auth": "workspace:*",
+    "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "effect": "catalog:"
   },

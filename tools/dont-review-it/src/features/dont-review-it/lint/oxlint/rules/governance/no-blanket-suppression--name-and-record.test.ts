@@ -1,10 +1,9 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { noBlanketSuppression } from "./no-blanket-suppression--name-and-record.ts";
 
 const REASSIGN_RULE = "no-reassign--use-spread-or-iife";
@@ -15,10 +14,27 @@ const GROUNDS = "the platform interface writes the total back into the element";
 
 const LEDGER_FILE_NAME = "approved-lint-suppressions.json";
 
-const ledgerRoot = mkdtempSync(join(tmpdir(), "dont-review-it-approval-ledger-"));
-mkdirSync(ledgerRoot, { recursive: true });
-writeFileSync(join(ledgerRoot, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-writeFileSync(join(ledgerRoot, LEDGER_FILE_NAME), "[]");
+const ledgerRoot = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-approval-ledger-" });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
+
+const FIXTURE_DIRECTORIES: readonly string[] = [ledgerRoot];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(ledgerRoot, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n"],
+  [path.join(ledgerRoot, LEDGER_FILE_NAME), "[]"],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-blanket-suppression--name-and-record", () => {
   testLintRule(noBlanketSuppression, {
@@ -106,7 +122,7 @@ describe("dont-review-it/no-blanket-suppression--name-and-record", () => {
       {
         name: "a repository ledger of approved suppressions is reported at the lint configuration",
         code: "export default { lint: {} };",
-        filename: join(ledgerRoot, "vite.config.ts"),
+        filename: path.join(ledgerRoot, "vite.config.ts"),
         errors: [{ messageId: "approvalLedger" }],
       },
     ],

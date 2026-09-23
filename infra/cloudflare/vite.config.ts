@@ -1,5 +1,12 @@
 import { applications } from "@repo/config";
-import { lifecycle, taskInput, testableLibraryRun } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  taskInput,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/features/cloudflare/monitors.ts";
@@ -11,7 +18,10 @@ const stackBuilds = ["core", ...applications, ...monitorStacks].map(
 export default defineConfig({
   run: {
     tasks: {
-      ...testableLibraryRun.tasks,
+      ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
+      ...modularBoundaries,
       "bootstrap:state": { cache: false, command: "./src/features/cloudflare/bootstrap-state.ts" },
       "db:bootstrap:remote": {
         cache: false,
@@ -45,10 +55,8 @@ export default defineConfig({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check:modular"],
         prepr: ["verify:stacks"],
-        premerge: ["test"],
         prerelease: ["verify:account"],
       }),
     },
   },
-  test: { testTimeout: 30_000 },
 });

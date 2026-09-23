@@ -1,10 +1,19 @@
-import { lifecycle, testableLibraryRun } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...testableLibraryRun.tasks,
+      ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
+      ...modularBoundaries,
       check: {
         command: "drizzle-kit check",
         input: [{ auto: true }, "!node_modules/.cache/**"],
@@ -18,13 +27,15 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check", "check:modular"],
-        premerge: ["test"],
       }),
     },
   },
   test: {
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     mockReset: true,
     restoreMocks: true,
-    testTimeout: 30_000,
   },
 });

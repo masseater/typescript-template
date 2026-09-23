@@ -2,12 +2,13 @@ import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import {
-  checkCode,
   effectDiagnostics,
   intentValidation,
   lifecycle,
-  testCoverageRun,
+  testRun,
+  checkCode,
   modularBoundaries,
+  workspaceCheckImports,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -15,14 +16,15 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       ...intentValidation,
-      ...checkCode,
-      ...testCoverageRun,
+      ...testRun,
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check", "check:modular"],
-        premerge: ["test"],
+        prepush: ["check:effect", "check:imports", "check", "check:modular"],
+        prepr: ["test"],
       }),
     },
   },

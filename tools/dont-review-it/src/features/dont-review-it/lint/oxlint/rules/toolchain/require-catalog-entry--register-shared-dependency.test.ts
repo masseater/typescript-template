@@ -1,138 +1,33 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { loadWorkspaceDependencies } from "../../lib/dependency-catalog/workspace-manifests.ts";
 import { createRequireCatalogEntry } from "./require-catalog-entry--register-shared-dependency.ts";
 
-const fixtureDir = mkdtempSync(join(tmpdir(), "dont-review-it-require-catalog-entry-"));
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-require-catalog-entry-" });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 const MODULE_SOURCE = "export const shipped = true;\n";
 
 const WORKSPACE_MANIFEST = "packages:\n  - packages/*\n";
 
-const sharedDir = join(fixtureDir, "shared");
-const aliasedDir = join(fixtureDir, "aliased");
+const sharedDir = path.join(fixtureDir, "shared");
+const aliasedDir = path.join(fixtureDir, "aliased");
 
-mkdirSync(join(sharedDir, "packages/alpha"), { recursive: true });
-mkdirSync(join(sharedDir, "packages/beta"), { recursive: true });
-mkdirSync(join(sharedDir, "packages/gamma"), { recursive: true });
-mkdirSync(join(aliasedDir, "packages/one"), { recursive: true });
-mkdirSync(join(aliasedDir, "packages/two"), { recursive: true });
-mkdirSync(join(aliasedDir, "sectionless"), { recursive: true });
-mkdirSync(join(aliasedDir, "manifestless"), { recursive: true });
-mkdirSync(join(fixtureDir, "no-manifest"), { recursive: true });
+const rootEntry = path.join(sharedDir, "entry.ts");
+const alphaEntry = path.join(sharedDir, "packages/alpha/entry.ts");
+const betaEntry = path.join(sharedDir, "packages/beta/entry.ts");
+const gammaEntry = path.join(sharedDir, "packages/gamma/entry.ts");
+const nestedGammaEntry = path.join(sharedDir, "packages/gamma/nested/deep.ts");
 
-writeFileSync(join(sharedDir, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST);
-writeFileSync(
-  join(sharedDir, "package.json"),
-  `${JSON.stringify({ name: "root", devDependencies: { "left-pad": "^1.0.0" } }, null, 2)}\n`,
-);
-writeFileSync(
-  join(sharedDir, "packages/alpha/package.json"),
-  `${JSON.stringify(
-    {
-      name: "alpha",
-      dependencies: {
-        "es-toolkit": "catalog:",
-        "@fixture/utils": "workspace:*",
-        linked: "link:../shared-lib",
-        filed: "file:../shared-lib",
-        "left-pad": "^1.0.0",
-        "only-here": "^2.0.0",
-      },
-      peerDependencies: { "peer-only": "^1.0.0" },
-    },
-    null,
-    2,
-  )}\n`,
-);
-writeFileSync(
-  join(sharedDir, "packages/beta/package.json"),
-  `${JSON.stringify(
-    {
-      name: "beta",
-      dependencies: {
-        "@fixture/utils": "workspace:*",
-        linked: "link:../shared-lib",
-        filed: "file:../shared-lib",
-      },
-      devDependencies: { "left-pad": "1.3.0" },
-      peerDependencies: { "peer-only": "^1.0.0" },
-    },
-    null,
-    2,
-  )}\n`,
-);
-writeFileSync(
-  join(sharedDir, "packages/gamma/package.json"),
-  `${JSON.stringify({ name: "gamma", dependencies: { "es-toolkit": "catalog:" } }, null, 2)}\n`,
-);
-
-const rootEntry = join(sharedDir, "entry.ts");
-writeFileSync(rootEntry, MODULE_SOURCE);
-const alphaEntry = join(sharedDir, "packages/alpha/entry.ts");
-writeFileSync(alphaEntry, MODULE_SOURCE);
-const betaEntry = join(sharedDir, "packages/beta/entry.ts");
-writeFileSync(betaEntry, MODULE_SOURCE);
-const gammaEntry = join(sharedDir, "packages/gamma/entry.ts");
-writeFileSync(gammaEntry, MODULE_SOURCE);
-mkdirSync(join(sharedDir, "packages/gamma/nested"), { recursive: true });
-const nestedGammaEntry = join(sharedDir, "packages/gamma/nested/deep.ts");
-writeFileSync(nestedGammaEntry, MODULE_SOURCE);
-
-writeFileSync(join(aliasedDir, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST);
-writeFileSync(
-  join(aliasedDir, "package.json"),
-  `${JSON.stringify({ name: "aliased-root" }, null, 2)}\n`,
-);
-writeFileSync(
-  join(aliasedDir, "packages/one/package.json"),
-  `${JSON.stringify(
-    {
-      name: "one",
-      dependencies: {
-        pad: "npm:left-pad@^1.0.0",
-        scoped: "npm:@fixture/tool",
-        broken: "npm:",
-        count: 5,
-      },
-      optionalDependencies: { "opt-shared": "^4.0.0" },
-    },
-    null,
-    2,
-  )}\n`,
-);
-writeFileSync(
-  join(aliasedDir, "packages/two/package.json"),
-  `${JSON.stringify(
-    {
-      name: "two",
-      dependencies: { "left-pad": "^1.0.0", "@fixture/tool": "^3.0.0" },
-      devDependencies: { "left-pad": "^9.9.9" },
-      optionalDependencies: { "opt-shared": "4.1.0" },
-    },
-    null,
-    2,
-  )}\n`,
-);
-writeFileSync(
-  join(aliasedDir, "sectionless/package.json"),
-  `${JSON.stringify({ name: "sectionless", dependencies: "oops" }, null, 2)}\n`,
-);
-writeFileSync(join(aliasedDir, "manifestless/package.json"), "[]\n");
-
-const packageOneEntry = join(aliasedDir, "packages/one/entry.ts");
-writeFileSync(packageOneEntry, MODULE_SOURCE);
-const twoEntry = join(aliasedDir, "packages/two/entry.ts");
-writeFileSync(twoEntry, MODULE_SOURCE);
-
-writeFileSync(join(fixtureDir, "no-manifest/pnpm-workspace.yaml"), "packages: []\n");
-const looseEntry = join(fixtureDir, "no-manifest/loose.ts");
-writeFileSync(looseEntry, MODULE_SOURCE);
+const packageOneEntry = path.join(aliasedDir, "packages/one/entry.ts");
+const twoEntry = path.join(aliasedDir, "packages/two/entry.ts");
+const looseEntry = path.join(fixtureDir, "no-manifest/loose.ts");
 
 const CATALOG = [{ catalog: ["es-toolkit"] }];
 
@@ -148,6 +43,122 @@ const OPTIONAL_SITES = "`packages/one` at `^4.0.0`, `packages/two` at `4.1.0`";
 const requireCatalogEntry = createRequireCatalogEntry({
   loadWorkspaces: loadWorkspaceDependencies,
 });
+
+const FIXTURE_DIRECTORIES: readonly string[] = [
+  path.join(sharedDir, "packages/alpha"),
+  path.join(sharedDir, "packages/beta"),
+  path.join(sharedDir, "packages/gamma"),
+  path.join(aliasedDir, "packages/one"),
+  path.join(aliasedDir, "packages/two"),
+  path.join(aliasedDir, "sectionless"),
+  path.join(aliasedDir, "manifestless"),
+  path.join(fixtureDir, "no-manifest"),
+  path.join(sharedDir, "packages/gamma/nested"),
+];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(sharedDir, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [
+    path.join(sharedDir, "package.json"),
+    `${JSON.stringify({ name: "root", devDependencies: { "left-pad": "^1.0.0" } }, null, 2)}\n`,
+  ],
+  [
+    path.join(sharedDir, "packages/alpha/package.json"),
+    `${JSON.stringify(
+      {
+        name: "alpha",
+        dependencies: {
+          "es-toolkit": "catalog:",
+          "@fixture/utils": "workspace:*",
+          linked: "link:../shared-lib",
+          filed: "file:../shared-lib",
+          "left-pad": "^1.0.0",
+          "only-here": "^2.0.0",
+        },
+        peerDependencies: { "peer-only": "^1.0.0" },
+      },
+      null,
+      2,
+    )}\n`,
+  ],
+  [
+    path.join(sharedDir, "packages/beta/package.json"),
+    `${JSON.stringify(
+      {
+        name: "beta",
+        dependencies: {
+          "@fixture/utils": "workspace:*",
+          linked: "link:../shared-lib",
+          filed: "file:../shared-lib",
+        },
+        devDependencies: { "left-pad": "1.3.0" },
+        peerDependencies: { "peer-only": "^1.0.0" },
+      },
+      null,
+      2,
+    )}\n`,
+  ],
+  [
+    path.join(sharedDir, "packages/gamma/package.json"),
+    `${JSON.stringify({ name: "gamma", dependencies: { "es-toolkit": "catalog:" } }, null, 2)}\n`,
+  ],
+  [rootEntry, MODULE_SOURCE],
+  [alphaEntry, MODULE_SOURCE],
+  [betaEntry, MODULE_SOURCE],
+  [gammaEntry, MODULE_SOURCE],
+  [nestedGammaEntry, MODULE_SOURCE],
+  [path.join(aliasedDir, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(aliasedDir, "package.json"), `${JSON.stringify({ name: "aliased-root" }, null, 2)}\n`],
+  [
+    path.join(aliasedDir, "packages/one/package.json"),
+    `${JSON.stringify(
+      {
+        name: "one",
+        dependencies: {
+          pad: "npm:left-pad@^1.0.0",
+          scoped: "npm:@fixture/tool",
+          broken: "npm:",
+          count: 5,
+        },
+        optionalDependencies: { "opt-shared": "^4.0.0" },
+      },
+      null,
+      2,
+    )}\n`,
+  ],
+  [
+    path.join(aliasedDir, "packages/two/package.json"),
+    `${JSON.stringify(
+      {
+        name: "two",
+        dependencies: { "left-pad": "^1.0.0", "@fixture/tool": "^3.0.0" },
+        devDependencies: { "left-pad": "^9.9.9" },
+        optionalDependencies: { "opt-shared": "4.1.0" },
+      },
+      null,
+      2,
+    )}\n`,
+  ],
+  [
+    path.join(aliasedDir, "sectionless/package.json"),
+    `${JSON.stringify({ name: "sectionless", dependencies: "oops" }, null, 2)}\n`,
+  ],
+  [path.join(aliasedDir, "manifestless/package.json"), "[]\n"],
+  [packageOneEntry, MODULE_SOURCE],
+  [twoEntry, MODULE_SOURCE],
+  [path.join(fixtureDir, "no-manifest/pnpm-workspace.yaml"), "packages: []\n"],
+  [looseEntry, MODULE_SOURCE],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/require-catalog-entry--register-shared-dependency", () => {
   testLintRule(requireCatalogEntry, {

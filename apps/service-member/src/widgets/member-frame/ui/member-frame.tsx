@@ -1,4 +1,4 @@
-import { AppFrame, Icon, ToastProvider } from "@repo/ui";
+import { AppFrame, Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { serviceName } from "#shared/config/index.ts";
@@ -40,22 +40,20 @@ function MemberFrame({
     }),
   );
   return (
-    <ToastProvider>
-      <AppFrame
-        bottomTabs
-        collapsedMark={collapsedMemberMark}
-        density="compact"
-        footer={() => <AccountMenu compact name={user.name} userId={user.id} />}
-        headerLeading={<AccountMenu compact name={user.name} userId={user.id} />}
-        homeTo="/home"
-        navigationId="member-navigation"
-        productName={serviceName}
-        sections={[{ destinations, label: "" }]}
-        title={titleForPath(pathname)}
-      >
-        {children}
-      </AppFrame>
-    </ToastProvider>
+    <AppFrame
+      bottomTabs
+      collapsedMark={collapsedMemberMark}
+      density="compact"
+      footer={() => <AccountMenu compact name={user.name} userId={user.id} />}
+      headerLeading={<AccountMenu compact name={user.name} userId={user.id} />}
+      homeTo="/home"
+      navigationId="member-navigation"
+      productName={serviceName}
+      sections={[{ destinations, label: "" }]}
+      title={titleForPath(pathname)}
+    >
+      {children}
+    </AppFrame>
   );
 }
 

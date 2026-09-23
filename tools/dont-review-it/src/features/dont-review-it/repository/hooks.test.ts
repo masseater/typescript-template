@@ -169,10 +169,11 @@ function ungatedProjects(): string[] {
 }
 
 function strayTestTasks(): string[] {
-  const allowed = new Set([...testProjectDirectories, ...workspacesWithTests()]);
   return configuredDirectories.filter(
     (directory) =>
-      directory !== "." && !allowed.has(directory) && taskNames(directory).includes("test"),
+      directory !== "." &&
+      !testProjectDirectories.includes(directory) &&
+      taskNames(directory).includes("test"),
   );
 }
 
@@ -209,18 +210,6 @@ function toolsPackagesWithTests(): string[] {
       ),
     ),
   ].toSorted();
-}
-
-function workspacesWithTests(): Set<string> {
-  const repositoryRoot = join(toolsRoot, "..");
-  return new Set(
-    workspaceDirectories.filter((directory) => {
-      if (directory === ".") {
-        return false;
-      }
-      return collectTestPackages(join(repositoryRoot, directory), directory).length > 0;
-    }),
-  );
 }
 
 function uncoveredToolTestPackages(): string[] {
@@ -360,13 +349,27 @@ describe("lifecycle contents", () => {
     ]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toEqual(
-      expect.arrayContaining(["knip", "check:canonical-literal-types", "check:text"]),
+      expect.arrayContaining(["check:effect", "knip", "check:canonical-literal-types"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
-    expect(reachable(".", ["prepush"])).not.toContain("check:code");
-    expect(reachable(".", ["prepush"])).not.toContain("check:client");
-    expect(reachable(".", ["prepush"])).not.toContain("check:imports");
-    expect(reachable(".", ["prepush"])).not.toContain("check:react");
+    expect(
+      configuredDirectories.filter(
+        (directory) => !reachable(directory, ["precommit"]).includes("check:code"),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.filter(
+        (directory) =>
+          directory !== "." && !reachable(directory, ["prepush"]).includes("check:imports"),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.filter((directory) =>
+        ["check:client", "check:react"].some((name) =>
+          reachable(directory, ["prepush"]).includes(name),
+        ),
+      ),
+    ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
     expect(
       configuredDirectories.flatMap((directory) =>
         taskNames(directory).includes("check:effect")
@@ -390,6 +393,23 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
       [],
     );
+  });
+
+  it("leaves every root entry outside the workspaces to the root check:code", () => {
+    expect.hasAssertions();
+    const repositoryRoot = join(toolsRoot, "..");
+    const ignored = new Set([
+      ".git",
+      ...readFileSync(join(repositoryRoot, ".gitignore"), "utf8")
+        .split("\n")
+        .filter((line) => /^[\w.-]+\/?$/u.test(line))
+        .map((line) => line.replace(/\/$/u, "")),
+      ...workspaceDirectories.map((directory) => directory.split("/")[0]),
+    ]);
+    const checked = new Set(commands(".", "check:code").flatMap((command) => command.split(" ")));
+    expect(
+      readdirSync(repositoryRoot).filter((entry) => !ignored.has(entry) && !checked.has(entry)),
+    ).toStrictEqual([]);
   });
 
   it("type-checks a package before that package's bundle", () => {

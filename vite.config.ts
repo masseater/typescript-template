@@ -24,9 +24,43 @@ const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 const textModule = (code: string, moduleId: string): string | undefined =>
   textModulePattern.test(moduleId) ? `export default ${JSON.stringify(code)};` : undefined;
 
+const rootOwnedPaths = [
+  ".claude",
+  ".cursor",
+  ".github",
+  ".gitignore",
+  ".mcp.json",
+  ".mergify.yml",
+  ".textlintrc.json",
+  ".vite-hooks",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "DESIGN.md",
+  "README.md",
+  "docs",
+  "knip.ts",
+  "mise.toml",
+  "package.json",
+  "patches",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "renovate.json",
+  "tsconfig.base.json",
+  "tsconfig.json",
+  "vite.config.ts",
+  "vitest.mutation.config.ts",
+  "vitest.workers.config.ts",
+  "vitest.workers.main.ts",
+] as const;
+
 const nodeTestIncludes = [
+  "libs/**/*.test.ts",
+  "libs/**/*.test.tsx",
+  "apps/**/*.test.ts",
+  "apps/**/*.test.tsx",
   ...rootNodeToolTestIncludes,
   "tools/dont-review-it/src/features/dont-review-it/repository/**/*.test.ts",
+  "infra/**/*.test.ts",
 ] as const;
 
 export default defineConfig({
@@ -42,6 +76,10 @@ export default defineConfig({
   run: {
     tasks: {
       "compile:paraglide": workspaceParaglideCompile,
+      "check:code": {
+        command: `vp check ${rootOwnedPaths.join(" ")}`,
+        input: [...taskInput],
+      },
       ...effectDiagnostics,
       "check:types": {
         command: "dont-review-it-typecheck",
@@ -80,17 +118,6 @@ export default defineConfig({
         command: "vp test run --project dev-server",
         dependsOn: ["compile:paraglide"],
       },
-      "test:workers": {
-        command: "vp test run --project workers",
-        input: [
-          ...taskInput,
-          "!coverage/**",
-          { base: "workspace", pattern: "!**/coverage/**" },
-          { base: "workspace", pattern: "pnpm-lock.yaml" },
-          { base: "workspace", pattern: "pnpm-workspace.yaml" },
-        ],
-        output: [],
-      },
       "test:storybook": {
         cache: false,
         command: "vp test run --project storybook",
@@ -105,7 +132,7 @@ export default defineConfig({
         ],
       },
       ...lifecycle({
-        precommit: ["check:text"],
+        precommit: ["check:text", "check:code"],
         prepush: ["check:effect", "knip", "check:canonical-literal-types"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],

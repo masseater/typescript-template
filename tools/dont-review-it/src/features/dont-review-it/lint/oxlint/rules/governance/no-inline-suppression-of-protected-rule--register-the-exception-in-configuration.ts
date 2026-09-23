@@ -1,6 +1,5 @@
-import { relative, resolve } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { ancestorsOf } from "../../lib/ast-node.ts";
 import { matchesAnchoredGlobPath } from "../../lib/glob-path-match.ts";
 import {
@@ -43,10 +42,10 @@ const scopedPathsOf = (property: ESTree.ObjectProperty): readonly (string | null
 const PATTERN_MARKER = /[*?[\]{}]/u;
 
 const listsCompletePaths = (paths: readonly (string | null)[]): boolean =>
-  paths.length > 0 && paths.every((path) => path !== null && !PATTERN_MARKER.test(path));
+  paths.length > 0 && paths.every((entry) => entry !== null && !PATTERN_MARKER.test(entry));
 
 const patternAmong = (paths: readonly (string | null)[]): string | undefined =>
-  paths.filter((path) => path !== null).find((path) => PATTERN_MARKER.test(path));
+  paths.filter((entry) => entry !== null).find((entry) => PATTERN_MARKER.test(entry));
 
 const weakeningMessageFor = (weakened: WeakenedRule): RuleMessage | null => {
   const carried = { ruleName: weakened.ruleName, severity: weakened.severity };
@@ -98,7 +97,7 @@ export const noInlineSuppressionOfProtectedRule = createDontReviewItRule({
     const settings = protectionSettingsIn(inspection.options);
     const protectedRules = protectedRulesFrom({ settings, keptRule: RULE_NAME });
     const relativePath = toPosixPath(
-      relative(inspection.cwd, resolve(inspection.cwd, inspection.filename)),
+      path.relative(inspection.cwd, path.resolve(inspection.cwd, inspection.filename)),
     );
     const generated = [...GENERATED_PATHS, ...settings.generatedPaths].some((pattern) =>
       matchesAnchoredGlobPath({ relativePath, pattern }),

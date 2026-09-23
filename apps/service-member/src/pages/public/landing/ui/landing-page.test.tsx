@@ -1,4 +1,4 @@
-import { FieldValidationMessageProvider } from "@repo/ui";
+import { AppProviders } from "@repo/ui/shell";
 import {
   RouterContextProvider,
   createMemoryHistory,
@@ -59,9 +59,9 @@ const rendered = (locale: Locale, view: ReactElement): string => {
   });
   return renderToStaticMarkup(
     createElement(RouterContextProvider, {
-      children: createElement(FieldValidationMessageProvider, {
+      children: createElement(AppProviders, {
         children: view,
-        messages: fieldValidationMessages(locale),
+        fieldValidationMessages: fieldValidationMessages(locale),
       }),
       router,
     }),

@@ -1,42 +1,59 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { noSpecSpecificSharedSetup } from "./no-spec-specific-shared-setup--keep-setup-uniform.ts";
 
-const fixtureDir = mkdtempSync(
-  join(realpathSync(tmpdir()), "dont-review-it-no-spec-specific-shared-setup-"),
-);
-rmSync(fixtureDir, { recursive: true, force: true });
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.realPath(
+    yield* filesystem.makeTempDirectory({
+      prefix: "dont-review-it-no-spec-specific-shared-setup-",
+    }),
+  );
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
-mkdirSync(join(fixtureDir, "setup"), { recursive: true });
-mkdirSync(join(fixtureDir, "src/legacy"), { recursive: true });
+const SETUP_FILE = path.join(fixtureDir, "setup/shared.setup.ts");
 
-writeFileSync(join(fixtureDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-writeFileSync(join(fixtureDir, "package.json"), '{ "name": "@fixture/root" }\n');
-writeFileSync(
-  join(fixtureDir, "vite.config.ts"),
-  'export default defineConfig({ test: { setupFiles: ["./setup/shared.setup.ts"] } });\n',
-);
-writeFileSync(join(fixtureDir, "setup/shared.setup.ts"), 'import "./reached.ts";\n');
-writeFileSync(join(fixtureDir, "setup/reached.ts"), "export const seeded = 1;\n");
-writeFileSync(join(fixtureDir, "setup/declared.ts"), "export const seeded = 2;\n");
-writeFileSync(join(fixtureDir, "src/order.test.ts"), "export const asserted = 1;\n");
-writeFileSync(join(fixtureDir, "src/legacy/old.test.ts"), "export const asserted = 2;\n");
+const REACHED_FILE = path.join(fixtureDir, "setup/reached.ts");
 
-const SETUP_FILE = join(fixtureDir, "setup/shared.setup.ts");
+const DECLARED_FILE = path.join(fixtureDir, "setup/declared.ts");
 
-const REACHED_FILE = join(fixtureDir, "setup/reached.ts");
+const PLAIN_FILE = path.join(fixtureDir, "plain.ts");
 
-const DECLARED_FILE = join(fixtureDir, "setup/declared.ts");
+const RUNNER_CONFIG_FILE = path.join(fixtureDir, "vite.config.ts");
 
-const PLAIN_FILE = join(fixtureDir, "plain.ts");
-writeFileSync(PLAIN_FILE, "export const total = 1;\n");
+const FIXTURE_DIRECTORIES: readonly string[] = [
+  path.join(fixtureDir, "setup"),
+  path.join(fixtureDir, "src/legacy"),
+];
 
-const RUNNER_CONFIG_FILE = join(fixtureDir, "vite.config.ts");
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(fixtureDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n"],
+  [path.join(fixtureDir, "package.json"), '{ "name": "@fixture/root" }\n'],
+  [
+    path.join(fixtureDir, "vite.config.ts"),
+    'export default defineConfig({ test: { setupFiles: ["./setup/shared.setup.ts"] } });\n',
+  ],
+  [path.join(fixtureDir, "setup/shared.setup.ts"), 'import "./reached.ts";\n'],
+  [path.join(fixtureDir, "setup/reached.ts"), "export const seeded = 1;\n"],
+  [path.join(fixtureDir, "setup/declared.ts"), "export const seeded = 2;\n"],
+  [path.join(fixtureDir, "src/order.test.ts"), "export const asserted = 1;\n"],
+  [path.join(fixtureDir, "src/legacy/old.test.ts"), "export const asserted = 2;\n"],
+  [PLAIN_FILE, "export const total = 1;\n"],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-spec-specific-shared-setup--keep-setup-uniform", () => {
   testLintRule(noSpecSpecificSharedSetup, {

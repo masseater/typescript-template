@@ -1,5 +1,21 @@
-import { applicationPorts, loopbackAddress, type Application } from "@repo/config";
+import { cloudflare } from "@cloudflare/vite-plugin";
+import {
+  applicationPorts,
+  coreEntrypoints,
+  grants,
+  jobsQueueBinding,
+  jobsQueueName,
+  jobsWorkflowBinding,
+  jobsWorkflowClass,
+  jobsWorkflowName,
+  loopbackAddress,
+  type Application,
+} from "@repo/config";
+import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
+import { localUserInbox, userInboxClassName } from "@repo/config/realtime";
 import { repositoryRoot } from "@repo/config/repository-root";
+import { localCacheNamespace, localFileBucket } from "@repo/config/storage";
+import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -14,12 +30,10 @@ import {
   type UserConfig,
 } from "vite-plus";
 
-import { cloudflareAppPlugin } from "./cloudflare-app.ts";
 import { devBoundary } from "./dev-boundary.ts";
 import { effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
-import { lifecycle } from "./lifecycle.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 
 const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
@@ -159,6 +173,20 @@ const taskInput = [
   { base: "workspace", pattern: "!**/node_modules/.bin/**" },
 ] as const;
 
+const testRun = {
+  test: {
+    command: "vp test run",
+    input: [
+      ...taskInput,
+      "!coverage/**",
+      { base: "workspace", pattern: "!**/coverage/**" },
+      { base: "workspace", pattern: "pnpm-lock.yaml" },
+      { base: "workspace", pattern: "pnpm-workspace.yaml" },
+    ],
+    output: [],
+  },
+} satisfies Tasks;
+
 const sliceBoundaries = {
   check: {
     command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
@@ -170,29 +198,66 @@ const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
 
-const checkCode = {
-  "check:code": {
-    command: "vp check --no-error-on-unmatched-pattern",
-    input: [...taskInput],
+const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
+type Lifecycle = (typeof lifecycles)[number];
+
+const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
+  precommit: [],
+  prepush: ["precommit"],
+  prepr: ["prepush"],
+  premerge: [],
+  prerelease: ["prepr", "premerge"],
+};
+
+type LifecycleTask = {
+  command: string[];
+  dependsOn: string[];
+};
+
+const lifecycle = (
+  stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {},
+): {
+  readonly precommit: LifecycleTask;
+  readonly prepush: LifecycleTask;
+  readonly prepr: LifecycleTask;
+  readonly premerge: LifecycleTask;
+  readonly prerelease: LifecycleTask;
+} => ({
+  precommit: {
+    command: [],
+    dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
   },
+  prepush: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
+  },
+  prepr: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
+  },
+  premerge: {
+    command: [],
+    dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
+  },
+  prerelease: {
+    command: [],
+    dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
+  },
+});
+
+const checkCode = {
+  "check:code": { command: "vp check --no-error-on-unmatched-pattern", input: [...taskInput] },
 } satisfies Tasks;
 
 const workspaceCheckImports = {
-  "check:imports": {
-    command:
-      "../../tools/dont-review-it/src/features/dont-review-it/repository/workspace-imports.ts",
-    input: [...taskInput],
-  },
+  "check:imports": { command: "quality-check-imports", input: [...taskInput] },
 } satisfies Tasks;
 
 const modularBoundaries = {
-  "check:modular": {
-    command: "quality-check-modular",
-    input: [...taskInput],
-  },
+  "check:modular": { command: "quality-check-modular", input: [...taskInput] },
 } satisfies Tasks;
 
-const inspectedLibraryRun = {
+const effectRun = {
   tasks: {
     ...effectDiagnostics,
     ...checkCode,
@@ -205,56 +270,44 @@ const inspectedLibraryRun = {
   },
 } satisfies RunConfig;
 
-const effectRun = inspectedLibraryRun;
-
-const testRun = {
-  test: {
-    command: "vp test run --exclude '**/*.worker.test.ts'",
-    input: [
-      ...taskInput,
-      "!coverage/**",
-      { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
-    ],
-    output: [],
+const appChecks = {
+  "check:client": {
+    command: "quality-check-client",
+    input: [...taskInput, "!**/dist/**", "!**/node_modules/.cache/**", ...withoutLocalState],
+    output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+  },
+  "check:react": {
+    command: "quality-check-react",
+    input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+    output: [{ auto: true }, "!**/node_modules/.cache/**"],
   },
 } satisfies Tasks;
 
-const testableLibraryRun = {
+const appRun = {
   tasks: {
-    ...inspectedLibraryRun.tasks,
-    ...testRun,
+    ...effectDiagnostics,
+    ...checkCode,
+    ...workspaceCheckImports,
+    ...appChecks,
+    check: sliceBoundaries.check,
+    build: {
+      command: "vp build",
+      dependsOn: ["@repo/dev#setup", "check:effect"],
+      input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
+      output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+    },
+    "check:dev": {
+      cache: false,
+      command: "../../tools/dev/src/features/dev/dev-start.ts",
+      dependsOn: ["@repo/dev#setup"],
+    },
+    dev: { cache: false, command: "vp dev" },
+    preview: { cache: false, command: "vp preview" },
     ...lifecycle({
       precommit: ["check:code"],
-      prepush: ["check:effect", "check:imports", "check:modular"],
-      premerge: ["test"],
-    }),
-  },
-} satisfies RunConfig;
-
-const testCoverageRun = {
-  test: {
-    command: "vp test run --coverage --exclude '**/*.worker.test.ts'",
-    input: [
-      ...taskInput,
-      "!coverage/**",
-      { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
-    ],
-    output: [{ base: "workspace", pattern: "coverage/**" }],
-  },
-} satisfies Tasks;
-
-const coveredTestableLibraryRun = {
-  tasks: {
-    ...inspectedLibraryRun.tasks,
-    ...testCoverageRun,
-    ...lifecycle({
-      precommit: ["check:code"],
-      prepush: ["check:effect", "check:imports", "check:modular"],
-      premerge: ["test"],
+      prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+      prepr: ["build"],
+      premerge: ["build", "check:dev"],
     }),
   },
 } satisfies RunConfig;
@@ -286,96 +339,55 @@ const paraglideCompileInputs = [
   { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts" },
 ] as const;
 
-const checkClient = (app: Application): Tasks =>
-  ({
-    "check:client": {
-      command: `quality-check-client --application ${app}`,
-      input: [
-        ...taskInput,
-        "!**/dist/**",
-        "!**/node_modules/.cache/**",
-        { base: "workspace", pattern: "!.local" },
-        { base: "workspace", pattern: "!.local/**" },
-      ],
-      output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-    },
-  }) satisfies Tasks;
-
-const checkReact = (app: Application): Tasks =>
-  ({
-    "check:react": {
-      command: `quality-check-react --application ${app}`,
-      input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
-      output: [{ auto: true }, "!**/node_modules/.cache/**"],
-    },
-  }) satisfies Tasks;
-
-const appRun = (app: Application): RunConfig => ({
+const paraglideAppRun = {
   tasks: {
-    ...effectDiagnostics,
-    check: sliceBoundaries.check,
-    ...checkCode,
-    ...workspaceCheckImports,
-    ...testRun,
-    ...checkClient(app),
-    ...checkReact(app),
-    build: {
-      command: "vp build",
-      dependsOn: ["@repo/dev#setup", "check:effect"],
-      input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
-      output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-    },
-    "check:dev": {
-      cache: false,
-      command: "../../tools/dev/src/features/dev/dev-start.ts",
-      dependsOn: ["@repo/dev#setup"],
-    },
-    dev: { cache: false, command: "vp dev" },
-    preview: { cache: false, command: "vp preview" },
-    ...lifecycle({
-      precommit: ["check:code"],
-      prepush: ["check:effect", "check", "check:imports", "check:react", "check:client"],
-      prepr: ["build"],
-      premerge: ["test", "check:dev"],
-    }),
-  },
-});
-
-const paraglideAppRun = (app: Application): RunConfig => ({
-  tasks: {
-    ...appRun(app).tasks,
+    ...appRun.tasks,
     "compile:paraglide": {
       command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
       input: [...paraglideCompileInputs],
       output: [".paraglide/**"],
     },
-    "check:effect": {
-      ...effectDiagnostics["check:effect"],
-      dependsOn: ["compile:paraglide"],
-    },
-    "check:imports": {
-      ...workspaceCheckImports["check:imports"],
-      dependsOn: ["compile:paraglide"],
-    },
-    "check:code": {
-      ...checkCode["check:code"],
-      dependsOn: ["compile:paraglide"],
-    },
-    test: {
-      ...testRun.test,
-      dependsOn: ["compile:paraglide"],
-    },
+    ...Object.fromEntries(
+      (["check:effect", "check:code", "check:imports", "check:client", "check:react"] as const).map(
+        (gatedTask) => [
+          gatedTask,
+          { ...appRun.tasks[gatedTask], dependsOn: ["compile:paraglide"] },
+        ],
+      ),
+    ),
   },
-});
+} satisfies RunConfig;
+
+const toolTest: NonNullable<UserConfig["test"]> = {
+  mockReset: true,
+  restoreMocks: true,
+  coverage: {
+    exclude: ["specs/**"],
+    thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+  },
+  unstubEnvs: true,
+  unstubGlobals: true,
+};
 
 const noExtraPlugins: readonly PluginOption[] = [];
+
+const coreDevWorker = {
+  config: {
+    compatibility_date: workerCompatibility.date,
+    compatibility_flags: [...workerCompatibility.flags],
+    d1_databases: [localDatabase],
+    main: paths.join(repositoryRoot, "apps/core/src/features/core/worker.ts"),
+    name: "template-core",
+  },
+};
 
 const appConfig = (
   app: Application,
   plugins: readonly PluginOption[] = noExtraPlugins,
 ): ((env: Readonly<ConfigEnv>) => UserConfig) => {
   const appRoot = paths.join(repositoryRoot, "apps", app);
-  return ({ command, isPreview, mode }: Readonly<ConfigEnv>): UserConfig => ({
+  const realtime = grants(app, "realtime");
+  return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
     plugins: [
       lazyPlugins(() => [
@@ -385,7 +397,58 @@ const appConfig = (
         devBoundary(app),
         elysiaAot(appRoot),
         elysiaWorkerdJit(),
-        ...(mode === "test" ? [] : [cloudflareAppPlugin(app, { command, isPreview })]),
+        cloudflare({
+          auxiliaryWorkers: [coreDevWorker],
+          config: (config) => ({
+            ...config,
+            assets: {
+              binding: "ASSETS",
+              run_worker_first: command !== "serve" || isPreview === true,
+            },
+            compatibility_date: workerCompatibility.date,
+            compatibility_flags: [...workerCompatibility.flags],
+            d1_databases: [localDatabase],
+            ...(realtime
+              ? {
+                  durable_objects: {
+                    bindings: [localUserInbox],
+                  },
+                  migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
+                }
+              : {}),
+            main: "./src/app/server.ts",
+            name: `template-${app}`,
+            services: [
+              ...(config.services ?? []),
+              {
+                binding: "CORE",
+                entrypoint: coreEntrypoints[app],
+                service: "template-core",
+              },
+            ],
+            ...(grants(app, "jobs")
+              ? {
+                  queues: {
+                    consumers: [{ queue: jobsQueueName }],
+                    producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
+                  },
+                  workflows: [
+                    {
+                      binding: jobsWorkflowBinding,
+                      class_name: jobsWorkflowClass,
+                      name: jobsWorkflowName,
+                    },
+                  ],
+                }
+              : {}),
+            ...(grants(app, "storage")
+              ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
+              : {}),
+          }),
+          inspectorPort: false,
+          persistState: { path: localDatabaseDirectory() },
+          viteEnvironment: { name: "ssr" },
+        }),
         ...plugins,
         tailwindcss(),
         ...withoutEnvFileLoader(tanstackStart(startOptions)),
@@ -393,9 +456,8 @@ const appConfig = (
       ]),
     ],
     preview: appServer(app),
-    run: appRun(app),
+    run: appRun,
     server: appServer(app),
-    test: { testTimeout: 30_000 },
   });
 };
 
@@ -406,13 +468,14 @@ export {
   appServer,
   checkCode,
   clientReachableModules,
-  coveredTestableLibraryRun,
   defineConfig,
   effectDiagnostics,
   effectRun,
   effectTsgoNoEmit,
-  inspectedLibraryRun,
   intentValidation,
+  lifecycle,
+  lifecycleInherits,
+  lifecycles,
   modularBoundaries,
   paraglideAppRun,
   previewDevVars,
@@ -424,15 +487,12 @@ export {
   sliceBoundaries,
   startOptions,
   taskInput,
-  testCoverageRun,
-  testableLibraryRun,
   testRun,
-  workspaceCheckImports,
+  toolTest,
   withoutEnvFileLoader,
+  workspaceCheckImports,
 };
-export { toolTest } from "./tool-test.ts";
 export { paths } from "./host.ts";
-export { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export type { Tasks };
