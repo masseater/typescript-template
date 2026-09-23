@@ -30,7 +30,7 @@
     "shadcn": "4.21.0",
     "styletron-engine-monolithic": "1.0.0",
     "styletron-react": "6.1.1",
-    "tailwindcss": "catalog:",
+    "tailwindcss": "4.3.3",
     "temporal-polyfill": "1.0.5",
     "web-vitals": "6.2.2"
   },

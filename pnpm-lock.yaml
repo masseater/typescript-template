@@ -320,9 +320,6 @@ catalogs:
     storybook:
       specifier: 10.6.0
       version: 10.6.0
-    tailwindcss:
-      specifier: 4.3.3
-      version: 4.3.3
     typescript:
       specifier: 7.0.2
       version: 7.0.2
@@ -338,6 +335,9 @@ catalogs:
     wrangler:
       specifier: 4.134.0
       version: 4.134.0
+    zod:
+      specifier: 4.6.5
+      version: 4.6.5
 
 overrides:
   vite@*: npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0
@@ -546,7 +546,7 @@ importers:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@cloudflare/workers-types':
@@ -655,7 +655,7 @@ importers:
         specifier: 6.0.2
         version: 6.0.2
       zod:
-        specifier: 4.6.5
+        specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
       '@cloudflare/workers-types':
@@ -1681,7 +1681,7 @@ importers:
         specifier: 6.1.1
         version: 6.1.1(react@19.3.0)
       tailwindcss:
-        specifier: 'catalog:'
+        specifier: 4.3.3
         version: 4.3.3
       temporal-polyfill:
         specifier: 1.0.5
