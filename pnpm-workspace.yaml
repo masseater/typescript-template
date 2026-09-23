@@ -6,11 +6,11 @@ packages:
 overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
-  effect@*: "catalog:"
+  vite-plus>oxlint: "catalog:"
+  vite-plus>oxlint-tsgolint: "catalog:"
   drizzle-orm@*: "catalog:"
   drizzle-kit@*: "catalog:"
   "valibot@*": 1.5.0
-  "@effect/platform-node-shared@*": 4.0.0-rc.112
   eslint-plugin-react-hooks>zod-validation-error: 4.0.2
 allowBuilds:
   esbuild: true
@@ -28,24 +28,22 @@ allowBuilds:
   core-js: true
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
-  - "@cloudflare/vite-plugin@1.54.10"
-  - "@cloudflare/workers-types@5.20260916.1"
-  - miniflare@5.20260915.0-alpha || 5.20260917.0-alpha
-  - wrangler@4.134.0
-  - "@cloudflare/vitest-plugin@1.1.12"
-  - "@cloudflare/workerd-darwin-64@1.20260917.1"
-  - "@cloudflare/workerd-darwin-arm64@1.20260917.1"
-  - "@cloudflare/workerd-linux-64@1.20260917.1"
-  - "@cloudflare/workerd-linux-arm64@1.20260917.1"
-  - "@cloudflare/workerd-windows-64@1.20260917.1"
-  - workerd@1.20260917.1
-  - effect-cf@0.47.0
+  - vite-plus@1.0.0-rc.0
+  - "@voidzero-dev/vite-plus-core@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-darwin-x64@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-darwin-arm64@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-x64-gnu@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-x64-musl@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-arm64-gnu@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-arm64-musl@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-win32-x64-msvc@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-win32-arm64-msvc@1.0.0-rc.0"
 catalog:
   "@cloudflare/flagship": 0.5.0
   "@openfeature/server-sdk": 1.23.0
   "@opentelemetry/exporter-trace-otlp-http": 0.221.0
   shell-quote: 1.10.0
-  alchemy: 2.0.0-beta.77
+  alchemy: 2.0.0-beta.79
   baseui: 18.2.0
   styletron-engine-monolithic: 1.0.0
   styletron-react: 6.1.1
@@ -58,9 +56,9 @@ catalog:
   "@opentelemetry/exporter-metrics-otlp-http": 0.221.0
   "@opentelemetry/sdk-metrics": 2.10.0
   "@oxlint/plugins": 1.82.0
-  "@effect/atom-react": 4.0.0-rc.112
-  "@effect/platform-node": 4.0.0-rc.112
-  "@effect/vitest": 4.0.0-rc.112
+  "@effect/atom-react": 4.0.0-rc.117
+  "@effect/platform-node": 4.0.0-rc.117
+  "@effect/vitest": 4.0.0-rc.117
   "@mergifyio/vitest": 0.3.7
   "@shadcn/lint": 0.1.1
   "@tailwindcss/vite": 4.3.3
@@ -71,15 +69,15 @@ catalog:
   "@types/react": 19.3.0
   "@types/react-dom": 19.3.0
   "@vitejs/plugin-react": 6.1.1
-  "@vitest/browser-playwright": 4.1.11
-  "@vitest/coverage-v8": 4.1.11
+  "@vitest/browser-playwright": 5.0.1
+  "@vitest/coverage-v8": 5.0.1
   better-auth: 1.7.5
   class-variance-authority: 0.7.1
   cn: 0.3.0
   dependency-cruiser: 18.3.1
   drizzle-kit: 1.0.0-rc.5-ab785fc
   drizzle-orm: 1.0.0-rc.5-ab785fc
-  effect: 4.0.0-rc.112
+  effect: 4.0.0-rc.117
   es-toolkit: 1.52.0
   lucide-react: 1.47.0
   miniflare: 5.20260917.0-alpha
@@ -102,9 +100,9 @@ catalog:
   textlint-rule-preset-ai-words-ja: 1.2.1
   tailwindcss: 4.3.3
   typescript: 7.0.2
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
-  vite-plus: 0.3.2
-  vitest: 4.1.11
+  vite: npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0
+  vite-plus: 1.0.0-rc.0
+  vitest: 5.0.1
   wrangler: 4.134.0
   yaml: 2.9.1
 peerDependencyRules:
@@ -115,9 +113,7 @@ peerDependencyRules:
     "@effect/atom-react>scheduler": ^0.28.0
     vite: "*"
     vitest: "*"
-    effect: ">=4.0.0-rc.112"
-    "@effect/sql-d1": ">=4.0.0-rc.112"
-    "@effect/sql-sqlite-do": ">=4.0.0-rc.112"
 patchedDependencies:
   "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch
+  "@cloudflare/vitest-plugin@1.1.12": patches/@cloudflare__vitest-plugin@1.1.12.patch
   fumadocs-mdx@15.4.1: patches/fumadocs-mdx@15.4.1.patch
