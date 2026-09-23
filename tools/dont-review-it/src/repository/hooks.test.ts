@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { lifecycleInherits, lifecycles } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
+import { parse } from "yaml";
 
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";
 import {
@@ -429,48 +430,47 @@ describe("on-demand gate escapes", () => {
 });
 
 describe("mergify ci insights", () => {
-  it("keeps MERGIFY_TOKEN on every check job and enables reduced merge-queue reruns", () => {
+  const checkWorkflow = parse(workflows["../../../../.github/workflows/check.yml"] ?? "") as {
+    readonly jobs: Readonly<
+      Record<
+        string,
+        {
+          readonly env?: Readonly<Record<string, string>>;
+          readonly steps?: readonly { readonly env?: Readonly<Record<string, string>>; readonly run?: string }[];
+        }
+      >
+    >;
+  };
+  const jobs = Object.entries(checkWorkflow.jobs);
+
+  it("hands MERGIFY_TOKEN to every job that runs vp, at the job level", () => {
     expect.hasAssertions();
-    const workflow = workflows["../../../../.github/workflows/check.yml"];
-    if (workflow === undefined) {
-      throw new Error("check.yml is missing");
-    }
-    expect(workflow).toMatch(
-      /^ {2}check:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}$/mu,
-    );
-    expect(workflow).toMatch(
-      /^ {2}merge-queue:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}\n {6}VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"$/mu,
-    );
-    expect(workflow).toMatch(
-      /^ {2}e2e:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}\n {6}VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"$/mu,
-    );
-    expect(workflow).toMatch(
-      /^ {2}cache:\n(?: {4}.+\n)*? {4}env:\n {6}MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}$/mu,
-    );
-    expect(workflow).not.toMatch(/^\s+- run: .+\n\s+env:\n\s+MERGIFY_TOKEN:/mu);
+    const vpJobs = jobs.filter(([, job]) => (job.steps ?? []).some((step) => step.run?.includes("vp ")));
+    expect(vpJobs.length).toBeGreaterThan(0);
+    expect(
+      vpJobs.filter(([, job]) => job.env?.["MERGIFY_TOKEN"] !== "${{ secrets.MERGIFY_TOKEN }}").map(([name]) => name),
+    ).toStrictEqual([]);
+    expect(
+      jobs.filter(([, job]) => (job.steps ?? []).some((step) => step.env?.["MERGIFY_TOKEN"] !== undefined)).map(([name]) => name),
+    ).toStrictEqual([]);
   });
 
-  it("probes Mergify check-job product state with the Mergify CLI", () => {
+  it("gates the merge queue only on checks the workflow defines", () => {
     expect.hasAssertions();
-    const workflow = workflows["../../../../.github/workflows/mergify-probe.yml"];
-    if (workflow === undefined) {
-      throw new Error("mergify-probe.yml is missing");
-    }
-    expect(workflow).toMatch(/Mergifyio\/setup-cli@/u);
-    expect(workflow).toMatch(/mergify events/u);
-    expect(workflow).toMatch(/mergify config simulate/u);
-    expect(workflow).toMatch(/\/v1\/products\//u);
-    expect(workflow).toMatch(/ci_insights/u);
-    expect(workflow).toMatch(/MERGIFY_TOKEN: \$\{\{ secrets\.MERGIFY_TOKEN \}\}/u);
-  });
-
-  it("keeps merge-queue gates on the check jobs Mergify can see", () => {
-    expect.hasAssertions();
-    expect(mergifyConfig).toMatch(/check-success = check/u);
-    expect(mergifyConfig).toMatch(/check-success = merge-queue/u);
-    expect(mergifyConfig).toMatch(/check-success = e2e/u);
-    expect(mergifyConfig).toMatch(/mode: isolated/u);
-    expect(mergifyConfig).toMatch(/max_parallel_checks: 5/u);
-    expect(mergifyConfig).toMatch(/checks_timeout: 45 min/u);
+    const config = parse(mergifyConfig) as {
+      readonly queue_rules: readonly {
+        readonly merge_conditions: readonly string[];
+        readonly queue_conditions: readonly unknown[];
+      }[];
+    };
+    const gates = config.queue_rules
+      .flatMap((rule) => [...rule.merge_conditions, ...rule.queue_conditions])
+      .flatMap((condition) =>
+        typeof condition === "string" && condition.startsWith("check-success = ")
+          ? [condition.slice("check-success = ".length)]
+          : [],
+      );
+    expect(gates.length).toBeGreaterThan(0);
+    expect(gates.filter((gate) => checkWorkflow.jobs[gate] === undefined)).toStrictEqual([]);
   });
 });

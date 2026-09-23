@@ -70,7 +70,6 @@ jobs:
     timeout-minutes: 30
     env:
       MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
-      VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"
     steps:
       - *checkout
       - *browser-cache
@@ -87,6 +86,8 @@ jobs:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
     timeout-minutes: 30
+    env:
+      MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -98,8 +99,6 @@ jobs:
       - *vite-task-cache
       - run: vp run compile:paraglide
       - run: vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4
-        env:
-          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
 
   merge-queue:
     if: ${{ always() && startsWith(github.head_ref, 'mergify/merge-queue/') }}
@@ -117,7 +116,6 @@ jobs:
     timeout-minutes: 15
     env:
       MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
-      VITEST_MERGIFY_TEST_SELECTION_ENABLE: "true"
     steps:
       - *checkout
       - *browser-cache
