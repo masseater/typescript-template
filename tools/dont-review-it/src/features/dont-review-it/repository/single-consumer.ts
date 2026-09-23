@@ -1,6 +1,6 @@
 import { Effect, FileSystem, Path } from "effect";
 
-import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
+import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
 import { path } from "../platform/path.ts";
 import { posixPath } from "../platform/path.ts";
 import {
@@ -242,14 +242,12 @@ const skippedDirectory = (name: string): boolean => name.startsWith(".") || skip
 const relativeFile = (root: string, absolute: string): string =>
   path.relative(root, absolute).split(path.sep).join("/");
 
-type SourceScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
-
-const listedSources = (directory: string, root: string): SourceScan<SourceText[]> =>
+const listedSources = (directory: string, root: string): TreeScan<SourceText[]> =>
   Effect.gen(function* scanSources() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
     const entries = yield* directoryEntries(directory);
-    const listed = yield* Effect.forEach(entries, (entry): SourceScan<SourceText[]> => {
+    const listed = yield* Effect.forEach(entries, (entry): TreeScan<SourceText[]> => {
       if (skippedDirectory(entry.name)) {
         return Effect.succeed([]);
       }
@@ -267,7 +265,7 @@ const listedSources = (directory: string, root: string): SourceScan<SourceText[]
     return listed.flat();
   });
 
-const repositorySources = (root: string): SourceScan<readonly SourceText[]> =>
+const repositorySources = (root: string): TreeScan<readonly SourceText[]> =>
   Effect.gen(function* repositorySources() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
@@ -493,7 +491,7 @@ const repositoryWorkspaces = (): readonly WorkspaceManifest[] => [
   })),
 ];
 
-const repositorySingleConsumerFindings: SourceScan<readonly Finding[]> = Effect.map(
+const repositorySingleConsumerFindings: TreeScan<readonly Finding[]> = Effect.map(
   repositorySources(repositoryRoot),
   (sources) =>
     singleConsumerFindings(
