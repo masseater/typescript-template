@@ -1,6 +1,6 @@
 import { env as processEnvironment } from "node:process";
 
-import { exitWith, markFailed } from "@repo/cli";
+import { exitWith, markFailed } from "@repo/cli/exit-code";
 import { applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
