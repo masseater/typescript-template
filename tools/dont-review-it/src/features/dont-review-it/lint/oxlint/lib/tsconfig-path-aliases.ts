@@ -1,7 +1,6 @@
-import { dirname, isAbsolute, join, resolve } from "node:path";
-
 import { maxBy, memoize } from "es-toolkit";
 
+import { path } from "../../../platform/path.ts";
 import { readTextFile } from "./canonical-values/source-files.ts";
 import { listedTexts } from "./listed-texts.ts";
 import { namedFieldsOf } from "./named-fields.ts";
@@ -28,7 +27,7 @@ const aliasesIn = (
   const patternTargets = new Map(
     Object.entries(declared).map(([pattern, held]) => [pattern, listedTexts(held)] as const),
   );
-  return { baseDirectory: resolve(dirname(configPath), baseUrl), patternTargets };
+  return { baseDirectory: path.resolve(path.dirname(configPath), baseUrl), patternTargets };
 };
 
 const inheritedSpecifiersOf = (config: Readonly<Record<string, unknown>>): readonly string[] => {
@@ -50,16 +49,16 @@ const aliasesAt = (configPath: string, visited: ReadonlySet<string>): PathAliase
   return (
     inheritedSpecifiersOf(config)
       .filter((specifier) => PLACE_NAMING_SPECIFIER.test(specifier))
-      .map((specifier) => aliasesAt(resolve(dirname(configPath), specifier), followed))
+      .map((specifier) => aliasesAt(path.resolve(path.dirname(configPath), specifier), followed))
       .find((found) => found !== null) ?? null
   );
 };
 
 const nearestAliasesFrom: (directory: string) => PathAliases | null = memoize(
   (directory: string): PathAliases | null => {
-    const parent = dirname(directory);
+    const parent = path.dirname(directory);
     return (
-      aliasesAt(join(directory, TSCONFIG_FILE_NAME), new Set()) ??
+      aliasesAt(path.join(directory, TSCONFIG_FILE_NAME), new Set()) ??
       (parent === directory ? null : nearestAliasesFrom(parent))
     );
   },
@@ -108,9 +107,9 @@ export const aliasedPathsFor = ({
   readonly specifier: string;
   readonly fromFile: string;
 }): readonly string[] => {
-  if (PLACE_NAMING_SPECIFIER.test(specifier) || isAbsolute(specifier)) return [];
+  if (PLACE_NAMING_SPECIFIER.test(specifier) || path.isAbsolute(specifier)) return [];
 
-  const aliases = nearestAliasesFrom(dirname(fromFile));
+  const aliases = nearestAliasesFrom(path.dirname(fromFile));
   if (aliases === null) return [];
 
   const matched = maxBy(
@@ -120,6 +119,6 @@ export const aliasedPathsFor = ({
   if (matched === undefined) return [];
 
   return matched.pathTemplates.map((pathTemplate) =>
-    resolve(aliases.baseDirectory, filledTarget(pathTemplate, matched.captured)),
+    path.resolve(aliases.baseDirectory, filledTarget(pathTemplate, matched.captured)),
   );
 };

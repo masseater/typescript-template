@@ -1,8 +1,9 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 
 import { attempt } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import {
   CACHE_FORMAT_VERSION,
   cacheIntegrity,
@@ -24,10 +25,10 @@ const CACHE_FILE_SEGMENTS: readonly string[] = [
 ];
 
 const cacheFilePath = (repositoryRoot: string): string =>
-  join(repositoryRoot, ...CACHE_FILE_SEGMENTS);
+  path.join(repositoryRoot, ...CACHE_FILE_SEGMENTS);
 
-const usableCacheAt = (path: string): unknown => {
-  const [unreadableCache, cached] = attempt(() => readJsonFile(path));
+const usableCacheAt = (filePath: string): unknown => {
+  const [unreadableCache, cached] = attempt(() => readJsonFile(filePath));
   return unreadableCache === null ? cached : null;
 };
 
@@ -44,8 +45,8 @@ export const writeCachedEntries = (
   repositoryRoot: string,
   { fingerprint, entries }: FingerprintedEntries,
 ): void => {
-  const path = cacheFilePath(repositoryRoot);
-  const temporaryPath = `${path}.${process.pid}.tmp`;
+  const filePath = cacheFilePath(repositoryRoot);
+  const temporaryPath = `${filePath}.${process.pid}.tmp`;
   const cacheDocument: CachedCatalog = {
     version: CACHE_FORMAT_VERSION,
     fingerprint,
@@ -53,9 +54,9 @@ export const writeCachedEntries = (
     integrity: cacheIntegrity({ fingerprint, entries }),
   };
   const [unwritableCache] = attempt(() => {
-    mkdirSync(dirname(path), { recursive: true });
+    mkdirSync(path.dirname(filePath), { recursive: true });
     writeFileSync(temporaryPath, JSON.stringify(cacheDocument), "utf8");
-    renameSync(temporaryPath, path);
+    renameSync(temporaryPath, filePath);
   });
   if (unwritableCache !== null) return;
 };

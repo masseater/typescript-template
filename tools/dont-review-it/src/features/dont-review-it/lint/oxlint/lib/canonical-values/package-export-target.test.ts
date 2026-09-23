@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import {
@@ -14,97 +13,181 @@ import {
   winningPackageExportSubpath,
 } from "./package-export-target.ts";
 
-const PACKAGE_DIRECTORY = mkdtempSync(join(tmpdir(), "package-export-target-spec-"));
-
 const PATH_ONLY_PACKAGE_DIRECTORY = "/packages/example";
 
-describe("packageExportSourceFile", () => {
-  const it = test
-    .extend("sourceFileBehindAJsTarget", ({}, { onCleanup }) => {
-      mkdirSync(join(PACKAGE_DIRECTORY, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(PACKAGE_DIRECTORY, { force: true, recursive: true });
-      });
-      writeFileSync(join(PACKAGE_DIRECTORY, "src/value.ts"), "export {};\n", "utf8");
-      return packageExportSourceFile(PACKAGE_DIRECTORY, "./src/value.js");
-    })
-    .extend("sourceFileBehindAJsxTarget", ({}, { onCleanup }) => {
-      mkdirSync(join(PACKAGE_DIRECTORY, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(PACKAGE_DIRECTORY, { force: true, recursive: true });
-      });
-      writeFileSync(join(PACKAGE_DIRECTORY, "src/view.tsx"), "export {};\n", "utf8");
-      return packageExportSourceFile(PACKAGE_DIRECTORY, "./src/view.jsx");
-    })
-    .extend("sourceFileBehindAnMjsTarget", ({}, { onCleanup }) => {
-      mkdirSync(join(PACKAGE_DIRECTORY, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(PACKAGE_DIRECTORY, { force: true, recursive: true });
-      });
-      writeFileSync(join(PACKAGE_DIRECTORY, "src/module.mts"), "export {};\n", "utf8");
-      return packageExportSourceFile(PACKAGE_DIRECTORY, "./src/module.mjs");
-    })
-    .extend("sourceFileBehindACjsTarget", ({}, { onCleanup }) => {
-      mkdirSync(join(PACKAGE_DIRECTORY, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(PACKAGE_DIRECTORY, { force: true, recursive: true });
-      });
-      writeFileSync(join(PACKAGE_DIRECTORY, "src/common.cts"), "export {};\n", "utf8");
-      return packageExportSourceFile(PACKAGE_DIRECTORY, "./src/common.cjs");
-    })
-    .extend("sourceFileBehindAJsonTarget", ({}, { onCleanup }) => {
-      mkdirSync(join(PACKAGE_DIRECTORY, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(PACKAGE_DIRECTORY, { force: true, recursive: true });
-      });
-      writeFileSync(join(PACKAGE_DIRECTORY, "src/exact.json"), "{}\n", "utf8");
-      return packageExportSourceFile(PACKAGE_DIRECTORY, "./src/exact.json");
-    })
-    .extend("sourceFileBehindADirectoryTarget", ({}, { onCleanup }) => {
-      mkdirSync(join(PACKAGE_DIRECTORY, "src/directory"), { recursive: true });
-      onCleanup(() => {
-        rmSync(PACKAGE_DIRECTORY, { force: true, recursive: true });
-      });
-      writeFileSync(join(PACKAGE_DIRECTORY, "src/directory/index.ts"), "export {};\n", "utf8");
-      return packageExportSourceFile(PACKAGE_DIRECTORY, "./src/directory");
-    })
-    .extend("sourceFileBehindAnAbsentTarget", ({}, { onCleanup }) => {
-      mkdirSync(join(PACKAGE_DIRECTORY, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(PACKAGE_DIRECTORY, { force: true, recursive: true });
-      });
-      return packageExportSourceFile(PACKAGE_DIRECTORY, "./src/missing");
+layer(NodeServices.layer)("packageExportSourceFile", (it) => {
+  const fixtures = Effect.gen(function* fixtures() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const temporaryPackageDirectory = yield* filesystem.makeTempDirectoryScoped({
+      prefix: "package-export-target-spec-",
     });
+    const sourceFileBehindAJsTarget = yield* Effect.gen(function* sourceFileBehindAJsTarget() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      yield* filesystem.makeDirectory(paths.join(temporaryPackageDirectory, "src"), {
+        recursive: true,
+      });
 
-  it("reads a .js target as the TypeScript source beside it", ({ sourceFileBehindAJsTarget }) => {
-    expect(sourceFileBehindAJsTarget).toBe(join(PACKAGE_DIRECTORY, "src/value.ts"));
-  });
+      yield* filesystem.writeFileString(
+        paths.join(temporaryPackageDirectory, "src/value.ts"),
+        "export {};\n",
+      );
+      return packageExportSourceFile(temporaryPackageDirectory, "./src/value.js");
+    });
+    const sourceFileBehindAJsxTarget = yield* Effect.gen(function* sourceFileBehindAJsxTarget() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      yield* filesystem.makeDirectory(paths.join(temporaryPackageDirectory, "src"), {
+        recursive: true,
+      });
 
-  it("reads a .jsx target as the TSX source beside it", ({ sourceFileBehindAJsxTarget }) => {
-    expect(sourceFileBehindAJsxTarget).toBe(join(PACKAGE_DIRECTORY, "src/view.tsx"));
-  });
+      yield* filesystem.writeFileString(
+        paths.join(temporaryPackageDirectory, "src/view.tsx"),
+        "export {};\n",
+      );
+      return packageExportSourceFile(temporaryPackageDirectory, "./src/view.jsx");
+    });
+    const sourceFileBehindAnMjsTarget = yield* Effect.gen(function* sourceFileBehindAnMjsTarget() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      yield* filesystem.makeDirectory(paths.join(temporaryPackageDirectory, "src"), {
+        recursive: true,
+      });
 
-  it("reads a .mjs target as the .mts source beside it", ({ sourceFileBehindAnMjsTarget }) => {
-    expect(sourceFileBehindAnMjsTarget).toBe(join(PACKAGE_DIRECTORY, "src/module.mts"));
-  });
+      yield* filesystem.writeFileString(
+        paths.join(temporaryPackageDirectory, "src/module.mts"),
+        "export {};\n",
+      );
+      return packageExportSourceFile(temporaryPackageDirectory, "./src/module.mjs");
+    });
+    const sourceFileBehindACjsTarget = yield* Effect.gen(function* sourceFileBehindACjsTarget() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      yield* filesystem.makeDirectory(paths.join(temporaryPackageDirectory, "src"), {
+        recursive: true,
+      });
 
-  it("reads a .cjs target as the .cts source beside it", ({ sourceFileBehindACjsTarget }) => {
-    expect(sourceFileBehindACjsTarget).toBe(join(PACKAGE_DIRECTORY, "src/common.cts"));
-  });
+      yield* filesystem.writeFileString(
+        paths.join(temporaryPackageDirectory, "src/common.cts"),
+        "export {};\n",
+      );
+      return packageExportSourceFile(temporaryPackageDirectory, "./src/common.cjs");
+    });
+    const sourceFileBehindAJsonTarget = yield* Effect.gen(function* sourceFileBehindAJsonTarget() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      yield* filesystem.makeDirectory(paths.join(temporaryPackageDirectory, "src"), {
+        recursive: true,
+      });
 
-  it("keeps a target that already names a file on disk", ({ sourceFileBehindAJsonTarget }) => {
-    expect(sourceFileBehindAJsonTarget).toBe(join(PACKAGE_DIRECTORY, "src/exact.json"));
-  });
+      yield* filesystem.writeFileString(
+        paths.join(temporaryPackageDirectory, "src/exact.json"),
+        "{}\n",
+      );
+      return packageExportSourceFile(temporaryPackageDirectory, "./src/exact.json");
+    });
+    const sourceFileBehindADirectoryTarget = yield* Effect.gen(
+      function* sourceFileBehindADirectoryTarget() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        yield* filesystem.makeDirectory(paths.join(temporaryPackageDirectory, "src/directory"), {
+          recursive: true,
+        });
 
-  it("reads a directory target as its index", ({ sourceFileBehindADirectoryTarget }) => {
-    expect(sourceFileBehindADirectoryTarget).toBe(
-      join(PACKAGE_DIRECTORY, "src/directory/index.ts"),
+        yield* filesystem.writeFileString(
+          paths.join(temporaryPackageDirectory, "src/directory/index.ts"),
+          "export {};\n",
+        );
+        return packageExportSourceFile(temporaryPackageDirectory, "./src/directory");
+      },
     );
+    const sourceFileBehindAnAbsentTarget = yield* Effect.gen(
+      function* sourceFileBehindAnAbsentTarget() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        yield* filesystem.makeDirectory(paths.join(temporaryPackageDirectory, "src"), {
+          recursive: true,
+        });
+
+        return packageExportSourceFile(temporaryPackageDirectory, "./src/missing");
+      },
+    );
+    return {
+      temporaryPackageDirectory,
+      sourceFileBehindAJsTarget,
+      sourceFileBehindAJsxTarget,
+      sourceFileBehindAnMjsTarget,
+      sourceFileBehindACjsTarget,
+      sourceFileBehindAJsonTarget,
+      sourceFileBehindADirectoryTarget,
+      sourceFileBehindAnAbsentTarget,
+    };
   });
 
-  it("answers null when no candidate exists", ({ sourceFileBehindAnAbsentTarget }) => {
-    expect(sourceFileBehindAnAbsentTarget).toBe(null);
-  });
+  it.effect("reads a .js target as the TypeScript source beside it", () =>
+    Effect.gen(function* program() {
+      const paths = yield* Path.Path;
+      const { sourceFileBehindAJsTarget, temporaryPackageDirectory } = yield* fixtures;
+      expect(sourceFileBehindAJsTarget).toBe(paths.join(temporaryPackageDirectory, "src/value.ts"));
+    }),
+  );
+
+  it.effect("reads a .jsx target as the TSX source beside it", () =>
+    Effect.gen(function* program() {
+      const paths = yield* Path.Path;
+      const { sourceFileBehindAJsxTarget, temporaryPackageDirectory } = yield* fixtures;
+      expect(sourceFileBehindAJsxTarget).toBe(
+        paths.join(temporaryPackageDirectory, "src/view.tsx"),
+      );
+    }),
+  );
+
+  it.effect("reads a .mjs target as the .mts source beside it", () =>
+    Effect.gen(function* program() {
+      const paths = yield* Path.Path;
+      const { sourceFileBehindAnMjsTarget, temporaryPackageDirectory } = yield* fixtures;
+      expect(sourceFileBehindAnMjsTarget).toBe(
+        paths.join(temporaryPackageDirectory, "src/module.mts"),
+      );
+    }),
+  );
+
+  it.effect("reads a .cjs target as the .cts source beside it", () =>
+    Effect.gen(function* program() {
+      const paths = yield* Path.Path;
+      const { sourceFileBehindACjsTarget, temporaryPackageDirectory } = yield* fixtures;
+      expect(sourceFileBehindACjsTarget).toBe(
+        paths.join(temporaryPackageDirectory, "src/common.cts"),
+      );
+    }),
+  );
+
+  it.effect("keeps a target that already names a file on disk", () =>
+    Effect.gen(function* program() {
+      const paths = yield* Path.Path;
+      const { sourceFileBehindAJsonTarget, temporaryPackageDirectory } = yield* fixtures;
+      expect(sourceFileBehindAJsonTarget).toBe(
+        paths.join(temporaryPackageDirectory, "src/exact.json"),
+      );
+    }),
+  );
+
+  it.effect("reads a directory target as its index", () =>
+    Effect.gen(function* program() {
+      const paths = yield* Path.Path;
+      const { sourceFileBehindADirectoryTarget, temporaryPackageDirectory } = yield* fixtures;
+      expect(sourceFileBehindADirectoryTarget).toBe(
+        paths.join(temporaryPackageDirectory, "src/directory/index.ts"),
+      );
+    }),
+  );
+
+  it.effect("answers null when no candidate exists", () =>
+    Effect.gen(function* program() {
+      const { sourceFileBehindAnAbsentTarget } = yield* fixtures;
+      expect(sourceFileBehindAnAbsentTarget).toBe(null);
+    }),
+  );
 });
 
 describe("singleWildcardPattern", () => {

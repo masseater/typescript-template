@@ -1,8 +1,9 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { realpathSync } from "node:fs";
-import { relative, resolve, sep } from "node:path";
 
 import { attempt } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 
 export type RepositoryModuleLocation =
@@ -13,16 +14,16 @@ export type RepositoryModuleLocation =
       readonly sourcePaths: readonly string[];
     };
 
-export const realPathOf = (path: string): string => {
-  const absolutePath = resolve(path);
+export const realPathOf = (filePath: string): string => {
+  const absolutePath = path.resolve(filePath);
   const [failure, realPath] = attempt(() => realpathSync.native(absolutePath));
   return failure === null && realPath !== null ? realPath : absolutePath;
 };
 
 const lexicalRepositorySource = (repositoryRoot: string, resolvedPath: string): string | null => {
-  const sourcePath = resolve(resolvedPath);
+  const sourcePath = path.resolve(resolvedPath);
   if (!pathIsInside(repositoryRoot, sourcePath)) return null;
-  return relative(repositoryRoot, sourcePath).split(sep).includes("node_modules")
+  return path.relative(repositoryRoot, sourcePath).split(path.sep).includes("node_modules")
     ? null
     : sourcePath;
 };
@@ -35,12 +36,13 @@ export const repositoryModuleLocation = ({
   readonly resolvedPath: string;
 }): RepositoryModuleLocation => {
   const repositoryRoot = realPathOf(rawRepositoryRoot);
-  const path = realPathOf(resolvedPath);
-  if (!pathIsInside(repositoryRoot, path)) return { kind: "external" };
-  if (relative(repositoryRoot, path).split(sep).includes("node_modules")) {
+  const filePath = realPathOf(resolvedPath);
+  if (!pathIsInside(repositoryRoot, filePath)) return { kind: "external" };
+  if (path.relative(repositoryRoot, filePath).split(path.sep).includes("node_modules")) {
     return { kind: "external" };
   }
-  const lexicalPath = lexicalRepositorySource(resolve(rawRepositoryRoot), resolvedPath);
-  const sourcePaths = lexicalPath === null || lexicalPath === path ? [path] : [path, lexicalPath];
-  return { kind: "repository", path, sourcePaths };
+  const lexicalPath = lexicalRepositorySource(path.resolve(rawRepositoryRoot), resolvedPath);
+  const sourcePaths =
+    lexicalPath === null || lexicalPath === filePath ? [filePath] : [filePath, lexicalPath];
+  return { kind: "repository", path: filePath, sourcePaths };
 };

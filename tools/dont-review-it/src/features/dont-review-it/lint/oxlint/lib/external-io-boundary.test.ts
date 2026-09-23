@@ -1,8 +1,7 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { replacedModuleAt } from "./external-io-boundary.ts";
 
@@ -41,164 +40,321 @@ const VOCABULARY = {
 
 const IMPORTING_FILE = "packages/mailer/src/send.test.ts";
 
-describe("external-io-boundary", () => {
-  const workspaceTest = test.extend("workspaceRoot", ({}, { onCleanup }) => {
-    const workspaceRoot = realpathSync(mkdtempSync(join(tmpdir(), "external-io-boundary-")));
-    onCleanup(() => {
-      rmSync(workspaceRoot, { recursive: true, force: true });
+layer(NodeServices.layer)("external-io-boundary", (it) => {
+  describe("a module this repository does not hold", () => {
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
+
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
+      });
+      const replacementOfAnUnheldModule = replacedModuleAt({
+        specifier: "node:fs",
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
+        vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAnUnheldModule };
     });
 
-    for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
-      const writtenFile = join(workspaceRoot, relativePath);
-      mkdirSync(dirname(writtenFile), { recursive: true });
-      writeFileSync(writtenFile, writtenContent);
-    }
-    for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
-      const link = join(workspaceRoot, linkPath);
-      mkdirSync(dirname(link), { recursive: true });
-      symlinkSync(join(workspaceRoot, linkedDirectory), link);
-    }
-    return workspaceRoot;
-  });
-
-  describe("a module this repository does not hold", () => {
-    const it = workspaceTest.extend("replacementOfAnUnheldModule", ({ workspaceRoot }) =>
-      replacedModuleAt({
-        specifier: "node:fs",
-        fromFile: join(workspaceRoot, IMPORTING_FILE),
-        vocabulary: VOCABULARY,
+    it.effect("is a boundary of its own", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAnUnheldModule } = yield* fixtures;
+        expect(replacementOfAnUnheldModule).toStrictEqual({ kind: "outsideTheRepository" });
       }),
     );
-
-    it("is a boundary of its own", ({ replacementOfAnUnheldModule }) => {
-      expect(replacementOfAnUnheldModule).toStrictEqual({ kind: "outsideTheRepository" });
-    });
   });
 
   describe("a module that reaches a named module", () => {
-    const it = workspaceTest.extend(
-      "replacementOfAModuleReachingANamedModule",
-      ({ workspaceRoot }) =>
-        replacedModuleAt({
-          specifier: "./transport.ts",
-          fromFile: join(workspaceRoot, IMPORTING_FILE),
-          vocabulary: VOCABULARY,
-        }),
-    );
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
 
-    it("owns the boundary itself", ({ replacementOfAModuleReachingANamedModule }) => {
-      expect(replacementOfAModuleReachingANamedModule).toStrictEqual({ kind: "ownsExternalIo" });
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
+      });
+      const replacementOfAModuleReachingANamedModule = replacedModuleAt({
+        specifier: "./transport.ts",
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
+        vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAModuleReachingANamedModule };
     });
+
+    it.effect("owns the boundary itself", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAModuleReachingANamedModule } = yield* fixtures;
+        expect(replacementOfAModuleReachingANamedModule).toStrictEqual({ kind: "ownsExternalIo" });
+      }),
+    );
   });
 
   describe("a module that reaches a named package", () => {
-    const it = workspaceTest.extend(
-      "replacementOfAModuleReachingANamedPackage",
-      ({ workspaceRoot }) =>
-        replacedModuleAt({
-          specifier: "./client.ts",
-          fromFile: join(workspaceRoot, IMPORTING_FILE),
-          vocabulary: VOCABULARY,
-        }),
-    );
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
 
-    it("owns the boundary the same way a named module does", ({
-      replacementOfAModuleReachingANamedPackage,
-    }) => {
-      expect(replacementOfAModuleReachingANamedPackage).toStrictEqual({ kind: "ownsExternalIo" });
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
+      });
+      const replacementOfAModuleReachingANamedPackage = replacedModuleAt({
+        specifier: "./client.ts",
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
+        vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAModuleReachingANamedPackage };
     });
+
+    it.effect("owns the boundary the same way a named module does", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAModuleReachingANamedPackage } = yield* fixtures;
+        expect(replacementOfAModuleReachingANamedPackage).toStrictEqual({ kind: "ownsExternalIo" });
+      }),
+    );
   });
 
   describe("a module that reaches the outside through another one", () => {
-    const it = workspaceTest.extend(
-      "replacementOfAModuleOneStepInFrontOfTheBoundary",
-      ({ workspaceRoot }) =>
-        replacedModuleAt({
-          specifier: "./send.ts",
-          fromFile: join(workspaceRoot, IMPORTING_FILE),
-          vocabulary: VOCABULARY,
-        }),
-    );
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
 
-    it("stands in front of the module that holds the boundary", ({
-      replacementOfAModuleOneStepInFrontOfTheBoundary,
-    }) => {
-      expect(replacementOfAModuleOneStepInFrontOfTheBoundary).toStrictEqual({
-        kind: "behindOwnModules",
-        boundary: "packages/mailer/src/transport.ts",
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
       });
+      const replacementOfAModuleOneStepInFrontOfTheBoundary = replacedModuleAt({
+        specifier: "./send.ts",
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
+        vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAModuleOneStepInFrontOfTheBoundary };
     });
+
+    it.effect("stands in front of the module that holds the boundary", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAModuleOneStepInFrontOfTheBoundary } = yield* fixtures;
+        expect(replacementOfAModuleOneStepInFrontOfTheBoundary).toStrictEqual({
+          kind: "behindOwnModules",
+          boundary: "packages/mailer/src/transport.ts",
+        });
+      }),
+    );
   });
 
   describe("a module two steps in front of the boundary", () => {
-    const it = workspaceTest.extend(
-      "replacementOfAModuleTwoStepsInFrontOfTheBoundary",
-      ({ workspaceRoot }) =>
-        replacedModuleAt({
-          specifier: "./queue.ts",
-          fromFile: join(workspaceRoot, IMPORTING_FILE),
-          vocabulary: VOCABULARY,
-        }),
-    );
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
 
-    it("is read the same way as one step in front", ({
-      replacementOfAModuleTwoStepsInFrontOfTheBoundary,
-    }) => {
-      expect(replacementOfAModuleTwoStepsInFrontOfTheBoundary).toStrictEqual({
-        kind: "behindOwnModules",
-        boundary: "packages/mailer/src/transport.ts",
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
       });
+      const replacementOfAModuleTwoStepsInFrontOfTheBoundary = replacedModuleAt({
+        specifier: "./queue.ts",
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
+        vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAModuleTwoStepsInFrontOfTheBoundary };
     });
+
+    it.effect("is read the same way as one step in front", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAModuleTwoStepsInFrontOfTheBoundary } = yield* fixtures;
+        expect(replacementOfAModuleTwoStepsInFrontOfTheBoundary).toStrictEqual({
+          kind: "behindOwnModules",
+          boundary: "packages/mailer/src/transport.ts",
+        });
+      }),
+    );
   });
 
   describe("a module that reaches nothing outside", () => {
-    const it = workspaceTest.extend(
-      "replacementOfAModuleReachingNothingOutside",
-      ({ workspaceRoot }) =>
-        replacedModuleAt({
-          specifier: "./compose.ts",
-          fromFile: join(workspaceRoot, IMPORTING_FILE),
-          vocabulary: VOCABULARY,
-        }),
-    );
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
 
-    it("is determined by what it is handed", ({ replacementOfAModuleReachingNothingOutside }) => {
-      expect(replacementOfAModuleReachingNothingOutside).toStrictEqual({
-        kind: "determinedByItsInput",
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
       });
+      const replacementOfAModuleReachingNothingOutside = replacedModuleAt({
+        specifier: "./compose.ts",
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
+        vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAModuleReachingNothingOutside };
     });
+
+    it.effect("is determined by what it is handed", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAModuleReachingNothingOutside } = yield* fixtures;
+        expect(replacementOfAModuleReachingNothingOutside).toStrictEqual({
+          kind: "determinedByItsInput",
+        });
+      }),
+    );
   });
 
   describe("a package named by its own name", () => {
-    const it = workspaceTest.extend("replacementOfAPackageNamedByItsOwnName", ({ workspaceRoot }) =>
-      replacedModuleAt({
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
+
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
+      });
+      const replacementOfAPackageNamedByItsOwnName = replacedModuleAt({
         specifier: "@fixture/mailer",
-        fromFile: join(workspaceRoot, IMPORTING_FILE),
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
         vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAPackageNamedByItsOwnName };
+    });
+
+    it.effect("is read through the entries it publishes", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAPackageNamedByItsOwnName } = yield* fixtures;
+        expect(replacementOfAPackageNamedByItsOwnName).toStrictEqual({
+          kind: "behindOwnModules",
+          boundary: "packages/mailer/src/transport.ts",
+        });
       }),
     );
-
-    it("is read through the entries it publishes", ({ replacementOfAPackageNamedByItsOwnName }) => {
-      expect(replacementOfAPackageNamedByItsOwnName).toStrictEqual({
-        kind: "behindOwnModules",
-        boundary: "packages/mailer/src/transport.ts",
-      });
-    });
   });
 
   describe("a package whose published entry is absent", () => {
-    const it = workspaceTest.extend("replacementOfAPackageWithAnAbsentEntry", ({ workspaceRoot }) =>
-      replacedModuleAt({
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const workspaceRoot = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "external-io-boundary-" }),
+        );
+
+        for (const [relativePath, writtenContent] of Object.entries(WORKSPACE_FILES)) {
+          const writtenFile = paths.join(workspaceRoot, relativePath);
+          yield* filesystem.makeDirectory(paths.dirname(writtenFile), { recursive: true });
+          yield* filesystem.writeFileString(writtenFile, writtenContent);
+        }
+        for (const [linkPath, linkedDirectory] of Object.entries(LINKED_PACKAGES)) {
+          const link = paths.join(workspaceRoot, linkPath);
+          yield* filesystem.makeDirectory(paths.dirname(link), { recursive: true });
+          yield* filesystem.symlink(paths.join(workspaceRoot, linkedDirectory), link);
+        }
+        return workspaceRoot;
+      });
+      const replacementOfAPackageWithAnAbsentEntry = replacedModuleAt({
         specifier: "@fixture/silent",
-        fromFile: join(workspaceRoot, IMPORTING_FILE),
+        fromFile: paths.join(workspaceRoot, IMPORTING_FILE),
         vocabulary: VOCABULARY,
+      });
+      return { workspaceRoot, replacementOfAPackageWithAnAbsentEntry };
+    });
+
+    it.effect("reaches nothing", () =>
+      Effect.gen(function* program() {
+        const { replacementOfAPackageWithAnAbsentEntry } = yield* fixtures;
+        expect(replacementOfAPackageWithAnAbsentEntry).toStrictEqual({
+          kind: "determinedByItsInput",
+        });
       }),
     );
-
-    it("reaches nothing", ({ replacementOfAPackageWithAnAbsentEntry }) => {
-      expect(replacementOfAPackageWithAnAbsentEntry).toStrictEqual({
-        kind: "determinedByItsInput",
-      });
-    });
   });
 });

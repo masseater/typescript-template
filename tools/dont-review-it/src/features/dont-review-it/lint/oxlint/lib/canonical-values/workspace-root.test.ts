@@ -1,20 +1,19 @@
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "./workspace-root.ts";
 
-const REPOSITORY_ROOT = resolve(
-  dirname(fileURLToPath(import.meta.url)),
+const REPOSITORY_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
   "../../../../../../../../..",
 );
 
-const DETACHED_DIRECTORY = mkdtempSync(join(tmpdir(), "mst-workspace-root-detached-"));
-
-describe("findWorkspaceRoot", () => {
+layer(NodeServices.layer)("findWorkspaceRoot", (it) => {
   describe("the directory holding the workspace manifest", () => {
     const it = test.extend("root", () => findWorkspaceRoot(REPOSITORY_ROOT));
 
@@ -25,7 +24,7 @@ describe("findWorkspaceRoot", () => {
 
   describe("a package directory", () => {
     const it = test.extend("root", () =>
-      findWorkspaceRoot(join(REPOSITORY_ROOT, "tools/dont-review-it")));
+      findWorkspaceRoot(path.join(REPOSITORY_ROOT, "tools/dont-review-it")));
 
     it("reports the workspace above it rather than itself", ({ root }) => {
       expect(root).toBe(REPOSITORY_ROOT);
@@ -34,7 +33,7 @@ describe("findWorkspaceRoot", () => {
 
   describe("a directory deeper inside a package", () => {
     const it = test.extend("root", () =>
-      findWorkspaceRoot(join(REPOSITORY_ROOT, "tools/dont-review-it/src/lint")));
+      findWorkspaceRoot(path.join(REPOSITORY_ROOT, "tools/dont-review-it/src/lint")));
 
     it("reports the same workspace above it", ({ root }) => {
       expect(root).toBe(REPOSITORY_ROOT);
@@ -42,16 +41,26 @@ describe("findWorkspaceRoot", () => {
   });
 
   describe("a directory under no workspace", () => {
-    const it = test.extend("root", ({}, { onCleanup }) => {
-      mkdirSync(DETACHED_DIRECTORY, { recursive: true });
-      onCleanup(() => {
-        rmSync(DETACHED_DIRECTORY, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const detachedDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "mst-workspace-root-detached-",
       });
-      return findWorkspaceRoot(DETACHED_DIRECTORY);
+      const root = yield* Effect.gen(function* root() {
+        const filesystem = yield* FileSystem.FileSystem;
+        yield* filesystem.makeDirectory(detachedDirectory, { recursive: true });
+
+        return findWorkspaceRoot(detachedDirectory);
+      });
+      return { detachedDirectory, root };
     });
 
-    it("keeps itself as the root", ({ root }) => {
-      expect(root).toBe(resolve(DETACHED_DIRECTORY));
-    });
+    it.effect("keeps itself as the root", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { root, detachedDirectory } = yield* fixtures;
+        expect(root).toBe(paths.resolve(detachedDirectory));
+      }),
+    );
   });
 });

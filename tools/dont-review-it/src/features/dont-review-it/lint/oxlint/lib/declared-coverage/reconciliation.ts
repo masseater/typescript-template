@@ -1,7 +1,6 @@
-import { dirname, join } from "node:path";
-
 import { groupBy, memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { nearestPackageDirectory } from "../canonical-values/source-files.ts";
 import {
   REPOSITORY_ROOT_WORKSPACE,
@@ -26,7 +25,7 @@ const heldWorkspaceOf = (asked: {
   if (heldPath === null) return REPOSITORY_ROOT_WORKSPACE;
 
   const packageDirectory = nearestPackageDirectory(
-    dirname(join(repositoryRoot, heldPath)),
+    path.dirname(path.join(repositoryRoot, heldPath)),
     repositoryRoot,
   );
   return packageDirectory === null

@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import {
@@ -10,8 +9,6 @@ import {
   MAX_INLINE_RECORD_LINES,
   recordLineCountOf,
 } from "./snapshot-records.ts";
-
-const snapshotRecordsRoot = mkdtempSync(join(tmpdir(), "dont-review-it-snapshot-records-"));
 
 describe("externalRecordKeyOf", () => {
   describe("a title path and an ordinal", () => {
@@ -24,188 +21,299 @@ describe("externalRecordKeyOf", () => {
   });
 });
 
-describe("externalRecordOf", () => {
+layer(NodeServices.layer)("externalRecordOf", (it) => {
   describe("a record written on one line", () => {
-    const it = test.extend("storedSingleLineSnapshot", () => {
-      const directory = join(snapshotRecordsRoot, "one-line");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(join(directory, "__snapshots__"), { recursive: true });
-      writeFileSync(
-        join(directory, "__snapshots__", "subject.test.ts.snap"),
-        [
-          "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
-          "",
-          'exports[`outer > names a behaviour 1`] = `"alpha"`;',
-          "",
-          "exports[`outer > names a behaviour 2`] = `",
-          "{",
-          '  "alpha": 1,',
-          "}",
-          "`;",
-          "",
-        ].join("\n"),
-      );
-      return externalRecordOf(join(directory, "subject.test.ts"), "outer > names a behaviour 1");
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const snapshotRecordsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-snapshot-records-",
+      });
+      const storedSingleLineSnapshot = yield* Effect.gen(function* storedSingleLineSnapshot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(snapshotRecordsRoot, "one-line");
+        yield* filesystem.makeDirectory(paths.join(directory, "__snapshots__"), {
+          recursive: true,
+        });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "__snapshots__", "subject.test.ts.snap"),
+          [
+            "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
+            "",
+            'exports[`outer > names a behaviour 1`] = `"alpha"`;',
+            "",
+            "exports[`outer > names a behaviour 2`] = `",
+            "{",
+            '  "alpha": 1,',
+            "}",
+            "`;",
+            "",
+          ].join("\n"),
+        );
+        return externalRecordOf(
+          paths.join(directory, "subject.test.ts"),
+          "outer > names a behaviour 1",
+        );
+      });
+      return { snapshotRecordsRoot, storedSingleLineSnapshot };
     });
 
-    it("is read back whole", ({ storedSingleLineSnapshot }) => {
-      expect(storedSingleLineSnapshot).toBe('"alpha"');
-    });
+    it.effect("is read back whole", () =>
+      Effect.gen(function* program() {
+        const { storedSingleLineSnapshot } = yield* fixtures;
+        expect(storedSingleLineSnapshot).toBe('"alpha"');
+      }),
+    );
   });
 
   describe("a record written across lines", () => {
-    const it = test.extend("storedMultiLineSnapshot", () => {
-      const directory = join(snapshotRecordsRoot, "across-lines");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(join(directory, "__snapshots__"), { recursive: true });
-      writeFileSync(
-        join(directory, "__snapshots__", "subject.test.ts.snap"),
-        [
-          "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
-          "",
-          'exports[`outer > names a behaviour 1`] = `"alpha"`;',
-          "",
-          "exports[`outer > names a behaviour 2`] = `",
-          "{",
-          '  "alpha": 1,',
-          "}",
-          "`;",
-          "",
-        ].join("\n"),
-      );
-      return externalRecordOf(join(directory, "subject.test.ts"), "outer > names a behaviour 2");
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const snapshotRecordsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-snapshot-records-",
+      });
+      const storedMultiLineSnapshot = yield* Effect.gen(function* storedMultiLineSnapshot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(snapshotRecordsRoot, "across-lines");
+        yield* filesystem.makeDirectory(paths.join(directory, "__snapshots__"), {
+          recursive: true,
+        });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "__snapshots__", "subject.test.ts.snap"),
+          [
+            "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
+            "",
+            'exports[`outer > names a behaviour 1`] = `"alpha"`;',
+            "",
+            "exports[`outer > names a behaviour 2`] = `",
+            "{",
+            '  "alpha": 1,',
+            "}",
+            "`;",
+            "",
+          ].join("\n"),
+        );
+        return externalRecordOf(
+          paths.join(directory, "subject.test.ts"),
+          "outer > names a behaviour 2",
+        );
+      });
+      return { snapshotRecordsRoot, storedMultiLineSnapshot };
     });
 
-    it("keeps the padding the runner wrote", ({ storedMultiLineSnapshot }) => {
-      expect(storedMultiLineSnapshot).toBe('\n{\n  "alpha": 1,\n}\n');
-    });
+    it.effect("keeps the padding the runner wrote", () =>
+      Effect.gen(function* program() {
+        const { storedMultiLineSnapshot } = yield* fixtures;
+        expect(storedMultiLineSnapshot).toBe('\n{\n  "alpha": 1,\n}\n');
+      }),
+    );
   });
 
   describe("a key the file does not carry", () => {
-    const it = test.extend("snapshotForAbsentKey", () => {
-      const directory = join(snapshotRecordsRoot, "other-key");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(join(directory, "__snapshots__"), { recursive: true });
-      writeFileSync(
-        join(directory, "__snapshots__", "subject.test.ts.snap"),
-        [
-          "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
-          "",
-          'exports[`outer > names a behaviour 1`] = `"alpha"`;',
-          "",
-          "exports[`outer > names a behaviour 2`] = `",
-          "{",
-          '  "alpha": 1,',
-          "}",
-          "`;",
-          "",
-        ].join("\n"),
-      );
-      return externalRecordOf(join(directory, "subject.test.ts"), "outer > some other behaviour 1");
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const snapshotRecordsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-snapshot-records-",
+      });
+      const snapshotForAbsentKey = yield* Effect.gen(function* snapshotForAbsentKey() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(snapshotRecordsRoot, "other-key");
+        yield* filesystem.makeDirectory(paths.join(directory, "__snapshots__"), {
+          recursive: true,
+        });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "__snapshots__", "subject.test.ts.snap"),
+          [
+            "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
+            "",
+            'exports[`outer > names a behaviour 1`] = `"alpha"`;',
+            "",
+            "exports[`outer > names a behaviour 2`] = `",
+            "{",
+            '  "alpha": 1,',
+            "}",
+            "`;",
+            "",
+          ].join("\n"),
+        );
+        return externalRecordOf(
+          paths.join(directory, "subject.test.ts"),
+          "outer > some other behaviour 1",
+        );
+      });
+      return { snapshotRecordsRoot, snapshotForAbsentKey };
     });
 
-    it("reads as no record", ({ snapshotForAbsentKey }) => {
-      expect(snapshotForAbsentKey).toBe(null);
-    });
+    it.effect("reads as no record", () =>
+      Effect.gen(function* program() {
+        const { snapshotForAbsentKey } = yield* fixtures;
+        expect(snapshotForAbsentKey).toBe(null);
+      }),
+    );
   });
 
   describe("a spec with no record file", () => {
-    const it = test.extend("snapshotForSpecWithoutRecordFile", () => {
-      const directory = join(snapshotRecordsRoot, "absent");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      return externalRecordOf(join(directory, "subject.test.ts"), "outer > names a behaviour 1");
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const snapshotRecordsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-snapshot-records-",
+      });
+      const snapshotForSpecWithoutRecordFile = yield* Effect.gen(
+        function* snapshotForSpecWithoutRecordFile() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(snapshotRecordsRoot, "absent");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          return externalRecordOf(
+            paths.join(directory, "subject.test.ts"),
+            "outer > names a behaviour 1",
+          );
+        },
+      );
+      return { snapshotRecordsRoot, snapshotForSpecWithoutRecordFile };
     });
 
-    it("reads as no record", ({ snapshotForSpecWithoutRecordFile }) => {
-      expect(snapshotForSpecWithoutRecordFile).toBe(null);
-    });
+    it.effect("reads as no record", () =>
+      Effect.gen(function* program() {
+        const { snapshotForSpecWithoutRecordFile } = yield* fixtures;
+        expect(snapshotForSpecWithoutRecordFile).toBe(null);
+      }),
+    );
   });
 
   describe("an escaped delimiter inside a record", () => {
-    const it = test.extend("snapshotCarryingEscapedDelimiters", () => {
-      const directory = join(snapshotRecordsRoot, "escaped");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(join(directory, "__snapshots__"), { recursive: true });
-      writeFileSync(
-        join(directory, "__snapshots__", "subject.test.ts.snap"),
-        [
-          "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
-          "",
-          "exports[`outer > carries delimiters 1`] = `",
-          '"line one',
-          "exports[\\`decoy > key 1\\`] = \\`tricked\\`;",
-          'line three"',
-          "`;",
-          "",
-          'exports[`outer > after the decoy 1`] = `"beta"`;',
-          "",
-        ].join("\n"),
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const snapshotRecordsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-snapshot-records-",
+      });
+      const snapshotCarryingEscapedDelimiters = yield* Effect.gen(
+        function* snapshotCarryingEscapedDelimiters() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(snapshotRecordsRoot, "escaped");
+          yield* filesystem.makeDirectory(paths.join(directory, "__snapshots__"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "__snapshots__", "subject.test.ts.snap"),
+            [
+              "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
+              "",
+              "exports[`outer > carries delimiters 1`] = `",
+              '"line one',
+              "exports[\\`decoy > key 1\\`] = \\`tricked\\`;",
+              'line three"',
+              "`;",
+              "",
+              'exports[`outer > after the decoy 1`] = `"beta"`;',
+              "",
+            ].join("\n"),
+          );
+          return externalRecordOf(
+            paths.join(directory, "subject.test.ts"),
+            "outer > carries delimiters 1",
+          );
+        },
       );
-      return externalRecordOf(join(directory, "subject.test.ts"), "outer > carries delimiters 1");
+      return { snapshotRecordsRoot, snapshotCarryingEscapedDelimiters };
     });
 
-    it("does not end the record", ({ snapshotCarryingEscapedDelimiters }) => {
-      expect(snapshotCarryingEscapedDelimiters).toBe(
-        '\n"line one\nexports[`decoy > key 1`] = `tricked`;\nline three"\n',
-      );
-    });
+    it.effect("does not end the record", () =>
+      Effect.gen(function* program() {
+        const { snapshotCarryingEscapedDelimiters } = yield* fixtures;
+        expect(snapshotCarryingEscapedDelimiters).toBe(
+          '\n"line one\nexports[`decoy > key 1`] = `tricked`;\nline three"\n',
+        );
+      }),
+    );
   });
 
   describe("a record carrying a decoy key", () => {
-    const it = test.extend("snapshotAfterTheDecoy", () => {
-      const directory = join(snapshotRecordsRoot, "after-decoy");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(join(directory, "__snapshots__"), { recursive: true });
-      writeFileSync(
-        join(directory, "__snapshots__", "subject.test.ts.snap"),
-        [
-          "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
-          "",
-          "exports[`outer > carries delimiters 1`] = `",
-          '"line one',
-          "exports[\\`decoy > key 1\\`] = \\`tricked\\`;",
-          'line three"',
-          "`;",
-          "",
-          'exports[`outer > after the decoy 1`] = `"beta"`;',
-          "",
-        ].join("\n"),
-      );
-      return externalRecordOf(join(directory, "subject.test.ts"), "outer > after the decoy 1");
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const snapshotRecordsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-snapshot-records-",
+      });
+      const snapshotAfterTheDecoy = yield* Effect.gen(function* snapshotAfterTheDecoy() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(snapshotRecordsRoot, "after-decoy");
+        yield* filesystem.makeDirectory(paths.join(directory, "__snapshots__"), {
+          recursive: true,
+        });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "__snapshots__", "subject.test.ts.snap"),
+          [
+            "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
+            "",
+            "exports[`outer > carries delimiters 1`] = `",
+            '"line one',
+            "exports[\\`decoy > key 1\\`] = \\`tricked\\`;",
+            'line three"',
+            "`;",
+            "",
+            'exports[`outer > after the decoy 1`] = `"beta"`;',
+            "",
+          ].join("\n"),
+        );
+        return externalRecordOf(
+          paths.join(directory, "subject.test.ts"),
+          "outer > after the decoy 1",
+        );
+      });
+      return { snapshotRecordsRoot, snapshotAfterTheDecoy };
     });
 
-    it("does not hide the record that follows it", ({ snapshotAfterTheDecoy }) => {
-      expect(snapshotAfterTheDecoy).toBe('"beta"');
-    });
+    it.effect("does not hide the record that follows it", () =>
+      Effect.gen(function* program() {
+        const { snapshotAfterTheDecoy } = yield* fixtures;
+        expect(snapshotAfterTheDecoy).toBe('"beta"');
+      }),
+    );
   });
 
   describe("the decoy key inside a record", () => {
-    const it = test.extend("snapshotForDecoyKey", () => {
-      const directory = join(snapshotRecordsRoot, "decoy");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(join(directory, "__snapshots__"), { recursive: true });
-      writeFileSync(
-        join(directory, "__snapshots__", "subject.test.ts.snap"),
-        [
-          "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
-          "",
-          "exports[`outer > carries delimiters 1`] = `",
-          '"line one',
-          "exports[\\`decoy > key 1\\`] = \\`tricked\\`;",
-          'line three"',
-          "`;",
-          "",
-          'exports[`outer > after the decoy 1`] = `"beta"`;',
-          "",
-        ].join("\n"),
-      );
-      return externalRecordOf(join(directory, "subject.test.ts"), "decoy > key 1");
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const snapshotRecordsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-snapshot-records-",
+      });
+      const snapshotForDecoyKey = yield* Effect.gen(function* snapshotForDecoyKey() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(snapshotRecordsRoot, "decoy");
+        yield* filesystem.makeDirectory(paths.join(directory, "__snapshots__"), {
+          recursive: true,
+        });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "__snapshots__", "subject.test.ts.snap"),
+          [
+            "// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html",
+            "",
+            "exports[`outer > carries delimiters 1`] = `",
+            '"line one',
+            "exports[\\`decoy > key 1\\`] = \\`tricked\\`;",
+            'line three"',
+            "`;",
+            "",
+            'exports[`outer > after the decoy 1`] = `"beta"`;',
+            "",
+          ].join("\n"),
+        );
+        return externalRecordOf(paths.join(directory, "subject.test.ts"), "decoy > key 1");
+      });
+      return { snapshotRecordsRoot, snapshotForDecoyKey };
     });
 
-    it("is not a key of its own", ({ snapshotForDecoyKey }) => {
-      expect(snapshotForDecoyKey).toBe(null);
-    });
+    it.effect("is not a key of its own", () =>
+      Effect.gen(function* program() {
+        const { snapshotForDecoyKey } = yield* fixtures;
+        expect(snapshotForDecoyKey).toBe(null);
+      }),
+    );
   });
 });
 

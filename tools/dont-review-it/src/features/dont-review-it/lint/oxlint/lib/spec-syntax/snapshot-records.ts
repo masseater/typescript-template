@@ -1,5 +1,4 @@
-import { basename, dirname, join, resolve } from "node:path";
-
+import { path } from "../../../../platform/path.ts";
 import { readTextFile } from "../canonical-values/source-files.ts";
 
 export const MAX_INLINE_RECORD_LINES = 12;
@@ -36,10 +35,10 @@ const EXTERNAL_RECORDS_DIRECTORY = "__snapshots__";
 const EXTERNAL_RECORDS_SUFFIX = ".snap";
 
 export const externalRecordOf = (specPath: string, externalRecordKey: string): string | null => {
-  const recordsPath = join(
-    dirname(specPath),
+  const recordsPath = path.join(
+    path.dirname(specPath),
     EXTERNAL_RECORDS_DIRECTORY,
-    `${basename(specPath)}${EXTERNAL_RECORDS_SUFFIX}`,
+    `${path.basename(specPath)}${EXTERNAL_RECORDS_SUFFIX}`,
   );
   const externalRecordsSource = readTextFile(recordsPath);
   return externalRecordsSource === null
@@ -48,7 +47,7 @@ export const externalRecordOf = (specPath: string, externalRecordKey: string): s
 };
 
 export const fileRecordOf = (specPath: string, written: string): string | null =>
-  readTextFile(resolve(dirname(specPath), written));
+  readTextFile(path.resolve(path.dirname(specPath), written));
 
 const EMPTY_BODY_RECORD = /^([$_\p{ID_Start}][$\p{ID_Continue}]*) \{\}$/u;
 

@@ -1,4 +1,6 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { createHash } from "node:crypto";
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readFileSync } from "node:fs";
 
 import { CACHE_FORMAT_VERSION } from "./catalog-cache-validation.ts";
