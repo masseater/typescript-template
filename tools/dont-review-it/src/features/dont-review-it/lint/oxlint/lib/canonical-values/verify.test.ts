@@ -1043,4 +1043,32 @@ layer(NodeServices.layer)("findEquivalentConcepts", (it) => {
       }),
     );
   });
+
+  describe("two concepts that each declare no values yet", () => {
+    const fixture = Effect.gen(function* equivalenceGroups() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-",
+      });
+
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "src", "article.ts"),
+        `/** ${TAG} article.flag */\nexport const ARTICLE_FLAGS = [] as const;\n`,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "src", "order.ts"),
+        `/** ${TAG} order.flag */\nexport const ORDER_FLAGS = [] as const;\n`,
+      );
+      return findEquivalentConcepts(inspectCanonicalValues({ repositoryRoot }).catalog.entries);
+    });
+
+    it.effect("form no group", () =>
+      Effect.gen(function* program() {
+        const equivalenceGroups = yield* fixture;
+        expect(equivalenceGroups).toStrictEqual([]);
+      }),
+    );
+  });
 });

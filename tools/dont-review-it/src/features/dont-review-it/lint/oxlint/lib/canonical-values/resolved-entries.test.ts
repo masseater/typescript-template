@@ -236,64 +236,40 @@ layer(NodeServices.layer)("an annotated object binding", (it) => {
 });
 
 layer(NodeServices.layer)("an empty tuple", (it) => {
-  const fixtures = Effect.gen(function* fixtures() {
-    const conceptIdsOfAnEmptyTuple = yield* Effect.gen(function* conceptIdsOfAnEmptyTuple() {
-      const filesystem = yield* FileSystem.FileSystem;
-      const pathService = yield* Path.Path;
-      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
-        prefix: "canonical-values-",
-      });
-
-      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
-      yield* filesystem.writeFileString(
-        pathService.join(repositoryRoot, "src", "values.ts"),
-        "/** @canonical-values order.status */\nexport const VALUES = [] as const;\n",
-      );
-      return analyzeCanonicalValuesRepository({ repositoryRoot }).catalog.entries.map(
-        (declarationEntry) => declarationEntry.conceptId,
-      );
+  const fixture = Effect.gen(function* analysisOfAnEmptyTuple() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const pathService = yield* Path.Path;
+    const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+      prefix: "canonical-values-",
     });
-    const vocabularyProblemsOfAnEmptyTuple = yield* Effect.gen(
-      function* vocabularyProblemsOfAnEmptyTuple() {
-        const filesystem = yield* FileSystem.FileSystem;
-        const pathService = yield* Path.Path;
-        const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
-          prefix: "canonical-values-",
-        });
 
-        yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), {
-          recursive: true,
-        });
-        yield* filesystem.writeFileString(
-          pathService.join(repositoryRoot, "src", "values.ts"),
-          "/** @canonical-values order.status */\nexport const VALUES = [] as const;\n",
-        );
-        return analyzeCanonicalValuesRepository({ repositoryRoot }).problems.filter(
-          (reported) => reported.kind === "vocabulary-without-values",
-        );
-      },
+    yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+    yield* filesystem.writeFileString(
+      pathService.join(repositoryRoot, "src", "values.ts"),
+      "/** @canonical-values order.status */\nexport const VALUES = [] as const;\n",
     );
-    return { conceptIdsOfAnEmptyTuple, vocabularyProblemsOfAnEmptyTuple };
+    return analyzeCanonicalValuesRepository({ repositoryRoot });
   });
 
-  it.effect("owns no catalog entry", () =>
+  it.effect("owns a catalog entry with no values", () =>
     Effect.gen(function* program() {
-      const { conceptIdsOfAnEmptyTuple } = yield* fixtures;
-      expect(conceptIdsOfAnEmptyTuple).toStrictEqual([]);
+      const { catalog } = yield* fixture;
+      expect(
+        catalog.entries.map(({ conceptId, fingerprint, values }) => ({
+          conceptId,
+          fingerprint,
+          values,
+        })),
+      ).toStrictEqual([
+        { conceptId: "order.status", fingerprint: fingerprintValues([]), values: [] },
+      ]);
     }),
   );
 
-  it.effect("is reported as a vocabulary without values", () =>
+  it.effect("is not reported as a problem", () =>
     Effect.gen(function* program() {
-      const { vocabularyProblemsOfAnEmptyTuple } = yield* fixtures;
-      expect(vocabularyProblemsOfAnEmptyTuple).toStrictEqual([
-        {
-          conceptId: "order.status",
-          filePath: "src/values.ts",
-          kind: "vocabulary-without-values",
-          line: 1,
-        },
-      ]);
+      const { problems } = yield* fixture;
+      expect(problems).toStrictEqual([]);
     }),
   );
 });
