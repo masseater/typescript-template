@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { Redirect } from "./redirect.ts";
+
 const maximumPathLength = 200;
 
 const WikiPagePath = Schema.String.check(
@@ -37,7 +39,7 @@ const WikiImageUpload = Schema.Struct({
   contentType: Schema.Literals(wikiImageTypes),
 });
 
-const WikiImageUploaded = Schema.Struct({ url: Schema.String });
+const WikiImageUploaded = Redirect;
 
 export {
   WikiDraftDiscard,

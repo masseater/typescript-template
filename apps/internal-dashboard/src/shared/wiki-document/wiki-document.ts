@@ -5,8 +5,8 @@ import { BaseListPlugin } from "@platejs/list";
 import { MarkdownPlugin, defaultRules } from "@platejs/markdown";
 import { BaseImagePlugin } from "@platejs/media";
 import { BaseTablePlugin } from "@platejs/table";
-import { remarkWikiTerm, wikiTermSyntax } from "@repo/markdown-terms";
-import { Effect, Schema } from "effect";
+import { remarkWikiTerm, termLinkAttribute, wikiTermSyntax } from "@repo/markdown-terms";
+import { Effect } from "effect";
 import { createSlateEditor, createSlatePlugin } from "platejs";
 import * as markdownPrinter from "prettier/plugins/markdown";
 import { format } from "prettier/standalone";
@@ -33,18 +33,9 @@ const TermLinkPlugin = createSlatePlugin({
   node: { isElement: true, isInline: true, isVoid: true },
 });
 
-const isStringAttribute = Schema.is(
-  Schema.Struct({
-    name: Schema.String,
-    type: Schema.Literal("mdxJsxAttribute"),
-    value: Schema.String,
-  }),
-);
-
 function termLinkElement(attributes: readonly unknown[]): TermLinkElement {
-  const strings = attributes.filter((attribute) => isStringAttribute(attribute));
-  const term = strings.find((attribute) => attribute.name === "term")?.value ?? "";
-  const label = strings.find((attribute) => attribute.name === "label")?.value;
+  const term = termLinkAttribute(attributes, "term") ?? "";
+  const label = termLinkAttribute(attributes, "label");
   return {
     children: [{ text: "" }],
     term,

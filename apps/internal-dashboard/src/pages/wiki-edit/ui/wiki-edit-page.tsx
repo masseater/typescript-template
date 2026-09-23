@@ -8,6 +8,7 @@ import {
   StatusMessage,
   localState,
   useAction,
+  useOptionalString,
 } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 import { Effect, Option } from "effect";
@@ -21,8 +22,6 @@ import { wikiEditorComponents, wikiEditorPlugins } from "./wiki-editor-plugins.t
 import type { WikiEditorData } from "#pages/wiki-edit/model/wiki-editor-data.ts";
 import type { ReactElement } from "react";
 
-const useTitle = localState(Option.none<string>());
-const useDescription = localState(Option.none<string>());
 const useConfirmingDiscard = localState(false);
 
 function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElement {
@@ -35,8 +34,8 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
   const router = useRouter();
   const saving = useAction();
   const discarding = useAction();
-  const [titleInput, setTitle] = useTitle();
-  const [descriptionInput, setDescription] = useDescription();
+  const [titleInput, setTitle] = useOptionalString();
+  const [descriptionInput, setDescription] = useOptionalString();
   const [confirmingDiscard, setConfirmingDiscard] = useConfirmingDiscard();
   const title = Option.getOrElse(titleInput, () => document.title);
   const description = Option.getOrElse(descriptionInput, () => document.description);

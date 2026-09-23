@@ -1,4 +1,4 @@
-import { wikiTermSyntax } from "@repo/markdown-terms";
+import { termLinkAttribute, wikiTermSyntax } from "@repo/markdown-terms";
 import { Schema } from "effect";
 
 import type { LLMsOptions } from "fumadocs-core/mdx-plugins";
@@ -11,21 +11,11 @@ const isChartAttribute = Schema.is(
   }),
 );
 
-const isStringAttribute = Schema.is(
-  Schema.Struct({
-    name: Schema.String,
-    type: Schema.Literal("mdxJsxAttribute"),
-    value: Schema.String,
-  }),
-);
-
 function termLinkMarkdown(node: { readonly attributes: readonly unknown[] }): string | undefined {
-  const attributes = node.attributes.filter((attribute) => isStringAttribute(attribute));
-  const term = attributes.find((attribute) => attribute.name === "term")?.value;
-  if (term === undefined) {
-    return undefined;
-  }
-  return wikiTermSyntax(term, attributes.find((attribute) => attribute.name === "label")?.value);
+  const term = termLinkAttribute(node.attributes, "term");
+  return term === undefined
+    ? undefined
+    : wikiTermSyntax(term, termLinkAttribute(node.attributes, "label"));
 }
 
 const processedMarkdown: LLMsOptions = {
