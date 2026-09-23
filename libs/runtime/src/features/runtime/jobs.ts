@@ -8,7 +8,8 @@ import {
 import { WorkflowEntrypoint } from "cloudflare:workers";
 import { Crypto, Effect, Schema } from "effect";
 
-import { JobLookupFailed, JobNotFound } from "./job-failures.ts";
+import { JobLookupFailed } from "./job-lookup-failed.ts";
+import { JobNotFound } from "./job-not-found.ts";
 
 class Process extends WorkflowEntrypoint<JobsBindings, JobPayload> {
   override run(

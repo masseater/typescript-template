@@ -53,7 +53,7 @@ const readJson = (d1Request: {
             "content-type": "application/json",
           },
           method: "POST",
-          redirect: "error",
+          redirect: "manual",
           signal: AbortSignal.any([signal, AbortSignal.timeout(D1_API_TIMEOUT_MS)]),
         }),
     });

@@ -1,7 +1,7 @@
 import { Encoding, Result } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { emailChangeTarget } from "./verification-token.ts";
+import { VerificationTokenInvalid, emailChangeTarget } from "./verification-token.ts";
 
 describe("emailChangeTarget", () => {
   describe("a decoded token without updateTo", () => {
@@ -29,10 +29,7 @@ describe("emailChangeTarget", () => {
       emailChangeTarget("hdr.!!!not-base64!!!.sig"));
 
     it("fails closed", ({ undecodableClaimsRefusal }) => {
-      expect(undecodableClaimsRefusal).toStrictEqual({
-        _tag: "Failure",
-        failure: { _tag: "VerificationTokenInvalid" },
-      });
+      expect(undecodableClaimsRefusal).toStrictEqual(Result.fail(new VerificationTokenInvalid()));
     });
   });
 
@@ -40,10 +37,7 @@ describe("emailChangeTarget", () => {
     const it = test.extend("opaqueTokenRefusal", () => emailChangeTarget("opaque-token"));
 
     it("fails closed", ({ opaqueTokenRefusal }) => {
-      expect(opaqueTokenRefusal).toStrictEqual({
-        _tag: "Failure",
-        failure: { _tag: "VerificationTokenInvalid" },
-      });
+      expect(opaqueTokenRefusal).toStrictEqual(Result.fail(new VerificationTokenInvalid()));
     });
   });
 });

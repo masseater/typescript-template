@@ -8,16 +8,14 @@ type SentMail = {
 };
 
 class MailRecorder extends WorkerEntrypoint {
-  #delivered: SentMail[] = [];
+  static readonly #mailbox: SentMail[] = [];
 
   public send(sentMail: SentMail): void {
-    this.#delivered = [...this.#delivered, sentMail];
+    (this.constructor as typeof MailRecorder).#mailbox.push(sentMail);
   }
 
   public taken(): readonly SentMail[] {
-    const delivered = this.#delivered;
-    this.#delivered = [];
-    return delivered;
+    return (this.constructor as typeof MailRecorder).#mailbox.splice(0);
   }
 }
 

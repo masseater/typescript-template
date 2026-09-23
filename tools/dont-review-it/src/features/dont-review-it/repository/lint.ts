@@ -429,7 +429,8 @@ const lintOptions = {
         "new-cap": [
           LINT_SEVERITY.ERROR,
           {
-            capIsNewExceptionPattern: "^(?:Schema|Context|Data|Binding|D1|Email|WorkersAi)\\.",
+            capIsNewExceptionPattern:
+              "^(?:Schema|Context|Data|Config|Binding|D1|Email|WorkersAi)\\.",
           },
         ],
         "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
@@ -567,7 +568,11 @@ const lintOptions = {
     },
     {
       files: [
+        "libs/auth/src/features/auth/auth.worker.test.ts",
+        "libs/auth/src/features/auth/create-auth.worker.test.ts",
         "libs/auth/src/features/auth/email-change.worker.test.ts",
+        "libs/auth/src/features/auth/request-hooks.worker.test.ts",
+        "libs/auth/src/features/auth/session.worker.test.ts",
         "libs/runtime/src/features/runtime/worker-runtime.dev-server.test.ts",
       ],
       rules: {
