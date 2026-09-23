@@ -14,12 +14,10 @@ describe("MailRecorder", () => {
     const it = test.extend("mailbox", () =>
       Effect.runPromise(
         Effect.gen(function* mailbox() {
-          yield* Effect.promise(() => Promise.resolve(env.EMAIL.taken()));
-          yield* Effect.sync(() => {
-            env.EMAIL.send(sentMail);
-          });
-          const first = yield* Effect.promise(() => Promise.resolve(env.EMAIL.taken()));
-          const second = yield* Effect.promise(() => Promise.resolve(env.EMAIL.taken()));
+          yield* Effect.promise(() => env.EMAIL.taken());
+          yield* Effect.promise(() => env.EMAIL.send(sentMail));
+          const first = yield* Effect.promise(() => env.EMAIL.taken());
+          const second = yield* Effect.promise(() => env.EMAIL.taken());
           return { first, second };
         }),
       ));

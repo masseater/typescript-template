@@ -20,6 +20,16 @@ import type { ConfigEnv, PluginOption } from "vite-plus";
 
 const serve = { command: "serve", isPreview: false, mode: "test" } as const satisfies ConfigEnv;
 
+const inlangState = [
+  "!project.inlang/.gitignore",
+  "!project.inlang/.meta.json",
+  "!project.inlang/README.md",
+  "!project.inlang/cache",
+  "!project.inlang/cache/**",
+  "!project.inlang/.lix",
+  "!project.inlang/.lix/**",
+];
+
 describe("lifecycle", () => {
   const it = test
     .extend("inheritedLifecycle", () => lifecycle({ prepush: ["check:effect"] }))
@@ -86,12 +96,13 @@ describe("appRun", () => {
             "!**/node_modules/.cache/**",
             { base: "workspace", pattern: "!.local" },
             { base: "workspace", pattern: "!.local/**" },
+            ...inlangState,
           ],
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },
         "check:react": {
           command: "quality-check-react",
-          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...inlangState],
           output: [{ auto: true }, "!**/node_modules/.cache/**"],
         },
         check: sliceBoundaries.check,
@@ -106,6 +117,7 @@ describe("appRun", () => {
             "!dist/**",
             { base: "workspace", pattern: "!.local" },
             { base: "workspace", pattern: "!.local/**" },
+            ...inlangState,
           ],
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },
@@ -136,31 +148,26 @@ describe("paraglideAppRun", () => {
     expect(localizedApplicationRun).toStrictEqual({
       tasks: {
         ...appRun.tasks,
-        "compile:paraglide": {
-          command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-          input: [
-            ...taskInput,
-            "messages/**",
-            "project.inlang/**",
-            { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-            {
-              base: "workspace",
-              pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-            },
-          ],
-          output: [".paraglide/**"],
-        },
         "check:effect": {
           ...awaitingEffectDiagnostics["check:effect"],
-          dependsOn: ["compile:paraglide"],
+          dependsOn: ["typescript-template#compile:paraglide"],
         },
-        "check:code": { ...checkCode["check:code"], dependsOn: ["compile:paraglide"] },
+        "check:code": {
+          ...checkCode["check:code"],
+          dependsOn: ["typescript-template#compile:paraglide"],
+        },
         "check:imports": {
           ...workspaceCheckImports["check:imports"],
-          dependsOn: ["compile:paraglide"],
+          dependsOn: ["typescript-template#compile:paraglide"],
         },
-        "check:client": { ...appRun.tasks["check:client"], dependsOn: ["compile:paraglide"] },
-        "check:react": { ...appRun.tasks["check:react"], dependsOn: ["compile:paraglide"] },
+        "check:client": {
+          ...appRun.tasks["check:client"],
+          dependsOn: ["typescript-template#compile:paraglide"],
+        },
+        "check:react": {
+          ...appRun.tasks["check:react"],
+          dependsOn: ["typescript-template#compile:paraglide"],
+        },
       },
     });
   });
