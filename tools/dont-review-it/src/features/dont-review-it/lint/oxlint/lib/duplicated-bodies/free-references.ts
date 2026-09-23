@@ -79,9 +79,42 @@ const declaredNamesIn = (node: AstFields): readonly string[] => [
 
 const LOWERCASE_INITIAL = /^[a-z]/u;
 
+const TYPE_POSITION_FIELDS: ReadonlySet<string> = new Set([
+  "implements",
+  "returnType",
+  "superTypeArguments",
+  "typeAnnotation",
+  "typeArguments",
+  "typeParameters",
+]);
+
+const TYPE_DECLARATION_KINDS: ReadonlySet<string> = new Set([
+  "TSDeclareFunction",
+  "TSInterfaceDeclaration",
+  "TSTypeAliasDeclaration",
+]);
+
+const FILE_RELATIVE_META_PROPERTIES: ReadonlySet<string> = new Set([
+  "dirname",
+  "filename",
+  "glob",
+  "resolve",
+  "url",
+]);
+
+const isImportMeta = (syntaxField: unknown): boolean =>
+  isAstFields(syntaxField) &&
+  kindOf(syntaxField) === "MetaProperty" &&
+  isAstFields(syntaxField.meta) &&
+  syntaxField.meta.name === "import";
+
+const readsFileRelativeMeta = (member: AstFields): boolean =>
+  member.computed === true ||
+  (isAstFields(member.property) && FILE_RELATIVE_META_PROPERTIES.has(String(member.property.name)));
+
 const ownReferenceOf = (node: AstFields): readonly string[] => {
   const kind = kindOf(node);
-  if (kind === "MetaProperty") return [IMPORT_META_REFERENCE];
+  if (kind === "MetaProperty") return isImportMeta(node) ? [IMPORT_META_REFERENCE] : [];
   if (kind === "Identifier") return [String(node.name)];
   if (kind === "JSXIdentifier" && !LOWERCASE_INITIAL.test(String(node.name))) {
     return [String(node.name)];
@@ -90,12 +123,23 @@ const ownReferenceOf = (node: AstFields): readonly string[] => {
 };
 
 const referencedNamesIn = (node: AstFields): readonly string[] => {
-  if (kindOf(node) === "MetaProperty") return ownReferenceOf(node);
-  const namingFields: ReadonlySet<string> = new Set(namingFieldsOf(node));
+  const kind = kindOf(node);
+  if (TYPE_DECLARATION_KINDS.has(kind)) return [];
+  if (kind === "MetaProperty") return ownReferenceOf(node);
+  if (kind === "MemberExpression" && isImportMeta(node.object)) {
+    return [
+      ...(readsFileRelativeMeta(node) ? [IMPORT_META_REFERENCE] : []),
+      ...(node.computed === true ? nestedOf(node.property).flatMap(referencedNamesIn) : []),
+    ];
+  }
+  const skippedFields: ReadonlySet<string> = new Set([
+    ...namingFieldsOf(node),
+    ...TYPE_POSITION_FIELDS,
+  ]);
   return [
     ...ownReferenceOf(node),
     ...Object.entries(node)
-      .filter(([field]) => !namingFields.has(field))
+      .filter(([field]) => !skippedFields.has(field))
       .flatMap(([, nested]) => nestedOf(nested))
       .flatMap(referencedNamesIn),
   ];
