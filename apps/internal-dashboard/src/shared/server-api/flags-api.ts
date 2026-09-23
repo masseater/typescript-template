@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { ConfigurationInvalid, httpStatus } from "@repo/config";
-import { FeatureFlags, requireFlagEditor, toggleFlagRemote } from "@repo/feature-flags";
+import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
 import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
@@ -36,6 +36,9 @@ const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
     config.FLAGSHIP_APP_ID === undefined ||
     config.FLAGSHIP_ACCOUNT_ID === undefined
   ) {
+    if (config.local) {
+      return yield* toggleFlag({ actorId: user.id, enabled: change.enabled, key: change.key });
+    }
     return yield* new ConfigurationInvalid({ reason: "FLAGSHIP write credentials" });
   }
   return yield* toggleFlagRemote(
