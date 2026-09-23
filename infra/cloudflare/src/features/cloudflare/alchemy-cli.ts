@@ -55,7 +55,6 @@ function spawnAlchemy(
       extendEnv: false,
       stdin: "ignore",
     }).pipe(Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })));
-    // oxlint-disable-next-line project/process-boundary -- the alchemy child process writes its stdout and stderr through this process, which is the boundary those streams cross
     yield* Effect.all(
       [
         forward(handle.stdout, cliStdout, confidential),

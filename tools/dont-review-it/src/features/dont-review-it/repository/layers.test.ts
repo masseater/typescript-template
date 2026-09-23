@@ -1,9 +1,9 @@
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { applications, architectureKindOf } from "@repo/config";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { directoryEntries } from "./directory-entries.ts";
 import { reported } from "./lint-harness.ts";
 import { commands, workspaceDirectories } from "./tasks.ts";
 
@@ -56,34 +56,40 @@ describe("modular coverage", () => {
     expect(modularPackages.length).toBeGreaterThan(0);
   });
 
-  it("requires a public API index on every modular feature slice", () => {
-    expect.hasAssertions();
-    const modularPackages = packagesWithSrc.filter(
-      (directory) => architectureKindOf(directory) === "modular",
-    );
-    const missing: string[] = [];
-    for (const directory of modularPackages) {
-      const featuresRoot = join(directory, "src/features");
-      let slices: ReturnType<typeof readdirSync>;
-      try {
-        slices = readdirSync(featuresRoot, { withFileTypes: true });
-      } catch {
-        missing.push(`${directory}/src/features`);
-        continue;
-      }
-      for (const slice of slices) {
-        if (!slice.isDirectory()) {
-          missing.push(`${directory}/src/features/${slice.name}`);
-          continue;
-        }
-        const names = readdirSync(join(featuresRoot, slice.name));
-        if (!names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name))) {
-          missing.push(`${directory}/src/features/${slice.name}/index.ts`);
-        }
-      }
-    }
-    expect(missing).toStrictEqual([]);
-  });
+  it("requires a public API index on every modular feature slice", () =>
+    Effect.runPromise(
+      Effect.gen(function* publicApiIndexRequired() {
+        expect.hasAssertions();
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const modularPackages = packagesWithSrc.filter(
+          (directory) => architectureKindOf(directory) === "modular",
+        );
+        const missing = yield* Effect.forEach(modularPackages, (directory) =>
+          Effect.gen(function* missingIndexes() {
+            const featuresRoot = paths.join(directory, "src/features");
+            const slices = yield* directoryEntries(featuresRoot).pipe(Effect.option);
+            if (slices._tag === "None") {
+              return [`${directory}/src/features`];
+            }
+            const perSlice = yield* Effect.forEach(slices.value, (slice) => {
+              if (slice.kind !== "directory") {
+                return Effect.succeed([`${directory}/src/features/${slice.name}`]);
+              }
+              return Effect.map(
+                filesystem.readDirectory(paths.join(featuresRoot, slice.name)),
+                (names) =>
+                  names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name))
+                    ? []
+                    : [`${directory}/src/features/${slice.name}/index.ts`],
+              );
+            });
+            return perSlice.flat();
+          }),
+        );
+        expect(missing.flat()).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 });
 
 describe("feature-sliced layers", () => {
