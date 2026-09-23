@@ -3,7 +3,10 @@ import { parseEnv } from "node:util";
 import { deploymentKey, privateDeploymentKeys } from "@repo/observability/deployment-keys";
 import { isSecretFileName } from "@repo/vite-config/private-path";
 
-import type { DeploymentValue } from "@repo/observability/deployment-keys";
+interface DeploymentValue {
+  readonly key: string;
+  readonly value: string;
+}
 
 const byKey = (left: DeploymentValue, right: DeploymentValue): number => {
   return left.key.localeCompare(right.key);

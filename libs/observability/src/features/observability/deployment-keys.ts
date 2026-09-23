@@ -32,10 +32,4 @@ const privateDeploymentKeys: readonly string[] = [
   ...deploymentKeys.filter((settingName) => settingName !== deploymentKey.budgetJpy),
   ...optionalDeploymentKeys,
 ];
-type DeploymentValue = {
-  readonly key: string;
-  readonly value: string;
-};
-
 export { deploymentKey, deploymentKeys, optionalDeploymentKeys, privateDeploymentKeys };
-export type { DeploymentValue };
