@@ -1,5 +1,5 @@
 import {
-  effectDiagnostics,
+  awaitingEffectDiagnostics,
   lifecycle,
   checkCode,
   modularBoundaries,
@@ -10,7 +10,7 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...awaitingEffectDiagnostics,
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

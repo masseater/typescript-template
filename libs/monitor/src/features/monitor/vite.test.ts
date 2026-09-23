@@ -1,27 +1,70 @@
-import { assert, it } from "@effect/vitest";
+import {
+  checkCode,
+  effectDiagnostics,
+  lifecycle,
+  modularBoundaries,
+  taskInput,
+  workspaceCheckImports,
+} from "@repo/vite-config";
+import { describe, expect, test } from "vite-plus/test";
 
 import { monitorWorkerVite } from "./vite.ts";
 
-it("packs each monitor from its feature worker and builds that artifact in the pull request gate", () => {
-  const config = monitorWorkerVite("error-monitor");
-  const build = config.run.tasks.build;
-  assert.deepStrictEqual(config.pack.entry, { index: "src/features/error-monitor/worker.ts" });
-  assert.deepStrictEqual(config.pack.outExtensions(), { js: ".js" });
-  assert.deepStrictEqual(config.pack.deps.alwaysBundle, [/^@repo\//, /^effect(?:\/|$)/]);
-  assert.deepStrictEqual(config.pack.deps.onlyBundle, ["effect", "@repo/monitor"]);
-  if (typeof build === "string" || build === undefined) {
-    assert.fail("the shared build task was replaced");
-  }
-  assert.strictEqual(build.command, "vp pack");
-  assert.strictEqual(config.run.tasks["check:modular"]?.command, "quality-check-modular");
-  assert.deepStrictEqual(config.run.tasks.prepr, {
-    command: [],
-    dependsOn: ["prepush", "build"],
+describe("monitorWorkerVite", () => {
+  const it = test.extend("workerVite", () => monitorWorkerVite("error-monitor"));
+
+  it("packs each monitor from its feature worker and builds that artifact before the pull request gate", ({
+    workerVite,
+  }) => {
+    expect(workerVite).toStrictEqual({
+      pack: {
+        deps: {
+          alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
+          onlyBundle: ["effect", "@repo/monitor"],
+        },
+        dts: false,
+        entry: { index: "src/features/error-monitor/worker.ts" },
+        format: "esm",
+        outExtensions: workerVite.pack.outExtensions,
+        platform: "browser",
+        target: "es2023",
+      },
+      run: {
+        tasks: {
+          ...effectDiagnostics,
+          ...checkCode,
+          ...workspaceCheckImports,
+          ...modularBoundaries,
+          build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
+          ...lifecycle({
+            precommit: ["check:code"],
+            prepush: ["check:effect", "check:imports", "check:modular"],
+            prepr: ["build"],
+          }),
+        },
+      },
+      test: {
+        coverage: {
+          exclude: ["specs/**"],
+          thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+        },
+        mockReset: true,
+        restoreMocks: true,
+      },
+    });
   });
-  assert.deepStrictEqual(config.run.tasks.premerge, { command: [], dependsOn: [] });
-  assert.deepStrictEqual(config.run.tasks.precommit, { command: [], dependsOn: ["check:code"] });
-  assert.deepStrictEqual(config.run.tasks.prepush, {
-    command: [],
-    dependsOn: ["precommit", "check:effect", "check:imports", "check:modular"],
+});
+
+describe("the pack extension", () => {
+  const it = test.extend("packedExtension", () => {
+    const { outExtensions } = monitorWorkerVite("error-monitor").pack;
+    if (outExtensions === undefined) {
+      throw new Error("monitorWorkerVite pack must declare outExtensions");
+    }
+    return outExtensions({ format: "es", options: {} } as never);
+  });
+
+  it("emits JavaScript", ({ packedExtension }) => {
+    expect(packedExtension).toStrictEqual({ js: ".js" });
   });
 });

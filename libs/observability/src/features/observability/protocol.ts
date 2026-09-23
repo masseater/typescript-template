@@ -1,21 +1,18 @@
 import { Option, Schema } from "effect";
 import * as Headers from "effect/unstable/http/Headers";
 import * as HttpTraceContext from "effect/unstable/http/HttpTraceContext";
-
 export type Correlation = {
   readonly traceId: string;
   readonly spanId: string;
   readonly requestId: string;
 };
-
 export const traceIdBytes = 16;
 export const spanIdBytes = 8;
-const hexRadix = 16;
+export const hexRadix = 16;
 const hexByteWidth = 2;
 export const routeMessage = "Telemetry routes require fixed paths and bounded labels";
 const routePathPattern = /^\/[^?#*]*$|^\/(?:[^?#*]*\/)?\*$/u;
 const unmatchedRoute = "unmatched";
-
 export const httpMethods = [
   "_OTHER",
   "GET",
@@ -28,7 +25,6 @@ export const httpMethods = [
 ] as const;
 export type HttpMethod = (typeof httpMethods)[number];
 const [otherHttpMethod] = httpMethods;
-
 export const TraceId = Schema.String.check(Schema.isPattern(/^(?!0+$)[0-9a-f]{32}$/u));
 export const SpanId = Schema.String.check(Schema.isPattern(/^(?!0+$)[0-9a-f]{16}$/u));
 export const RequestId = Schema.String.check(
@@ -40,26 +36,28 @@ const Routes = Schema.Record(Schema.String, RouteLabel).check(
     Object.keys(routes).every((routePath) => routePathPattern.test(routePath)),
   ),
 );
-const isTraceId = Schema.is(TraceId);
+const acceptedTraceId = Schema.is(TraceId);
 const isSpanId = Schema.is(SpanId);
 export const isRequestId = Schema.is(RequestId);
 const isHttpMethod = Schema.is(Schema.Literals(httpMethods));
 export const isRoutes = Schema.is(Routes);
-
 export const randomHex = (bytes: number): string => {
   return Array.from(crypto.getRandomValues(new Uint8Array(bytes)), (byte) =>
     byte.toString(hexRadix).padStart(hexByteWidth, "0"),
   ).join("");
 };
-
 export const traceparentOf = (span: {
   readonly spanId: string;
   readonly traceId: string;
 }): string => `00-${span.traceId}-${span.spanId}-01`;
-
 export const parentContext = (
   traceparent: string | null,
-): { readonly parentSpanId: string; readonly traceId: string } | undefined => {
+):
+  | {
+      readonly parentSpanId: string;
+      readonly traceId: string;
+    }
+  | undefined => {
   if (traceparent === null) {
     return undefined;
   }
@@ -68,13 +66,13 @@ export const parentContext = (
     return undefined;
   }
   const { spanId, traceId } = decoded.value;
-  return isTraceId(traceId) && isSpanId(spanId) ? { parentSpanId: spanId, traceId } : undefined;
+  return acceptedTraceId(traceId) && isSpanId(spanId)
+    ? { parentSpanId: spanId, traceId }
+    : undefined;
 };
-
 export const httpMethod = (method: string): HttpMethod => {
   return isHttpMethod(method) ? method : otherHttpMethod;
 };
-
 export const routeLabel = (pathname: string, routes: Readonly<Record<string, string>>): string => {
   if (Object.hasOwn(routes, pathname)) {
     return routes[pathname] ?? unmatchedRoute;

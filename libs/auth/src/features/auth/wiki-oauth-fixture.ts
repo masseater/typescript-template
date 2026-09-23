@@ -21,6 +21,12 @@ type AuthorizationFlow = {
 const wikiOrigin = origins[APPLICATION.wiki];
 const redirectUri = "http://127.0.0.1:43123/callback";
 const VERIFIER_BYTES = 32;
+const encodeBase64Url = (bytes: Uint8Array): string =>
+  btoa(Array.from(bytes, (codePoint) => String.fromCodePoint(codePoint)).join(""))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
+
 const Registration = Schema.Struct({ client_id: Schema.String });
 
 const wikiAdministrator = Effect.fn("wikiAdministrator")(function* wikiAdministrator(
@@ -46,7 +52,7 @@ const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifie
   const digest = yield* Effect.promise(() =>
     crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
-  return Buffer.from(digest).toString("base64url");
+  return encodeBase64Url(new Uint8Array(digest));
 });
 
 const authorizeUrl = (clientId: string, challenge: string): URL => {
@@ -85,9 +91,7 @@ const registerClient = Effect.fn("registerClient")(function* registerClient(
 const startAuthorization = Effect.fn("startAuthorization")(function* startAuthorization() {
   const anonymous = yield* clientOf(APPLICATION.wiki);
   const clientId = yield* registerClient(anonymous);
-  const verifier = Buffer.from(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES))).toString(
-    "base64url",
-  );
+  const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES)));
   const redirect = yield* anonymous.navigate(
     authorizeUrl(clientId, yield* pkceChallenge(verifier)).href,
   );
@@ -96,4 +100,5 @@ const startAuthorization = Effect.fn("startAuthorization")(function* startAuthor
   return flow;
 });
 
-export { startAuthorization, wikiAdministrator, wikiOrigin };
+export { redirectUri, startAuthorization, wikiAdministrator, wikiOrigin };
+export type { AuthorizationFlow };
