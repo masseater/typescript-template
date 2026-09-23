@@ -1,12 +1,9 @@
 #!/usr/bin/env node
-import { appendFileSync, readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
+import { appendFileSync, readFileSync } from "node:fs";
 
-import { affectedTests, shardDirectories, type WorkspacePackage } from "./pr-affected-scope.ts";
-import { repositoryRoot } from "./repository-root.ts";
+import { affectedTests, shardDirectories } from "./pr-affected-scope.ts";
 import { prCheckShardCount } from "./test-runtime.ts";
-
-const workspaceRoots = ["apps", "libs", "infra", "tools"] as const;
+import { workspacePackages } from "./workspace-packages.ts";
 
 const required = (name: "CHECK_SHARD" | "GITHUB_OUTPUT" | "PR_FILES_PATH"): string => {
   const value = process.env[name];
@@ -15,54 +12,6 @@ const required = (name: "CHECK_SHARD" | "GITHUB_OUTPUT" | "PR_FILES_PATH"): stri
   }
   return value;
 };
-
-const dependencyFields = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-] as const;
-
-type PackageManifest = Readonly<{
-  dependencies?: Readonly<Record<string, string>>;
-  devDependencies?: Readonly<Record<string, string>>;
-  name?: string;
-  optionalDependencies?: Readonly<Record<string, string>>;
-  peerDependencies?: Readonly<Record<string, string>>;
-}>;
-
-const dependencyNames = (manifest: PackageManifest): readonly string[] =>
-  dependencyFields.flatMap((field) => {
-    const declared = manifest[field];
-    if (declared === undefined) {
-      return [];
-    }
-    return Object.entries(declared).flatMap(([name, version]) =>
-      version.startsWith("workspace:") ? [name] : [],
-    );
-  });
-
-const workspacePackages = (): readonly WorkspacePackage[] =>
-  workspaceRoots.flatMap((root) =>
-    readdirSync(path.join(repositoryRoot, root), { withFileTypes: true }).flatMap((entry) => {
-      if (!entry.isDirectory()) {
-        return [];
-      }
-      const manifest = JSON.parse(
-        readFileSync(path.join(repositoryRoot, root, entry.name, "package.json"), "utf8"),
-      ) as PackageManifest;
-      if (manifest.name === undefined) {
-        throw new Error(`${root}/${entry.name} is missing a package name`);
-      }
-      return [
-        {
-          dependencies: dependencyNames(manifest),
-          directory: `${root}/${entry.name}`,
-          name: manifest.name,
-        },
-      ];
-    }),
-  );
 
 const outputLines = (): string => {
   const files = readFileSync(required("PR_FILES_PATH"), "utf8")
