@@ -291,6 +291,7 @@ describe("lifecycle entry points", () => {
   it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
     expect.hasAssertions();
     expect(workflowRuns("../../../../../../.github/workflows/check.yml")).toStrictEqual([
+      "vp run --filter @repo/dont-review-it pr-affected",
       "vp run -w prepr",
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
       "vp run compile:paraglide",
