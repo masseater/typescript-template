@@ -58,7 +58,14 @@ function misplacedHooks(): string[] {
   return hookStages
     .filter(
       ([stage, source]) =>
-        !lifecycles.some((name) => name === stage) || source !== `vp run -r ${stage}\n`,
+        !lifecycles.some((name) => name === stage) ||
+        source !==
+          [
+            `scope="$(node tools/dont-review-it/src/features/dont-review-it/repository/hook-scope.ts ${stage})" || scope="-r"`,
+            '[ -n "$scope" ] || exit 0',
+            `vp run --concurrency-limit ${stage === "prepush" ? "1" : "2"} $scope ${stage}`,
+            "",
+          ].join("\n"),
     )
     .map(([stage]) => stage);
 }
@@ -253,7 +260,7 @@ describe("cloud agent environment", () => {
 });
 
 describe("lifecycle entry points", () => {
-  it("each hook runs its lifecycle task in every workspace", () => {
+  it("each hook runs its lifecycle task in the workspaces its change reaches", () => {
     expect.hasAssertions();
     expect(hookStages.length).toBeGreaterThan(0);
     expect(misplacedHooks()).toStrictEqual([]);

@@ -87,6 +87,7 @@ const workspaces = {
   "tools/dont-review-it": {
     entry: [
       "src/features/dont-review-it/repository/dependency-cruiser.ts",
+      "src/features/dont-review-it/repository/hook-scope.ts!",
       "doctor.config.ts",
       "src/features/dont-review-it/index.ts!",
       "src/features/dont-review-it/repository/lint.ts!",

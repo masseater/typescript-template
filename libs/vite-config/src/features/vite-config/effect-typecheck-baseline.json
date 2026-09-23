@@ -1193,6 +1193,12 @@
       {
         "file": "src/features/dont-review-it/repository/claude-settings.test.ts",
         "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/features/dont-review-it/repository/claude-settings.test.ts",
+        "code": "TS377057",
         "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
         "count": 1
       },
@@ -1335,6 +1341,24 @@
         "count": 1
       },
       {
+        "file": "src/features/dont-review-it/repository/hook-scope.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/features/dont-review-it/repository/hook-scope.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/features/dont-review-it/repository/hook-scope.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
         "file": "src/features/dont-review-it/repository/hooks.test.ts",
         "code": "TS377057",
         "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
@@ -1410,12 +1434,6 @@
         "file": "src/features/dont-review-it/repository/pr-affected.ts",
         "code": "TS377057",
         "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/dont-review-it/repository/pr-affected.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
         "count": 1
       },
       {
@@ -1654,6 +1672,18 @@
       },
       {
         "file": "src/features/dont-review-it/repository/workspace-imports.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/features/dont-review-it/repository/workspace-packages.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/features/dont-review-it/repository/workspace-packages.ts",
         "code": "TS377057",
         "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
         "count": 1
