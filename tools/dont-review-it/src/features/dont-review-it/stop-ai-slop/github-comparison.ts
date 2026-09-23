@@ -1,13 +1,21 @@
+import { Effect, Option, Schema } from "effect";
 import { isPlainObject } from "es-toolkit";
 
+import { parsingRefused, type ParsingRefused } from "./parsing-refused.ts";
 import {
   comparisonFrom,
   decodedPreviousSource,
   decodedSource,
   type RepositoryComparison,
+  type UndecodableSource,
 } from "./repository-comparison.ts";
 
-export type GitHubRequest = (path: string) => Promise<unknown>;
+export class GitHubRequestFailed extends Schema.TaggedError<GitHubRequestFailed>()(
+  "GitHubRequestFailed",
+  { message: Schema.String, cause: Schema.optional(Schema.Defect()) },
+) {}
+
+export type GitHubRequest = (requestPath: string) => Effect.Effect<unknown, GitHubRequestFailed>;
 
 export type GitHubPullRequestComparison = Readonly<{
   repositoryRoot: string;
@@ -24,31 +32,40 @@ type ComparedFile = Readonly<{
   patch?: string | undefined;
 }>;
 
-const movedFrom = (file: ComparedFile): string => {
+type PlacedFile = Readonly<{
+  filename: string;
+  formerPath: string;
+  patch: string | undefined;
+}>;
+
+const refused = (message: string): Effect.Effect<never, ParsingRefused> =>
+  Effect.fail(parsingRefused(message));
+
+const movedFrom = (file: ComparedFile): Effect.Effect<string, ParsingRefused> => {
   const before = file.previous_filename;
-  if (before === undefined || before === "") {
-    throw new Error(
-      `Do not read a move the compare answered without its former path: ${file.filename}.`,
-    );
-  }
-  return before;
+  return before === undefined || before === ""
+    ? refused(`Do not read a move the compare answered without its former path: ${file.filename}.`)
+    : Effect.succeed(before);
 };
 
+const inPlace = (file: ComparedFile): Effect.Effect<string, ParsingRefused> =>
+  Effect.succeed(file.filename);
+
 type ChangeShape = Readonly<{
-  inventory: (file: ComparedFile) => string;
-  formerPath: (file: ComparedFile) => string;
-  headers: (file: ComparedFile) => readonly string[];
+  formerPath: (file: ComparedFile) => Effect.Effect<string, ParsingRefused>;
+  inventory: (file: PlacedFile) => string;
+  headers: (file: PlacedFile) => readonly string[];
 }>;
 
 const asAdded: ChangeShape = {
+  formerPath: inPlace,
   inventory: (file) => `A\0${file.filename}\0`,
-  formerPath: (file) => file.filename,
   headers: (file) => ["new file mode 100644", "--- /dev/null", `+++ b/${file.filename}`],
 };
 
 const asModified: ChangeShape = {
+  formerPath: inPlace,
   inventory: (file) => `M\0${file.filename}\0`,
-  formerPath: (file) => file.filename,
   headers: (file) => [`--- a/${file.filename}`, `+++ b/${file.filename}`],
 };
 
@@ -58,162 +75,175 @@ const SHAPES_BY_STATUS: Readonly<Record<string, ChangeShape>> = {
   copied: asAdded,
   modified: asModified,
   removed: {
+    formerPath: inPlace,
     inventory: (file) => `D\0${file.filename}\0`,
-    formerPath: (file) => file.filename,
     headers: (file) => ["deleted file mode 100644", `--- a/${file.filename}`, "+++ /dev/null"],
   },
   renamed: {
-    inventory: (file) => `R100\0${movedFrom(file)}\0${file.filename}\0`,
     formerPath: movedFrom,
+    inventory: (file) => `R100\0${file.formerPath}\0${file.filename}\0`,
     headers: (file) => [
       "similarity index 100%",
-      `rename from ${movedFrom(file)}`,
+      `rename from ${file.formerPath}`,
       `rename to ${file.filename}`,
     ],
   },
 };
 
-const shapeOf = (file: ComparedFile): ChangeShape => {
+const shapeOf = (file: ComparedFile): Effect.Effect<ChangeShape, ParsingRefused> => {
   const shape = SHAPES_BY_STATUS[file.status];
-  if (shape === undefined) {
-    throw new Error(`Do not read past an unknown compare status "${file.status}".`);
-  }
-  return shape;
+  return shape === undefined
+    ? refused(`Do not read past an unknown compare status "${file.status}".`)
+    : Effect.succeed(shape);
 };
 
-const inventoryEntryOf = (file: ComparedFile): string => shapeOf(file).inventory(file);
-
-const patchEntryOf = (file: ComparedFile): string => {
-  const shape = shapeOf(file);
+const patchEntryOf = (shape: ChangeShape, file: PlacedFile): string => {
   const lines = [
-    `diff --git a/${shape.formerPath(file)} b/${file.filename}`,
+    `diff --git a/${file.formerPath} b/${file.filename}`,
     ...shape.headers(file),
     ...(file.patch === undefined ? [] : [file.patch.replace(/\n+$/u, "")]),
   ];
   return `${lines.join("\n")}\n`;
 };
 
-const fieldsFrom = (held: unknown, refusal: string): Readonly<Record<string, unknown>> => {
-  if (!isPlainObject(held)) {
-    throw new Error(refusal);
-  }
-  return held;
-};
+const entriesOf = Effect.fn("entriesOf")(function* entriesOf(file: ComparedFile) {
+  const shape = yield* shapeOf(file);
+  const placed: PlacedFile = {
+    filename: file.filename,
+    formerPath: yield* shape.formerPath(file),
+    patch: file.patch,
+  };
+  return { inventory: shape.inventory(placed), patch: patchEntryOf(shape, placed) };
+});
 
-const textFrom = (held: unknown, refusal: string): string => {
-  if (typeof held !== "string") {
-    throw new Error(refusal);
-  }
-  return held;
-};
+const fieldsFrom = (
+  held: unknown,
+  refusal: string,
+): Effect.Effect<Readonly<Record<string, unknown>>, ParsingRefused> =>
+  isPlainObject(held) ? Effect.succeed(held) : refused(refusal);
 
-const optionalTextFrom = (held: unknown, refusal: string): string | undefined =>
-  held === undefined ? undefined : textFrom(held, refusal);
+const textFrom = (held: unknown, refusal: string): Effect.Effect<string, ParsingRefused> =>
+  typeof held === "string" ? Effect.succeed(held) : refused(refusal);
 
-const comparedFileFrom = (held: unknown): ComparedFile => {
-  const fileFields = fieldsFrom(
+const optionalTextFrom = (
+  held: unknown,
+  refusal: string,
+): Effect.Effect<Option.Option<string>, ParsingRefused> =>
+  held === undefined ? Effect.succeedNone : Effect.asSome(textFrom(held, refusal));
+
+const comparedFileFrom = Effect.fn("comparedFileFrom")(function* comparedFileFrom(held: unknown) {
+  const fileFields = yield* fieldsFrom(
     held,
     "Do not read a changed file the compare answered as something other than an object.",
   );
-  return {
-    filename: textFrom(
+  const comparedFile: ComparedFile = {
+    filename: yield* textFrom(
       fileFields.filename,
       "Do not read a changed file the compare answered without a path.",
     ),
-    status: textFrom(
+    status: yield* textFrom(
       fileFields.status,
       "Do not read a changed file the compare answered without a status.",
     ),
-    previous_filename: optionalTextFrom(
-      fileFields.previous_filename,
-      "Do not read a former path the compare answered as something other than text.",
+    previous_filename: Option.getOrUndefined(
+      yield* optionalTextFrom(
+        fileFields.previous_filename,
+        "Do not read a former path the compare answered as something other than text.",
+      ),
     ),
-    patch: optionalTextFrom(
-      fileFields.patch,
-      "Do not read a patch the compare answered as something other than text.",
+    patch: Option.getOrUndefined(
+      yield* optionalTextFrom(
+        fileFields.patch,
+        "Do not read a patch the compare answered as something other than text.",
+      ),
     ),
   };
-};
+  return comparedFile;
+});
 
-const isChangedFileList = (held: unknown): held is readonly unknown[] => Array.isArray(held);
+const comparedFilesFrom = (
+  held: unknown,
+): Effect.Effect<readonly ComparedFile[], ParsingRefused> =>
+  Array.isArray(held)
+    ? Effect.forEach(held, comparedFileFrom)
+    : refused("Do not read the changed files the compare answered as something other than a list.");
 
-const comparedFilesFrom = (held: unknown): readonly ComparedFile[] => {
-  if (!isChangedFileList(held)) {
-    throw new Error(
-      "Do not read the changed files the compare answered as something other than a list.",
-    );
-  }
-  return held.map(comparedFileFrom);
-};
-
-const comparedFrom = (
-  carried: unknown,
-): Readonly<{ mergeBaseRevision: string; files: readonly ComparedFile[] }> => {
-  const compareFields = fieldsFrom(
+const comparedFrom = Effect.fn("comparedFrom")(function* comparedFrom(carried: unknown) {
+  const compareFields = yield* fieldsFrom(
     carried,
     "Do not read a compare the API answered as something other than an object.",
   );
-  const mergeBaseFields = fieldsFrom(
+  const mergeBaseFields = yield* fieldsFrom(
     compareFields.merge_base_commit,
     "Do not read a compare the API answered without its merge base commit.",
   );
   const changedFiles = compareFields.files;
   return {
-    mergeBaseRevision: textFrom(
+    mergeBaseRevision: yield* textFrom(
       mergeBaseFields.sha,
       "Do not read a merge base commit the compare answered without a revision.",
     ),
-    files: changedFiles === undefined ? [] : comparedFilesFrom(changedFiles),
+    files: changedFiles === undefined ? [] : yield* comparedFilesFrom(changedFiles),
   };
-};
+});
 
-const decodedContent = (carried: unknown): Uint8Array => {
-  const contentsFields = fieldsFrom(
-    carried,
-    "Do not read a file the contents API answered as something other than an object.",
-  );
-  return Buffer.from(
-    textFrom(
-      contentsFields.content,
-      "Do not read a file the contents API answered without content.",
+const decodedContent = (carried: unknown): Effect.Effect<Uint8Array, ParsingRefused> =>
+  Effect.flatMap(
+    fieldsFrom(
+      carried,
+      "Do not read a file the contents API answered as something other than an object.",
     ),
-    "base64",
-  );
-};
-
-export const compareGitHubPullRequest = async ({
-  repositoryRoot,
-  repository,
-  baseRevision,
-  headRevision,
-  request,
-}: GitHubPullRequestComparison): Promise<RepositoryComparison> => {
-  const { mergeBaseRevision, files } = comparedFrom(
-    await request(`/repos/${repository}/compare/${baseRevision}...${headRevision}`),
-  );
-  const contentsAt =
-    (revision: string, decode: (path: string, sourceBytes: Uint8Array) => string | null) =>
-    async (path: string) =>
-      decode(
-        path,
-        decodedContent(
-          await request(`/repos/${repository}/contents/${encodeURI(path)}?ref=${revision}`),
+    (contentsFields) =>
+      Effect.map(
+        textFrom(
+          contentsFields.content,
+          "Do not read a file the contents API answered without content.",
         ),
-      );
+        (content) => Buffer.from(content, "base64"),
+      ),
+  );
 
-  return {
+export const compareGitHubPullRequest = Effect.fn("compareGitHubPullRequest")(
+  function* compareGitHubPullRequest({
     repositoryRoot,
-    baseRevision: mergeBaseRevision,
+    repository,
+    baseRevision,
     headRevision,
-    files: await comparisonFrom({
-      inventoryOutput: files.map(inventoryEntryOf).join(""),
-      diff: files.map(patchEntryOf).join(""),
-      sources: {
-        base: contentsAt(mergeBaseRevision, (_path, sourceBytes) =>
-          decodedPreviousSource(sourceBytes),
-        ),
-        head: contentsAt(headRevision, decodedSource),
-      },
-    }),
-  };
-};
+    request,
+  }: GitHubPullRequestComparison) {
+    const { mergeBaseRevision, files } = yield* comparedFrom(
+      yield* request(`/repos/${repository}/compare/${baseRevision}...${headRevision}`),
+    );
+    const entries = yield* Effect.forEach(files, entriesOf);
+    const contentsAt =
+      (
+        revision: string,
+        decode: (
+          sourcePath: string,
+          sourceBytes: Uint8Array,
+        ) => Effect.Effect<string | null, UndecodableSource>,
+      ) =>
+      (sourcePath: string) =>
+        request(`/repos/${repository}/contents/${encodeURI(sourcePath)}?ref=${revision}`).pipe(
+          Effect.flatMap(decodedContent),
+          Effect.flatMap((sourceBytes) => decode(sourcePath, sourceBytes)),
+        );
+
+    const comparison: RepositoryComparison = {
+      repositoryRoot,
+      baseRevision: mergeBaseRevision,
+      headRevision,
+      files: yield* comparisonFrom({
+        inventoryOutput: entries.map((entry) => entry.inventory).join(""),
+        diff: entries.map((entry) => entry.patch).join(""),
+        sources: {
+          base: contentsAt(mergeBaseRevision, (_sourcePath, sourceBytes) =>
+            Effect.succeed(decodedPreviousSource(sourceBytes)),
+          ),
+          head: contentsAt(headRevision, decodedSource),
+        },
+      }),
+    };
+    return comparison;
+  },
+);

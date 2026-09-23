@@ -1,91 +1,111 @@
-import { attemptAsync } from "es-toolkit";
-import { http } from "msw";
+import { layer } from "@effect/vitest";
+import { Effect, Layer, Redacted } from "effect";
+import { http, type HttpHandler } from "msw";
 import { setupServer } from "msw/node";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { githubRequestFor } from "./github-request.ts";
 
-describe("githubRequestFor", () => {
-  describe("a token that was never given", () => {
-    const it = test.extend("requestForAnAbsentToken", () => githubRequestFor(undefined));
+const githubApi = setupServer();
 
-    it("has no request to make without a token", ({ requestForAnAbsentToken }) => {
-      expect(requestForAnAbsentToken).toBe(null);
-    });
+const listeningGitHubApi = Layer.effectDiscard(
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      githubApi.listen({ onUnhandledRequest: "error" });
+    }),
+    () =>
+      Effect.sync(() => {
+        githubApi.close();
+      }),
+  ),
+);
+
+const answeringWith = (handler: HttpHandler) =>
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      githubApi.use(handler);
+    }),
+    () =>
+      Effect.sync(() => {
+        githubApi.resetHandlers();
+      }),
+  );
+
+const requestedWithAToken = (requestPath: string) =>
+  Effect.flatMap(Effect.fromNullishOr(githubRequestFor(Redacted.make("token"))), (request) =>
+    request(requestPath),
+  );
+
+const isGitHubApi = ({ request }: { readonly request: Request }): boolean =>
+  new URL(request.url).origin === "https://api.github.com";
+
+layer(listeningGitHubApi)("githubRequestFor", (it) => {
+  describe("a token that was never given", () => {
+    it.effect("has no request to make without a token", () =>
+      Effect.sync(() => {
+        expect(githubRequestFor(undefined)).toBe(null);
+      }),
+    );
   });
 
   describe("a token that was given as an empty string", () => {
-    const it = test.extend("requestForAnEmptyToken", () => githubRequestFor(""));
-
-    it("has no request to make for an empty token", ({ requestForAnEmptyToken }) => {
-      expect(requestForAnEmptyToken).toBe(null);
-    });
+    it.effect("has no request to make for an empty token", () =>
+      Effect.sync(() => {
+        expect(githubRequestFor(Redacted.make(""))).toBe(null);
+      }),
+    );
   });
 
   describe("a compare the API answered", () => {
-    const it = test.extend("answeredCompare", async ({}, { onCleanup }) => {
-      const seen = Promise.withResolvers<Request>();
-      const server = setupServer(
-        http.get(
-          ({ request }) => new URL(request.url).origin === "https://api.github.com",
-          ({ request }) => {
-            seen.resolve(request);
-            return Response.json({ merge_base_commit: { sha: "basesha" } });
-          },
+    const answeredCompare = Effect.gen(function* answeredCompare() {
+      yield* answeringWith(
+        http.get(isGitHubApi, ({ request }) =>
+          Response.json({
+            merge_base_commit: { sha: "basesha" },
+            received: [
+              request.url,
+              request.headers.get("authorization"),
+              request.headers.get("accept"),
+              request.headers.get("x-github-api-version"),
+            ],
+          }),
         ),
       );
-      server.listen({ onUnhandledRequest: "error" });
-      onCleanup(() => {
-        server.close();
-      });
-      const decoded = await githubRequestFor("token")?.("/repos/owner/name/compare/a...b");
-      const interceptedRequest = await seen.promise;
-      return Promise.all([
-        Promise.resolve(decoded),
-        Promise.all([
-          Promise.resolve(interceptedRequest.url),
-          Promise.resolve(interceptedRequest.headers.get("authorization")),
-          Promise.resolve(interceptedRequest.headers.get("accept")),
-          Promise.resolve(interceptedRequest.headers.get("x-github-api-version")),
-        ]),
-      ]);
+      return yield* requestedWithAToken("/repos/owner/name/compare/a...b");
     });
 
-    it("answers under the token headers the handler received", ({ answeredCompare }) => {
-      expect(answeredCompare).toStrictEqual([
-        { merge_base_commit: { sha: "basesha" } },
-        [
-          "https://api.github.com/repos/owner/name/compare/a...b",
-          "Bearer token",
-          "application/vnd.github+json",
-          "2022-11-28",
-        ],
-      ]);
-    });
+    it.effect("answers under the token headers the handler received", () =>
+      Effect.gen(function* program() {
+        expect(yield* answeredCompare).toStrictEqual({
+          merge_base_commit: { sha: "basesha" },
+          received: [
+            "https://api.github.com/repos/owner/name/compare/a...b",
+            "Bearer token",
+            "application/vnd.github+json",
+            "2022-11-28",
+          ],
+        });
+      }),
+    );
   });
 
   describe("a failing answer from the API", () => {
-    const it = test.extend("failureFromReadingAFailingAnswer", async ({}, { onCleanup }) => {
-      const server = setupServer(
-        http.get(
-          ({ request }) => new URL(request.url).origin === "https://api.github.com",
-          () => new Response("no", { status: 404 }),
-        ),
-      );
-      server.listen({ onUnhandledRequest: "error" });
-      onCleanup(() => {
-        server.close();
-      });
-      const [failure] = await attemptAsync<unknown, Error>(async () =>
-        githubRequestFor("token")?.("/repos/owner/name/contents/absent.ts"),
-      );
-      return failure === null ? null : failure.message;
-    });
+    const failureFromReadingAFailingAnswer = Effect.gen(
+      function* failureFromReadingAFailingAnswer() {
+        yield* answeringWith(http.get(isGitHubApi, () => new Response("no", { status: 404 })));
+        const failure = yield* Effect.flip(
+          requestedWithAToken("/repos/owner/name/contents/absent.ts"),
+        );
+        return failure.message;
+      },
+    );
 
-    it("refuses to read past a failing answer", ({ failureFromReadingAFailingAnswer }) => {
-      expect(failureFromReadingAFailingAnswer).toBe(
-        "Do not read past a GitHub API failure: 404 on /repos/owner/name/contents/absent.ts.",
-      );
-    });
+    it.effect("refuses to read past a failing answer", () =>
+      Effect.gen(function* program() {
+        expect(yield* failureFromReadingAFailingAnswer).toBe(
+          "Do not read past a GitHub API failure: 404 on /repos/owner/name/contents/absent.ts.",
+        );
+      }),
+    );
   });
 });

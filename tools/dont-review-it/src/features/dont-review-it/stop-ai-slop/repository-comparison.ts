@@ -1,8 +1,9 @@
-import { extname } from "node:path";
-
+import { Effect, Schema } from "effect";
 import { attempt } from "es-toolkit";
 
+import { path } from "../platform/path.ts";
 import { runGitBuffer, runGitText } from "./git-text.ts";
+import { parsingRefused, type ParsingRefused } from "./parsing-refused.ts";
 import { parseRepositoryChanges, type RepositoryChange } from "./repository-diff.ts";
 
 export type CompareRevisionsOptions = Readonly<{
@@ -64,14 +65,19 @@ export type RepositoryComparison = Readonly<{
   files: readonly ComparisonFile[];
 }>;
 
-const resolveRevisionObject = async (repositoryRoot: string, revision: string): Promise<string> => {
-  return (
-    await runGitText({
+export class UndecodableSource extends Schema.TaggedError<UndecodableSource>()(
+  "UndecodableSource",
+  { message: Schema.String },
+) {}
+
+const resolveRevisionObject = (repositoryRoot: string, revision: string) =>
+  Effect.map(
+    runGitText({
       repositoryRoot,
       args: ["rev-parse", "--verify", "--end-of-options", `${revision}^{tree}`],
-    })
-  ).trim();
-};
+    }),
+    (answered) => answered.trim(),
+  );
 
 const utf8SourceOf = (sourceBytes: Uint8Array): string | null => {
   const [undecodable, decoded] = attempt<string, Error>(() =>
@@ -80,123 +86,136 @@ const utf8SourceOf = (sourceBytes: Uint8Array): string | null => {
   return undecodable === null ? decoded : null;
 };
 
-export const decodedSource = (path: string, sourceBytes: Uint8Array): string => {
+export const decodedSource = (
+  sourcePath: string,
+  sourceBytes: Uint8Array,
+): Effect.Effect<string, UndecodableSource> => {
   const decoded = utf8SourceOf(sourceBytes);
-  if (decoded === null) {
-    throw new Error(`Source blob does not decode as UTF-8: ${path}`);
-  }
-
-  return decoded;
+  return decoded === null
+    ? Effect.fail(
+        new UndecodableSource({ message: `Source blob does not decode as UTF-8: ${sourcePath}` }),
+      )
+    : Effect.succeed(decoded);
 };
 
 export const decodedPreviousSource = (sourceBytes: Uint8Array): string | null =>
   utf8SourceOf(sourceBytes);
 
-export type SideSources = Readonly<{
-  base: (path: string) => Promise<string | null>;
-  head: (path: string) => Promise<string | null>;
+export type SideSources<E, R> = Readonly<{
+  base: (sourcePath: string) => Effect.Effect<string | null, E, R>;
+  head: (sourcePath: string) => Effect.Effect<string | null, E, R>;
 }>;
 
 const sourceExtensions = [".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"];
 
-const readSource = async ({
+const readSource = <E, R>({
   sources,
   side,
-  path,
+  sourcePath,
 }: Readonly<{
-  sources: SideSources;
-  side: keyof SideSources;
-  path: string;
-}>): Promise<string | null> =>
-  sourceExtensions.includes(extname(path).toLowerCase()) ? sources[side](path) : null;
+  sources: SideSources<E, R>;
+  side: keyof SideSources<E, R>;
+  sourcePath: string;
+}>): Effect.Effect<string | null, E, R> =>
+  sourceExtensions.includes(path.extname(sourcePath).toLowerCase())
+    ? sources[side](sourcePath)
+    : Effect.succeed(null);
 
-type FileConversionInput<File extends RepositoryChange> = Readonly<{
-  context: Readonly<{ sources: SideSources }>;
+type FileConversionInput<File extends RepositoryChange, E, R> = Readonly<{
+  sources: SideSources<E, R>;
   file: File;
 }>;
 
-const toAddedComparisonFile = async ({
-  context,
+const toAddedComparisonFile = <E, R>({
+  sources,
   file,
-}: FileConversionInput<
-  Extract<RepositoryChange, { kind: "added" }>
->): Promise<AddedComparisonFile> => {
-  return {
+}: FileConversionInput<Extract<RepositoryChange, { kind: "added" }>, E, R>): Effect.Effect<
+  AddedComparisonFile,
+  E,
+  R
+> =>
+  Effect.map(readSource({ sources, side: "head", sourcePath: file.afterPath }), (afterSource) => ({
     ...file,
     beforeSource: null,
-    afterSource: await readSource({
-      sources: context.sources,
-      side: "head",
-      path: file.afterPath,
-    }),
-    firstAddedLine: file.addedLines[0] ?? null,
-  };
-};
-
-const toDeletedComparisonFile = async ({
-  context,
-  file,
-}: FileConversionInput<
-  Extract<RepositoryChange, { kind: "deleted" }>
->): Promise<DeletedComparisonFile> => {
-  return {
-    ...file,
-    beforeSource: await readSource({
-      sources: context.sources,
-      side: "base",
-      path: file.beforePath,
-    }),
-    afterSource: null,
-    firstAddedLine: null,
-  };
-};
-
-const toTwoSidedComparisonFile = async ({
-  context,
-  file,
-}: FileConversionInput<Extract<RepositoryChange, { kind: "changed" | "renamed" }>>): Promise<
-  ChangedComparisonFile | RenamedComparisonFile
-> => {
-  const [beforeSource, afterSource] = await Promise.all([
-    readSource({ sources: context.sources, side: "base", path: file.beforePath }),
-    readSource({ sources: context.sources, side: "head", path: file.afterPath }),
-  ]);
-  return {
-    ...file,
-    beforeSource,
     afterSource,
     firstAddedLine: file.addedLines[0] ?? null,
-  };
-};
+  }));
 
-const toComparisonFile = ({
-  context,
+const toDeletedComparisonFile = <E, R>({
+  sources,
   file,
-}: FileConversionInput<RepositoryChange>): Promise<ComparisonFile> => {
+}: FileConversionInput<Extract<RepositoryChange, { kind: "deleted" }>, E, R>): Effect.Effect<
+  DeletedComparisonFile,
+  E,
+  R
+> =>
+  Effect.map(
+    readSource({ sources, side: "base", sourcePath: file.beforePath }),
+    (beforeSource) => ({
+      ...file,
+      beforeSource,
+      afterSource: null,
+      firstAddedLine: null,
+    }),
+  );
+
+const toTwoSidedComparisonFile = <E, R>({
+  sources,
+  file,
+}: FileConversionInput<
+  Extract<RepositoryChange, { kind: "changed" | "renamed" }>,
+  E,
+  R
+>): Effect.Effect<ChangedComparisonFile | RenamedComparisonFile, E, R> =>
+  Effect.map(
+    Effect.all(
+      [
+        readSource({ sources, side: "base", sourcePath: file.beforePath }),
+        readSource({ sources, side: "head", sourcePath: file.afterPath }),
+      ],
+      { concurrency: "unbounded" },
+    ),
+    ([beforeSource, afterSource]) => ({
+      ...file,
+      beforeSource,
+      afterSource,
+      firstAddedLine: file.addedLines[0] ?? null,
+    }),
+  );
+
+const toComparisonFile = <E, R>({
+  sources,
+  file,
+}: FileConversionInput<RepositoryChange, E, R>): Effect.Effect<ComparisonFile, E, R> => {
   switch (file.kind) {
     case "added":
-      return toAddedComparisonFile({ context, file });
+      return toAddedComparisonFile({ sources, file });
     case "deleted":
-      return toDeletedComparisonFile({ context, file });
+      return toDeletedComparisonFile({ sources, file });
     case "changed":
     case "renamed":
-      return toTwoSidedComparisonFile({ context, file });
+      return toTwoSidedComparisonFile({ sources, file });
   }
 };
 
-export const comparisonFrom = async ({
+export const comparisonFrom = <E, R>({
   inventoryOutput,
   diff,
   sources,
 }: Readonly<{
   inventoryOutput: string;
   diff: string;
-  sources: SideSources;
-}>): Promise<readonly ComparisonFile[]> =>
-  Promise.all(
-    parseRepositoryChanges({ inventoryOutput, diff }).map((file) =>
-      toComparisonFile({ context: { sources }, file }),
-    ),
+  sources: SideSources<E, R>;
+}>): Effect.Effect<readonly ComparisonFile[], E | ParsingRefused, R> =>
+  Effect.flatMap(
+    Effect.try({
+      try: () => parseRepositoryChanges({ inventoryOutput, diff }),
+      catch: parsingRefused,
+    }),
+    (changes) =>
+      Effect.forEach(changes, (file) => toComparisonFile({ sources, file }), {
+        concurrency: "unbounded",
+      }),
   );
 
 const diffArguments = ({
@@ -224,44 +243,59 @@ const diffArguments = ({
   "--",
 ];
 
-export const compareRevisions = async ({
+export const compareRevisions = Effect.fn("compareRevisions")(function* compareRevisions({
   repositoryRoot,
   baseRevision,
   headRevision,
-}: CompareRevisionsOptions): Promise<RepositoryComparison> => {
-  const [baseObject, headObject] = await Promise.all([
-    resolveRevisionObject(repositoryRoot, baseRevision),
-    resolveRevisionObject(repositoryRoot, headRevision),
-  ]);
-  const [inventoryOutput, diff] = await Promise.all([
-    runGitText({
-      repositoryRoot,
-      args: diffArguments({ baseObject, headObject, presentation: ["--name-status", "-z"] }),
-    }),
-    runGitText({
-      repositoryRoot,
-      args: diffArguments({ baseObject, headObject, presentation: ["--unified=0"] }),
-    }),
-  ]);
+}: CompareRevisionsOptions) {
+  const [baseObject, headObject] = yield* Effect.all(
+    [
+      resolveRevisionObject(repositoryRoot, baseRevision),
+      resolveRevisionObject(repositoryRoot, headRevision),
+    ],
+    { concurrency: "unbounded" },
+  );
+  const [inventoryOutput, diff] = yield* Effect.all(
+    [
+      runGitText({
+        repositoryRoot,
+        args: diffArguments({ baseObject, headObject, presentation: ["--name-status", "-z"] }),
+      }),
+      runGitText({
+        repositoryRoot,
+        args: diffArguments({ baseObject, headObject, presentation: ["--unified=0"] }),
+      }),
+    ],
+    { concurrency: "unbounded" },
+  );
   const blobAt =
-    (revision: string, decode: (path: string, sourceBytes: Uint8Array) => string | null) =>
-    async (path: string) =>
-      decode(
-        path,
-        await runGitBuffer({ repositoryRoot, args: ["cat-file", "blob", `${revision}:${path}`] }),
+    (
+      revision: string,
+      decode: (
+        sourcePath: string,
+        sourceBytes: Uint8Array,
+      ) => Effect.Effect<string | null, UndecodableSource>,
+    ) =>
+    (sourcePath: string) =>
+      Effect.flatMap(
+        runGitBuffer({ repositoryRoot, args: ["cat-file", "blob", `${revision}:${sourcePath}`] }),
+        (sourceBytes) => decode(sourcePath, sourceBytes),
       );
 
-  return {
+  const comparison: RepositoryComparison = {
     repositoryRoot,
     baseRevision,
     headRevision,
-    files: await comparisonFrom({
+    files: yield* comparisonFrom({
       inventoryOutput,
       diff,
       sources: {
-        base: blobAt(baseObject, (_path, sourceBytes) => decodedPreviousSource(sourceBytes)),
+        base: blobAt(baseObject, (_sourcePath, sourceBytes) =>
+          Effect.succeed(decodedPreviousSource(sourceBytes)),
+        ),
         head: blobAt(headObject, decodedSource),
       },
     }),
   };
-};
+  return comparison;
+});

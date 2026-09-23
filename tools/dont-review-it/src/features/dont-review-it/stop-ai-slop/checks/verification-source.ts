@@ -1,5 +1,3 @@
-import { posix } from "node:path";
-
 import {
   parseSync,
   type Argument,
@@ -9,6 +7,7 @@ import {
   type ParseResult,
 } from "oxc-parser";
 
+import { path } from "../../platform/path.ts";
 import { scopedCallExpressionsIn } from "./scoped-call-expressions.ts";
 
 type FileAbsenceVerification = {
@@ -88,7 +87,7 @@ const staticMember = (
 
 const repositoryPath = (held: string): string | null => {
   if (held.startsWith("/") || /^[A-Za-z]:[\\/]/u.test(held)) return null;
-  const normalizedText = posix.normalize(held);
+  const normalizedText = path.normalize(held);
   if (normalizedText === "." || normalizedText === ".." || normalizedText.startsWith("../"))
     return null;
   return normalizedText;
@@ -186,7 +185,7 @@ const fileVerificationFrom = ({
 const importedModulePath = (testFile: string, moduleRequest: string): string | null => {
   if (!moduleRequest.startsWith("./") && !moduleRequest.startsWith("../")) return null;
   if (!/\.[cm]?[jt]sx?$/u.test(moduleRequest)) return null;
-  return repositoryPath(posix.join(posix.dirname(testFile), moduleRequest));
+  return repositoryPath(path.join(path.dirname(testFile), moduleRequest));
 };
 
 const negatedExpectationFrom = (

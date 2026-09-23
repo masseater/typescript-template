@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+
 import { runGitText } from "./git-text.ts";
 
 export type ComparisonRange = Readonly<{
@@ -7,41 +9,44 @@ export type ComparisonRange = Readonly<{
 
 const INTEGRATION_REVISION = "origin/main";
 
-const commitOrNull = async (repositoryRoot: string, revision: string): Promise<string | null> => {
-  const found = (
-    await runGitText({
-      repositoryRoot,
-      args: ["rev-list", "--max-count=1", "--ignore-missing", "--end-of-options", revision],
-    })
-  ).trim();
-  return found === "" ? null : found;
-};
+const trimmedGitText = (repositoryRoot: string, args: readonly string[]) =>
+  Effect.map(runGitText({ repositoryRoot, args }), (answered) => answered.trim());
 
-const mergeBaseOf = async (
+const commitOrNull = (repositoryRoot: string, revision: string) =>
+  Effect.map(
+    trimmedGitText(repositoryRoot, [
+      "rev-list",
+      "--max-count=1",
+      "--ignore-missing",
+      "--end-of-options",
+      revision,
+    ]),
+    (found) => (found === "" ? null : found),
+  );
+
+const mergeBaseOf = (repositoryRoot: string, revisions: readonly [string, string]) =>
+  trimmedGitText(repositoryRoot, ["merge-base", ...revisions]);
+
+const indexTreeOf = (repositoryRoot: string) => trimmedGitText(repositoryRoot, ["write-tree"]);
+
+export const comparisonRangeIn = Effect.fn("comparisonRangeIn")(function* comparisonRangeIn(
   repositoryRoot: string,
-  revisions: readonly [string, string],
-): Promise<string> =>
-  (await runGitText({ repositoryRoot, args: ["merge-base", ...revisions] })).trim();
-
-const indexTreeOf = async (repositoryRoot: string): Promise<string> =>
-  (await runGitText({ repositoryRoot, args: ["write-tree"] })).trim();
-
-export const comparisonRangeIn = async (
-  repositoryRoot: string,
-): Promise<ComparisonRange | null> => {
-  const mergeHead = await commitOrNull(repositoryRoot, "MERGE_HEAD");
+) {
+  const mergeHead = yield* commitOrNull(repositoryRoot, "MERGE_HEAD");
   if (mergeHead !== null) {
-    return {
-      baseRevision: await mergeBaseOf(repositoryRoot, ["HEAD", mergeHead]),
-      headRevision: await indexTreeOf(repositoryRoot),
+    const range: ComparisonRange = {
+      baseRevision: yield* mergeBaseOf(repositoryRoot, ["HEAD", mergeHead]),
+      headRevision: yield* indexTreeOf(repositoryRoot),
     };
+    return range;
   }
 
-  const integration = await commitOrNull(repositoryRoot, INTEGRATION_REVISION);
+  const integration = yield* commitOrNull(repositoryRoot, INTEGRATION_REVISION);
   if (integration === null) return null;
 
-  return {
-    baseRevision: await mergeBaseOf(repositoryRoot, [integration, "HEAD"]),
+  const range: ComparisonRange = {
+    baseRevision: yield* mergeBaseOf(repositoryRoot, [integration, "HEAD"]),
     headRevision: "HEAD",
   };
-};
+  return range;
+});
