@@ -36,6 +36,8 @@ type WikiEnv = SharedEnv &
   Readonly<{
     FLAGSHIP_API_TOKEN: Redacted.Redacted;
     FLAGSHIP_APP_ID: string;
+    WIKI: WorkerEntrypointBinding;
+    WIKI_API: WorkerEntrypointBinding;
   }>;
 
 interface CapabilityEnv {

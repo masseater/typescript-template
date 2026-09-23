@@ -1,10 +1,3 @@
-@import "tailwindcss";
-@import "fumadocs-ui/css/neutral.css";
-@import "fumadocs-ui/css/preset.css";
-@import "@xyflow/react/dist/style.css";
+@import "@repo/ui/styles.css";
 
-@layer base {
-  body {
-    @apply flex min-h-svh flex-col;
-  }
-}
+@source "..";

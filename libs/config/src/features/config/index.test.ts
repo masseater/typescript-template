@@ -10,6 +10,8 @@ import {
   readAi,
   readConfig,
   readJobs,
+  readSiteEnvironment,
+  readWikiBindings,
 } from "./index.ts";
 
 const local = {
@@ -198,6 +200,61 @@ describe("mail delivery", () => {
   it("requires a way to deliver mail", ({ refusal }) => {
     expect(refusal).toStrictEqual(
       new ConfigurationInvalid({ reason: "An email delivery binding is required" }),
+    );
+  });
+});
+
+describe("wiki worker environment", () => {
+  const assets = workerBindings.ASSETS;
+  const it = test
+    .extend("site", () =>
+      Effect.runPromise(readSiteEnvironment({ APP_RELEASE: "1.2.3", ASSETS: assets })))
+    .extend("missingRelease", () =>
+      Effect.runPromise(readSiteEnvironment({ ASSETS: assets }).pipe(Effect.flip)),
+    )
+    .extend("insecureCollector", () =>
+      Effect.runPromise(
+        readSiteEnvironment({
+          APP_RELEASE: "1.2.3",
+          ASSETS: assets,
+          OTLP_ENDPOINT: "http://collector.example.test",
+        }).pipe(Effect.flip),
+      ),
+    );
+
+  it("reads the release without an application origin", ({ site }) => {
+    expect(site).toStrictEqual({ APP_RELEASE: "1.2.3", ASSETS: assets });
+  });
+
+  it("requires the release", ({ missingRelease }) => {
+    expect(missingRelease).toStrictEqual(
+      new ConfigurationInvalid({ reason: 'Missing key\n  at ["APP_RELEASE"]' }),
+    );
+  });
+
+  it("requires HTTPS for the collector outside localhost", ({ insecureCollector }) => {
+    expect(insecureCollector).toStrictEqual(
+      new ConfigurationInvalid({ reason: "HTTPS is required outside localhost" }),
+    );
+  });
+});
+
+describe("dashboard wiki bindings", () => {
+  const wikiService = workerBindings.ASSETS;
+  const it = test
+    .extend("bound", () =>
+      Effect.runPromise(readWikiBindings({ WIKI: wikiService, WIKI_API: wikiService })))
+    .extend("missingApi", () =>
+      Effect.runPromise(readWikiBindings({ WIKI: wikiService }).pipe(Effect.flip)),
+    );
+
+  it("keeps both bindings", ({ bound }) => {
+    expect(bound).toStrictEqual({ WIKI: wikiService, WIKI_API: wikiService });
+  });
+
+  it("refuses without the RPC binding", ({ missingApi }) => {
+    expect(missingApi).toStrictEqual(
+      new ConfigurationInvalid({ reason: 'Missing key\n  at ["WIKI_API"]' }),
     );
   });
 });
