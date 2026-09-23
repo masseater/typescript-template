@@ -1,4 +1,4 @@
-import { effectTsgoNoEmit, effectTypecheckInputs } from "@repo/config/effect-typecheck";
+import { effectTsgoNoEmit, effectTypecheckInputs } from "@repo/config";
 
 import type { UserConfig } from "vite-plus";
 
@@ -9,4 +9,4 @@ const effectDiagnostics = {
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
-export { effectDiagnostics, effectTsgoNoEmit, effectTypecheckInputs };
+export { effectDiagnostics, effectTsgoNoEmit };
