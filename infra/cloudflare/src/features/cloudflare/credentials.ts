@@ -1,12 +1,12 @@
 import { parseEnv } from "node:util";
 
+import { modeAllowsGroupOrOther } from "@repo/cli";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem, Option, Path, Schema } from "effect";
 
 import { secretsFile } from "./deployment.ts";
 import { isNotFound, layer } from "./platform.ts";
 import { projectName } from "./project.ts";
-import { modeAllowsGroupOrOther } from "./unix-permission-bits.ts";
 
 function declaredKeys(contents: string): ReadonlySet<string> {
   return new Set(Object.keys(parseEnv(contents)));

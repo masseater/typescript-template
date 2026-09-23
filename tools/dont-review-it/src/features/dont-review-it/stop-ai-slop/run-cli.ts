@@ -19,6 +19,7 @@ import { formatProblem, type SlopProblem } from "./problem.ts";
 import { resolvedComparison, type ComparisonUnresolved } from "./resolved-comparison.ts";
 import { runChecks } from "./run-checks.ts";
 
+import type { GitHubComparisonIncomplete } from "./github-comparison.ts";
 import type { BlobUnreadable, UndecodableSource } from "./repository-comparison.ts";
 import type { DiffUnreadable } from "./repository-diff.ts";
 
@@ -56,6 +57,7 @@ type Refusal =
   | ComparisonUnresolved
   | GitHubRequestFailed
   | GitHubAnswerUnexpected
+  | GitHubComparisonIncomplete
   | DiffUnreadable
   | BlobUnreadable
   | UndecodableSource

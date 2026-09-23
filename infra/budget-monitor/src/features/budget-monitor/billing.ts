@@ -8,7 +8,6 @@ const MILLISECONDS_PER_HOUR = 3_600_000;
 const FUTURE_CHARGE_TOLERANCE_HOURS = 24;
 const MAX_DATA_AGE_HOURS = 48;
 const isCloudflareId = Schema.is(CloudflareId);
-const encodeUsageKey = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 const IsoTimestamp = Schema.String.check(
   Schema.makeFilter(
@@ -83,7 +82,7 @@ const rowFailure = (
 
 const hasDuplicateRows = (usageRows: readonly UsageRecord[]): Effect.Effect<boolean> =>
   Effect.forEach(usageRows, (usageRow) =>
-    encodeUsageKey([
+    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
       usageRow.SubscriptionId,
       usageRow.ZoneId,
       usageRow.ServiceName,

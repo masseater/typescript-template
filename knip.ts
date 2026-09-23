@@ -1,3 +1,5 @@
+import bundledTelemetry from "./libs/telemetry/package.json" with { type: "json" };
+
 import type { KnipConfig, KnipConfiguration } from "knip";
 
 const load = {
@@ -83,7 +85,16 @@ const workspaces = {
     entry: [...modularFeaturePublicApi],
     ignoreDependencies: ["@tanstack/intent"],
   },
-  "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
+  "tools/ai-native-telemetry": {
+    ignoreDependencies: [
+      "@tanstack/intent",
+      "@repo/config!",
+      `${bundledTelemetry.name}!`,
+      ...Object.entries(bundledTelemetry.dependencies).flatMap(([dependency, version]) =>
+        version.startsWith("workspace:") ? [] : [dependency],
+      ),
+    ],
+  },
   "tools/dont-review-it": {
     entry: [
       "src/features/dont-review-it/repository/dependency-cruiser.ts",
@@ -93,7 +104,15 @@ const workspaces = {
       "src/features/dont-review-it/repository/lint.ts!",
       "src/features/dont-review-it/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
+    ignoreDependencies: [
+      "@tanstack/intent",
+      "@repo/cli!",
+      "@repo/config!",
+      "@repo/infra-cloudflare!",
+      "@repo/observability!",
+      "@repo/vite-config!",
+      "effect!",
+    ],
     project: [
       "src/features/dont-review-it/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",

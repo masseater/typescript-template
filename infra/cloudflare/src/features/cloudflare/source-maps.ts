@@ -1,7 +1,7 @@
 import { sourceMapDirectories, sourceMapManifest } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, Schema } from "effect";
 
-import { ArtifactFailure, fail } from "./artifact-io.ts";
+import { ArtifactFailure, fail, ioFailed } from "./artifact-io.ts";
 import { isNotFound, layer, path } from "./platform.ts";
 import { retainGenerations } from "./retention.ts";
 
@@ -10,10 +10,6 @@ import type { BuildTarget } from "@repo/config";
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
 const ARCHIVED_RELEASES_KEPT = 5;
-
-function ioFailed(): ArtifactFailure {
-  return new ArtifactFailure({ code: "artifact_io_failed" });
-}
 
 function directoryExists(source: string): Effect.Effect<boolean, ArtifactFailure> {
   return Effect.gen(function* checkDirectory() {

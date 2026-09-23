@@ -1022,6 +1022,48 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
     );
   });
 
+  describe("a source the attributes file marks as generated", () => {
+    const fixture = Effect.gen(function* repositoryFilesBesideAGeneratedSource() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
+
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src/app"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, ".gitattributes"),
+        "**/routeTree.gen.ts linguist-generated\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/app/routeTree.gen.ts"),
+        "/* eslint-disable */\nexport const routeTree = 1;\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/app/router.ts"),
+        "export const router = 1;\n",
+      );
+      const listed = listRepositoryFiles(repositoryRoot);
+      return {
+        cacheInputs: listed.cacheInputs.map((file) => file.relativePath),
+        commentSources: listed.commentSources.map((file) => file.relativePath),
+        declarationSources: listed.declarationSources.map((file) => file.relativePath),
+      };
+    });
+
+    it.effect("stays a cache input but enters no source collection", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesBesideAGeneratedSource = yield* fixture;
+        expect(repositoryFilesBesideAGeneratedSource).toStrictEqual({
+          cacheInputs: ["src/app/routeTree.gen.ts", "src/app/router.ts"],
+          commentSources: ["src/app/router.ts"],
+          declarationSources: ["src/app/router.ts"],
+        });
+      }),
+    );
+  });
+
   describe("a tracked source that a later ignore rule covers", () => {
     const fixtures = Effect.gen(function* fixtures() {
       const cacheInputPathsOfATrackedIgnoredSource = yield* Effect.gen(

@@ -5,6 +5,7 @@ import { Result, Schema } from "effect";
 import { ErrorBody } from "./contracts.ts";
 
 import type { AnyElysia } from "elysia";
+import type { Decodable } from "./contracts.ts";
 type ApiReply = {
   readonly data: unknown;
   readonly error: {
@@ -12,9 +13,6 @@ type ApiReply = {
     readonly value: unknown;
   } | null;
   readonly response: Readonly<Pick<Response, "headers">>;
-};
-type Decodable = Schema.Top & {
-  readonly DecodingServices: never;
 };
 const decodeJson = <Contract extends Decodable>(
   contract: Contract,
