@@ -11,7 +11,7 @@ metadata:
 **skill の文体の責任は自分が持つ。**
 
 1. `.claude/skills/<name>/SKILL.md` に置き、frontmatter に `name`（ディレクトリ名と同じ）と `description` を書く。詳細は同じディレクトリの `references/` に分ける。
-2. 検証する。frontmatter、参照ファイルの存在、他 skill へのリンクは `tools/dont-review-it/src/repository/claude-skills.test.ts` が検査する。
+2. 検証する。frontmatter、参照ファイルの存在、他 skill へのリンクは `tools/dont-review-it/src/features/dont-review-it/repository/claude-skills.test.ts` が検査する。
 3. 構造的な規則ならテストを足す。主観的な内容なら足さない。
 4. AGENTS.md の merge 手順に従って PR を出す。
 

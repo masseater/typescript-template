@@ -1,6 +1,7 @@
+import { modularBoundaries } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-import { effectTsgoNoEmit, effectTypecheckInputs } from "./src/effect-typecheck.ts";
+import { effectTsgoNoEmit, effectTypecheckInputs } from "./src/features/config/effect-typecheck.ts";
 
 export default defineConfig({
   run: {
@@ -9,8 +10,9 @@ export default defineConfig({
         command: effectTsgoNoEmit("tsconfig.json"),
         input: [...effectTypecheckInputs],
       },
+      ...modularBoundaries,
       precommit: { command: [], dependsOn: [] },
-      prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
+      prepush: { command: [], dependsOn: ["precommit", "check:effect", "check:modular"] },
       prepr: { command: [], dependsOn: ["prepush"] },
       premerge: { command: [], dependsOn: [] },
       prerelease: { command: [], dependsOn: ["prepr", "premerge"] },

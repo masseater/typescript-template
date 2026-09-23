@@ -2,6 +2,9 @@
   "name": "@repo/error-monitor",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/features/error-monitor/index.ts"
+  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
