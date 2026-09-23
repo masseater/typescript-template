@@ -28,6 +28,7 @@ export default defineConfig({
         command: "./src/features/cloudflare/cli.ts deploy all",
         dependsOn: [...stackBuilds, "verify:account"],
       },
+      "materialize:env": { cache: false, command: "./src/features/cloudflare/materialize-env.ts" },
       "prepare:ci-env": { cache: false, command: "./src/features/cloudflare/prepare-ci-env.ts" },
       preview: {
         cache: false,
