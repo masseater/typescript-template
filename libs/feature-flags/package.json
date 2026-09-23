@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

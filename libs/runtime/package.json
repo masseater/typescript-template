@@ -31,6 +31,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "msw": "catalog:",
     "typescript": "catalog:",
