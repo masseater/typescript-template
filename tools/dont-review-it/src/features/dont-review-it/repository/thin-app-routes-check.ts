@@ -4,21 +4,19 @@ import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect, FileSystem, Path } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
+import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
 import { isAppRouteModule } from "./thin-app-routes.ts";
 
 const violation =
   "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。";
 
-type RouteScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
-
-const collectFiles = (directory: string): RouteScan<readonly string[]> =>
+const collectFiles = (directory: string): TreeScan<readonly string[]> =>
   Effect.gen(function* listRouteFiles() {
     const paths = yield* Path.Path;
     const entries = yield* directoryEntries(directory);
     const nested = yield* Effect.forEach(
       entries,
-      (entry): RouteScan<readonly string[]> => {
+      (entry): TreeScan<readonly string[]> => {
         const entryPath = paths.join(directory, entry.name);
         if (entry.kind === "directory") {
           return collectFiles(entryPath);
@@ -55,7 +53,7 @@ const hasJsx = (source: string, file: string): boolean => {
   return false;
 };
 
-const checkRoutes = (routesRoot: string): RouteScan<readonly string[]> =>
+const checkRoutes = (routesRoot: string): TreeScan<readonly string[]> =>
   Effect.gen(function* scan() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;

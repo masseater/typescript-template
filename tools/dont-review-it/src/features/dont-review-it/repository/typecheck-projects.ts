@@ -2,8 +2,7 @@ import { Effect, type FileSystem, Path } from "effect";
 
 import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
-
-const workspaceGroups = ["apps", "libs", "infra", "tools"] as const;
+import { workspaceRoots } from "./workspace-layout.ts";
 
 const skippedDirectoryNames = new Set([
   ".git",
@@ -44,7 +43,7 @@ const tsconfigFilesUnder = (root: string, directory: string): ProjectDiscovery<r
 const typecheckProjects = (root: string): ProjectDiscovery<readonly string[]> =>
   Effect.gen(function* typecheckProjects() {
     const paths = yield* Path.Path;
-    const nested = yield* Effect.forEach(workspaceGroups, (group) =>
+    const nested = yield* Effect.forEach(workspaceRoots, (group) =>
       Effect.flatMap(pathExists(paths.join(root, group)), (present) =>
         present ? tsconfigFilesUnder(root, group) : Effect.succeed([]),
       ),

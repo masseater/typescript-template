@@ -4,12 +4,10 @@ import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { architectureKindOf, modularBudgets } from "@repo/config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 
-import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
+import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
 
 const sourceSuffix = /\.[cm]?[jt]sx?$/u;
-
-type SourceScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
 class NotAModularPackage extends Schema.TaggedError<NotAModularPackage>()("NotAModularPackage", {
   cwd: Schema.String,
@@ -19,13 +17,13 @@ class NotAModularPackage extends Schema.TaggedError<NotAModularPackage>()("NotAM
   }
 }
 
-const collectFiles = (directory: string): SourceScan<readonly string[]> =>
+const collectFiles = (directory: string): TreeScan<readonly string[]> =>
   Effect.gen(function* listFiles() {
     const paths = yield* Path.Path;
     const entries = yield* directoryEntries(directory);
     const nested = yield* Effect.forEach(
       entries,
-      (entry): SourceScan<readonly string[]> => {
+      (entry): TreeScan<readonly string[]> => {
         const entryPath = paths.join(directory, entry.name);
         if (entry.kind === "directory") {
           return collectFiles(entryPath);
@@ -40,7 +38,7 @@ const collectFiles = (directory: string): SourceScan<readonly string[]> =>
     return nested.flat();
   });
 
-const lineCount = (file: string): SourceScan<number> =>
+const lineCount = (file: string): TreeScan<number> =>
   Effect.gen(function* countLines() {
     const filesystem = yield* FileSystem.FileSystem;
     const source = yield* filesystem.readFileString(file);
@@ -50,7 +48,7 @@ const lineCount = (file: string): SourceScan<number> =>
     return source.split(/\r?\n/u).length - (source.endsWith("\n") ? 1 : 0);
   });
 
-const directoryLines = (directory: string): SourceScan<number> =>
+const directoryLines = (directory: string): TreeScan<number> =>
   Effect.gen(function* sum() {
     const files = yield* collectFiles(directory);
     const counts = yield* Effect.forEach(files, lineCount, { concurrency: "unbounded" });
@@ -60,13 +58,13 @@ const directoryLines = (directory: string): SourceScan<number> =>
 const whenPresent = <Scanned>(
   directory: string,
   absent: Scanned,
-  scan: (present: string) => SourceScan<Scanned>,
-): SourceScan<Scanned> =>
+  scan: (present: string) => TreeScan<Scanned>,
+): TreeScan<Scanned> =>
   Effect.gen(function* whenPresent() {
     return (yield* pathExists(directory)) ? yield* scan(directory) : absent;
   });
 
-const budgetFindings = (srcRoot: string): SourceScan<readonly string[]> =>
+const budgetFindings = (srcRoot: string): TreeScan<readonly string[]> =>
   Effect.gen(function* scan() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
