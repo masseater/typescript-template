@@ -1,23 +1,26 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { openTypeScriptApi } from "./open-api.ts";
 
-describe("openTypeScriptApi", () => {
+layer(NodeServices.layer)("openTypeScriptApi", (it) => {
   describe("a directory holding no package of its own", () => {
-    const it = test.extend("closedApi", ({}, { onCleanup }) => {
-      const packageDirectory = mkdtempSync(join(tmpdir(), "open-type-script-api-"));
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixture = Effect.gen(function* closedApi() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const packageDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "open-type-script-api-",
       });
+
       openTypeScriptApi(packageDirectory).close();
     });
 
-    it("hands back an API that closes on the directory it was opened at", ({ closedApi }) => {
-      expect(closedApi).toBe(undefined);
-    });
+    it.effect("hands back an API that closes on the directory it was opened at", () =>
+      Effect.gen(function* program() {
+        const closedApi = yield* fixture;
+        expect(closedApi).toBe(undefined);
+      }),
+    );
   });
 });

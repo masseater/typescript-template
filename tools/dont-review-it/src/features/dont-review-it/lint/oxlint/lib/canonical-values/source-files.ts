@@ -7,11 +7,12 @@ import {
   statSync,
   type Dirent,
   type Stats,
+  // @effect-diagnostics-next-line nodeBuiltinImport:off
 } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
 
 import { attempt, partition, sortBy, uniqBy } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
@@ -19,23 +20,23 @@ import { pathIsInside } from "../path-is-inside.ts";
 import { toPosixPath } from "../posix-path.ts";
 import { MANIFEST_FILE_NAME } from "./package-manifest.ts";
 
-const statOf = (path: string): Stats | null => readUnlessMissing(() => statSync(path));
+const statOf = (targetPath: string): Stats | null => readUnlessMissing(() => statSync(targetPath));
 
-export const isFile = (path: string): boolean => statOf(path)?.isFile() === true;
+export const isFile = (targetPath: string): boolean => statOf(targetPath)?.isFile() === true;
 
 export const nearestPackageDirectory = (
   fileDirectory: string,
   repositoryRoot: string,
 ): string | null => {
-  if (isFile(join(fileDirectory, MANIFEST_FILE_NAME))) return fileDirectory;
+  if (isFile(path.join(fileDirectory, MANIFEST_FILE_NAME))) return fileDirectory;
   if (fileDirectory === repositoryRoot) return null;
 
-  const parent = dirname(fileDirectory);
+  const parent = path.dirname(fileDirectory);
   return parent === fileDirectory ? null : nearestPackageDirectory(parent, repositoryRoot);
 };
 
-export const readTextFile = (path: string): string | null =>
-  readUnlessMissing(() => readFileSync(path, "utf8"));
+export const readTextFile = (targetPath: string): string | null =>
+  readUnlessMissing(() => readFileSync(targetPath, "utf8"));
 
 const SCRIPT_FILE_NAME_PATTERN = /\.[cm]?[jt]sx?$/u;
 
@@ -88,7 +89,7 @@ const unsafeLinkAt = (repositoryRoot: string, absolutePath: string): ScannedFile
     {
       kind: "unsafe-symbolic-link",
       line: 1,
-      filePath: toPosixPath(relative(repositoryRoot, absolutePath)),
+      filePath: toPosixPath(path.relative(repositoryRoot, absolutePath)),
     },
   ],
 });
@@ -126,8 +127,8 @@ const scannedFileAt = (input: {
   );
   return {
     absolutePath,
-    relativePath: toPosixPath(relative(repositoryRoot, absolutePath)),
-    realPathIdentity: toPosixPath(relative(realRepositoryRoot, realPath)),
+    relativePath: toPosixPath(path.relative(repositoryRoot, absolutePath)),
+    realPathIdentity: toPosixPath(path.relative(realRepositoryRoot, realPath)),
     size: stats.size,
     symbolicLinkTarget,
     mtimeMs: stats.mtimeMs,
@@ -156,7 +157,7 @@ const scannedSymbolicFile = (
 };
 
 const scannedSymbolicLink = (input: ScanDirectoryInput, directoryEntry: Dirent): ScannedFiles => {
-  const absolutePath = join(input.directory, directoryEntry.name);
+  const absolutePath = path.join(input.directory, directoryEntry.name);
   if (input.sourceScope.isIgnored(absolutePath)) return EMPTY_SCANNED_FILES;
   const resolvedTargetPath = resolvedSymbolicTarget(input, absolutePath);
   if (resolvedTargetPath === null) return unsafeLinkAt(input.repositoryRoot, absolutePath);
@@ -185,7 +186,7 @@ const scannedRegularFile = (input: ScanDirectoryInput, absolutePath: string): Sc
 };
 
 const scannedDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent): ScannedFiles => {
-  const absolutePath = join(input.directory, directoryEntry.name);
+  const absolutePath = path.join(input.directory, directoryEntry.name);
   if (
     input.ignoredDirectoryNames.has(directoryEntry.name) &&
     (directoryEntry.isDirectory() || directoryEntry.isSymbolicLink())
@@ -232,16 +233,16 @@ const scannedFilesUnder = ({
 };
 
 const isManifest = (file: ScannedFile): boolean =>
-  basename(file.absolutePath) === MANIFEST_FILE_NAME;
+  path.basename(file.absolutePath) === MANIFEST_FILE_NAME;
 
 const isCommentSource = (file: ScannedFile): boolean =>
-  SCRIPT_FILE_NAME_PATTERN.test(basename(file.absolutePath));
+  SCRIPT_FILE_NAME_PATTERN.test(path.basename(file.absolutePath));
 
 const isStyleSheet = (file: ScannedFile): boolean =>
-  basename(file.absolutePath).endsWith(STYLE_SHEET_EXTENSION);
+  path.basename(file.absolutePath).endsWith(STYLE_SHEET_EXTENSION);
 
 const isMarkupSource = (file: ScannedFile): boolean =>
-  MARKUP_SOURCE_NAME_PATTERN.test(basename(file.absolutePath));
+  MARKUP_SOURCE_NAME_PATTERN.test(path.basename(file.absolutePath));
 
 const UNSCANNED_DIRECTORY_NAMES: ReadonlySet<string> = new Set([
   ".cache",
@@ -264,7 +265,7 @@ const DECLARATION_SOURCE_NAME_PATTERN = /\.[cm]?tsx?$/u;
 const TYPE_DECLARATION_FILE_NAME_PATTERN = /\.d\.[cm]?ts$/u;
 
 const isDeclarationSource = (file: ScannedFile): boolean => {
-  const fileName = basename(file.absolutePath);
+  const fileName = path.basename(file.absolutePath);
   return (
     DECLARATION_SOURCE_NAME_PATTERN.test(fileName) &&
     !TYPE_DECLARATION_FILE_NAME_PATTERN.test(fileName) &&
@@ -307,7 +308,8 @@ const UNCACHED_DIRECTORY_NAMES: ReadonlySet<string> = new Set([
   "node_modules",
 ]);
 
-export const isDirectory = (path: string): boolean => statOf(path)?.isDirectory() === true;
+export const isDirectory = (targetPath: string): boolean =>
+  statOf(targetPath)?.isDirectory() === true;
 
 export const listRepositoryFiles = (
   repositoryRoot: string,

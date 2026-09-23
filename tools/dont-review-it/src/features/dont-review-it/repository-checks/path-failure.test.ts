@@ -1,114 +1,101 @@
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+// @effect-diagnostics-next-line nodeBuiltinImport:off
+import { readFileSync, statSync } from "node:fs";
 
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { attempt } from "es-toolkit";
 import { describe, expect, test } from "vite-plus/test";
 
 import { failureCodeOf, readUnlessMissing } from "./path-failure.ts";
 
-class RuntimeRefusal extends Error {
-  constructor(readonly code: string | number) {
-    super("the runtime refused");
-  }
-}
+class RuntimeRefusal extends Schema.TaggedError<RuntimeRefusal>()("RuntimeRefusal", {
+  code: Schema.Union([Schema.String, Schema.Finite]),
+}) {}
 
-describe("readUnlessMissing", () => {
+class UncodedFailure extends Schema.TaggedError<UncodedFailure>()("UncodedFailure", {}) {}
+
+const presentFile = Effect.gen(function* presentFile() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const paths = yield* Path.Path;
+  const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "path-failure-" });
+  const presentPath = paths.join(root, "present.txt");
+  yield* filesystem.writeFileString(presentPath, "written");
+  return { presentPath, root };
+});
+
+const raisedBy = (thrown: unknown): unknown => {
+  const [failure] = attempt<unknown, unknown>(() =>
+    readUnlessMissing(() => {
+      throw thrown;
+    }),
+  );
+  return failure;
+};
+
+layer(NodeServices.layer)("readUnlessMissing", (it) => {
   describe("a read that succeeds", () => {
-    const it = test.extend("presentFileText", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "path-failure-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      const path = join(root, "present.txt");
-      writeFileSync(path, "written", "utf8");
-      return readUnlessMissing(() => readFileSync(path, "utf8"));
-    });
-
-    it("hands back what it read", ({ presentFileText }) => {
-      expect(presentFileText).toBe("written");
-    });
+    it.effect("hands back what it read", () =>
+      Effect.gen(function* program() {
+        const { presentPath } = yield* presentFile;
+        expect(readUnlessMissing(() => readFileSync(presentPath, "utf8"))).toBe("written");
+      }),
+    );
   });
 
   describe("a path that does not exist", () => {
-    const it = test.extend("stat", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "path-failure-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      return readUnlessMissing(() => statSync(join(root, "absent.txt")));
-    });
-
-    it("is an absence rather than a failure", ({ stat }) => {
-      expect(stat).toBe(null);
-    });
+    it.effect("is an absence rather than a failure", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { root } = yield* presentFile;
+        expect(readUnlessMissing(() => statSync(paths.join(root, "absent.txt")))).toBe(null);
+      }),
+    );
   });
 
   describe("a path routed through a file instead of a directory", () => {
-    const it = test.extend("stat", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "path-failure-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      const path = join(root, "present.txt");
-      writeFileSync(path, "written", "utf8");
-      return readUnlessMissing(() => statSync(join(path, "below.txt")));
-    });
-
-    it("is an absence as well", ({ stat }) => {
-      expect(stat).toBe(null);
-    });
+    it.effect("is an absence as well", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { presentPath } = yield* presentFile;
+        expect(readUnlessMissing(() => statSync(paths.join(presentPath, "below.txt")))).toBe(null);
+      }),
+    );
   });
+});
 
+describe("readUnlessMissing", () => {
   describe("a path that exists but cannot be read", () => {
-    const it = test.extend("wordedRefusalWording", () => {
-      const [failure] = attempt<unknown, Error>(() =>
-        readUnlessMissing(() => {
-          throw new RuntimeRefusal("EACCES");
-        }),
-      );
-      return failure === null ? null : failure.message;
-    });
+    const refusal = new RuntimeRefusal({ code: "EACCES" });
+    const it = test.extend("raisedRefusal", () => raisedBy(refusal));
 
-    it("is raised instead of becoming an absence", ({ wordedRefusalWording }) => {
-      expect(wordedRefusalWording).toBe("the runtime refused");
+    it("is raised instead of becoming an absence", ({ raisedRefusal }) => {
+      expect(raisedRefusal).toBe(refusal);
     });
   });
 
   describe("a failure the runtime did not raise", () => {
-    const it = test.extend("uncodedFailureWording", () => {
-      const [failure] = attempt<unknown, Error>(() =>
-        readUnlessMissing(() => {
-          throw new Error("the read failed for a reason the runtime did not name");
-        }),
-      );
-      return failure === null ? null : failure.message;
-    });
+    const uncoded = new UncodedFailure();
+    const it = test.extend("raisedUncoded", () => raisedBy(uncoded));
 
-    it("is passed on untouched", ({ uncodedFailureWording }) => {
-      expect(uncodedFailureWording).toBe("the read failed for a reason the runtime did not name");
+    it("is passed on untouched", ({ raisedUncoded }) => {
+      expect(raisedUncoded).toBe(uncoded);
     });
   });
 
   describe("a failure whose code is not a word", () => {
-    const it = test.extend("numberedRefusalWording", () => {
-      const [failure] = attempt<unknown, Error>(() =>
-        readUnlessMissing(() => {
-          throw new RuntimeRefusal(7);
-        }),
-      );
-      return failure === null ? null : failure.message;
-    });
+    const numbered = new RuntimeRefusal({ code: 7 });
+    const it = test.extend("raisedNumbered", () => raisedBy(numbered));
 
-    it("is raised rather than becoming an absence", ({ numberedRefusalWording }) => {
-      expect(numberedRefusalWording).toBe("the runtime refused");
+    it("is raised rather than becoming an absence", ({ raisedNumbered }) => {
+      expect(raisedNumbered).toBe(numbered);
     });
   });
 });
 
 describe("failureCodeOf", () => {
   describe("a failure carrying a worded code", () => {
-    const it = test.extend("code", () => failureCodeOf(new RuntimeRefusal("EROFS")));
+    const it = test.extend("code", () => failureCodeOf(new RuntimeRefusal({ code: "EROFS" })));
 
     it("hands the code back", ({ code }) => {
       expect(code).toBe("EROFS");

@@ -13,7 +13,7 @@ Disallow handing a concrete type to a value the source declares as `any` or `unk
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-unchecked-cast--parse-at-boundary.ts`](../../src/lint/oxlint/rules/writing/no-unchecked-cast--parse-at-boundary.ts)
+- Source: [`no-unchecked-cast--parse-at-boundary.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-unchecked-cast--parse-at-boundary.ts)
 
 <!-- END GENERATED rule-header -->
 

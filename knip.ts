@@ -39,6 +39,7 @@ const workspaces = {
     entry: [
       "src/features/auth/auth-test-fixture.ts",
       "src/features/auth/browser-client.ts",
+      "src/features/auth/email-change.ts",
       "src/features/auth/mail-fixture.ts",
       "src/features/auth/unexpected-status.ts",
       "src/features/auth/wiki-oauth-fixture.ts",
@@ -85,6 +86,7 @@ const workspaces = {
   "tools/dont-review-it": {
     entry: [
       "src/features/dont-review-it/repository/dependency-cruiser.ts",
+      "src/features/dont-review-it/repository/hook-scope.ts!",
       "doctor.config.ts",
       "src/features/dont-review-it/index.ts!",
       "src/features/dont-review-it/repository/lint.ts!",
@@ -134,15 +136,13 @@ const scripts = {
     "src/features/cloudflare/prepare-ci-env.ts!",
     "src/features/cloudflare/verify-origins.ts!",
   ],
+  "infra/github": ["src/features/github/cli.ts!"],
   "infra/local": ["src/features/local/compose.ts!"],
   "libs/db-local": [
     "src/features/db-local/bootstrap-local.ts!",
     "src/features/db-local/migrate-local.ts!",
   ],
-  "libs/vite-config": [
-    "src/features/vite-config/compile-paraglide.ts!",
-    "src/features/vite-config/compile-workspace-paraglide.ts!",
-  ],
+  "libs/vite-config": ["src/features/vite-config/compile-workspace-paraglide.ts!"],
   "tools/dev": [
     "src/features/dev/cli.ts!",
     "src/features/dev/prepare-browser.ts!",
@@ -200,11 +200,12 @@ const config = ({
       "libs/monitor/src/features/monitor/mail-recorder.worker.test.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/app-fixture.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/bindings.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/features/runtime/file-store.worker.test.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/jobs.ts": ["unlisted"],
-      "libs/runtime/src/features/runtime/storage.worker.test.ts": ["unlisted"],
-      "libs/runtime/src/features/runtime/worker-telemetry.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/features/runtime/read-cache.worker.test.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
+      "libs/vite-config/src/features/vite-config/effect-typecheck.ts": ["exports"],
     },
     treatConfigHintsAsErrors: true,
     workspaces: {
@@ -252,6 +253,10 @@ const config = ({
           ...modularFeaturePublicApi,
         ],
         ignoreExportsUsedInFile: true,
+        project: ["src/**/*.ts!"],
+      },
+      "infra/github": {
+        entry: ["alchemy.run.ts!", ...productionOnly(...scripts["infra/github"])],
         project: ["src/**/*.ts!"],
       },
       "infra/local": {

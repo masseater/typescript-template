@@ -13,7 +13,7 @@ Disallow splitting a file into siblings distinguished only by a number, so every
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`forbid-numbered-sibling-file--name-what-each-file-owns.ts`](../../src/lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.ts)
+- Source: [`forbid-numbered-sibling-file--name-what-each-file-owns.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/forbid-numbered-sibling-file--name-what-each-file-owns.ts)
 
 <!-- END GENERATED rule-header -->
 

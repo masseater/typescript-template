@@ -1,3 +1,4 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 

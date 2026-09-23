@@ -13,7 +13,6 @@ import { contactApi } from "./contact-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
@@ -57,7 +56,7 @@ function contactApp() {
   const environment = appEnvironment({ OPS_EMAIL: opsEmail });
   const runtime = workerRuntime(() =>
     Layer.merge(
-      Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
+      Layer.orDie(appLayer({ env: environment, audience: APPLICATION.user, routes: routes })),
       Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
     ),
   );

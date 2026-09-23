@@ -13,7 +13,7 @@ Require every lint suppression to apply to the next line alone, so code written 
 - Suggestions: no
 - Options: no
 - Bundle: `authoring`
-- Source: [`no-broad-lint-disable--use-next-line-with-reason.ts`](../../src/lint-rule-authoring/lint/oxlint/rules/authoring/no-broad-lint-disable--use-next-line-with-reason.ts)
+- Source: [`no-broad-lint-disable--use-next-line-with-reason.ts`](../../src/features/dont-review-it/lint-rule-authoring/lint/oxlint/rules/authoring/no-broad-lint-disable--use-next-line-with-reason.ts)
 
 <!-- END GENERATED rule-header -->
 

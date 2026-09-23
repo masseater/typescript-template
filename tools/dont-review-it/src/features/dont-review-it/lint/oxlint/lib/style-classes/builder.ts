@@ -1,7 +1,6 @@
-import { resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import {
   listRepositoryFiles,
   readTextFile,
@@ -20,7 +19,7 @@ const buildRepositoryStyleClassIndex = ({
 }: {
   readonly repositoryRoot: string;
 }): StyleClassIndex => {
-  const listed = listRepositoryFiles(resolve(repositoryRoot));
+  const listed = listRepositoryFiles(path.resolve(repositoryRoot));
   return buildStyleClassIndex({
     styleSheets: readableFilesIn(listed.styleSheets),
     referenceTexts: readableFilesIn([...listed.commentSources, ...listed.markupSources]).map(
@@ -30,5 +29,5 @@ const buildRepositoryStyleClassIndex = ({
 };
 
 export const loadStyleClassIndex = memoize(buildRepositoryStyleClassIndex, {
-  getCacheKey: (ruleOptions) => resolve(ruleOptions.repositoryRoot),
+  getCacheKey: (ruleOptions) => path.resolve(ruleOptions.repositoryRoot),
 });

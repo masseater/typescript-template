@@ -19,11 +19,13 @@ const respondBuilt = Effect.gen(function* respond() {
   return new Response(slow.value);
 });
 
-const coldStartWorker = serveWorker(runtime, () => respondBuilt, { service: APPLICATION.user });
+const coldStartWorker = serveWorker({
+  reporting: { service: APPLICATION.user },
+  route: () => respondBuilt,
+  runtime,
+});
 
-function coldStartFixturePath(): string {
-  return new URL(import.meta.url).pathname;
-}
+const coldStartFixturePath = (): string => new URL(import.meta.url).pathname;
 
 export { coldStartFixturePath };
 export default coldStartWorker;

@@ -1,18 +1,16 @@
 #!/usr/bin/env node
-import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
-import { basename, dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type Application, ApplicationName } from "@repo/config";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, Schema, type PlatformError } from "effect";
+import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
-import {
-  ANALYSIS_TIMEOUT,
-  REACT_DOCTOR_SKIP_DETAIL,
-  skippedOnlyByTimeout,
-} from "./react-doctor-timeout.ts";
+import { path } from "../platform/path.ts";
+import { capturedProcess } from "./captured-process.ts";
+import { skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 interface Scan {
@@ -21,11 +19,9 @@ interface Scan {
   readonly stdout: string;
 }
 
-const MAX_OUTPUT_BYTES = 33_554_432;
-
 const Diagnostic = Schema.Struct({
   filePath: Schema.String,
-  line: Schema.optionalKey(Schema.Number),
+  line: Schema.optionalKey(Schema.Finite),
   message: Schema.String,
   rule: Schema.String,
   severity: Schema.String,
@@ -54,23 +50,26 @@ const Rules = Schema.fromJsonString(
 );
 
 const require = createRequire(import.meta.url);
-const executable = join(dirname(require.resolve("react-doctor")), "..", "bin", "react-doctor.js");
+const executable = path.join(
+  path.dirname(require.resolve("react-doctor")),
+  "..",
+  "bin",
+  "react-doctor.js",
+);
 
-const scan = (args: readonly string[]): Effect.Effect<Scan> => {
-  return Effect.promise(
-    async () =>
-      new Promise<Scan>((resolve) => {
-        execFile(
-          executable,
-          [...args, "--no-score"],
-          { cwd: repositoryRoot, maxBuffer: MAX_OUTPUT_BYTES },
-          (failure, stdout, stderr) => {
-            resolve({ failed: failure !== null, stderr, stdout });
-          },
-        );
-      }),
+const scan = (
+  args: readonly string[],
+): Effect.Effect<Scan, PlatformError.PlatformError, ChildProcessSpawner.ChildProcessSpawner> =>
+  capturedProcess(
+    ChildProcess.make(executable, [...args, "--no-score"], {
+      cwd: repositoryRoot,
+      stdin: "ignore",
+    }),
+  ).pipe(
+    Effect.map(({ exitCode, stderr, stdout }) => ({ failed: exitCode !== 0, stderr, stdout })),
   );
-};
+
+const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 const findingsOf = (entry: typeof Project.Type): string[] => {
   const name = entry.project.projectName;
@@ -83,7 +82,7 @@ const findingsOf = (entry: typeof Project.Type): string[] => {
 const skippedOf = (entry: typeof Project.Type): string[] => {
   const name = entry.project.projectName;
   return [
-    ...(entry.complete ? [] : [`${name} ${REACT_DOCTOR_SKIP_DETAIL.incomplete}`]),
+    ...(entry.complete ? [] : [`${name} incomplete`]),
     ...entry.skippedChecks.map((check) => `${name} ${check}`),
     ...Object.entries(entry.skippedCheckReasons ?? {}).map(
       ([check, reason]) => `${name} ${check} ${reason}`,
@@ -95,7 +94,7 @@ const unclassifiedRules = Effect.fn("unclassifiedRules")(function* unclassifiedR
   if (listed.failed && listed.stderr !== "") {
     yield* Console.error(listed.stderr);
   }
-  const rules = yield* Schema.decodeUnknownEffect(Rules)(listed.stdout).pipe(
+  const rules = yield* Schema.decodeEffect(Rules)(listed.stdout).pipe(
     Effect.tapError(() => Console.error(listed.stderr)),
   );
   return rules
@@ -110,70 +109,74 @@ const skippedIn = (report: typeof Scanned.Type): string[] => [
   ...(report.skippedProjects ?? []).map(({ directory, reason }) => `${directory} ${reason}`),
 ];
 
-const scanProjects = (application: Application) =>
-  Effect.fn("scanProjects")(function* scanProjects() {
-    const target = `apps/${application}`;
-    let attempt = 0;
-    let scanned = yield* scan([target, "--json"]);
-    let report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(
+const scanProjects = Effect.fn("scanProjects")(function* scanProjects(application: Application) {
+  const target = `apps/${application}`;
+  let attempt = 0;
+  let scanned = yield* scan([target, "--json"]);
+  let report = yield* Schema.decodeEffect(Report)(scanned.stdout).pipe(
+    Effect.tapError(() => Console.error(scanned.stdout)),
+  );
+  while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
+    attempt += 1;
+    yield* Console.error(
+      yield* encodeJson({
+        attempt,
+        event: "quality.react_doctor_retry",
+        reason: "transient-analysis-failure",
+      }),
+    );
+    scanned = yield* scan([target, "--json"]);
+    report = yield* Schema.decodeEffect(Report)(scanned.stdout).pipe(
       Effect.tapError(() => Console.error(scanned.stdout)),
     );
-    while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
-      attempt += 1;
-      yield* Console.error(
-        JSON.stringify({ attempt, event: "quality.react_doctor_retry", reason: ANALYSIS_TIMEOUT }),
-      );
-      scanned = yield* scan([target, "--json"]);
-      report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(
-        Effect.tapError(() => Console.error(scanned.stdout)),
-      );
-    }
-    return { report, scanned };
-  })();
+  }
+  return { report, scanned };
+});
 
-const inspect = (application: Application) =>
-  Effect.fn("inspect")(function* inspect() {
-    const [{ report, scanned }, listed] = yield* Effect.all(
-      [scanProjects(application), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
-      { concurrency: "unbounded" },
-    );
-    const { failed, stderr } = scanned;
-    if (failed && stderr !== "") {
-      yield* Console.error(stderr);
-    }
-    const unclassified = yield* unclassifiedRules(listed);
-    const findings = report.projects.flatMap((entry) => findingsOf(entry));
-    const skipped = skippedIn(report);
-    const found = new Set(report.projects.map((entry) => entry.project.projectName));
-    const missing = [`@repo/${application}`].filter((name) => !found.has(name));
-    return {
-      application,
-      error: report.error?.message,
-      findings,
-      missing,
-      ok:
-        !failed &&
-        !listed.failed &&
-        report.error === null &&
-        findings.length === 0 &&
-        skipped.length === 0 &&
-        unclassified.length === 0 &&
-        report.projects.length > 0 &&
-        missing.length === 0,
-      projects: report.projects.length,
-      skipped,
-      unclassified,
-    };
-  })();
+const inspect = Effect.fn("inspect")(function* inspect(application: Application) {
+  const [{ report, scanned }, listed] = yield* Effect.all(
+    [scanProjects(application), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
+    { concurrency: "unbounded" },
+  );
+  const { failed, stderr } = scanned;
+  if (failed && stderr !== "") {
+    yield* Console.error(stderr);
+  }
+  const unclassified = yield* unclassifiedRules(listed);
+  const findings = report.projects.flatMap((entry) => findingsOf(entry));
+  const skipped = skippedIn(report);
+  const found = new Set(report.projects.map((entry) => entry.project.projectName));
+  const missing = [`@repo/${application}`].filter((name) => !found.has(name));
+  return {
+    application,
+    error: report.error?.message,
+    findings,
+    missing,
+    ok:
+      !failed &&
+      !listed.failed &&
+      report.error === null &&
+      findings.length === 0 &&
+      skipped.length === 0 &&
+      unclassified.length === 0 &&
+      report.projects.length > 0 &&
+      missing.length === 0,
+    projects: report.projects.length,
+    skipped,
+    unclassified,
+  };
+});
 
 runCli(
   Effect.gen(function* run() {
-    const application = yield* Schema.decodeUnknownEffect(ApplicationName)(basename(process.cwd()));
+    const application = yield* Schema.decodeUnknownEffect(ApplicationName)(
+      path.basename(process.cwd()),
+    );
     const result = yield* inspect(application);
-    yield* Console.log(JSON.stringify({ event: "quality.react_doctor", ...result }));
+    yield* Console.log(yield* encodeJson({ event: "quality.react_doctor", ...result }));
     if (!result.ok) {
       yield* markFailed;
     }
-  }),
+  }).pipe(Effect.provide(NodeServices.layer)),
   (cause) => causeRecord("quality.react_doctor_failed", { cause }),
 );

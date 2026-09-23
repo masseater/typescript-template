@@ -23,6 +23,9 @@ function FlagsPage(): ReactElement {
       {flags === undefined && failure === undefined ? (
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       ) : null}
+      {flags?.length === 0 ? (
+        <StatusMessage variant={STATUS_VARIANT.empty}>機能フラグはまだありません。</StatusMessage>
+      ) : null}
       {flags === undefined ? null : (
         <div className="flex flex-col gap-3">
           {flags.map((entry) => (

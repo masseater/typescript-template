@@ -1,4 +1,3 @@
-import { NOTIFICATION_KIND } from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
@@ -6,11 +5,9 @@ import { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 
 const mailSubjects = {
   contact: "お問い合わせ",
-  emailChangeCompleted: "メールアドレスが変更されました",
   emailChangeNotice: "メールアドレスの変更が申請されました",
   emailChangeVerification: "新しいメールアドレスの確認",
   existingAccount: "このメールアドレスは登録済みです",
-  invite: "アカウントへの招待",
   verification: "メールアドレスの確認",
 } as const;
 
@@ -21,11 +18,15 @@ type OutboundEmail = {
   readonly to: string;
 };
 
-const sendThroughMailpit = (
-  fetchImpl: typeof fetch,
-  mailpitSendUrl: string,
-  outbound: OutboundEmail,
-): Effect.Effect<void, EmailDeliveryFailed> =>
+const sendThroughMailpit = ({
+  fetchImpl,
+  mailpitSendUrl,
+  outbound,
+}: {
+  readonly fetchImpl: typeof fetch;
+  readonly mailpitSendUrl: string;
+  readonly outbound: OutboundEmail;
+}): Effect.Effect<void, EmailDeliveryFailed> =>
   Effect.gen(function* sendMailpit() {
     const requestPayload = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
       From: { Email: outbound.from },
@@ -85,7 +86,11 @@ const deliver = (
   const addressed: OutboundEmail = { ...outbound, from: settings.EMAIL_FROM };
   return settings.MAILPIT_SEND_URL === undefined
     ? sendThroughBinding(settings.EMAIL, addressed)
-    : sendThroughMailpit(fetch, settings.MAILPIT_SEND_URL, addressed);
+    : sendThroughMailpit({
+        fetchImpl: fetch,
+        mailpitSendUrl: settings.MAILPIT_SEND_URL,
+        outbound: addressed,
+      });
 };
 
 type LinkedMail = {
@@ -93,11 +98,15 @@ type LinkedMail = {
   readonly url: string;
 };
 
-const deliverLink = (
-  settings: MailSettings,
-  linked: LinkedMail,
-  template: { readonly lead: string; readonly span: string; readonly subject: string },
-): Effect.Effect<void, EmailDeliveryFailed> => {
+const deliverLink = ({
+  linked,
+  settings,
+  template,
+}: {
+  readonly linked: LinkedMail;
+  readonly settings: MailSettings;
+  readonly template: { readonly lead: string; readonly span: string; readonly subject: string };
+}): Effect.Effect<void, EmailDeliveryFailed> => {
   if (URL.parse(linked.url)?.origin !== settings.APP_ORIGIN) {
     return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
   }
@@ -108,71 +117,66 @@ const deliverLink = (
   }).pipe(withSpan(template.span));
 };
 
-const sendVerificationEmail = (
+/** @internal */
+export { mailSubjects };
+
+export const sendVerificationEmail = (
   settings: MailSettings,
   verification: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, verification, {
-    lead: "次のリンクでメールアドレスを確認してください。",
-    span: "email.verification",
-    subject: mailSubjects.verification,
+  deliverLink({
+    linked: verification,
+    settings,
+    template: {
+      lead: "次のリンクでメールアドレスを確認してください。",
+      span: "email.verification",
+      subject: mailSubjects.verification,
+    },
   });
 
-const sendExistingAccountNotice = (
+export const sendExistingAccountNotice = (
   settings: MailSettings,
   notice: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, notice, {
-    lead: "このメールアドレスで新規登録が試みられましたが、すでにアカウントがあります。次のリンクからログインしてください。心当たりがない場合は、このメールを破棄してください。",
-    span: "email.existing_account_notice",
-    subject: mailSubjects.existingAccount,
+  deliverLink({
+    linked: notice,
+    settings,
+    template: {
+      lead: "このメールアドレスで新規登録が試みられましたが、すでにアカウントがあります。次のリンクからログインしてください。心当たりがない場合は、このメールを破棄してください。",
+      span: "email.existing_account_notice",
+      subject: mailSubjects.existingAccount,
+    },
   });
 
-const sendEmailChangeVerification = (
+export const sendEmailChangeVerification = (
   settings: MailSettings,
   verification: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, verification, {
-    lead: "このメールアドレスへの変更が申請されました。次のリンクを開くと変更が確定します。心当たりがない場合は、このメールを破棄してください。",
-    span: "email.email_change_verification",
-    subject: mailSubjects.emailChangeVerification,
+  deliverLink({
+    linked: verification,
+    settings,
+    template: {
+      lead: "このメールアドレスへの変更が申請されました。次のリンクを開くと変更が確定します。心当たりがない場合は、このメールを破棄してください。",
+      span: "email.email_change_verification",
+      subject: mailSubjects.emailChangeVerification,
+    },
   });
 
-const sendEmailChangeNotice = (
+export const sendEmailChangeNotice = (
   settings: MailSettings,
   notice: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, notice, {
-    lead: "このアカウントのメールアドレスを変更する申請がありました。新しいメールアドレスに届いたリンクが開かれると、変更が確定します。心当たりがない場合は、次のリンクからセキュリティ設定を確認し、パスワードを変更してください。",
-    span: "email.email_change_notice",
-    subject: mailSubjects.emailChangeNotice,
+  deliverLink({
+    linked: notice,
+    settings,
+    template: {
+      lead: "このアカウントのメールアドレスを変更する申請がありました。新しいメールアドレスに届いたリンクが開かれると、変更が確定します。心当たりがない場合は、次のリンクからセキュリティ設定を確認し、パスワードを変更してください。",
+      span: "email.email_change_notice",
+      subject: mailSubjects.emailChangeNotice,
+    },
   });
 
-const sendEmailChangeCompleted = (
-  settings: MailSettings,
-  notice: LinkedMail,
-): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, notice, {
-    lead: "このアカウントのメールアドレスの変更が確定しました。心当たりがない場合は、次のリンクからセキュリティ設定を確認してください。",
-    span: "email.email_change_completed",
-    subject: mailSubjects.emailChangeCompleted,
-  });
-
-const sendInviteEmail = (
-  settings: MailSettings,
-  invitation: { readonly email: string; readonly url: string },
-): Effect.Effect<void, EmailDeliveryFailed> => {
-  if (URL.parse(invitation.url)?.origin !== settings.APP_ORIGIN) {
-    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
-  }
-  return deliver(settings, {
-    subject: mailSubjects.invite,
-    text: `アカウントへ招待されました。次のリンクを開いてパスワードを設定してください。リンクは 7 日で無効になります。\n${invitation.url}`,
-    to: invitation.email,
-  }).pipe(withSpan("email.invite"));
-};
-
-const sendContactEmail = (
+export const sendContactEmail = (
   settings: MailSettings,
   outbound: Readonly<{
     readonly to: string;
@@ -185,46 +189,4 @@ const sendContactEmail = (
     to: outbound.to,
   }).pipe(withSpan("email.contact"));
 
-const notificationMailSubjects = {
-  board: "掲示板の更新があります",
-  conversationMessage: "新しいメッセージがあります",
-} as const;
-
-const sendNotificationEmail = (
-  settings: MailSettings,
-  outbound: Readonly<{
-    readonly href: string;
-    readonly kind:
-      | typeof NOTIFICATION_KIND.boardPost
-      | typeof NOTIFICATION_KIND.conversationMessage;
-    readonly to: string;
-  }>,
-): Effect.Effect<void, EmailDeliveryFailed> => {
-  const url = new URL(outbound.href, settings.APP_ORIGIN).href;
-  if (URL.parse(url)?.origin !== settings.APP_ORIGIN) {
-    return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
-  }
-  const subject =
-    outbound.kind === NOTIFICATION_KIND.conversationMessage
-      ? notificationMailSubjects.conversationMessage
-      : notificationMailSubjects.board;
-  return deliver(settings, {
-    subject,
-    text: `${subject}\n\n${url}`,
-    to: outbound.to,
-  }).pipe(withSpan("email.notification"));
-};
-
-/** @internal */
-export { mailSubjects, notificationMailSubjects };
-export {
-  sendContactEmail,
-  sendEmailChangeCompleted,
-  sendEmailChangeNotice,
-  sendEmailChangeVerification,
-  sendExistingAccountNotice,
-  sendInviteEmail,
-  sendNotificationEmail,
-  sendVerificationEmail,
-};
 export type { MailSettings };

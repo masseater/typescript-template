@@ -31,7 +31,7 @@ export const forbidUnresolvableModuleSpecifier = createDontReviewItRule({
     docs: {
       description:
         "Disallow a module specifier whose value is decided while the program runs, so every specifier in the source is one string the checks that read specifiers can match",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/enforcement.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/enforcement.md"],
     },
     messages: {
       unresolvableModuleSpecifier:

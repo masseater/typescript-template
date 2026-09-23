@@ -9,6 +9,6 @@ import type { Reporting } from "@repo/observability";
 
 const service = APPLICATION.admin;
 const reporting: Reporting = { service };
-const runtime = workerRuntime(() => appLayer(env, service, routes));
+const runtime = workerRuntime(() => appLayer({ env: env, audience: service, routes: routes }));
 
 export { reporting, runtime };

@@ -13,7 +13,7 @@ Disallow a class whose only instance is built inside one function and never leav
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-class-as-mutable-cell--decide-in-an-iife.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-class-as-mutable-cell--decide-in-an-iife.ts)
+- Source: [`no-class-as-mutable-cell--decide-in-an-iife.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-class-as-mutable-cell--decide-in-an-iife.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -45,6 +45,7 @@ class Tally {
     this.total += row;
   }
 }
+
 ```
 
 Code this rule accepts.
@@ -54,6 +55,7 @@ Code this rule accepts.
 const Tally = class {
   total = 0;
 };
+
 ```
 
 ```ts
@@ -61,6 +63,7 @@ const Tally = class {
 export default class {
   total = 0;
 }
+
 ```
 
 <!-- END GENERATED examples -->

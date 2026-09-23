@@ -1,6 +1,10 @@
-import path from "node:path";
+import { NodePath } from "@effect/platform-node";
+import { Effect, Path } from "effect";
 
+import { path } from "../platform/path.ts";
 import { repositoryRoot } from "./repository-root.ts";
+
+const posixPath: Path.Path = Effect.runSync(Path.Path.pipe(Effect.provide(NodePath.layerPosix)));
 
 const qualityDirectory = import.meta.dirname;
 
@@ -9,7 +13,7 @@ const repositoryRelative = (fromQuality: string): string => {
 };
 
 const directoryOfGlobKey = (key: string): string => {
-  return path.posix.dirname(repositoryRelative(key)) || ".";
+  return posixPath.dirname(repositoryRelative(key)) || ".";
 };
 
-export { directoryOfGlobKey, repositoryRelative };
+export { directoryOfGlobKey, posixPath, repositoryRelative };

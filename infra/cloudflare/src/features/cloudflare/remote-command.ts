@@ -1,11 +1,8 @@
-import {
-  bootstrapDatabase,
-  fail,
-  loadRemoteMigrations,
-  parseRemoteInput,
-  remoteDatabase,
-} from "@repo/db/migrations";
+import { bootstrapDatabase, fail, loadRemoteMigrations } from "@repo/db/migrations";
 import { Effect } from "effect";
+
+import { remoteDatabase } from "./remote-http.ts";
+import { parseRemoteInput } from "./remote-input.ts";
 
 import type { RemoteFailure } from "@repo/db/migrations";
 
@@ -46,7 +43,7 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
   if (target.email === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  yield* bootstrapDatabase(database, target.email);
+  yield* bootstrapDatabase({ database: database, email: target.email });
   return { databaseId: target.databaseId, event: "database.remote_admin_bootstrapped", ok: true };
 });
 

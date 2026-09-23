@@ -13,7 +13,7 @@ Disallow writing the expression a fixture built the subject from as the expected
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-expect-mirrored-subject--assert-observable-contract.ts`](../../src/lint/oxlint/rules/testing/no-expect-mirrored-subject--assert-observable-contract.ts)
+- Source: [`no-expect-mirrored-subject--assert-observable-contract.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-expect-mirrored-subject--assert-observable-contract.ts)
 
 <!-- END GENERATED rule-header -->
 

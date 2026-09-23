@@ -13,7 +13,7 @@ Require every test data file to sit beside a spec of the same stem, so the data 
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`require-spec-file-for-assets--create-matching-spec.ts`](../../src/lint/oxlint/rules/testing/require-spec-file-for-assets--create-matching-spec.ts)
+- Source: [`require-spec-file-for-assets--create-matching-spec.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/require-spec-file-for-assets--create-matching-spec.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -34,6 +34,7 @@ Code this rule rejects.
 ```ts
 // test data with no spec of its stem anywhere
 export const orderTotals = [1, 2];
+
 ```
 
 <!-- END GENERATED examples -->

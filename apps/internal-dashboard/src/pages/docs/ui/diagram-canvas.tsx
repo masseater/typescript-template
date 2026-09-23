@@ -28,9 +28,9 @@ type DiagramCanvasProps<NodeType extends Node, EdgeType extends Edge> = Readonly
 const toggleFullscreen = (figure: HTMLElement): Promise<void> =>
   document.fullscreenElement === figure ? document.exitFullscreen() : figure.requestFullscreen();
 
-const nextFrame = Effect.callback<void>((resume) => {
-  requestAnimationFrame(() => {
-    resume(Effect.void);
+const nextFrame = Effect.callback<number>((resume) => {
+  requestAnimationFrame((time) => {
+    resume(Effect.succeed(time));
   });
 });
 
@@ -54,7 +54,7 @@ function FullscreenButton(): ReactElement {
   return (
     <ControlButton
       aria-label="全画面で表示"
-      onClick={(event) => toggle(event)}
+      onClick={(event) => void toggle(event)}
       title="全画面で表示"
     >
       <Fullscreen />

@@ -1,7 +1,6 @@
-import { resolve, sep } from "node:path";
-
 import { describe, expect, test } from "vite-plus/test";
 
+import { path } from "../../../../platform/path.ts";
 import {
   aliasedSpecifierIn,
   entriesInForceAt,
@@ -122,7 +121,7 @@ describe("entriesInForceAt", () => {
         entries: [
           { module: "retired-lib", exports: [], allowedPositions: ["owner/**"], substitute },
         ],
-        file: resolve("/repo", "reader", "reader.ts").split("/").join(sep),
+        file: path.resolve("/repo", "reader", "reader.ts").split("/").join(path.sep),
         cwd: "/repo",
       }));
 
@@ -139,7 +138,7 @@ describe("entriesInForceAt", () => {
         entries: [
           { module: "retired-lib", exports: [], allowedPositions: ["owner/**"], substitute },
         ],
-        file: resolve("/repo", "owner", "reader.ts").split("/").join(sep),
+        file: path.resolve("/repo", "owner", "reader.ts").split("/").join(path.sep),
         cwd: "/repo",
       }));
 
@@ -278,11 +277,11 @@ describe("aliasedSpecifierIn", () => {
       aliasedSpecifierIn({
         specifier: "~/forward.ts",
         aliases: [{ prefix: "~/", directory: "shared" }],
-        workspaceRoot: resolve("/repo"),
+        workspaceRoot: path.resolve("/repo"),
       }));
 
     it("resolves to the directory it stands for", ({ aliasedPath }) => {
-      expect(aliasedPath).toBe(resolve("/repo", "shared", "forward.ts"));
+      expect(aliasedPath).toBe(path.resolve("/repo", "shared", "forward.ts"));
     });
   });
 
@@ -291,7 +290,7 @@ describe("aliasedSpecifierIn", () => {
       aliasedSpecifierIn({
         specifier: "@other/forward.ts",
         aliases: [{ prefix: "~/", directory: "shared" }],
-        workspaceRoot: resolve("/repo"),
+        workspaceRoot: path.resolve("/repo"),
       }));
 
     it("stands for nothing", ({ aliasedPath }) => {

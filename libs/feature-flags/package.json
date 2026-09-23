@@ -18,7 +18,6 @@
   "devDependencies": {
     "@effect/vitest": "catalog:",
     "@repo/vite-config": "workspace:*",
-    "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

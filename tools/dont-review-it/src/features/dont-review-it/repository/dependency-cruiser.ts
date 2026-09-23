@@ -31,7 +31,7 @@ const workerRuntimeModule = String.raw`^(?:${anyOf(workerRuntimeModules)})$`;
 
 const generatedRouteTree = String.raw`routeTree\.gen\.ts$`;
 
-const configuration: IConfiguration = {
+const configuration = {
   forbidden: [
     {
       comment:
@@ -81,7 +81,7 @@ const configuration: IConfiguration = {
       severity: "error",
       to: {
         dependencyTypes: ["local"],
-        pathNot: String.raw`^$1/$2/|^libs/auth/src/features/auth/testing\.ts$|^libs/db/src/features/db/migrate-d1\.ts$|^libs/db/src/features/db/remote-input\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings\.ts$|^infra/cloudflare/src/features/cloudflare/remote-command\.ts$|^knip\.ts$`,
+        pathNot: String.raw`^$1/$2/|^libs/auth/src/features/auth/testing\.ts$|^libs/db/src/features/db/migrate-d1\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings\.ts$|^knip\.ts$`,
       },
     },
     {
@@ -121,8 +121,10 @@ const configuration: IConfiguration = {
     },
     {
       comment:
-        "生の DB ドライバーは libs/db と、feature クエリを所有する apps だけで使えます。共有 libs の業務処理は計測付きの @repo/db の入口を使ってください。",
-      from: { pathNot: "^(?:libs/db/|apps/)" },
+        "生の DB ドライバーは libs/db、feature クエリを所有する apps、D1 HTTP の転送層だけで使えます。共有 libs の業務処理は計測付きの @repo/db の入口を使ってください。",
+      from: {
+        pathNot: String.raw`^(?:libs/db/|apps/|infra/cloudflare/src/features/cloudflare/remote-http\.ts$)`,
+      },
       name: "no-raw-database-driver",
       severity: "error",
       to: { path: rawDatabaseDriver },
@@ -192,6 +194,6 @@ const configuration: IConfiguration = {
     exclude: { path: [String.raw`^(?:apps|libs|infra|tools)/[^/]+/(?:\.(?!storybook)|dist/)`] },
     parser: "swc",
   },
-};
+} satisfies IConfiguration;
 
 export default configuration;

@@ -1,64 +1,102 @@
 #!/usr/bin/env node
-import { appendFileSync } from "node:fs";
-
+import { NodeServices } from "@effect/platform-node";
+import { causeRecord, runCli } from "@repo/cli";
+import { Config, Effect, FileSystem, Redacted, Schema } from "effect";
 import {
-  pendingIssues,
-  trustedComments,
-  type CommentRecord,
-  type IssueRecord,
-  type PullRecord,
-} from "./can-not-now-scope.ts";
+  FetchHttpClient,
+  HttpClient,
+  HttpClientResponse,
+  type HttpClientError,
+} from "effect/unstable/http";
+
+import { Comment, Issue, Pull, pendingIssues, trustedComments } from "./can-not-now-scope.ts";
 
 const API_ORIGIN = "https://api.github.com";
 const PAGE_SIZE = 100;
 
-const required = (name: "GH_TOKEN" | "GITHUB_OUTPUT" | "GITHUB_REPOSITORY"): string => {
-  const value = process.env[name];
-  if (value === undefined || value === "") {
-    throw new Error(`${name} is required`);
+class GitHubApiFailure extends Schema.TaggedError<GitHubApiFailure>()("GitHubApiFailure", {
+  status: Schema.Int,
+  url: Schema.String,
+}) {
+  public override get message(): string {
+    return `Do not read past a GitHub API failure: ${this.status} on ${this.url}.`;
   }
-  return value;
-};
+}
 
-const token = required("GH_TOKEN");
-const repository = required("GITHUB_REPOSITORY");
+type GitHubRead<Read> = Effect.Effect<
+  Read,
+  HttpClientError.HttpClientError | GitHubApiFailure | Schema.SchemaError
+>;
 
-const pageOf = async <Item>(path: string, page: number): Promise<readonly Item[]> => {
-  const separator = path.includes("?") ? "&" : "?";
-  const url = `${API_ORIGIN}/repos/${repository}${path}${separator}per_page=${PAGE_SIZE}&page=${page}`;
-  const answered = await fetch(url, {
-    headers: {
-      accept: "application/vnd.github+json",
-      authorization: `Bearer ${token}`,
-      "x-github-api-version": "2022-11-28",
-    },
-  });
-  if (!answered.ok) {
-    throw new Error(`Do not read past a GitHub API failure: ${answered.status} on ${url}.`);
-  }
-  return (await answered.json()) as readonly Item[];
-};
+const readGitHub = Effect.gen(function* readGitHub() {
+  const token = yield* Config.Redacted("GH_TOKEN");
+  const repository = yield* Config.String("GITHUB_REPOSITORY");
+  const client = yield* HttpClient.HttpClient;
 
-const everyPage = async <Item>(path: string, page = 1): Promise<readonly Item[]> => {
-  const items = await pageOf<Item>(path, page);
-  return items.length < PAGE_SIZE ? items : [...items, ...(await everyPage<Item>(path, page + 1))];
-};
+  const pageOf = <Item, Encoded>(
+    item: Schema.Codec<Item, Encoded>,
+    route: string,
+    page: number,
+  ): GitHubRead<readonly Item[]> =>
+    Effect.gen(function* readPage() {
+      const separator = route.includes("?") ? "&" : "?";
+      const url = `${API_ORIGIN}/repos/${repository}${route}${separator}per_page=${PAGE_SIZE}&page=${page}`;
+      const answered = yield* client.get(url, {
+        headers: {
+          accept: "application/vnd.github+json",
+          authorization: `Bearer ${Redacted.value(token)}`,
+          "x-github-api-version": "2022-11-28",
+        },
+      });
+      if (answered.status < 200 || answered.status >= 300) {
+        return yield* new GitHubApiFailure({ status: answered.status, url });
+      }
+      return yield* HttpClientResponse.schemaBodyJson(Schema.Array(item))(answered);
+    });
 
-const [issues, openPulls] = await Promise.all([
-  everyPage<IssueRecord>("/issues?labels=can-not-now&state=open"),
-  everyPage<PullRecord>("/pulls?state=open"),
-]);
+  const everyPage = <Item, Encoded>(
+    item: Schema.Codec<Item, Encoded>,
+    route: string,
+    page = 1,
+  ): GitHubRead<readonly Item[]> =>
+    Effect.filterOrElse(
+      pageOf(item, route, page),
+      (items) => items.length < PAGE_SIZE,
+      (items) => Effect.map(everyPage(item, route, page + 1), (rest) => [...items, ...rest]),
+    );
 
-const tasks = await Promise.all(
-  pendingIssues({ issues, openPulls, repository }).map(async (issue) => ({
-    body: issue.body ?? "",
-    comments: trustedComments(await everyPage<CommentRecord>(`/issues/${issue.number}/comments`)),
-    number: issue.number,
-    title: issue.title,
-  })),
-);
+  const [issues, openPulls] = yield* Effect.all(
+    [
+      everyPage(Issue, "/issues?labels=can-not-now&state=open"),
+      everyPage(Pull, "/pulls?state=open"),
+    ],
+    { concurrency: "unbounded" },
+  );
 
-appendFileSync(
-  required("GITHUB_OUTPUT"),
-  `count=${tasks.length}\nissues=${JSON.stringify(tasks)}\n`,
+  return yield* Effect.forEach(
+    pendingIssues({ issues, openPulls, repository }),
+    (issue) =>
+      Effect.map(everyPage(Comment, `/issues/${issue.number}/comments`), (comments) => ({
+        body: issue.body ?? "",
+        comments: trustedComments(comments),
+        number: issue.number,
+        title: issue.title,
+      })),
+    { concurrency: "unbounded" },
+  );
+});
+
+runCli(
+  Effect.gen(function* canNotNow() {
+    const tasks = yield* readGitHub;
+    const githubOutput = yield* Config.String("GITHUB_OUTPUT");
+    const filesystem = yield* FileSystem.FileSystem;
+    const encodedTasks = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(tasks);
+    yield* filesystem.writeFileString(
+      githubOutput,
+      `count=${tasks.length}\nissues=${encodedTasks}\n`,
+      { flag: "a" },
+    );
+  }).pipe(Effect.provide([NodeServices.layer, FetchHttpClient.layer])),
+  (cause) => causeRecord("quality.can_not_now_failed", { cause }),
 );

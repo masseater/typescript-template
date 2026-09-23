@@ -13,7 +13,7 @@ Disallow a type declared at the top level of a file without being exported when 
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-single-use-local-type--inline-at-the-use-site.ts`](../../src/lint/oxlint/rules/writing/no-single-use-local-type--inline-at-the-use-site.ts)
+- Source: [`no-single-use-local-type--inline-at-the-use-site.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-single-use-local-type--inline-at-the-use-site.ts)
 
 <!-- END GENERATED rule-header -->
 

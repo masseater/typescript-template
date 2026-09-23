@@ -13,7 +13,7 @@ Disallow a style sheet class that no script and no markup in the repository spel
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-unused-style-class--delete-or-reference-it.ts`](../../src/lint/oxlint/rules/writing/no-unused-style-class--delete-or-reference-it.ts)
+- Source: [`no-unused-style-class--delete-or-reference-it.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-unused-style-class--delete-or-reference-it.ts)
 
 <!-- END GENERATED rule-header -->
 

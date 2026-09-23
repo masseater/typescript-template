@@ -13,7 +13,7 @@ Disallow taking the result of a call that returns a failure and a value as a pai
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-discarded-failure--receive-and-surface-it.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-discarded-failure--receive-and-surface-it.ts)
+- Source: [`no-discarded-failure--receive-and-surface-it.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-discarded-failure--receive-and-surface-it.ts)
 
 <!-- END GENERATED rule-header -->
 

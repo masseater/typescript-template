@@ -13,7 +13,7 @@ Disallow a module whose every statement is a re-export and which forwards at lea
 - Suggestions: no
 - Options: yes
 - Shipped in the preset: no
-- Source: [`no-barrel-module--declare-in-the-owning-module.ts`](../../src/lint/oxlint/rules/no-barrel-module--declare-in-the-owning-module.ts)
+- Source: [`no-barrel-module--declare-in-the-owning-module.ts`](../../src/features/dont-review-it/lint/oxlint/rules/no-barrel-module--declare-in-the-owning-module.ts)
 
 <!-- END GENERATED rule-header -->
 

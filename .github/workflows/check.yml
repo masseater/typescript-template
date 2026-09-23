@@ -14,12 +14,16 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  check:
+  check-shard:
     if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: &runner ubuntu-latest
     timeout-minutes: 15
     env:
       MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - &checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,36 +37,44 @@ jobs:
         with:
           node-version-file: package.json
           cache: true
-      - &vite-task-cache
-        id: vite-task-cache
+      - id: vite-task-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
-          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.base.sha }}-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            vite-task-${{ runner.os }}-${{ runner.arch }}-
+            vite-task-${{ runner.os }}-${{ runner.arch }}-pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.base.sha }}-${{ matrix.shard }}-
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.event.pull_request.base.sha }}
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-
       - id: affected
         env:
+          CHECK_SHARD: ${{ matrix.shard }}
           GH_TOKEN: ${{ github.token }}
           PR_FILES_PATH: ${{ runner.temp }}/pr-files.txt
         run: gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[] | .filename, .previous_filename // empty' > "$PR_FILES_PATH" && vp run --filter @repo/dont-review-it pr-affected
-      - if: steps.affected.outputs.scope == 'all'
-        run: vp run -r prepr
-      - if: steps.affected.outputs.scope == 'subset'
+      - if: steps.affected.outputs.root == 'true'
         run: vp run -w prepr
-      - if: steps.affected.outputs.scope == 'subset'
+      - if: steps.affected.outputs.filters != ''
         env:
           AFFECTED_FILTERS: ${{ steps.affected.outputs.filters }}
         run: vp run --fail-if-no-match $AFFECTED_FILTERS prepr
-      - if: steps.affected.outputs.scope == 'subset'
+      - if: steps.affected.outputs.paths != ''
         env:
           AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
         run: vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always()
+        if: always() && (steps.affected.outputs.root == 'true' || steps.affected.outputs.filters != '')
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
+
+  check:
+    if: ${{ always() && github.event_name == 'pull_request' && !startsWith(github.head_ref, 'mergify/merge-queue/') }}
+    needs: [check-shard]
+    runs-on: *runner
+    timeout-minutes: 5
+    steps:
+      - run: test "${{ needs.check-shard.result }}" = "success"
 
   merge-queue-packages:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
@@ -74,7 +86,14 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
-      - *vite-task-cache
+      - &vite-task-cache
+        id: vite-task-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: node_modules/.vite/task-cache
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-mq-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-
       - run: vp run -r premerge
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
@@ -133,8 +152,16 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
-      - run: vp run -r prepr
-      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - id: vite-task-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
-          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.sha }}
+          restore-keys: |
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-
+      - run: vp run -r prepr
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ !cancelled() && steps.vite-task-cache.outputs.cache-hit != 'true' }}
+        with:
+          path: node_modules/.vite/task-cache
+          key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}

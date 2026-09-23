@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { affectedTests, type WorkspacePackage } from "./pr-affected-scope.ts";
+import {
+  affectedTests,
+  hookFilters,
+  shardDirectories,
+  type WorkspacePackage,
+} from "./pr-affected-scope.ts";
+import { workspaceDirectories } from "./tasks.ts";
+import { prCheckShardCount } from "./test-runtime.ts";
 
 const packages: readonly WorkspacePackage[] = [
   { dependencies: [], directory: "libs/ui", name: "@repo/ui" },
@@ -54,5 +61,60 @@ describe("affected test directories", () => {
       kind: "all",
     });
     expect(affectedTests(["apps/missing/src/index.ts"], packages)).toStrictEqual({ kind: "all" });
+  });
+});
+
+describe("pull request check shards", () => {
+  const workspaces = workspaceDirectories.filter((directory) => directory !== ".");
+  const shards = Array.from({ length: prCheckShardCount }, (_unused, index) =>
+    shardDirectories(workspaces, index + 1, prCheckShardCount),
+  );
+
+  it("checks every workspace in exactly one shard", () => {
+    expect.hasAssertions();
+    expect(shards.flat().toSorted()).toStrictEqual([...workspaces].toSorted());
+  });
+
+  it("puts the applications in different shards", () => {
+    expect.hasAssertions();
+    const applications = workspaces.filter((directory) => directory.startsWith("apps/"));
+    expect(
+      shards.map((shard) => shard.filter((directory) => directory.startsWith("apps/")).length),
+    ).toStrictEqual(
+      Array.from(
+        { length: prCheckShardCount },
+        (_unused, index) => Math.floor((applications.length - index - 1) / prCheckShardCount) + 1,
+      ),
+    );
+  });
+
+  it("refuses a shard the check does not run", () => {
+    expect.hasAssertions();
+    expect(() => shardDirectories(workspaces, 0, prCheckShardCount)).toThrow("is not a shard");
+    expect(() => shardDirectories(workspaces, prCheckShardCount + 1, prCheckShardCount)).toThrow(
+      "is not a shard",
+    );
+  });
+});
+
+describe("hook filters", () => {
+  it("runs nothing when the change touches no file", () => {
+    expect(hookFilters([], packages)).toStrictEqual([]);
+  });
+
+  it("runs the root and filters to the changed package and the packages that depend on it", () => {
+    expect(hookFilters(["libs/ui/src/features/ui/button.tsx"], packages)).toStrictEqual([
+      "-w",
+      "--filter",
+      "@repo/ui",
+      "--filter",
+      "@repo/service-member",
+    ]);
+  });
+
+  it("walks every workspace when a changed file is outside the workspaces", () => {
+    expect(
+      hookFilters(["libs/cli/src/features/cli/cli.ts", ".vite-hooks/pre-push"], packages),
+    ).toStrictEqual(["-r"]);
   });
 });
