@@ -293,6 +293,7 @@ describe("lifecycle entry points", () => {
     expect(workflowRuns("../../../../../../.github/workflows/check.yml")).toStrictEqual([
       "vp run -w prepr",
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
+      "vp run compile:paraglide",
       "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
       "vp run -r premerge",
       "vp run compile:paraglide",
