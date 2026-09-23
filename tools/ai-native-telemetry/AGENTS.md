@@ -15,6 +15,6 @@ description: One OpenTelemetry provider startup for a process.
   - MUST: `beforeExit` に自分で登録する
   - PROHIBIT: 送信の停止処理より先に登録されることを前提にする
 
-npm へは `publishConfig.access: public` で出す。入口は `.` と `./vitest-sdk` である。コマンドは持たない。
+npm へは `publishConfig.access: public` で出す。エントリは `.` と `./vitest-sdk` である。コマンドは持たない。
 
 OpenTelemetry API 1。Logs / metrics / trace の SDK は package.json の pin に従う。

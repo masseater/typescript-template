@@ -344,9 +344,7 @@ describe("lifecycle contents", () => {
   it("runs static analysis on push and leaves tests and builds to later gates", () => {
     expect.hasAssertions();
     expect(dependencies(".", "precommit")).toContain("check:text");
-    expect(commands(".", "check:text")).toStrictEqual([
-      'textlint ".claude/**/*.md" "apps/internal-dashboard/content/docs/**/*.md"',
-    ]);
+    expect(commands(".", "check:text")).toStrictEqual(['textlint "**/*.md"']);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toEqual(
       expect.arrayContaining(["check:effect", "knip", "check:canonical-literal-types"]),
