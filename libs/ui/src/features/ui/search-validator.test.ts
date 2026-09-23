@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { searchValidator } from "./app-router.ts";
+import { searchValidator } from "./search-validator.ts";
 
 class UnreadableSearch extends Schema.TaggedError<UnreadableSearch>()("UnreadableSearch", {}) {}
 

@@ -38,7 +38,7 @@ export { TableRow } from "./shared/ui/table-row";
 export { TextLink } from "./shared/ui/text-link";
 export { useToast } from "./shared/ui/use-toast";
 export { useAction } from "./action";
-export { searchValidator } from "./app-router";
+export { searchValidator } from "./search-validator";
 export type { ActionState } from "./action";
 export { ActionStatus } from "./action-status";
 export { localState, useOptionalString } from "./local-state";
