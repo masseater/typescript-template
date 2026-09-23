@@ -2,13 +2,14 @@ import {
   FlagIcon,
   LayoutDashboardIcon,
   MessageSquareIcon,
+  MicIcon,
   ScrollTextIcon,
   UsersIcon,
 } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
 
-type DashboardNavPath = "/" | "/audit" | "/flags" | "/inquiries" | "/staff";
+type DashboardNavPath = "/" | "/audit" | "/flags" | "/inquiries" | "/recordings" | "/staff";
 
 type DashboardNavItem = Readonly<{
   icon: LucideIcon;
@@ -26,6 +27,7 @@ const dashboardNavGroups: readonly DashboardNavGroup[] = [
     items: [
       { icon: LayoutDashboardIcon, label: "概要", to: "/" },
       { icon: MessageSquareIcon, label: "問い合わせ", to: "/inquiries" },
+      { icon: MicIcon, label: "録音", to: "/recordings" },
       { icon: ScrollTextIcon, label: "監査ログ", to: "/audit" },
     ],
     label: "状況",
@@ -44,6 +46,7 @@ const dashboardPageTitles: Readonly<Record<DashboardNavPath | "/security", strin
   "/audit": "監査ログ",
   "/flags": "機能フラグ",
   "/inquiries": "問い合わせ",
+  "/recordings": "録音",
   "/security": "セキュリティ",
   "/staff": "メンバー",
 };
