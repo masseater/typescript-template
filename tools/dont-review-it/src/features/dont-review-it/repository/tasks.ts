@@ -44,9 +44,12 @@ const workspaceNames: Readonly<Record<string, string>> = Object.fromEntries(
   }),
 );
 
-const packageDirectories: Readonly<Record<string, string>> = Object.fromEntries(
-  Object.entries(workspaceNames).map(([directory, name]) => [name, directory]),
-);
+const rootName = field(rootManifests["../../../../../../package.json"], "name");
+
+const packageDirectories: Readonly<Record<string, string>> = Object.fromEntries([
+  ...(typeof rootName === "string" ? [[rootName, "."] as const] : []),
+  ...Object.entries(workspaceNames).map(([directory, name]) => [name, directory] as const),
+]);
 
 const workspaceConfigs: Readonly<Record<string, UserConfig>> = Object.fromEntries(
   Object.entries(configModules).map(([file, config]) => [
@@ -125,6 +128,10 @@ function expanded(entries: readonly string[]): string[] {
   return next.length === 0 ? [...entries] : expanded([...entries, ...new Set(next)]);
 }
 
+function reachableAcross(directory: string, name: string): string[] {
+  return expanded([`${directory}#${name}`]);
+}
+
 function uncachedGateTasks(): string[] {
   return expanded(configuredDirectories.map((directory) => `${directory}#prerelease`))
     .filter((entry) => {
@@ -140,6 +147,7 @@ export {
   configuredDirectories,
   dependencies,
   reachable,
+  reachableAcross,
   uncachedGateTasks,
   scriptNames,
   taskNames,
