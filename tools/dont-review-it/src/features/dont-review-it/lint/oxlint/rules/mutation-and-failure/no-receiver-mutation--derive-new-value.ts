@@ -1,8 +1,7 @@
-import { dirname, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { classModulesFor } from "../../lib/receiver-mutation/class-modules.ts";
 import { mutatingMethodNamesIn } from "../../lib/receiver-mutation/mutating-class-methods.ts";
@@ -67,7 +66,7 @@ export const noReceiverMutation = createDontReviewItRule({
     schema: [],
   },
   create(inspection) {
-    const file = resolve(inspection.cwd, inspection.filename);
+    const file = path.resolve(inspection.cwd, inspection.filename);
 
     const importedNames = memoize(() => importedNamesIn(inspection.sourceCode.ast.body));
     const ownedNames = memoize(
@@ -84,7 +83,7 @@ export const noReceiverMutation = createDontReviewItRule({
       const found = classModulesFor({
         file,
         source: inspection.sourceCode.text,
-        workspaceRoot: findWorkspaceRoot(dirname(file)),
+        workspaceRoot: findWorkspaceRoot(path.dirname(file)),
         imported,
       }).flatMap((module) => {
         const mutatingNames = mutatingMethodNamesIn({ ...module, className });

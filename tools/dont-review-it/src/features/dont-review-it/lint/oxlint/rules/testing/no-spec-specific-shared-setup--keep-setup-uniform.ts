@@ -1,8 +1,7 @@
-import { dirname, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { defaultExportedObject } from "../../lib/default-exported-object.ts";
 import { configuredSuffixesFrom } from "../../lib/file-name-suffixes.ts";
@@ -154,8 +153,8 @@ export const noSpecSpecificSharedSetup = createDontReviewItRule({
     ],
   },
   create(inspection) {
-    const filename = resolve(inspection.cwd, inspection.filename);
-    const workspaceRoot = findWorkspaceRoot(dirname(filename));
+    const filename = path.resolve(inspection.cwd, inspection.filename);
+    const workspaceRoot = findWorkspaceRoot(path.dirname(filename));
     const specPathsOf = memoize((): readonly string[] => authoredSpecPathsUnder(workspaceRoot));
     if (isRunnerConfigurationFile(inspection.filename)) {
       return configurationVisitor({ inspection, specPathsOf });

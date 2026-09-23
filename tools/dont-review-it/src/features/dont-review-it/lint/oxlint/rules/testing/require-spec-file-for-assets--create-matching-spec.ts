@@ -1,6 +1,5 @@
-import { dirname, join, resolve } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { isFile } from "../../lib/canonical-values/source-files.ts";
 import { assetsNameMarkersFrom, assetsStemOf } from "../../lib/spec-syntax/assets-files.ts";
 import { specFileSuffixesFrom } from "../../lib/spec-syntax/spec-files.ts";
@@ -17,9 +16,9 @@ const unownedAssetsNamesIn = (
   const stem = assetsStemOf(assetsPath, markers);
   if (stem === null) return null;
 
-  const directory = dirname(assetsPath);
+  const directory = path.dirname(assetsPath);
   const ownerNames = specSuffixes.map((suffix) => `${stem}${suffix}`);
-  if (ownerNames.some((ownerName) => isFile(join(directory, ownerName)))) return null;
+  if (ownerNames.some((ownerName) => isFile(path.join(directory, ownerName)))) return null;
 
   return ownerNames.map((ownerName) => `\`${ownerName}\``).join(" or ");
 };
@@ -54,7 +53,7 @@ export const requireSpecFileForAssets = createDontReviewItRule({
 
     return {
       Program(node: ESTree.Program) {
-        const ownerNames = unownedAssetsNamesIn(resolve(inspection.cwd, inspection.filename), {
+        const ownerNames = unownedAssetsNamesIn(path.resolve(inspection.cwd, inspection.filename), {
           markers,
           specSuffixes,
         });

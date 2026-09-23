@@ -1,10 +1,9 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { noRuleSuppression } from "./no-rule-suppression--fix-the-violation.ts";
 
 const SOURCE_FILE = "packages/cart/src/basket.ts";
@@ -23,16 +22,32 @@ const OUTSIDE_RULE = "no-console";
 
 const DECLARATION = "export const total = 1;";
 
-const fixtureDir = mkdtempSync(join(tmpdir(), "dont-review-it-no-rule-suppression-"));
-mkdirSync(join(fixtureDir, "src/legacy"), { recursive: true });
-
-writeFileSync(join(fixtureDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-writeFileSync(join(fixtureDir, "package.json"), '{ "name": "@fixture/root" }\n');
-writeFileSync(join(fixtureDir, "src/legacy/basket.test.ts"), 'it("counts", () => {});\n');
-const ignoringConfig = join(fixtureDir, CONFIG_FILE);
-writeFileSync(ignoringConfig, DECLARATION);
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-no-rule-suppression-" });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
+const ignoringConfig = path.join(fixtureDir, CONFIG_FILE);
 
 const EVERY_RULE_REACHING_HERE = "every rule reaching this file (this gate among them)";
+
+const FIXTURE_DIRECTORIES: readonly string[] = [path.join(fixtureDir, "src/legacy")];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(fixtureDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n"],
+  [path.join(fixtureDir, "package.json"), '{ "name": "@fixture/root" }\n'],
+  [path.join(fixtureDir, "src/legacy/basket.test.ts"), 'it("counts", () => {});\n'],
+  [ignoringConfig, DECLARATION],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-rule-suppression--fix-the-violation", () => {
   testLintRule(noRuleSuppression, {

@@ -16,7 +16,6 @@ interface ErrorGroup {
 
 interface ErrorGroups {
   readonly groups: readonly ErrorGroup[];
-  readonly dropped: number;
 }
 
 interface QueryWindow {
@@ -173,8 +172,14 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
     offsetBy += QUERY_LIMIT;
   }
   const collected = aggregates.map((item) => errorGroup(item));
+  const dropped = collected.reduce((total, item) => total + item.dropped, 0);
+  if (dropped > 0) {
+    return yield* new ErrorMonitorFailure({
+      code: "telemetry_groups_dropped",
+      keys: [`dropped:${String(dropped)}`],
+    });
+  }
   return {
-    dropped: collected.reduce((total, item) => total + item.dropped, 0),
     groups: collected.flatMap((item) => (item.group === undefined ? [] : [item.group])),
   } satisfies ErrorGroups;
 });

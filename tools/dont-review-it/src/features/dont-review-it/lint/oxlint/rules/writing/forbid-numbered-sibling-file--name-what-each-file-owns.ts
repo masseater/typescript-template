@@ -1,9 +1,10 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readdirSync } from "node:fs";
-import { dirname, resolve, sep } from "node:path";
 
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 
 import type { ESTree } from "@oxlint/plugins";
 
@@ -29,13 +30,13 @@ const isSplitSibling = (input: {
 };
 
 const splitSiblingOf = (filePath: string): string | null => {
-  const fileName = filePath.split(sep).slice(-1).join("");
+  const fileName = filePath.split(path.sep).slice(-1).join("");
   const prefix = ordinalPrefixOf(fileName);
   if (prefix === null) return null;
 
   const ownBaseName = baseNameOf(fileName);
   return (
-    directoryEntries(dirname(filePath)).find((entryName) =>
+    directoryEntries(path.dirname(filePath)).find((entryName) =>
       isSplitSibling({ entryName, ownBaseName, prefix }),
     ) ?? null
   );
@@ -59,7 +60,7 @@ export const forbidNumberedSiblingFile = createDontReviewItRule({
   create(inspection) {
     return {
       Program(node: ESTree.Program) {
-        const sibling = splitSiblingOf(resolve(inspection.cwd, inspection.filename));
+        const sibling = splitSiblingOf(path.resolve(inspection.cwd, inspection.filename));
         if (sibling === null) return;
         inspection.report({ node, messageId: "numberedSiblingFile", data: { sibling } });
       },

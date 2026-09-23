@@ -1,6 +1,5 @@
-import { dirname, resolve } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { matchesAnchoredGlobPath } from "../../lib/glob-path-match.ts";
 import { type RuleMessage } from "../../lib/rule-message.ts";
@@ -120,9 +119,9 @@ export const forbidTrackedPath = createDontReviewItRule({
     schema: FORBIDDEN_TRACKED_PATH_SCHEMA,
   },
   create(inspection) {
-    const file = resolve(inspection.cwd, inspection.filename);
-    const workspaceRoot = findWorkspaceRoot(dirname(file));
-    if (dirname(file) !== workspaceRoot) return {};
+    const file = path.resolve(inspection.cwd, inspection.filename);
+    const workspaceRoot = findWorkspaceRoot(path.dirname(file));
+    if (path.dirname(file) !== workspaceRoot) return {};
 
     const registered = registeredTrackedPathsFrom(inspection.options);
     const releases = releasesFrom(inspection.options);

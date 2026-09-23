@@ -1,8 +1,7 @@
-import { dirname, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { misplacedFixturePackages } from "../../lib/setup-modules/allowlist-entries.ts";
 import { constantSpecifiersIn, couplingEdgeOf } from "../../lib/setup-modules/coupling-edges.ts";
@@ -69,10 +68,10 @@ export const noDryTestSetup = createDontReviewItRule({
   create(inspection) {
     if (!isSpecFile(inspection.filename, specFileSuffixesFrom(inspection.options))) return {};
 
-    const fromFile = resolve(inspection.cwd, inspection.filename);
+    const fromFile = path.resolve(inspection.cwd, inspection.filename);
 
     const policyOf = memoize((): SetupModulePolicy => ({
-      workspaceRoot: findWorkspaceRoot(dirname(fromFile)),
+      workspaceRoot: findWorkspaceRoot(path.dirname(fromFile)),
       namePatterns:
         configuredStrings(inspection.options, "setupModuleNamePatterns") ??
         DEFAULT_SETUP_MODULE_NAME_PATTERNS,

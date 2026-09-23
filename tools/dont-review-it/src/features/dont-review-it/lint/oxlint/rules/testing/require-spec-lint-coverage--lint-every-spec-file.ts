@@ -1,8 +1,7 @@
-import { dirname, resolve } from "node:path";
-
 import { sortBy } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { spelledNames } from "../../lib/declared-coverage/coverage-declarations.ts";
 import {
@@ -168,7 +167,7 @@ export const requireSpecLintCoverage = createDontReviewItRule({
 
     const reportIgnoredSpecFiles = (lint: ESTree.ObjectExpression): void => {
       const repositoryRoot = findWorkspaceRoot(
-        dirname(resolve(inspection.cwd, inspection.filename)),
+        path.dirname(path.resolve(inspection.cwd, inspection.filename)),
       );
       for (const ignored of ignoredSpecFilesIn({ lint, repositoryRoot })) {
         inspection.report({
