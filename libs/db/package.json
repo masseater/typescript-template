@@ -24,7 +24,6 @@
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",
-    "msw": "catalog:",
     "typescript": "catalog:"
   }
 }

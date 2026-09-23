@@ -1,14 +1,12 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { path } from "../../../../platform/path.ts";
 import { restrictedTargetReachedBy } from "./relayed-reach.ts";
 
 import type { RestrictedTargetEntry } from "./restricted-entries.ts";
-
-const FIXTURE_ROOT = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-relayed-reach-"));
 
 const RETIRED_LIB: RestrictedTargetEntry = {
   module: "retired-lib",
@@ -17,13 +15,13 @@ const RETIRED_LIB: RestrictedTargetEntry = {
   substitute: "Read the same value through the reader this package owns.",
 };
 
-describe("restrictedTargetReachedBy", () => {
+layer(NodeServices.layer)("restrictedTargetReachedBy", (it) => {
   describe("a specifier that resolves to no file in the repository", () => {
     const it = test.extend("reach", () =>
       restrictedTargetReachedBy({
         specifier: "./never-written-relay.ts",
-        fromFile: resolve("/repository", "reader.ts"),
-        policy: { workspaceRoot: resolve("/repository"), entries: [], aliases: [] },
+        fromFile: path.resolve("/repository", "reader.ts"),
+        policy: { workspaceRoot: path.resolve("/repository"), entries: [], aliases: [] },
       }));
 
     it("reaches no restricted target", ({ reach }) => {
@@ -35,9 +33,18 @@ describe("restrictedTargetReachedBy", () => {
     const it = test.extend("reach", () =>
       restrictedTargetReachedBy({
         specifier: "@repo/dont-review-it/tsconfig/*",
-        fromFile: resolve(import.meta.dirname, "relayed-reach.ts"),
+        fromFile: path.resolve(import.meta.dirname, "relayed-reach.ts"),
         policy: {
-          workspaceRoot: resolve(import.meta.dirname, "..", "..", "..", "..", "..", "..", ".."),
+          workspaceRoot: path.resolve(
+            import.meta.dirname,
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+            "..",
+          ),
           entries: [],
           aliases: [],
         },
@@ -49,249 +56,388 @@ describe("restrictedTargetReachedBy", () => {
   });
 
   describe("a local module that forwards the restricted target", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "one-relay");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "./relay.ts";\n');
-      writeFileSync(join(root, "src", "relay.ts"), 'export { readFile } from "retired-lib";\n');
-      return restrictedTargetReachedBy({
-        specifier: "./relay.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "one-relay");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "./relay.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "relay.ts"),
+          'export { readFile } from "retired-lib";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "./relay.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("is reached through it", ({ reach }) => {
-      expect(reach).toStrictEqual({
-        entry: RETIRED_LIB,
-        target: "retired-lib",
-        relays: ["src/relay.ts"],
-      });
-    });
+    it.effect("is reached through it", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toStrictEqual({
+          entry: RETIRED_LIB,
+          target: "retired-lib",
+          relays: ["src/relay.ts"],
+        });
+      }),
+    );
   });
 
   describe("a target reached through two modules", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "two-relays");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "./first.ts";\n');
-      writeFileSync(join(root, "src", "first.ts"), 'export * from "./second.ts";\n');
-      writeFileSync(join(root, "src", "second.ts"), 'export * from "retired-lib";\n');
-      return restrictedTargetReachedBy({
-        specifier: "./first.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "two-relays");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "./first.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "first.ts"),
+          'export * from "./second.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "second.ts"),
+          'export * from "retired-lib";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "./first.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("names every module walked through on the way", ({ reach }) => {
-      expect(reach).toStrictEqual({
-        entry: RETIRED_LIB,
-        target: "retired-lib",
-        relays: ["src/first.ts", "src/second.ts"],
-      });
-    });
+    it.effect("names every module walked through on the way", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toStrictEqual({
+          entry: RETIRED_LIB,
+          target: "retired-lib",
+          relays: ["src/first.ts", "src/second.ts"],
+        });
+      }),
+    );
   });
 
   describe("a module that forwards several modules", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "mixed-relay");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "./relay.ts";\n');
-      writeFileSync(
-        join(root, "src", "relay.ts"),
-        'export { join } from "node:path";\nexport { readFile } from "retired-lib";\n',
-      );
-      return restrictedTargetReachedBy({
-        specifier: "./relay.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "mixed-relay");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "./relay.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "relay.ts"),
+          'export { join } from "node:path";\nexport { readFile } from "retired-lib";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "./relay.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("has its restricted forward picked out", ({ reach }) => {
-      expect(reach).toStrictEqual({
-        entry: RETIRED_LIB,
-        target: "retired-lib",
-        relays: ["src/relay.ts"],
-      });
-    });
+    it.effect("has its restricted forward picked out", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toStrictEqual({
+          entry: RETIRED_LIB,
+          target: "retired-lib",
+          relays: ["src/relay.ts"],
+        });
+      }),
+    );
   });
 
   describe("an internal alias prefix", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "aliased-relay");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "~/relay.ts";\n');
-      writeFileSync(join(root, "src", "relay.ts"), 'export * from "retired-lib";\n');
-      return restrictedTargetReachedBy({
-        specifier: "~/relay.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: {
-          workspaceRoot: root,
-          entries: [RETIRED_LIB],
-          aliases: [{ prefix: "~/", directory: "src" }],
-        },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "aliased-relay");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "~/relay.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "relay.ts"),
+          'export * from "retired-lib";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "~/relay.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: {
+            workspaceRoot: root,
+            entries: [RETIRED_LIB],
+            aliases: [{ prefix: "~/", directory: "src" }],
+          },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("is followed to the directory it stands for", ({ reach }) => {
-      expect(reach).toStrictEqual({
-        entry: RETIRED_LIB,
-        target: "retired-lib",
-        relays: ["src/relay.ts"],
-      });
-    });
+    it.effect("is followed to the directory it stands for", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toStrictEqual({
+          entry: RETIRED_LIB,
+          target: "retired-lib",
+          relays: ["src/relay.ts"],
+        });
+      }),
+    );
   });
 
   describe("a module that forwards no restricted target", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "plain-relay");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { join } from "./relay.ts";\n');
-      writeFileSync(join(root, "src", "relay.ts"), 'export { join } from "node:path";\n');
-      return restrictedTargetReachedBy({
-        specifier: "./relay.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "plain-relay");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { join } from "./relay.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "relay.ts"),
+          'export { join } from "node:path";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "./relay.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("reaches nothing", ({ reach }) => {
-      expect(reach).toBe(null);
-    });
+    it.effect("reaches nothing", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toBe(null);
+      }),
+    );
   });
 
   describe("a module already walked through", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "cycle");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "./first.ts";\n');
-      writeFileSync(join(root, "src", "first.ts"), 'export * from "./second.ts";\n');
-      writeFileSync(join(root, "src", "second.ts"), 'export * from "./first.ts";\n');
-      return restrictedTargetReachedBy({
-        specifier: "./first.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "cycle");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "./first.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "first.ts"),
+          'export * from "./second.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "second.ts"),
+          'export * from "./first.ts";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "./first.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("stops the walk", ({ reach }) => {
-      expect(reach).toBe(null);
-    });
+    it.effect("stops the walk", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toBe(null);
+      }),
+    );
   });
 
   describe("a specifier that names no module in the repository", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "named-outright");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "retired-lib";\n');
-      return restrictedTargetReachedBy({
-        specifier: "retired-lib",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "named-outright");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "retired-lib";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "retired-lib",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("reaches nothing", ({ reach }) => {
-      expect(reach).toBe(null);
-    });
+    it.effect("reaches nothing", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toBe(null);
+      }),
+    );
   });
 
   describe("a public entry a package declares but does not carry on disk", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "unbuilt-entry");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      mkdirSync(join(root, "packages", "relay"), { recursive: true });
-      mkdirSync(join(root, "node_modules", "@fixture"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "@fixture/relay";\n');
-      writeFileSync(
-        join(root, "packages", "relay", "package.json"),
-        '{"name":"@fixture/relay","exports":{".":{"import":"./built.ts","default":"./relay.ts"}}}',
-      );
-      writeFileSync(join(root, "packages", "relay", "relay.ts"), 'export * from "retired-lib";\n');
-      symlinkSync(
-        join(root, "packages", "relay"),
-        join(root, "node_modules", "@fixture", "relay"),
-        "dir",
-      );
-      return restrictedTargetReachedBy({
-        specifier: "@fixture/relay",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "unbuilt-entry");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.makeDirectory(paths.join(root, "packages", "relay"), { recursive: true });
+        yield* filesystem.makeDirectory(paths.join(root, "node_modules", "@fixture"), {
+          recursive: true,
+        });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "@fixture/relay";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "packages", "relay", "package.json"),
+          '{"name":"@fixture/relay","exports":{".":{"import":"./built.ts","default":"./relay.ts"}}}',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "packages", "relay", "relay.ts"),
+          'export * from "retired-lib";\n',
+        );
+        yield* filesystem.symlink(
+          paths.join(root, "packages", "relay"),
+          paths.join(root, "node_modules", "@fixture", "relay"),
+        );
+        return restrictedTargetReachedBy({
+          specifier: "@fixture/relay",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
+      return { fixtureRoot, reach };
     });
 
-    it("is walked past", ({ reach }) => {
-      expect(reach).toStrictEqual({
-        entry: RETIRED_LIB,
-        target: "retired-lib",
-        relays: ["packages/relay/relay.ts"],
-      });
-    });
+    it.effect("is walked past", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toStrictEqual({
+          entry: RETIRED_LIB,
+          target: "retired-lib",
+          relays: ["packages/relay/relay.ts"],
+        });
+      }),
+    );
   });
 
   describe("a relay rewritten after it was walked once", () => {
-    const it = test.extend("reach", ({}, { onCleanup }) => {
-      const root = join(FIXTURE_ROOT, "remembered");
-      rmSync(root, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-relayed-reach-",
       });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "index.ts"), 'import { readFile } from "./relay.ts";\n');
-      writeFileSync(join(root, "src", "relay.ts"), 'export * from "retired-lib";\n');
-      restrictedTargetReachedBy({
-        specifier: "./relay.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+      const reach = yield* Effect.gen(function* reach() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const root = paths.join(fixtureRoot, "remembered");
+
+        yield* filesystem.makeDirectory(paths.join(root, "src"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "index.ts"),
+          'import { readFile } from "./relay.ts";\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "relay.ts"),
+          'export * from "retired-lib";\n',
+        );
+        restrictedTargetReachedBy({
+          specifier: "./relay.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
+        yield* filesystem.writeFileString(
+          paths.join(root, "src", "relay.ts"),
+          'export { join } from "node:path";\n',
+        );
+        return restrictedTargetReachedBy({
+          specifier: "./relay.ts",
+          fromFile: paths.join(root, "src", "index.ts"),
+          policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
+        });
       });
-      writeFileSync(join(root, "src", "relay.ts"), 'export { join } from "node:path";\n');
-      return restrictedTargetReachedBy({
-        specifier: "./relay.ts",
-        fromFile: join(root, "src", "index.ts"),
-        policy: { workspaceRoot: root, entries: [RETIRED_LIB], aliases: [] },
-      });
+      return { fixtureRoot, reach };
     });
 
-    it("keeps the forwards read the first time it was walked", ({ reach }) => {
-      expect(reach).toStrictEqual({
-        entry: RETIRED_LIB,
-        target: "retired-lib",
-        relays: ["src/relay.ts"],
-      });
-    });
+    it.effect("keeps the forwards read the first time it was walked", () =>
+      Effect.gen(function* program() {
+        const { reach } = yield* fixtures;
+        expect(reach).toStrictEqual({
+          entry: RETIRED_LIB,
+          target: "retired-lib",
+          relays: ["src/relay.ts"],
+        });
+      }),
+    );
   });
 });

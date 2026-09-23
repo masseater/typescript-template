@@ -1,17 +1,16 @@
+import { Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { isEnvironmentFailure } from "./path-failure.ts";
 
-class RuntimeRefusal extends Error {
-  constructor(readonly code: string | number) {
-    super("the runtime refused");
-  }
-}
+class RuntimeRefusal extends Schema.TaggedError<RuntimeRefusal>()("RuntimeRefusal", {
+  code: Schema.String,
+}) {}
 
 describe("isEnvironmentFailure", () => {
   describe("a failure carrying a code", () => {
     const it = test.extend("cameFromTheEnvironment", () =>
-      isEnvironmentFailure(new RuntimeRefusal("EROFS")));
+      isEnvironmentFailure(new RuntimeRefusal({ code: "EROFS" })));
 
     it("came from the environment", ({ cameFromTheEnvironment }) => {
       expect(cameFromTheEnvironment).toBe(true);

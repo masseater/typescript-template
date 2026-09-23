@@ -348,19 +348,28 @@ describe("lifecycle contents", () => {
       'textlint "apps/internal-dashboard/content/docs/**/*.md"',
     ]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
-    expect(dependencies(".", "prepush")).toContain("check:code");
     expect(reachable(".", ["prepush"])).toStrictEqual(
-      expect.arrayContaining([
-        "check:code",
-        "check:effect",
-        "knip",
-        "check:client",
-        "check:imports",
-        "check:react",
-        "check:canonical-literal-types",
-      ]),
+      expect.arrayContaining(["check:effect", "knip", "check:canonical-literal-types"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
+    expect(
+      configuredDirectories.filter(
+        (directory) => !reachable(directory, ["precommit"]).includes("check:code"),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.filter(
+        (directory) =>
+          directory !== "." && !reachable(directory, ["prepush"]).includes("check:imports"),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.filter((directory) =>
+        ["check:client", "check:react"].some((name) =>
+          reachable(directory, ["prepush"]).includes(name),
+        ),
+      ),
+    ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
     expect(
       configuredDirectories.flatMap((directory) =>
         taskNames(directory).includes("check:effect")
@@ -384,6 +393,23 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
       [],
     );
+  });
+
+  it("leaves every root entry outside the workspaces to the root check:code", () => {
+    expect.hasAssertions();
+    const repositoryRoot = join(toolsRoot, "..");
+    const ignored = new Set([
+      ".git",
+      ...readFileSync(join(repositoryRoot, ".gitignore"), "utf8")
+        .split("\n")
+        .filter((line) => /^[\w.-]+\/?$/u.test(line))
+        .map((line) => line.replace(/\/$/u, "")),
+      ...workspaceDirectories.map((directory) => directory.split("/")[0]),
+    ]);
+    const checked = new Set(commands(".", "check:code").flatMap((command) => command.split(" ")));
+    expect(
+      readdirSync(repositoryRoot).filter((entry) => !ignored.has(entry) && !checked.has(entry)),
+    ).toStrictEqual([]);
   });
 
   it("type-checks a package before that package's bundle", () => {

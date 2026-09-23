@@ -1,8 +1,7 @@
-import { dirname, resolve } from "node:path";
-
 import { attempt, memoize, sortBy, uniqBy } from "es-toolkit";
 
 import { measureStage } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { readAnnotatedSources, type AnnotatedSource } from "./annotated-sources.ts";
 import { cacheInputFingerprint, readCachedEntries, writeCachedEntries } from "./catalog-cache.ts";
@@ -94,7 +93,7 @@ const packageNamesIn = (manifests: RepositoryFiles["manifests"]): readonly strin
   uniqBy(
     manifests.flatMap((manifest) => {
       const [failure, packageName] = attempt(() =>
-        publicPackageName(dirname(manifest.absolutePath)),
+        publicPackageName(path.dirname(manifest.absolutePath)),
       );
       return failure === null && packageName !== null ? [packageName] : [];
     }),
@@ -144,7 +143,7 @@ export const analyzeCanonicalValuesRepository = ({
 }: {
   readonly repositoryRoot: string;
 }): CanonicalValuesRepositoryAnalysis => {
-  const root = resolve(repositoryRoot);
+  const root = path.resolve(repositoryRoot);
   const sourceScope = measureStage("canonical.scope", () => readGitSourceScope(root));
   return analyzeRepositoryFiles({
     repositoryFiles: measureStage("canonical.scan", () => listRepositoryFiles(root, sourceScope)),
@@ -201,8 +200,8 @@ const buildCanonicalValuesCatalog = ({
   repositoryRoot,
 }: {
   readonly repositoryRoot: string;
-}): CanonicalValuesCatalog => buildCatalogFor(repositoryInput(resolve(repositoryRoot)));
+}): CanonicalValuesCatalog => buildCatalogFor(repositoryInput(path.resolve(repositoryRoot)));
 
 export const loadCanonicalValuesCatalogSnapshot = memoize(buildCanonicalValuesCatalog, {
-  getCacheKey: (catalogRequest) => resolve(catalogRequest.repositoryRoot),
+  getCacheKey: (catalogRequest) => path.resolve(catalogRequest.repositoryRoot),
 });

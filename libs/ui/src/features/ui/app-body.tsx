@@ -1,17 +1,18 @@
-import { RegistryProvider } from "@effect/atom-react";
 import { Scripts } from "@tanstack/react-router";
 
-import { BaseWebProvider } from "./baseweb-provider";
+import { AppProviders } from "./app-providers";
 
 import type { ReactElement } from "react";
+import type { FieldValidationMessages } from "./shared/ui/field-validation-messages";
 import type { Children } from "./shared/ui/types";
 
-const AppBody = ({ children }: Children): ReactElement => {
+const AppBody = ({
+  children,
+  fieldValidationMessages,
+}: Children & Readonly<{ fieldValidationMessages: FieldValidationMessages }>): ReactElement => {
   return (
     <body>
-      <BaseWebProvider>
-        <RegistryProvider>{children}</RegistryProvider>
-      </BaseWebProvider>
+      <AppProviders fieldValidationMessages={fieldValidationMessages}>{children}</AppProviders>
       <Scripts />
     </body>
   );

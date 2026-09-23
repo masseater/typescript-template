@@ -1,274 +1,499 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { gitOutput } from "../git-output.ts";
 import { listRepositoryFiles, nearestPackageDirectory } from "./source-files.ts";
 
-const UNREACHABLE_TARGET_ROOT = mkdtempSync(join(tmpdir(), "source-files-unreachable-target-"));
-
-const DIRECTORY_TARGET_ROOT = mkdtempSync(join(tmpdir(), "source-files-directory-target-"));
-
-const OWN_MANIFEST_ROOT = mkdtempSync(join(tmpdir(), "source-files-own-manifest-"));
-
-const MANIFEST_ABOVE_ROOT = mkdtempSync(join(tmpdir(), "source-files-manifest-above-"));
-
-const RIVAL_MANIFESTS_ROOT = mkdtempSync(join(tmpdir(), "source-files-rival-manifests-"));
-
-const ROOT_ONLY_MANIFEST_ROOT = mkdtempSync(join(tmpdir(), "source-files-root-only-manifest-"));
-
-const NO_MANIFEST_ROOT = mkdtempSync(join(tmpdir(), "source-files-no-manifest-"));
-
-const MIXED_ASSET_SCRIPTS_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-scripts-"));
-
-const MIXED_ASSET_STYLES_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-styles-"));
-
-const MIXED_ASSET_MARKUP_ROOT = mkdtempSync(join(tmpdir(), "source-files-mixed-assets-markup-"));
-
-const MIXED_ASSET_MANIFESTS_ROOT = mkdtempSync(
-  join(tmpdir(), "source-files-mixed-assets-manifests-"),
-);
-
-describe("listRepositoryFiles", () => {
+layer(NodeServices.layer)("listRepositoryFiles", (it) => {
   describe("an entry the directory lists but the file system cannot reach", () => {
-    const it = test.extend("commentSourcePathsBesideALinkToNothing", ({}, { onCleanup }) => {
-      rmSync(UNREACHABLE_TARGET_ROOT, { recursive: true, force: true });
-      mkdirSync(join(UNREACHABLE_TARGET_ROOT, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(UNREACHABLE_TARGET_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const unreachableTargetRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-unreachable-target-",
       });
-      writeFileSync(
-        join(UNREACHABLE_TARGET_ROOT, "src", "present.ts"),
-        "export const total = 1;\n",
+      const commentSourcePathsBesideALinkToNothing = yield* Effect.gen(
+        function* commentSourcePathsBesideALinkToNothing() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(unreachableTargetRoot, "src"), {
+            recursive: true,
+          });
+
+          yield* filesystem.writeFileString(
+            pathService.join(unreachableTargetRoot, "src", "present.ts"),
+            "export const total = 1;\n",
+          );
+          yield* filesystem.symlink(
+            pathService.join(unreachableTargetRoot, "src", "removed.ts"),
+            pathService.join(unreachableTargetRoot, "src", "gone.ts"),
+          );
+          return listRepositoryFiles(unreachableTargetRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
       );
-      symlinkSync(
-        join(UNREACHABLE_TARGET_ROOT, "src", "removed.ts"),
-        join(UNREACHABLE_TARGET_ROOT, "src", "gone.ts"),
-      );
-      return listRepositoryFiles(UNREACHABLE_TARGET_ROOT).commentSources.map(
-        (file) => file.relativePath,
-      );
+      return { unreachableTargetRoot, commentSourcePathsBesideALinkToNothing };
     });
 
-    it("is left out", ({ commentSourcePathsBesideALinkToNothing }) => {
-      expect(commentSourcePathsBesideALinkToNothing).toStrictEqual(["src/present.ts"]);
-    });
+    it.effect("is left out", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsBesideALinkToNothing } = yield* fixtures;
+        expect(commentSourcePathsBesideALinkToNothing).toStrictEqual(["src/present.ts"]);
+      }),
+    );
   });
 
   describe("an entry that resolves to a directory", () => {
-    const it = test.extend("commentSourcePathsBesideALinkToADirectory", ({}, { onCleanup }) => {
-      rmSync(DIRECTORY_TARGET_ROOT, { recursive: true, force: true });
-      mkdirSync(join(DIRECTORY_TARGET_ROOT, "src", "nested"), { recursive: true });
-      onCleanup(() => {
-        rmSync(DIRECTORY_TARGET_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const directoryTargetRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-directory-target-",
       });
-      writeFileSync(join(DIRECTORY_TARGET_ROOT, "src", "present.ts"), "export const total = 1;\n");
-      symlinkSync(
-        join(DIRECTORY_TARGET_ROOT, "src", "nested"),
-        join(DIRECTORY_TARGET_ROOT, "src", "linked.ts"),
+      const commentSourcePathsBesideALinkToADirectory = yield* Effect.gen(
+        function* commentSourcePathsBesideALinkToADirectory() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(directoryTargetRoot, "src", "nested"), {
+            recursive: true,
+          });
+
+          yield* filesystem.writeFileString(
+            pathService.join(directoryTargetRoot, "src", "present.ts"),
+            "export const total = 1;\n",
+          );
+          yield* filesystem.symlink(
+            pathService.join(directoryTargetRoot, "src", "nested"),
+            pathService.join(directoryTargetRoot, "src", "linked.ts"),
+          );
+          return listRepositoryFiles(directoryTargetRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
       );
-      return listRepositoryFiles(DIRECTORY_TARGET_ROOT).commentSources.map(
-        (file) => file.relativePath,
-      );
+      return { directoryTargetRoot, commentSourcePathsBesideALinkToADirectory };
     });
 
-    it("is left out of the listing", ({ commentSourcePathsBesideALinkToADirectory }) => {
-      expect(commentSourcePathsBesideALinkToADirectory).toStrictEqual(["src/present.ts"]);
-    });
+    it.effect("is left out of the listing", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsBesideALinkToADirectory } = yield* fixtures;
+        expect(commentSourcePathsBesideALinkToADirectory).toStrictEqual(["src/present.ts"]);
+      }),
+    );
   });
 
   describe("a script standing beside a style sheet and a markup file", () => {
-    const it = test.extend("commentSourcePathsBesideAssets", ({}, { onCleanup }) => {
-      rmSync(MIXED_ASSET_SCRIPTS_ROOT, { recursive: true, force: true });
-      mkdirSync(join(MIXED_ASSET_SCRIPTS_ROOT, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(MIXED_ASSET_SCRIPTS_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const mixedAssetScriptsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-mixed-assets-scripts-",
       });
-      writeFileSync(join(MIXED_ASSET_SCRIPTS_ROOT, "package.json"), "{}");
-      writeFileSync(join(MIXED_ASSET_SCRIPTS_ROOT, "src", "order.ts"), "export const total = 1;\n");
-      writeFileSync(
-        join(MIXED_ASSET_SCRIPTS_ROOT, "src", "order.css"),
-        ".total {\n  color: red;\n}\n",
+      const commentSourcePathsBesideAssets = yield* Effect.gen(
+        function* commentSourcePathsBesideAssets() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(mixedAssetScriptsRoot, "src"), {
+            recursive: true,
+          });
+
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetScriptsRoot, "package.json"),
+            "{}",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetScriptsRoot, "src", "order.ts"),
+            "export const total = 1;\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetScriptsRoot, "src", "order.css"),
+            ".total {\n  color: red;\n}\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetScriptsRoot, "src", "icon.svg"),
+            "<svg></svg>\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetScriptsRoot, "index.html"),
+            "<div></div>\n",
+          );
+          return listRepositoryFiles(mixedAssetScriptsRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
       );
-      writeFileSync(join(MIXED_ASSET_SCRIPTS_ROOT, "src", "icon.svg"), "<svg></svg>\n");
-      writeFileSync(join(MIXED_ASSET_SCRIPTS_ROOT, "index.html"), "<div></div>\n");
-      return listRepositoryFiles(MIXED_ASSET_SCRIPTS_ROOT).commentSources.map(
-        (file) => file.relativePath,
-      );
+      return { mixedAssetScriptsRoot, commentSourcePathsBesideAssets };
     });
 
-    it("is listed as a script", ({ commentSourcePathsBesideAssets }) => {
-      expect(commentSourcePathsBesideAssets).toStrictEqual(["src/order.ts"]);
-    });
+    it.effect("is listed as a script", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsBesideAssets } = yield* fixtures;
+        expect(commentSourcePathsBesideAssets).toStrictEqual(["src/order.ts"]);
+      }),
+    );
   });
 
   describe("a style sheet standing beside a script", () => {
-    const it = test.extend("styleSheetPathsBesideScripts", ({}, { onCleanup }) => {
-      rmSync(MIXED_ASSET_STYLES_ROOT, { recursive: true, force: true });
-      mkdirSync(join(MIXED_ASSET_STYLES_ROOT, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(MIXED_ASSET_STYLES_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const mixedAssetStylesRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-mixed-assets-styles-",
       });
-      writeFileSync(join(MIXED_ASSET_STYLES_ROOT, "package.json"), "{}");
-      writeFileSync(join(MIXED_ASSET_STYLES_ROOT, "src", "order.ts"), "export const total = 1;\n");
-      writeFileSync(
-        join(MIXED_ASSET_STYLES_ROOT, "src", "order.css"),
-        ".total {\n  color: red;\n}\n",
+      const styleSheetPathsBesideScripts = yield* Effect.gen(
+        function* styleSheetPathsBesideScripts() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(mixedAssetStylesRoot, "src"), {
+            recursive: true,
+          });
+
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetStylesRoot, "package.json"),
+            "{}",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetStylesRoot, "src", "order.ts"),
+            "export const total = 1;\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetStylesRoot, "src", "order.css"),
+            ".total {\n  color: red;\n}\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetStylesRoot, "src", "icon.svg"),
+            "<svg></svg>\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetStylesRoot, "index.html"),
+            "<div></div>\n",
+          );
+          return listRepositoryFiles(mixedAssetStylesRoot).styleSheets.map(
+            (file) => file.relativePath,
+          );
+        },
       );
-      writeFileSync(join(MIXED_ASSET_STYLES_ROOT, "src", "icon.svg"), "<svg></svg>\n");
-      writeFileSync(join(MIXED_ASSET_STYLES_ROOT, "index.html"), "<div></div>\n");
-      return listRepositoryFiles(MIXED_ASSET_STYLES_ROOT).styleSheets.map(
-        (file) => file.relativePath,
-      );
+      return { mixedAssetStylesRoot, styleSheetPathsBesideScripts };
     });
 
-    it("is listed apart from the scripts", ({ styleSheetPathsBesideScripts }) => {
-      expect(styleSheetPathsBesideScripts).toStrictEqual(["src/order.css"]);
-    });
+    it.effect("is listed apart from the scripts", () =>
+      Effect.gen(function* program() {
+        const { styleSheetPathsBesideScripts } = yield* fixtures;
+        expect(styleSheetPathsBesideScripts).toStrictEqual(["src/order.css"]);
+      }),
+    );
   });
 
   describe("a markup file standing beside a script", () => {
-    const it = test.extend("markupSourcePathsBesideScripts", ({}, { onCleanup }) => {
-      rmSync(MIXED_ASSET_MARKUP_ROOT, { recursive: true, force: true });
-      mkdirSync(join(MIXED_ASSET_MARKUP_ROOT, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(MIXED_ASSET_MARKUP_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const mixedAssetMarkupRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-mixed-assets-markup-",
       });
-      writeFileSync(join(MIXED_ASSET_MARKUP_ROOT, "package.json"), "{}");
-      writeFileSync(join(MIXED_ASSET_MARKUP_ROOT, "src", "order.ts"), "export const total = 1;\n");
-      writeFileSync(
-        join(MIXED_ASSET_MARKUP_ROOT, "src", "order.css"),
-        ".total {\n  color: red;\n}\n",
+      const markupSourcePathsBesideScripts = yield* Effect.gen(
+        function* markupSourcePathsBesideScripts() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(mixedAssetMarkupRoot, "src"), {
+            recursive: true,
+          });
+
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetMarkupRoot, "package.json"),
+            "{}",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetMarkupRoot, "src", "order.ts"),
+            "export const total = 1;\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetMarkupRoot, "src", "order.css"),
+            ".total {\n  color: red;\n}\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetMarkupRoot, "src", "icon.svg"),
+            "<svg></svg>\n",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(mixedAssetMarkupRoot, "index.html"),
+            "<div></div>\n",
+          );
+          return listRepositoryFiles(mixedAssetMarkupRoot).markupSources.map(
+            (file) => file.relativePath,
+          );
+        },
       );
-      writeFileSync(join(MIXED_ASSET_MARKUP_ROOT, "src", "icon.svg"), "<svg></svg>\n");
-      writeFileSync(join(MIXED_ASSET_MARKUP_ROOT, "index.html"), "<div></div>\n");
-      return listRepositoryFiles(MIXED_ASSET_MARKUP_ROOT).markupSources.map(
-        (file) => file.relativePath,
-      );
+      return { mixedAssetMarkupRoot, markupSourcePathsBesideScripts };
     });
 
-    it("is listed apart from the scripts", ({ markupSourcePathsBesideScripts }) => {
-      expect(markupSourcePathsBesideScripts).toStrictEqual(["index.html", "src/icon.svg"]);
-    });
+    it.effect("is listed apart from the scripts", () =>
+      Effect.gen(function* program() {
+        const { markupSourcePathsBesideScripts } = yield* fixtures;
+        expect(markupSourcePathsBesideScripts).toStrictEqual(["index.html", "src/icon.svg"]);
+      }),
+    );
   });
 
   describe("a manifest standing beside a script", () => {
-    const it = test.extend("manifestPathsBesideScripts", ({}, { onCleanup }) => {
-      rmSync(MIXED_ASSET_MANIFESTS_ROOT, { recursive: true, force: true });
-      mkdirSync(join(MIXED_ASSET_MANIFESTS_ROOT, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(MIXED_ASSET_MANIFESTS_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const mixedAssetManifestsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-mixed-assets-manifests-",
       });
-      writeFileSync(join(MIXED_ASSET_MANIFESTS_ROOT, "package.json"), "{}");
-      writeFileSync(
-        join(MIXED_ASSET_MANIFESTS_ROOT, "src", "order.ts"),
-        "export const total = 1;\n",
-      );
-      writeFileSync(
-        join(MIXED_ASSET_MANIFESTS_ROOT, "src", "order.css"),
-        ".total {\n  color: red;\n}\n",
-      );
-      writeFileSync(join(MIXED_ASSET_MANIFESTS_ROOT, "src", "icon.svg"), "<svg></svg>\n");
-      writeFileSync(join(MIXED_ASSET_MANIFESTS_ROOT, "index.html"), "<div></div>\n");
-      return listRepositoryFiles(MIXED_ASSET_MANIFESTS_ROOT).manifests.map(
-        (file) => file.relativePath,
-      );
+      const manifestPathsBesideScripts = yield* Effect.gen(function* manifestPathsBesideScripts() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const pathService = yield* Path.Path;
+
+        yield* filesystem.makeDirectory(pathService.join(mixedAssetManifestsRoot, "src"), {
+          recursive: true,
+        });
+
+        yield* filesystem.writeFileString(
+          pathService.join(mixedAssetManifestsRoot, "package.json"),
+          "{}",
+        );
+        yield* filesystem.writeFileString(
+          pathService.join(mixedAssetManifestsRoot, "src", "order.ts"),
+          "export const total = 1;\n",
+        );
+        yield* filesystem.writeFileString(
+          pathService.join(mixedAssetManifestsRoot, "src", "order.css"),
+          ".total {\n  color: red;\n}\n",
+        );
+        yield* filesystem.writeFileString(
+          pathService.join(mixedAssetManifestsRoot, "src", "icon.svg"),
+          "<svg></svg>\n",
+        );
+        yield* filesystem.writeFileString(
+          pathService.join(mixedAssetManifestsRoot, "index.html"),
+          "<div></div>\n",
+        );
+        return listRepositoryFiles(mixedAssetManifestsRoot).manifests.map(
+          (file) => file.relativePath,
+        );
+      });
+      return { mixedAssetManifestsRoot, manifestPathsBesideScripts };
     });
 
-    it("is listed apart from the scripts", ({ manifestPathsBesideScripts }) => {
-      expect(manifestPathsBesideScripts).toStrictEqual(["package.json"]);
-    });
+    it.effect("is listed apart from the scripts", () =>
+      Effect.gen(function* program() {
+        const { manifestPathsBesideScripts } = yield* fixtures;
+        expect(manifestPathsBesideScripts).toStrictEqual(["package.json"]);
+      }),
+    );
   });
 
   describe("production sources standing beside tests, stories, fixtures, and declarations", () => {
-    const it = test
-      .extend("declarationSourcePathsBesideNonProductionScripts", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        for (const relativePath of [
-          "src/order-status.ts",
-          "src/order-status.test.ts",
-          "src/order-status.test.helper.ts",
-          "src/order-status.test-d.ts",
-          "src/OrderStatus.stories.tsx",
-          "src/Owner.stories.fixture.ts",
-          "fixtures/order-status.ts",
-          "src/order-status.d.ts",
-          "src/contest.ts",
-          "src/latest.ts",
-        ]) {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, "export const total = 1;\n");
-        }
-        return listRepositoryFiles(repositoryRoot).declarationSources.map(
-          (file) => file.relativePath,
-        );
-      })
-      .extend("commentSourcePathsBesideNonProductionScripts", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        for (const relativePath of [
-          "src/order-status.ts",
-          "src/order-status.test.ts",
-          "src/order-status.test.helper.ts",
-          "src/order-status.test-d.ts",
-          "src/OrderStatus.stories.tsx",
-          "src/Owner.stories.fixture.ts",
-          "fixtures/order-status.ts",
-          "src/order-status.d.ts",
-          "src/contest.ts",
-          "src/latest.ts",
-        ]) {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, "export const total = 1;\n");
-        }
-        return listRepositoryFiles(repositoryRoot).commentSources.map((file) => file.relativePath);
-      });
+    const fixtures = Effect.gen(function* fixtures() {
+      const declarationSourcePathsBesideNonProductionScripts = yield* Effect.gen(
+        function* declarationSourcePathsBesideNonProductionScripts() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
 
-    it("let only the production TypeScript sources declare canonical values", ({
-      declarationSourcePathsBesideNonProductionScripts,
-    }) => {
-      expect(declarationSourcePathsBesideNonProductionScripts).toStrictEqual([
-        "src/contest.ts",
-        "src/latest.ts",
-        "src/order-status.ts",
-      ]);
+          for (const relativePath of [
+            "src/order-status.ts",
+            "src/order-status.test.ts",
+            "src/order-status.test.helper.ts",
+            "src/order-status.test-d.ts",
+            "src/OrderStatus.stories.tsx",
+            "src/Owner.stories.fixture.ts",
+            "fixtures/order-status.ts",
+            "src/order-status.d.ts",
+            "src/contest.ts",
+            "src/latest.ts",
+          ]) {
+            const absolutePath = pathService.join(repositoryRoot, relativePath);
+            yield* filesystem.makeDirectory(pathService.dirname(absolutePath), { recursive: true });
+            yield* filesystem.writeFileString(absolutePath, "export const total = 1;\n");
+          }
+          return listRepositoryFiles(repositoryRoot).declarationSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      const commentSourcePathsBesideNonProductionScripts = yield* Effect.gen(
+        function* commentSourcePathsBesideNonProductionScripts() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          for (const relativePath of [
+            "src/order-status.ts",
+            "src/order-status.test.ts",
+            "src/order-status.test.helper.ts",
+            "src/order-status.test-d.ts",
+            "src/OrderStatus.stories.tsx",
+            "src/Owner.stories.fixture.ts",
+            "fixtures/order-status.ts",
+            "src/order-status.d.ts",
+            "src/contest.ts",
+            "src/latest.ts",
+          ]) {
+            const absolutePath = pathService.join(repositoryRoot, relativePath);
+            yield* filesystem.makeDirectory(pathService.dirname(absolutePath), { recursive: true });
+            yield* filesystem.writeFileString(absolutePath, "export const total = 1;\n");
+          }
+          return listRepositoryFiles(repositoryRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      return {
+        declarationSourcePathsBesideNonProductionScripts,
+        commentSourcePathsBesideNonProductionScripts,
+      };
     });
 
-    it("are all listed as scripts whatever their role", ({
-      commentSourcePathsBesideNonProductionScripts,
-    }) => {
-      expect(commentSourcePathsBesideNonProductionScripts).toStrictEqual([
-        "fixtures/order-status.ts",
-        "src/OrderStatus.stories.tsx",
-        "src/Owner.stories.fixture.ts",
-        "src/contest.ts",
-        "src/latest.ts",
-        "src/order-status.d.ts",
-        "src/order-status.test-d.ts",
-        "src/order-status.test.helper.ts",
-        "src/order-status.test.ts",
-        "src/order-status.ts",
-      ]);
-    });
+    it.effect("let only the production TypeScript sources declare canonical values", () =>
+      Effect.gen(function* program() {
+        const { declarationSourcePathsBesideNonProductionScripts } = yield* fixtures;
+        expect(declarationSourcePathsBesideNonProductionScripts).toStrictEqual([
+          "src/contest.ts",
+          "src/latest.ts",
+          "src/order-status.ts",
+        ]);
+      }),
+    );
+
+    it.effect("are all listed as scripts whatever their role", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsBesideNonProductionScripts } = yield* fixtures;
+        expect(commentSourcePathsBesideNonProductionScripts).toStrictEqual([
+          "fixtures/order-status.ts",
+          "src/OrderStatus.stories.tsx",
+          "src/Owner.stories.fixture.ts",
+          "src/contest.ts",
+          "src/latest.ts",
+          "src/order-status.d.ts",
+          "src/order-status.test-d.ts",
+          "src/order-status.test.helper.ts",
+          "src/order-status.test.ts",
+          "src/order-status.ts",
+        ]);
+      }),
+    );
   });
 
   describe("a repository holding lock files, manifests, JSON, and a readme", () => {
-    const it = test
-      .extend("cacheInputPathsOfADependencyConfiguration", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        for (const relativePath of [
+    const fixtures = Effect.gen(function* fixtures() {
+      const cacheInputPathsOfADependencyConfiguration = yield* Effect.gen(
+        function* cacheInputPathsOfADependencyConfiguration() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          for (const relativePath of [
+            ".npmrc",
+            ".yarnrc.yml",
+            "bun.lock",
+            "bun.lockb",
+            "deno.lock",
+            "dist/generated.d.ts",
+            "package.json",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml",
+            "src/data.json",
+            "src/runtime.ts",
+            "src/types.d.ts",
+            "tsconfig.json",
+            "yarn.lock",
+            "README.md",
+          ]) {
+            const absolutePath = pathService.join(repositoryRoot, relativePath);
+            yield* filesystem.makeDirectory(pathService.dirname(absolutePath), { recursive: true });
+            yield* filesystem.writeFileString(absolutePath, "{}\n");
+          }
+          return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
+        },
+      );
+      const commentSourcePathsOfADependencyConfiguration = yield* Effect.gen(
+        function* commentSourcePathsOfADependencyConfiguration() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          for (const relativePath of [
+            ".npmrc",
+            ".yarnrc.yml",
+            "bun.lock",
+            "bun.lockb",
+            "deno.lock",
+            "dist/generated.d.ts",
+            "package.json",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml",
+            "src/data.json",
+            "src/runtime.ts",
+            "src/types.d.ts",
+            "tsconfig.json",
+            "yarn.lock",
+            "README.md",
+          ]) {
+            const absolutePath = pathService.join(repositoryRoot, relativePath);
+            yield* filesystem.makeDirectory(pathService.dirname(absolutePath), { recursive: true });
+            yield* filesystem.writeFileString(absolutePath, "{}\n");
+          }
+          return listRepositoryFiles(repositoryRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      const manifestPathsOfADependencyConfiguration = yield* Effect.gen(
+        function* manifestPathsOfADependencyConfiguration() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          for (const relativePath of [
+            ".npmrc",
+            ".yarnrc.yml",
+            "bun.lock",
+            "bun.lockb",
+            "deno.lock",
+            "dist/generated.d.ts",
+            "package.json",
+            "pnpm-lock.yaml",
+            "pnpm-workspace.yaml",
+            "src/data.json",
+            "src/runtime.ts",
+            "src/types.d.ts",
+            "tsconfig.json",
+            "yarn.lock",
+            "README.md",
+          ]) {
+            const absolutePath = pathService.join(repositoryRoot, relativePath);
+            yield* filesystem.makeDirectory(pathService.dirname(absolutePath), { recursive: true });
+            yield* filesystem.writeFileString(absolutePath, "{}\n");
+          }
+          return listRepositoryFiles(repositoryRoot).manifests.map((file) => file.relativePath);
+        },
+      );
+      return {
+        cacheInputPathsOfADependencyConfiguration,
+        commentSourcePathsOfADependencyConfiguration,
+        manifestPathsOfADependencyConfiguration,
+      };
+    });
+
+    it.effect("cover the checker sources, declarations, JSON, and dependency configuration", () =>
+      Effect.gen(function* program() {
+        const { cacheInputPathsOfADependencyConfiguration } = yield* fixtures;
+        expect(cacheInputPathsOfADependencyConfiguration).toStrictEqual([
           ".npmrc",
           ".yarnrc.yml",
           "bun.lock",
@@ -283,653 +508,867 @@ describe("listRepositoryFiles", () => {
           "src/types.d.ts",
           "tsconfig.json",
           "yarn.lock",
-          "README.md",
-        ]) {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, "{}\n");
-        }
-        return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
-      })
-      .extend("commentSourcePathsOfADependencyConfiguration", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        for (const relativePath of [
-          ".npmrc",
-          ".yarnrc.yml",
-          "bun.lock",
-          "bun.lockb",
-          "deno.lock",
-          "dist/generated.d.ts",
-          "package.json",
-          "pnpm-lock.yaml",
-          "pnpm-workspace.yaml",
-          "src/data.json",
+        ]);
+      }),
+    );
+
+    it.effect("leave the readme and the generated declaration out of the scripts", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsOfADependencyConfiguration } = yield* fixtures;
+        expect(commentSourcePathsOfADependencyConfiguration).toStrictEqual([
           "src/runtime.ts",
           "src/types.d.ts",
-          "tsconfig.json",
-          "yarn.lock",
-          "README.md",
-        ]) {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, "{}\n");
-        }
-        return listRepositoryFiles(repositoryRoot).commentSources.map((file) => file.relativePath);
-      })
-      .extend("manifestPathsOfADependencyConfiguration", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        for (const relativePath of [
-          ".npmrc",
-          ".yarnrc.yml",
-          "bun.lock",
-          "bun.lockb",
-          "deno.lock",
-          "dist/generated.d.ts",
-          "package.json",
-          "pnpm-lock.yaml",
-          "pnpm-workspace.yaml",
-          "src/data.json",
-          "src/runtime.ts",
-          "src/types.d.ts",
-          "tsconfig.json",
-          "yarn.lock",
-          "README.md",
-        ]) {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, "{}\n");
-        }
-        return listRepositoryFiles(repositoryRoot).manifests.map((file) => file.relativePath);
-      });
+        ]);
+      }),
+    );
 
-    it("cover the checker sources, declarations, JSON, and dependency configuration", ({
-      cacheInputPathsOfADependencyConfiguration,
-    }) => {
-      expect(cacheInputPathsOfADependencyConfiguration).toStrictEqual([
-        ".npmrc",
-        ".yarnrc.yml",
-        "bun.lock",
-        "bun.lockb",
-        "deno.lock",
-        "dist/generated.d.ts",
-        "package.json",
-        "pnpm-lock.yaml",
-        "pnpm-workspace.yaml",
-        "src/data.json",
-        "src/runtime.ts",
-        "src/types.d.ts",
-        "tsconfig.json",
-        "yarn.lock",
-      ]);
-    });
-
-    it("leave the readme and the generated declaration out of the scripts", ({
-      commentSourcePathsOfADependencyConfiguration,
-    }) => {
-      expect(commentSourcePathsOfADependencyConfiguration).toStrictEqual([
-        "src/runtime.ts",
-        "src/types.d.ts",
-      ]);
-    });
-
-    it("hold the manifest apart from the rest", ({ manifestPathsOfADependencyConfiguration }) => {
-      expect(manifestPathsOfADependencyConfiguration).toStrictEqual(["package.json"]);
-    });
+    it.effect("hold the manifest apart from the rest", () =>
+      Effect.gen(function* program() {
+        const { manifestPathsOfADependencyConfiguration } = yield* fixtures;
+        expect(manifestPathsOfADependencyConfiguration).toStrictEqual(["package.json"]);
+      }),
+    );
   });
 
   describe("a script reached through a link into a generated directory", () => {
-    const it = test
-      .extend("commentSourcePathsOfALinkToGeneratedSource", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        const generatedSource = join(repositoryRoot, "dist/generated/consumer.ts");
-        const linkPath = join(repositoryRoot, "src/consumer.ts");
-        mkdirSync(dirname(generatedSource), { recursive: true });
-        mkdirSync(dirname(linkPath), { recursive: true });
-        writeFileSync(
-          generatedSource,
-          '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
-        );
-        symlinkSync(generatedSource, linkPath);
-        return listRepositoryFiles(repositoryRoot).commentSources.map((file) => file.relativePath);
-      })
-      .extend("declarationSourcePathsOfALinkToGeneratedSource", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        const generatedSource = join(repositoryRoot, "dist/generated/consumer.ts");
-        const linkPath = join(repositoryRoot, "src/consumer.ts");
-        mkdirSync(dirname(generatedSource), { recursive: true });
-        mkdirSync(dirname(linkPath), { recursive: true });
-        writeFileSync(
-          generatedSource,
-          '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
-        );
-        symlinkSync(generatedSource, linkPath);
-        return listRepositoryFiles(repositoryRoot).declarationSources.map(
-          (file) => file.relativePath,
-        );
-      })
-      .extend("cacheInputPathsOfALinkToGeneratedSource", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        const generatedSource = join(repositoryRoot, "dist/generated/consumer.ts");
-        const linkPath = join(repositoryRoot, "src/consumer.ts");
-        mkdirSync(dirname(generatedSource), { recursive: true });
-        mkdirSync(dirname(linkPath), { recursive: true });
-        writeFileSync(
-          generatedSource,
-          '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
-        );
-        symlinkSync(generatedSource, linkPath);
-        return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
-      })
-      .extend("problemPathsOfALinkToGeneratedSource", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        const generatedSource = join(repositoryRoot, "dist/generated/consumer.ts");
-        const linkPath = join(repositoryRoot, "src/consumer.ts");
-        mkdirSync(dirname(generatedSource), { recursive: true });
-        mkdirSync(dirname(linkPath), { recursive: true });
-        writeFileSync(
-          generatedSource,
-          '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
-        );
-        symlinkSync(generatedSource, linkPath);
-        return listRepositoryFiles(repositoryRoot).problems.map((problem) => problem.filePath);
-      });
+    const fixtures = Effect.gen(function* fixtures() {
+      const commentSourcePathsOfALinkToGeneratedSource = yield* Effect.gen(
+        function* commentSourcePathsOfALinkToGeneratedSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
 
-    it("is listed as a script under the path inside the sources", ({
-      commentSourcePathsOfALinkToGeneratedSource,
-    }) => {
-      expect(commentSourcePathsOfALinkToGeneratedSource).toStrictEqual(["src/consumer.ts"]);
+          const generatedSource = pathService.join(repositoryRoot, "dist/generated/consumer.ts");
+          const linkPath = pathService.join(repositoryRoot, "src/consumer.ts");
+          yield* filesystem.makeDirectory(pathService.dirname(generatedSource), {
+            recursive: true,
+          });
+          yield* filesystem.makeDirectory(pathService.dirname(linkPath), { recursive: true });
+          yield* filesystem.writeFileString(
+            generatedSource,
+            '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
+          );
+          yield* filesystem.symlink(generatedSource, linkPath);
+          return listRepositoryFiles(repositoryRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      const declarationSourcePathsOfALinkToGeneratedSource = yield* Effect.gen(
+        function* declarationSourcePathsOfALinkToGeneratedSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          const generatedSource = pathService.join(repositoryRoot, "dist/generated/consumer.ts");
+          const linkPath = pathService.join(repositoryRoot, "src/consumer.ts");
+          yield* filesystem.makeDirectory(pathService.dirname(generatedSource), {
+            recursive: true,
+          });
+          yield* filesystem.makeDirectory(pathService.dirname(linkPath), { recursive: true });
+          yield* filesystem.writeFileString(
+            generatedSource,
+            '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
+          );
+          yield* filesystem.symlink(generatedSource, linkPath);
+          return listRepositoryFiles(repositoryRoot).declarationSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      const cacheInputPathsOfALinkToGeneratedSource = yield* Effect.gen(
+        function* cacheInputPathsOfALinkToGeneratedSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          const generatedSource = pathService.join(repositoryRoot, "dist/generated/consumer.ts");
+          const linkPath = pathService.join(repositoryRoot, "src/consumer.ts");
+          yield* filesystem.makeDirectory(pathService.dirname(generatedSource), {
+            recursive: true,
+          });
+          yield* filesystem.makeDirectory(pathService.dirname(linkPath), { recursive: true });
+          yield* filesystem.writeFileString(
+            generatedSource,
+            '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
+          );
+          yield* filesystem.symlink(generatedSource, linkPath);
+          return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
+        },
+      );
+      const problemPathsOfALinkToGeneratedSource = yield* Effect.gen(
+        function* problemPathsOfALinkToGeneratedSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          const generatedSource = pathService.join(repositoryRoot, "dist/generated/consumer.ts");
+          const linkPath = pathService.join(repositoryRoot, "src/consumer.ts");
+          yield* filesystem.makeDirectory(pathService.dirname(generatedSource), {
+            recursive: true,
+          });
+          yield* filesystem.makeDirectory(pathService.dirname(linkPath), { recursive: true });
+          yield* filesystem.writeFileString(
+            generatedSource,
+            '// eslint-disable-next-line -- escape\nexport const status = "draft";\n',
+          );
+          yield* filesystem.symlink(generatedSource, linkPath);
+          return listRepositoryFiles(repositoryRoot).problems.map((problem) => problem.filePath);
+        },
+      );
+      return {
+        commentSourcePathsOfALinkToGeneratedSource,
+        declarationSourcePathsOfALinkToGeneratedSource,
+        cacheInputPathsOfALinkToGeneratedSource,
+        problemPathsOfALinkToGeneratedSource,
+      };
     });
 
-    it("cannot declare canonical values through the link", ({
-      declarationSourcePathsOfALinkToGeneratedSource,
-    }) => {
-      expect(declarationSourcePathsOfALinkToGeneratedSource).toStrictEqual([]);
-    });
+    it.effect("is listed as a script under the path inside the sources", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsOfALinkToGeneratedSource } = yield* fixtures;
+        expect(commentSourcePathsOfALinkToGeneratedSource).toStrictEqual(["src/consumer.ts"]);
+      }),
+    );
 
-    it("keeps the cache identity of both paths", ({ cacheInputPathsOfALinkToGeneratedSource }) => {
-      expect(cacheInputPathsOfALinkToGeneratedSource).toStrictEqual([
-        "dist/generated/consumer.ts",
-        "src/consumer.ts",
-      ]);
-    });
+    it.effect("cannot declare canonical values through the link", () =>
+      Effect.gen(function* program() {
+        const { declarationSourcePathsOfALinkToGeneratedSource } = yield* fixtures;
+        expect(declarationSourcePathsOfALinkToGeneratedSource).toStrictEqual([]);
+      }),
+    );
 
-    it("raises no problem", ({ problemPathsOfALinkToGeneratedSource }) => {
-      expect(problemPathsOfALinkToGeneratedSource).toStrictEqual([]);
-    });
+    it.effect("keeps the cache identity of both paths", () =>
+      Effect.gen(function* program() {
+        const { cacheInputPathsOfALinkToGeneratedSource } = yield* fixtures;
+        expect(cacheInputPathsOfALinkToGeneratedSource).toStrictEqual([
+          "dist/generated/consumer.ts",
+          "src/consumer.ts",
+        ]);
+      }),
+    );
+
+    it.effect("raises no problem", () =>
+      Effect.gen(function* program() {
+        const { problemPathsOfALinkToGeneratedSource } = yield* fixtures;
+        expect(problemPathsOfALinkToGeneratedSource).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a script standing beside an alias of itself", () => {
-    const it = test
-      .extend("commentSourcePathsOfAnAliasedScript", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        const scriptPath = join(repositoryRoot, "src/status.ts");
-        mkdirSync(dirname(scriptPath), { recursive: true });
-        writeFileSync(scriptPath, "export const status = 'draft';\n");
-        symlinkSync("status.ts", join(repositoryRoot, "src/status-alias.ts"));
-        return listRepositoryFiles(repositoryRoot).commentSources.map((file) => file.relativePath);
-      })
-      .extend("cacheInputPathsOfAnAliasedScript", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        const scriptPath = join(repositoryRoot, "src/status.ts");
-        mkdirSync(dirname(scriptPath), { recursive: true });
-        writeFileSync(scriptPath, "export const status = 'draft';\n");
-        symlinkSync("status.ts", join(repositoryRoot, "src/status-alias.ts"));
-        return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
-      });
+    const fixtures = Effect.gen(function* fixtures() {
+      const commentSourcePathsOfAnAliasedScript = yield* Effect.gen(
+        function* commentSourcePathsOfAnAliasedScript() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
 
-    it("is scanned once under its physical path", ({ commentSourcePathsOfAnAliasedScript }) => {
-      expect(commentSourcePathsOfAnAliasedScript).toStrictEqual(["src/status.ts"]);
+          const scriptPath = pathService.join(repositoryRoot, "src/status.ts");
+          yield* filesystem.makeDirectory(pathService.dirname(scriptPath), { recursive: true });
+          yield* filesystem.writeFileString(scriptPath, "export const status = 'draft';\n");
+          yield* filesystem.symlink(
+            "status.ts",
+            pathService.join(repositoryRoot, "src/status-alias.ts"),
+          );
+          return listRepositoryFiles(repositoryRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      const cacheInputPathsOfAnAliasedScript = yield* Effect.gen(
+        function* cacheInputPathsOfAnAliasedScript() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          const scriptPath = pathService.join(repositoryRoot, "src/status.ts");
+          yield* filesystem.makeDirectory(pathService.dirname(scriptPath), { recursive: true });
+          yield* filesystem.writeFileString(scriptPath, "export const status = 'draft';\n");
+          yield* filesystem.symlink(
+            "status.ts",
+            pathService.join(repositoryRoot, "src/status-alias.ts"),
+          );
+          return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
+        },
+      );
+      return { commentSourcePathsOfAnAliasedScript, cacheInputPathsOfAnAliasedScript };
     });
 
-    it("keeps both paths in the cache inputs", ({ cacheInputPathsOfAnAliasedScript }) => {
-      expect(cacheInputPathsOfAnAliasedScript).toStrictEqual([
-        "src/status-alias.ts",
-        "src/status.ts",
-      ]);
-    });
+    it.effect("is scanned once under its physical path", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsOfAnAliasedScript } = yield* fixtures;
+        expect(commentSourcePathsOfAnAliasedScript).toStrictEqual(["src/status.ts"]);
+      }),
+    );
+
+    it.effect("keeps both paths in the cache inputs", () =>
+      Effect.gen(function* program() {
+        const { cacheInputPathsOfAnAliasedScript } = yield* fixtures;
+        expect(cacheInputPathsOfAnAliasedScript).toStrictEqual([
+          "src/status-alias.ts",
+          "src/status.ts",
+        ]);
+      }),
+    );
   });
 
   describe("a directory reached through an alias inside the repository", () => {
-    const it = test
-      .extend("cacheInputPathsOfAnAliasedDirectory", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        mkdirSync(join(repositoryRoot, "shared"), { recursive: true });
-        writeFileSync(join(repositoryRoot, "shared/status.ts"), "export const status = 'draft';\n");
-        mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-        symlinkSync("../shared", join(repositoryRoot, "src/shared"));
-        return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
-      })
-      .extend("commentSourcePathsOfAnAliasedDirectory", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        mkdirSync(join(repositoryRoot, "shared"), { recursive: true });
-        writeFileSync(join(repositoryRoot, "shared/status.ts"), "export const status = 'draft';\n");
-        mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-        symlinkSync("../shared", join(repositoryRoot, "src/shared"));
-        return listRepositoryFiles(repositoryRoot).commentSources.map((file) => file.relativePath);
-      });
+    const fixtures = Effect.gen(function* fixtures() {
+      const cacheInputPathsOfAnAliasedDirectory = yield* Effect.gen(
+        function* cacheInputPathsOfAnAliasedDirectory() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
 
-    it("keeps both paths in the cache inputs", ({ cacheInputPathsOfAnAliasedDirectory }) => {
-      expect(cacheInputPathsOfAnAliasedDirectory).toStrictEqual([
-        "shared/status.ts",
-        "src/shared/status.ts",
-      ]);
+          yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "shared"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, "shared/status.ts"),
+            "export const status = 'draft';\n",
+          );
+          yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), {
+            recursive: true,
+          });
+          yield* filesystem.symlink("../shared", pathService.join(repositoryRoot, "src/shared"));
+          return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
+        },
+      );
+      const commentSourcePathsOfAnAliasedDirectory = yield* Effect.gen(
+        function* commentSourcePathsOfAnAliasedDirectory() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "shared"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, "shared/status.ts"),
+            "export const status = 'draft';\n",
+          );
+          yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), {
+            recursive: true,
+          });
+          yield* filesystem.symlink("../shared", pathService.join(repositoryRoot, "src/shared"));
+          return listRepositoryFiles(repositoryRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      return { cacheInputPathsOfAnAliasedDirectory, commentSourcePathsOfAnAliasedDirectory };
     });
 
-    it("is scanned once under its physical path", ({ commentSourcePathsOfAnAliasedDirectory }) => {
-      expect(commentSourcePathsOfAnAliasedDirectory).toStrictEqual(["shared/status.ts"]);
-    });
+    it.effect("keeps both paths in the cache inputs", () =>
+      Effect.gen(function* program() {
+        const { cacheInputPathsOfAnAliasedDirectory } = yield* fixtures;
+        expect(cacheInputPathsOfAnAliasedDirectory).toStrictEqual([
+          "shared/status.ts",
+          "src/shared/status.ts",
+        ]);
+      }),
+    );
+
+    it.effect("is scanned once under its physical path", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsOfAnAliasedDirectory } = yield* fixtures;
+        expect(commentSourcePathsOfAnAliasedDirectory).toStrictEqual(["shared/status.ts"]);
+      }),
+    );
   });
 
   describe("a link whose name belongs to no scanned kind", () => {
-    const it = test.extend("repositoryFilesOfALinkWithAnUnscannedName", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
-      });
-      writeFileSync(join(repositoryRoot, "README.md"), "status\n");
-      symlinkSync("README.md", join(repositoryRoot, "README-link.md"));
+    const fixture = Effect.gen(function* repositoryFilesOfALinkWithAnUnscannedName() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
+
+      yield* filesystem.writeFileString(pathService.join(repositoryRoot, "README.md"), "status\n");
+      yield* filesystem.symlink("README.md", pathService.join(repositoryRoot, "README-link.md"));
       return listRepositoryFiles(repositoryRoot);
     });
 
-    it("stays outside the source collections", ({ repositoryFilesOfALinkWithAnUnscannedName }) => {
-      expect(repositoryFilesOfALinkWithAnUnscannedName).toStrictEqual({
-        cacheInputs: [],
-        commentSources: [],
-        declarationSources: [],
-        manifests: [],
-        markupSources: [],
-        problems: [],
-        styleSheets: [],
-      });
-    });
+    it.effect("stays outside the source collections", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesOfALinkWithAnUnscannedName = yield* fixture;
+        expect(repositoryFilesOfALinkWithAnUnscannedName).toStrictEqual({
+          cacheInputs: [],
+          commentSources: [],
+          declarationSources: [],
+          manifests: [],
+          markupSources: [],
+          problems: [],
+          styleSheets: [],
+        });
+      }),
+    );
   });
 
   describe("links pointing outside the repository and at nothing", () => {
-    const it = test.extend("repositoryFilesOfLinksLeavingTheRepository", ({}, { onCleanup }) => {
-      const enclosingDirectory = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(enclosingDirectory, { recursive: true, force: true });
+    const fixture = Effect.gen(function* repositoryFilesOfLinksLeavingTheRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const enclosingDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-",
       });
-      const repositoryRoot = join(enclosingDirectory, "repository");
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(join(enclosingDirectory, "external.ts"), 'export const status = "draft";\n');
-      symlinkSync(
-        join(enclosingDirectory, "external.ts"),
-        join(repositoryRoot, "src", "external.ts"),
+
+      const repositoryRoot = pathService.join(enclosingDirectory, "repository");
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(enclosingDirectory, "external.ts"),
+        'export const status = "draft";\n',
       );
-      symlinkSync(
-        join(enclosingDirectory, "missing.ts"),
-        join(repositoryRoot, "src", "missing.ts"),
+      yield* filesystem.symlink(
+        pathService.join(enclosingDirectory, "external.ts"),
+        pathService.join(repositoryRoot, "src", "external.ts"),
+      );
+      yield* filesystem.symlink(
+        pathService.join(enclosingDirectory, "missing.ts"),
+        pathService.join(repositoryRoot, "src", "missing.ts"),
       );
       return listRepositoryFiles(repositoryRoot);
     });
 
-    it("become strict repository problems", ({ repositoryFilesOfLinksLeavingTheRepository }) => {
-      expect(repositoryFilesOfLinksLeavingTheRepository).toStrictEqual({
-        cacheInputs: [],
-        commentSources: [],
-        declarationSources: [],
-        manifests: [],
-        markupSources: [],
-        problems: [
-          { kind: "unsafe-symbolic-link", line: 1, filePath: "src/external.ts" },
-          { kind: "unsafe-symbolic-link", line: 1, filePath: "src/missing.ts" },
-        ],
-        styleSheets: [],
-      });
-    });
+    it.effect("become strict repository problems", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesOfLinksLeavingTheRepository = yield* fixture;
+        expect(repositoryFilesOfLinksLeavingTheRepository).toStrictEqual({
+          cacheInputs: [],
+          commentSources: [],
+          declarationSources: [],
+          manifests: [],
+          markupSources: [],
+          problems: [
+            { kind: "unsafe-symbolic-link", line: 1, filePath: "src/external.ts" },
+            { kind: "unsafe-symbolic-link", line: 1, filePath: "src/missing.ts" },
+          ],
+          styleSheets: [],
+        });
+      }),
+    );
   });
 
   describe("a link that closes a cycle onto its own directory", () => {
-    const it = test.extend("repositoryFilesOfALinkCycle", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
-      });
-      const sourceDirectory = join(repositoryRoot, "src");
-      mkdirSync(sourceDirectory, { recursive: true });
-      symlinkSync(sourceDirectory, join(sourceDirectory, "cycle"));
+    const fixture = Effect.gen(function* repositoryFilesOfALinkCycle() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
+
+      const sourceDirectory = pathService.join(repositoryRoot, "src");
+      yield* filesystem.makeDirectory(sourceDirectory, { recursive: true });
+      yield* filesystem.symlink(sourceDirectory, pathService.join(sourceDirectory, "cycle"));
       return listRepositoryFiles(repositoryRoot);
     });
 
-    it("becomes a strict repository problem", ({ repositoryFilesOfALinkCycle }) => {
-      expect(repositoryFilesOfALinkCycle).toStrictEqual({
-        cacheInputs: [],
-        commentSources: [],
-        declarationSources: [],
-        manifests: [],
-        markupSources: [],
-        problems: [{ kind: "unsafe-symbolic-link", line: 1, filePath: "src/cycle/cycle" }],
-        styleSheets: [],
-      });
-    });
+    it.effect("becomes a strict repository problem", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesOfALinkCycle = yield* fixture;
+        expect(repositoryFilesOfALinkCycle).toStrictEqual({
+          cacheInputs: [],
+          commentSources: [],
+          declarationSources: [],
+          manifests: [],
+          markupSources: [],
+          problems: [{ kind: "unsafe-symbolic-link", line: 1, filePath: "src/cycle/cycle" }],
+          styleSheets: [],
+        });
+      }),
+    );
   });
 
   describe("a link to an agent-artifact directory outside the repository", () => {
-    const it = test.extend("repositoryFilesBesideAnExternalArtifactLink", ({}, { onCleanup }) => {
-      const enclosingDirectory = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(enclosingDirectory, { recursive: true, force: true });
+    const fixture = Effect.gen(function* repositoryFilesBesideAnExternalArtifactLink() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const enclosingDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-",
       });
-      const repositoryRoot = join(enclosingDirectory, "repository");
-      mkdirSync(repositoryRoot, { recursive: true });
-      const artifactDirectory = join(enclosingDirectory, "agent-artifacts");
-      mkdirSync(artifactDirectory, { recursive: true });
-      writeFileSync(join(artifactDirectory, "notes.ts"), 'export const status = "draft";\n');
-      symlinkSync(artifactDirectory, join(repositoryRoot, ".local-agents"));
+
+      const repositoryRoot = pathService.join(enclosingDirectory, "repository");
+      yield* filesystem.makeDirectory(repositoryRoot, { recursive: true });
+      const artifactDirectory = pathService.join(enclosingDirectory, "agent-artifacts");
+      yield* filesystem.makeDirectory(artifactDirectory, { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(artifactDirectory, "notes.ts"),
+        'export const status = "draft";\n',
+      );
+      yield* filesystem.symlink(
+        artifactDirectory,
+        pathService.join(repositoryRoot, ".local-agents"),
+      );
       return listRepositoryFiles(repositoryRoot);
     });
 
-    it("stays outside the repository scan", ({ repositoryFilesBesideAnExternalArtifactLink }) => {
-      expect(repositoryFilesBesideAnExternalArtifactLink).toStrictEqual({
-        cacheInputs: [],
-        commentSources: [],
-        declarationSources: [],
-        manifests: [],
-        markupSources: [],
-        problems: [],
-        styleSheets: [],
-      });
-    });
+    it.effect("stays outside the repository scan", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesBesideAnExternalArtifactLink = yield* fixture;
+        expect(repositoryFilesBesideAnExternalArtifactLink).toStrictEqual({
+          cacheInputs: [],
+          commentSources: [],
+          declarationSources: [],
+          manifests: [],
+          markupSources: [],
+          problems: [],
+          styleSheets: [],
+        });
+      }),
+    );
   });
 
   describe("an ignored source that git never tracked", () => {
-    const it = test.extend("repositoryFilesOfAnUntrackedIgnoredSource", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
-      });
+    const fixture = Effect.gen(function* repositoryFilesOfAnUntrackedIgnoredSource() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
+
       gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
-      mkdirSync(join(repositoryRoot, "ignored"), { recursive: true });
-      writeFileSync(join(repositoryRoot, ".gitignore"), "ignored\n");
-      writeFileSync(join(repositoryRoot, "ignored/status.ts"), 'export const status = "draft";\n');
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, ".gitignore"),
+        "ignored\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "ignored/status.ts"),
+        'export const status = "draft";\n',
+      );
       return listRepositoryFiles(repositoryRoot);
     });
 
-    it("enters no repository source collection", ({
-      repositoryFilesOfAnUntrackedIgnoredSource,
-    }) => {
-      expect(repositoryFilesOfAnUntrackedIgnoredSource).toStrictEqual({
-        cacheInputs: [],
-        commentSources: [],
-        declarationSources: [],
-        manifests: [],
-        markupSources: [],
-        problems: [],
-        styleSheets: [],
-      });
-    });
+    it.effect("enters no repository source collection", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesOfAnUntrackedIgnoredSource = yield* fixture;
+        expect(repositoryFilesOfAnUntrackedIgnoredSource).toStrictEqual({
+          cacheInputs: [],
+          commentSources: [],
+          declarationSources: [],
+          manifests: [],
+          markupSources: [],
+          problems: [],
+          styleSheets: [],
+        });
+      }),
+    );
   });
 
   describe("a tracked source that a later ignore rule covers", () => {
-    const it = test
-      .extend("cacheInputPathsOfATrackedIgnoredSource", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
-        mkdirSync(join(repositoryRoot, "ignored"), { recursive: true });
-        writeFileSync(
-          join(repositoryRoot, "ignored/status.ts"),
-          'export const status = "draft";\n',
-        );
-        gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
-        writeFileSync(join(repositoryRoot, ".gitignore"), "ignored\n");
-        return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
-      })
-      .extend("commentSourcePathsOfATrackedIgnoredSource", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
-        mkdirSync(join(repositoryRoot, "ignored"), { recursive: true });
-        writeFileSync(
-          join(repositoryRoot, "ignored/status.ts"),
-          'export const status = "draft";\n',
-        );
-        gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
-        writeFileSync(join(repositoryRoot, ".gitignore"), "ignored\n");
-        return listRepositoryFiles(repositoryRoot).commentSources.map((file) => file.relativePath);
-      })
-      .extend("declarationSourcePathsOfATrackedIgnoredSource", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
-        mkdirSync(join(repositoryRoot, "ignored"), { recursive: true });
-        writeFileSync(
-          join(repositoryRoot, "ignored/status.ts"),
-          'export const status = "draft";\n',
-        );
-        gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
-        writeFileSync(join(repositoryRoot, ".gitignore"), "ignored\n");
-        return listRepositoryFiles(repositoryRoot).declarationSources.map(
-          (file) => file.relativePath,
-        );
-      });
+    const fixtures = Effect.gen(function* fixtures() {
+      const cacheInputPathsOfATrackedIgnoredSource = yield* Effect.gen(
+        function* cacheInputPathsOfATrackedIgnoredSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
 
-    it("stays in the cache inputs", ({ cacheInputPathsOfATrackedIgnoredSource }) => {
-      expect(cacheInputPathsOfATrackedIgnoredSource).toStrictEqual(["ignored/status.ts"]);
+          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+          yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, "ignored/status.ts"),
+            'export const status = "draft";\n',
+          );
+          gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, ".gitignore"),
+            "ignored\n",
+          );
+          return listRepositoryFiles(repositoryRoot).cacheInputs.map((file) => file.relativePath);
+        },
+      );
+      const commentSourcePathsOfATrackedIgnoredSource = yield* Effect.gen(
+        function* commentSourcePathsOfATrackedIgnoredSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+          yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, "ignored/status.ts"),
+            'export const status = "draft";\n',
+          );
+          gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, ".gitignore"),
+            "ignored\n",
+          );
+          return listRepositoryFiles(repositoryRoot).commentSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      const declarationSourcePathsOfATrackedIgnoredSource = yield* Effect.gen(
+        function* declarationSourcePathsOfATrackedIgnoredSource() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "source-files-",
+          });
+
+          gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+          yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "ignored"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, "ignored/status.ts"),
+            'export const status = "draft";\n',
+          );
+          gitOutput(["add", "ignored/status.ts"], { cwd: repositoryRoot, env: process.env });
+          yield* filesystem.writeFileString(
+            pathService.join(repositoryRoot, ".gitignore"),
+            "ignored\n",
+          );
+          return listRepositoryFiles(repositoryRoot).declarationSources.map(
+            (file) => file.relativePath,
+          );
+        },
+      );
+      return {
+        cacheInputPathsOfATrackedIgnoredSource,
+        commentSourcePathsOfATrackedIgnoredSource,
+        declarationSourcePathsOfATrackedIgnoredSource,
+      };
     });
 
-    it("stays among the scripts", ({ commentSourcePathsOfATrackedIgnoredSource }) => {
-      expect(commentSourcePathsOfATrackedIgnoredSource).toStrictEqual(["ignored/status.ts"]);
-    });
+    it.effect("stays in the cache inputs", () =>
+      Effect.gen(function* program() {
+        const { cacheInputPathsOfATrackedIgnoredSource } = yield* fixtures;
+        expect(cacheInputPathsOfATrackedIgnoredSource).toStrictEqual(["ignored/status.ts"]);
+      }),
+    );
 
-    it("stays able to declare canonical values", ({
-      declarationSourcePathsOfATrackedIgnoredSource,
-    }) => {
-      expect(declarationSourcePathsOfATrackedIgnoredSource).toStrictEqual(["ignored/status.ts"]);
-    });
+    it.effect("stays among the scripts", () =>
+      Effect.gen(function* program() {
+        const { commentSourcePathsOfATrackedIgnoredSource } = yield* fixtures;
+        expect(commentSourcePathsOfATrackedIgnoredSource).toStrictEqual(["ignored/status.ts"]);
+      }),
+    );
+
+    it.effect("stays able to declare canonical values", () =>
+      Effect.gen(function* program() {
+        const { declarationSourcePathsOfATrackedIgnoredSource } = yield* fixtures;
+        expect(declarationSourcePathsOfATrackedIgnoredSource).toStrictEqual(["ignored/status.ts"]);
+      }),
+    );
   });
 
   describe("an ignored link pointing outside the repository", () => {
-    const it = test.extend("repositoryFilesOfAnIgnoredExternalLink", ({}, { onCleanup }) => {
-      const enclosingDirectory = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(enclosingDirectory, { recursive: true, force: true });
+    const fixture = Effect.gen(function* repositoryFilesOfAnIgnoredExternalLink() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const enclosingDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-",
       });
-      const repositoryRoot = join(enclosingDirectory, "repository");
-      mkdirSync(repositoryRoot, { recursive: true });
+
+      const repositoryRoot = pathService.join(enclosingDirectory, "repository");
+      yield* filesystem.makeDirectory(repositoryRoot, { recursive: true });
       gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
-      writeFileSync(join(repositoryRoot, ".gitignore"), "ignored.ts\n");
-      writeFileSync(join(enclosingDirectory, "external.ts"), 'export const status = "draft";\n');
-      symlinkSync(join(enclosingDirectory, "external.ts"), join(repositoryRoot, "ignored.ts"));
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, ".gitignore"),
+        "ignored.ts\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(enclosingDirectory, "external.ts"),
+        'export const status = "draft";\n',
+      );
+      yield* filesystem.symlink(
+        pathService.join(enclosingDirectory, "external.ts"),
+        pathService.join(repositoryRoot, "ignored.ts"),
+      );
       return listRepositoryFiles(repositoryRoot);
     });
 
-    it("is omitted before the unsafe-link check", ({ repositoryFilesOfAnIgnoredExternalLink }) => {
-      expect(repositoryFilesOfAnIgnoredExternalLink).toStrictEqual({
-        cacheInputs: [],
-        commentSources: [],
-        declarationSources: [],
-        manifests: [],
-        markupSources: [],
-        problems: [],
-        styleSheets: [],
-      });
-    });
+    it.effect("is omitted before the unsafe-link check", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesOfAnIgnoredExternalLink = yield* fixture;
+        expect(repositoryFilesOfAnIgnoredExternalLink).toStrictEqual({
+          cacheInputs: [],
+          commentSources: [],
+          declarationSources: [],
+          manifests: [],
+          markupSources: [],
+          problems: [],
+          styleSheets: [],
+        });
+      }),
+    );
   });
 
   describe("a tracked link pointing outside the repository that a later ignore rule covers", () => {
-    const it = test.extend("repositoryFilesOfATrackedIgnoredExternalLink", ({}, { onCleanup }) => {
-      const enclosingDirectory = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(enclosingDirectory, { recursive: true, force: true });
+    const fixture = Effect.gen(function* repositoryFilesOfATrackedIgnoredExternalLink() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const enclosingDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-",
       });
-      const repositoryRoot = join(enclosingDirectory, "repository");
-      mkdirSync(repositoryRoot, { recursive: true });
+
+      const repositoryRoot = pathService.join(enclosingDirectory, "repository");
+      yield* filesystem.makeDirectory(repositoryRoot, { recursive: true });
       gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
-      writeFileSync(join(enclosingDirectory, "external.ts"), 'export const status = "draft";\n');
-      symlinkSync(join(enclosingDirectory, "external.ts"), join(repositoryRoot, "ignored.ts"));
+      yield* filesystem.writeFileString(
+        pathService.join(enclosingDirectory, "external.ts"),
+        'export const status = "draft";\n',
+      );
+      yield* filesystem.symlink(
+        pathService.join(enclosingDirectory, "external.ts"),
+        pathService.join(repositoryRoot, "ignored.ts"),
+      );
       gitOutput(["add", "ignored.ts"], { cwd: repositoryRoot, env: process.env });
-      writeFileSync(join(repositoryRoot, ".gitignore"), "ignored.ts\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, ".gitignore"),
+        "ignored.ts\n",
+      );
       return listRepositoryFiles(repositoryRoot);
     });
 
-    it("remains an unsafe repository source", ({
-      repositoryFilesOfATrackedIgnoredExternalLink,
-    }) => {
-      expect(repositoryFilesOfATrackedIgnoredExternalLink).toStrictEqual({
-        cacheInputs: [],
-        commentSources: [],
-        declarationSources: [],
-        manifests: [],
-        markupSources: [],
-        problems: [{ kind: "unsafe-symbolic-link", line: 1, filePath: "ignored.ts" }],
-        styleSheets: [],
-      });
-    });
+    it.effect("remains an unsafe repository source", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesOfATrackedIgnoredExternalLink = yield* fixture;
+        expect(repositoryFilesOfATrackedIgnoredExternalLink).toStrictEqual({
+          cacheInputs: [],
+          commentSources: [],
+          declarationSources: [],
+          manifests: [],
+          markupSources: [],
+          problems: [{ kind: "unsafe-symbolic-link", line: 1, filePath: "ignored.ts" }],
+          styleSheets: [],
+        });
+      }),
+    );
   });
 });
 
-describe("nearestPackageDirectory", () => {
+layer(NodeServices.layer)("nearestPackageDirectory", (it) => {
   describe("a directory that holds a manifest", () => {
-    const it = test.extend("packageDirectoryOfADirectoryHoldingAManifest", ({}, { onCleanup }) => {
-      rmSync(OWN_MANIFEST_ROOT, { recursive: true, force: true });
-      mkdirSync(join(OWN_MANIFEST_ROOT, "packages", "order"), { recursive: true });
-      onCleanup(() => {
-        rmSync(OWN_MANIFEST_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const ownManifestRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-own-manifest-",
       });
-      writeFileSync(join(OWN_MANIFEST_ROOT, "packages", "order", "package.json"), "{}");
-      return nearestPackageDirectory(
-        join(OWN_MANIFEST_ROOT, "packages", "order"),
-        OWN_MANIFEST_ROOT,
+      const packageDirectoryOfADirectoryHoldingAManifest = yield* Effect.gen(
+        function* packageDirectoryOfADirectoryHoldingAManifest() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(ownManifestRoot, "packages", "order"), {
+            recursive: true,
+          });
+
+          yield* filesystem.writeFileString(
+            pathService.join(ownManifestRoot, "packages", "order", "package.json"),
+            "{}",
+          );
+          return nearestPackageDirectory(
+            pathService.join(ownManifestRoot, "packages", "order"),
+            ownManifestRoot,
+          );
+        },
       );
+      return { ownManifestRoot, packageDirectoryOfADirectoryHoldingAManifest };
     });
 
-    it("is its own package", ({ packageDirectoryOfADirectoryHoldingAManifest }) => {
-      expect(packageDirectoryOfADirectoryHoldingAManifest).toBe(
-        join(OWN_MANIFEST_ROOT, "packages", "order"),
-      );
-    });
+    it.effect("is its own package", () =>
+      Effect.gen(function* program() {
+        const pathService = yield* Path.Path;
+        const { packageDirectoryOfADirectoryHoldingAManifest, ownManifestRoot } = yield* fixtures;
+        expect(packageDirectoryOfADirectoryHoldingAManifest).toBe(
+          pathService.join(ownManifestRoot, "packages", "order"),
+        );
+      }),
+    );
   });
 
   describe("a directory below a manifest", () => {
-    const it = test.extend("packageDirectoryOfADirectoryBelowAManifest", ({}, { onCleanup }) => {
-      rmSync(MANIFEST_ABOVE_ROOT, { recursive: true, force: true });
-      mkdirSync(join(MANIFEST_ABOVE_ROOT, "packages", "order", "src", "lint"), { recursive: true });
-      onCleanup(() => {
-        rmSync(MANIFEST_ABOVE_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const manifestAboveRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-manifest-above-",
       });
-      writeFileSync(join(MANIFEST_ABOVE_ROOT, "packages", "order", "package.json"), "{}");
-      return nearestPackageDirectory(
-        join(MANIFEST_ABOVE_ROOT, "packages", "order", "src", "lint"),
-        MANIFEST_ABOVE_ROOT,
+      const packageDirectoryOfADirectoryBelowAManifest = yield* Effect.gen(
+        function* packageDirectoryOfADirectoryBelowAManifest() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(
+            pathService.join(manifestAboveRoot, "packages", "order", "src", "lint"),
+            { recursive: true },
+          );
+
+          yield* filesystem.writeFileString(
+            pathService.join(manifestAboveRoot, "packages", "order", "package.json"),
+            "{}",
+          );
+          return nearestPackageDirectory(
+            pathService.join(manifestAboveRoot, "packages", "order", "src", "lint"),
+            manifestAboveRoot,
+          );
+        },
       );
+      return { manifestAboveRoot, packageDirectoryOfADirectoryBelowAManifest };
     });
 
-    it("belongs to the package that holds it", ({ packageDirectoryOfADirectoryBelowAManifest }) => {
-      expect(packageDirectoryOfADirectoryBelowAManifest).toBe(
-        join(MANIFEST_ABOVE_ROOT, "packages", "order"),
-      );
-    });
+    it.effect("belongs to the package that holds it", () =>
+      Effect.gen(function* program() {
+        const pathService = yield* Path.Path;
+        const { packageDirectoryOfADirectoryBelowAManifest, manifestAboveRoot } = yield* fixtures;
+        expect(packageDirectoryOfADirectoryBelowAManifest).toBe(
+          pathService.join(manifestAboveRoot, "packages", "order"),
+        );
+      }),
+    );
   });
 
   describe("a directory standing between two manifests", () => {
-    const it = test.extend("packageDirectoryBetweenTwoManifests", ({}, { onCleanup }) => {
-      rmSync(RIVAL_MANIFESTS_ROOT, { recursive: true, force: true });
-      mkdirSync(join(RIVAL_MANIFESTS_ROOT, "packages", "order", "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(RIVAL_MANIFESTS_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const rivalManifestsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-rival-manifests-",
       });
-      writeFileSync(join(RIVAL_MANIFESTS_ROOT, "package.json"), "{}");
-      writeFileSync(join(RIVAL_MANIFESTS_ROOT, "packages", "order", "package.json"), "{}");
-      return nearestPackageDirectory(
-        join(RIVAL_MANIFESTS_ROOT, "packages", "order", "src"),
-        RIVAL_MANIFESTS_ROOT,
+      const packageDirectoryBetweenTwoManifests = yield* Effect.gen(
+        function* packageDirectoryBetweenTwoManifests() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(
+            pathService.join(rivalManifestsRoot, "packages", "order", "src"),
+            { recursive: true },
+          );
+
+          yield* filesystem.writeFileString(
+            pathService.join(rivalManifestsRoot, "package.json"),
+            "{}",
+          );
+          yield* filesystem.writeFileString(
+            pathService.join(rivalManifestsRoot, "packages", "order", "package.json"),
+            "{}",
+          );
+          return nearestPackageDirectory(
+            pathService.join(rivalManifestsRoot, "packages", "order", "src"),
+            rivalManifestsRoot,
+          );
+        },
       );
+      return { rivalManifestsRoot, packageDirectoryBetweenTwoManifests };
     });
 
-    it("belongs to the nearer manifest rather than the one further up", ({
-      packageDirectoryBetweenTwoManifests,
-    }) => {
-      expect(packageDirectoryBetweenTwoManifests).toBe(
-        join(RIVAL_MANIFESTS_ROOT, "packages", "order"),
-      );
-    });
+    it.effect("belongs to the nearer manifest rather than the one further up", () =>
+      Effect.gen(function* program() {
+        const pathService = yield* Path.Path;
+        const { packageDirectoryBetweenTwoManifests, rivalManifestsRoot } = yield* fixtures;
+        expect(packageDirectoryBetweenTwoManifests).toBe(
+          pathService.join(rivalManifestsRoot, "packages", "order"),
+        );
+      }),
+    );
   });
 
   describe("a directory under a repository whose root holds the only manifest", () => {
-    const it = test.extend("packageDirectoryUnderARootHoldingTheOnlyManifest", ({}, {
-      onCleanup,
-    }) => {
-      rmSync(ROOT_ONLY_MANIFEST_ROOT, { recursive: true, force: true });
-      mkdirSync(join(ROOT_ONLY_MANIFEST_ROOT, "scripts"), { recursive: true });
-      onCleanup(() => {
-        rmSync(ROOT_ONLY_MANIFEST_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const rootOnlyManifestRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-root-only-manifest-",
       });
-      writeFileSync(join(ROOT_ONLY_MANIFEST_ROOT, "package.json"), "{}");
-      return nearestPackageDirectory(
-        join(ROOT_ONLY_MANIFEST_ROOT, "scripts"),
-        ROOT_ONLY_MANIFEST_ROOT,
+      const packageDirectoryUnderARootHoldingTheOnlyManifest = yield* Effect.gen(
+        function* packageDirectoryUnderARootHoldingTheOnlyManifest() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(rootOnlyManifestRoot, "scripts"), {
+            recursive: true,
+          });
+
+          yield* filesystem.writeFileString(
+            pathService.join(rootOnlyManifestRoot, "package.json"),
+            "{}",
+          );
+          return nearestPackageDirectory(
+            pathService.join(rootOnlyManifestRoot, "scripts"),
+            rootOnlyManifestRoot,
+          );
+        },
       );
+      return { rootOnlyManifestRoot, packageDirectoryUnderARootHoldingTheOnlyManifest };
     });
 
-    it("belongs to the root", ({ packageDirectoryUnderARootHoldingTheOnlyManifest }) => {
-      expect(packageDirectoryUnderARootHoldingTheOnlyManifest).toBe(ROOT_ONLY_MANIFEST_ROOT);
-    });
+    it.effect("belongs to the root", () =>
+      Effect.gen(function* program() {
+        const { packageDirectoryUnderARootHoldingTheOnlyManifest, rootOnlyManifestRoot } =
+          yield* fixtures;
+        expect(packageDirectoryUnderARootHoldingTheOnlyManifest).toBe(rootOnlyManifestRoot);
+      }),
+    );
   });
 
   describe("a directory under a repository whose root holds no manifest", () => {
-    const it = test.extend("packageDirectoryUnderARootHoldingNoManifest", ({}, { onCleanup }) => {
-      rmSync(NO_MANIFEST_ROOT, { recursive: true, force: true });
-      mkdirSync(join(NO_MANIFEST_ROOT, "scripts"), { recursive: true });
-      onCleanup(() => {
-        rmSync(NO_MANIFEST_ROOT, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const noManifestRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "source-files-no-manifest-",
       });
-      return nearestPackageDirectory(join(NO_MANIFEST_ROOT, "scripts"), NO_MANIFEST_ROOT);
+      const packageDirectoryUnderARootHoldingNoManifest = yield* Effect.gen(
+        function* packageDirectoryUnderARootHoldingNoManifest() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+
+          yield* filesystem.makeDirectory(pathService.join(noManifestRoot, "scripts"), {
+            recursive: true,
+          });
+
+          return nearestPackageDirectory(
+            pathService.join(noManifestRoot, "scripts"),
+            noManifestRoot,
+          );
+        },
+      );
+      return { noManifestRoot, packageDirectoryUnderARootHoldingNoManifest };
     });
 
-    it("is left in no package", ({ packageDirectoryUnderARootHoldingNoManifest }) => {
-      expect(packageDirectoryUnderARootHoldingNoManifest).toBe(null);
-    });
+    it.effect("is left in no package", () =>
+      Effect.gen(function* program() {
+        const { packageDirectoryUnderARootHoldingNoManifest } = yield* fixtures;
+        expect(packageDirectoryUnderARootHoldingNoManifest).toBe(null);
+      }),
+    );
   });
 
   describe("a directory standing above the repository root", () => {
-    const it = test.extend("packageDirectoryOutsideTheRepository", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "source-files-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
-      });
-      return nearestPackageDirectory(dirname(repositoryRoot), repositoryRoot);
+    const fixture = Effect.gen(function* packageDirectoryOutsideTheRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
+
+      return nearestPackageDirectory(pathService.dirname(repositoryRoot), repositoryRoot);
     });
 
-    it("cannot acquire a package", ({ packageDirectoryOutsideTheRepository }) => {
-      expect(packageDirectoryOutsideTheRepository).toBe(null);
-    });
+    it.effect("cannot acquire a package", () =>
+      Effect.gen(function* program() {
+        const packageDirectoryOutsideTheRepository = yield* fixture;
+        expect(packageDirectoryOutsideTheRepository).toBe(null);
+      }),
+    );
   });
 });

@@ -1,8 +1,7 @@
-import { relative } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { matchesGlobSegment } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { segmentsOf } from "../path-segments.ts";
 import { toPosixPath } from "../posix-path.ts";
 import { assetsStemOf } from "../spec-syntax/assets-files.ts";
@@ -82,7 +81,7 @@ export const spelledPathOf = ({
   readonly workspaceRoot: string;
 }): string =>
   isInsideDirectory({ path: file, directory: workspaceRoot })
-    ? toPosixPath(relative(workspaceRoot, file))
+    ? toPosixPath(path.relative(workspaceRoot, file))
     : toPosixPath(file);
 
 const carriesForbiddenName = ({

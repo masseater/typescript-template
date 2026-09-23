@@ -13,7 +13,7 @@ Disallow a declaration that stands apart from the statement that uses it, so a r
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-detached-declaration--declare-it-next-to-its-use.ts`](../../src/lint/oxlint/rules/writing/no-detached-declaration--declare-it-next-to-its-use.ts)
+- Source: [`no-detached-declaration--declare-it-next-to-its-use.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-detached-declaration--declare-it-next-to-its-use.ts)
 
 <!-- END GENERATED rule-header -->
 

@@ -1,4 +1,11 @@
-import { effectDiagnostics, lifecycle, modularBoundaries, taskInput } from "@repo/vite-config";
+import {
+  checkCode,
+  effectDiagnostics,
+  lifecycle,
+  modularBoundaries,
+  taskInput,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { describe, expect, test } from "vite-plus/test";
 
 import { monitorWorkerVite } from "./vite.ts";
@@ -25,10 +32,13 @@ describe("monitorWorkerVite", () => {
       run: {
         tasks: {
           ...effectDiagnostics,
+          ...checkCode,
+          ...workspaceCheckImports,
           ...modularBoundaries,
           build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
           ...lifecycle({
-            prepush: ["check:effect", "check:modular"],
+            precommit: ["check:code"],
+            prepush: ["check:effect", "check:imports", "check:modular"],
             prepr: ["build"],
           }),
         },

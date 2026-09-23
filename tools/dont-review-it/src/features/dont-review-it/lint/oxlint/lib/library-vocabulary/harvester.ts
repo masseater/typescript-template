@@ -1,5 +1,3 @@
-import { dirname, resolve } from "node:path";
-
 import { attempt, memoize } from "es-toolkit";
 import {
   SymbolFlags,
@@ -9,6 +7,7 @@ import {
   type Symbol as TypeSymbol,
 } from "typescript/unstable/sync";
 
+import { path } from "../../../../platform/path.ts";
 import { nearestPackageDirectory } from "../canonical-values/source-files.ts";
 import { isEnvironmentFailure } from "../path-failure.ts";
 import { dependencyTypeEntries, type DependencyTypeEntry } from "./dependency-types.ts";
@@ -110,8 +109,8 @@ export const createLibraryVocabularyLoader = ({
 
   return ({ filename, repositoryRoot }) => {
     const packageDirectory = nearestPackageDirectory(
-      dirname(resolve(filename)),
-      resolve(repositoryRoot),
+      path.dirname(path.resolve(filename)),
+      path.resolve(repositoryRoot),
     );
     return packageDirectory === null
       ? EMPTY_LIBRARY_VOCABULARY_INDEX

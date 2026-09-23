@@ -1,11 +1,8 @@
-import {
-  bootstrapDatabase,
-  fail,
-  loadRemoteMigrations,
-  parseRemoteInput,
-  remoteDatabase,
-} from "@repo/db/migrations";
+import { bootstrapDatabase, fail, loadRemoteMigrations } from "@repo/db/migrations";
 import { Effect } from "effect";
+
+import { remoteDatabase } from "./remote-http.ts";
+import { parseRemoteInput } from "./remote-input.ts";
 
 import type { RemoteFailure } from "@repo/db/migrations";
 

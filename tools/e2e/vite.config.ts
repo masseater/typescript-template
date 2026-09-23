@@ -1,18 +1,29 @@
 import { MergifyReporter } from "@mergifyio/vitest";
-import { effectDiagnostics, lifecycle, modularBoundaries } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       "test:e2e": {
         cache: false,
         command: "vp test run",
         dependsOn: ["@repo/dev#setup"],
       },
-      ...lifecycle({ prepush: ["check:effect", "check:modular"] }),
+      ...lifecycle({
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check:modular"],
+      }),
     },
   },
   test: {

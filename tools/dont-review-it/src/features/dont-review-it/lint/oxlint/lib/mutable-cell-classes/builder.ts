@@ -1,8 +1,7 @@
-import { resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 import { parseSync } from "oxc-parser";
 
+import { path } from "../../../../platform/path.ts";
 import {
   listRepositoryFiles,
   readTextFile,
@@ -37,4 +36,4 @@ export const loadRepositoryCellClassIndex = ({
   repositoryRoot,
 }: {
   readonly repositoryRoot: string;
-}): CellClassIndex => buildRepositoryCellClassIndex(resolve(repositoryRoot));
+}): CellClassIndex => buildRepositoryCellClassIndex(path.resolve(repositoryRoot));

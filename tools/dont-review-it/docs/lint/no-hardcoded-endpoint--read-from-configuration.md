@@ -13,7 +13,7 @@ Disallow text written out in the source at the destination argument of a call th
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-hardcoded-endpoint--read-from-configuration.ts`](../../src/lint/oxlint/rules/writing/no-hardcoded-endpoint--read-from-configuration.ts)
+- Source: [`no-hardcoded-endpoint--read-from-configuration.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-hardcoded-endpoint--read-from-configuration.ts)
 
 <!-- END GENERATED rule-header -->
 

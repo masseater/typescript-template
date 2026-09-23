@@ -1,8 +1,7 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { ownersVisibleFrom } from "./consumer-package.ts";
 
@@ -28,7 +27,7 @@ const vocabularyOwner: CanonicalValuesEntry = {
   values: ["draft", "published"],
 };
 
-describe("ownersVisibleFrom", () => {
+layer(NodeServices.layer)("ownersVisibleFrom", (it) => {
   describe.for([
     ["a package the consumer depends on, published", "@fixture/vocabulary", true, true],
     ["a package the consumer depends on, unpublished", "@fixture/vocabulary", false, false],
@@ -36,22 +35,29 @@ describe("ownersVisibleFrom", () => {
     ["a package the consumer does not depend on", "@fixture/unrelated", true, false],
     ["no package at all", null, false, true],
   ] as const)("an owner declared in %s", ([, ownerPackage, published, visibility]) => {
-    const it = test.extend("ownerVisible", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "consumer-package-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* ownerVisible() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "consumer-package-",
       });
-      mkdirSync(join(repositoryRoot, "packages/app/src"), { recursive: true });
-      writeFileSync(join(repositoryRoot, "package.json"), JSON.stringify({ name: "root" }));
-      writeFileSync(
-        join(repositoryRoot, "packages/app/package.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "packages/app/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name: "root" }),
+      );
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "packages/app/package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/app",
           dependencies: { "@fixture/vocabulary": "workspace:*" },
         }),
       );
       return ownersVisibleFrom({
-        filename: join(repositoryRoot, "packages/app/src/view.ts"),
+        filename: paths.join(repositoryRoot, "packages/app/src/view.ts"),
         repositoryRoot,
       })({
         ...vocabularyOwner,
@@ -60,8 +66,11 @@ describe("ownersVisibleFrom", () => {
       });
     });
 
-    it("is visible only where the consumer can import it", ({ ownerVisible }) => {
-      expect(ownerVisible).toBe(visibility);
-    });
+    it.effect("is visible only where the consumer can import it", () =>
+      Effect.gen(function* program() {
+        const ownerVisible = yield* fixture;
+        expect(ownerVisible).toBe(visibility);
+      }),
+    );
   });
 });

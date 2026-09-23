@@ -13,7 +13,7 @@ Require queryOptions, infiniteQueryOptions, and mutationOptions factories to liv
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`require-query-options-in-api-segment--move-query-options-to-api.ts`](../../src/lint/oxlint/rules/mutation-and-failure/require-query-options-in-api-segment--move-query-options-to-api.ts)
+- Source: [`require-query-options-in-api-segment--move-query-options-to-api.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/require-query-options-in-api-segment--move-query-options-to-api.ts)
 
 <!-- END GENERATED rule-header -->
 

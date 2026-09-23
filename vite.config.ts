@@ -24,6 +24,35 @@ const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 const textModule = (code: string, moduleId: string): string | undefined =>
   textModulePattern.test(moduleId) ? `export default ${JSON.stringify(code)};` : undefined;
 
+const rootOwnedPaths = [
+  ".claude",
+  ".cursor",
+  ".github",
+  ".gitignore",
+  ".mcp.json",
+  ".mergify.yml",
+  ".textlintrc.json",
+  ".vite-hooks",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "DESIGN.md",
+  "README.md",
+  "docs",
+  "knip.ts",
+  "mise.toml",
+  "package.json",
+  "patches",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "renovate.json",
+  "tsconfig.base.json",
+  "tsconfig.json",
+  "vite.config.ts",
+  "vitest.mutation.config.ts",
+  "vitest.workers.config.ts",
+  "vitest.workers.main.ts",
+] as const;
+
 const nodeTestIncludes = [
   "libs/**/*.test.ts",
   "libs/**/*.test.tsx",
@@ -47,21 +76,8 @@ export default defineConfig({
   run: {
     tasks: {
       "compile:paraglide": workspaceParaglideCompile,
-      "check:client": {
-        command: "quality-check-client",
-        dependsOn: ["compile:paraglide"],
-        input: [
-          ...taskInput,
-          "!**/dist/**",
-          "!**/node_modules/.cache/**",
-          { base: "workspace", pattern: "!.local" },
-          { base: "workspace", pattern: "!.local/**" },
-        ],
-        output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-      },
       "check:code": {
-        command: "vp check",
-        dependsOn: ["compile:paraglide"],
+        command: `vp check ${rootOwnedPaths.join(" ")}`,
         input: [...taskInput],
       },
       ...effectDiagnostics,
@@ -69,17 +85,6 @@ export default defineConfig({
         command: "dont-review-it-typecheck",
         dependsOn: ["compile:paraglide"],
         input: [...taskInput],
-      },
-      "check:imports": {
-        command:
-          "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
-        dependsOn: ["compile:paraglide"],
-      },
-      "check:react": {
-        command: "quality-check-react",
-        dependsOn: ["compile:paraglide"],
-        input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
-        output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
       "check:canonical-literal-types": {
         command: "dont-review-it-canonical-literal-types",
@@ -127,17 +132,8 @@ export default defineConfig({
         ],
       },
       ...lifecycle({
-        precommit: ["check:text"],
-        prepush: [
-          "check:code",
-          "check:effect",
-          "knip",
-          "check:client",
-          "check:imports",
-          "check:react",
-          "check:canonical-literal-types",
-        ],
-        prepr: ["check:imports"],
+        precommit: ["check:text", "check:code"],
+        prepush: ["check:effect", "knip", "check:canonical-literal-types"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),

@@ -1,5 +1,4 @@
 import { APPLICATION } from "@repo/config";
-import { configuredFeatureFlagsLayer } from "@repo/feature-flags";
 import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
@@ -16,15 +15,7 @@ const reporting: Reporting = { service };
 const runtime = workerRuntime(() =>
   Layer.mergeAll(
     appLayer({ env: env, audience: service, routes: routes }),
-    Layer.unwrap(
-      readWorkerConfig(env).pipe(
-        Effect.flatMap((config) =>
-          configuredFeatureFlagsLayer(config).pipe(
-            Effect.map((flags) => Layer.mergeAll(opsMailLayer(config), flags)),
-          ),
-        ),
-      ),
-    ),
+    Layer.unwrap(readWorkerConfig(env).pipe(Effect.map((config) => opsMailLayer(config)))),
     Interviewer.fromEnvironment(env),
   ),
 );

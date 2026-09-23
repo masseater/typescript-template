@@ -13,7 +13,7 @@ Disallow a module replacement declaration from carrying a factory, so what a rep
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts`](../../src/lint/oxlint/rules/testing/no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts)
+- Source: [`no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts)
 
 <!-- END GENERATED rule-header -->
 

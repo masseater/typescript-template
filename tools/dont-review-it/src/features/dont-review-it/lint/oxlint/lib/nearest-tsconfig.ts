@@ -1,8 +1,7 @@
-import { dirname, join } from "node:path";
-
 import { memoize } from "es-toolkit";
 import { parse } from "jsonc-parser";
 
+import { path } from "../../../platform/path.ts";
 import { readTextFile } from "./canonical-values/source-files.ts";
 import { isNamedFields } from "./named-fields.ts";
 
@@ -24,7 +23,7 @@ const specifiersOf = (config: unknown): readonly string[] => {
 };
 
 const declaredIn = (directory: string): TsconfigExtends | null => {
-  const candidatePath = join(directory, TSCONFIG_FILE_NAME);
+  const candidatePath = path.join(directory, TSCONFIG_FILE_NAME);
   const writtenText = readTextFile(candidatePath);
   if (writtenText === null) return null;
   return { tsconfigPath: candidatePath, specifiers: specifiersOf(parseJsonc(writtenText)) };
@@ -32,13 +31,13 @@ const declaredIn = (directory: string): TsconfigExtends | null => {
 
 const nearestFrom: (directory: string) => TsconfigExtends | null = memoize(
   (directory: string): TsconfigExtends | null => {
-    const parent = dirname(directory);
+    const parent = path.dirname(directory);
     return declaredIn(directory) ?? (parent === directory ? null : nearestFrom(parent));
   },
 );
 
 export const nearestTsconfigExtends = (filename: string): TsconfigExtends | null =>
-  nearestFrom(dirname(filename));
+  nearestFrom(path.dirname(filename));
 
 export const extendsOneOf = (
   specifiers: readonly string[],
