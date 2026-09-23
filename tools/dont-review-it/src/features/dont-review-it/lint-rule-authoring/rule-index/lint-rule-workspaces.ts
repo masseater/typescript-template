@@ -2,9 +2,9 @@ import { Effect, type FileSystem, Schema } from "effect";
 import { attempt, isPlainObject } from "es-toolkit";
 import { parse } from "yaml";
 
-import { directoriesMatching } from "../../dependency-catalog/manifest-files.ts";
 import { textOrNull } from "../../platform/file-system.ts";
 import { path } from "../../platform/path.ts";
+import { directoriesMatching } from "../../platform/workspace-patterns.ts";
 
 import type { TreeFailure } from "../../platform/directory-entries.ts";
 

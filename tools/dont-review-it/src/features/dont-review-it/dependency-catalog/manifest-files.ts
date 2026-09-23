@@ -1,10 +1,10 @@
 import { Effect, type FileSystem, Schema } from "effect";
 import { uniq } from "es-toolkit";
 
-import { NEGATION_PREFIX } from "../lint/oxlint/lib/tracked-paths/ignore-listing.ts";
-import { childDirectoryNamesIn, type TreeFailure } from "../platform/directory-entries.ts";
+import { type TreeFailure } from "../platform/directory-entries.ts";
 import { textOrNull } from "../platform/file-system.ts";
 import { path, posixPath } from "../platform/path.ts";
+import { directoriesMatching } from "../platform/workspace-patterns.ts";
 
 import type { DependencyCatalogChecksConfig } from "./config.ts";
 
@@ -36,26 +36,6 @@ const manifestAt = (
       Effect.mapError((unparsable) => new ManifestUnparsable({ file, cause: unparsable })),
     );
   });
-
-const SINGLE_LEVEL_PATTERN_SUFFIX = "/*";
-
-export const directoriesMatching = ({
-  repositoryRoot,
-  pattern,
-}: {
-  readonly repositoryRoot: string;
-  readonly pattern: string;
-}): Effect.Effect<readonly string[], TreeFailure, FileSystem.FileSystem> => {
-  if (pattern.startsWith(NEGATION_PREFIX)) return Effect.succeed([]);
-  if (!pattern.endsWith(SINGLE_LEVEL_PATTERN_SUFFIX)) return Effect.succeed([pattern]);
-
-  const parentDirectory = pattern.slice(0, -SINGLE_LEVEL_PATTERN_SUFFIX.length);
-  return childDirectoryNamesIn(path.join(repositoryRoot, parentDirectory)).pipe(
-    Effect.map((childNames) =>
-      childNames === null ? [] : childNames.map((childName) => `${parentDirectory}/${childName}`),
-    ),
-  );
-};
 
 export const readWorkspaceManifests = ({
   repositoryRoot,

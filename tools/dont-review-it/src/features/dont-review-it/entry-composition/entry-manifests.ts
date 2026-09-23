@@ -3,10 +3,10 @@ import { attempt, uniq } from "es-toolkit";
 import { parseTree, type Node, type ParseError } from "jsonc-parser";
 import { parse } from "yaml";
 
-import { directoriesMatching } from "../dependency-catalog/manifest-files.ts";
 import { recordOf } from "../dependency-catalog/record-fields.ts";
 import { isMissingPath } from "../platform/path-failure.ts";
 import { path, posixPath } from "../platform/path.ts";
+import { directoriesMatching } from "../platform/workspace-patterns.ts";
 
 import type { TreeFailure } from "../platform/directory-entries.ts";
 import type { EntryCompositionConfig, EntryCompositionLayer } from "./config.ts";
