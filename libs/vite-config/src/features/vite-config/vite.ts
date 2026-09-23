@@ -179,7 +179,8 @@ const checkCode = {
 
 const workspaceCheckImports = {
   "check:imports": {
-    command: "../../tools/dont-review-it/src/features/dont-review-it/repository/workspace-imports.ts",
+    command:
+      "../../tools/dont-review-it/src/features/dont-review-it/repository/workspace-imports.ts",
     input: [...taskInput],
   },
 } satisfies Tasks;

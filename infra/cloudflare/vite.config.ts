@@ -13,8 +13,14 @@ export default defineConfig({
     tasks: {
       ...testableLibraryRun.tasks,
       "bootstrap:state": { cache: false, command: "./src/features/cloudflare/bootstrap-state.ts" },
-      "db:bootstrap:remote": { cache: false, command: "./src/features/cloudflare/database-command.ts bootstrap" },
-      "db:migrate:remote": { cache: false, command: "./src/features/cloudflare/database-command.ts migrate" },
+      "db:bootstrap:remote": {
+        cache: false,
+        command: "./src/features/cloudflare/database-command.ts bootstrap",
+      },
+      "db:migrate:remote": {
+        cache: false,
+        command: "./src/features/cloudflare/database-command.ts migrate",
+      },
       deploy: {
         cache: false,
         command: "./src/features/cloudflare/cli.ts deploy",

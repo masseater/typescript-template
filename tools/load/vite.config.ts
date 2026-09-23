@@ -1,4 +1,10 @@
-import { effectDiagnostics, effectTsgoNoEmit, lifecycle, testRun, modularBoundaries } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  effectTsgoNoEmit,
+  lifecycle,
+  testRun,
+  modularBoundaries,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
