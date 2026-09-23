@@ -14,7 +14,7 @@ import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 type FetchMcp = (request: Request) => Effect.Effect<Response, never, never>;
 
-class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData")<{}> {}
+class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData") {}
 
 const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Tokens = Schema.Struct({ access_token: Schema.String });

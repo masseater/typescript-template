@@ -58,7 +58,7 @@ describe("sanitizeImage", () => {
     ["a truncated JPEG", jpegWithExif.subarray(0, 12)],
     ["a JPEG without a scan", Uint8Array.from([0xff, 0xd8, 0xff, 0xd9])],
     ["a PNG without IEND", pngWithText.subarray(0, pngWithText.byteLength - 12)],
-    ["a RIFF that is not WebP", Uint8Array.from([...new TextEncoder().encode("RIFF\0\0\0\0WAVE")])],
+    ["a RIFF that is not WebP", new TextEncoder().encode("RIFF\0\0\0\0WAVE")],
     ["an empty file", new Uint8Array()],
   ])("refuses %s", (_, bytes) => {
     expect.hasAssertions();

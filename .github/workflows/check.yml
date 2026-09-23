@@ -41,9 +41,11 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
-          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.base.sha }}-${{ matrix.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            vite-task-${{ runner.os }}-${{ runner.arch }}-
+            vite-task-${{ runner.os }}-${{ runner.arch }}-pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.base.sha }}-${{ matrix.shard }}-
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.event.pull_request.base.sha }}
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-
       - id: affected
         env:
           CHECK_SHARD: ${{ matrix.shard }}
@@ -61,7 +63,7 @@ jobs:
           AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
         run: vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always()
+        if: always() && (steps.affected.outputs.root == 'true' || steps.affected.outputs.filters != '')
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
@@ -89,9 +91,9 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
-          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-mq-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            vite-task-${{ runner.os }}-${{ runner.arch }}-
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-
       - run: vp run -r premerge
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
@@ -150,8 +152,16 @@ jobs:
       - *checkout
       - *browser-cache
       - *setup
-      - run: vp run -r prepr
-      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - id: vite-task-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: node_modules/.vite/task-cache
-          key: vite-task-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.sha }}
+          restore-keys: |
+            vite-task-${{ runner.os }}-${{ runner.arch }}-main-
+      - run: vp run -r prepr
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: ${{ !cancelled() && steps.vite-task-cache.outputs.cache-hit != 'true' }}
+        with:
+          path: node_modules/.vite/task-cache
+          key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}

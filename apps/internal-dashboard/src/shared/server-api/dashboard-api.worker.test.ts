@@ -1,4 +1,4 @@
-import { assert, it } from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
 import { dashboardStaff, type ReadOnlyDashboardStaff } from "@repo/db";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
@@ -40,10 +40,12 @@ it.effect("rejects write requests on dashboard routes", () =>
   }),
 );
 
-it("exposes only read-only dashboard staff operations", () => {
-  const staff: ReadOnlyDashboardStaff = dashboardStaff;
-  assert.isFunction(staff.auditEvents);
-  assert.isFunction(staff.metricTrend);
-  assert.isFunction(staff.overview);
-  assert.notProperty(staff, "refreshMetricSnapshots");
+describe("the staff surface", () => {
+  it("exposes only read-only dashboard staff operations", () => {
+    const staff: ReadOnlyDashboardStaff = dashboardStaff;
+    assert.isFunction(staff.auditEvents);
+    assert.isFunction(staff.metricTrend);
+    assert.isFunction(staff.overview);
+    assert.notProperty(staff, "refreshMetricSnapshots");
+  });
 });

@@ -1,4 +1,4 @@
-import { assert, it } from "@effect/vitest";
+import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
 import { inquiryStaff, type ReadOnlyInquiryStaff } from "@repo/db/inquiry-staff";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
@@ -43,11 +43,13 @@ it.effect("rejects write requests on inquiry routes", () =>
   }),
 );
 
-it("exposes only read-only inquiry staff operations", () => {
-  const staff: ReadOnlyInquiryStaff = inquiryStaff;
-  assert.isFunction(staff.getInquiry);
-  assert.isFunction(staff.inquiryCounts);
-  assert.isFunction(staff.listMemberInquiries);
-  assert.notProperty(staff, "replyAsAdmin");
-  assert.notProperty(staff, "createMemberInquiry");
+describe("the staff surface", () => {
+  it("exposes only read-only inquiry staff operations", () => {
+    const staff: ReadOnlyInquiryStaff = inquiryStaff;
+    assert.isFunction(staff.getInquiry);
+    assert.isFunction(staff.inquiryCounts);
+    assert.isFunction(staff.listMemberInquiries);
+    assert.notProperty(staff, "replyAsAdmin");
+    assert.notProperty(staff, "createMemberInquiry");
+  });
 });

@@ -14,7 +14,7 @@ import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 type FetchMcp = (request: Request) => Effect.Effect<Response, never, never>;
 
-class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData")<{}> {}
+class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData") {}
 
 const memberOrigin = "http://127.0.0.1:3001";
 const redirectUri = "http://127.0.0.1:43124/callback";

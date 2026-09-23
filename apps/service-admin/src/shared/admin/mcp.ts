@@ -14,7 +14,7 @@ import {
   setMemberState,
 } from "@repo/db/admin";
 import { AppOrigin, secureResponse } from "@repo/runtime/http";
-import { Effect, Schema } from "effect";
+import { Effect, Predicate, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
@@ -86,25 +86,22 @@ const runTool =
           ),
         ),
       ),
-    ).catch(
-      (failure: {
-        readonly _tag?: string;
-      }): { content: [{ type: "text"; text: string }]; isError: true } => {
-        if (failure?._tag === "PermissionRequired") {
-          return toolFailure("permission_required");
-        }
-        if (failure?._tag === "TargetUnavailable") {
-          return toolFailure("target_unavailable");
-        }
-        if (failure?._tag === "LastAdminRequired") {
-          return toolFailure("last_admin_required");
-        }
-        if (failure?._tag === "InviteRejected") {
-          return toolFailure("invite_rejected");
-        }
-        return toolFailure("operation_failed");
-      },
-    );
+    ).catch((failure: unknown): { content: [{ type: "text"; text: string }]; isError: true } => {
+      const failureTag = Predicate.hasProperty(failure, "_tag") ? failure._tag : undefined;
+      if (failureTag === "PermissionRequired") {
+        return toolFailure("permission_required");
+      }
+      if (failureTag === "TargetUnavailable") {
+        return toolFailure("target_unavailable");
+      }
+      if (failureTag === "LastAdminRequired") {
+        return toolFailure("last_admin_required");
+      }
+      if (failureTag === "InviteRejected") {
+        return toolFailure("invite_rejected");
+      }
+      return toolFailure("operation_failed");
+    });
 
 function createServer(
   actor: AdminMcpActor,

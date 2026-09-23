@@ -1,0 +1,4 @@
+{
+  "title": "場面ごとにやること",
+  "pages": ["index", "idea", "commit", "build", "release", "change", "periodic", "wind-down"]
+}

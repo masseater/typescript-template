@@ -93,7 +93,7 @@ function messagingApi(api: ApiRoutes<AppServices>) {
             const { user } = yield* verifySession(request.headers);
             const { peerId } = yield* readSearchParams(ConversationLookup, request);
             const conversationId = yield* lookupDirectConversation(user.id, peerId);
-            return { conversationId: conversationId === undefined ? null : conversationId };
+            return { conversationId: conversationId ?? null };
           }),
         failures,
       ),

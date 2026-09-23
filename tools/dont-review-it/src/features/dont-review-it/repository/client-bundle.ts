@@ -1,12 +1,9 @@
 #!/usr/bin/env node
-const { mkdtemp, readFile, readdir, rm } = process.getBuiltinModule("fs/promises");
-const { tmpdir } = process.getBuiltinModule("os");
-const path = process.getBuiltinModule("path");
-
+import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type Application, ApplicationName } from "@repo/config";
 import { serverOnlyMarkers } from "@repo/vite-config";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
 import { repositoryRoot } from "./repository-root.ts";
@@ -41,67 +38,78 @@ function denialReason(error: unknown): string {
   );
 }
 
-async function clientBuild(
+class BuildDenied extends Schema.TaggedError<BuildDenied>()("BuildDenied", {
+  reason: Schema.String,
+}) {}
+
+const clientBuild = (
   application: Application,
   specifiers: readonly string[],
   outDirectory: string,
-): Promise<string> {
-  const appRoot = path.join(repositoryRoot, "apps", application);
-  const probeModule = path.join(appRoot, probeModules[application]);
-  try {
-    await build({
-      build: { emptyOutDir: true, outDir: outDirectory },
-      configFile: path.join(appRoot, "vite.config.ts"),
-      logLevel: "silent",
-      plugins: [
-        {
-          applyToEnvironment: (environment: Readonly<{ name: string }>): boolean =>
-            environment.name === "client",
-          enforce: "post",
-          name: "client-bundle-probe",
-          transform(code: string, id: string) {
-            if (id !== probeModule) {
-              return;
-            }
-            const injected = specifiers
-              .map((specifier) => `import ${JSON.stringify(specifier)};`)
-              .join("\n");
-            return { code: `${injected}\n${code}`, map: { mappings: "" } };
-          },
-        },
-      ],
-      root: appRoot,
-    });
-    return "";
-  } catch (error: unknown) {
-    return denialReason(error);
-  }
-}
+): Effect.Effect<string, never, Path.Path> =>
+  Effect.gen(function* clientBuild() {
+    const paths = yield* Path.Path;
+    const appRoot = paths.join(repositoryRoot, "apps", application);
+    const probeModule = paths.join(appRoot, probeModules[application]);
+    return yield* Effect.tryPromise({
+      catch: (error) => new BuildDenied({ reason: denialReason(error) }),
+      try: () =>
+        build({
+          build: { emptyOutDir: true, outDir: outDirectory },
+          configFile: paths.join(appRoot, "vite.config.ts"),
+          logLevel: "silent",
+          plugins: [
+            {
+              applyToEnvironment: (environment: Readonly<{ name: string }>): boolean =>
+                environment.name === "client",
+              enforce: "post",
+              name: "client-bundle-probe",
+              transform(code: string, id: string) {
+                if (id !== probeModule) {
+                  return;
+                }
+                const injected = specifiers
+                  .map((specifier) => `import ${JSON.stringify(specifier)};`)
+                  .join("\n");
+                return { code: `${injected}\n${code}`, map: { mappings: "" } };
+              },
+            },
+          ],
+          root: appRoot,
+        }),
+    }).pipe(
+      Effect.match({
+        onFailure: (denied) => denied.reason,
+        onSuccess: () => "",
+      }),
+    );
+  });
 
-async function bundledMarkers(outDirectory: string): Promise<readonly string[]> {
-  const entries = await readdir(outDirectory, { recursive: true });
-  const sources = await Promise.all(
-    entries
-      .filter((entry) => entry.endsWith(".js"))
-      .map(async (entry) => readFile(path.join(outDirectory, entry), "utf-8")),
-  );
-  return serverOnlyMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
-}
+const bundledMarkers = (outDirectory: string) =>
+  Effect.gen(function* bundledMarkers() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const entries = yield* filesystem.readDirectory(outDirectory, { recursive: true });
+    const sources = yield* Effect.forEach(
+      entries.filter((entry) => entry.endsWith(".js")),
+      (entry) => filesystem.readFileString(paths.join(outDirectory, entry)),
+      { concurrency: "unbounded" },
+    );
+    return serverOnlyMarkers.filter((marker) => sources.some((source) => source.includes(marker)));
+  });
 
-const temporaryOutput = Effect.acquireRelease(
-  Effect.promise(async () => mkdtemp(path.join(tmpdir(), "template-client-bundle-"))),
-  (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
-);
+const temporaryOutput = Effect.gen(function* temporaryOutput() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectoryScoped({ prefix: "template-client-bundle-" });
+});
 
-function serverOnlyProblems(
+const serverOnlyProblems = (
   application: Application,
   [specifier, pattern]: readonly [string, string],
-): Effect.Effect<readonly string[]> {
-  return Effect.scoped(
+) =>
+  Effect.scoped(
     temporaryOutput.pipe(
-      Effect.flatMap((outDirectory) =>
-        Effect.promise(async () => clientBuild(application, [specifier], outDirectory)),
-      ),
+      Effect.flatMap((outDirectory) => clientBuild(application, [specifier], outDirectory)),
       Effect.map((denial) =>
         denial === pattern
           ? []
@@ -109,15 +117,12 @@ function serverOnlyProblems(
       ),
     ),
   );
-}
 
 const inspect = (application: Application) =>
   Effect.gen(function* inspect() {
     const reachableDirectory = yield* temporaryOutput;
-    const reachableDenial = yield* Effect.promise(async () =>
-      clientBuild(application, clientReachable, reachableDirectory),
-    );
-    const markers = yield* Effect.promise(async () => bundledMarkers(reachableDirectory));
+    const reachableDenial = yield* clientBuild(application, clientReachable, reachableDirectory);
+    const markers = yield* bundledMarkers(reachableDirectory);
     const denials = yield* Effect.forEach(serverOnly, (entry) =>
       serverOnlyProblems(application, entry),
     );
@@ -132,12 +137,13 @@ const inspect = (application: Application) =>
 
 runCli(
   Effect.gen(function* run() {
+    const paths = yield* Path.Path;
     const application = yield* Schema.decodeUnknownEffect(ApplicationName)(
-      path.basename(process.cwd()),
+      paths.basename(process.cwd()),
     );
     const unexpected = yield* inspect(application);
     yield* Console.log(
-      JSON.stringify({
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
         application,
         event: "quality.client_bundle",
         inputs: clientReachable.length + serverOnly.length,
@@ -148,6 +154,6 @@ runCli(
     if (unexpected.length > 0) {
       yield* markFailed;
     }
-  }),
+  }).pipe(Effect.provide(NodeServices.layer)),
   (cause) => causeRecord("quality.client_bundle_failed", { cause }),
 );

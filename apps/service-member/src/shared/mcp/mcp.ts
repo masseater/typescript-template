@@ -2,7 +2,7 @@ import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_SCOPE, ROLE } from "@repo/config";
 import { and, eq, query, requirePaid, schema } from "@repo/db";
 import { AppOrigin, secureResponse } from "@repo/runtime/http";
-import { Clock, Effect, Schema } from "effect";
+import { Clock, Effect, Predicate, Schema } from "effect";
 
 import { ProfileUpdate, maximumMessageBodyLength } from "#shared/contracts/index.ts";
 import { getProfile, listMembers, updateProfile } from "#shared/members/index.ts";
@@ -44,14 +44,15 @@ const toolFailure = (
   isError: true,
 });
 
-const failureText = (failure: { readonly _tag?: string }): string => {
-  if (failure._tag === "PaidPlanRequired") {
+const failureText = (failure: unknown): string => {
+  const failureTag = Predicate.hasProperty(failure, "_tag") ? failure._tag : undefined;
+  if (failureTag === "PaidPlanRequired") {
     return "paid_plan_required";
   }
-  if (failure._tag === "MessagingConversationNotFound" || failure._tag === "UserNotFound") {
+  if (failureTag === "MessagingConversationNotFound" || failureTag === "UserNotFound") {
     return "target_unavailable";
   }
-  if (failure._tag === "MessagingMemberRequired") {
+  if (failureTag === "MessagingMemberRequired") {
     return "member_required";
   }
   return "operation_failed";
@@ -73,7 +74,7 @@ const runTool =
           ),
         ),
       ),
-    ).catch((failure: { readonly _tag?: string }) => toolFailure(failureText(failure)));
+    ).catch((failure: unknown) => toolFailure(failureText(failure)));
 
 const requireMemberSession = Effect.fn("requireMemberSession")(function* requireMemberSession(
   actor: MemberMcpActor,

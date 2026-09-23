@@ -152,7 +152,10 @@ function InterviewReply({
     onSay({ kind: "text", text: label });
   };
   return (
-    <div aria-label="回答欄" className="flex flex-wrap items-center gap-2" role="group">
+    <fieldset
+      aria-label="回答欄"
+      className="m-0 flex min-w-0 flex-wrap items-center gap-2 border-0 p-0"
+    >
       {reply?.kind === "single" && (
         <InterviewChoices disabled={disabled} onChoose={handleChoice} options={reply.options} />
       )}
@@ -180,7 +183,7 @@ function InterviewReply({
       >
         この質問はスキップ
       </Button>
-    </div>
+    </fieldset>
   );
 }
 
