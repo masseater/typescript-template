@@ -14,6 +14,7 @@ import { Cause, Console, Effect, FileSystem, Path, Result, Schema } from "effect
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { createServer } from "vite-plus";
 
+import { describeError } from "./failure.ts";
 import { layer } from "./platform.ts";
 
 class DevStartFailure extends Schema.TaggedError<DevStartFailure>()("DevStartFailure", {
@@ -26,10 +27,6 @@ const requestTimeoutMilliseconds = 120_000;
 const startTimeout = "5 minutes";
 const closeTimeoutMilliseconds = 30_000;
 const databasePrefix = "template-check-dev-";
-
-function describe(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 function workspaceName(): string {
   const cwd = process.cwd();
@@ -56,7 +53,7 @@ function migrateDatabase(
         Effect.mapError(
           (error) =>
             new DevStartFailure({
-              reason: `failed to prepare database: ${describe(error)}`,
+              reason: `failed to prepare database: ${describeError(error)}`,
             }),
         ),
       );
@@ -64,7 +61,7 @@ function migrateDatabase(
       Effect.mapError(
         (error) =>
           new DevStartFailure({
-            reason: `failed to prepare database: ${describe(error)}`,
+            reason: `failed to prepare database: ${describeError(error)}`,
           }),
       ),
     );
@@ -84,7 +81,7 @@ const isolatedDatabase = Effect.acquireRelease(
       Effect.mapError(
         (error) =>
           new DevStartFailure({
-            reason: `failed to prepare database: ${describe(error)}`,
+            reason: `failed to prepare database: ${describeError(error)}`,
           }),
       ),
     );
@@ -102,7 +99,7 @@ const isolatedDatabase = Effect.acquireRelease(
 
 const devServer = Effect.acquireRelease(
   Effect.tryPromise({
-    catch: (error) => new DevStartFailure({ reason: `failed to start: ${describe(error)}` }),
+    catch: (error) => new DevStartFailure({ reason: `failed to start: ${describeError(error)}` }),
     try: () =>
       createServer({
         logLevel: "silent",
@@ -130,7 +127,8 @@ const listeningOrigin = isolatedDatabase.pipe(
   Effect.flatMap(() => devServer),
   Effect.flatMap((server) =>
     Effect.tryPromise({
-      catch: (error) => new DevStartFailure({ reason: `failed to listen: ${describe(error)}` }),
+      catch: (error) =>
+        new DevStartFailure({ reason: `failed to listen: ${describeError(error)}` }),
       try: () => server.listen(),
     }),
   ),
@@ -148,7 +146,7 @@ function probe(origin: string, pathname: string): Effect.Effect<number, DevStart
     method: "GET",
     onStatus: (status) => new DevStartFailure({ reason: `${pathname} responded ${status}` }),
     onUnreachable: (error) =>
-      new DevStartFailure({ reason: `${pathname} did not answer: ${describe(error)}` }),
+      new DevStartFailure({ reason: `${pathname} did not answer: ${describeError(error)}` }),
     timeoutMilliseconds: requestTimeoutMilliseconds,
     url: new URL(pathname, origin).href,
   });
@@ -217,7 +215,8 @@ const stopDescendants: Effect.Effect<
     )
     .pipe(
       Effect.mapError(
-        (error) => new DevStartFailure({ reason: `failed to list processes: ${describe(error)}` }),
+        (error) =>
+          new DevStartFailure({ reason: `failed to list processes: ${describeError(error)}` }),
       ),
     );
   for (const pid of descendantPids(process.pid, processRows(table))) {
