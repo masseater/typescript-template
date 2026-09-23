@@ -56,8 +56,8 @@ jobs:
           PR_FILES_PATH: ${{ runner.temp }}/pr-files.txt
         run: vp run --filter @repo/dont-review-it pr-affected
       - if: steps.affected.outputs.root == 'true'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        run: git fetch --no-tags --depth=2 origin ${{ github.sha }}
+      - if: steps.affected.outputs.root == 'true'
         run: vp run -w prepr
       - if: steps.affected.outputs.filters != ''
         env:
