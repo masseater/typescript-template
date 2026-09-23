@@ -133,6 +133,13 @@ const clearOf = (point: Point, direction: Direction, shape: Box): number => {
 };
 
 const routeAround = (request: RouteRequest): readonly Point[] => {
+  const orthogonal = (direction: Direction): boolean =>
+    directions.some((candidate) => candidate.x === direction.x && candidate.y === direction.y);
+  if (!orthogonal(request.departure) || !orthogonal(request.arrival)) {
+    throw new Error(
+      "a route can only be re-routed when both of its ends run horizontally or vertically",
+    );
+  }
   const walls = request.obstacles.map((obstacle) => inflate(obstacle, CLEARANCE - 0.5));
   const departurePort = step(
     request.start,
