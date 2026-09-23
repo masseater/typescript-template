@@ -87,7 +87,9 @@ No rule of this repository declares this document as its grounds. What the off-t
 
 ## [.claude/skills/reviews/references/remove-useless-tests.md](../.claude/skills/reviews/references/remove-useless-tests.md)
 
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+| Rule | Description |
+| --- | --- |
+| [no-whole-data-import-subject--assert-the-contract-member](../tools/dont-review-it/docs/lint/no-whole-data-import-subject--assert-the-contract-member.md) | Disallow handing an assertion a whole imported data file, so a spec states the part of that file it keeps rather than restating the file and failing on every unrelated edit |
 
 ## [.claude/skills/reviews/references/review-findings.md](../.claude/skills/reviews/references/review-findings.md)
 
