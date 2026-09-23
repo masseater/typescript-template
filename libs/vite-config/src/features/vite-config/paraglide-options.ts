@@ -1,4 +1,8 @@
+import { APPLICATION } from "@repo/config";
+
 import type { CompilerOptions } from "@inlang/paraglide-js";
+
+const localizedApps = [APPLICATION.user, APPLICATION.admin] as const;
 
 const paraglideStrategy = ["url", "cookie", "preferredLanguage", "baseLocale"] as const;
 
@@ -23,4 +27,4 @@ const paraglideCompileOptions = (): CompilerOptions => ({
   ],
 });
 
-export { paraglideCompileOptions, paraglideStrategy };
+export { localizedApps, paraglideCompileOptions, paraglideStrategy };

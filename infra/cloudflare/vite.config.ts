@@ -18,7 +18,7 @@ const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics,
+      ...awaitingEffectDiagnostics(import.meta.dirname),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

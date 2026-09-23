@@ -5,7 +5,7 @@ import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  run: effectRun,
+  run: effectRun(import.meta.dirname),
   test: {
     experimental: {
       openTelemetry: {

@@ -5,7 +5,7 @@ import { awaitingEffectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  run: awaitingEffectRun,
+  run: awaitingEffectRun(import.meta.dirname),
   test: {
     experimental: {
       openTelemetry: {
