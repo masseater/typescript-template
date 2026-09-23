@@ -30,6 +30,7 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
+import { effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
@@ -195,24 +196,6 @@ const sliceBoundaries = {
 const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
-
-const typecheckInputs = [
-  ...taskInput,
-  { base: "workspace", pattern: "**/*.{ts,tsx}" },
-  { base: "workspace", pattern: "**/package.json" },
-  { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "!**/node_modules/**" },
-  { base: "workspace", pattern: "!**/dist/**" },
-  { base: "workspace", pattern: "!**/.paraglide/**" },
-  { base: "workspace", pattern: "!**/.local/**" },
-] as const;
-
-const effectDiagnostics = {
-  "check:effect": {
-    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
-    input: [...typecheckInputs],
-  },
-} satisfies NonNullable<UserConfig["run"]>["tasks"];
 
 const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
 type Lifecycle = (typeof lifecycles)[number];
@@ -453,6 +436,7 @@ export {
   defineConfig,
   effectDiagnostics,
   effectRun,
+  effectTsgoNoEmit,
   intentValidation,
   lifecycle,
   lifecycleInherits,

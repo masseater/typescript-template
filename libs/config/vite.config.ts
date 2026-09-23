@@ -1,25 +1,14 @@
 import { modularBoundaries } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-const typecheckInput = [
-  { auto: true },
-  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-  { base: "workspace", pattern: "**/*.{ts,tsx}" },
-  { base: "workspace", pattern: "**/package.json" },
-  { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "!**/node_modules/**" },
-  { base: "workspace", pattern: "!**/dist/**" },
-  { base: "workspace", pattern: "!**/.paraglide/**" },
-  { base: "workspace", pattern: "!**/.local/**" },
-] as const;
+import { effectTsgoNoEmit, effectTypecheckInputs } from "./src/features/config/effect-typecheck.ts";
 
 export default defineConfig({
   run: {
     tasks: {
       "check:effect": {
-        command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
-        input: [...typecheckInput],
+        command: effectTsgoNoEmit("tsconfig.json"),
+        input: [...effectTypecheckInputs],
       },
       ...modularBoundaries,
       precommit: { command: [], dependsOn: [] },

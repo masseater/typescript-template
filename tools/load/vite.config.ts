@@ -1,10 +1,13 @@
-import { effectDiagnostics, lifecycle, modularBoundaries } from "@repo/vite-config";
+import { effectDiagnostics, effectTsgoNoEmit, lifecycle, modularBoundaries } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      "check:effect": {
+        command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
+        input: effectDiagnostics["check:effect"].input,
+      },
       ...modularBoundaries,
       ci: {
         cache: false,
