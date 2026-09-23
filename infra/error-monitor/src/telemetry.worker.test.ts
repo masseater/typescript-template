@@ -98,194 +98,196 @@ function recordQuery(requests: unknown[]): Effect.Effect<Network, never, Scope.S
 }
 
 describe("error monitor telemetry", () => {
-it.effect("groups fingerprinted error logs through the Workers Observability query API", () =>
-  Effect.gen(function* program() {
-    const requests: unknown[] = [];
-    yield* withServer(
-      http.post(endpoint, ({ request }) => {
-        if (request.headers.get("authorization") !== `Bearer ${token}`) {
-          return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
-        }
-        return request.json().then((body) => {
-          requests.push(body);
-          return HttpResponse.json({
-            ...queryResult,
-            result: {
-              ...queryResult.result,
-              calculations: [
-                {
-                  aggregates: [fingerprintedAggregate],
-                  calculation: "count",
-                  series: [{ data: [1], time: [1] }],
-                },
-              ],
-            },
+  it.effect("groups fingerprinted error logs through the Workers Observability query API", () =>
+    Effect.gen(function* program() {
+      const requests: unknown[] = [];
+      yield* withServer(
+        http.post(endpoint, ({ request }) => {
+          if (request.headers.get("authorization") !== `Bearer ${token}`) {
+            return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
+          }
+          return request.json().then((body) => {
+            requests.push(body);
+            return HttpResponse.json({
+              ...queryResult,
+              result: {
+                ...queryResult.result,
+                calculations: [
+                  {
+                    aggregates: [fingerprintedAggregate],
+                    calculation: "count",
+                    series: [{ data: [1], time: [1] }],
+                  },
+                ],
+              },
+            });
           });
-        });
-      }),
-    );
-    const result = yield* fetchErrorGroups(window);
-    assert.deepStrictEqual(result, {
-      dropped: 0,
-      groups: [
-        {
-          count: GROUPED_EVENTS,
-          event: "application.error",
-          fingerprint: "0123abcd",
-          service: "service-member-server",
-          tag: "RangeError",
-          type: "Error",
-        },
-      ],
-    });
-    const [body] = requests;
-    assert.deepInclude(body, {
-      chartType: "aggregate",
-      ignoreSeries: true,
-      timeframe: { from: window.from, to: window.to },
-      view: "calculations",
-    });
-    assert.deepNestedInclude(body, {
-      "parameters.calculations[0].operator": "count",
-      "parameters.filters[0]": { key: "error.fingerprint", operation: "exists", type: "string" },
-      "parameters.groupBys": [
-        { type: "string", value: "error.fingerprint" },
-        { type: "string", value: "service" },
-        { type: "string", value: "event" },
-        { type: "string", value: "error.tag" },
-        { type: "string", value: "error.type" },
-      ],
-    });
-  }).pipe(Effect.scoped),
-);
+        }),
+      );
+      const result = yield* fetchErrorGroups(window);
+      assert.deepStrictEqual(result, {
+        dropped: 0,
+        groups: [
+          {
+            count: GROUPED_EVENTS,
+            event: "application.error",
+            fingerprint: "0123abcd",
+            service: "service-member-server",
+            tag: "RangeError",
+            type: "Error",
+          },
+        ],
+      });
+      const [body] = requests;
+      assert.deepInclude(body, {
+        chartType: "aggregate",
+        ignoreSeries: true,
+        timeframe: { from: window.from, to: window.to },
+        view: "calculations",
+      });
+      assert.deepNestedInclude(body, {
+        "parameters.calculations[0].operator": "count",
+        "parameters.filters[0]": { key: "error.fingerprint", operation: "exists", type: "string" },
+        "parameters.groupBys": [
+          { type: "string", value: "error.fingerprint" },
+          { type: "string", value: "service" },
+          { type: "string", value: "event" },
+          { type: "string", value: "error.tag" },
+          { type: "string", value: "error.type" },
+        ],
+      });
+    }).pipe(Effect.scoped),
+  );
 
-it.effect("an invalid fingerprint is a check failure rather than a successful drop", () =>
-  Effect.gen(function* program() {
-    yield* recordQuery([]);
-    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "telemetry_groups_dropped");
-    assert.deepStrictEqual(failure.keys, ["dropped:1"]);
-    assert.notInclude(
-      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
-      "private@example.com",
-    );
-  }).pipe(Effect.scoped),
-);
+  it.effect("an invalid fingerprint is a check failure rather than a successful drop", () =>
+    Effect.gen(function* program() {
+      yield* recordQuery([]);
+      const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
+      assert.strictEqual(failure.code, "telemetry_groups_dropped");
+      assert.deepStrictEqual(failure.keys, ["dropped:1"]);
+      assert.notInclude(
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(failure),
+        "private@example.com",
+      );
+    }).pipe(Effect.scoped),
+  );
 
-it.effect("a response without the calculations key is an error rather than zero errors", () =>
-  Effect.gen(function* program() {
-    yield* withServer(
-      http.post(endpoint, () =>
-        HttpResponse.json({ ...queryResult, result: { run: {}, statistics: {} } }),
-      ),
-    );
-    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "telemetry_response_invalid");
-    assert.isTrue(failure.keys.some((key) => key.includes("calculations")));
-  }).pipe(Effect.scoped),
-);
+  it.effect("a response without the calculations key is an error rather than zero errors", () =>
+    Effect.gen(function* program() {
+      yield* withServer(
+        http.post(endpoint, () =>
+          HttpResponse.json({ ...queryResult, result: { run: {}, statistics: {} } }),
+        ),
+      );
+      const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
+      assert.strictEqual(failure.code, "telemetry_response_invalid");
+      assert.isTrue(failure.keys.some((key) => key.includes("calculations")));
+    }).pipe(Effect.scoped),
+  );
 
-it.effect("pages grouped results past the query limit instead of treating them as truncated", () =>
-  Effect.gen(function* program() {
-    const requests: AskedQuery[] = [];
-    yield* withServer(
-      http.post<RequestParams, AskedQuery>(endpoint, ({ request }) =>
-        request.json().then((body) => {
-          requests.push(body);
-          const start = body.offsetBy;
-          const pageSize = body.limit;
-          return HttpResponse.json({
+  it.effect(
+    "pages grouped results past the query limit instead of treating them as truncated",
+    () =>
+      Effect.gen(function* program() {
+        const requests: AskedQuery[] = [];
+        yield* withServer(
+          http.post<RequestParams, AskedQuery>(endpoint, ({ request }) =>
+            request.json().then((body) => {
+              requests.push(body);
+              const start = body.offsetBy;
+              const pageSize = body.limit;
+              return HttpResponse.json({
+                ...queryResult,
+                result: {
+                  ...queryResult.result,
+                  calculations: [
+                    {
+                      aggregates: Array.from(
+                        { length: start === 0 ? pageSize : 1 },
+                        (_unused, index) => ({
+                          ...fingerprintedAggregate,
+                          groups: [
+                            {
+                              key: "error.fingerprint",
+                              value: (start + index).toString(16).padStart(8, "0"),
+                            },
+                            { key: "error.tag", value: "Overflow" },
+                          ],
+                        }),
+                      ),
+                      calculation: "count",
+                      series: [],
+                    },
+                  ],
+                },
+              });
+            }),
+          ),
+        );
+        const result = yield* fetchErrorGroups(window);
+        const pageSize = requests[0]?.limit;
+        assert.isTrue(pageSize !== undefined && pageSize > 0);
+        assert.strictEqual(result.groups.length, (pageSize ?? 0) + 1);
+        assert.strictEqual(result.dropped, 0);
+        assert.deepStrictEqual(
+          requests.map((request) => request.offsetBy),
+          [0, pageSize],
+        );
+        assert.isTrue(requests.every((request) => request.limit === pageSize));
+        assert.isTrue(requests.every((request) => request.parameters.limit === pageSize));
+      }).pipe(Effect.scoped),
+  );
+
+  it.effect("reports a group value the query did not return as absent", () =>
+    Effect.gen(function* program() {
+      yield* withServer(
+        http.post(endpoint, () =>
+          HttpResponse.json({
             ...queryResult,
             result: {
               ...queryResult.result,
               calculations: [
                 {
-                  aggregates: Array.from(
-                    { length: start === 0 ? pageSize : 1 },
-                    (_unused, index) => ({
+                  aggregates: [
+                    {
                       ...fingerprintedAggregate,
-                      groups: [
-                        {
-                          key: "error.fingerprint",
-                          value: (start + index).toString(16).padStart(8, "0"),
-                        },
-                        { key: "error.tag", value: "Overflow" },
-                      ],
-                    }),
-                  ),
+                      groups: [{ key: "error.fingerprint", value: "0123abcd" }],
+                    },
+                  ],
                   calculation: "count",
                   series: [],
                 },
               ],
             },
-          });
-        }),
-      ),
-    );
-    const result = yield* fetchErrorGroups(window);
-    const pageSize = requests[0]?.limit;
-    assert.isTrue(pageSize !== undefined && pageSize > 0);
-    assert.strictEqual(result.groups.length, (pageSize ?? 0) + 1);
-    assert.strictEqual(result.dropped, 0);
-    assert.deepStrictEqual(
-      requests.map((request) => request.offsetBy),
-      [0, pageSize],
-    );
-    assert.isTrue(requests.every((request) => request.limit === pageSize));
-    assert.isTrue(requests.every((request) => request.parameters.limit === pageSize));
-  }).pipe(Effect.scoped),
-);
-
-it.effect("reports a group value the query did not return as absent", () =>
-  Effect.gen(function* program() {
-    yield* withServer(
-      http.post(endpoint, () =>
-        HttpResponse.json({
-          ...queryResult,
-          result: {
-            ...queryResult.result,
-            calculations: [
-              {
-                aggregates: [
-                  {
-                    ...fingerprintedAggregate,
-                    groups: [{ key: "error.fingerprint", value: "0123abcd" }],
-                  },
-                ],
-                calculation: "count",
-                series: [],
-              },
-            ],
+          }),
+        ),
+      );
+      assert.deepStrictEqual(yield* fetchErrorGroups(window), {
+        dropped: 0,
+        groups: [
+          {
+            count: GROUPED_EVENTS,
+            event: undefined,
+            fingerprint: "0123abcd",
+            service: undefined,
+            tag: undefined,
+            type: undefined,
           },
-        }),
-      ),
-    );
-    assert.deepStrictEqual(yield* fetchErrorGroups(window), {
-      dropped: 0,
-      groups: [
-        {
-          count: GROUPED_EVENTS,
-          event: undefined,
-          fingerprint: "0123abcd",
-          service: undefined,
-          tag: undefined,
-          type: undefined,
-        },
-      ],
-    });
-  }).pipe(Effect.scoped),
-);
+        ],
+      });
+    }).pipe(Effect.scoped),
+  );
 
-it.effect("query failures are errors rather than an empty result", () =>
-  Effect.gen(function* program() {
-    yield* withServer(
-      http.post(endpoint, () =>
-        HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
-      ),
-    );
-    const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "telemetry_http_failed");
-    assert.deepStrictEqual(failure.keys, []);
-  }).pipe(Effect.scoped),
-);
+  it.effect("query failures are errors rather than an empty result", () =>
+    Effect.gen(function* program() {
+      yield* withServer(
+        http.post(endpoint, () =>
+          HttpResponse.json({ secret: "must-not-be-logged" }, { status: 403 }),
+        ),
+      );
+      const failure = yield* fetchErrorGroups(window).pipe(Effect.flip);
+      assert.strictEqual(failure.code, "telemetry_http_failed");
+      assert.deepStrictEqual(failure.keys, []);
+    }).pipe(Effect.scoped),
+  );
 });

@@ -86,9 +86,7 @@ class ReadCache extends Context.Service<ReadCache, ReadCacheShape>()("@repo/runt
   }
 
   public static fromEnvironment(env: unknown): Layer.Layer<ReadCache, ConfigurationInvalid> {
-    return Layer.unwrap(
-      Effect.map(readStorage(env), (storage) => ReadCache.layer(storage.cache)),
-    );
+    return Layer.unwrap(Effect.map(readStorage(env), (storage) => ReadCache.layer(storage.cache)));
   }
 }
 
