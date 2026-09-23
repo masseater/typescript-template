@@ -1,10 +1,9 @@
-import { readMigrationStatus } from "@repo/db/migrations";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Effect } from "effect";
 
 import { isUnreadable, readVerdict, unreadableState } from "./account-read.ts";
 import { CloudflareFailure } from "./config.ts";
-import { databaseName, findDatabaseId, lookupDatabaseId } from "./database-lookup.ts";
+import { databaseName, findDatabaseId } from "./database-lookup.ts";
 import { recordedDatabaseIds } from "./state-ownership.ts";
 
 import type { StateService } from "alchemy/State";
@@ -54,36 +53,4 @@ const assertDatabaseUnclaimed = Effect.fn("assertDatabaseUnclaimed")(
   },
 );
 
-const assertDatabaseMigrated = Effect.fn("assertDatabaseMigrated")(function* assertDatabaseMigrated(
-  access: AccountAccess,
-  target: DeploymentTarget,
-) {
-  const databaseId = yield* lookupDatabaseId(access, databaseName(target.prefix));
-  const status = yield* readMigrationStatus({
-    accountId: access.accountId,
-    apiToken: access.apiToken,
-    databaseId,
-  }).pipe(
-    Effect.mapError(
-      (failure) =>
-        new CloudflareFailure({
-          code: "database_migration_status_unreadable",
-          keys: [failure.code],
-        }),
-    ),
-  );
-  if (status.state === "unrecorded") {
-    return yield* new CloudflareFailure({
-      code: "database_migration_history_missing",
-      keys: [String(status.declared)],
-    });
-  }
-  if (status.pending > 0) {
-    return yield* new CloudflareFailure({
-      code: "database_migrations_pending",
-      keys: [String(status.applied), String(status.declared)],
-    });
-  }
-});
-
-export { assertDatabaseMigrated, assertDatabaseUnclaimed, databaseVerdict };
+export { assertDatabaseUnclaimed, databaseVerdict };

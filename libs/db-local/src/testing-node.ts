@@ -1,6 +1,7 @@
 import { workerCompatibility } from "@repo/config/worker";
 import { Database, DatabaseFailure } from "@repo/db";
 import { localDatabase } from "@repo/db/local";
+import { migrateD1 } from "@repo/db/migrations";
 import { Context, Effect, Layer, Schema } from "effect";
 import { convertV4MiniflareOptions, Miniflare } from "miniflare";
 
@@ -26,16 +27,6 @@ const boundStatements = (
   Effect.gen(function* bindStatements() {
     const { batch } = yield* Schema.decodeUnknownEffect(HttpBatch)(requestJson);
     return batch.map((query) => database.prepare(query.sql).bind(...(query.params ?? [])));
-  });
-
-const executeD1HttpBatch = (
-  database: D1Database,
-  requestJson: unknown,
-): Effect.Effect<Readonly<{ result: readonly D1Result[]; success: true }>, Schema.SchemaError> =>
-  Effect.gen(function* executeHttpBatch() {
-    const statements = yield* boundStatements(database, requestJson);
-    const executedStatements = yield* Effect.promise(() => database.batch(statements));
-    return { result: executedStatements, success: true };
   });
 
 const columnValues = (columnObject: unknown): readonly unknown[] =>
@@ -210,4 +201,20 @@ export const describeDatabase = Effect.fn("describeDatabase")(function* describe
   };
 });
 
-export { EmptyTestDatabase, TestBinding, executeD1HttpBatch, executeD1RawBatch, runStatement };
+const deployMigrations = Effect.fn("deployMigrations")(function* deployMigrations(
+  binding: D1Database,
+) {
+  yield* migrateD1(binding);
+  yield* Effect.promise(() =>
+    binding.batch([
+      binding.prepare(
+        "CREATE TABLE __alchemy_migrations (id INTEGER PRIMARY KEY, hash text NOT NULL, created_at numeric, name text, applied_at TEXT)",
+      ),
+      binding.prepare(
+        "INSERT INTO __alchemy_migrations (id, hash, created_at, name) SELECT id, hash, created_at, name FROM __drizzle_migrations",
+      ),
+    ]),
+  );
+});
+
+export { EmptyTestDatabase, TestBinding, deployMigrations, executeD1RawBatch, runStatement };
