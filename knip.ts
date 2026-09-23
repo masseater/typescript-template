@@ -1,3 +1,5 @@
+import bundledTelemetry from "./libs/telemetry/package.json" with { type: "json" };
+
 import type { KnipConfig, KnipConfiguration } from "knip";
 
 const load = {
@@ -83,7 +85,16 @@ const workspaces = {
     entry: [...modularFeaturePublicApi],
     ignoreDependencies: ["@tanstack/intent"],
   },
-  "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
+  "tools/ai-native-telemetry": {
+    ignoreDependencies: [
+      "@tanstack/intent",
+      "@repo/config!",
+      `${bundledTelemetry.name}!`,
+      ...Object.entries(bundledTelemetry.dependencies).flatMap(([dependency, version]) =>
+        version.startsWith("workspace:") ? [] : [dependency],
+      ),
+    ],
+  },
   "tools/dont-review-it": {
     entry: [
       "src/features/dont-review-it/repository/dependency-cruiser.ts",

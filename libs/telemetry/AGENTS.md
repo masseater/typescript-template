@@ -2,7 +2,7 @@
 description: One OpenTelemetry provider startup for a process.
 ---
 
-# @repo/ai-native-telemetry
+# @repo/telemetry
 
 ## このパッケージが守るもの
 
@@ -15,6 +15,6 @@ description: One OpenTelemetry provider startup for a process.
   - MUST: `beforeExit` に自分で登録する
   - PROHIBIT: 送信の停止処理より先に登録されることを前提にする
 
-npm へは `publishConfig.access: public` で出す。入口は `.`・`./optional-setting`・`./vitest-sdk` である。実装はこのパッケージに置かず、ビルド時に束ねる private workspace から再公開する。コマンドは持たない。
+入口は `.`・`./optional-setting`・`./vitest-sdk` である。コマンドは持たない。npm へは直接出さず、公開パッケージのビルドに束ねられて出る。
 
 OpenTelemetry API 1。Logs / metrics / trace の SDK は package.json の pin に従う。
