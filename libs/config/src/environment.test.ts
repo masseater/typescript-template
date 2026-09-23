@@ -262,6 +262,7 @@ describe("an analytics measurement id beside a public origin", () => {
       readEnvironment({
         ...remoteBindings,
         APP_ORIGIN: "https://app.example.test",
+        APP_RELEASE: "1.2.3",
         GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
       }),
     );
@@ -270,7 +271,7 @@ describe("an analytics measurement id beside a public origin", () => {
   it("is read as it was written", ({ analyticsEnvironment }) => {
     expect(analyticsEnvironment).toStrictEqual({
       APP_ORIGIN: "https://app.example.test",
-      APP_RELEASE: "local",
+      APP_RELEASE: "1.2.3",
       AUTH_SECRET: localBindings.AUTH_SECRET,
       EMAIL_FROM: localBindings.EMAIL_FROM,
       GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-PUBLICMEASURE",
