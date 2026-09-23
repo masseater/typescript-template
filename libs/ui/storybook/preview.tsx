@@ -7,9 +7,9 @@ import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/
 import { Effect } from "effect";
 import msw from "msw-storybook-addon";
 
-import { BaseWebProvider } from "../src/baseweb-provider.tsx";
-import { MotionProvider } from "../src/motion-provider.tsx";
-import { FieldValidationMessageProvider } from "../src/shared/ui/field-validation-message-provider.tsx";
+import { BaseWebProvider } from "../src/features/ui/baseweb-provider.tsx";
+import { MotionProvider } from "../src/features/ui/motion-provider.tsx";
+import { FieldValidationMessageProvider } from "../src/features/ui/shared/ui/field-validation-message-provider.tsx";
 
 import type { ReactElement } from "react";
 

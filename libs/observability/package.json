@@ -4,9 +4,9 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/server.ts",
-    "./testing": "./src/testing.ts",
-    "./deployment-keys": "./src/deployment-keys.ts"
+    ".": "./src/features/observability/index.ts",
+    "./testing": "./src/features/observability/testing.ts",
+    "./deployment-keys": "./src/features/observability/deployment-keys.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

@@ -5,7 +5,7 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/styles.css",
+    "css": "src/features/ui/styles.css",
     "baseColor": "neutral",
     "cssVariables": true
   },
@@ -14,7 +14,7 @@
     "@react-bits": "https://reactbits.dev/r/{name}.json"
   },
   "aliases": {
-    "ui": "./src/shared/ui",
+    "ui": "./src/features/ui/shared/ui",
     "utils": "cn"
   }
 }
