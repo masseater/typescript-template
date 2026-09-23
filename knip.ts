@@ -93,7 +93,15 @@ const workspaces = {
       "src/features/dont-review-it/repository/lint.ts!",
       "src/features/dont-review-it/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
+    ignoreDependencies: [
+      "@tanstack/intent",
+      "@repo/cli!",
+      "@repo/config!",
+      "@repo/infra-cloudflare!",
+      "@repo/observability!",
+      "@repo/vite-config!",
+      "effect!",
+    ],
     project: [
       "src/features/dont-review-it/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
