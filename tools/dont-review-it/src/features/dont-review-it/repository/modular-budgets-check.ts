@@ -4,11 +4,11 @@ import { join, relative } from "node:path";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { architectureKindOf, modularBudgets } from "@repo/config";
-import { Console, Effect } from "effect";
+import { Cause, Console, Effect } from "effect";
 
 const sourceSuffix = /\.[cm]?[jt]sx?$/u;
 
-const collectFiles = (directory: string): Effect.Effect<readonly string[]> =>
+const collectFiles = (directory: string): Effect.Effect<readonly string[], Cause.UnknownError> =>
   Effect.gen(function* listFiles() {
     const entries = yield* Effect.tryPromise(() => readdir(directory, { withFileTypes: true }));
     const nested = yield* Effect.forEach(
@@ -28,7 +28,7 @@ const collectFiles = (directory: string): Effect.Effect<readonly string[]> =>
     return nested.flat();
   });
 
-const lineCount = (file: string): Effect.Effect<number> =>
+const lineCount = (file: string): Effect.Effect<number, Cause.UnknownError> =>
   Effect.gen(function* countLines() {
     const source = yield* Effect.tryPromise(() => readFile(file, "utf8"));
     if (source.length === 0) {
@@ -37,7 +37,7 @@ const lineCount = (file: string): Effect.Effect<number> =>
     return source.split(/\r?\n/u).length - (source.endsWith("\n") ? 1 : 0);
   });
 
-const directoryLines = (directory: string): Effect.Effect<number> =>
+const directoryLines = (directory: string): Effect.Effect<number, Cause.UnknownError> =>
   Effect.gen(function* sum() {
     const files = yield* collectFiles(directory);
     const counts = yield* Effect.forEach(files, lineCount, { concurrency: "unbounded" });
@@ -75,7 +75,7 @@ const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[]> =>
       const hasPublicApi = yield* Effect.tryPromise(async () => {
         const names = await readdir(sliceRoot);
         return names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name));
-      }).pipe(Effect.orElseSucceed(false));
+      }).pipe(Effect.orElseSucceed(() => false));
       if (!hasPublicApi) {
         findings.push(
           `features/${entry.name}: missing public API index (features/${entry.name}/index.ts).`,
@@ -111,4 +111,4 @@ const program = Effect.gen(function* main() {
   yield* Console.log(`modular-budgets: ok (${relative(process.cwd(), srcRoot) || "."})`);
 });
 
-void runCli(program, (cause) => causeRecord("quality.modular_budgets_failed", { cause }));
+runCli(program, (cause) => causeRecord("quality.modular_budgets_failed", { cause }));

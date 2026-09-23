@@ -14,7 +14,7 @@ const qualityDirectory = fileURLToPath(new URL(".", import.meta.url));
 
 const onDiskSandboxUnsafe = (): string[] =>
   readdirSync(qualityDirectory)
-    .filter((file) => sandboxUnsafeName.test(file))
+    .filter((file) => file.endsWith(".sandbox-unsafe.test.ts"))
     .map((file) => `tools/dont-review-it/src/features/dont-review-it/repository/${file}`)
     .toSorted();
 
