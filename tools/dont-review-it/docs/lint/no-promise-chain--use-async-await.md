@@ -13,7 +13,7 @@ Disallow calling a member named then, catch or finally, so the continuation and 
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-promise-chain--use-async-await.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-promise-chain--use-async-await.ts)
+- Source: [`no-promise-chain--use-async-await.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-promise-chain--use-async-await.ts)
 
 <!-- END GENERATED rule-header -->
 

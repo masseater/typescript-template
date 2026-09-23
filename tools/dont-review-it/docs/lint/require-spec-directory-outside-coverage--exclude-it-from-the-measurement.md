@@ -13,7 +13,7 @@ Require the test config to keep the specification directory out of the coverage 
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts`](../../src/lint/oxlint/rules/testing/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts)
+- Source: [`require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts)
 
 <!-- END GENERATED rule-header -->
 

@@ -13,7 +13,7 @@ Disallow combining useState with fetch for server data after the TanStack Query 
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-hand-rolled-server-read--use-tanstack-query.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-hand-rolled-server-read--use-tanstack-query.ts)
+- Source: [`no-hand-rolled-server-read--use-tanstack-query.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-hand-rolled-server-read--use-tanstack-query.ts)
 
 <!-- END GENERATED rule-header -->
 

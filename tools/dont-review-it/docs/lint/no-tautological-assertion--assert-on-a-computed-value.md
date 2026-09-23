@@ -13,7 +13,7 @@ Disallow an equality assertion whose expected value and whose subject are the sa
 - Suggestions: no
 - Options: no
 - Bundle: `testing`
-- Source: [`no-tautological-assertion--assert-on-a-computed-value.ts`](../../src/lint/oxlint/rules/testing/no-tautological-assertion--assert-on-a-computed-value.ts)
+- Source: [`no-tautological-assertion--assert-on-a-computed-value.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-tautological-assertion--assert-on-a-computed-value.ts)
 
 <!-- END GENERATED rule-header -->
 

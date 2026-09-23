@@ -13,7 +13,7 @@ Disallow a promise-valued expression that reaches no await, no return, no bindin
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-floating-promise--await-the-result.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-floating-promise--await-the-result.ts)
+- Source: [`no-floating-promise--await-the-result.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-floating-promise--await-the-result.ts)
 
 <!-- END GENERATED rule-header -->
 

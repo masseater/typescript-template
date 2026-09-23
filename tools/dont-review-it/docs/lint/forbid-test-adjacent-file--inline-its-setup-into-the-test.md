@@ -13,7 +13,7 @@ Disallow a file whose name carries a test marker other than the ones the reposit
 - Suggestions: no
 - Options: no
 - Bundle: `testing`
-- Source: [`forbid-test-adjacent-file--inline-its-setup-into-the-test.ts`](../../src/lint/oxlint/rules/testing/forbid-test-adjacent-file--inline-its-setup-into-the-test.ts)
+- Source: [`forbid-test-adjacent-file--inline-its-setup-into-the-test.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/forbid-test-adjacent-file--inline-its-setup-into-the-test.ts)
 
 <!-- END GENERATED rule-header -->
 

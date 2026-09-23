@@ -13,7 +13,7 @@ Disallow a file carrying more code lines than the budget set for it, so a file i
 - Suggestions: no
 - Options: yes
 - Bundle: `writing`
-- Source: [`forbid-oversized-file--split-by-responsibility.ts`](../../src/lint/oxlint/rules/writing/forbid-oversized-file--split-by-responsibility.ts)
+- Source: [`forbid-oversized-file--split-by-responsibility.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/forbid-oversized-file--split-by-responsibility.ts)
 
 <!-- END GENERATED rule-header -->
 

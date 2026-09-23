@@ -13,7 +13,7 @@ Disallow a constant, function, or class declared under a name another declaratio
 - Suggestions: no
 - Options: no
 - Bundle: `single-ownership`
-- Source: [`no-duplicate-value-declaration--reuse-authoritative-value.ts`](../../src/lint/oxlint/rules/single-ownership/no-duplicate-value-declaration--reuse-authoritative-value.ts)
+- Source: [`no-duplicate-value-declaration--reuse-authoritative-value.ts`](../../src/features/dont-review-it/lint/oxlint/rules/single-ownership/no-duplicate-value-declaration--reuse-authoritative-value.ts)
 
 <!-- END GENERATED rule-header -->
 

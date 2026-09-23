@@ -13,7 +13,7 @@ Require every path the required-file table registers to hold a file that is not 
 - Suggestions: no
 - Options: yes
 - Bundle: `toolchain`
-- Source: [`require-registered-file--restore-it-at-the-registered-path.ts`](../../src/lint/oxlint/rules/toolchain/require-registered-file--restore-it-at-the-registered-path.ts)
+- Source: [`require-registered-file--restore-it-at-the-registered-path.ts`](../../src/features/dont-review-it/lint/oxlint/rules/toolchain/require-registered-file--restore-it-at-the-registered-path.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -36,6 +36,7 @@ Code this rule rejects.
 ```ts
 // a registered path with nothing at it is reported against the repository root
 export const shipped = true;
+
 ```
 
 <!-- END GENERATED examples -->

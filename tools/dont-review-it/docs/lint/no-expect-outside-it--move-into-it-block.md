@@ -13,7 +13,7 @@ Disallow an assertion standing anywhere other than inside a test block the runne
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-expect-outside-it--move-into-it-block.ts`](../../src/lint/oxlint/rules/testing/no-expect-outside-it--move-into-it-block.ts)
+- Source: [`no-expect-outside-it--move-into-it-block.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-expect-outside-it--move-into-it-block.ts)
 
 <!-- END GENERATED rule-header -->
 

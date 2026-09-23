@@ -51,7 +51,7 @@ export const forbidItExtend = createDontReviewItRule({
     docs: {
       description:
         "Disallow a fixture factory that stands on the test block spelling, so the name that declares test blocks carries that one role and everything scanning the suite can settle what that name means by reading it",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
     },
     messages: {
       itExtend:

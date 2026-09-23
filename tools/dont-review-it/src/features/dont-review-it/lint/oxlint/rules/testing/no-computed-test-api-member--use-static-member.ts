@@ -27,7 +27,7 @@ export const noComputedTestApiMember = createDontReviewItRule({
     docs: {
       description:
         "Disallow reaching a member of the test block API or the assertion entry through a subscript, so every rule reading the suite settles what a call means from the name the source spells out",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
     },
     messages: {
       spelledSubscript:

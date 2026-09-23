@@ -13,7 +13,7 @@ Require every test block declaration to be rooted at one configured spelling, so
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`require-test-block-spelling--use-configured-fn.ts`](../../src/lint/oxlint/rules/testing/require-test-block-spelling--use-configured-fn.ts)
+- Source: [`require-test-block-spelling--use-configured-fn.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/require-test-block-spelling--use-configured-fn.ts)
 
 <!-- END GENERATED rule-header -->
 
