@@ -1,24 +1,19 @@
 import { MergifyReporter } from "@mergifyio/vitest";
-import { effectDiagnostics, lifecycle } from "@repo/vite-config";
+import { checkCode, effectDiagnostics, lifecycle, workspaceCheckImports } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
-
-import { roleApplications } from "./src/journey-roles.ts";
-
-const applicationChecks = Object.values(roleApplications).flatMap((application) => [
-  `@repo/${application}#build`,
-  `@repo/${application}#check:dev`,
-]);
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       "test:e2e": {
         cache: false,
         command: "vp test run",
-        dependsOn: ["@repo/dev#setup", ...applicationChecks],
+        dependsOn: ["@repo/dev#setup"],
       },
-      ...lifecycle({ prepush: ["check:effect"] }),
+      ...lifecycle({ prepush: ["check:effect", "check:code", "check:imports"] }),
     },
   },
   test: {

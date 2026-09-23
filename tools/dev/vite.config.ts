@@ -1,10 +1,12 @@
-import { effectDiagnostics, lifecycle } from "@repo/vite-config";
+import { checkCode, effectDiagnostics, lifecycle, workspaceCheckImports } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       authenticate: { cache: false, command: "./src/cli.ts authenticate" },
       browser: { cache: false, command: "./src/cli.ts browser" },
       "browser-command": { cache: false, command: "./src/cli.ts browser-command" },
@@ -24,7 +26,7 @@ export default defineConfig({
       storybook: { cache: false, command: "./src/cli.ts storybook" },
       ...lifecycle({
         premerge: ["check:exported"],
-        prepush: ["check:effect"],
+        prepush: ["check:effect", "check:code", "check:imports"],
       }),
     },
   },

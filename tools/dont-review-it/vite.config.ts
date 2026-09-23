@@ -6,7 +6,8 @@ import {
   effectDiagnostics,
   intentValidation,
   lifecycle,
-  testCoverageRun,
+  testRun,
+  workspaceCheckImports,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -14,9 +15,10 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
-      ...intentValidation,
       ...checkCode,
-      ...testCoverageRun,
+      ...workspaceCheckImports,
+      ...intentValidation,
+      ...testRun,
       "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
       "pr-affected": { cache: false, command: "./src/repository/pr-affected.ts" },
       "clean:shared-task-cache": {
@@ -24,9 +26,9 @@ export default defineConfig({
         command: "./src/repository/clean-shared-task-cache.ts",
       },
       ...lifecycle({
-        precommit: ["check:staged", "check:code"],
-        prepush: ["check:effect", "check"],
-        premerge: ["test"],
+        precommit: ["check:staged"],
+        prepush: ["check:effect", "check:code", "check:imports", "check"],
+        prepr: ["test"],
       }),
     },
   },

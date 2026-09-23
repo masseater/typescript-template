@@ -99,7 +99,7 @@ const withAuth = <Value, Failure>(
 
 const audienceOnEmptyDatabase = (
   audience: Application,
-): Effect.Effect<"AuthFailure" | Application, unknown> => {
+): Effect.Effect<AuthFailure["_tag"] | Application, unknown> => {
   return Effect.scoped(authFor(audience)).pipe(
     Effect.match({
       onFailure: (failure) => failure._tag,

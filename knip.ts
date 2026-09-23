@@ -26,11 +26,11 @@ const workspaces = {
     },
   },
   "infra/error-monitor": {
-    entry: ["src/worker.ts!"],
+    entry: ["alchemy.run.ts!", "src/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "infra/health-monitor": {
-    entry: ["src/worker.ts!"],
+    entry: ["alchemy.run.ts!", "src/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
@@ -108,9 +108,6 @@ const cloudflareStacks = [
   "src/email.ts!",
   "src/observability.ts!",
   "src/tokens.ts!",
-  "src/budget-monitor.ts!",
-  "src/error-monitor.ts!",
-  "src/health-monitor.ts!",
   "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
@@ -222,7 +219,11 @@ const config = ({
         project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
-        entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
+        entry: [
+          "alchemy.run.ts!",
+          "src/worker.ts!",
+          ...productionOnly(...scripts["infra/budget-monitor"]),
+        ],
         project: ["src/**/*.ts!"],
       },
       "infra/cloudflare": {

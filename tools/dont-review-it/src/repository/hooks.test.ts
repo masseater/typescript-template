@@ -159,10 +159,11 @@ function ungatedProjects(): string[] {
 }
 
 function strayTestTasks(): string[] {
-  const allowed = new Set([...testProjectDirectories, ...workspacesWithTests()]);
   return configuredDirectories.filter(
     (directory) =>
-      directory !== "." && !allowed.has(directory) && taskNames(directory).includes("test"),
+      directory !== "." &&
+      !testProjectDirectories.includes(directory) &&
+      taskNames(directory).includes("test"),
   );
 }
 
@@ -199,18 +200,6 @@ function toolsPackagesWithTests(): string[] {
       ),
     ),
   ].toSorted();
-}
-
-function workspacesWithTests(): Set<string> {
-  const repositoryRoot = join(toolsRoot, "..");
-  return new Set(
-    workspaceDirectories.filter((directory) => {
-      if (directory === ".") {
-        return false;
-      }
-      return collectTestPackages(join(repositoryRoot, directory), directory).length > 0;
-    }),
-  );
 }
 
 function uncoveredToolTestPackages(): string[] {
@@ -265,7 +254,9 @@ describe("lifecycle entry points", () => {
       cache: ["vp run -r prepr"],
       check: ["vp run -r prepr"],
       e2e: [],
-      "merge-queue": ["vp run -r premerge"],
+      "merge-queue": [],
+      "merge-queue-packages": ["vp run -r premerge"],
+      "merge-queue-unit": [],
     });
     expect(lifecycleByJob("../../../../.github/workflows/prerelease.yml")).toStrictEqual({
       load: [],
@@ -282,6 +273,8 @@ describe("lifecycle entry points", () => {
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
       "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
       "vp run -r premerge",
+      "vp run compile:paraglide",
+      "vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4",
       "vp run --filter @repo/e2e test:e2e",
       "vp run -r prepr",
     ]);
@@ -317,6 +310,7 @@ describe("lifecycle contents", () => {
     expect(uncachedGateTasks()).toStrictEqual([
       ".#mutation",
       ".#test:dev-server",
+      ".#test:storybook",
       "apps/internal-dashboard#check:dev",
       "apps/service-admin#check:dev",
       "apps/service-member#check:dev",
@@ -343,14 +337,37 @@ describe("lifecycle contents", () => {
       'textlint "apps/internal-dashboard/content/docs/**/*.md"',
     ]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
+    expect(dependencies(".", "prepush")).toContain("check:code");
     expect(reachable(".", ["prepush"])).toEqual(
-      expect.arrayContaining(["knip", "check:canonical-literal-types", "check:text"]),
+      expect.arrayContaining([
+        "check:code",
+        "check:effect",
+        "knip",
+        "check:canonical-literal-types",
+      ]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
-    expect(reachable(".", ["prepush"])).not.toContain("check:code");
-    expect(reachable(".", ["prepush"])).not.toContain("check:client");
-    expect(reachable(".", ["prepush"])).not.toContain("check:imports");
-    expect(reachable(".", ["prepush"])).not.toContain("check:react");
+    expect(
+      ["check:client", "check:imports", "check:react"].filter((name) =>
+        taskNames(".").includes(name),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.filter(
+        (directory) =>
+          directory !== "." &&
+          !["check:code", "check:imports"].every((name) =>
+            reachable(directory, ["prepush"]).includes(name),
+          ),
+      ),
+    ).toStrictEqual([]);
+    expect(
+      configuredDirectories.filter((directory) =>
+        ["check:client", "check:react"].some((name) =>
+          reachable(directory, ["prepush"]).includes(name),
+        ),
+      ),
+    ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
     expect(
       configuredDirectories.flatMap((directory) =>
         taskNames(directory).includes("check:effect")
@@ -374,6 +391,23 @@ describe("lifecycle contents", () => {
     expect(configuredDirectories.flatMap((directory) => slowBeforePush(directory))).toStrictEqual(
       [],
     );
+  });
+
+  it("leaves every root entry outside the workspaces to the root check:code", () => {
+    expect.hasAssertions();
+    const repositoryRoot = join(toolsRoot, "..");
+    const ignored = new Set([
+      ".git",
+      ...readFileSync(join(repositoryRoot, ".gitignore"), "utf8")
+        .split("\n")
+        .filter((line) => /^[\w.-]+\/?$/u.test(line))
+        .map((line) => line.replace(/\/$/u, "")),
+      ...workspaceDirectories.map((directory) => directory.split("/")[0]),
+    ]);
+    const checked = new Set(commands(".", "check:code").flatMap((command) => command.split(" ")));
+    expect(
+      readdirSync(repositoryRoot).filter((entry) => !ignored.has(entry) && !checked.has(entry)),
+    ).toStrictEqual([]);
   });
 
   it("type-checks a package before that package's bundle", () => {
@@ -404,6 +438,7 @@ describe("test ownership", () => {
       "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
     ]);
     expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
+    expect(commands(".", "test:storybook")).toStrictEqual(["vp test run --project storybook"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 

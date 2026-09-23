@@ -18,3 +18,4 @@ playwright-report/
 .alchemy/
 coverage/
 .spool/
+.vitest/

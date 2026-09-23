@@ -6,7 +6,8 @@ import {
   effectDiagnostics,
   intentValidation,
   lifecycle,
-  testCoverageRun,
+  testRun,
+  workspaceCheckImports,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -14,13 +15,13 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
-      ...intentValidation,
       ...checkCode,
-      ...testCoverageRun,
+      ...workspaceCheckImports,
+      ...intentValidation,
+      ...testRun,
       ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check"],
-        premerge: ["test"],
+        prepush: ["check:effect", "check:code", "check:imports", "check"],
+        prepr: ["test"],
       }),
     },
   },

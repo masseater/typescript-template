@@ -1,8 +1,40 @@
-import { coveredTestableLibraryRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
+import { effectTsgoNoEmit, effectTypecheckInputs } from "./src/effect-typecheck.ts";
+
 export default defineConfig({
-  run: coveredTestableLibraryRun,
+  run: {
+    tasks: {
+      "check:effect": {
+        command: effectTsgoNoEmit("tsconfig.json"),
+        input: [...effectTypecheckInputs],
+      },
+      "check:code": {
+        command: "vp check --no-error-on-unmatched-pattern",
+        input: [
+          { auto: true },
+          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
+        ],
+      },
+      "check:imports": {
+        command: "quality-check-imports",
+        input: [
+          { auto: true },
+          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
+          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
+        ],
+      },
+      precommit: { command: [], dependsOn: [] },
+      prepush: {
+        command: [],
+        dependsOn: ["precommit", "check:effect", "check:code", "check:imports"],
+      },
+      prepr: { command: [], dependsOn: ["prepush"] },
+      premerge: { command: [], dependsOn: [] },
+      prerelease: { command: [], dependsOn: ["prepr", "premerge"] },
+    },
+  },
   test: {
     coverage: {
       exclude: ["specs/**"],

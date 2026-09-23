@@ -1,11 +1,21 @@
-import { effectDiagnostics, lifecycle, testRun } from "@repo/vite-config";
+import {
+  checkCode,
+  effectDiagnostics,
+  effectTsgoNoEmit,
+  lifecycle,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
-      ...testRun,
+      ...checkCode,
+      ...workspaceCheckImports,
+      "check:effect": {
+        command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
+        input: effectDiagnostics["check:effect"].input,
+      },
       ci: {
         cache: false,
         command: "./src/ci.ts",
@@ -17,10 +27,7 @@ export default defineConfig({
         ],
       },
       load: { cache: false, command: "./src/cli.ts" },
-      ...lifecycle({
-        prepush: ["check:effect"],
-        premerge: ["test"],
-      }),
+      ...lifecycle({ prepush: ["check:effect", "check:code", "check:imports"] }),
     },
   },
   test: {

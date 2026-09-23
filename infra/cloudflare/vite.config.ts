@@ -1,5 +1,11 @@
 import { applications } from "@repo/config";
-import { lifecycle, taskInput, testableLibraryRun } from "@repo/vite-config";
+import {
+  checkCode,
+  effectDiagnostics,
+  lifecycle,
+  taskInput,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/monitors.ts";
@@ -11,7 +17,9 @@ const stackBuilds = ["core", ...applications, ...monitorStacks].map(
 export default defineConfig({
   run: {
     tasks: {
-      ...testableLibraryRun.tasks,
+      ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       "bootstrap:state": { cache: false, command: "./src/bootstrap-state.ts" },
       "db:bootstrap:remote": { cache: false, command: "./src/database-command.ts bootstrap" },
       "db:migrate:remote": { cache: false, command: "./src/database-command.ts migrate" },
@@ -39,13 +47,10 @@ export default defineConfig({
         input: [...taskInput],
       },
       ...lifecycle({
-        precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports"],
+        prepush: ["check:effect", "check:code", "check:imports"],
         prepr: ["verify:stacks"],
-        premerge: ["test"],
         prerelease: ["verify:account"],
       }),
     },
   },
-  test: { testTimeout: 30_000 },
 });
