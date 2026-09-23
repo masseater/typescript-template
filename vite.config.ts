@@ -10,7 +10,12 @@ import {
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
-import { lifecycle, taskInput, workspaceParaglideCompile } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  taskInput,
+  workspaceParaglideCompile,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -34,6 +39,7 @@ export default defineConfig({
   run: {
     tasks: {
       "compile:paraglide": workspaceParaglideCompile,
+      ...effectDiagnostics,
       "check:types": {
         command: "dont-review-it-typecheck",
         dependsOn: ["compile:paraglide"],
@@ -96,7 +102,7 @@ export default defineConfig({
       },
       ...lifecycle({
         precommit: ["check:text"],
-        prepush: ["knip", "check:canonical-literal-types"],
+        prepush: ["check:effect", "knip", "check:canonical-literal-types"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),
