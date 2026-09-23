@@ -1,5 +1,10 @@
 {
   "rules": {
-    "preset-ai-words-ja": true
+    "preset-ai-words-ja": {
+      "no-ai-words": {
+        "allows": ["検査", "実測", "経路", "突き合わせ", "正本", "正典"],
+        "dictionaryPath": "./.textlint-ai-words.json"
+      }
+    }
   }
 }
