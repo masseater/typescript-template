@@ -1,7 +1,9 @@
+import { NodeServices } from "@effect/platform-node";
 import { defineCommand } from "citty";
+import { Effect } from "effect";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
-import { isDirectory } from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import { isDirectoryAt } from "./platform/file-system.ts";
 import { path } from "./platform/path.ts";
 import { measureCheck } from "./repository-checks/index.ts";
 
@@ -33,22 +35,26 @@ export const checkCommand = defineCommand({
     },
   },
   run({ args, rawArgs }) {
-    return measureCheck(() => {
-      const unknownFlags = flagsIn(rawArgs).filter((raised) => !KNOWN_FLAGS.includes(raised));
-      if (unknownFlags.length > 0) {
-        refuseMisuse(`Unknown option ${unknownFlags.join(", ")}. Run --help for usage.\n`);
-        return;
-      }
+    return measureCheck(() =>
+      Effect.runPromise(
+        Effect.gen(function* check() {
+          const unknownFlags = flagsIn(rawArgs).filter((raised) => !KNOWN_FLAGS.includes(raised));
+          if (unknownFlags.length > 0) {
+            refuseMisuse(`Unknown option ${unknownFlags.join(", ")}. Run --help for usage.\n`);
+            return;
+          }
 
-      const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
-      if (!isDirectory(repositoryRoot)) {
-        refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
-        return;
-      }
+          const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
+          if (!(yield* isDirectoryAt(repositoryRoot))) {
+            refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
+            return;
+          }
 
-      if (args.write && !repairGeneratedParts(repositoryRoot)) return;
+          if (args.write && !(yield* repairGeneratedParts(repositoryRoot))) return;
 
-      reportProblems(repositoryRoot);
-    });
+          yield* reportProblems(repositoryRoot);
+        }).pipe(Effect.provide(NodeServices.layer)),
+      ),
+    );
   },
 });

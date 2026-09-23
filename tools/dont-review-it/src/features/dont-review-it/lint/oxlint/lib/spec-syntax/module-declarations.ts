@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 
 import { parseSync } from "oxc-parser";
 
+import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
-import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 
 import type { ESTree } from "@oxlint/plugins";
 import type { SpecStatement } from "./subject-expressions.ts";

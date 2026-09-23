@@ -12,8 +12,8 @@ import {
 
 import { attempt, partition, sortBy, uniqBy } from "es-toolkit";
 
+import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
-import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import { pathIsInside } from "../path-is-inside.ts";

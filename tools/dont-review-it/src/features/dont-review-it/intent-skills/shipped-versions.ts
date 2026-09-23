@@ -1,12 +1,13 @@
-import { readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { Effect, FileSystem, type PlatformError } from "effect";
 
-import { readUnlessMissing } from "../repository-checks/index.ts";
+import { textOrNull } from "../platform/file-system.ts";
+import { path, relativePosixPath } from "../platform/path.ts";
 import { declaresVersion } from "./changelog.ts";
 import { lineOfProperty, propertyValueOf, type PublishedManifest } from "./manifest.ts";
 import { listSkillFiles, skillsDirectoryOf } from "./skill-files.ts";
 import { libraryVersionOf, lineOfLibraryVersion } from "./skill-version.ts";
 
+import type { TreeFailure } from "../platform/directory-entries.ts";
 import type { RepositoryProblem } from "../problem.ts";
 import type { IntentSkillsConfig } from "./config.ts";
 
@@ -17,10 +18,12 @@ export type SkillPackage = {
 };
 
 const changelogPathOf = ({ manifest, config }: SkillPackage): string =>
-  join(skillsDirectoryOf({ manifest, config }), config.changelogFileName);
+  path.join(skillsDirectoryOf({ manifest, config }), config.changelogFileName);
 
-const changelogSourceOf = (scope: SkillPackage): string | null =>
-  readUnlessMissing(() => readFileSync(changelogPathOf(scope), "utf8"));
+const changelogSourceOf = (
+  scope: SkillPackage,
+): Effect.Effect<string | null, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  textOrNull(changelogPathOf(scope));
 
 export const declaredVersionOf = ({ manifest }: SkillPackage): string | null => {
   const declared = propertyValueOf(manifest.root, "version");
@@ -39,7 +42,7 @@ const missingChangelog = (scope: SkillPackage): readonly RepositoryProblem[] => 
 };
 
 const relativeTo = ({ repositoryRoot }: SkillPackage, absolutePath: string): string =>
-  relative(repositoryRoot, absolutePath);
+  relativePosixPath(repositoryRoot, absolutePath);
 
 const missingVersionHeading = ({
   scope,
@@ -63,48 +66,67 @@ const staleLibraryVersion = ({
   readonly scope: SkillPackage;
   readonly version: string;
   readonly skillFile: string;
-}): readonly RepositoryProblem[] => {
-  const source = readFileSync(skillFile, "utf8");
-  if (libraryVersionOf(source) === version) return [];
+}): Effect.Effect<
+  readonly RepositoryProblem[],
+  PlatformError.PlatformError,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* staleLibraryVersion() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const source = yield* filesystem.readFileString(skillFile);
+    if (libraryVersionOf(source) === version) return [];
 
-  return [
-    {
-      file: relativeTo(scope, skillFile),
-      line: lineOfLibraryVersion(source),
-      message: `A shipped skill must not name a version its manifest no longer declares, because an agent reads library_version to decide whether the skill describes the package it installed. Set metadata.library_version to "${version}", or run dont-review-it check --write.`,
-    },
-  ];
-};
-
-export const publishedVersionProblems = (scope: SkillPackage): readonly RepositoryProblem[] => {
-  const version = declaredVersionOf(scope);
-  if (version === null) return [];
-
-  const changelog = changelogSourceOf(scope);
-  if (changelog === null) return missingChangelog(scope);
-
-  const skillFiles = listSkillFiles({
-    directory: skillsDirectoryOf(scope),
-    config: scope.config,
+    return [
+      {
+        file: relativeTo(scope, skillFile),
+        line: lineOfLibraryVersion(source),
+        message: `A shipped skill must not name a version its manifest no longer declares, because an agent reads library_version to decide whether the skill describes the package it installed. Set metadata.library_version to "${version}", or run dont-review-it check --write.`,
+      },
+    ];
   });
 
-  return [
-    ...(declaresVersion({ source: changelog, version })
-      ? []
-      : missingVersionHeading({ scope, version })),
-    ...skillFiles.flatMap((skillFile) => staleLibraryVersion({ scope, version, skillFile })),
-  ];
-};
+export const publishedVersionProblems = (
+  scope: SkillPackage,
+): Effect.Effect<readonly RepositoryProblem[], TreeFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* publishedVersionProblems() {
+    const version = declaredVersionOf(scope);
+    if (version === null) return [];
 
-export const unexpectedChangelogProblems = (scope: SkillPackage): readonly RepositoryProblem[] => {
-  const { manifest, config } = scope;
-  if (changelogSourceOf(scope) === null) return [];
+    const changelog = yield* changelogSourceOf(scope);
+    if (changelog === null) return missingChangelog(scope);
 
-  return [
-    {
-      file: manifest.file.relativePath,
-      line: lineOfProperty({ manifest, key: "private" }),
-      message: `A workspace-internal package must not carry a changelog beside its skills, because nothing is ever packed from a package npm cannot publish. Delete ${config.skillsDirectory}/${config.changelogFileName}, or let the package publish by removing "private": true.`,
-    },
-  ];
-};
+    const skillFiles = yield* listSkillFiles({
+      directory: skillsDirectoryOf(scope),
+      config: scope.config,
+    });
+    const staleSkills = yield* Effect.forEach(skillFiles, (skillFile) =>
+      staleLibraryVersion({ scope, version, skillFile }),
+    );
+
+    return [
+      ...(declaresVersion({ source: changelog, version })
+        ? []
+        : missingVersionHeading({ scope, version })),
+      ...staleSkills.flat(),
+    ];
+  });
+
+export const unexpectedChangelogProblems = (
+  scope: SkillPackage,
+): Effect.Effect<
+  readonly RepositoryProblem[],
+  PlatformError.PlatformError,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* unexpectedChangelogProblems() {
+    const { manifest, config } = scope;
+    if ((yield* changelogSourceOf(scope)) === null) return [];
+
+    return [
+      {
+        file: manifest.file.relativePath,
+        line: lineOfProperty({ manifest, key: "private" }),
+        message: `A workspace-internal package must not carry a changelog beside its skills, because nothing is ever packed from a package npm cannot publish. Delete ${config.skillsDirectory}/${config.changelogFileName}, or let the package publish by removing "private": true.`,
+      },
+    ];
+  });

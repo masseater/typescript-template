@@ -1,5 +1,3 @@
-import { dirname, join, resolve } from "node:path";
-
 import { groupBy } from "es-toolkit";
 import * as ts from "typescript-6";
 
@@ -19,6 +17,7 @@ import {
   createCanonicalValuesTypeScriptProgram,
 } from "../lint/oxlint/lib/canonical-values/typescript-program.ts";
 import { formatValues } from "../lint/oxlint/lib/canonical-values/verify-format.ts";
+import { path } from "../platform/path.ts";
 import {
   contextualOriginSymbol,
   declaredHolderSymbol,
@@ -63,7 +62,7 @@ const ownerDerivedNames = (input: {
 }): ReadonlySet<string> =>
   new Set(
     input.catalog.entries.flatMap((owner) => {
-      const ownerText = readTextFile(join(input.repositoryRoot, owner.declarationPath));
+      const ownerText = readTextFile(path.join(input.repositoryRoot, owner.declarationPath));
       if (ownerText === null) {
         throw new Error(
           `The catalog owner ${owner.conceptId} is not readable at ${owner.declarationPath}.`,
@@ -250,7 +249,7 @@ const problemsInGroup = (input: {
   const program = createCanonicalValuesTypeScriptProgram({
     repositoryRoot: input.repositoryRoot,
     rootNames,
-    searchDirectory: dirname(rootNames[0] as string),
+    searchDirectory: path.dirname(rootNames[0] as string),
   });
   const checker = program.getTypeChecker();
   return input.candidates.flatMap((candidate) => {
@@ -274,7 +273,7 @@ const configKeyFor = (input: {
 }): string =>
   canonicalValuesTypeScriptConfigPath({
     repositoryRoot: input.repositoryRoot,
-    searchDirectory: dirname(input.candidate.absolutePath),
+    searchDirectory: path.dirname(input.candidate.absolutePath),
   }) ?? input.repositoryRoot;
 
 export const runCanonicalLiteralTypeChecks = (input: {
@@ -282,7 +281,7 @@ export const runCanonicalLiteralTypeChecks = (input: {
   readonly declarationSources: readonly ScannedFile[];
   readonly repositoryRoot: string;
 }): ScannedProblems => {
-  const repositoryRoot = resolve(input.repositoryRoot);
+  const repositoryRoot = path.resolve(input.repositoryRoot);
   const needles = searchNeedles(input.catalog);
   const candidates = measureStage("canonical-literal-types.prefilter", () => {
     if (needles.length === 0) return [];

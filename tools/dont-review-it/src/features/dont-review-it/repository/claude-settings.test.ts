@@ -3,6 +3,7 @@ import { Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 import { describe, expect, it } from "vite-plus/test";
 
+import { pathExists } from "../platform/file-system.ts";
 import { capturedProcess } from "./captured-process.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
@@ -43,7 +44,7 @@ const { registeredCommands, unreachableScripts } = await Effect.runPromise(
       return directory === undefined
         ? Effect.succeed(true)
         : Effect.map(
-            filesystem.exists(paths.join(repositoryRoot, directory, groups["script"])),
+            pathExists(paths.join(repositoryRoot, directory, groups["script"])),
             (present) => !present,
           );
     });

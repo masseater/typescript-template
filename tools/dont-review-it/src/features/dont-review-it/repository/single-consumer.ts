@@ -1,14 +1,14 @@
-import { Effect, FileSystem, Path, type PlatformError } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 
+import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { path } from "../platform/path.ts";
+import { posixPath } from "../platform/path.ts";
 import {
   declaredDependencies,
   field,
   workspaceManifests,
   type WorkspaceManifest,
 } from "./dependencies.ts";
-import { directoryEntries } from "./directory-entries.ts";
-import { posixPath } from "./repository-path.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 const areas = new Set(["apps", "libs", "infra", "tools"]);
@@ -248,11 +248,7 @@ const skippedDirectory = (name: string): boolean => name.startsWith(".") || skip
 const relativeFile = (root: string, absolute: string): string =>
   path.relative(root, absolute).split(path.sep).join("/");
 
-type SourceScan<Scanned> = Effect.Effect<
-  Scanned,
-  PlatformError.PlatformError,
-  FileSystem.FileSystem | Path.Path
->;
+type SourceScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
 const listedSources = (directory: string, root: string): SourceScan<SourceText[]> =>
   Effect.gen(function* scanSources() {

@@ -1,12 +1,10 @@
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-import { normalize } from "node:path/posix";
-
+import { Effect, type FileSystem, Schema } from "effect";
 import { uniq } from "es-toolkit";
 
-import { readJsonFile } from "../lint/oxlint/lib/canonical-values/read-json-file.ts";
-import { NEGATION_PREFIX } from "../lint/oxlint/lib/tracked-paths/ignore-listing.ts";
-import { readUnlessMissing } from "../repository-checks/index.ts";
+import { type TreeFailure } from "../platform/directory-entries.ts";
+import { textOrNull } from "../platform/file-system.ts";
+import { path, posixPath } from "../platform/path.ts";
+import { directoriesMatching } from "../platform/workspace-patterns.ts";
 
 import type { DependencyCatalogChecksConfig } from "./config.ts";
 
@@ -15,30 +13,29 @@ export type WorkspaceManifest = {
   readonly manifest: unknown;
 };
 
-const SINGLE_LEVEL_PATTERN_SUFFIX = "/*";
+class ManifestUnparsable extends Schema.TaggedError<ManifestUnparsable>()("ManifestUnparsable", {
+  file: Schema.String,
+  cause: Schema.Defect(),
+}) {
+  override get message(): string {
+    return `${this.file} exists but does not parse as JSON, so the dependencies it declares cannot be checked.`;
+  }
+}
 
-export const directoriesMatching = ({
-  repositoryRoot,
-  pattern,
-}: {
-  readonly repositoryRoot: string;
-  readonly pattern: string;
-}): readonly string[] => {
-  if (pattern.startsWith(NEGATION_PREFIX)) return [];
-  if (!pattern.endsWith(SINGLE_LEVEL_PATTERN_SUFFIX)) return [pattern];
+export type ManifestReadFailure = TreeFailure | ManifestUnparsable;
 
-  const parentDirectory = pattern.slice(0, -SINGLE_LEVEL_PATTERN_SUFFIX.length);
-  const parentEntries =
-    readUnlessMissing(() =>
-      readdirSync(join(repositoryRoot, parentDirectory), {
-        withFileTypes: true,
-      }),
-    ) ?? [];
+const decodeManifest = Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown));
 
-  return parentEntries
-    .filter((parentEntry) => parentEntry.isDirectory())
-    .map((parentEntry) => `${parentDirectory}/${parentEntry.name}`);
-};
+const manifestAt = (
+  file: string,
+): Effect.Effect<unknown, ManifestReadFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* manifestAt() {
+    const text = yield* textOrNull(file);
+    if (text === null) return null;
+    return yield* decodeManifest(text).pipe(
+      Effect.mapError((unparsable) => new ManifestUnparsable({ file, cause: unparsable })),
+    );
+  });
 
 export const readWorkspaceManifests = ({
   repositoryRoot,
@@ -48,18 +45,24 @@ export const readWorkspaceManifests = ({
   readonly repositoryRoot: string;
   readonly packagePatterns: readonly string[];
   readonly config: DependencyCatalogChecksConfig;
-}): readonly WorkspaceManifest[] => {
-  const workspaceManifestPaths = uniq(
-    packagePatterns
-      .flatMap((pattern) => directoriesMatching({ repositoryRoot, pattern }))
-      .map((directory) => normalize(`${directory}/${config.manifestFileName}`)),
-  )
-    .toSorted()
-    .filter((relativePath) => relativePath !== config.manifestFileName);
-  const manifestPaths = [config.manifestFileName, ...workspaceManifestPaths];
+}): Effect.Effect<readonly WorkspaceManifest[], ManifestReadFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* readWorkspaceManifests() {
+    const directories = yield* Effect.forEach(packagePatterns, (pattern) =>
+      directoriesMatching({ repositoryRoot, pattern }),
+    );
+    const workspaceManifestPaths = uniq(
+      directories
+        .flat()
+        .map((directory) => posixPath.normalize(`${directory}/${config.manifestFileName}`)),
+    )
+      .toSorted()
+      .filter((relativePath) => relativePath !== config.manifestFileName);
+    const manifestPaths = [config.manifestFileName, ...workspaceManifestPaths];
 
-  return manifestPaths.flatMap((relativePath) => {
-    const manifest = readJsonFile(join(repositoryRoot, relativePath));
-    return manifest === null ? [] : [{ relativePath, manifest }];
+    const manifests = yield* Effect.forEach(manifestPaths, (relativePath) =>
+      Effect.map(manifestAt(path.join(repositoryRoot, relativePath)), (manifest) =>
+        manifest === null ? [] : [{ relativePath, manifest }],
+      ),
+    );
+    return manifests.flat();
   });
-};
