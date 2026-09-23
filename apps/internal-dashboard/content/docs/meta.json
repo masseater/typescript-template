@@ -2,6 +2,7 @@
   "pages": [
     "index",
     "getting-started",
+    "checklists",
     "tech-stack",
     "observability",
     "data-model",
