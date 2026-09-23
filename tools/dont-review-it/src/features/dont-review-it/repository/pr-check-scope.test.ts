@@ -62,6 +62,9 @@ describe("pull request check scope", () => {
           "key: vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.sha }}",
         );
         expect(check).toMatch(/cache\/save@.+\n {8}if: .*steps\.affected\.outputs\./u);
+        expect(check).toMatch(
+          /cache\/save@.+\n {8}if: \$\{\{ !cancelled\(\) && steps\.vite-task-cache\.outputs\.cache-hit != 'true' \}\}\n/u,
+        );
       }),
     ));
 

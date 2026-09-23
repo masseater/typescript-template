@@ -161,7 +161,7 @@ jobs:
             vite-task-${{ runner.os }}-${{ runner.arch }}-main-
       - run: vp run -r prepr
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: steps.vite-task-cache.outputs.cache-hit != 'true'
+        if: ${{ !cancelled() && steps.vite-task-cache.outputs.cache-hit != 'true' }}
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
