@@ -17,7 +17,8 @@
     "./deployment": "./src/deployment.ts",
     "./lint-overrides": "./src/lint-overrides.ts",
     "./monitor": "./src/monitor.ts",
-    "./stacks": "./src/stacks.ts"
+    "./stacks": "./src/stacks.ts",
+    "./wiki-program": "./src/wiki-program.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

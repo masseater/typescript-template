@@ -45,6 +45,8 @@ export {
   readAi,
   readConfig,
   readEnvironment,
+  readSiteEnvironment,
+  readWikiBindings,
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
 export {
@@ -59,7 +61,7 @@ export {
 export type { JobResult, JobsBindings } from "./jobs.ts";
 export { effectTsgoNoEmit, effectTypecheckInputs } from "./effect-typecheck.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
-export type { AppConfig, AssetFetcher } from "./environment.ts";
+export type { AppConfig, AssetFetcher, ServiceFetcher, SiteConfig } from "./environment.ts";
 export {
   localUserInbox,
   readRealtime,
@@ -69,3 +71,17 @@ export {
   userInboxClassName,
 } from "./realtime.ts";
 export { respondedSuccessfully, waitUntilResponds } from "./responds.ts";
+export {
+  buildTargets,
+  hostOf,
+  isWikiPath,
+  wikiApiBinding,
+  wikiApiEntrypoint,
+  wikiBasePath,
+  wikiDevOriginVariable,
+  wikiHost,
+  wikiPagesBinding,
+  wikiServerFnBase,
+  wikiWorker,
+} from "./wiki.ts";
+export type { BuildTarget, WikiWorker } from "./wiki.ts";

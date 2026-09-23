@@ -22,6 +22,7 @@ const awaitingPresetPackages = [
   "apps/service-admin/**",
   "apps/service-member/**",
   "apps/internal-dashboard/**",
+  "apps/internal-wiki/**",
   "infra/budget-monitor/**",
   "infra/cloudflare/**",
   "infra/error-monitor/**",

@@ -108,7 +108,7 @@ describe("社内ダッシュボードの枠", () => {
     expect(theCollapsedFrame).toContain('href="/inquiries"');
     expect(theCollapsedFrame).toContain("問い合わせ");
     expect(theCollapsedFrame).toContain("Google Analytics");
-    expect(theCollapsedFrame).toContain('href="/wiki"');
+    expect(theCollapsedFrame).toContain('href="/wiki/"');
     expect(theCollapsedFrame).toContain("本文");
     expect(theCollapsedFrame).not.toContain("<input");
     expect(theCollapsedFrame).not.toContain("この画面内を検索");

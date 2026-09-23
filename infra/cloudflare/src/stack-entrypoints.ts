@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, wikiWorker } from "@repo/config";
 
 import { path } from "./platform.ts";
 
@@ -15,6 +15,7 @@ const applicationEntrypoints = {
   [APPLICATION.user]: path.join(repositoryRoot, "apps", APPLICATION.user, "alchemy.run.ts"),
   [APPLICATION.wiki]: path.join(repositoryRoot, "apps", APPLICATION.wiki, "alchemy.run.ts"),
   core: path.join(repositoryRoot, "apps", "core", "alchemy.run.ts"),
+  [wikiWorker]: path.join(repositoryRoot, "apps", wikiWorker, "alchemy.run.ts"),
 } as const satisfies Readonly<Record<PackageStack, string>>;
 
 const monitorEntrypoints = {

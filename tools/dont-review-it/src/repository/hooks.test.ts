@@ -363,6 +363,7 @@ describe("lifecycle contents", () => {
       ),
     ).toStrictEqual([
       "apps/internal-dashboard",
+      "apps/internal-wiki",
       "apps/service-admin",
       "apps/service-member",
       "libs/db",

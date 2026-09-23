@@ -1,4 +1,5 @@
-import { loginPath, useSession } from "@repo/auth-ui";
+import { loginPath } from "@repo/auth-ui/login-redirect";
+import { useSession } from "@repo/auth-ui/session";
 import { ROLE } from "@repo/config";
 import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";

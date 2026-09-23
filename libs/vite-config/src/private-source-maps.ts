@@ -3,7 +3,7 @@ import { Effect, Schema } from "effect";
 import { filesystem, paths } from "./host.ts";
 import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "./source-maps.ts";
 
-import type { Application } from "@repo/config";
+import type { BuildTarget } from "@repo/config";
 import type { Plugin } from "vite-plus";
 
 const PRIVATE_FILE_MODE = 0o600;
@@ -69,14 +69,14 @@ const clientMaps = (
   return { ready: true, outDir, sourceMapFiles };
 };
 
-const encodePrivateMapsNotice = (app: Application, moved: number): Effect.Effect<string> =>
+const encodePrivateMapsNotice = (app: BuildTarget, moved: number): Effect.Effect<string> =>
   Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
     audience: app,
     event: "build.source_maps_private",
     moved,
   }).pipe(Effect.orDie);
 
-const privateSourceMaps = (app: Application): Plugin => {
+const privateSourceMaps = (app: BuildTarget): Plugin => {
   const mapDirectory = sourceMapDirectories(repositoryRoot, app).client;
   const moveClientMaps = (
     placed: Readonly<{ outDir: string; sourceMapFiles: readonly string[] }>,

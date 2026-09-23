@@ -1,11 +1,10 @@
 import { initBrowserTelemetry } from "@repo/observability/browser";
 import { FieldValidationMessageProvider, ToastProvider } from "@repo/ui";
-import { HeadContent, Scripts } from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { fieldValidationMessages } from "#shared/i18n/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
-import { WikiProvider } from "./-wiki-provider.tsx";
 
 import type { ReactElement } from "react";
 
@@ -28,7 +27,7 @@ function RootDocument(): ReactElement {
       <body className="flex min-h-svh flex-col">
         <FieldValidationMessageProvider messages={fieldValidationMessages}>
           <ToastProvider>
-            <WikiProvider />
+            <Outlet />
           </ToastProvider>
         </FieldValidationMessageProvider>
         <Scripts />

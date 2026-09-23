@@ -1,0 +1,48 @@
+{
+  "name": "@repo/internal-wiki",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#*": "./src/*"
+  },
+  "dependencies": {
+    "@effect/atom-react": "catalog:",
+    "@repo/auth-ui": "workspace:*",
+    "@repo/config": "workspace:*",
+    "@repo/core-api": "workspace:*",
+    "@repo/infra-cloudflare": "workspace:*",
+    "@repo/observability": "workspace:*",
+    "@repo/runtime": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "@tanstack/react-router": "catalog:",
+    "@tanstack/react-start": "catalog:",
+    "alchemy": "catalog:",
+    "effect": "catalog:",
+    "fumadocs-core": "16.15.11",
+    "fumadocs-mdx": "15.4.1",
+    "fumadocs-ui": "16.15.11",
+    "lucide-react": "catalog:",
+    "mermaid": "12.0.0",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "source-map": "0.8.0",
+    "unist-util-visit-parents": "6.0.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@repo/vite-config": "workspace:*",
+    "@types/mdast": "4.0.4",
+    "@types/mdx": "2.0.14",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "remark": "15.0.1",
+    "remark-mdx": "3.1.1",
+    "steiger": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

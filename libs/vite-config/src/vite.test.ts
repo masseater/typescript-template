@@ -1,4 +1,4 @@
-import { applications, type Application } from "@repo/config";
+import { APPLICATION, applications, type Application } from "@repo/config";
 import { describe, expect, test } from "vite-plus/test";
 
 import {
@@ -144,7 +144,31 @@ describe("appConfig", () => {
           }
           return [];
         });
-      return applications.map((app) => pluginNamesOf(appConfig(app)(serve).plugins ?? [], app));
+      return applications.map((app) =>
+        pluginNamesOf(appConfig(app)(serve).plugins ?? [], app).filter(
+          (pluginName) => pluginName !== "template-wiki-companion",
+        ),
+      );
+    })
+    .extend("wikiCompanionHosts", () => {
+      const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
+        plugins.flatMap((plugin): readonly string[] => {
+          if (Array.isArray(plugin)) {
+            return pluginNamesOf(plugin);
+          }
+          if (
+            typeof plugin === "object" &&
+            plugin !== null &&
+            "name" in plugin &&
+            typeof plugin.name === "string"
+          ) {
+            return [plugin.name];
+          }
+          return [];
+        });
+      return applications.filter((app) =>
+        pluginNamesOf(appConfig(app)(serve).plugins ?? []).includes("template-wiki-companion"),
+      );
     })
     .extend("adminPlugins", () => {
       const pluginNamesOf = (plugins: readonly PluginOption[]): readonly string[] =>
@@ -212,6 +236,10 @@ describe("appConfig", () => {
       pluginNamesByApplication[0],
       pluginNamesByApplication[0],
     ]);
+  });
+
+  it("starts the wiki development server only beside its host", ({ wikiCompanionHosts }) => {
+    expect(wikiCompanionHosts).toStrictEqual([APPLICATION.wiki]);
   });
 
   it("inserts application plugins after the dev boundary", ({

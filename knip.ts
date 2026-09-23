@@ -161,8 +161,10 @@ const config = ({
     ignoreDependencies: ["vite"],
     ignoreIssues: {
       "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/mcp.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/server-app.ts": ["exports"],
+      "apps/internal-dashboard/src/shared/server-api/wiki-gateway.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/server-app.ts": ["exports"],
@@ -178,6 +180,9 @@ const config = ({
       "apps/service-member/src/shared/server-api/realtime-api.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/service-member/src/shared/server-api/server-app.ts": ["exports"],
+      "apps/internal-wiki/src/shared/server-api/runtime.ts": ["unlisted"],
+      "apps/internal-wiki/src/shared/server-api/server-app.ts": ["exports"],
+      "apps/internal-wiki/src/shared/server-api/wiki-api.ts": ["unlisted"],
       "libs/db/src/testing.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.ts": ["unlisted"],
       "libs/monitor/src/mail-recorder.worker.test.ts": ["unlisted"],
@@ -202,11 +207,12 @@ const config = ({
       "apps/internal-dashboard": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
-        project: [
-          "src/**/*.{ts,tsx,mdx}!",
-          "src/**/*.css",
-          "!src/shared/wiki/wiki-oauth-fixture.ts!",
-        ],
+        project: ["src/**/*.{ts,tsx}!", "!src/shared/wiki/wiki-oauth-fixture.ts!"],
+      },
+      "apps/internal-wiki": {
+        ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
+        project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
       },
       "apps/service-admin": {
         ...app,

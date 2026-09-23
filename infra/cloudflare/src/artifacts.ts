@@ -23,7 +23,7 @@ import {
 } from "./source-maps.ts";
 import { stageFiles } from "./staging.ts";
 
-import type { Application } from "@repo/config";
+import type { BuildTarget } from "@repo/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -197,7 +197,7 @@ function manifestDigest(
 
 const buildOutput = Effect.fn("buildOutput")(function* buildOutput(
   repository: string,
-  target: Application,
+  target: BuildTarget,
 ) {
   const root = path.join(repository, "apps", target, "dist");
   const output: BuildOutput = {
@@ -234,12 +234,12 @@ const digests = Effect.fn("digests")(function* digests(
   return { release: release.slice(0, RELEASE_LENGTH), uploaded };
 });
 
-function stagedRoot(repository: string, target: Application): string {
+function stagedRoot(repository: string, target: BuildTarget): string {
   return path.join(repository, "infra", "cloudflare", ".artifacts", target);
 }
 
 const materialize = Effect.fn("materialize")(function* materialize(
-  place: { readonly repository: string; readonly target: Application },
+  place: { readonly repository: string; readonly target: BuildTarget },
   output: BuildOutput,
   artifacts: Artifacts,
 ) {
@@ -272,7 +272,7 @@ const materialize = Effect.fn("materialize")(function* materialize(
 
 const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
   repository: string,
-  target: Application,
+  target: BuildTarget,
 ) {
   const output = yield* buildOutput(repository, target);
   const clientFiles = yield* clientArtifactFiles(output.client);

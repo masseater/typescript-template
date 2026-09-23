@@ -145,7 +145,7 @@ const configuration: IConfiguration = {
     },
     {
       comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
-      from: { path: "^apps/internal-dashboard/" },
+      from: { path: "^apps/(?:internal-dashboard|internal-wiki)/" },
       name: "no-wiki-to-database",
       severity: "error",
       to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/local\.ts$` },

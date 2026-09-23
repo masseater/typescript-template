@@ -1,4 +1,4 @@
-import { loopbackAddress, type Application } from "@repo/config";
+import { loopbackAddress, type BuildTarget } from "@repo/config";
 import { repositoryRoot as defaultRepositoryRoot } from "@repo/config/repository-root";
 import { Effect } from "effect";
 
@@ -9,7 +9,7 @@ import { serverOptions } from "./server-options.ts";
 
 import type { ConfigEnv, Plugin, ResolvedConfig } from "vite-plus";
 
-const devBoundary = (application: Application, repositoryRoot = defaultRepositoryRoot): Plugin => {
+const devBoundary = (application: BuildTarget, repositoryRoot = defaultRepositoryRoot): Plugin => {
   const canonicalRepositoryRoot = Effect.runPromise(filesystem.realPath(repositoryRoot));
   return {
     apply: (_config: unknown, environment: Readonly<ConfigEnv>) =>

@@ -57,9 +57,11 @@ describe("alchemy stacks", () => {
     expect(violationsWhenLast(traceDestinationStack)).toStrictEqual([
       "core",
       "internal-dashboard",
+      "internal-wiki",
       "service-admin",
       "service-member",
     ]);
+    expect(violationsWhenLast("internal-wiki")).toStrictEqual(["internal-dashboard"]);
   });
 
   it.for(stackNames)("%s exports the program the CLI runs", (stack) =>

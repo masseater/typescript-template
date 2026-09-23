@@ -1,4 +1,4 @@
-import { applications, loopbackAddress, loopbackOrigin } from "@repo/config";
+import { buildTargets, loopbackAddress, loopbackOrigin } from "@repo/config";
 import { Effect, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 import { createServer } from "vite-plus";
@@ -17,7 +17,7 @@ const administratorDatabaseModulePath = "libs/db/src/admin.ts?raw";
 const administratorDatabaseSource = 'export const label = "private-admin-database";';
 const httpLayer = FetchHttpClient.layer;
 
-describe.each(applications)("the %s development server", (application) => {
+describe.each(buildTargets)("the %s development server", (application) => {
   const foreignApplications = applicationsExcept(application);
   const applicationEntrySource = `export const label = "${application}-module";`;
   const servedApplicationEntryModule = `export default ${Effect.runSync(
@@ -83,7 +83,7 @@ describe.each(applications)("the %s development server", (application) => {
           const applicationRoot = paths.join(repositoryRoot, "apps", application);
           yield* Effect.forEach(
             [
-              ...applications.map((candidate) => `apps/${candidate}/src`),
+              ...buildTargets.map((candidate) => `apps/${candidate}/src`),
               "libs/db/src",
               "libs/ui",
               ".local",

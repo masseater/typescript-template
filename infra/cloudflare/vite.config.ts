@@ -1,10 +1,10 @@
-import { applications } from "@repo/config";
+import { applications, wikiWorker } from "@repo/config";
 import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/monitors.ts";
 
-const stackBuilds = ["core", ...applications, ...monitorStacks].map(
+const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(
   (unit) => `@repo/${unit}#build`,
 );
 
