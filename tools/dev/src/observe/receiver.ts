@@ -139,7 +139,7 @@ const openReceiver = Effect.gen(function* openReceiverProgram() {
       ),
     )
     .pipe(Scope.provide(scope));
-  if (server.address._tag !== "TcpAddress") {
+  if (server.address._tag === "UnixPathAddress") {
     yield* Scope.close(scope, Exit.succeed(undefined));
     return yield* new ReceiverCheckFailure({ reason: "receiver did not bind" });
   }

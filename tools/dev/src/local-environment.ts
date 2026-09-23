@@ -19,7 +19,6 @@ import type { Application } from "@repo/config";
 import type { LocalCommandFailure } from "./failure.ts";
 
 type App = Application;
-type RouteName = App | "mailpit";
 
 interface RunOptions {
   readonly cwd?: string;
@@ -50,6 +49,7 @@ const CredentialsFile = Schema.Struct({
 });
 const routes = { ...applicationPorts, mailpit: mailpitPort };
 const routeNames = [...applications, "mailpit"] as const;
+type RouteName = (typeof routeNames)[number];
 
 type Credentials = typeof CredentialsFile.Type;
 

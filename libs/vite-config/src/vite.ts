@@ -6,6 +6,7 @@ import react from "@vitejs/plugin-react";
 import { Effect } from "effect";
 import {
   defineConfig,
+  lazyPlugins,
   type ConfigEnv,
   type Plugin,
   type PluginOption,
@@ -15,6 +16,7 @@ import {
 
 import { cloudflareAppPlugin } from "./cloudflare-app.ts";
 import { devBoundary } from "./dev-boundary.ts";
+import { effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
 import { lifecycle } from "./lifecycle.ts";
@@ -165,24 +167,6 @@ const sliceBoundaries = {
 const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
-
-const typecheckInputs = [
-  ...taskInput,
-  { base: "workspace", pattern: "**/*.{ts,tsx}" },
-  { base: "workspace", pattern: "**/package.json" },
-  { base: "workspace", pattern: "**/tsconfig*.json" },
-  { base: "workspace", pattern: "!**/node_modules/**" },
-  { base: "workspace", pattern: "!**/dist/**" },
-  { base: "workspace", pattern: "!**/.paraglide/**" },
-  { base: "workspace", pattern: "!**/.local/**" },
-] as const;
-
-const effectDiagnostics = {
-  "check:effect": {
-    command: '"$(effect-tsgo get-exe-path)" --pretty false --noEmit -p tsconfig.json',
-    input: [...typecheckInputs],
-  },
-} satisfies NonNullable<UserConfig["run"]>["tasks"];
 
 const checkCode = {
   "check:code": {
@@ -377,17 +361,19 @@ const appConfig = (
   return ({ command, isPreview, mode }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
     plugins: [
-      failOnBrokenSourceMaps(),
-      previewDevVars(appRoot),
-      privateSourceMaps(app),
-      devBoundary(app),
-      elysiaAot(appRoot),
-      elysiaWorkerdJit(),
-      ...(mode === "test" ? [] : [cloudflareAppPlugin(app, { command, isPreview })]),
-      ...plugins,
-      tailwindcss(),
-      ...withoutEnvFileLoader(tanstackStart(startOptions)),
-      reactCompiler(),
+      lazyPlugins(() => [
+        failOnBrokenSourceMaps(),
+        previewDevVars(appRoot),
+        privateSourceMaps(app),
+        devBoundary(app),
+        elysiaAot(appRoot),
+        elysiaWorkerdJit(),
+        ...(mode === "test" ? [] : [cloudflareAppPlugin(app, { command, isPreview })]),
+        ...plugins,
+        tailwindcss(),
+        ...withoutEnvFileLoader(tanstackStart(startOptions)),
+        reactCompiler(),
+      ]),
     ],
     preview: appServer(app),
     run: appRun(app),
@@ -407,6 +393,7 @@ export {
   defineConfig,
   effectDiagnostics,
   effectRun,
+  effectTsgoNoEmit,
   inspectedLibraryRun,
   intentValidation,
   paraglideAppRun,

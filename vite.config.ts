@@ -4,6 +4,7 @@ import {
   devServerTests,
   dontReviewItPreset,
   generatedFiles,
+  isolatedNodeTests,
   lintOptions,
   rootNodeToolTestIncludes,
   rootOnDemandChecks,
@@ -17,6 +18,11 @@ const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
 const textModule = (code: string, moduleId: string): string | undefined =>
   textModulePattern.test(moduleId) ? `export default ${JSON.stringify(code)};` : undefined;
+
+const nodeTestIncludes = [
+  ...rootNodeToolTestIncludes,
+  "tools/dont-review-it/src/repository/**/*.test.ts",
+] as const;
 
 export default defineConfig({
   fmt: dontReviewItPreset.fmt({
@@ -75,6 +81,11 @@ export default defineConfig({
         ],
         output: [],
       },
+      "test:storybook": {
+        cache: false,
+        command: "vp test run --project storybook",
+        dependsOn: ["compile:paraglide"],
+      },
       "check:text": {
         command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
         input: [
@@ -86,7 +97,7 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:text"],
         prepush: ["knip", "check:canonical-literal-types"],
-        premerge: ["test", "test:dev-server", "test:workers"],
+        premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),
       "check:repository": rootOnDemandChecks["check:repository"],
@@ -114,12 +125,20 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          exclude: [...defaultExclude, workerTests, devServerTests],
-          include: [
-            ...rootNodeToolTestIncludes,
-            "tools/dont-review-it/src/repository/**/*.test.ts",
-          ],
+          exclude: [...defaultExclude, workerTests, devServerTests, isolatedNodeTests],
+          include: [...nodeTestIncludes],
+          isolate: false,
           name: "node",
+        },
+      },
+      {
+        extends: true,
+        test: {
+          exclude: [...defaultExclude, workerTests, devServerTests],
+          include: nodeTestIncludes.map((pattern) =>
+            pattern.replace("/**/*.test.", "/**/*.isolated.test."),
+          ),
+          name: "node-isolated",
         },
       },
       { extends: true, test: { include: [devServerTests], name: "dev-server" } },

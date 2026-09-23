@@ -5,14 +5,12 @@
     "repo-budget-inspect": "./src/inspect.ts"
   },
   "type": "module",
-  "exports": {
-    "./config": "./src/config.ts"
-  },
   "dependencies": {
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
+    "@repo/infra-cloudflare": "workspace:*",
     "@repo/monitor": "workspace:*",
-    "@repo/observability": "workspace:*",
+    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

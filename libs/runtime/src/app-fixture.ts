@@ -1,3 +1,4 @@
+import { APPLICATION } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Layer } from "effect";
 import { TestClock } from "effect/testing";
@@ -32,7 +33,7 @@ function appEnvironment(
 function testClockRuntime(
   routes: Readonly<Record<string, string>>,
 ): WorkerRuntime<AppServices | TestClock.TestClock, never> {
-  const services = Layer.orDie(appLayer(appEnvironment(), "service-member", routes));
+  const services = Layer.orDie(appLayer(appEnvironment(), APPLICATION.user, routes));
   return workerRuntime(() => Layer.merge(services, TestClock.layer()));
 }
 

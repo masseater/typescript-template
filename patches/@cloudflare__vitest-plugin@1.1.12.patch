@@ -1,0 +1,13 @@
+diff --git a/dist/pool/index.mjs b/dist/pool/index.mjs
+index a3430a8f2d92f876bb7838dd1efdfe4a3f98d838..b2cb3bfdb31746f01af6b3fe8078b468f1c35078 100644
+--- a/dist/pool/index.mjs
++++ b/dist/pool/index.mjs
+@@ -49033,7 +49033,7 @@ function withSourceUrl(contents, url$2) {
+ 	return contents + `\n//# sourceURL=${url$2.toString()}\n`;
+ }
+ function withImportMetaUrl(contents, url$2) {
+-	return contents.replaceAll("import.meta.url", JSON.stringify(url$2.toString()));
++	return contents.includes("import.meta.url") ? `import.meta.url = ${JSON.stringify(url$2.toString())};${contents}` : contents;
+ }
+ const requireExtensions = [
+ 	".js",

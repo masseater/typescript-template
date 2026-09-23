@@ -7,6 +7,8 @@ import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { loopbackOrigin } from "./ports.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
+import type { NetAddress } from "effect/unstable/net";
+
 const recordDelivery = (
   deliveries: Ref.Ref<readonly string[]>,
 ): Effect.Effect<
@@ -92,10 +94,10 @@ const sinkOn = (opened: {
     waitForDeliveryLink({ deliveries: opened.deliveries, prefix, recipient }),
 });
 
-const listeningPort = (address: HttpServer.Address): Effect.Effect<number, JourneyFailure> =>
-  address._tag === "TcpAddress"
-    ? Effect.succeed(address.port)
-    : Effect.fail(failed("E2E_MAIL_SINK_UNAVAILABLE"));
+const listeningPort = (address: NetAddress.SocketAddress): Effect.Effect<number, JourneyFailure> =>
+  address._tag === "UnixPathAddress"
+    ? Effect.fail(failed("E2E_MAIL_SINK_UNAVAILABLE"))
+    : Effect.succeed(address.port);
 
 const startMailSink = (): Effect.Effect<MailSink, JourneyFailure> =>
   Effect.gen(function* openMailSink() {

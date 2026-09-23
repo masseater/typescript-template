@@ -1,12 +1,15 @@
+import { verifySession } from "@repo/auth";
 import { JobPayload, readJobs, httpStatus } from "@repo/config";
 import { unavailable } from "@repo/runtime/account";
-import { createApi } from "@repo/runtime/http";
+import { createApi, readJsonBody } from "@repo/runtime/http";
 import { enqueueJob, jobStatus } from "@repo/runtime/jobs";
 import { env } from "cloudflare:workers";
 import { Effect, Schema } from "effect";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
+
+const JobCreate = Schema.Struct({});
 
 const JobAccepted = Schema.Struct({
   id: Schema.String,
@@ -23,6 +26,8 @@ const failures = {
   ...unavailable,
   ConfigurationInvalid: "unexpected" as const,
   InputInvalid: { message: "入力内容を確認してください。", status: httpStatus.badRequest },
+  JobLookupFailed: "unexpected" as const,
+  JobNotFound: { message: "ジョブが見つかりません。", status: httpStatus.notFound },
 };
 
 function jobsApi(api: ApiRoutes<AppServices>) {
@@ -31,10 +36,12 @@ function jobsApi(api: ApiRoutes<AppServices>) {
       "/jobs",
       api.route(
         JobAccepted,
-        () =>
+        (request) =>
           Effect.gen(function* handleRequest() {
+            const { user } = yield* verifySession(request.headers);
+            yield* readJsonBody(JobCreate, request);
             const jobs = yield* readJobs(env);
-            const { jobId } = yield* enqueueJob(jobs);
+            const { jobId } = yield* enqueueJob(jobs, user.id);
             return { id: jobId };
           }),
         failures,
@@ -46,12 +53,14 @@ function jobsApi(api: ApiRoutes<AppServices>) {
         JobStatusView,
         (request) =>
           Effect.gen(function* handleRequest() {
+            const { user } = yield* verifySession(request.headers);
             const id = new URL(request.url).pathname.split("/").at(-1) ?? "";
-            yield* Schema.decodeEffect(JobPayload)({ jobId: id }).pipe(
-              Effect.mapError(() => ({ _tag: "InputInvalid" as const })),
-            );
+            const payload = yield* Schema.decodeEffect(JobPayload)({
+              jobId: id,
+              ownerId: user.id,
+            }).pipe(Effect.mapError(() => ({ _tag: "InputInvalid" as const })));
             const jobs = yield* readJobs(env);
-            const status = yield* jobStatus(jobs, id);
+            const status = yield* jobStatus(jobs, payload);
             return {
               id,
               status: status.status,

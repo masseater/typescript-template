@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const { isDeepStrictEqual } = process.getBuiltinModule("util");
 
-import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
 import { markFailed, reportFailed, runCli } from "@repo/cli";
 import {
   APPLICATION,
@@ -17,8 +16,14 @@ import {
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { coreEntrypoints } from "@repo/core-api/entrypoints";
-import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
-import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
+import {
+  budgetMonitorEnv,
+  budgetMonitorWorker,
+  errorMonitorEnv,
+  errorMonitorWorker,
+  healthMonitorWorker,
+  healthOriginKey,
+} from "@repo/monitor/workers";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Cause, Console, Effect, Schema } from "effect";
 
