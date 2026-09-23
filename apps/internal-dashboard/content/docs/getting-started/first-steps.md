@@ -47,9 +47,13 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `TEMPLATE_OBSERVABILITY_SAMPLING`: 0 以上 1 以下の数。
     - `TEMPLATE_PREFIX`: 先頭は英小文字、続きは英小文字・数字・ハイフン。全体で 3〜36 文字。
     - `TEMPLATE_RESERVE_USD`: 0 以上の数。
+    - `TEMPLATE_STRIPE_PRICE_ID`: 有料会員の Stripe 価格 ID。
+    - `TEMPLATE_STRIPE_SECRET_KEY`: Stripe のシークレットキー。
+    - `TEMPLATE_STRIPE_WEBHOOK_SECRET`: Stripe Webhook の署名シークレット。
   - 空でも適用は始まります。値があるときだけデプロイへ渡ります。
     - `TEMPLATE_OTLP_ENDPOINT`: https の URL。
     - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。
+    - `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID`: `G-` で始まる Google Analytics の測定 ID。
     - `TEMPLATE_OTLP_AUTHORIZATION`: トレース送信の認可。
 - **検索エンジン設定**:
   - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/worker.ts`）。
