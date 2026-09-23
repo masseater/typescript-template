@@ -39,7 +39,7 @@ export const createNoDuplicateValueDeclaration = ({
       docs: {
         description:
           "Disallow a constant, function, or class declared under a name another declaration in the repository binds to the same body, so one value keeps one owner instead of drifting between copies",
-        relatedGuidelines: [".claude/skills/reviews/references/ownership.md"],
+        relatedGuidelines: [".claude/skills/reviews/references/ownership-and-duplication.md"],
       },
       messages: {
         duplicateValueDeclaration:

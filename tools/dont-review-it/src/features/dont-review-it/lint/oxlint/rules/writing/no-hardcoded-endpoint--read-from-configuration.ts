@@ -64,7 +64,7 @@ export const noHardcodedEndpoint = createDontReviewItRule({
     docs: {
       description:
         "Disallow text written out in the source at the destination argument of a call that opens a connection, so where a deployment talks to is decided by its configuration rather than by the file that performs the request",
-      relatedGuidelines: [".claude/skills/reviews/references/surface.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/package-and-command-surfaces.md"],
     },
     messages: {
       hardcodedEndpoint:

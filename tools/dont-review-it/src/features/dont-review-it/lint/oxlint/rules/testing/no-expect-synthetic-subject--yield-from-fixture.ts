@@ -21,7 +21,7 @@ export const noExpectSyntheticSubject = createDontReviewItRule({
     docs: {
       description:
         "Disallow assembling the subject of an assertion in the assertion itself or in a binding the spec filled with a value it wrote, so a comparison pins the shape the code under test produced rather than the bag the spec packed for it",
-      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
     },
     messages: {
       syntheticSubject:

@@ -13,7 +13,7 @@ description: 挙動は Base UI が持ち、見た目のコンポーネントは�
 
 `disabled` は Base UI の Button に渡る。`variant="primary"` がどのクラスになるかは、コピーしたコンポーネントのファイルに書いてある。shadcn のコンポーネントはパッケージの公開 API として依存せず、そのファイルを編集して見た目を変える。
 
-コンポーネントを足すときの判断は `.claude/skills/reviews/references/frontend.md` にある。
+コンポーネントを足すときの判断は `.claude/skills/reviews/references/frontend-components-and-state.md` にある。
 
 ## 採ると
 

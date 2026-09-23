@@ -3,7 +3,7 @@ title: SLI / SLO
 description: 成功の割合を測り、目標と誤り予算を決める
 ---
 
-SLI は、利用者から見て成功した割合である。SLO はその割合の目標で、SLA は外との約束である。誤り予算は目標から外れてよい残りで、その消費速度が burn rate である。入力は [Tracing / Logging / Profiling](/observability/signals) と [Prometheus](/observability/prometheus) が残した、状態コードと処理時間である。アラートの宛先と条件の置き方は `.claude/skills/reviews/references/observability.md` が持つ。
+SLI は、利用者から見て成功した割合である。SLO はその割合の目標で、SLA は外との約束である。誤り予算は目標から外れてよい残りで、その消費速度が burn rate である。入力は [Tracing / Logging / Profiling](/observability/signals) と [Prometheus](/observability/prometheus) が残した、状態コードと処理時間である。アラートの宛先と条件の置き方は `.claude/skills/reviews/references/monitoring-logging-and-status-codes.md` が持つ。
 
 サービスの外から見るときは RED で、要求の件数（Rate）、失敗（Errors）、所要時間（Duration）である。CPU やディスクのような資源は USE で、使用率（Utilization）、飽和（Saturation）、失敗（Errors）である。
 

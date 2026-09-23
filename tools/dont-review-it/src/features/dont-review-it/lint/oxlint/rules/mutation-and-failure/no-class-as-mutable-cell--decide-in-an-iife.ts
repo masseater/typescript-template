@@ -27,7 +27,7 @@ export const createNoClassAsMutableCell = ({
       docs: {
         description:
           "Disallow a class whose only instance is built inside one function and never leaves it while its fields keep being written after construction, so a local mutable variable cannot be laundered into class syntax",
-        relatedGuidelines: [".claude/skills/reviews/references/failures.md"],
+        relatedGuidelines: [".claude/skills/reviews/references/failure-handling-and-fallbacks.md"],
       },
       messages: {
         containedMutableCell:
