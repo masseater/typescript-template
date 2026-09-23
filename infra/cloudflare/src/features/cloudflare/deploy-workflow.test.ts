@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { assert, it } from "@effect/vitest";
-import { applications } from "@repo/config";
+import { applications, wikiWorker } from "@repo/config";
 import { deploymentKeys, optionalDeploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 
@@ -18,7 +18,7 @@ const setupGuide = fileURLToPath(
   ),
 );
 const viteConfig = fileURLToPath(new URL("../../../vite.config.ts", import.meta.url));
-const stackBuilds = ["core", ...applications, ...monitorStacks].map(
+const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(
   (unit) => `@repo/${unit}#build`,
 );
 const documentedSecrets = [...deploymentKeys, ...optionalDeploymentKeys];
@@ -65,9 +65,13 @@ it.effect("getting started names every deployment secret", () =>
 it.effect("deploy and preview tasks refuse to run without every stack build", () =>
   Effect.gen(function* program() {
     const source = yield* readText(viteConfig);
-    assert.include(source, 'const stackBuilds = ["core", ...applications, ...monitorStacks].map(');
+    assert.include(
+      source,
+      'const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(',
+    );
     assert.deepStrictEqual(stackBuilds, [
       "@repo/core#build",
+      "@repo/internal-wiki#build",
       "@repo/service-member#build",
       "@repo/service-admin#build",
       "@repo/internal-dashboard#build",

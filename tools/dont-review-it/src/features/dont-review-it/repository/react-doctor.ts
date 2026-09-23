@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { basename, dirname, join } from "node:path";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { type Application, ApplicationName } from "@repo/config";
+import { type BuildTarget, BuildTargetName } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
@@ -106,7 +106,7 @@ const skippedIn = (report: typeof Scanned.Type): string[] => [
   ...(report.skippedProjects ?? []).map(({ directory, reason }) => `${directory} ${reason}`),
 ];
 
-const scanProjects = (application: Application) =>
+const scanProjects = (application: BuildTarget) =>
   Effect.fn("scanProjects")(function* scanProjects() {
     const target = `apps/${application}`;
     let attempt = 0;
@@ -127,7 +127,7 @@ const scanProjects = (application: Application) =>
     return { report, scanned };
   })();
 
-const inspect = (application: Application) =>
+const inspect = (application: BuildTarget) =>
   Effect.fn("inspect")(function* inspect() {
     const [{ report, scanned }, listed] = yield* Effect.all(
       [scanProjects(application), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
@@ -164,7 +164,7 @@ const inspect = (application: Application) =>
 
 runCli(
   Effect.gen(function* run() {
-    const application = yield* Schema.decodeUnknownEffect(ApplicationName)(basename(process.cwd()));
+    const application = yield* Schema.decodeUnknownEffect(BuildTargetName)(basename(process.cwd()));
     const result = yield* inspect(application);
     yield* Console.log(JSON.stringify({ event: "quality.react_doctor", ...result }));
     if (!result.ok) {

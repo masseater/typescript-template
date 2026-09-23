@@ -1,6 +1,13 @@
-import { appServerEntry } from "@repo/runtime/worker";
+import { isWikiPath } from "@repo/config";
+import { serveApp, startRoute } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 
-import { reporting, runtime } from "#shared/server-api/index.ts";
+import { forwardWiki, reporting, runtime } from "#shared/server-api/index.ts";
 
-export default appServerEntry(runtime, handler, reporting);
+const start = startRoute(handler);
+
+export default serveApp(
+  runtime,
+  (request, path) => (isWikiPath(path) ? forwardWiki(request, path) : start(request)),
+  reporting,
+);

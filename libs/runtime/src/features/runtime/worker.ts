@@ -80,11 +80,22 @@ function fetchAsset(request: Request): Effect.Effect<Response, never, Assets> {
   });
 }
 
+function assetRequest(request: Request, assetBase: string): Request {
+  if (assetBase === "") {
+    return request;
+  }
+  const url = new URL(request.url);
+  url.pathname = url.pathname.slice(assetBase.length);
+  return new Request(url, request);
+}
+
 function serveApp<Requirements>(
   runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
   route: AppRoute<Requirements>,
   reporting: Reporting,
+  assetBase = "",
 ): FetchWorker {
+  const assetPrefix = `${assetBase}/assets/`;
   return serveWorker(
     runtime,
     (request) => {
@@ -95,7 +106,9 @@ function serveApp<Requirements>(
       if (path.endsWith(".map")) {
         return Effect.succeed(new Response(undefined, { status: httpStatus.notFound }));
       }
-      return path.startsWith("/assets/") ? fetchAsset(request) : route(request, path);
+      return path.startsWith(assetPrefix)
+        ? fetchAsset(assetRequest(request, assetBase))
+        : route(request, path);
     },
     reporting,
   );
@@ -105,8 +118,9 @@ function appServerEntry<Requirements>(
   runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>,
   handler: StartHandler,
   reporting: Reporting,
+  assetBase = "",
 ): FetchWorker {
-  return serveApp(runtime, startRoute(handler), reporting);
+  return serveApp(runtime, startRoute(handler), reporting, assetBase);
 }
 
 function withQueue(
@@ -136,6 +150,8 @@ function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<
 }
 
 export { appServerEntry, serveApp, serveWorker, startRoute, withQueue };
+export { configuredSiteLayer } from "./site.ts";
+export type { SiteServices } from "./site.ts";
 export { workerRuntime } from "./worker-runtime.ts";
 export type { AppRoute, FetchWorker };
 export type { WorkerRuntime } from "./worker-runtime.ts";

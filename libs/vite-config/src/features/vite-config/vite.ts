@@ -9,6 +9,10 @@ import {
   jobsWorkflowClass,
   jobsWorkflowName,
   loopbackAddress,
+  wikiBasePath,
+  wikiHost,
+  wikiServerFnBase,
+  wikiWorker,
   type Application,
 } from "@repo/config";
 import { localDatabase, localDatabaseDirectory } from "@repo/config/local-database-path";
@@ -19,12 +23,10 @@ import { workerCompatibility } from "@repo/config/worker";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
-import { Effect } from "effect";
 import {
   defineConfig,
   lazyPlugins,
   type ConfigEnv,
-  type Plugin,
   type PluginOption,
   type ServerOptions,
   type UserConfig,
@@ -33,44 +35,17 @@ import {
 import { devBoundary } from "./dev-boundary.ts";
 import { effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
-import { filesystem, isNotFound, paths } from "./host.ts";
+import { withoutEnvFileLoader } from "./env-file-loader.ts";
+import { paths } from "./host.ts";
+import { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
+import { previewDevVars } from "./preview-dev-vars.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
-
-const readDevVars = (appRoot: string): Effect.Effect<string | undefined> =>
-  filesystem.readFileString(paths.join(appRoot, ".dev.vars")).pipe(
-    Effect.catchIf(isNotFound, () => Effect.as(Effect.void, undefined as string | undefined)),
-    Effect.orDie,
-  );
-
-const previewDevVars = (appRoot: string): Plugin => {
-  return {
-    apply: "build",
-    applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
-    generateBundle() {
-      const emitDevVarsFile = (
-        file: Readonly<{ fileName: string; source: string; type: "asset" }>,
-      ): void => {
-        this.emitFile(file);
-      };
-      const reportMissingDevVars = (missingDevVarsText: string): void => {
-        this.error(missingDevVarsText);
-      };
-      return Effect.runPromise(
-        Effect.gen(function* emitDevVars() {
-          const source = yield* readDevVars(appRoot);
-          if (source === undefined) {
-            reportMissingDevVars(
-              `Missing ${paths.join(appRoot, ".dev.vars")}; run vp run --filter @repo/dev setup before building for preview`,
-            );
-            return;
-          }
-          emitDevVarsFile({ fileName: ".dev.vars", source, type: "asset" });
-        }),
-      );
-    },
-    name: "template-preview-dev-vars",
-  };
-};
+import {
+  wikiCompanion,
+  wikiDevServices,
+  wikiDevWorkerName,
+  wikiHmrPath,
+} from "./wiki-companion.ts";
 
 const clientReachableModules = [
   "libs/runtime/src/features/runtime/client.ts",
@@ -102,40 +77,6 @@ const serverOnlyMarkers: readonly string[] = [
   "better-auth/api",
   "drizzle:entityKind",
 ];
-
-const envFileLoader = "tanstack-start-core:load-env";
-
-const pluginNamed = (plugin: PluginOption): string | undefined =>
-  typeof plugin === "object" &&
-  plugin !== null &&
-  "name" in plugin &&
-  typeof plugin.name === "string"
-    ? plugin.name
-    : undefined;
-
-const stripEnvFileLoader = (
-  pluginOptions: readonly PluginOption[],
-): readonly [PluginOption[], number] => {
-  const pieces = pluginOptions.map((plugin): readonly [PluginOption[], number] => {
-    if (Array.isArray(plugin)) {
-      const [nested, removedCount] = stripEnvFileLoader(plugin);
-      return [[...nested], removedCount];
-    }
-    return pluginNamed(plugin) === envFileLoader ? [[], 1] : [[plugin], 0];
-  });
-  return [
-    pieces.flatMap(([kept]) => kept),
-    pieces.reduce((removedSum, [, removedCount]) => removedSum + removedCount, 0),
-  ];
-};
-
-const withoutEnvFileLoader = (plugins: readonly PluginOption[]): PluginOption[] => {
-  const [kept, removed] = stripEnvFileLoader(plugins);
-  if (removed === 0) {
-    return Effect.runSync(Effect.die(`${envFileLoader} plugin not found`));
-  }
-  return [...kept];
-};
 
 const reactCompiler = (): PluginOption[] => react({ compiler: { logDiagnostics: true } });
 
@@ -197,53 +138,6 @@ const sliceBoundaries = {
 const intentValidation = {
   check: { command: "intent validate", input: [...taskInput] },
 } satisfies Tasks;
-
-const lifecycles = ["precommit", "prepush", "prepr", "premerge", "prerelease"] as const;
-type Lifecycle = (typeof lifecycles)[number];
-
-const lifecycleInherits: Readonly<Record<Lifecycle, readonly Lifecycle[]>> = {
-  precommit: [],
-  prepush: ["precommit"],
-  prepr: ["prepush"],
-  premerge: [],
-  prerelease: ["prepr", "premerge"],
-};
-
-type LifecycleTask = {
-  command: string[];
-  dependsOn: string[];
-};
-
-const lifecycle = (
-  stages: Readonly<Partial<Record<Lifecycle, readonly string[]>>> = {},
-): {
-  readonly precommit: LifecycleTask;
-  readonly prepush: LifecycleTask;
-  readonly prepr: LifecycleTask;
-  readonly premerge: LifecycleTask;
-  readonly prerelease: LifecycleTask;
-} => ({
-  precommit: {
-    command: [],
-    dependsOn: [...lifecycleInherits.precommit, ...(stages.precommit ?? [])],
-  },
-  prepush: {
-    command: [],
-    dependsOn: [...lifecycleInherits.prepush, ...(stages.prepush ?? [])],
-  },
-  prepr: {
-    command: [],
-    dependsOn: [...lifecycleInherits.prepr, ...(stages.prepr ?? [])],
-  },
-  premerge: {
-    command: [],
-    dependsOn: [...lifecycleInherits.premerge, ...(stages.premerge ?? [])],
-  },
-  prerelease: {
-    command: [],
-    dependsOn: [...lifecycleInherits.prerelease, ...(stages.prerelease ?? [])],
-  },
-});
 
 const checkCode = {
   "check:code": { command: "vp check --no-error-on-unmatched-pattern", input: [...taskInput] },
@@ -378,6 +272,14 @@ const appConfig = (
         previewDevVars(appRoot),
         privateSourceMaps(app),
         devBoundary(app),
+        ...(app === wikiHost
+          ? [
+              wikiCompanion({
+                repositoryRoot,
+                wikiRoot: paths.join(repositoryRoot, "apps", wikiWorker),
+              }),
+            ]
+          : []),
         elysiaAot(appRoot),
         elysiaWorkerdJit(),
         cloudflare({
@@ -408,6 +310,7 @@ const appConfig = (
                 entrypoint: coreEntrypoints[app],
                 service: "template-core",
               },
+              ...(app === wikiHost ? wikiDevServices : []),
             ],
             ...(grants(app, "jobs")
               ? {
@@ -444,8 +347,93 @@ const appConfig = (
   });
 };
 
+const wikiStartOptions = {
+  ...startOptions,
+  router: { ...startOptions.router, basepath: "/" },
+  serverFns: { base: wikiServerFnBase },
+};
+
+const wikiContentInput = {
+  base: "workspace",
+  pattern: `apps/${wikiHost}/content/docs/**`,
+} as const;
+
+const wikiRun = {
+  tasks: {
+    ...effectDiagnostics,
+    ...checkCode,
+    ...workspaceCheckImports,
+    ...appChecks,
+    check: sliceBoundaries.check,
+    build: {
+      ...appRun.tasks.build,
+      input: [...appRun.tasks.build.input, wikiContentInput],
+    },
+    dev: appRun.tasks.dev,
+    preview: appRun.tasks.preview,
+    ...lifecycle({
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+      prepr: ["build"],
+      premerge: ["build"],
+    }),
+  },
+} satisfies RunConfig;
+
+const WIKI_PORT = 3004;
+
+const wikiServer: ServerOptions = {
+  host: loopbackAddress,
+  port: WIKI_PORT,
+  strictPort: true,
+  ws: { path: wikiHmrPath },
+};
+
+const wikiConfig = (
+  plugins: readonly PluginOption[] = noExtraPlugins,
+): ((env: Readonly<ConfigEnv>) => UserConfig) => {
+  const wikiRoot = paths.join(repositoryRoot, "apps", wikiWorker);
+  return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
+    base: `${wikiBasePath}/`,
+    build: { sourcemap: "hidden" },
+    plugins: [
+      lazyPlugins(() => [
+        failOnBrokenSourceMaps(),
+        privateSourceMaps(wikiWorker),
+        devBoundary(wikiWorker),
+        elysiaAot(wikiRoot),
+        elysiaWorkerdJit(),
+        cloudflare({
+          config: (config) => ({
+            ...config,
+            assets: {
+              binding: "ASSETS",
+              run_worker_first: command !== "serve" || isPreview === true,
+            },
+            compatibility_date: workerCompatibility.date,
+            compatibility_flags: [...workerCompatibility.flags],
+            main: "./src/app/server.ts",
+            name: wikiDevWorkerName,
+            vars: { ...config.vars, APP_RELEASE: "local" },
+          }),
+          inspectorPort: false,
+          viteEnvironment: { name: "ssr" },
+        }),
+        ...plugins,
+        tailwindcss(),
+        ...withoutEnvFileLoader(tanstackStart(wikiStartOptions)),
+        reactCompiler(),
+      ]),
+    ],
+    preview: wikiServer,
+    run: wikiRun,
+    server: wikiServer,
+  });
+};
+
 export {
   appConfig,
+  wikiConfig,
   appRun,
   elysiaWorkerdJit,
   appServer,

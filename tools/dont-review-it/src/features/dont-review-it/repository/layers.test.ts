@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { applications, architectureKindOf } from "@repo/config";
+import { architectureKindOf, buildTargets } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { reported } from "./lint-harness.ts";
@@ -23,18 +23,18 @@ describe("architecture coverage", () => {
     expect(kinds.every((entry) => entry.kind === "fsd" || entry.kind === "modular")).toBe(true);
     expect(
       kinds.filter((entry) => entry.kind === "fsd").map((entry) => entry.directory),
-    ).toStrictEqual(applications.map((app) => `apps/${app}`).toSorted());
+    ).toStrictEqual(buildTargets.map((app) => `apps/${app}`).toSorted());
   });
 });
 
 describe("steiger coverage", () => {
   it("runs the layer check in every FSD application", () => {
     expect.hasAssertions();
-    const checks = applications
+    const checks = buildTargets
       .map((app) => `apps/${app}: ${commands(`apps/${app}`, "check").join(" ")}`)
       .toSorted();
     expect(checks).toStrictEqual(
-      applications
+      buildTargets
         .map(
           (app) => `apps/${app}: steiger src --fail-on-warnings && quality-check-thin-app-routes`,
         )

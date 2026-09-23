@@ -4,8 +4,6 @@ import { configuredAppLayer } from "@repo/runtime";
 import { readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
-import { Embedder, embedWith } from "./embedder.ts";
-
 import type { AuthFailure } from "@repo/auth";
 import type { FeatureFlags, FlagEditorAccess } from "@repo/feature-flags";
 import type { TelemetryInvalid } from "@repo/observability";
@@ -13,7 +11,7 @@ import type { AppServices } from "@repo/runtime";
 
 const wikiService = APPLICATION.wiki;
 
-type WikiServices = AppServices | Embedder | FeatureFlags | FlagEditorAccess;
+type WikiServices = AppServices | FeatureFlags | FlagEditorAccess;
 
 function wikiLayer(
   env: unknown,
@@ -23,13 +21,8 @@ function wikiLayer(
     readWorkerConfig(env).pipe(
       Effect.flatMap((config) =>
         Effect.gen(function* wikiServices() {
-          const embedder = Embedder.of({
-            available: config.AI !== undefined,
-            embed: embedWith(config.AI),
-          });
           const flags = yield* configuredFeatureFlagsLayer(config);
           return Layer.mergeAll(
-            Layer.succeed(Embedder, embedder),
             configuredAppLayer(config, wikiService, routes),
             flags,
             allowAllEditors,

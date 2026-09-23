@@ -11,6 +11,8 @@ import {
   readConfig,
   readEnvironment,
   readJobs,
+  readSiteEnvironment,
+  readWikiBindings,
 } from "./index.ts";
 
 const local = {
@@ -225,5 +227,33 @@ it.effect("requires a way to deliver mail", () =>
       }),
       "An email delivery binding is required",
     );
+  }),
+);
+
+const binding = { fetch: (): Promise<Response> => Promise.resolve(new Response()) };
+
+it.effect("the wiki worker needs its release and its assets but no application origin", () =>
+  Effect.gen(function* program() {
+    const site = yield* readSiteEnvironment({ APP_RELEASE: "1.2.3", ASSETS: binding });
+    assert.strictEqual(site.APP_RELEASE, "1.2.3");
+    const missing = yield* Effect.flip(readSiteEnvironment({ ASSETS: binding }));
+    assert.include(missing.reason, "APP_RELEASE");
+    const insecure = yield* Effect.flip(
+      readSiteEnvironment({
+        APP_RELEASE: "1.2.3",
+        ASSETS: binding,
+        OTLP_ENDPOINT: "http://collector.example.test",
+      }),
+    );
+    assert.strictEqual(insecure.reason, "HTTPS is required outside localhost");
+  }),
+);
+
+it.effect("the dashboard refuses to reach the wiki without both of its bindings", () =>
+  Effect.gen(function* program() {
+    const bound = yield* readWikiBindings({ WIKI: binding, WIKI_API: binding });
+    assert.strictEqual(bound.WIKI, binding);
+    const missing = yield* Effect.flip(readWikiBindings({ WIKI: binding }));
+    assert.include(missing.reason, "WIKI_API");
   }),
 );

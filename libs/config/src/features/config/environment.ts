@@ -2,8 +2,11 @@ import { Effect, Predicate, Schema } from "effect";
 
 import { loopbackHosts, mailpitSendPath } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
+import { wikiApiBinding, wikiPagesBinding } from "./wiki.ts";
 
 import type { Ai, D1Database, Flagship, SendEmail } from "@cloudflare/workers-types";
+
+type ServiceFetcher = { readonly fetch: typeof fetch };
 
 type AssetFetcher = {
   readonly fetch: (request: Request) => Promise<Response>;
@@ -162,6 +165,40 @@ const readConfig = Effect.fn("readConfig")(function* readConfig(input: unknown) 
 
 type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 
+const SiteEnvironment = Schema.Struct({
+  [appEnvKey.appRelease]: Release,
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
+  [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
+  AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
+  ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
+});
+
+const readSiteEnvironment = Effect.fn("readSiteEnvironment")(function* readSiteEnvironment(
+  input: unknown,
+) {
+  const environment = yield* decode(SiteEnvironment, input);
+  if (environment.OTLP_ENDPOINT === undefined) {
+    if (environment.OTLP_ENABLED !== undefined) {
+      return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
+    }
+  } else {
+    yield* requireSecureOrigin(environment.OTLP_ENDPOINT);
+  }
+  return environment;
+});
+
+const WikiBindings = Schema.Struct({
+  [wikiPagesBinding]: bindingWith<ServiceFetcher>("Fetcher", ["fetch"]),
+  [wikiApiBinding]: bindingWith<ServiceFetcher>("Fetcher", ["fetch"]),
+});
+
+const readWikiBindings = (
+  input: unknown,
+): Effect.Effect<typeof WikiBindings.Type, ConfigurationInvalid> => decode(WikiBindings, input);
+
+type SiteConfig = Effect.Success<ReturnType<typeof readSiteEnvironment>>;
+
 const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   const { AI } = yield* decode(AiBindings, input);
   return AI;
@@ -180,5 +217,7 @@ export {
   readAi,
   readConfig,
   readEnvironment,
+  readSiteEnvironment,
+  readWikiBindings,
 };
-export type { AppConfig, AssetFetcher };
+export type { AppConfig, AssetFetcher, ServiceFetcher, SiteConfig };

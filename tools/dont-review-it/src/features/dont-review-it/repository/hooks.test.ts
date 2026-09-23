@@ -369,7 +369,12 @@ describe("lifecycle contents", () => {
           reachable(directory, ["prepush"]).includes(name),
         ),
       ),
-    ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
+    ).toStrictEqual([
+      "apps/internal-dashboard",
+      "apps/internal-wiki",
+      "apps/service-admin",
+      "apps/service-member",
+    ]);
     expect(
       configuredDirectories.flatMap((directory) =>
         taskNames(directory).includes("check:effect")
@@ -383,6 +388,7 @@ describe("lifecycle contents", () => {
       ),
     ).toStrictEqual([
       "apps/internal-dashboard",
+      "apps/internal-wiki",
       "apps/service-admin",
       "apps/service-member",
       "libs/db",

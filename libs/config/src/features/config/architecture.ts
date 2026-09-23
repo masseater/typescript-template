@@ -1,9 +1,9 @@
-import { applications } from "./applications.ts";
+import { buildTargets } from "./wiki.ts";
 
 export const architectureKinds = ["fsd", "modular"] as const;
 export type ArchitectureKind = (typeof architectureKinds)[number];
 
-export const fsdPackages = applications;
+export const fsdPackages = buildTargets;
 
 export const modularLayers = ["app", "features", "shared"] as const;
 export type ModularLayer = (typeof modularLayers)[number];

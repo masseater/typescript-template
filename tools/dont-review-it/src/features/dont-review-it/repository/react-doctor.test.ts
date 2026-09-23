@@ -115,7 +115,12 @@ describe("react-doctor integration", () => {
       configuredDirectories
         .filter((directory) => reachable(directory, ["prepush"]).includes("check:react"))
         .toSorted(),
-    ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
+    ).toStrictEqual([
+      "apps/internal-dashboard",
+      "apps/internal-wiki",
+      "apps/service-admin",
+      "apps/service-member",
+    ]);
   });
 
   it("keeps AI-operable UI rules enabled at error", () => {
