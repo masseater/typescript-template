@@ -3,10 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/server.ts",
-    "./browser": "./src/browser.ts",
-    "./testing": "./src/testing.ts",
-    "./deployment-keys": "./src/deployment-keys.ts"
+    ".": "./src/features/observability/index.ts",
+    "./browser": "./src/features/observability/browser.ts",
+    "./testing": "./src/features/observability/testing.ts",
+    "./deployment-keys": "./src/features/observability/deployment-keys.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

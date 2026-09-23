@@ -4,8 +4,8 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { runChecks } from "../src/run-checks.ts";
-import { scanTraceFor } from "../src/scan-trace/scan-trace-report.ts";
+import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
+import { scanTraceFor } from "../src/features/dont-review-it/scan-trace/scan-trace-report.ts";
 
 const GATED_WORKFLOW = `name: CI
 on:

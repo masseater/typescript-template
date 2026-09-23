@@ -4,8 +4,8 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { defaultShippablePackagesConfig } from "../src/shippable-packages/config.ts";
-import { shippablePackagesProblems } from "../src/shippable-packages/shippable-packages.ts";
+import { defaultShippablePackagesConfig } from "../src/features/dont-review-it/shippable-packages/config.ts";
+import { shippablePackagesProblems } from "../src/features/dont-review-it/shippable-packages/shippable-packages.ts";
 
 const config = defaultShippablePackagesConfig;
 

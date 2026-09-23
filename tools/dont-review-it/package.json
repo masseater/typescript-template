@@ -13,12 +13,13 @@
     "directory": "tools/dont-review-it"
   },
   "bin": {
-    "dont-review-it": "./src/cli.ts",
-    "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts",
-    "dont-review-it-typecheck": "./src/repository/typecheck-workspaces.ts",
-    "quality-check-client": "./src/repository/client-bundle.ts",
-    "quality-check-react": "./src/repository/react-doctor.ts",
-    "quality-check-thin-app-routes": "./src/repository/thin-app-routes-check.ts"
+    "dont-review-it": "./src/features/dont-review-it/cli.ts",
+    "dont-review-it-canonical-literal-types": "./src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
+    "dont-review-it-typecheck": "./src/features/dont-review-it/repository/typecheck-workspaces.ts",
+    "quality-check-client": "./src/features/dont-review-it/repository/client-bundle.ts",
+    "quality-check-modular": "./src/features/dont-review-it/repository/modular-budgets-check.ts",
+    "quality-check-react": "./src/features/dont-review-it/repository/react-doctor.ts",
+    "quality-check-thin-app-routes": "./src/features/dont-review-it/repository/thin-app-routes-check.ts"
   },
   "files": [
     "dist",
@@ -28,7 +29,7 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/workspace-entry.ts",
+    ".": "./src/features/dont-review-it/workspace-entry.ts",
     "./tsconfig/*": "./tsconfig/*",
     "./package.json": "./package.json"
   },
@@ -91,7 +92,7 @@
     "vite-plus": "^0.3.2"
   },
   "lintRules": [
-    "src/lint/oxlint/rules",
-    "src/lint-rule-authoring/lint/oxlint/rules"
+    "src/features/dont-review-it/lint/oxlint/rules",
+    "src/features/dont-review-it/lint-rule-authoring/lint/oxlint/rules"
   ]
 }

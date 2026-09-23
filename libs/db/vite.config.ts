@@ -1,10 +1,11 @@
-import { effectDiagnostics, lifecycle } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle, modularBoundaries } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...modularBoundaries,
       check: {
         command: "drizzle-kit check",
         input: [{ auto: true }, "!node_modules/.cache/**"],
@@ -12,7 +13,7 @@ export default defineConfig({
       },
       "db:generate": { cache: false, command: "drizzle-kit generate" },
       ...lifecycle({
-        prepush: ["check:effect", "check"],
+        prepush: ["check:effect", "check", "check:modular"],
       }),
     },
   },
