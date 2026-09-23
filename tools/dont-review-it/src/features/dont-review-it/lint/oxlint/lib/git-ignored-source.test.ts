@@ -31,6 +31,64 @@ layer(NodeServices.layer)("readGitSourceScope", (it) => {
     );
   });
 
+  describe("a directory the ignore file names", () => {
+    const fixture = Effect.gen(function* ignoredDirectoryAnswer() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "git-ignored-directory-itself-",
+      });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "dist"));
+      yield* filesystem.writeFileString(paths.join(repositoryRoot, "dist/status.ts"), "export {};");
+      return readGitSourceScope(repositoryRoot).isIgnored(paths.join(repositoryRoot, "dist"));
+    });
+
+    it.effect("is itself ignored", () =>
+      Effect.gen(function* program() {
+        const ignoredDirectoryAnswer = yield* fixture;
+        expect(ignoredDirectoryAnswer).toBe(true);
+      }),
+    );
+  });
+
+  describe("sources under a package directory the scope was built for", () => {
+    const fixture = Effect.gen(function* packageSourceAnswers() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "git-ignored-package-",
+      });
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      yield* filesystem.writeFileString(paths.join(repositoryRoot, ".gitignore"), "dist\n");
+      const packageRoot = paths.join(repositoryRoot, "packages/app");
+      yield* filesystem.makeDirectory(paths.join(packageRoot, "dist"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(packageRoot, "src"));
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "packages/app-sibling/dist"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(paths.join(packageRoot, "dist/status.ts"), "export {};");
+      yield* filesystem.writeFileString(paths.join(packageRoot, "src/entry.ts"), "export {};");
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "packages/app-sibling/dist/status.ts"),
+        "export {};",
+      );
+      const scope = readGitSourceScope(packageRoot);
+      return {
+        generated: scope.isIgnored(paths.join(packageRoot, "dist/status.ts")),
+        authored: scope.isIgnored(paths.join(packageRoot, "src/entry.ts")),
+      };
+    });
+
+    it.effect("ignore what the repository ignore file names and keep the rest", () =>
+      Effect.gen(function* program() {
+        const packageSourceAnswers = yield* fixture;
+        expect(packageSourceAnswers).toStrictEqual({ generated: true, authored: false });
+      }),
+    );
+  });
+
   describe("a source whose name matches a suffix pattern in the ignore file", () => {
     const fixture = Effect.gen(function* ignoredSuffixSourceAnswer() {
       const filesystem = yield* FileSystem.FileSystem;
