@@ -322,7 +322,7 @@ const staticExpected: Readonly<
     Database: {
       adopt: false,
       bindings: [],
-      declared: { name: `${prefix}-db` },
+      declared: { migrations: "libs/db/migrations/", name: `${prefix}-db` },
       removalPolicy: "retain",
       type: "Cloudflare.D1Database",
     },

@@ -43,17 +43,11 @@ const RemoteTarget = Schema.Struct({
   email: Schema.optionalKey(Email),
 });
 
-const MigrationStatusTarget = Schema.Struct({
-  accountId: CloudflareId,
-  apiToken: ApiToken,
-  databaseId: DatabaseId,
-});
-
 const parseCommand = (
   commandArguments: readonly string[],
 ): Effect.Effect<
   {
-    readonly operation: "migrate" | "bootstrap";
+    readonly operation: "bootstrap";
     readonly execute: boolean;
     readonly confirmation: string | undefined;
   },
@@ -65,7 +59,7 @@ const parseCommand = (
     runMode === "--execute" &&
     commandArguments.length === EXECUTE_ARGUMENT_COUNT &&
     confirmationFlag === "--confirm-database";
-  return (operation === "migrate" || operation === "bootstrap") && (planned || executed)
+  return operation === "bootstrap" && (planned || executed)
     ? Effect.succeed({ confirmation, execute: executed, operation })
     : fail("REMOTE_COMMAND_INVALID");
 };
@@ -78,8 +72,7 @@ export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRem
   const remoteTarget = yield* Schema.decodeUnknownEffect(RemoteTarget)(input, {
     onExcessProperty: "error",
   }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_INPUT_INVALID" })));
-  const emailMatchesOperation = (operation === "bootstrap") === (remoteTarget.email !== undefined);
-  if (!emailMatchesOperation || (execute && remoteTarget.apiToken === undefined)) {
+  if (remoteTarget.email === undefined || (execute && remoteTarget.apiToken === undefined)) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
   if (execute && confirmation !== remoteTarget.databaseId) {
@@ -88,4 +81,4 @@ export const parseRemoteInput = Effect.fn("parseRemoteInput")(function* parseRem
   return { execute, operation, target: remoteTarget };
 });
 
-export { MigrationStatusTarget, RemoteFailure, fail };
+export { RemoteFailure, fail };
