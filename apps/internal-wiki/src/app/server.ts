@@ -6,4 +6,9 @@ import { reporting, runtime } from "#shared/server-api/index.ts";
 
 export { WikiApi } from "#shared/server-api/index.ts";
 
-export default appServerEntry(runtime, handler, reporting, wikiBasePath);
+export default appServerEntry({
+  runtime,
+  routeHandler: handler,
+  reporting,
+  assetBase: wikiBasePath,
+});

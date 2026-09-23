@@ -20,18 +20,11 @@ const enrollmentPaths = new Set([
   "/passkey/verify-authentication",
 ]);
 
-const deny = (denial: string): never => {
-  throw new APIError("FORBIDDEN", { message: denial });
-};
-
 const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const isStrongMethod = (method: string): boolean => strongMethods.has(method);
 
-const SECONDS_PER_MINUTE = 60;
-const MILLISECONDS_PER_SECOND = 1000;
-const STEP_UP_MINUTES = 10;
-const STEP_UP_MILLISECONDS = STEP_UP_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const STEP_UP_MILLISECONDS = 10 * 60 * 1000;
 
 const isRecentlyStrong = (
   sessionRecord: {
@@ -73,22 +66,22 @@ const authenticationMethodFor = (path: string | undefined): AuthenticationMethod
   (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
   AUTHENTICATION_METHOD.password;
 
-function assertEligibleUser<
+const deny = (denial: string): never => {
+  throw new APIError("FORBIDDEN", { message: denial });
+};
+
+const assertEligibleUser: <
   TUser extends { readonly emailVerified: boolean; readonly role: string },
->(eligibleUser: TUser | undefined, audience: Application): asserts eligibleUser is TUser {
-  if (
-    eligibleUser !== undefined &&
-    eligibleUser.emailVerified &&
-    (audience === APPLICATION.user || eligibleUser.role === ROLE.administrator)
-  ) {
+>(
+  eligibleUser: TUser | undefined,
+  audience: Application,
+) => asserts eligibleUser is TUser = (eligibleUser, audience) => {
+  const verified = eligibleUser?.emailVerified === true;
+  if (verified && (audience === APPLICATION.user || eligibleUser.role === ROLE.administrator)) {
     return;
   }
-  deny(
-    eligibleUser !== undefined && eligibleUser.emailVerified
-      ? "ADMIN_REQUIRED"
-      : "VERIFIED_EMAIL_REQUIRED",
-  );
-}
+  deny(verified ? "ADMIN_REQUIRED" : "VERIFIED_EMAIL_REQUIRED");
+};
 
 export {
   assertEligibleUser,

@@ -23,7 +23,7 @@ function wikiLayer(
         Effect.gen(function* wikiServices() {
           const flags = yield* configuredFeatureFlagsLayer(config);
           return Layer.mergeAll(
-            configuredAppLayer(config, wikiService, routes),
+            configuredAppLayer({ appConfig: config, audience: wikiService, routes }),
             flags,
             allowAllEditors,
           );

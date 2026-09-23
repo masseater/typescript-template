@@ -1,25 +1,34 @@
-import { Telemetry } from "@repo/observability";
+import { Telemetry, type TelemetryFlusher, type TelemetryInvalid } from "@repo/observability";
 import { Layer } from "effect";
 
 import { Assets } from "./assets.ts";
 
 import type { SiteConfig } from "@repo/config";
-import type { TelemetryFlusher, TelemetryInvalid } from "@repo/observability";
 
 type SiteServices = Assets | Telemetry | TelemetryFlusher;
 
-function configuredSiteLayer(
-  config: SiteConfig,
-  serviceName: string,
-  routes: Readonly<Record<string, string>>,
-): Layer.Layer<SiteServices, TelemetryInvalid> {
+const configuredSiteLayer = (
+  asked: Readonly<{
+    readonly siteConfig: SiteConfig;
+    readonly serviceName: string;
+    readonly routes: Readonly<Record<string, string>>;
+  }>,
+): Layer.Layer<SiteServices, TelemetryInvalid> => {
   const otlp =
-    config.OTLP_ENDPOINT === undefined || config.OTLP_ENABLED === "false"
+    asked.siteConfig.OTLP_ENDPOINT === undefined || asked.siteConfig.OTLP_ENABLED === "false"
       ? undefined
-      : { authorization: config.OTLP_AUTHORIZATION, endpoint: config.OTLP_ENDPOINT };
-  const telemetry = Telemetry.layer({ otlp, release: config.APP_RELEASE, routes, serviceName });
-  return Layer.succeed(Assets, config.ASSETS).pipe(Layer.provideMerge(telemetry));
-}
+      : {
+          authorization: asked.siteConfig.OTLP_AUTHORIZATION,
+          endpoint: asked.siteConfig.OTLP_ENDPOINT,
+        };
+  const telemetry = Telemetry.layer({
+    otlp,
+    release: asked.siteConfig.APP_RELEASE,
+    routes: asked.routes,
+    serviceName: asked.serviceName,
+  });
+  return Layer.succeed(Assets, asked.siteConfig.ASSETS).pipe(Layer.provideMerge(telemetry));
+};
 
 export { configuredSiteLayer };
 export type { SiteServices };

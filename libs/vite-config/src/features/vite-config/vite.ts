@@ -33,7 +33,7 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
-import { effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
+import { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { withoutEnvFileLoader } from "./env-file-loader.ts";
 import { paths } from "./host.ts";
@@ -159,6 +159,13 @@ const effectRun = {
   },
 } satisfies RunConfig;
 
+const awaitingEffectRun = {
+  tasks: {
+    ...effectRun.tasks,
+    ...awaitingEffectDiagnostics,
+  },
+} satisfies RunConfig;
+
 const appChecks = {
   "check:client": {
     command: "quality-check-client",
@@ -180,7 +187,7 @@ const appChecks = {
 
 const appRun = {
   tasks: {
-    ...effectDiagnostics,
+    ...awaitingEffectDiagnostics,
     ...checkCode,
     ...workspaceCheckImports,
     ...appChecks,
@@ -428,6 +435,8 @@ export {
   appRun,
   elysiaWorkerdJit,
   appServer,
+  awaitingEffectDiagnostics,
+  awaitingEffectRun,
   checkCode,
   clientReachableModules,
   defineConfig,
@@ -457,5 +466,6 @@ export {
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
+export { runTypecheckGate } from "./effect-typecheck.ts";
 export type { Tasks };
 export { devBoundary };

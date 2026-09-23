@@ -19,3 +19,4 @@ playwright-report/
 coverage/
 .spool/
 .vitest/
+.claude/worktrees/

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import {
   architectureKindOf,
@@ -9,13 +9,16 @@ import {
 } from "./architecture.ts";
 import { buildTargets } from "./wiki.ts";
 
-describe("architecture kinds", () => {
-  it("keeps FSD packages aligned with the built frontends", () => {
-    expect.hasAssertions();
-    expect([...fsdPackages]).toStrictEqual([...buildTargets]);
-  });
+describe("fsdPackages", () => {
+  const it = test.extend("packages", () => fsdPackages);
 
-  it.for([
+  it("keeps FSD packages aligned with the built frontends", ({ packages }) => {
+    expect(packages).toStrictEqual(buildTargets);
+  });
+});
+
+describe("architectureKindOf", () => {
+  describe.for([
     ["apps/service-member", "fsd"],
     ["apps/service-admin", "fsd"],
     ["apps/internal-dashboard", "fsd"],
@@ -24,15 +27,30 @@ describe("architecture kinds", () => {
     ["libs/auth", "modular"],
     ["tools/dont-review-it", "modular"],
     ["infra/cloudflare", "modular"],
-  ] as const)("classifies %s as %s", ([workspacePath, kind]) => {
-    expect.hasAssertions();
-    expect(architectureKindOf(workspacePath)).toBe(kind);
+  ] as const)("%s", ([workspacePath, expectedArchitecture]) => {
+    const it = test.extend("classifiedArchitecture", () => architectureKindOf(workspacePath));
+
+    it(`classifies as ${expectedArchitecture}`, ({ classifiedArchitecture }) => {
+      expect(classifiedArchitecture).toBe(expectedArchitecture);
+    });
+  });
+});
+
+describe("modular presets", () => {
+  const it = test
+    .extend("architectureVocabulary", () => architectureKinds)
+    .extend("layers", () => modularLayers)
+    .extend("budgets", () => modularBudgets);
+
+  it("exposes the architecture kinds", ({ architectureVocabulary }) => {
+    expect(architectureVocabulary).toStrictEqual(["fsd", "modular"]);
   });
 
-  it("exposes the modular layer and budget presets", () => {
-    expect.hasAssertions();
-    expect([...architectureKinds]).toStrictEqual(["fsd", "modular"]);
-    expect([...modularLayers]).toStrictEqual(["app", "features", "shared"]);
-    expect(modularBudgets).toStrictEqual({ app: 400, shared: 800 });
+  it("exposes the modular layers", ({ layers }) => {
+    expect(layers).toStrictEqual(["app", "features", "shared"]);
+  });
+
+  it("exposes the modular budgets", ({ budgets }) => {
+    expect(budgets).toStrictEqual({ app: 400, shared: 800 });
   });
 });

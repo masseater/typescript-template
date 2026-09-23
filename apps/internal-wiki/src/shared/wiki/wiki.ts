@@ -24,7 +24,7 @@ function wikiLayer(
             Embedder,
             Embedder.of({ available: config.AI !== undefined, embed: embedWith(config.AI) }),
           ),
-          configuredSiteLayer(config, wikiService, routes),
+          configuredSiteLayer({ siteConfig: config, serviceName: wikiService, routes }),
         ),
       ),
     ),

@@ -9,4 +9,14 @@ const effectDiagnostics = {
   },
 } satisfies NonNullable<UserConfig["run"]>["tasks"];
 
-export { effectDiagnostics, effectTsgoNoEmit };
+const awaitingEffectDiagnostics = {
+  "check:effect": {
+    command: "check-effect-typecheck",
+    input: [
+      ...effectTypecheckInputs,
+      { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
+    ],
+  },
+} satisfies NonNullable<UserConfig["run"]>["tasks"];
+
+export { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit };

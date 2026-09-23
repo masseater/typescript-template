@@ -6,8 +6,8 @@ import { forwardWiki, reporting, runtime } from "#shared/server-api/index.ts";
 
 const start = startRoute(handler);
 
-export default serveApp(
+export default serveApp({
   runtime,
-  (request, path) => (isWikiPath(path) ? forwardWiki(request, path) : start(request)),
+  route: (request, path) => (isWikiPath(path) ? forwardWiki(request, path) : start(request)),
   reporting,
-);
+});

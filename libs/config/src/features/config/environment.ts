@@ -32,6 +32,10 @@ const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u))
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
 const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
 const NonEmpty = Schema.String.check(Schema.isMinLength(1));
+
+const distinctOrigins = (origins: readonly string[]): boolean =>
+  new Set(origins).size === origins.length;
+
 const appEnvKey = {
   appOrigin: "APP_ORIGIN",
   appRelease: "APP_RELEASE",
@@ -47,20 +51,6 @@ const appEnvKey = {
   otlpEndpoint: "OTLP_ENDPOINT",
 } as const;
 
-const distinctOrigins = (origins: readonly string[]): boolean =>
-  new Set(origins).size === origins.length;
-
-const bindingWith = <Binding>(
-  bindingName: string,
-  methods: readonly string[],
-): Schema.declare<Binding, Binding> =>
-  Schema.declare(
-    (candidate: unknown): candidate is Binding =>
-      Predicate.isObject(candidate) &&
-      methods.every((method) => typeof Reflect.get(candidate, method) === "function"),
-    { expected: bindingName },
-  );
-
 const Scalars = Schema.Struct({
   [appEnvKey.appOrigin]: Origin,
   [appEnvKey.appRelease]: Schema.optionalKey(Release),
@@ -75,6 +65,17 @@ const Scalars = Schema.Struct({
   [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
 });
+
+const bindingWith = <Binding>(
+  bindingName: string,
+  methods: readonly string[],
+): Schema.declare<Binding, Binding> =>
+  Schema.declare(
+    (candidate: unknown): candidate is Binding =>
+      Predicate.isObject(candidate) &&
+      methods.every((method) => typeof Reflect.get(candidate, method) === "function"),
+    { expected: bindingName },
+  );
 
 const EmailBinding = bindingWith<SendEmail>("SendEmail", ["send"]);
 const FlagshipBinding = bindingWith<Flagship>("Flagship", [
@@ -99,11 +100,11 @@ const isLocalLanHostname = (hostname: string): boolean =>
   /^[a-z0-9-]+\.local$/u.test(hostname) || /^[a-z0-9-]+\.local\.example\.test$/u.test(hostname);
 
 const isLocalDevelopmentOrigin = (candidate: string): boolean => {
-  const parsed = URL.parse(candidate);
+  const parsedOrigin = URL.parse(candidate);
   return (
-    parsed !== null &&
-    (loopbackHosts.includes(parsed.hostname) ||
-      (parsed.protocol === "https:" && isLocalLanHostname(parsed.hostname)))
+    parsedOrigin !== null &&
+    (loopbackHosts.includes(parsedOrigin.hostname) ||
+      (parsedOrigin.protocol === "https:" && isLocalLanHostname(parsedOrigin.hostname)))
   );
 };
 
@@ -117,33 +118,50 @@ const decode = <Decoded extends Schema.Top & { readonly DecodingServices: never 
     Effect.mapError((issue) => invalid(issue.message)),
   );
 
+type EnvironmentScalars = Schema.Schema.Type<typeof Scalars>;
+
+const refuseMissingRelease = (
+  scalars: EnvironmentScalars,
+  local: boolean,
+): Effect.Effect<void, ConfigurationInvalid> =>
+  scalars.APP_RELEASE === undefined && !local
+    ? Effect.fail(invalid("APP_RELEASE is required outside local development"))
+    : Effect.void;
+
+const refuseInvalidMailpit = (
+  scalars: EnvironmentScalars,
+  local: boolean,
+): Effect.Effect<void, ConfigurationInvalid> =>
+  scalars.MAILPIT_URL !== undefined &&
+  (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
+    ? Effect.fail(invalid("Mailpit is restricted to local development"))
+    : Effect.void;
+
 const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationInvalid> => {
-  const parsed = new URL(origin);
-  return parsed.protocol === "https:" || loopbackHosts.includes(parsed.hostname)
+  const parsedOrigin = new URL(origin);
+  return parsedOrigin.protocol === "https:" || loopbackHosts.includes(parsedOrigin.hostname)
     ? Effect.void
     : Effect.fail(invalid("HTTPS is required outside localhost"));
+};
+
+const enforceOtlpOrigin = (
+  scalars: EnvironmentScalars,
+): Effect.Effect<void, ConfigurationInvalid> => {
+  if (scalars.OTLP_ENDPOINT === undefined) {
+    return scalars.OTLP_ENABLED === undefined
+      ? Effect.void
+      : Effect.fail(invalid("OTLP_ENABLED needs OTLP_ENDPOINT"));
+  }
+  return requireSecureOrigin(scalars.OTLP_ENDPOINT);
 };
 
 const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(input: unknown) {
   const scalars = yield* decode(Scalars, input);
   yield* requireSecureOrigin(scalars.APP_ORIGIN);
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
-  if (scalars.APP_RELEASE === undefined && !local) {
-    return yield* invalid("APP_RELEASE is required outside local development");
-  }
-  if (
-    scalars.MAILPIT_URL !== undefined &&
-    (!local || !loopbackHosts.includes(new URL(scalars.MAILPIT_URL).hostname))
-  ) {
-    return yield* invalid("Mailpit is restricted to local development");
-  }
-  if (scalars.OTLP_ENDPOINT === undefined) {
-    if (scalars.OTLP_ENABLED !== undefined) {
-      return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
-    }
-  } else {
-    yield* requireSecureOrigin(scalars.OTLP_ENDPOINT);
-  }
+  yield* refuseMissingRelease(scalars, local);
+  yield* refuseInvalidMailpit(scalars, local);
+  yield* enforceOtlpOrigin(scalars);
   return {
     ...scalars,
     APP_RELEASE: scalars.APP_RELEASE ?? "local",

@@ -1,18 +1,27 @@
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Layer, Option, Schema, Tracer } from "effect";
 import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
 import { RequestEntropy } from "./request-span.ts";
-import { fixedSpans, recordedLogs } from "./server-testing.ts";
 import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
+import { recordingSink } from "./testing.ts";
 
 const fixedNow = 1_800_000_000_000;
-const clockEntropy = RequestEntropy.defaultValue();
 
+class FixedSpan extends Tracer.NativeSpan {
+  public override get spanId(): string {
+    return "c".repeat(16);
+  }
+
+  public override get traceId(): string {
+    return Option.getOrUndefined(this.parent)?.traceId ?? "c".repeat(32);
+  }
+}
+
+const fixedSpans = Tracer.make({ span: (spanOptions) => new FixedSpan(spanOptions) });
 const fixedEntropy = Layer.merge(
   Layer.succeed(RequestEntropy, {
-    epochMilliseconds: () => clockEntropy.epochMilliseconds(),
-    monotonicMilliseconds: () => clockEntropy.monotonicMilliseconds(),
+    ...RequestEntropy.defaultValue(),
     requestId: () => "22222222-2222-4222-8222-222222222222",
   }),
   Layer.effectDiscard(TestClock.setTime(fixedNow)).pipe(Layer.provideMerge(TestClock.layer())),
@@ -225,32 +234,34 @@ describe("ingestBrowser", () => {
     [0, "stderr", "7777777777777777"],
   ] as const)("a browser client span answered with %s", ([answeredStatus, stream, spanId]) => {
     const it = test.extend("recordedStreams", () =>
-      recordedLogs((sink) =>
-        ingestBrowser(
-          new Request(new URL("/api/telemetry", testOrigin), {
-            body: Effect.runSync(
-              Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+      Effect.runPromise(
+        Effect.gen(function* recordLogs() {
+          const logs = recordingSink();
+          yield* ingestBrowser(
+            new Request(new URL("/api/telemetry", testOrigin), {
+              body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
                 { ...requestEvent, spanId, status: answeredStatus },
               ]),
+              headers: { "content-type": "application/json", origin: "http://localhost" },
+              method: "POST",
+            }),
+          ).pipe(
+            Effect.provide(
+              Layer.merge(
+                Telemetry.layer({
+                  log: logs.sink,
+                  release: "test",
+                  routes: { "/": "home", "/api/telemetry": "telemetry" },
+                  serviceName: "user",
+                }),
+                fixedEntropy,
+              ),
             ),
-            headers: { "content-type": "application/json", origin: "http://localhost" },
-            method: "POST",
-          }),
-        ).pipe(
-          Effect.provide(
-            Layer.merge(
-              Telemetry.layer({
-                log: sink,
-                release: "test",
-                routes: { "/": "home", "/api/telemetry": "telemetry" },
-                serviceName: "user",
-              }),
-              fixedEntropy,
-            ),
-          ),
-          Effect.withTracer(fixedSpans),
-          Effect.asVoid,
-        ),
+            Effect.withTracer(fixedSpans),
+            Effect.asVoid,
+          );
+          return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
+        }),
       ));
 
     it(`records the span on ${stream} and leaves the other streams empty`, ({
@@ -283,31 +294,35 @@ describe("ingestBrowser", () => {
 
   describe("the same batch posted twice", () => {
     const it = test.extend("reportedLogs", () =>
-      recordedLogs((sink) => {
-        const resend = ingestBrowser(
-          new Request(new URL("/api/telemetry", testOrigin), {
-            body: Effect.runSync(
-              Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([requestEvent]),
+      Effect.runPromise(
+        Effect.gen(function* recordLogs() {
+          const logs = recordingSink();
+          const resend = ingestBrowser(
+            new Request(new URL("/api/telemetry", testOrigin), {
+              body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+                requestEvent,
+              ]),
+              headers: { "content-type": "application/json", origin: "http://localhost" },
+              method: "POST",
+            }),
+          ).pipe(
+            Effect.provide(
+              Layer.merge(
+                Telemetry.layer({
+                  log: logs.sink,
+                  release: "test",
+                  routes: { "/": "home", "/api/telemetry": "telemetry" },
+                  serviceName: "user",
+                }),
+                fixedEntropy,
+              ),
             ),
-            headers: { "content-type": "application/json", origin: "http://localhost" },
-            method: "POST",
-          }),
-        ).pipe(
-          Effect.provide(
-            Layer.merge(
-              Telemetry.layer({
-                log: sink,
-                release: "test",
-                routes: { "/": "home", "/api/telemetry": "telemetry" },
-                serviceName: "user",
-              }),
-              fixedEntropy,
-            ),
-          ),
-          Effect.withTracer(fixedSpans),
-        );
-        return Effect.andThen(resend, resend);
-      }));
+            Effect.withTracer(fixedSpans),
+          );
+          yield* Effect.andThen(resend, resend);
+          return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
+        }),
+      ));
 
     it("records the events of the batch once", ({ reportedLogs }) => {
       expect(reportedLogs).toStrictEqual({
@@ -337,51 +352,57 @@ describe("ingestBrowser", () => {
 
 describe("browser events followed by a failing request", () => {
   const it = test.extend("reportedLogs", () =>
-    recordedLogs((sink) =>
-      Effect.gen(function* probe() {
-        yield* ingestBrowser(
-          new Request(new URL("/api/telemetry", testOrigin), {
-            body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
-              { ...requestEvent, spanId: "c1c1c1c1c1c1c1c1" },
-              {
-                ...requestEvent,
-                errorType: "TypeError",
-                kind: "exception",
-                locations: "/assets/index-abc.js:1:234",
-                method: "GET",
-                name: "browser.error",
-                spanId: "c2c2c2c2c2c2c2c2",
-                status: 0,
-                value: 1,
-              },
-            ]).pipe(Effect.orDie),
-            headers: { "content-type": "application/json", origin: "http://localhost" },
-            method: "POST",
-          }),
-        );
-        yield* observeRequest(new Request(testOrigin), () =>
-          Effect.die(
-            new (class extends RangeError {
-              public override readonly stack =
-                "RangeError: private@example.test\n at handle (/assets/app-abc.js:7:11)";
-            })("private@example.test"),
-          ),
-        );
-      }).pipe(
-        Effect.provide(
-          Layer.merge(
-            Telemetry.layer({
-              log: sink,
-              release: "abc123",
-              routes: { "/": "home" },
-              serviceName: "user",
+    Effect.runPromise(
+      Effect.gen(function* recordLogs() {
+        const logs = recordingSink();
+        yield* Effect.gen(function* probe() {
+          yield* ingestBrowser(
+            new Request(new URL("/api/telemetry", testOrigin), {
+              body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+                { ...requestEvent, spanId: "8888888888888888" },
+                {
+                  ...requestEvent,
+                  errorType: "TypeError",
+                  kind: "exception",
+                  locations: "/assets/index-abc.js:1:234",
+                  method: "GET",
+                  name: "browser.error",
+                  spanId: "9999999999999999",
+                  status: 0,
+                  value: 1,
+                },
+              ]).pipe(Effect.orDie),
+              headers: { "content-type": "application/json", origin: "http://localhost" },
+              method: "POST",
             }),
-            fixedEntropy,
+          );
+          yield* observeRequest(new Request(testOrigin), () =>
+            Effect.die(
+              Object.create(RangeError.prototype, {
+                message: { value: "private@example.test" },
+                stack: {
+                  value: "RangeError: private@example.test\n at handle (/assets/app-abc.js:7:11)",
+                },
+              }),
+            ),
+          );
+        }).pipe(
+          Effect.provide(
+            Layer.merge(
+              Telemetry.layer({
+                log: logs.sink,
+                release: "abc123",
+                routes: { "/": "home" },
+                serviceName: "user",
+              }),
+              fixedEntropy,
+            ),
           ),
-        ),
-        Effect.withTracer(fixedSpans),
-        Effect.asVoid,
-      ),
+          Effect.withTracer(fixedSpans),
+          Effect.asVoid,
+        );
+        return { stderr: logs.stderr, stdout: logs.stdout, stdwarn: logs.stdwarn };
+      }),
     ));
 
   it("keeps the secrets out of every line it writes", ({ reportedLogs }) => {
@@ -395,7 +416,7 @@ describe("browser events followed by a failing request", () => {
           "http.route": "home",
           measurement_value: 1,
           request_id: "11111111-1111-4111-8111-111111111111",
-          span_id: "c2c2c2c2c2c2c2c2",
+          span_id: "9999999999999999",
           start: "2027-01-15T08:00:00.000Z",
           "telemetry.source": "untrusted-browser",
           trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -436,7 +457,7 @@ describe("browser events followed by a failing request", () => {
           "http.route": "home",
           measurement_value: 0,
           request_id: "11111111-1111-4111-8111-111111111111",
-          span_id: "c1c1c1c1c1c1c1c1",
+          span_id: "8888888888888888",
           start: "2027-01-15T08:00:00.000Z",
           "telemetry.source": "untrusted-browser",
           trace_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
