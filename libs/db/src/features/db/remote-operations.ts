@@ -45,6 +45,7 @@ const MigrationFile = Schema.Struct({
 const MigrationFiles = Schema.Array(MigrationFile).check(Schema.isMinLength(1));
 type Migration = typeof MigrationFile.Type;
 
+const RowCells = Schema.Array(Schema.Array(Schema.Unknown));
 const TableNameRows = Schema.Array(Schema.Tuple([Schema.String]));
 const HistoryRows = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
 const BootstrappedRow = Schema.Tuple([Schema.Unknown, Schema.Unknown, Schema.Unknown]);
@@ -224,6 +225,7 @@ const bootstrapDatabase = <Result>(
 };
 
 export {
+  RowCells,
   RemoteFailure,
   bootstrapDatabase,
   fail,

@@ -1,4 +1,4 @@
-import { field, workspaceManifests } from "./dependencies.ts";
+import { field, rootManifests, workspaceManifests } from "./dependencies.ts";
 import { directoryOfGlobKey } from "./repository-path.ts";
 
 import type { Tasks } from "@repo/vite-config";
@@ -10,14 +10,6 @@ const configModules: Readonly<Record<string, UserConfig | UserConfigFnObject>> =
     "../../../../../../{apps,libs,infra,tools}/*/vite.config.ts",
   ],
   { eager: true, import: "default" },
-);
-
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../../../../../package.json",
-  {
-    eager: true,
-    import: "default",
-  },
 );
 
 const serveEnv: ConfigEnv = { command: "serve", mode: "development" };

@@ -14,6 +14,7 @@ import { attempt, partition, sortBy, uniqBy } from "es-toolkit";
 
 import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
+import { generatedSourcePaths } from "../generated-source.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import { pathIsInside } from "../path-is-inside.ts";
@@ -334,7 +335,12 @@ export const listRepositoryFiles = (
     ancestry: new Set([realRoot]),
   });
   const cacheInputs = sortBy(scannedRepository.files, ["relativePath"]);
-  const scanned = cacheInputs.filter(isScannedSourcePath);
+  const sourcePaths = cacheInputs.filter(isScannedSourcePath);
+  const generated = generatedSourcePaths({
+    repositoryRoot,
+    relativePaths: sourcePaths.map((file) => file.relativePath),
+  });
+  const scanned = sourcePaths.filter((file) => !generated.has(file.relativePath));
   const [manifests, otherScannedFiles] = partition(scanned, isManifest);
   const commentSources = uniquePhysicalFiles(otherScannedFiles.filter(isCommentSource));
 

@@ -4,8 +4,9 @@ import { decodeJson } from "@repo/runtime/client";
 import { Effect, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
+import { Redirect } from "#shared/contracts/index.ts";
+
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
-const Redirect = Schema.Struct({ url: Schema.String });
 
 function loadClientName(clientId: string): Effect.Effect<string | undefined> {
   return Effect.gen(function* loadName() {

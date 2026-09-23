@@ -1,4 +1,4 @@
-import { Effect, FileSystem, type PlatformError, Schema } from "effect";
+import { Effect, FileSystem, type Path, type PlatformError, Schema } from "effect";
 
 import { unlessMissing } from "./file-system.ts";
 import { isLinkLoop, isMissingPath, isNotALink } from "./path-failure.ts";
@@ -43,6 +43,12 @@ export type TreeFailure =
   | DanglingSymlink
   | EscapingSymlink
   | SymlinkCycle;
+
+export type TreeScan<Scanned> = Effect.Effect<
+  Scanned,
+  TreeFailure,
+  FileSystem.FileSystem | Path.Path
+>;
 
 type Descent = Readonly<{
   root: string;

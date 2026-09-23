@@ -21,6 +21,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/platform-node": "catalog:",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",

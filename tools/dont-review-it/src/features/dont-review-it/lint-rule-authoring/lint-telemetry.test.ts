@@ -190,9 +190,8 @@ describe("startLintTelemetry", () => {
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
             telemetry.startLintTelemetry();
             const marked = vi.fn<(exitCode: unknown) => void>();
-            vi.spyOn(process.stderr, "write").mockImplementation(() => {
+            vi.spyOn(console, "error").mockImplementation(() => {
               marked(process.exitCode);
-              return true;
             });
             globalErrorHandler(new Error("the collector refused"));
             return marked;
@@ -224,9 +223,8 @@ describe("startLintTelemetry", () => {
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
             telemetry.startLintTelemetry();
             const written = vi.fn<(failureReport: string) => void>();
-            vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
+            vi.spyOn(console, "error").mockImplementation((failureReport: unknown) => {
               written(String(failureReport));
-              return true;
             });
             globalErrorHandler(new Error("the collector refused"));
             return written;
@@ -235,7 +233,7 @@ describe("startLintTelemetry", () => {
 
       it("names the message the error carried", ({ thrownErrorReport }) => {
         expect(thrownErrorReport).toHaveBeenCalledExactlyOnceWith(
-          `${EXPORT_FAILURE_PREFIX}the collector refused\n`,
+          `${EXPORT_FAILURE_PREFIX}the collector refused`,
         );
       });
     });
@@ -258,9 +256,8 @@ describe("startLintTelemetry", () => {
             const telemetry = yield* Effect.promise(() => import("./lint-telemetry.ts"));
             telemetry.startLintTelemetry();
             const written = vi.fn<(failureReport: string) => void>();
-            vi.spyOn(process.stderr, "write").mockImplementation((failureReport) => {
+            vi.spyOn(console, "error").mockImplementation((failureReport: unknown) => {
               written(String(failureReport));
-              return true;
             });
             globalErrorHandler({ code: "503" });
             return written;
@@ -269,7 +266,7 @@ describe("startLintTelemetry", () => {
 
       it("names the value that was thrown", ({ thrownNonErrorReport }) => {
         expect(thrownNonErrorReport).toHaveBeenCalledExactlyOnceWith(
-          `${EXPORT_FAILURE_PREFIX}{"code":"503"}\n`,
+          `${EXPORT_FAILURE_PREFIX}{"code":"503"}`,
         );
       });
     });

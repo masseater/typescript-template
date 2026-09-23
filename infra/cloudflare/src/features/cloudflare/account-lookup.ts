@@ -1,17 +1,21 @@
 import { Effect, Schema } from "effect";
 
-import { endpoint, readList, readRequired, readResource } from "./account-read.ts";
+import {
+  IdentifiedResults,
+  NamedResults,
+  endpoint,
+  readList,
+  readRequired,
+  readResource,
+} from "./account-read.ts";
 
 import type { AccountAccess } from "./account-read.ts";
 
 const SECRETS_STORE_PAGE_SIZE = 100;
 
-const Scripts = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
-const Stores = Schema.Struct({ result: Schema.Array(Schema.Struct({ id: Schema.String })) });
 const Domains = Schema.Struct({
   result: Schema.Array(Schema.Struct({ hostname: Schema.String, service: Schema.String })),
 });
-const Records = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
 const Subdomain = Schema.Struct({
   result: Schema.Struct({ subdomain: Schema.optional(Schema.String) }),
 });
@@ -32,7 +36,7 @@ const secretsStoreCount = Effect.fn("secretsStoreCount")(function* secretsStoreC
       pageSize: SECRETS_STORE_PAGE_SIZE,
       source: endpoint`accounts/${access.accountId}/secrets_store/stores`,
     },
-    Stores,
+    IdentifiedResults,
   );
   return listed.result.length;
 });
@@ -41,7 +45,7 @@ const workerNames = Effect.fn("workerNames")(function* workerNames(access: Accou
   const listed = yield* readList(
     access,
     { source: endpoint`accounts/${access.accountId}/workers/scripts` },
-    Scripts,
+    IdentifiedResults,
   );
   return listed.result.map((script) => script.id);
 });
@@ -77,7 +81,7 @@ const dnsRecordNames = Effect.fn("dnsRecordNames")(function* dnsRecordNames(
   const listed = yield* readList(
     access,
     { filter: { "name.exact": hostname }, source: endpoint`zones/${zoneId}/dns_records` },
-    Records,
+    NamedResults,
   );
   return listed.result.filter((record) => record.name === hostname).map((record) => record.name);
 });
