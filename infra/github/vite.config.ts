@@ -4,7 +4,7 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   run: {
     tasks: {
-      ...effectRun.tasks,
+      ...effectRun(import.meta.dirname).tasks,
       deploy: { cache: false, command: "./src/features/github/cli.ts deploy" },
       plan: { cache: false, command: "./src/features/github/cli.ts plan" },
     },

@@ -1,7 +1,7 @@
 import { monitorWorkerVite } from "@repo/monitor/vite";
 import { defineConfig } from "vite-plus";
 
-const budgetMonitorVite = monitorWorkerVite("budget-monitor");
+const budgetMonitorVite = monitorWorkerVite(import.meta.dirname);
 
 export default defineConfig({
   ...budgetMonitorVite,

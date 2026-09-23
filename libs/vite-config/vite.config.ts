@@ -3,7 +3,7 @@ import { defineConfig } from "vite-plus";
 import { awaitingEffectRun } from "./src/features/vite-config/vite.ts";
 
 export default defineConfig({
-  run: awaitingEffectRun,
+  run: awaitingEffectRun(import.meta.dirname),
   test: {
     coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
     mockReset: true,

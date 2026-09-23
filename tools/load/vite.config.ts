@@ -13,7 +13,7 @@ export default defineConfig({
     tasks: {
       "check:effect": {
         command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
-        input: effectDiagnostics["check:effect"].input,
+        input: effectDiagnostics(import.meta.dirname)["check:effect"].input,
       },
       ...checkCode,
       ...workspaceCheckImports,
