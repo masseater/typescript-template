@@ -1,5 +1,5 @@
-import { ConfigurationInvalid, readEnvironment } from "@repo/config";
-import { readStorage } from "@repo/config/storage";
+import { ConfigurationInvalid, grants, readEnvironment } from "@repo/config";
+import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { Config, Effect, Layer, Option, Redacted } from "effect";
 import {
   Binding,
@@ -139,9 +139,12 @@ function appLayer(
   return Layer.unwrap(
     readWorkerConfig(env).pipe(
       Effect.flatMap((config) =>
-        Effect.map(readStorage(env), (storage) =>
-          configuredAppLayer(config, audience, routes, storage),
-        ),
+        Effect.gen(function* withStorage() {
+          const storage = grants(audience, "storage")
+            ? yield* readStorage(env)
+            : yield* readOptionalStorage(env);
+          return configuredAppLayer(config, audience, routes, storage);
+        }),
       ),
     ),
   );
