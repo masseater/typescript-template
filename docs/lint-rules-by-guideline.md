@@ -4,21 +4,27 @@ Which lint rules of this repository declare each normative document as their gro
 
 <!-- BEGIN GENERATED rules-by-guideline -->
 
-## [AGENTS.md](../AGENTS.md)
-
-| Rule | Description |
-| --- | --- |
-| [forbid-declared-command-invocation--use-designated-replacement](../tools/dont-review-it/docs/lint/forbid-declared-command-invocation--use-designated-replacement.md) | Disallow starting a command the shared declaration has retired as a child process, so the declaration that closes the import route and the manifest route closes the process route with the same entry |
-| [no-detached-test-file--move-beside-source](../tools/dont-review-it/docs/lint/no-detached-test-file--move-beside-source.md) | Require a test file to sit in the directory of the source it tests under that source's name, so the pair is tied together by the path and a test cannot be left behind when its source moves |
-| [no-version-range--pin-the-exact-version](../tools/dont-review-it/docs/lint/no-version-range--pin-the-exact-version.md) | Disallow every dependency version that matches more than one release, in workspace manifests and in the catalog alike, so the release a workspace installs is decided by the declaration instead of by the moment the install ran |
-| [require-catalog-entry--register-shared-dependency](../tools/dont-review-it/docs/lint/require-catalog-entry--register-shared-dependency.md) | Require every package that more than one workspace declares to be registered in the catalog, so the version they resolve to is decided in one place instead of workspace by workspace |
-| [require-spec-directory-outside-coverage--exclude-it-from-the-measurement](../tools/dont-review-it/docs/lint/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.md) | Require the test config to keep the specification directory out of the coverage measurement, so the number a run reports is what the tests beside the sources reached rather than what the specifications happened to touch |
-
-## [apps/internal-dashboard/content/docs/guidelines/documents.md](../apps/internal-dashboard/content/docs/guidelines/documents.md)
+## [.claude/skills/reviews/references/agents-md.md](../.claude/skills/reviews/references/agents-md.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/internal-dashboard/content/docs/guidelines/enforcement.md](../apps/internal-dashboard/content/docs/guidelines/enforcement.md)
+## [.claude/skills/reviews/references/ci-efficiency.md](../.claude/skills/reviews/references/ci-efficiency.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/colocation.md](../.claude/skills/reviews/references/colocation.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/config-cleanup.md](../.claude/skills/reviews/references/config-cleanup.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/documents.md](../.claude/skills/reviews/references/documents.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/enforcement.md](../.claude/skills/reviews/references/enforcement.md)
 
 | Rule | Description |
 | --- | --- |
@@ -40,19 +46,23 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [require-spec-lint-coverage--lint-every-spec-file](../tools/dont-review-it/docs/lint/require-spec-lint-coverage--lint-every-spec-file.md) | Require every file declaring a test block to sit inside the reach of the spec discipline bundle, with those rules failing a run and their shared settings handed out from one declaration, so a run that reports nothing stands apart from a bundle that reaches nothing |
 | [require-test-block-for-spec-file--add-test-or-delete-file](../tools/dont-review-it/docs/lint/require-test-block-for-spec-file--add-test-or-delete-file.md) | Require a file named as a spec to declare at least one test block that runs, so naming a file a spec costs a check that actually executes rather than buying the standing of a spec for free |
 
-## [apps/internal-dashboard/content/docs/guidelines/frontend.md](../apps/internal-dashboard/content/docs/guidelines/frontend.md)
+## [.claude/skills/reviews/references/frontend.md](../.claude/skills/reviews/references/frontend.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/internal-dashboard/content/docs/guidelines/infrastructure.md](../apps/internal-dashboard/content/docs/guidelines/infrastructure.md)
+## [.claude/skills/reviews/references/infrastructure.md](../.claude/skills/reviews/references/infrastructure.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/internal-dashboard/content/docs/guidelines/observability.md](../apps/internal-dashboard/content/docs/guidelines/observability.md)
+## [.claude/skills/reviews/references/no-silent-fallback.md](../.claude/skills/reviews/references/no-silent-fallback.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/internal-dashboard/content/docs/guidelines/placement-and-tools.md](../apps/internal-dashboard/content/docs/guidelines/placement-and-tools.md)
+## [.claude/skills/reviews/references/observability.md](../.claude/skills/reviews/references/observability.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/placement-and-tools.md](../.claude/skills/reviews/references/placement-and-tools.md)
 
 | Rule | Description |
 | --- | --- |
@@ -64,22 +74,30 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-unwrapped-toolchain-config--call-the-preset-for-the-block](../tools/dont-review-it/docs/lint/no-unwrapped-toolchain-config--call-the-preset-for-the-block.md) | Require the lint and fmt blocks of a Vite+ configuration to be what the matching `dontReviewItPreset` function returns, so the rule set, the formatting decisions, and what git is told to ignore all arrive without the caller restating them |
 | [require-registered-file--restore-it-at-the-registered-path](../tools/dont-review-it/docs/lint/require-registered-file--restore-it-at-the-registered-path.md) | Require every path the required-file table registers to hold a file that is not empty, so a file whose readers sit outside the source keeps its place instead of leaving with the change that stopped mentioning it |
 
-## [apps/internal-dashboard/content/docs/guidelines/principles.md](../apps/internal-dashboard/content/docs/guidelines/principles.md)
+## [.claude/skills/reviews/references/principles.md](../.claude/skills/reviews/references/principles.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/internal-dashboard/content/docs/guidelines/review-findings.md](../apps/internal-dashboard/content/docs/guidelines/review-findings.md)
+## [.claude/skills/reviews/references/remove-useless-tests.md](../.claude/skills/reviews/references/remove-useless-tests.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [apps/internal-dashboard/content/docs/guidelines/secrets-and-permissions.md](../apps/internal-dashboard/content/docs/guidelines/secrets-and-permissions.md)
+## [.claude/skills/reviews/references/review-findings.md](../.claude/skills/reviews/references/review-findings.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/secrets-and-permissions.md](../.claude/skills/reviews/references/secrets-and-permissions.md)
 
 | Rule | Description |
 | --- | --- |
 | [forbid-tracked-path--untrack-and-ignore](../tools/dont-review-it/docs/lint/forbid-tracked-path--untrack-and-ignore.md) | Require every path registered as untrackable to stay out of the tracked file list and to stand in the ignore settings, so values that belong to one machine and output that a build produces never ride a commit into another clone |
 | [no-hardcoded-provider-id--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-provider-id--read-from-configuration.md) | Disallow text written out in the source at an identity argument of a client built from a provider package, so which account a deployment acts as is decided by its configuration rather than by the file that builds the client |
 
-## [apps/internal-dashboard/content/docs/guidelines/tests.md](../apps/internal-dashboard/content/docs/guidelines/tests.md)
+## [.claude/skills/reviews/references/simplify.md](../.claude/skills/reviews/references/simplify.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/tests.md](../.claude/skills/reviews/references/tests.md)
 
 | Rule | Description |
 | --- | --- |
@@ -136,7 +154,11 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [require-test-block-spelling--use-configured-fn](../tools/dont-review-it/docs/lint/require-test-block-spelling--use-configured-fn.md) | Require every test block declaration to be rooted at one configured spelling, so a scan of the test surface settles what an identifier means without reading the block behind it |
 | [require-vitest-extend-builder--infer-fixture-type](../tools/dont-review-it/docs/lint/require-vitest-extend-builder--infer-fixture-type.md) | Require every fixture to be declared as its own builder call whose type is inferred from what the factory returns, so the shape a test destructures is the shape the factory produces rather than a hand-written copy that drifts away from it |
 
-## [apps/internal-dashboard/content/docs/guidelines/writing-code.md](../apps/internal-dashboard/content/docs/guidelines/writing-code.md)
+## [.claude/skills/reviews/references/verification-bypass.md](../.claude/skills/reviews/references/verification-bypass.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
+## [.claude/skills/reviews/references/writing-code.md](../.claude/skills/reviews/references/writing-code.md)
 
 | Rule | Description |
 | --- | --- |
@@ -173,6 +195,16 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-unordered-import--group-by-origin-then-sort-by-specifier](../tools/dont-review-it/docs/lint/no-unordered-import--group-by-origin-then-sort-by-specifier.md) | Disallow an import list whose order does not follow origin then specifier, so what a file depends on is read off the block boundaries instead of every specifier |
 | [no-unused-style-class--delete-or-reference-it](../tools/dont-review-it/docs/lint/no-unused-style-class--delete-or-reference-it.md) | Disallow a style sheet class that no script and no markup in the repository spells, so the style sheet keeps only the classes that reach the rendered page |
 | [require-re-export-only-files--move-declaration-to-owning-module](../tools/dont-review-it/docs/lint/require-re-export-only-files--move-declaration-to-owning-module.md) | Require the files the deployment lists as re-export only to carry re-exports and nothing else, so the surface a module presents can be read off that file without opening what it forwards |
+
+## [AGENTS.md](../AGENTS.md)
+
+| Rule | Description |
+| --- | --- |
+| [forbid-declared-command-invocation--use-designated-replacement](../tools/dont-review-it/docs/lint/forbid-declared-command-invocation--use-designated-replacement.md) | Disallow starting a command the shared declaration has retired as a child process, so the declaration that closes the import route and the manifest route closes the process route with the same entry |
+| [no-detached-test-file--move-beside-source](../tools/dont-review-it/docs/lint/no-detached-test-file--move-beside-source.md) | Require a test file to sit in the directory of the source it tests under that source's name, so the pair is tied together by the path and a test cannot be left behind when its source moves |
+| [no-version-range--pin-the-exact-version](../tools/dont-review-it/docs/lint/no-version-range--pin-the-exact-version.md) | Disallow every dependency version that matches more than one release, in workspace manifests and in the catalog alike, so the release a workspace installs is decided by the declaration instead of by the moment the install ran |
+| [require-catalog-entry--register-shared-dependency](../tools/dont-review-it/docs/lint/require-catalog-entry--register-shared-dependency.md) | Require every package that more than one workspace declares to be registered in the catalog, so the version they resolve to is decided in one place instead of workspace by workspace |
+| [require-spec-directory-outside-coverage--exclude-it-from-the-measurement](../tools/dont-review-it/docs/lint/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.md) | Require the test config to keep the specification directory out of the coverage measurement, so the number a run reports is what the tests beside the sources reached rather than what the specifications happened to touch |
 
 ## [apps/internal-dashboard/content/docs/plans/modernization.md](../apps/internal-dashboard/content/docs/plans/modernization.md)
 

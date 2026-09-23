@@ -190,7 +190,7 @@ export const noDetachedDeclaration = createDontReviewItRule({
     docs: {
       description:
         "Disallow a declaration that stands apart from the statement that uses it, so a reader reaches the shape of a name without leaving the line that names it",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
     },
     messages: {
       detachedDeclaration:

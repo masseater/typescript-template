@@ -41,7 +41,7 @@ export const createNoTwinDeclaration = ({
       docs: {
         description:
           "Disallow a declaration that another declaration in the repository spells with the same name and the same body, so one concept keeps one owner however small the body is",
-        relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
+        relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
       },
       messages: {
         twinDeclaration:
