@@ -63,5 +63,26 @@ const affectedTests = (
   return { directories: withDependents(selected, packages), kind: "subset" };
 };
 
-export { affectedTests };
+const shardDirectories = (
+  directories: readonly string[],
+  shard: number,
+  count: number,
+): readonly string[] => {
+  if (
+    !Number.isInteger(count) ||
+    count < 1 ||
+    !Number.isInteger(shard) ||
+    shard < 1 ||
+    shard > count
+  ) {
+    throw new Error(`shard ${String(shard)}/${String(count)} is not a shard of the check`);
+  }
+  const applications = directories.filter((directory) => directory.startsWith("apps/")).toSorted();
+  const rest = directories.filter((directory) => !directory.startsWith("apps/")).toSorted();
+  return [...applications, ...rest]
+    .filter((_directory, index) => index % count === shard - 1)
+    .toSorted();
+};
+
+export { affectedTests, shardDirectories };
 export type { WorkspacePackage };
