@@ -6,6 +6,8 @@ packages:
 overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
+  vite-plus>oxlint: "catalog:"
+  vite-plus>oxlint-tsgolint: "catalog:"
   effect@*: "catalog:"
   drizzle-orm@*: "catalog:"
   drizzle-kit@*: "catalog:"
@@ -40,6 +42,16 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workerd-windows-64@1.20260917.1"
   - workerd@1.20260917.1
   - effect-cf@0.47.0
+  - vite-plus@1.0.0-rc.0
+  - "@voidzero-dev/vite-plus-core@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-darwin-x64@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-darwin-arm64@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-x64-gnu@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-x64-musl@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-arm64-gnu@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-linux-arm64-musl@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-win32-x64-msvc@1.0.0-rc.0"
+  - "@voidzero-dev/vite-plus-win32-arm64-msvc@1.0.0-rc.0"
 catalog:
   "@cloudflare/flagship": 0.5.0
   "@openfeature/server-sdk": 1.23.0
@@ -71,8 +83,8 @@ catalog:
   "@types/react": 19.3.0
   "@types/react-dom": 19.3.0
   "@vitejs/plugin-react": 6.1.1
-  "@vitest/browser-playwright": 4.1.11
-  "@vitest/coverage-v8": 4.1.11
+  "@vitest/browser-playwright": 5.0.1
+  "@vitest/coverage-v8": 5.0.1
   better-auth: 1.7.5
   class-variance-authority: 0.7.1
   cn: 0.3.0
@@ -102,9 +114,9 @@ catalog:
   textlint-rule-preset-ai-words-ja: 1.2.1
   tailwindcss: 4.3.3
   typescript: 7.0.2
-  vite: npm:@voidzero-dev/vite-plus-core@0.3.2
-  vite-plus: 0.3.2
-  vitest: 4.1.11
+  vite: npm:@voidzero-dev/vite-plus-core@1.0.0-rc.0
+  vite-plus: 1.0.0-rc.0
+  vitest: 5.0.1
   wrangler: 4.134.0
   yaml: 2.9.1
 peerDependencyRules:
@@ -121,3 +133,4 @@ peerDependencyRules:
 patchedDependencies:
   "@better-auth/oauth-provider@1.7.5": patches/@better-auth__oauth-provider@1.7.5.patch
   fumadocs-mdx@15.4.1: patches/fumadocs-mdx@15.4.1.patch
+  vitest@5.0.1: patches/vitest@5.0.1.patch

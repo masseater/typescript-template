@@ -1,0 +1,13 @@
+diff --git a/dist/module-evaluator.js b/dist/module-evaluator.js
+index d56fbf4cb41570bbc1e0fdd30b667ef29b89c14a..38f388fb315130484501a95518f2266a57ffae59 100644
+--- a/dist/module-evaluator.js
++++ b/dist/module-evaluator.js
+@@ -385,7 +385,7 @@ const CJS_GLOBALS_REFERENCE_ERROR_RE = /^(module|exports|require|__filename|__di
+ const ESM_HINTS = {
+ 	module: "use \"export\" declarations instead of \"module.exports\"",
+ 	exports: "use \"export\" declarations instead of \"exports\"",
+-	require: "use \"import\" declarations or \"createRequire(import.meta.url)\" instead of \"require\"",
++	require: "use \"import\" declarations or \"createRequire(import.meta\u002eurl)\" instead of \"require\"",
+ 	__filename: "use \"import.meta.filename\" instead of \"__filename\"",
+ 	__dirname: "use \"import.meta.dirname\" instead of \"__dirname\""
+ };
