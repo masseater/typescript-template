@@ -245,24 +245,50 @@ const lifecycle = (
   },
 });
 
+const checkCode = {
+  "check:code": { command: "vp check --no-error-on-unmatched-pattern", input: [...taskInput] },
+} satisfies Tasks;
+
+const workspaceCheckImports = {
+  "check:imports": { command: "quality-check-imports", input: [...taskInput] },
+} satisfies Tasks;
+
 const modularBoundaries = {
-  "check:modular": {
-    command: "quality-check-modular",
-    input: [...taskInput],
-  },
+  "check:modular": { command: "quality-check-modular", input: [...taskInput] },
 } satisfies Tasks;
 
 const effectRun = {
   tasks: {
     ...effectDiagnostics,
+    ...checkCode,
+    ...workspaceCheckImports,
     ...modularBoundaries,
-    ...lifecycle({ prepush: ["check:effect", "check:modular"] }),
+    ...lifecycle({
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check:imports", "check:modular"],
+    }),
   },
 } satisfies RunConfig;
+
+const appChecks = {
+  "check:client": {
+    command: "quality-check-client",
+    input: [...taskInput, "!**/dist/**", "!**/node_modules/.cache/**", ...withoutLocalState],
+    output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+  },
+  "check:react": {
+    command: "quality-check-react",
+    input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+    output: [{ auto: true }, "!**/node_modules/.cache/**"],
+  },
+} satisfies Tasks;
 
 const appRun = {
   tasks: {
     ...effectDiagnostics,
+    ...checkCode,
+    ...workspaceCheckImports,
+    ...appChecks,
     check: sliceBoundaries.check,
     build: {
       command: "vp build",
@@ -278,7 +304,8 @@ const appRun = {
     dev: { cache: false, command: "vp dev" },
     preview: { cache: false, command: "vp preview" },
     ...lifecycle({
-      prepush: ["check:effect", "check"],
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
       prepr: ["build"],
       premerge: ["build", "check:dev"],
     }),
@@ -320,10 +347,14 @@ const paraglideAppRun = {
       input: [...paraglideCompileInputs],
       output: [".paraglide/**"],
     },
-    "check:effect": {
-      ...effectDiagnostics["check:effect"],
-      dependsOn: ["compile:paraglide"],
-    },
+    ...Object.fromEntries(
+      (["check:effect", "check:code", "check:imports", "check:client", "check:react"] as const).map(
+        (gatedTask) => [
+          gatedTask,
+          { ...appRun.tasks[gatedTask], dependsOn: ["compile:paraglide"] },
+        ],
+      ),
+    ),
   },
 } satisfies RunConfig;
 
@@ -435,6 +466,7 @@ export {
   appRun,
   elysiaWorkerdJit,
   appServer,
+  checkCode,
   clientReachableModules,
   defineConfig,
   effectDiagnostics,
@@ -458,6 +490,7 @@ export {
   testRun,
   toolTest,
   withoutEnvFileLoader,
+  workspaceCheckImports,
 };
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
