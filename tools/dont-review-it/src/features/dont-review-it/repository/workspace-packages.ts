@@ -1,18 +1,13 @@
 import { Effect, FileSystem, Path, Schema } from "effect";
+import { uniq } from "es-toolkit";
+import { parseSync } from "oxc-parser";
 
 import { directoryEntries } from "../platform/directory-entries.ts";
+import { textOrNull } from "../platform/file-system.ts";
 import { repositoryRoot } from "./repository-root.ts";
+import { dependencyFields, workspaceRoots } from "./workspace-layout.ts";
 
 import type { WorkspacePackage } from "./pr-affected-scope.ts";
-
-const workspaceRoots = ["apps", "libs", "infra", "tools"] as const;
-
-const dependencyFields = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-] as const;
 
 const DeclaredDependencies = Schema.optionalKey(Schema.Record(Schema.String, Schema.String));
 
@@ -45,6 +40,21 @@ const dependencyNames = (manifest: typeof PackageManifest.Type): readonly string
     );
   });
 
+const TOOLCHAIN_CONFIG = "vite.config.ts";
+
+const packageNameOf = (specifier: string): string =>
+  specifier
+    .split("/")
+    .slice(0, specifier.startsWith("@") ? 2 : 1)
+    .join("/");
+
+const toolchainImportsIn = (source: string): readonly string[] =>
+  parseSync(TOOLCHAIN_CONFIG, source).program.body.flatMap((statement) =>
+    statement.type === "ImportDeclaration" && !statement.source.value.startsWith(".")
+      ? [packageNameOf(statement.source.value)]
+      : [],
+  );
+
 const workspacePackages = Effect.gen(function* workspacePackages() {
   const filesystem = yield* FileSystem.FileSystem;
   const paths = yield* Path.Path;
@@ -63,8 +73,14 @@ const workspacePackages = Effect.gen(function* workspacePackages() {
           if (manifest.name === undefined) {
             return yield* new UnnamedWorkspace({ directory });
           }
+          const toolchainSource = yield* textOrNull(
+            paths.join(repositoryRoot, root, entry.name, TOOLCHAIN_CONFIG),
+          );
           const workspace: WorkspacePackage = {
-            dependencies: dependencyNames(manifest),
+            dependencies: uniq([
+              ...dependencyNames(manifest),
+              ...(toolchainSource === null ? [] : toolchainImportsIn(toolchainSource)),
+            ]),
             directory,
             name: manifest.name,
           };

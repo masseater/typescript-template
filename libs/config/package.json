@@ -8,6 +8,7 @@
     "./realtime": "./src/features/config/realtime.ts",
     "./repository-root": "./src/features/config/repository-root.ts",
     "./paging": "./src/features/config/paging.ts",
+    "./process-environment": "./src/features/config/process-environment.ts",
     "./storage": "./src/features/config/storage.ts",
     "./worker": "./src/features/config/worker.ts",
     "./identity": "./src/features/config/identity.ts"

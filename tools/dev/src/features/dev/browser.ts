@@ -1,23 +1,15 @@
 import { env as processEnvironment } from "node:process";
 
-import { exitWith, markFailed } from "@repo/cli";
-import { applicationOrigins, applicationReadyPaths } from "@repo/config";
+import { exitWith, markFailed } from "@repo/cli/exit-code";
+import { applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
+import { configuredOrigin, sessionArguments, sessionName } from "./browser-session.ts";
 import { failure } from "./failure.ts";
-import { browserLaunchArguments } from "./lan-gateway.ts";
-import {
-  browserConfig,
-  lanOrigin,
-  readCredentials,
-  refreshBrowserConfig,
-  root,
-  run,
-} from "./local-environment.ts";
-import { urlPath } from "./platform.ts";
+import { readCredentials, refreshBrowserConfig, root, run } from "./local-environment.ts";
 
-import type { App, Credentials } from "./local-environment.ts";
+import type { App } from "./local-environment.ts";
 
 interface BrowserReport {
   readonly event: "local.browser_opened";
@@ -30,24 +22,6 @@ interface BrowserReport {
 type ChildExit =
   | { readonly started: false }
   | { readonly started: true; readonly code: number | null };
-
-function sessionName(app: App): string {
-  return `template-local-${app}`;
-}
-
-function configuredOrigin(app: App, credentials: Credentials): string {
-  return credentials.origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
-}
-
-const sessionArguments = Effect.fn("sessionArguments")(function* sessionArguments(
-  app: App,
-  credentials: Credentials,
-) {
-  const launch =
-    credentials.origins === "loopback" ? ([] as const) : yield* browserLaunchArguments();
-  const config = yield* urlPath(browserConfig);
-  return ["--config", config, ...launch, "--session", sessionName(app)];
-});
 
 const browser = Effect.fn("browser")(function* browser(app: App) {
   const credentials = yield* readCredentials();

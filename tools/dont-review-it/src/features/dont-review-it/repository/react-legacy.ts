@@ -1,13 +1,8 @@
 import { originVisitor } from "./alias-visitor.ts";
 import { reportViolation, scopeOf, type LintContext, type Node } from "./lint-context.ts";
-import { origins, propertyKey, type Origin } from "./references.ts";
+import { origins, propertyKey, type Origin, type ScopeLink } from "./references.ts";
 
 import type { Variable, Visitor } from "vite-plus/lint/plugins";
-
-type ScopeLink = {
-  readonly set: { readonly get: (declared: string) => Variable | undefined };
-  readonly upper: ScopeLink | null;
-};
 
 const legacyApis: Readonly<Record<string, readonly string[]>> = {
   react: ["createFactory", "forwardRef"],

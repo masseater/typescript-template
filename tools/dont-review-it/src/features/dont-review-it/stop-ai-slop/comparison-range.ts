@@ -12,7 +12,7 @@ const INTEGRATION_REVISION = "origin/main";
 const trimmedGitText = (repositoryRoot: string, args: readonly string[]) =>
   Effect.map(runGitText({ repositoryRoot, args }), (answered) => answered.trim());
 
-const commitOrNull = (repositoryRoot: string, revision: string) =>
+export const commitOrNull = (repositoryRoot: string, revision: string) =>
   Effect.map(
     trimmedGitText(repositoryRoot, [
       "rev-list",

@@ -1,5 +1,11 @@
 import { DiagramCrowded } from "./diagram-crowded.ts";
-import { collinearOverlap, segmentEntersBox, type Segment } from "./diagram-overlaps.ts";
+import { inflate } from "./diagram-geometry.ts";
+import {
+  collinearOverlap,
+  segmentBox,
+  segmentEntersBox,
+  type Segment,
+} from "./diagram-overlaps.ts";
 
 import type { Box, Point } from "./diagram-geometry.ts";
 
@@ -30,13 +36,6 @@ const directions: readonly Direction[] = [
   { x: 0, y: -1 },
 ];
 
-const inflate = (box: Box, by: number): Box => ({
-  height: box.height + by * 2,
-  width: box.width + by * 2,
-  x: box.x - by,
-  y: box.y - by,
-});
-
 const step = (point: Point, direction: Direction, distance: number): Point => ({
   x: point.x + direction.x * distance,
   y: point.y + direction.y * distance,
@@ -52,14 +51,7 @@ const uniqueSorted = (values: readonly number[]): readonly number[] =>
   [...new Set(values.map((value) => Math.round(value * 1000) / 1000))].toSorted((a, b) => a - b);
 
 const crossings = (segment: Segment, crossable: readonly Segment[]): number =>
-  crossable.filter((other) => segmentEntersBox(segment, inflate(segmentBoxOf(other), 0.5))).length;
-
-const segmentBoxOf = ([start, end]: Segment): Box => ({
-  height: Math.abs(end.y - start.y),
-  width: Math.abs(end.x - start.x),
-  x: Math.min(start.x, end.x),
-  y: Math.min(start.y, end.y),
-});
+  crossable.filter((other) => segmentEntersBox(segment, inflate(segmentBox(other), 0.5))).length;
 
 const simplify = (points: readonly Point[]): readonly Point[] =>
   points.filter((point, index) => {

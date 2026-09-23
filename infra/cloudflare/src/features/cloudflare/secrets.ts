@@ -2,6 +2,9 @@ import { reportFailed } from "@repo/cli";
 import { Cause, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
+import type { deploymentKey } from "@repo/observability/deployment-keys";
+import type { ENVIRONMENT_FILE_VARIABLE } from "./deployment.ts";
+
 const OK_EXIT_CODE = 0;
 
 const FailureKeys = Schema.Array(Schema.String);
@@ -10,7 +13,9 @@ const isCoded = Schema.is(
 );
 
 interface Confidential {
-  readonly key: string;
+  readonly key:
+    | (typeof deploymentKey)[keyof typeof deploymentKey]
+    | typeof ENVIRONMENT_FILE_VARIABLE;
   readonly value: string;
 }
 

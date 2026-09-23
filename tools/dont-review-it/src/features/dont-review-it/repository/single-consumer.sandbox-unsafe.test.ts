@@ -219,6 +219,74 @@ describe("single consumer findings", () => {
     expect(findings.map((finding) => finding.id)).toStrictEqual(["package:@repo/dev"]);
   });
 
+  const runner = workspace(
+    "tools/runner/package.json",
+    { bin: { runner: "./src/cli.ts", unused: "./src/unused.ts" }, name: "@repo/runner" },
+    "tools",
+  );
+
+  const rootRunning = (scripts: Readonly<Record<string, string>>): WorkspaceManifest =>
+    workspace(
+      "package.json",
+      { devDependencies: { "@repo/runner": "workspace:*" }, name: "root", scripts },
+      ".",
+    );
+
+  it("skips a tool the root only runs through a bin it declares", () => {
+    expect.hasAssertions();
+    expect(
+      singleConsumerFindings(
+        [runner, rootRunning({ guard: "runner --timeout 60 -- vp run check" })],
+        [],
+      ),
+    ).toStrictEqual([]);
+  });
+
+  it("skips a tool whose bin only a root task runs", () => {
+    expect.hasAssertions();
+    expect(
+      singleConsumerFindings([runner, rootRunning({})], [], ["vp check && runner -- vp run check"]),
+    ).toStrictEqual([]);
+  });
+
+  it("reports a tool the root runs through a bin but also imports", () => {
+    expect.hasAssertions();
+    const findings = singleConsumerFindings(
+      [runner, rootRunning({ guard: "runner -- vp run check" })],
+      [source("vite.config.ts", 'import { preset } from "@repo/runner";\n')],
+    );
+    expect(findings.map((finding) => finding.id)).toStrictEqual(["package:@repo/runner"]);
+  });
+
+  it("reports a tool the root depends on without running any bin it declares", () => {
+    expect.hasAssertions();
+    const findings = singleConsumerFindings(
+      [runner, rootRunning({ guard: "other-runner -- vp run check" })],
+      [],
+    );
+    expect(findings.map((finding) => finding.id)).toStrictEqual(["package:@repo/runner"]);
+  });
+
+  it("reports a tool whose declared bin one other workspace runs", () => {
+    expect.hasAssertions();
+    const findings = singleConsumerFindings(
+      [
+        runner,
+        workspace(
+          "tools/e2e/package.json",
+          {
+            devDependencies: { "@repo/runner": "workspace:*" },
+            name: "@repo/e2e",
+            scripts: { guard: "runner -- vp run check" },
+          },
+          "tools",
+        ),
+      ],
+      [],
+    );
+    expect(findings.map((finding) => finding.id)).toStrictEqual(["package:@repo/runner"]);
+  });
+
   it("reports a wildcard subpath with one importer", () => {
     expect.hasAssertions();
     const findings = singleConsumerFindings(

@@ -6,17 +6,13 @@ import {
   decodeJson,
   failureMessage,
 } from "@repo/runtime/client";
+import { CreatedResource } from "@repo/runtime/contracts";
 import { notFound } from "@tanstack/react-router";
 import { Effect } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient } from "effect/unstable/http";
 
 import { wikiClient } from "#shared/api/index.ts";
-import {
-  PeopleList,
-  RecordingAccepted,
-  RecordingList,
-  RecordingView,
-} from "#shared/contracts/index.ts";
+import { PeopleList, RecordingList, RecordingView } from "#shared/contracts/index.ts";
 
 type RegisteredPeople = (typeof PeopleList.Type)["people"];
 type RecordingDetail = RecordingView & Readonly<{ people: RegisteredPeople }>;
@@ -72,20 +68,20 @@ function uploadRecording(title: string, audio: Readonly<File>): Promise<string> 
           ),
         );
       }
-      return decodeJson(RecordingAccepted, answered).id;
+      return decodeJson(CreatedResource, answered).id;
     }).pipe(Effect.orDie),
   );
 }
 
 function retryRecording(id: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    api.recording.retry.post({ id }).then((response) => apiData(RecordingAccepted, response).id),
+    api.recording.retry.post({ id }).then((response) => apiData(CreatedResource, response).id),
   );
 }
 
 function deleteRecording(id: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    api.recording.delete({ id }).then((response) => apiData(RecordingAccepted, response).id),
+    api.recording.delete({ id }).then((response) => apiData(CreatedResource, response).id),
   );
 }
 
@@ -97,7 +93,7 @@ function assignSpeaker(
   return Promise.resolve(wikiClient()).then(({ api }) =>
     api.recording.speaker
       .patch({ label, personId, recordingId })
-      .then((response) => apiData(RecordingAccepted, response).id),
+      .then((response) => apiData(CreatedResource, response).id),
   );
 }
 
@@ -105,13 +101,13 @@ function registerPerson(name: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
     api.people
       .post({ consent: true, name })
-      .then((response) => apiData(RecordingAccepted, response).id),
+      .then((response) => apiData(CreatedResource, response).id),
   );
 }
 
 function removePerson(id: string): Promise<string> {
   return Promise.resolve(wikiClient()).then(({ api }) =>
-    api.people.delete({ id }).then((response) => apiData(RecordingAccepted, response).id),
+    api.people.delete({ id }).then((response) => apiData(CreatedResource, response).id),
   );
 }
 

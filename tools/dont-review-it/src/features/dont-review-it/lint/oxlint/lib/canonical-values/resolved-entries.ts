@@ -110,9 +110,7 @@ const arrayDomain = (input: {
   readonly declaration: ts.VariableDeclaration;
   readonly elementType: ts.Type;
 }): readonly CanonicalValue[] => {
-  if ((input.elementType.flags & ts.TypeFlags.Never) !== 0) {
-    throw new Error(`${input.declaration.name.getText()}: canonical array must not be empty`);
-  }
+  if ((input.elementType.flags & ts.TypeFlags.Never) !== 0) return [];
   const memberTypes = input.elementType.isUnion() ? input.elementType.types : [input.elementType];
   const canonicalItems = memberTypes.map((member) => literalValueFromType(input.checker, member));
   if (
