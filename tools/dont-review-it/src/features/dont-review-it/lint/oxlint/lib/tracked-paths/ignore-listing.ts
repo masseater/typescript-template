@@ -1,6 +1,5 @@
-import { join } from "node:path";
-
 import { ignoreFilePatterns } from "../../../../configs/git-excludes/ignore-file-patterns.ts";
+import { path } from "../../../../platform/path.ts";
 import { readTextFile } from "../canonical-values/source-files.ts";
 
 export const IGNORE_SETTINGS_FILE_NAME = ".gitignore";
@@ -15,7 +14,7 @@ const spelledPlainly = (pattern: string): string =>
   pattern.replace(LEADING_REACH, "").replace(TRAILING_REACH, "");
 
 export const ignoreListingAt = (workspaceRoot: string): ReadonlySet<string> => {
-  const fileText = readTextFile(join(workspaceRoot, IGNORE_SETTINGS_FILE_NAME));
+  const fileText = readTextFile(path.join(workspaceRoot, IGNORE_SETTINGS_FILE_NAME));
   if (fileText === null) return new Set();
 
   return new Set(

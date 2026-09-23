@@ -1,7 +1,6 @@
-import { resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import {
   listRepositoryFiles,
   readTextFile,
@@ -36,7 +35,7 @@ export const buildRepositoryBodyIndex = ({
 }: {
   readonly repositoryRoot: string;
 }): BodyIndex => {
-  const root = resolve(repositoryRoot);
+  const root = path.resolve(repositoryRoot);
   const { declarationSources } = listRepositoryFiles(root);
   const scanned = declarationSources.filter((file) => !isOutOfScopeSource(file.relativePath));
   if (scanned.length === 0) return EMPTY_BODY_INDEX;
@@ -52,4 +51,4 @@ export const loadRepositoryBodyIndex = ({
   repositoryRoot,
 }: {
   readonly repositoryRoot: string;
-}): BodyIndex => bodyIndexUnder(resolve(repositoryRoot));
+}): BodyIndex => bodyIndexUnder(path.resolve(repositoryRoot));

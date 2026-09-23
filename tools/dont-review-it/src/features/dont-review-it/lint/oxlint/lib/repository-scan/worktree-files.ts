@@ -1,8 +1,9 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readdirSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
 
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 import { toPosixPath } from "../posix-path.ts";
 
@@ -37,13 +38,13 @@ const filePathsUnder = (worktree: Worktree, directory: string): readonly string[
   if (directoryChildren === null) return [];
 
   return directoryChildren.flatMap((directoryChild) => {
-    const path = join(directory, directoryChild.name);
+    const filePath = path.join(directory, directoryChild.name);
     if (directoryChild.isDirectory()) {
       return worktree.unscannedDirectoryNames.has(directoryChild.name)
         ? []
-        : filePathsUnder(worktree, path);
+        : filePathsUnder(worktree, filePath);
     }
-    return directoryChild.isFile() ? [toPosixPath(relative(worktree.root, path))] : [];
+    return directoryChild.isFile() ? [toPosixPath(path.relative(worktree.root, filePath))] : [];
   });
 };
 
@@ -57,6 +58,6 @@ const scannedFilePathsUnder = memoize(
 
 export const worktreeFilePathsUnder = (asked: Worktree): readonly string[] =>
   scannedFilePathsUnder({
-    root: resolve(asked.root),
+    root: path.resolve(asked.root),
     unscannedDirectoryNames: asked.unscannedDirectoryNames,
   });

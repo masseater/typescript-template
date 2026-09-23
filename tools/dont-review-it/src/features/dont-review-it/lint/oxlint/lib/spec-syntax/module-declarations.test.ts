@@ -1,13 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { parseSync } from "oxc-parser";
 import { describe, expect, test } from "vite-plus/test";
 
 import { importedDeclarationOf, moduleDeclarationsOf } from "./module-declarations.ts";
-
-const moduleDeclarationsRoot = mkdtempSync(join(tmpdir(), "dont-review-it-module-declarations-"));
 
 import type { SpecStatement } from "./subject-expressions.ts";
 
@@ -165,224 +162,380 @@ describe("moduleDeclarationsOf", () => {
   });
 });
 
-describe("importedDeclarationOf", () => {
+layer(NodeServices.layer)("importedDeclarationOf", (it) => {
   describe("a name reached through a dependency", () => {
-    const it = test.extend("declarationReachedThroughADependency", () => {
-      const directory = join(moduleDeclarationsRoot, "dependency");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      return importedDeclarationOf({
-        from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-        imported: { specifier: "es-toolkit", exported: "sortBy" },
-        visited: new Set<string>(),
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
       });
+      const declarationReachedThroughADependency = yield* Effect.gen(
+        function* declarationReachedThroughADependency() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "dependency");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          return importedDeclarationOf({
+            from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+            imported: { specifier: "es-toolkit", exported: "sortBy" },
+            visited: new Set<string>(),
+          });
+        },
+      );
+      return { moduleDeclarationsRoot, declarationReachedThroughADependency };
     });
 
-    it("is judged by its spelling alone", ({ declarationReachedThroughADependency }) => {
-      expect(declarationReachedThroughADependency).toBe(null);
-    });
+    it.effect("is judged by its spelling alone", () =>
+      Effect.gen(function* program() {
+        const { declarationReachedThroughADependency } = yield* fixtures;
+        expect(declarationReachedThroughADependency).toBe(null);
+      }),
+    );
   });
 
   describe("a module that is not on disk", () => {
-    const it = test.extend("declarationReachedThroughAModuleThatIsNotOnDisk", () => {
-      const directory = join(moduleDeclarationsRoot, "absent");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      return importedDeclarationOf({
-        from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-        imported: { specifier: "./absent.ts", exported: "ordered" },
-        visited: new Set<string>(),
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
       });
+      const declarationReachedThroughAModuleThatIsNotOnDisk = yield* Effect.gen(
+        function* declarationReachedThroughAModuleThatIsNotOnDisk() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "absent");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          return importedDeclarationOf({
+            from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+            imported: { specifier: "./absent.ts", exported: "ordered" },
+            visited: new Set<string>(),
+          });
+        },
+      );
+      return { moduleDeclarationsRoot, declarationReachedThroughAModuleThatIsNotOnDisk };
     });
 
-    it("hands back nothing to read", ({ declarationReachedThroughAModuleThatIsNotOnDisk }) => {
-      expect(declarationReachedThroughAModuleThatIsNotOnDisk).toBe(null);
-    });
+    it.effect("hands back nothing to read", () =>
+      Effect.gen(function* program() {
+        const { declarationReachedThroughAModuleThatIsNotOnDisk } = yield* fixtures;
+        expect(declarationReachedThroughAModuleThatIsNotOnDisk).toBe(null);
+      }),
+    );
   });
 
   describe("a name the module never declares", () => {
-    const it = test.extend("declarationOfANameTheModuleNeverDeclares", () => {
-      const directory = join(moduleDeclarationsRoot, "bare");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "bare.ts"), "export const widen = (rows) => rows;\n");
-      return importedDeclarationOf({
-        from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-        imported: { specifier: "./bare.ts", exported: "ordered" },
-        visited: new Set<string>(),
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
       });
+      const declarationOfANameTheModuleNeverDeclares = yield* Effect.gen(
+        function* declarationOfANameTheModuleNeverDeclares() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "bare");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "bare.ts"),
+            "export const widen = (rows) => rows;\n",
+          );
+          return importedDeclarationOf({
+            from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+            imported: { specifier: "./bare.ts", exported: "ordered" },
+            visited: new Set<string>(),
+          });
+        },
+      );
+      return { moduleDeclarationsRoot, declarationOfANameTheModuleNeverDeclares };
     });
 
-    it("hands back nothing to read either", ({ declarationOfANameTheModuleNeverDeclares }) => {
-      expect(declarationOfANameTheModuleNeverDeclares).toBe(null);
-    });
+    it.effect("hands back nothing to read either", () =>
+      Effect.gen(function* program() {
+        const { declarationOfANameTheModuleNeverDeclares } = yield* fixtures;
+        expect(declarationOfANameTheModuleNeverDeclares).toBe(null);
+      }),
+    );
   });
 
   describe("a name declared in the imported module", () => {
-    const it = test.extend("readingOfANameDeclaredInTheImportedModule", () => {
-      const directory = join(moduleDeclarationsRoot, "declared");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
-      return [
-        importedDeclarationOf({
-          from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-          imported: { specifier: "./shape.ts", exported: "ordered" },
-          visited: new Set<string>(),
-        }),
-      ].map((found) => ({ kind: found?.declared.type, module: found?.module.filename }));
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
+      });
+      const readingOfANameDeclaredInTheImportedModule = yield* Effect.gen(
+        function* readingOfANameDeclaredInTheImportedModule() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "declared");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "shape.ts"),
+            "export const ordered = (rows) => rows.sort();\n",
+          );
+          return [
+            importedDeclarationOf({
+              from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+              imported: { specifier: "./shape.ts", exported: "ordered" },
+              visited: new Set<string>(),
+            }),
+          ].map((found) => ({ kind: found?.declared.type, module: found?.module.filename }));
+        },
+      );
+      return { moduleDeclarationsRoot, readingOfANameDeclaredInTheImportedModule };
     });
 
-    it("resolves to what it is bound to", ({ readingOfANameDeclaredInTheImportedModule }) => {
-      expect(readingOfANameDeclaredInTheImportedModule).toStrictEqual([
-        {
-          kind: "ArrowFunctionExpression",
-          module: join(moduleDeclarationsRoot, "declared", "shape.ts"),
-        },
-      ]);
-    });
+    it.effect("resolves to what it is bound to", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { readingOfANameDeclaredInTheImportedModule, moduleDeclarationsRoot } =
+          yield* fixtures;
+        expect(readingOfANameDeclaredInTheImportedModule).toStrictEqual([
+          {
+            kind: "ArrowFunctionExpression",
+            module: paths.join(moduleDeclarationsRoot, "declared", "shape.ts"),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a name exported under an alias", () => {
-    const it = test.extend("kindBehindANameExportedUnderAnAlias", () => {
-      const directory = join(moduleDeclarationsRoot, "aliased");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(
-        join(directory, "aliased.ts"),
-        "const ordered = (rows) => rows.sort();\nexport { ordered as sorted };\n",
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
+      });
+      const kindBehindANameExportedUnderAnAlias = yield* Effect.gen(
+        function* kindBehindANameExportedUnderAnAlias() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "aliased");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "aliased.ts"),
+            "const ordered = (rows) => rows.sort();\nexport { ordered as sorted };\n",
+          );
+          return [
+            importedDeclarationOf({
+              from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+              imported: { specifier: "./aliased.ts", exported: "sorted" },
+              visited: new Set<string>(),
+            }),
+          ].map((found) => found?.declared.type);
+        },
       );
-      return [
-        importedDeclarationOf({
-          from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-          imported: { specifier: "./aliased.ts", exported: "sorted" },
-          visited: new Set<string>(),
-        }),
-      ].map((found) => found?.declared.type);
+      return { moduleDeclarationsRoot, kindBehindANameExportedUnderAnAlias };
     });
 
-    it("resolves to the binding behind the alias", ({ kindBehindANameExportedUnderAnAlias }) => {
-      expect(kindBehindANameExportedUnderAnAlias).toStrictEqual(["ArrowFunctionExpression"]);
-    });
+    it.effect("resolves to the binding behind the alias", () =>
+      Effect.gen(function* program() {
+        const { kindBehindANameExportedUnderAnAlias } = yield* fixtures;
+        expect(kindBehindANameExportedUnderAnAlias).toStrictEqual(["ArrowFunctionExpression"]);
+      }),
+    );
   });
 
   describe("a name re-exported from another module", () => {
-    const it = test.extend("moduleBehindANameReExportedFromAnotherModule", () => {
-      const directory = join(moduleDeclarationsRoot, "re-exported");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
-      writeFileSync(join(directory, "re-exported.ts"), 'export { ordered } from "./shape.ts";\n');
-      return [
-        importedDeclarationOf({
-          from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-          imported: { specifier: "./re-exported.ts", exported: "ordered" },
-          visited: new Set<string>(),
-        }),
-      ].map((found) => found?.module.filename);
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
+      });
+      const moduleBehindANameReExportedFromAnotherModule = yield* Effect.gen(
+        function* moduleBehindANameReExportedFromAnotherModule() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "re-exported");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "shape.ts"),
+            "export const ordered = (rows) => rows.sort();\n",
+          );
+          yield* filesystem.writeFileString(
+            paths.join(directory, "re-exported.ts"),
+            'export { ordered } from "./shape.ts";\n',
+          );
+          return [
+            importedDeclarationOf({
+              from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+              imported: { specifier: "./re-exported.ts", exported: "ordered" },
+              visited: new Set<string>(),
+            }),
+          ].map((found) => found?.module.filename);
+        },
+      );
+      return { moduleDeclarationsRoot, moduleBehindANameReExportedFromAnotherModule };
     });
 
-    it("is followed to that module", ({ moduleBehindANameReExportedFromAnotherModule }) => {
-      expect(moduleBehindANameReExportedFromAnotherModule).toStrictEqual([
-        join(moduleDeclarationsRoot, "re-exported", "shape.ts"),
-      ]);
-    });
+    it.effect("is followed to that module", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { moduleBehindANameReExportedFromAnotherModule, moduleDeclarationsRoot } =
+          yield* fixtures;
+        expect(moduleBehindANameReExportedFromAnotherModule).toStrictEqual([
+          paths.join(moduleDeclarationsRoot, "re-exported", "shape.ts"),
+        ]);
+      }),
+    );
   });
 
   describe("a name that arrives by import and leaves by export", () => {
-    const it = test.extend("moduleBehindANameThatArrivesByImportAndLeavesByExport", () => {
-      const directory = join(moduleDeclarationsRoot, "passed-on");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
-      writeFileSync(
-        join(directory, "passed-on.ts"),
-        'import { ordered } from "./shape.ts";\nexport { ordered };\n',
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
+      });
+      const moduleBehindANameThatArrivesByImportAndLeavesByExport = yield* Effect.gen(
+        function* moduleBehindANameThatArrivesByImportAndLeavesByExport() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "passed-on");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "shape.ts"),
+            "export const ordered = (rows) => rows.sort();\n",
+          );
+          yield* filesystem.writeFileString(
+            paths.join(directory, "passed-on.ts"),
+            'import { ordered } from "./shape.ts";\nexport { ordered };\n',
+          );
+          return [
+            importedDeclarationOf({
+              from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+              imported: { specifier: "./passed-on.ts", exported: "ordered" },
+              visited: new Set<string>(),
+            }),
+          ].map((found) => found?.module.filename);
+        },
       );
-      return [
-        importedDeclarationOf({
-          from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-          imported: { specifier: "./passed-on.ts", exported: "ordered" },
-          visited: new Set<string>(),
-        }),
-      ].map((found) => found?.module.filename);
+      return { moduleDeclarationsRoot, moduleBehindANameThatArrivesByImportAndLeavesByExport };
     });
 
-    it("is followed to its source", ({ moduleBehindANameThatArrivesByImportAndLeavesByExport }) => {
-      expect(moduleBehindANameThatArrivesByImportAndLeavesByExport).toStrictEqual([
-        join(moduleDeclarationsRoot, "passed-on", "shape.ts"),
-      ]);
-    });
+    it.effect("is followed to its source", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { moduleBehindANameThatArrivesByImportAndLeavesByExport, moduleDeclarationsRoot } =
+          yield* fixtures;
+        expect(moduleBehindANameThatArrivesByImportAndLeavesByExport).toStrictEqual([
+          paths.join(moduleDeclarationsRoot, "passed-on", "shape.ts"),
+        ]);
+      }),
+    );
   });
 
   describe("a name forwarded wholesale", () => {
-    const it = test.extend("moduleBehindANameForwardedWholesale", () => {
-      const directory = join(moduleDeclarationsRoot, "barrel");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
-      writeFileSync(
-        join(directory, "barrel.ts"),
-        'export * from "./absent.ts";\nexport * from "./shape.ts";\n',
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
+      });
+      const moduleBehindANameForwardedWholesale = yield* Effect.gen(
+        function* moduleBehindANameForwardedWholesale() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "barrel");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "shape.ts"),
+            "export const ordered = (rows) => rows.sort();\n",
+          );
+          yield* filesystem.writeFileString(
+            paths.join(directory, "barrel.ts"),
+            'export * from "./absent.ts";\nexport * from "./shape.ts";\n',
+          );
+          return [
+            importedDeclarationOf({
+              from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+              imported: { specifier: "./barrel.ts", exported: "ordered" },
+              visited: new Set<string>(),
+            }),
+          ].map((found) => found?.module.filename);
+        },
       );
-      return [
-        importedDeclarationOf({
-          from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-          imported: { specifier: "./barrel.ts", exported: "ordered" },
-          visited: new Set<string>(),
-        }),
-      ].map((found) => found?.module.filename);
+      return { moduleDeclarationsRoot, moduleBehindANameForwardedWholesale };
     });
 
-    it("is followed into the forwarded module", ({ moduleBehindANameForwardedWholesale }) => {
-      expect(moduleBehindANameForwardedWholesale).toStrictEqual([
-        join(moduleDeclarationsRoot, "barrel", "shape.ts"),
-      ]);
-    });
+    it.effect("is followed into the forwarded module", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { moduleBehindANameForwardedWholesale, moduleDeclarationsRoot } = yield* fixtures;
+        expect(moduleBehindANameForwardedWholesale).toStrictEqual([
+          paths.join(moduleDeclarationsRoot, "barrel", "shape.ts"),
+        ]);
+      }),
+    );
   });
 
   describe("a forwarding cycle", () => {
-    const it = test.extend("declarationReachedThroughAForwardingCycle", () => {
-      const directory = join(moduleDeclarationsRoot, "looping");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "looping.ts"), 'export * from "./looping.ts";\n');
-      return importedDeclarationOf({
-        from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-        imported: { specifier: "./looping.ts", exported: "ordered" },
-        visited: new Set<string>(),
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
       });
+      const declarationReachedThroughAForwardingCycle = yield* Effect.gen(
+        function* declarationReachedThroughAForwardingCycle() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "looping");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "looping.ts"),
+            'export * from "./looping.ts";\n',
+          );
+          return importedDeclarationOf({
+            from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+            imported: { specifier: "./looping.ts", exported: "ordered" },
+            visited: new Set<string>(),
+          });
+        },
+      );
+      return { moduleDeclarationsRoot, declarationReachedThroughAForwardingCycle };
     });
 
-    it("stops at the module it has already read", ({
-      declarationReachedThroughAForwardingCycle,
-    }) => {
-      expect(declarationReachedThroughAForwardingCycle).toBe(null);
-    });
+    it.effect("stops at the module it has already read", () =>
+      Effect.gen(function* program() {
+        const { declarationReachedThroughAForwardingCycle } = yield* fixtures;
+        expect(declarationReachedThroughAForwardingCycle).toBe(null);
+      }),
+    );
   });
 
   describe("a spelling written as a string in an export clause", () => {
-    const it = test.extend("kindBehindASpellingWrittenAsAStringInAnExportClause", () => {
-      const directory = join(moduleDeclarationsRoot, "quoted");
-      rmSync(directory, { recursive: true, force: true });
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(
-        join(directory, "quoted.ts"),
-        'const ordered = (rows) => rows.sort();\nexport { ordered as "sorted" };\n',
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const moduleDeclarationsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-module-declarations-",
+      });
+      const kindBehindASpellingWrittenAsAStringInAnExportClause = yield* Effect.gen(
+        function* kindBehindASpellingWrittenAsAStringInAnExportClause() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const directory = paths.join(moduleDeclarationsRoot, "quoted");
+          yield* filesystem.makeDirectory(directory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(directory, "quoted.ts"),
+            'const ordered = (rows) => rows.sort();\nexport { ordered as "sorted" };\n',
+          );
+          return [
+            importedDeclarationOf({
+              from: moduleDeclarationsOf(paths.join(directory, "spec.ts"), []),
+              imported: { specifier: "./quoted.ts", exported: "sorted" },
+              visited: new Set<string>(),
+            }),
+          ].map((found) => found?.declared.type);
+        },
       );
-      return [
-        importedDeclarationOf({
-          from: moduleDeclarationsOf(join(directory, "spec.ts"), []),
-          imported: { specifier: "./quoted.ts", exported: "sorted" },
-          visited: new Set<string>(),
-        }),
-      ].map((found) => found?.declared.type);
+      return { moduleDeclarationsRoot, kindBehindASpellingWrittenAsAStringInAnExportClause };
     });
 
-    it("reads as the same name", ({ kindBehindASpellingWrittenAsAStringInAnExportClause }) => {
-      expect(kindBehindASpellingWrittenAsAStringInAnExportClause).toStrictEqual([
-        "ArrowFunctionExpression",
-      ]);
-    });
+    it.effect("reads as the same name", () =>
+      Effect.gen(function* program() {
+        const { kindBehindASpellingWrittenAsAStringInAnExportClause } = yield* fixtures;
+        expect(kindBehindASpellingWrittenAsAStringInAnExportClause).toStrictEqual([
+          "ArrowFunctionExpression",
+        ]);
+      }),
+    );
   });
 });

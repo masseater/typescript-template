@@ -1,7 +1,6 @@
-import { resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import {
   listRepositoryFiles,
   readTextFile,
@@ -28,7 +27,7 @@ const buildRepositoryValueDeclarationIndex = ({
 }: {
   readonly repositoryRoot: string;
 }): ValueDeclarationIndex => {
-  const { declarationSources } = listRepositoryFiles(resolve(repositoryRoot));
+  const { declarationSources } = listRepositoryFiles(path.resolve(repositoryRoot));
 
   return buildValueDeclarationIndex(
     declarationSources
@@ -46,4 +45,4 @@ export const loadRepositoryValueDeclarationIndex = ({
   repositoryRoot,
 }: {
   readonly repositoryRoot: string;
-}): ValueDeclarationIndex => valueDeclarationIndexAt(resolve(repositoryRoot));
+}): ValueDeclarationIndex => valueDeclarationIndexAt(path.resolve(repositoryRoot));

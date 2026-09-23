@@ -1,7 +1,6 @@
-import { dirname, join } from "node:path";
-
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { MANIFEST_FILE_NAME } from "./package-manifest.ts";
 import { readJsonFile } from "./read-json-file.ts";
 import { nearestPackageDirectory } from "./source-files.ts";
@@ -16,7 +15,7 @@ const DEPENDENCY_FIELDS = [
 ] as const;
 
 const manifestAt = memoize((packageDirectory: string): object | null => {
-  const manifest = readJsonFile(join(packageDirectory, MANIFEST_FILE_NAME));
+  const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
   return typeof manifest === "object" && manifest !== null ? manifest : null;
 });
 
@@ -40,7 +39,7 @@ export const ownersVisibleFrom = (consumer: {
   readonly repositoryRoot: string;
 }): ((owner: CanonicalValuesEntry) => boolean) => {
   const packageDirectory = nearestPackageDirectory(
-    dirname(consumer.filename),
+    path.dirname(consumer.filename),
     consumer.repositoryRoot,
   );
   const reachable =

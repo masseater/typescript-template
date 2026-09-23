@@ -1,11 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { attempt } from "es-toolkit";
 import * as ts from "typescript-6";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
+import { path } from "../../../../platform/path.ts";
 import {
   canonicalValuesTypeScriptConfigPath,
   createCanonicalValuesTypeScriptProgram,
@@ -15,83 +15,102 @@ const BASE_SOURCE = 'export const BASE = ["draft"] as const;\n';
 const OWNER_SOURCE =
   'import { BASE } from "@internal/base";\nexport const OWNER = [...BASE, "published"] as const;\n';
 
-describe("createCanonicalValuesTypeScriptProgram", () => {
+layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
   describe("sibling source directories under one repository configuration", () => {
-    const siblingRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-sibling-"));
-
-    const it = test.extend("siblingConfigPaths", ({}, { onCleanup }) => {
-      rmSync(siblingRoot, { force: true, recursive: true });
-      mkdirSync(join(siblingRoot, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(siblingRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* siblingConfigPaths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const siblingRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-sibling-",
       });
-      writeFileSync(join(siblingRoot, "tsconfig.json"), "{}");
-      return ["src/first", "src/second"].map((searchDirectory) =>
-        canonicalValuesTypeScriptConfigPath({
-          repositoryRoot: siblingRoot,
-          searchDirectory: join(siblingRoot, searchDirectory),
-        }),
-      );
+      yield* filesystem.makeDirectory(pathService.join(siblingRoot, "src"), { recursive: true });
+
+      yield* filesystem.writeFileString(pathService.join(siblingRoot, "tsconfig.json"), "{}");
+      return {
+        siblingRoot,
+        siblingConfigPaths: ["src/first", "src/second"].map((searchDirectory) =>
+          canonicalValuesTypeScriptConfigPath({
+            repositoryRoot: siblingRoot,
+            searchDirectory: path.join(siblingRoot, searchDirectory),
+          }),
+        ),
+      };
     });
 
-    it("resolve to one configuration identity", ({ siblingConfigPaths }) => {
-      expect(siblingConfigPaths).toStrictEqual([
-        join(siblingRoot, "tsconfig.json"),
-        join(siblingRoot, "tsconfig.json"),
-      ]);
-    });
+    it.effect("resolve to one configuration identity", () =>
+      Effect.gen(function* program() {
+        const pathService = yield* Path.Path;
+        const { siblingRoot, siblingConfigPaths } = yield* fixture;
+        expect(siblingConfigPaths).toStrictEqual([
+          pathService.join(siblingRoot, "tsconfig.json"),
+          pathService.join(siblingRoot, "tsconfig.json"),
+        ]);
+      }),
+    );
   });
 
   describe("a nested configuration standing beside the repository configuration", () => {
-    const nestedRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-nested-"));
-
-    const it = test.extend("nestedConfigPaths", ({}, { onCleanup }) => {
-      rmSync(nestedRoot, { force: true, recursive: true });
-      mkdirSync(join(nestedRoot, "src"), { recursive: true });
-      mkdirSync(join(nestedRoot, "packages/nested/src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(nestedRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* nestedConfigPaths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const nestedRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-nested-",
       });
-      writeFileSync(join(nestedRoot, "tsconfig.json"), "{}");
-      writeFileSync(join(nestedRoot, "packages/nested/tsconfig.json"), "{}");
-      return ["src", "packages/nested/src"].map((searchDirectory) =>
-        canonicalValuesTypeScriptConfigPath({
-          repositoryRoot: nestedRoot,
-          searchDirectory: join(nestedRoot, searchDirectory),
-        }),
+      yield* filesystem.makeDirectory(pathService.join(nestedRoot, "src"), { recursive: true });
+      yield* filesystem.makeDirectory(pathService.join(nestedRoot, "packages/nested/src"), {
+        recursive: true,
+      });
+
+      yield* filesystem.writeFileString(pathService.join(nestedRoot, "tsconfig.json"), "{}");
+      yield* filesystem.writeFileString(
+        pathService.join(nestedRoot, "packages/nested/tsconfig.json"),
+        "{}",
       );
+      return {
+        nestedRoot,
+        nestedConfigPaths: ["src", "packages/nested/src"].map((searchDirectory) =>
+          canonicalValuesTypeScriptConfigPath({
+            repositoryRoot: nestedRoot,
+            searchDirectory: path.join(nestedRoot, searchDirectory),
+          }),
+        ),
+      };
     });
 
-    it("stay distinct program identities", ({ nestedConfigPaths }) => {
-      expect(nestedConfigPaths).toStrictEqual([
-        join(nestedRoot, "tsconfig.json"),
-        join(nestedRoot, "packages/nested/tsconfig.json"),
-      ]);
-    });
+    it.effect("stay distinct program identities", () =>
+      Effect.gen(function* program() {
+        const pathService = yield* Path.Path;
+        const { nestedRoot, nestedConfigPaths } = yield* fixture;
+        expect(nestedConfigPaths).toStrictEqual([
+          pathService.join(nestedRoot, "tsconfig.json"),
+          pathService.join(nestedRoot, "packages/nested/tsconfig.json"),
+        ]);
+      }),
+    );
   });
 
   describe("a paths mapping declared by the nearest repository configuration", () => {
-    const mappingRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-mapping-"));
-
-    const it = test.extend("mappedOwnerType", ({}, { onCleanup }) => {
-      rmSync(mappingRoot, { force: true, recursive: true });
-      mkdirSync(join(mappingRoot, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(mappingRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* mappedOwnerType() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const mappingRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-mapping-",
       });
-      writeFileSync(
-        join(mappingRoot, "tsconfig.json"),
-        JSON.stringify({
+      yield* filesystem.makeDirectory(pathService.join(mappingRoot, "src"), { recursive: true });
+
+      yield* filesystem.writeFileString(
+        pathService.join(mappingRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: { baseUrl: ".", paths: { "@internal/base": ["src/base.ts"] } },
         }),
       );
-      writeFileSync(join(mappingRoot, "src/base.ts"), BASE_SOURCE);
-      const ownerPath = join(mappingRoot, "src/owner.ts");
-      writeFileSync(ownerPath, OWNER_SOURCE);
+      yield* filesystem.writeFileString(pathService.join(mappingRoot, "src/base.ts"), BASE_SOURCE);
+      const ownerPath = pathService.join(mappingRoot, "src/owner.ts");
+      yield* filesystem.writeFileString(ownerPath, OWNER_SOURCE);
       const program = createCanonicalValuesTypeScriptProgram({
         repositoryRoot: mappingRoot,
         rootNames: [ownerPath],
-        searchDirectory: join(mappingRoot, "src"),
+        searchDirectory: pathService.join(mappingRoot, "src"),
       });
       const [, ownerStatement] = program.getSourceFile(ownerPath)?.statements ?? [];
       if (ownerStatement === undefined || !ts.isVariableStatement(ownerStatement)) {
@@ -104,35 +123,41 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
         .typeToString(program.getTypeChecker().getTypeAtLocation(ownerDeclaration.name));
     });
 
-    it("widens the owner to the mapped tuple", ({ mappedOwnerType }) => {
-      expect(mappedOwnerType).toBe('readonly ["draft", "published"]');
-    });
+    it.effect("widens the owner to the mapped tuple", () =>
+      Effect.gen(function* program() {
+        const mappedOwnerType = yield* fixture;
+        expect(mappedOwnerType).toBe('readonly ["draft", "published"]');
+      }),
+    );
   });
 
   describe("a configuration sitting above the repository root", () => {
-    const outsideConfigRoot = mkdtempSync(
-      join(tmpdir(), "canonical-values-typescript-program-above-"),
-    );
-
-    const it = test.extend("unmappedOwnerType", ({}, { onCleanup }) => {
-      rmSync(outsideConfigRoot, { force: true, recursive: true });
-      mkdirSync(join(outsideConfigRoot, "nested/src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(outsideConfigRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* unmappedOwnerType() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const outsideConfigRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-above-",
       });
-      writeFileSync(
-        join(outsideConfigRoot, "tsconfig.json"),
-        JSON.stringify({
+      yield* filesystem.makeDirectory(pathService.join(outsideConfigRoot, "nested/src"), {
+        recursive: true,
+      });
+
+      yield* filesystem.writeFileString(
+        pathService.join(outsideConfigRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: { baseUrl: ".", paths: { "@internal/base": ["base.ts"] } },
         }),
       );
-      writeFileSync(join(outsideConfigRoot, "base.ts"), BASE_SOURCE);
-      const ownerPath = join(outsideConfigRoot, "nested/src/owner.ts");
-      writeFileSync(ownerPath, OWNER_SOURCE);
+      yield* filesystem.writeFileString(
+        pathService.join(outsideConfigRoot, "base.ts"),
+        BASE_SOURCE,
+      );
+      const ownerPath = pathService.join(outsideConfigRoot, "nested/src/owner.ts");
+      yield* filesystem.writeFileString(ownerPath, OWNER_SOURCE);
       const program = createCanonicalValuesTypeScriptProgram({
-        repositoryRoot: join(outsideConfigRoot, "nested"),
+        repositoryRoot: pathService.join(outsideConfigRoot, "nested"),
         rootNames: [ownerPath],
-        searchDirectory: join(outsideConfigRoot, "nested/src"),
+        searchDirectory: pathService.join(outsideConfigRoot, "nested/src"),
       });
       const [, ownerStatement] = program.getSourceFile(ownerPath)?.statements ?? [];
       if (ownerStatement === undefined || !ts.isVariableStatement(ownerStatement)) {
@@ -145,131 +170,163 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
         .typeToString(program.getTypeChecker().getTypeAtLocation(ownerDeclaration.name));
     });
 
-    it("is left out of the program", ({ unmappedOwnerType }) => {
-      expect(unmappedOwnerType).toBe('readonly [...any[], "published"]');
-    });
+    it.effect("is left out of the program", () =>
+      Effect.gen(function* program() {
+        const unmappedOwnerType = yield* fixture;
+        expect(unmappedOwnerType).toBe('readonly [...any[], "published"]');
+      }),
+    );
   });
 
   describe("a configuration extending a file outside the repository", () => {
-    const outsideExtendsRoot = mkdtempSync(
-      join(tmpdir(), "canonical-values-typescript-program-extends-"),
-    );
-
-    const it = test.extend("outsideExtendsFailure", ({}, { onCleanup }) => {
-      rmSync(outsideExtendsRoot, { force: true, recursive: true });
-      mkdirSync(join(outsideExtendsRoot, "nested/src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(outsideExtendsRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* outsideExtendsFailure() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const outsideExtendsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-extends-",
       });
-      writeFileSync(join(outsideExtendsRoot, "base.json"), JSON.stringify({ compilerOptions: {} }));
-      writeFileSync(
-        join(outsideExtendsRoot, "nested/tsconfig.json"),
-        JSON.stringify({ extends: "../base.json" }),
+      yield* filesystem.makeDirectory(pathService.join(outsideExtendsRoot, "nested/src"), {
+        recursive: true,
+      });
+
+      yield* filesystem.writeFileString(
+        pathService.join(outsideExtendsRoot, "base.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ compilerOptions: {} }),
       );
-      const ownerPath = join(outsideExtendsRoot, "nested/src/owner.ts");
-      writeFileSync(ownerPath, 'export const OWNER = ["draft", "published"] as const;\n');
-      const [failure] = attempt<ts.Program, Error>(() =>
-        createCanonicalValuesTypeScriptProgram({
-          repositoryRoot: join(outsideExtendsRoot, "nested"),
-          rootNames: [ownerPath],
-          searchDirectory: join(outsideExtendsRoot, "nested/src"),
+      yield* filesystem.writeFileString(
+        pathService.join(outsideExtendsRoot, "nested/tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          extends: "../base.json",
         }),
       );
-      return failure === null ? null : failure.message;
+      const ownerPath = pathService.join(outsideExtendsRoot, "nested/src/owner.ts");
+      yield* filesystem.writeFileString(
+        ownerPath,
+        'export const OWNER = ["draft", "published"] as const;\n',
+      );
+      const [failure] = attempt<ts.Program, Error>(() =>
+        createCanonicalValuesTypeScriptProgram({
+          repositoryRoot: path.join(outsideExtendsRoot, "nested"),
+          rootNames: [ownerPath],
+          searchDirectory: path.join(outsideExtendsRoot, "nested/src"),
+        }),
+      );
+      return {
+        outsideExtendsRoot,
+        outsideExtendsFailure: failure === null ? null : failure.message,
+      };
     });
 
-    it("is refused by name", ({ outsideExtendsFailure }) => {
-      expect(outsideExtendsFailure).toBe(
-        `TypeScript config extends outside the repository: ${join(outsideExtendsRoot, "base.json")}`,
-      );
-    });
+    it.effect("is refused by name", () =>
+      Effect.gen(function* program() {
+        const pathService = yield* Path.Path;
+        const { outsideExtendsRoot, outsideExtendsFailure } = yield* fixture;
+        expect(outsideExtendsFailure).toBe(
+          `TypeScript config extends outside the repository: ${pathService.join(outsideExtendsRoot, "base.json")}`,
+        );
+      }),
+    );
   });
 
   describe("a paths target sitting outside the cache-bounded repository", () => {
-    const outsideTargetRoot = mkdtempSync(
-      join(tmpdir(), "canonical-values-typescript-program-target-"),
-    );
-
-    const it = test.extend("outsideTargetFailure", ({}, { onCleanup }) => {
-      rmSync(outsideTargetRoot, { force: true, recursive: true });
-      mkdirSync(join(outsideTargetRoot, "nested/src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(outsideTargetRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* outsideTargetFailure() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const outsideTargetRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-target-",
       });
-      writeFileSync(join(outsideTargetRoot, "base.ts"), BASE_SOURCE);
-      writeFileSync(
-        join(outsideTargetRoot, "nested/tsconfig.json"),
-        JSON.stringify({
+      yield* filesystem.makeDirectory(pathService.join(outsideTargetRoot, "nested/src"), {
+        recursive: true,
+      });
+
+      yield* filesystem.writeFileString(
+        pathService.join(outsideTargetRoot, "base.ts"),
+        BASE_SOURCE,
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(outsideTargetRoot, "nested/tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: { baseUrl: ".", paths: { "@external/base": ["../base.ts"] } },
         }),
       );
-      const ownerPath = join(outsideTargetRoot, "nested/src/owner.ts");
-      writeFileSync(
+      const ownerPath = pathService.join(outsideTargetRoot, "nested/src/owner.ts");
+      yield* filesystem.writeFileString(
         ownerPath,
         'import { BASE } from "@external/base";\nexport const OWNER = [...BASE, "published"] as const;\n',
       );
       const [failure] = attempt<ts.Program, Error>(() =>
         createCanonicalValuesTypeScriptProgram({
-          repositoryRoot: join(outsideTargetRoot, "nested"),
+          repositoryRoot: path.join(outsideTargetRoot, "nested"),
           rootNames: [ownerPath],
-          searchDirectory: join(outsideTargetRoot, "nested/src"),
+          searchDirectory: path.join(outsideTargetRoot, "nested/src"),
         }),
       );
-      return failure === null ? null : failure.message;
+      return { outsideTargetRoot, outsideTargetFailure: failure === null ? null : failure.message };
     });
 
-    it("is refused by name", ({ outsideTargetFailure }) => {
-      expect(outsideTargetFailure).toBe(
-        `TypeScript dependency is outside the repository: ${join(outsideTargetRoot, "base.ts")}`,
-      );
-    });
+    it.effect("is refused by name", () =>
+      Effect.gen(function* program() {
+        const pathService = yield* Path.Path;
+        const { outsideTargetRoot, outsideTargetFailure } = yield* fixture;
+        expect(outsideTargetFailure).toBe(
+          `TypeScript dependency is outside the repository: ${pathService.join(outsideTargetRoot, "base.ts")}`,
+        );
+      }),
+    );
   });
 
   describe("a malformed TypeScript configuration", () => {
-    const malformedRoot = mkdtempSync(
-      join(tmpdir(), "canonical-values-typescript-program-malformed-"),
-    );
-
-    const it = test.extend("malformedConfigFailure", ({}, { onCleanup }) => {
-      rmSync(malformedRoot, { force: true, recursive: true });
-      mkdirSync(join(malformedRoot, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(malformedRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* malformedConfigFailure() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const malformedRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-malformed-",
       });
-      writeFileSync(join(malformedRoot, "tsconfig.json"), '{ "compilerOptions": { "module": 1 }');
-      const ownerPath = join(malformedRoot, "src/owner.ts");
-      writeFileSync(ownerPath, 'export const OWNER = ["draft", "published"] as const;\n');
+      yield* filesystem.makeDirectory(pathService.join(malformedRoot, "src"), { recursive: true });
+
+      yield* filesystem.writeFileString(
+        pathService.join(malformedRoot, "tsconfig.json"),
+        '{ "compilerOptions": { "module": 1 }',
+      );
+      const ownerPath = pathService.join(malformedRoot, "src/owner.ts");
+      yield* filesystem.writeFileString(
+        ownerPath,
+        'export const OWNER = ["draft", "published"] as const;\n',
+      );
       const [failure] = attempt<ts.Program, Error>(() =>
         createCanonicalValuesTypeScriptProgram({
           repositoryRoot: malformedRoot,
           rootNames: [ownerPath],
-          searchDirectory: join(malformedRoot, "src"),
+          searchDirectory: path.join(malformedRoot, "src"),
         }),
       );
       return failure === null ? null : failure.message;
     });
 
-    it("surfaces its first diagnostic", ({ malformedConfigFailure }) => {
-      expect(malformedConfigFailure).toBe(
-        "Compiler option 'module' requires a value of type string.",
-      );
-    });
+    it.effect("surfaces its first diagnostic", () =>
+      Effect.gen(function* program() {
+        const malformedConfigFailure = yield* fixture;
+        expect(malformedConfigFailure).toBe(
+          "Compiler option 'module' requires a value of type string.",
+        );
+      }),
+    );
   });
 
   describe("a tsx source override", () => {
-    const tsxRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-tsx-"));
-
-    const it = test.extend("tsxOverrideSyntaxErrors", ({}, { onCleanup }) => {
-      rmSync(tsxRoot, { force: true, recursive: true });
-      mkdirSync(join(tsxRoot, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(tsxRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* tsxOverrideSyntaxErrors() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const tsxRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-tsx-",
       });
-      const sourcePath = join(tsxRoot, "src/owner.tsx");
+      yield* filesystem.makeDirectory(pathService.join(tsxRoot, "src"), { recursive: true });
+
+      const sourcePath = pathService.join(tsxRoot, "src/owner.tsx");
       const program = createCanonicalValuesTypeScriptProgram({
         repositoryRoot: tsxRoot,
         rootNames: [sourcePath],
-        searchDirectory: join(tsxRoot, "src"),
+        searchDirectory: pathService.join(tsxRoot, "src"),
         sourceOverrides: new Map([[sourcePath, "export const view = <main />;\n"]]),
       });
       const overriddenSource = program.getSourceFile(sourcePath);
@@ -279,25 +336,28 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
         .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
     });
 
-    it("carries jsx that only the jsx script kind accepts", ({ tsxOverrideSyntaxErrors }) => {
-      expect(tsxOverrideSyntaxErrors).toStrictEqual([]);
-    });
+    it.effect("carries jsx that only the jsx script kind accepts", () =>
+      Effect.gen(function* program() {
+        const tsxOverrideSyntaxErrors = yield* fixture;
+        expect(tsxOverrideSyntaxErrors).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a ts source override", () => {
-    const tsRoot = mkdtempSync(join(tmpdir(), "canonical-values-typescript-program-ts-"));
-
-    const it = test.extend("tsOverrideSyntaxErrors", ({}, { onCleanup }) => {
-      rmSync(tsRoot, { force: true, recursive: true });
-      mkdirSync(join(tsRoot, "src"), { recursive: true });
-      onCleanup(() => {
-        rmSync(tsRoot, { force: true, recursive: true });
+    const fixture = Effect.gen(function* tsOverrideSyntaxErrors() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const tsRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-typescript-program-ts-",
       });
-      const sourcePath = join(tsRoot, "src/owner.ts");
+      yield* filesystem.makeDirectory(pathService.join(tsRoot, "src"), { recursive: true });
+
+      const sourcePath = pathService.join(tsRoot, "src/owner.ts");
       const program = createCanonicalValuesTypeScriptProgram({
         repositoryRoot: tsRoot,
         rootNames: [sourcePath],
-        searchDirectory: join(tsRoot, "src"),
+        searchDirectory: pathService.join(tsRoot, "src"),
         sourceOverrides: new Map([[sourcePath, 'export const label = <string>"draft";\n']]),
       });
       const overriddenSource = program.getSourceFile(sourcePath);
@@ -307,10 +367,11 @@ describe("createCanonicalValuesTypeScriptProgram", () => {
         .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"));
     });
 
-    it("carries an assertion that only the standard script kind accepts", ({
-      tsOverrideSyntaxErrors,
-    }) => {
-      expect(tsOverrideSyntaxErrors).toStrictEqual([]);
-    });
+    it.effect("carries an assertion that only the standard script kind accepts", () =>
+      Effect.gen(function* program() {
+        const tsOverrideSyntaxErrors = yield* fixture;
+        expect(tsOverrideSyntaxErrors).toStrictEqual([]);
+      }),
+    );
   });
 });
