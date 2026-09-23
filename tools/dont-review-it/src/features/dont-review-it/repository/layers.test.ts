@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { type Dirent, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { applications, architectureKindOf } from "@repo/config";
@@ -64,7 +64,7 @@ describe("modular coverage", () => {
     const missing: string[] = [];
     for (const directory of modularPackages) {
       const featuresRoot = join(directory, "src/features");
-      let slices: ReturnType<typeof readdirSync>;
+      let slices: Dirent[];
       try {
         slices = readdirSync(featuresRoot, { withFileTypes: true });
       } catch {

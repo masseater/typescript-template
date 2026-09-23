@@ -13,7 +13,9 @@ const violation =
 
 const collectFiles = (directory: string): Effect.Effect<readonly string[]> =>
   Effect.gen(function* listRouteFiles() {
-    const entries = yield* Effect.tryPromise(() => readdir(directory, { withFileTypes: true }));
+    const entries = yield* Effect.orDie(
+      Effect.tryPromise(() => readdir(directory, { withFileTypes: true })),
+    );
     const nested = yield* Effect.forEach(
       entries,
       (entry) => {
@@ -63,7 +65,7 @@ const checkRoutes = (routesRoot: string): Effect.Effect<readonly string[]> =>
           if (!isAppRouteModule(file.replaceAll("\\", "/"))) {
             return undefined;
           }
-          const source = yield* Effect.tryPromise(() => readFile(file, "utf8"));
+          const source = yield* Effect.orDie(Effect.tryPromise(() => readFile(file, "utf8")));
           if (!hasJsx(source, file)) {
             return undefined;
           }
@@ -84,9 +86,6 @@ const program = Effect.gen(function* main() {
   yield* Console.log(`thin-app-routes: ok (${relative(process.cwd(), routesRoot) || "."})`);
 });
 
-void runCli(
-  program.pipe(
-    Effect.tapError((error) => Console.error(JSON.stringify(causeRecord(error)))),
-    Effect.asVoid,
-  ),
+runCli(program.pipe(Effect.asVoid), (cause) =>
+  causeRecord("quality.thin_app_routes_failed", { cause }),
 );

@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { cruise, format } from "dependency-cruiser";
-import { Effect } from "effect";
+import { Cause, Console, Effect } from "effect";
 
 import configuration from "./dependency-cruiser.ts";
 import { repositoryRoot } from "./repository-root.ts";
@@ -18,7 +18,7 @@ function workspaceFromCwd(): string {
   return relative;
 }
 
-function depcruise(workspace: string): Effect.Effect<number> {
+function depcruise(workspace: string): Effect.Effect<number, Cause.UnknownError> {
   return Effect.gen(function* run() {
     const { output } = yield* Effect.tryPromise(() =>
       cruise(
@@ -26,19 +26,19 @@ function depcruise(workspace: string): Effect.Effect<number> {
         {
           ...configuration.options,
           baseDir: repositoryRoot,
-          ruleSet: { forbidden: configuration.forbidden },
+          ruleSet: { forbidden: configuration.forbidden ?? [] },
           validate: true,
         },
         configuration.options?.enhancedResolveOptions,
       ),
     );
     if (typeof output === "string") {
-      console.error(output);
+      yield* Console.error(output);
       return 1;
     }
     const formatted = yield* Effect.tryPromise(() => format(output, { outputType: "err-long" }));
     if (typeof formatted.output === "string" && formatted.output.length > 0) {
-      console.error(formatted.output);
+      yield* Console.error(formatted.output);
     }
     return formatted.exitCode;
   });
