@@ -1,3 +1,5 @@
+import { Effect, type FileSystem, type PlatformError } from "effect";
+
 import { actionUpdateProblems } from "./action-updates.ts";
 import { runWorkflowChecks } from "./run-workflow-checks.ts";
 
@@ -15,14 +17,15 @@ export const workflowOutcomesOf = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: WorkflowChecksConfig;
-}): WorkflowOutcomes => {
-  const definitions = runWorkflowChecks({ repositoryRoot, config });
+}): Effect.Effect<WorkflowOutcomes, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* workflowOutcomesOf() {
+    const definitions = yield* runWorkflowChecks({ repositoryRoot, config });
 
-  return {
-    definitions,
-    updates:
-      definitions.scanned === 0
-        ? { problems: [], scanned: 0 }
-        : actionUpdateProblems({ repositoryRoot, config }),
-  };
-};
+    return {
+      definitions,
+      updates:
+        definitions.scanned === 0
+          ? { problems: [], scanned: 0 }
+          : yield* actionUpdateProblems({ repositoryRoot, config }),
+    };
+  });

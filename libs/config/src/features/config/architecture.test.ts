@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { applications } from "./applications.ts";
 import {
   architectureKindOf,
   architectureKinds,
@@ -8,12 +7,13 @@ import {
   modularBudgets,
   modularLayers,
 } from "./architecture.ts";
+import { buildTargets } from "./wiki.ts";
 
 describe("fsdPackages", () => {
   const it = test.extend("packages", () => fsdPackages);
 
-  it("keeps FSD packages aligned with applications", ({ packages }) => {
-    expect(packages).toStrictEqual(applications);
+  it("keeps FSD packages aligned with the built frontends", ({ packages }) => {
+    expect(packages).toStrictEqual(buildTargets);
   });
 });
 
@@ -22,6 +22,7 @@ describe("architectureKindOf", () => {
     ["apps/service-member", "fsd"],
     ["apps/service-admin", "fsd"],
     ["apps/internal-dashboard", "fsd"],
+    ["apps/internal-wiki", "fsd"],
     ["apps/core", "modular"],
     ["libs/auth", "modular"],
     ["tools/dont-review-it", "modular"],

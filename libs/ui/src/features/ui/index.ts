@@ -1,7 +1,7 @@
 export { AppFrame } from "./app-frame";
 export { Avatar } from "./shared/ui/avatar";
 export { Button } from "./shared/ui/button";
-export { ButtonLink } from "./shared/ui/button-link";
+export { ButtonAnchor, ButtonLink } from "./shared/ui/button-link";
 export { Card } from "./shared/ui/card";
 export { CardLink } from "./shared/ui/card-link";
 export { CheckboxField } from "./shared/ui/checkbox-field";

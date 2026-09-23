@@ -4,7 +4,6 @@ export const routes = {
   "/api/auth/*": "auth",
   "/api/health": "health",
   "/api/invite": "invite-api",
-  "/api/search": "search",
   "/api/inquiries/counts": "inquiries-api",
   "/api/inquiries/member": "inquiries-api",
   "/api/inquiries/detail": "inquiries-api",

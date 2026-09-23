@@ -3,7 +3,7 @@ import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { mailSubjects } from "./email.ts";
-import { MockNetwork, mockNetwork } from "./mock-network.ts";
+import { MockNetwork, mockNetwork } from "./mock-network-fixture.ts";
 
 type Delivery = {
   readonly link: string;

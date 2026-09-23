@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { type Application, ApplicationName } from "@repo/config";
+import { type BuildTarget, BuildTargetName } from "@repo/config";
 import { Console, Effect, Schema, type PlatformError } from "effect";
 import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
@@ -109,7 +109,7 @@ const skippedIn = (report: typeof Scanned.Type): string[] => [
   ...(report.skippedProjects ?? []).map(({ directory, reason }) => `${directory} ${reason}`),
 ];
 
-const scanProjects = Effect.fn("scanProjects")(function* scanProjects(application: Application) {
+const scanProjects = Effect.fn("scanProjects")(function* scanProjects(application: BuildTarget) {
   const target = `apps/${application}`;
   let attempt = 0;
   let scanned = yield* scan([target, "--json"]);
@@ -133,7 +133,7 @@ const scanProjects = Effect.fn("scanProjects")(function* scanProjects(applicatio
   return { report, scanned };
 });
 
-const inspect = Effect.fn("inspect")(function* inspect(application: Application) {
+const inspect = Effect.fn("inspect")(function* inspect(application: BuildTarget) {
   const [{ report, scanned }, listed] = yield* Effect.all(
     [scanProjects(application), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
     { concurrency: "unbounded" },
@@ -169,7 +169,7 @@ const inspect = Effect.fn("inspect")(function* inspect(application: Application)
 
 runCli(
   Effect.gen(function* run() {
-    const application = yield* Schema.decodeUnknownEffect(ApplicationName)(
+    const application = yield* Schema.decodeUnknownEffect(BuildTargetName)(
       path.basename(process.cwd()),
     );
     const result = yield* inspect(application);

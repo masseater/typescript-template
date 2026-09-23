@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-
+import { Effect, type FileSystem, type PlatformError } from "effect";
 import { parseSync } from "oxc-parser";
 
+import { textOrNull } from "../../platform/file-system.ts";
+import { path } from "../../platform/path.ts";
 import {
   isAstNode,
   moduleConstantsIn,
@@ -119,21 +119,22 @@ export const lintRuleExamplesIn = ({
 }: {
   readonly workspaceRoot: string;
   readonly sourcePath: string;
-}): LintRuleExamples => {
-  const testPath = testFilePathFor(sourcePath);
-  const absolutePath = join(workspaceRoot, testPath);
-  if (!existsSync(absolutePath)) return NO_EXAMPLES;
+}): Effect.Effect<LintRuleExamples, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* lintRuleExamplesIn() {
+    const testPath = testFilePathFor(sourcePath);
+    const testSource = yield* textOrNull(path.join(workspaceRoot, testPath));
+    if (testSource === null) return NO_EXAMPLES;
 
-  const statements = nodesIn(parseSync(testPath, readFileSync(absolutePath, "utf8")).program.body);
-  const declared = casesObjectsIn(statements);
-  if (declared.length === 0) return NO_EXAMPLES;
+    const statements = nodesIn(parseSync(testPath, testSource).program.body);
+    const declared = casesObjectsIn(statements);
+    if (declared.length === 0) return NO_EXAMPLES;
 
-  const constants = moduleConstantsIn(statements);
-  const validCases = declared.flatMap((cases) => markedCasesIn({ cases, field: "valid" }));
-  const invalidCases = declared.flatMap((cases) => markedCasesIn({ cases, field: "invalid" }));
-  return {
-    valid: validCases.flatMap((testCase) => exampleOf({ testCase, constants })),
-    invalid: invalidCases.flatMap((testCase) => exampleOf({ testCase, constants })),
-    unspellable: unspellableNamesIn({ marked: [...validCases, ...invalidCases], constants }),
-  };
-};
+    const constants = moduleConstantsIn(statements);
+    const validCases = declared.flatMap((cases) => markedCasesIn({ cases, field: "valid" }));
+    const invalidCases = declared.flatMap((cases) => markedCasesIn({ cases, field: "invalid" }));
+    return {
+      valid: validCases.flatMap((testCase) => exampleOf({ testCase, constants })),
+      invalid: invalidCases.flatMap((testCase) => exampleOf({ testCase, constants })),
+      unspellable: unspellableNamesIn({ marked: [...validCases, ...invalidCases], constants }),
+    };
+  });

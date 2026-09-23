@@ -12,6 +12,10 @@ import {
   jobsWorkflowClass,
   userInboxBinding,
   userInboxClassName,
+  wikiApiBinding,
+  wikiApiEntrypoint,
+  wikiPagesBinding,
+  wikiWorker,
 } from "@repo/config";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
@@ -106,6 +110,8 @@ function applicationResource(app: Application, release: string): ResourceInvento
       ? [
           tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
           `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
+          `${wikiApiBinding}:service:entrypoint=${wikiApiEntrypoint}:service=${stackName(wikiWorker)}.Worker.workerName`,
+          `${wikiPagesBinding}:service:service=${stackName(wikiWorker)}.Worker.workerName`,
         ]
       : []),
   ];
@@ -283,8 +289,37 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
   });
 });
 
+const wikiStack = Effect.fn("wikiStack")(function* wikiStack() {
+  const artifacts = yield* loadArtifacts(repositoryRoot, wikiWorker);
+  return declaredStack(wikiWorker, {
+    Worker: {
+      adopt: false,
+      bindings: [
+        "AI:ai",
+        plainText(appEnvKey.appRelease, artifacts.release),
+        `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
+        plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
+        plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
+      ].toSorted(),
+      declared: {
+        ...sharedWorker,
+        assets: {
+          directory: `infra/cloudflare/.artifacts/${wikiWorker}/<digest>/client`,
+          runWorkerFirst: true,
+        },
+        bundle: false,
+        main: `infra/cloudflare/.artifacts/${wikiWorker}/<digest>/server/index.js`,
+        name: `${prefix}-${wikiWorker}`,
+        rules: [{ globs: ["**/*.js", "**/*.mjs", "**/*.txt", "**/*.wasm", "**/*.map"] }],
+      },
+      removalPolicy: "destroy",
+      type: "Cloudflare.Worker",
+    },
+  });
+});
+
 const staticExpected: Readonly<
-  Record<Exclude<StackName, Application | "flagship">, StackInventory>
+  Record<Exclude<StackName, Application | "flagship" | typeof wikiWorker>, StackInventory>
 > = {
   core: declaredStack("core", {
     Worker: {
@@ -412,6 +447,9 @@ const expectedStack = Effect.fn("expectedStack")(function* expectedStack(stack: 
   if (stack === "flagship") {
     return yield* compileStack(stack);
   }
+  if (stack === wikiWorker) {
+    return yield* wikiStack();
+  }
   return staticExpected[stack];
 });
 
@@ -442,7 +480,8 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const expected = yield* expectedStack(stack);
-  const coreViolation = stack === "core" ? assertCoreNotPublic(inventory) : undefined;
+  const coreViolation =
+    stack === "core" || stack === wikiWorker ? assertCoreNotPublic(inventory) : undefined;
   const matches = coreViolation === undefined && isDeepStrictEqual(inventory, expected);
   if (coreViolation !== undefined) {
     yield* Console.error(

@@ -14,7 +14,6 @@ import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as ConsentRouteImport } from './routes/consent'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as McpRouteImport } from './routes/mcp'
-import { Route as WikiRouteRouteImport } from './routes/wiki/route'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known.$'
 import { Route as DashboardIndexRouteImport } from './routes/_dashboard/index'
 import { Route as DashboardAuditRouteImport } from './routes/_dashboard/audit'
@@ -24,8 +23,6 @@ import { Route as DashboardSecurityRouteImport } from './routes/_dashboard/secur
 import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
-import { Route as WikiIndexRouteImport } from './routes/wiki/index'
-import { Route as WikiSplatRouteImport } from './routes/wiki/$'
 
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
@@ -49,11 +46,6 @@ const LoginRoute = LoginRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WikiRouteRoute = WikiRouteRouteImport.update({
-  id: '/wiki',
-  path: '/wiki',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
@@ -101,19 +93,8 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WikiIndexRoute = WikiIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => WikiRouteRoute,
-} as any)
-const WikiSplatRoute = WikiSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => WikiRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
-  '/wiki': typeof WikiRouteRouteWithChildren
   '/$': typeof SplatRoute
   '/': typeof DashboardIndexRoute
   '/consent': typeof ConsentRoute
@@ -127,8 +108,6 @@ export interface FileRoutesByFullPath {
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/invite/$token': typeof InviteTokenRoute
-  '/wiki/$': typeof WikiSplatRoute
-  '/wiki/': typeof WikiIndexRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
@@ -143,13 +122,10 @@ export interface FileRoutesByTo {
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/invite/$token': typeof InviteTokenRoute
-  '/wiki/$': typeof WikiSplatRoute
   '/': typeof DashboardIndexRoute
-  '/wiki': typeof WikiIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/wiki': typeof WikiRouteRouteWithChildren
   '/$': typeof SplatRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/consent': typeof ConsentRoute
@@ -163,14 +139,11 @@ export interface FileRoutesById {
   '/_dashboard/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/invite/$token': typeof InviteTokenRoute
-  '/wiki/$': typeof WikiSplatRoute
   '/_dashboard/': typeof DashboardIndexRoute
-  '/wiki/': typeof WikiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/wiki'
     | '/$'
     | '/'
     | '/consent'
@@ -184,8 +157,6 @@ export interface FileRouteTypes {
     | '/staff'
     | '/api/$'
     | '/invite/$token'
-    | '/wiki/$'
-    | '/wiki/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/$'
@@ -200,12 +171,9 @@ export interface FileRouteTypes {
     | '/staff'
     | '/api/$'
     | '/invite/$token'
-    | '/wiki/$'
     | '/'
-    | '/wiki'
   id:
     | '__root__'
-    | '/wiki'
     | '/$'
     | '/_dashboard'
     | '/consent'
@@ -219,13 +187,10 @@ export interface FileRouteTypes {
     | '/_dashboard/staff'
     | '/api/$'
     | '/invite/$token'
-    | '/wiki/$'
     | '/_dashboard/'
-    | '/wiki/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  WikiRouteRoute: typeof WikiRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ConsentRoute: typeof ConsentRoute
@@ -271,13 +236,6 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/wiki': {
-      id: '/wiki'
-      path: '/wiki'
-      fullPath: '/wiki'
-      preLoaderRoute: typeof WikiRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/$': {
@@ -343,36 +301,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wiki/': {
-      id: '/wiki/'
-      path: '/'
-      fullPath: '/wiki/'
-      preLoaderRoute: typeof WikiIndexRouteImport
-      parentRoute: typeof WikiRouteRoute
-    }
-    '/wiki/$': {
-      id: '/wiki/$'
-      path: '/$'
-      fullPath: '/wiki/$'
-      preLoaderRoute: typeof WikiSplatRouteImport
-      parentRoute: typeof WikiRouteRoute
-    }
   }
 }
-
-interface WikiRouteRouteChildren {
-  WikiSplatRoute: typeof WikiSplatRoute
-  WikiIndexRoute: typeof WikiIndexRoute
-}
-
-const WikiRouteRouteChildren: WikiRouteRouteChildren = {
-  WikiSplatRoute: WikiSplatRoute,
-  WikiIndexRoute: WikiIndexRoute,
-}
-
-const WikiRouteRouteWithChildren = WikiRouteRoute._addFileChildren(
-  WikiRouteRouteChildren,
-)
 
 interface DashboardRouteChildren {
   DashboardAuditRoute: typeof DashboardAuditRoute
@@ -397,7 +327,6 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  WikiRouteRoute: WikiRouteRouteWithChildren,
   SplatRoute: SplatRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ConsentRoute: ConsentRoute,

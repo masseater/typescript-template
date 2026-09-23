@@ -153,6 +153,7 @@ describe("inspection coverage", () => {
       "apps/service-admin/**",
       "apps/service-member/**",
       "apps/internal-dashboard/**",
+      "apps/internal-wiki/**",
       "infra/cloudflare/**",
       "tools/dev/**",
       "tools/dont-review-it/**",

@@ -1,8 +1,7 @@
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { agentInstructionLinksIn } from "./agent-instruction-links.ts";
 import { defaultRequiredFileFormConfig } from "./config.ts";
@@ -18,123 +17,170 @@ const INSTRUCTIONS_UNDER_THE_LINK =
 const SPELLED_TWICE =
   "Agent instructions must not be spelled twice. Replace this file with a symbolic link to AGENTS.md.";
 
-describe("agentInstructionLinksIn", () => {
+layer(NodeServices.layer)("agentInstructionLinksIn", (it) => {
   describe("a directory holding neither name", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "agent-instruction-links-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "agent-instruction-links-",
       });
-      return agentInstructionLinksIn({
+
+      return yield* agentInstructionLinksIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,
       });
     });
 
-    it("says nothing about it", ({ problems }) => {
-      expect(problems).toStrictEqual([]);
-    });
+    it.effect("says nothing about it", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a directory holding the instructions with no second name", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "agent-instruction-links-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "agent-instruction-links-",
       });
-      writeFileSync(join(repositoryRoot, "AGENTS.md"), "# instructions\n", "utf8");
-      return agentInstructionLinksIn({
+
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "AGENTS.md"),
+        "# instructions\n",
+      );
+      return yield* agentInstructionLinksIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,
       });
     });
 
-    it("asks for the second name as a link", ({ problems }) => {
-      expect(problems).toStrictEqual([{ file: "CLAUDE.md", line: null, message: MISSING_LINK }]);
-    });
+    it.effect("asks for the second name as a link", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([{ file: "CLAUDE.md", line: null, message: MISSING_LINK }]);
+      }),
+    );
   });
 
   describe("a directory holding the second name alone", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "agent-instruction-links-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "agent-instruction-links-",
       });
-      writeFileSync(join(repositoryRoot, "CLAUDE.md"), "# instructions\n", "utf8");
-      return agentInstructionLinksIn({
+
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "CLAUDE.md"),
+        "# instructions\n",
+      );
+      return yield* agentInstructionLinksIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,
       });
     });
 
-    it("asks for the instructions under the first name", ({ problems }) => {
-      expect(problems).toStrictEqual([
-        { file: "AGENTS.md", line: null, message: INSTRUCTIONS_UNDER_THE_LINK },
-      ]);
-    });
+    it.effect("asks for the instructions under the first name", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([
+          { file: "AGENTS.md", line: null, message: INSTRUCTIONS_UNDER_THE_LINK },
+        ]);
+      }),
+    );
   });
 
   describe("a directory spelling the instructions under both names", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "agent-instruction-links-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "agent-instruction-links-",
       });
-      writeFileSync(join(repositoryRoot, "AGENTS.md"), "# instructions\n", "utf8");
-      writeFileSync(join(repositoryRoot, "CLAUDE.md"), "# instructions\n", "utf8");
-      return agentInstructionLinksIn({
+
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "AGENTS.md"),
+        "# instructions\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "CLAUDE.md"),
+        "# instructions\n",
+      );
+      return yield* agentInstructionLinksIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,
       });
     });
 
-    it("asks for the second name to become a link", ({ problems }) => {
-      expect(problems).toStrictEqual([{ file: "CLAUDE.md", line: null, message: SPELLED_TWICE }]);
-    });
+    it.effect("asks for the second name to become a link", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([{ file: "CLAUDE.md", line: null, message: SPELLED_TWICE }]);
+      }),
+    );
   });
 
   describe("a second name linked at something other than the instructions", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "agent-instruction-links-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "agent-instruction-links-",
       });
-      writeFileSync(join(repositoryRoot, "AGENTS.md"), "# instructions\n", "utf8");
-      writeFileSync(join(repositoryRoot, "README.md"), "# readme\n", "utf8");
-      symlinkSync("README.md", join(repositoryRoot, "CLAUDE.md"));
-      return agentInstructionLinksIn({
+
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "AGENTS.md"),
+        "# instructions\n",
+      );
+      yield* filesystem.writeFileString(paths.join(repositoryRoot, "README.md"), "# readme\n");
+      yield* filesystem.symlink("README.md", paths.join(repositoryRoot, "CLAUDE.md"));
+      return yield* agentInstructionLinksIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,
       });
     });
 
-    it("asks for the link to point at the instructions", ({ problems }) => {
-      expect(problems).toStrictEqual([{ file: "CLAUDE.md", line: null, message: SPELLED_TWICE }]);
-    });
+    it.effect("asks for the link to point at the instructions", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([{ file: "CLAUDE.md", line: null, message: SPELLED_TWICE }]);
+      }),
+    );
   });
 
   describe("a second name linked at the instructions", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "agent-instruction-links-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "agent-instruction-links-",
       });
-      writeFileSync(join(repositoryRoot, "AGENTS.md"), "# instructions\n", "utf8");
-      symlinkSync("AGENTS.md", join(repositoryRoot, "CLAUDE.md"));
-      return agentInstructionLinksIn({
+
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "AGENTS.md"),
+        "# instructions\n",
+      );
+      yield* filesystem.symlink("AGENTS.md", paths.join(repositoryRoot, "CLAUDE.md"));
+      return yield* agentInstructionLinksIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,
       });
     });
 
-    it("says nothing about it", ({ problems }) => {
-      expect(problems).toStrictEqual([]);
-    });
+    it.effect("says nothing about it", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([]);
+      }),
+    );
   });
 });

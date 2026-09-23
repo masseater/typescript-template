@@ -115,6 +115,8 @@ export {
   readEnvironment,
   readStripeConfig,
   stripeKeyModes,
+  readSiteEnvironment,
+  readWikiBindings,
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
 export { memberRetentionDays } from "./member-retention.ts";
@@ -144,7 +146,14 @@ export {
 export type { JobResult, JobsBindings } from "./jobs.ts";
 export { effectTsgoNoEmit, effectTypecheckInputs } from "./effect-typecheck.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
-export type { AppConfig, AssetFetcher, StripeConfig, StripeKeyMode } from "./environment.ts";
+export type {
+  AppConfig,
+  AssetFetcher,
+  ServiceFetcher,
+  SiteConfig,
+  StripeConfig,
+  StripeKeyMode,
+} from "./environment.ts";
 export {
   localUserInbox,
   readRealtime,
@@ -170,3 +179,18 @@ export {
   metricKeys,
   metricPeriods,
 } from "./dashboard-literals.ts";
+export {
+  BuildTargetName,
+  buildTargets,
+  hostOf,
+  isWikiPath,
+  wikiApiBinding,
+  wikiApiEntrypoint,
+  wikiBasePath,
+  wikiDevOriginVariable,
+  wikiHost,
+  wikiPagesBinding,
+  wikiServerFnBase,
+  wikiWorker,
+} from "./wiki.ts";
+export type { BuildTarget, WikiWorker } from "./wiki.ts";

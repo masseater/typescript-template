@@ -4,14 +4,14 @@ import { Effect, Path } from "effect";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
 import { runLintRuleAuthoring } from "./lint-rule-authoring/run-cli.ts";
-import { isDirectory } from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import { isDirectoryAt } from "./platform/file-system.ts";
 import {
   EXIT_MISUSE,
   EXIT_SUCCESS,
   measureCheck,
   type CliResult,
 } from "./repository-checks/index.ts";
-import { runStopAiSlop } from "./stop-ai-slop/run-cli.ts";
+import { stopAiSlop } from "./stop-ai-slop/run-cli.ts";
 
 const writeCliResult = (result: CliResult): number => {
   if (result.out !== "") process.stdout.write(result.out);
@@ -42,25 +42,23 @@ export const checkRepositoryCommand = defineCommand({
         Effect.gen(function* checkRepository() {
           const path = yield* Path.Path;
           const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
-          if (!isDirectory(repositoryRoot)) {
+          if (!(yield* isDirectoryAt(repositoryRoot))) {
             refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
             return;
           }
 
-          if (args.write && !repairGeneratedParts(repositoryRoot)) return;
+          if (args.write && !(yield* repairGeneratedParts(repositoryRoot))) return;
 
           process.exitCode = EXIT_SUCCESS;
-          reportProblems(repositoryRoot);
+          yield* reportProblems(repositoryRoot);
           const afterDontReviewIt = process.exitCode ?? EXIT_SUCCESS;
           if (afterDontReviewIt === EXIT_MISUSE) return;
 
           const rootArgs = ["--repository-root", repositoryRoot];
           const lintRuleAuthoringExit = writeCliResult(
-            runLintRuleAuthoring(["check", ...rootArgs]),
+            yield* runLintRuleAuthoring(["check", ...rootArgs]),
           );
-          const stopAiSlopExit = writeCliResult(
-            yield* Effect.promise(() => runStopAiSlop(["check", ...rootArgs])),
-          );
+          const stopAiSlopExit = writeCliResult(yield* stopAiSlop({ repositoryRoot }));
           const worst = Math.max(afterDontReviewIt, lintRuleAuthoringExit, stopAiSlopExit);
           if (worst !== EXIT_SUCCESS) process.exitCode = worst;
         }).pipe(Effect.provide(NodeServices.layer)),

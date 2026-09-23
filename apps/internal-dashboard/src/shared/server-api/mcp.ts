@@ -1,34 +1,98 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, readWikiBindings, wikiApiBinding } from "@repo/config";
+import { WikiRpcs, makeRpcClient } from "@repo/core-api";
+import { reportFailure } from "@repo/observability";
 import { AppOrigin, secureResponse } from "@repo/runtime/http";
-import { Effect } from "effect";
-import { registerSearchTool, registerSourceTools } from "fumadocs-core/mcp";
+import { env } from "cloudflare:workers";
+import { Cause, Effect } from "effect";
+import { z } from "zod";
 
-import { source } from "#shared/content/index.ts";
 import { authorizeMcpRequest } from "#shared/wiki/index.ts";
 import { registerDashboardTools } from "./mcp-dashboard.ts";
-import { searchServer, wikiLlms } from "./search.ts";
+import { runtime } from "./runtime.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
+import type { ServiceFetcher } from "@repo/config";
 import type { Context } from "effect";
+import type { RpcClient, RpcGroup } from "effect/unstable/rpc";
+import type { RpcClientError } from "effect/unstable/rpc/RpcClientError";
+
+type WikiClient = RpcClient.RpcClient<RpcGroup.Rpcs<typeof WikiRpcs>, RpcClientError>;
+type ToolResult = { content: { text: string; type: "text" }[]; isError?: boolean };
 
 const mcpVersion = "1.0.0";
 
-function createServer(context: Context.Context<WikiServices>): McpServer {
+function text(content: string): ToolResult {
+  return { content: [{ text: content, type: "text" }] };
+}
+
+function callWiki(
+  binding: ServiceFetcher,
+  call: (wiki: WikiClient) => Effect.Effect<ToolResult, RpcClientError>,
+): Promise<ToolResult> {
+  return runtime.runPromise(
+    makeRpcClient(WikiRpcs, binding).pipe(
+      Effect.flatMap(call),
+      Effect.catchTag("RpcClientError", (error) =>
+        reportFailure(Cause.fail(error)).pipe(
+          Effect.as({ ...text("wiki is unavailable"), isError: true }),
+        ),
+      ),
+      Effect.scoped,
+    ),
+  );
+}
+
+function createServer(binding: ServiceFetcher, context: Context.Context<WikiServices>): McpServer {
   const server = new McpServer({ name: APPLICATION.wiki, version: mcpVersion });
-  registerSearchTool(server, searchServer(context));
-  registerSourceTools(server, source, wikiLlms);
+  server.registerTool(
+    "search",
+    {
+      description: "Search docs pages with a query",
+      inputSchema: z.object({ query: z.string() }),
+      title: "Search Docs",
+    },
+    ({ query }) =>
+      callWiki(binding, (wiki) =>
+        wiki.searchWiki({ query }).pipe(Effect.map(({ results }) => text(JSON.stringify(results)))),
+      ),
+  );
+  server.registerTool(
+    "list_pages",
+    {
+      description: "List all docs pages with their pathnames (URLs)",
+      inputSchema: z.object({}),
+      title: "List Pages",
+    },
+    () => callWiki(binding, (wiki) => wiki.listWikiPages({}).pipe(Effect.map(text))),
+  );
+  server.registerTool(
+    "get_page",
+    {
+      description: "Get the Markdown content of a docs page by its pathname (URL)",
+      inputSchema: z.object({ url: z.string() }),
+      title: "Get Page",
+    },
+    ({ url }) =>
+      callWiki(binding, (wiki) =>
+        wiki.readWikiPage({ url }).pipe(
+          Effect.map(text),
+          Effect.catchTag("WikiPageNotFound", () =>
+            Effect.succeed({ ...text(`page not found: ${url}`), isError: true }),
+          ),
+        ),
+      ),
+  );
   registerDashboardTools(server, context);
   return server;
 }
 
-function handleMcp(request: Request): Effect.Effect<Response, never, WikiServices> {
-  return Effect.gen(function* handleMcpRequest() {
-    const context = yield* Effect.context<WikiServices>();
-    const handler = createMcpHandler(() => createServer(context));
-    return yield* Effect.promise(() => handler.fetch(request));
-  });
-}
+const handleMcp = Effect.fn("handleMcp")(function* handleMcp(request: Request) {
+  const bindings = yield* readWikiBindings(env).pipe(Effect.orDie);
+  const context = yield* Effect.context<WikiServices>();
+  const handler = createMcpHandler(() => createServer(bindings[wikiApiBinding], context));
+  return yield* Effect.promise(() => handler.fetch(request));
+});
 
 const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
   const authorized = yield* authorizeMcpRequest(request, yield* AppOrigin);

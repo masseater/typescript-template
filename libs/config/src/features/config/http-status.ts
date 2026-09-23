@@ -13,6 +13,7 @@ const httpStatus = {
   payloadTooLarge: 413,
   paymentRequired: 402,
   preconditionRequired: 428,
+  permanentRedirect: 308,
   serviceUnavailable: 503,
   tooManyRequests: 429,
   unauthorized: 401,

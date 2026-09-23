@@ -1,7 +1,7 @@
 import { secretsFile, secretsFileConfigured } from "@repo/infra-cloudflare/deployment";
 import { Effect, FileSystem, Option, Path, PlatformError, Schema } from "effect";
 
-import { failureCodeOf } from "../repository-checks/index.ts";
+import { failureCodeOf, isMissingPath } from "../platform/path-failure.ts";
 import { deploymentValues, type DeploymentValue } from "./secrets.ts";
 
 const Manifest = Schema.fromJsonString(Schema.Struct({ name: Schema.String }));
@@ -70,7 +70,7 @@ const readCredentials = (
   }).pipe(
     Effect.asSome,
     Effect.catchIf(
-      (error) => error.reason._tag === "NotFound" && !secretsFileConfigured(),
+      (error) => isMissingPath(error) && !secretsFileConfigured(),
       () => Effect.succeedNone,
     ),
     Effect.mapError(unavailable("credentials-unreadable")),

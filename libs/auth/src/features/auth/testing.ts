@@ -29,7 +29,7 @@ export {
 export { BrowserClient, origins } from "./browser-client.ts";
 export { requestEmailChange } from "./email-change.ts";
 export { mailSubjects } from "./email.ts";
-export { MockNetwork } from "./mock-network.ts";
+export { MockNetwork } from "./mock-network-fixture.ts";
 export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixture.ts";
 export { signedSessionCookie } from "./auth-test-fixture.ts";
 export { startClientAuthorization } from "./oauth-client-fixture.ts";

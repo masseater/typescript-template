@@ -1,4 +1,4 @@
-import { applications } from "./applications.ts";
+import { buildTargets } from "./wiki.ts";
 
 export const modularLayers = ["app", "features", "shared"] as const;
 export type ModularLayer = (typeof modularLayers)[number];
@@ -14,7 +14,7 @@ export const modularBudgets = {
 export const architectureKinds = ["fsd", "modular"] as const;
 export type ArchitectureKind = (typeof architectureKinds)[number];
 
-export const fsdPackages = applications;
+export const fsdPackages = buildTargets;
 const fsdPackageSet: ReadonlySet<string> = new Set(fsdPackages);
 
 export const architectureKindOf = (workspacePath: string): ArchitectureKind | undefined => {

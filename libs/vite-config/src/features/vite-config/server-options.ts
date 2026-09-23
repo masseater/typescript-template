@@ -1,4 +1,4 @@
-import { APPLICATION, type Application } from "@repo/config";
+import { APPLICATION, hostOf, type BuildTarget } from "@repo/config";
 
 import { paths } from "./host.ts";
 import { applicationsExcept } from "./private-path.ts";
@@ -10,7 +10,7 @@ const serverOptions = ({
   applicationRoot,
   repositoryRoot,
 }: Readonly<{
-  application: Application;
+  application: BuildTarget;
   applicationRoot: string;
   repositoryRoot: string;
 }>): UserConfig => ({
@@ -19,6 +19,9 @@ const serverOptions = ({
     fs: {
       allow: [
         applicationRoot,
+        ...(hostOf(application) === application
+          ? []
+          : [paths.join(repositoryRoot, "apps", hostOf(application), "content")]),
         paths.join(repositoryRoot, "libs"),
         paths.join(repositoryRoot, "node_modules"),
       ],
