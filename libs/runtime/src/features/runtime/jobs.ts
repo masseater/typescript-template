@@ -8,6 +8,8 @@ import {
 import { WorkflowEntrypoint } from "cloudflare:workers";
 import { Effect, Schema } from "effect";
 
+import { JobLookupFailed, JobNotFound } from "./job-failures.ts";
+
 class Process extends WorkflowEntrypoint<JobsBindings, JobPayload> {
   override run(
     event: Readonly<{ payload: JobPayload }>,
@@ -52,7 +54,7 @@ function consumeJobs(batch: MessageBatch<unknown>, env: JobsBindings): Promise<v
       for (const message of batch.messages) {
         const payload = yield* Schema.decodeUnknownEffect(JobPayload)(message.body);
         yield* Effect.promise(() =>
-          env[jobsWorkflowBinding].create({ id: payload.jobId, params: payload }),
+          env[jobsWorkflowBinding].create({ id: instanceId(payload), params: payload }),
         );
         message.ack();
       }
@@ -60,15 +62,32 @@ function consumeJobs(batch: MessageBatch<unknown>, env: JobsBindings): Promise<v
   );
 }
 
-const enqueueJob = Effect.fn("jobs.enqueue")(function* enqueueJob(env: JobsBindings) {
-  const jobId = crypto.randomUUID();
-  const payload = { jobId };
+const missingInstance = "instance.not_found";
+
+function instanceId(payload: JobPayload): string {
+  return `${payload.ownerId}-${payload.jobId}`;
+}
+
+const enqueueJob = Effect.fn("jobs.enqueue")(function* enqueueJob(
+  env: JobsBindings,
+  ownerId: string,
+) {
+  const payload = { jobId: crypto.randomUUID(), ownerId };
   yield* Effect.promise(() => env[jobsQueueBinding].send(payload));
   return payload;
 });
 
-const jobStatus = Effect.fn("jobs.status")(function* jobStatus(env: JobsBindings, jobId: string) {
-  const instance = yield* Effect.promise(() => env[jobsWorkflowBinding].get(jobId));
+const jobStatus = Effect.fn("jobs.status")(function* jobStatus(
+  env: JobsBindings,
+  payload: JobPayload,
+) {
+  const instance = yield* Effect.tryPromise({
+    catch: (cause) =>
+      cause instanceof Error && cause.message === missingInstance
+        ? new JobNotFound()
+        : new JobLookupFailed({ cause }),
+    try: () => env[jobsWorkflowBinding].get(instanceId(payload)),
+  });
   return yield* Effect.promise(() => instance.status());
 });
 
