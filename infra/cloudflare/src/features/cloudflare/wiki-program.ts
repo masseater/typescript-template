@@ -1,8 +1,9 @@
 import { wikiWorker } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Worker, Workers } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
+import { loadArtifacts, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { otlpAuthorization, settings } from "./settings.ts";
 import { stackName } from "./stacks.ts";

@@ -7,4 +7,12 @@ const repositoryRoot = Effect.runSync(
   }).pipe(Effect.provide(Path.layer)),
 );
 
-export { repositoryRoot };
+const repositoryFile = (file: string): string =>
+  Effect.runSync(
+    Effect.gen(function* resolveRepositoryFile() {
+      const path = yield* Path.Path;
+      return path.isAbsolute(file) ? file : path.join(repositoryRoot, file);
+    }).pipe(Effect.provide(Path.layer)),
+  );
+
+export { repositoryFile, repositoryRoot };

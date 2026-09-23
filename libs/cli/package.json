@@ -10,6 +10,7 @@
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",

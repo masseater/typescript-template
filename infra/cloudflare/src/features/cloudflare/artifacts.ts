@@ -1,5 +1,4 @@
-import { fileURLToPath } from "node:url";
-
+import { repositoryRoot } from "@repo/config/repository-root";
 import { serverOnlyMarkers } from "@repo/vite-config";
 import { isSecretFileName } from "@repo/vite-config/private-path";
 import { Context, Effect } from "effect";
@@ -25,8 +24,6 @@ import { stageFiles } from "./staging.ts";
 
 import type { BuildTarget } from "@repo/config";
 import type { ArtifactFailure } from "./artifact-io.ts";
-
-const repositoryRoot = fileURLToPath(new URL("../../../../../", import.meta.url));
 
 const MAIN_MODULE = "index.js";
 
@@ -292,12 +289,5 @@ const loadArtifacts = Effect.fn("loadArtifacts")(function* loadArtifacts(
   return artifacts;
 });
 
-export {
-  ArtifactWrites,
-  coreArtifact,
-  loadArtifacts,
-  monitorArtifact,
-  repositoryRoot,
-  workerModuleGlobs,
-};
+export { ArtifactWrites, coreArtifact, loadArtifacts, monitorArtifact, workerModuleGlobs };
 export type { ArtifactMode };
