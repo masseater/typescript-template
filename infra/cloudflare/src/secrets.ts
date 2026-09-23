@@ -3,7 +3,6 @@ import { Cause, Effect, Option, Predicate, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
 const OK_EXIT_CODE = 0;
-const FAILED_EXIT_CODE = 1;
 
 const FailureKeys = Schema.Array(Schema.String);
 const isCoded = Schema.is(
@@ -84,7 +83,6 @@ function reportCause(
 }
 
 export {
-  FAILED_EXIT_CODE,
   causeRecord,
   OK_EXIT_CODE,
   describeCause,
