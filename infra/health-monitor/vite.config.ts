@@ -4,7 +4,7 @@ import { monitorWorkerVite } from "@repo/monitor/vite";
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import { defineConfig } from "vite-plus";
 
-const healthMonitorVite = monitorWorkerVite("health-monitor");
+const healthMonitorVite = monitorWorkerVite(import.meta.dirname);
 
 export default defineConfig({
   ...healthMonitorVite,
