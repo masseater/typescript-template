@@ -15,12 +15,14 @@ const MovedFile = Schema.Struct({
   filename: Schema.String,
   status: Schema.Literal("renamed"),
   previous_filename: Schema.NonEmptyString,
+  changes: Schema.Finite,
   patch: Schema.optional(Schema.String),
 });
 
 const PlacedFile = Schema.Struct({
   filename: Schema.String,
   status: Schema.Literals(["added", "changed", "copied", "modified", "removed"]),
+  changes: Schema.Finite,
   patch: Schema.optional(Schema.String),
 });
 
