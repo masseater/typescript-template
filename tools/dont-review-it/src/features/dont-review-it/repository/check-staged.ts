@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { NodeServices } from "@effect/platform-node";
 import { markFailed, runCli } from "@repo/cli";
 import { Cause, Console, Effect, Option } from "effect";
 
@@ -38,6 +39,7 @@ runCli(
         }),
       ).pipe(Effect.andThen(status === "failed" ? markFailed : Effect.void)),
     ),
+    Effect.provide(NodeServices.layer),
   ),
   (cause) => {
     const failure = Option.getOrUndefined(Cause.findErrorOption(cause));

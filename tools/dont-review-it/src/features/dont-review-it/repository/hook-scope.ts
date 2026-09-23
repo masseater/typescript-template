@@ -1,43 +1,71 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import path from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { causeRecord, runCli } from "@repo/cli";
+import { Console, Effect, FileSystem, Option, Path, Schema } from "effect";
+import { ChildProcess } from "effect/unstable/process";
 
+import { capturedProcess } from "./captured-process.ts";
 import { hookFilters } from "./pr-affected-scope.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { workspacePackages } from "./workspace-packages.ts";
 
-const git = (...handed: readonly string[]): string | undefined => {
-  const result = spawnSync("git", handed, { cwd: repositoryRoot, encoding: "utf8" });
-  return result.status === 0 ? result.stdout.trim() : undefined;
-};
+class NotAHookStage extends Schema.TaggedError<NotAHookStage>()("NotAHookStage", {
+  stage: Schema.String,
+}) {
+  public override get message(): string {
+    return `${this.stage} is not a hook stage`;
+  }
+}
 
-const changedFiles = (stage: string | undefined): readonly string[] | undefined => {
+const git = (...handed: readonly string[]) =>
+  capturedProcess(
+    ChildProcess.make("git", [...handed], { cwd: repositoryRoot, stdin: "ignore" }),
+  ).pipe(
+    Effect.map((result) =>
+      result.exitCode === 0 ? Option.some(result.stdout.trim()) : Option.none(),
+    ),
+  );
+
+const lines = (output: Option.Option<string>): Option.Option<readonly string[]> =>
+  Option.map(output, (text) => text.split("\n"));
+
+const changedFiles = Effect.fn("changedFiles")(function* changedFiles(stage: string) {
   if (stage === "precommit") {
-    const gitDirectory = git("rev-parse", "--git-dir");
-    const base =
-      gitDirectory !== undefined &&
-      existsSync(path.resolve(repositoryRoot, gitDirectory, "MERGE_HEAD"))
-        ? "MERGE_HEAD"
-        : "HEAD";
-    return git("diff", "--cached", "--name-only", "--no-renames", base)?.split("\n");
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const gitDirectory = yield* git("rev-parse", "--git-dir");
+    const merging = Option.isSome(gitDirectory)
+      ? yield* filesystem.exists(paths.resolve(repositoryRoot, gitDirectory.value, "MERGE_HEAD"))
+      : false;
+    return lines(
+      yield* git(
+        "diff",
+        "--cached",
+        "--name-only",
+        "--no-renames",
+        merging ? "MERGE_HEAD" : "HEAD",
+      ),
+    );
   }
   if (stage === "prepush") {
-    const base = git("merge-base", "origin/main", "HEAD");
-    return base === undefined
-      ? undefined
-      : git("diff", "--name-only", "--no-renames", base, "HEAD")?.split("\n");
+    const base = yield* git("merge-base", "origin/main", "HEAD");
+    return Option.isNone(base)
+      ? Option.none()
+      : lines(yield* git("diff", "--name-only", "--no-renames", base.value, "HEAD"));
   }
-  throw new Error(`${String(stage)} is not a hook stage`);
-};
+  return yield* new NotAHookStage({ stage });
+});
 
-const files = changedFiles(process.argv[2]);
-process.stdout.write(
-  `${(files === undefined
-    ? ["-r"]
-    : hookFilters(
-        files.filter((file) => file !== ""),
-        workspacePackages(),
-      )
-  ).join(" ")}\n`,
+runCli(
+  Effect.gen(function* hookScope() {
+    const files = yield* changedFiles(process.argv[2] ?? "");
+    const filters = Option.isNone(files)
+      ? ["-r"]
+      : hookFilters(
+          files.value.filter((file) => file !== ""),
+          yield* workspacePackages,
+        );
+    yield* Console.log(filters.join(" "));
+  }).pipe(Effect.provide(NodeServices.layer)),
+  (cause) => causeRecord("quality.hook_scope_failed", { cause }),
 );

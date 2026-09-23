@@ -1,8 +1,15 @@
-import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-const lintSource = readFileSync(new URL("./lint.ts", import.meta.url), "utf-8");
+const lintSource = await Effect.runPromise(
+  Effect.gen(function* lintSource() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem.readFileString(fileURLToPath(new URL("./lint.ts", import.meta.url)));
+  }).pipe(Effect.provide(NodeServices.layer)),
+);
 
 describe("workspace lint ownership", () => {
   it("does not hardcode libs/ui design-system paths in root lint overrides", () => {

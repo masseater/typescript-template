@@ -1,9 +1,7 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import { secretsFile, secretsFileConfigured } from "@repo/infra-cloudflare/deployment";
-import { Effect, Schema } from "effect";
+import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
 
+import { failureCodeOf } from "../repository-checks/index.ts";
 import { deploymentValues, type DeploymentValue } from "./secrets.ts";
 
 const NOT_FOUND = "ENOENT";
@@ -33,14 +31,9 @@ class CredentialsUnavailable extends Schema.TaggedError<CredentialsUnavailable>(
   }
 }
 
-const errorCode = (error: unknown): string | undefined => {
-  return typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    typeof error.code === "string"
-    ? error.code
-    : undefined;
-};
+const errorCode = (error: unknown): string | undefined =>
+  failureCodeOf(error instanceof PlatformError.PlatformError ? error.reason.cause : error) ??
+  undefined;
 
 const unavailable = (
   reason: CredentialsUnavailable["reason"],
@@ -48,17 +41,16 @@ const unavailable = (
   return (error) => new CredentialsUnavailable({ code: errorCode(error), reason });
 };
 
-const projectName = (root: string): Effect.Effect<string, CredentialsUnavailable> => {
-  const manifest = Effect.tryPromise({
-    catch: unavailable("manifest-unreadable"),
-    try: async () => readFile(path.join(root, "package.json"), "utf-8"),
-  });
-  return manifest.pipe(
-    Effect.flatMap(Schema.decodeUnknownEffect(Manifest)),
-    Effect.mapError(unavailable("manifest-unreadable")),
-    Effect.map(({ name }) => name),
-  );
-};
+const projectName = (
+  root: string,
+): Effect.Effect<string, CredentialsUnavailable, FileSystem.FileSystem | Path.Path> =>
+  Effect.gen(function* projectName() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const manifestText = yield* filesystem.readFileString(paths.join(root, "package.json"));
+    const { name } = yield* Schema.decodeEffect(Manifest)(manifestText);
+    return name;
+  }).pipe(Effect.mapError(unavailable("manifest-unreadable")));
 
 const scannable = (
   contents: string,
@@ -73,11 +65,11 @@ const absent: DeploymentCredentials = { source: "absent", values: [] };
 
 const readCredentials = (
   filename: string,
-): Effect.Effect<DeploymentCredentials, CredentialsUnavailable> => {
-  const contents = Effect.tryPromise({
-    catch: unavailable("credentials-unreadable"),
-    try: async () => readFile(filename, "utf-8"),
-  });
+): Effect.Effect<DeploymentCredentials, CredentialsUnavailable, FileSystem.FileSystem> => {
+  const contents = Effect.gen(function* credentialsText() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem.readFileString(filename);
+  }).pipe(Effect.mapError(unavailable("credentials-unreadable")));
   return contents.pipe(
     Effect.flatMap(scannable),
     Effect.catchIf(
