@@ -13,7 +13,7 @@ Disallow a spec file coupling to a module that its own package's public entry ca
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-dry-test-setup--inline-owned-setup.ts`](../../src/lint/oxlint/rules/testing/no-dry-test-setup--inline-owned-setup.ts)
+- Source: [`no-dry-test-setup--inline-owned-setup.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-dry-test-setup--inline-owned-setup.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -36,6 +36,7 @@ Code this rule rejects.
 import { build } from "./helpers.ts";
 
 export const used = build;
+
 ```
 
 ```ts
@@ -43,6 +44,7 @@ export const used = build;
 import { other } from "./other.test.ts";
 
 export const used = other;
+
 ```
 
 Code this rule accepts.
@@ -52,6 +54,7 @@ Code this rule accepts.
 import { widget } from "./widget.ts";
 
 export const under = widget;
+
 ```
 
 ```ts
@@ -59,6 +62,7 @@ export const under = widget;
 import type { Shape } from "./shapes.ts";
 
 export const size = (shape: Shape) => shape.size;
+
 ```
 
 <!-- END GENERATED examples -->

@@ -13,7 +13,7 @@ Require every directory and file name on the path of a linted file to start with
 - Suggestions: no
 - Options: yes
 - Bundle: `authoring`
-- Source: [`forbid-symbol-prefixed-name--rename-to-alphanumeric-start.ts`](../../src/lint-rule-authoring/lint/oxlint/rules/authoring/forbid-symbol-prefixed-name--rename-to-alphanumeric-start.ts)
+- Source: [`forbid-symbol-prefixed-name--rename-to-alphanumeric-start.ts`](../../src/features/dont-review-it/lint-rule-authoring/lint/oxlint/rules/authoring/forbid-symbol-prefixed-name--rename-to-alphanumeric-start.ts)
 
 <!-- END GENERATED rule-header -->
 

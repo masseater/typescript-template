@@ -13,7 +13,7 @@ Require a file named as a spec to declare at least one test block that runs, so 
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`require-test-block-for-spec-file--add-test-or-delete-file.ts`](../../src/lint/oxlint/rules/testing/require-test-block-for-spec-file--add-test-or-delete-file.ts)
+- Source: [`require-test-block-for-spec-file--add-test-or-delete-file.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/require-test-block-for-spec-file--add-test-or-delete-file.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -34,6 +34,7 @@ Code this rule rejects.
 ```ts
 // a file with nothing in it names a spec that checks nothing
 // in report.test.ts
+
 ```
 
 ```ts

@@ -13,7 +13,7 @@ Disallow declaring an object type with an interface outside an ambient module, s
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-interface-declaration--write-a-type-alias.ts`](../../src/lint/oxlint/rules/writing/no-interface-declaration--write-a-type-alias.ts)
+- Source: [`no-interface-declaration--write-a-type-alias.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-interface-declaration--write-a-type-alias.ts)
 
 <!-- END GENERATED rule-header -->
 

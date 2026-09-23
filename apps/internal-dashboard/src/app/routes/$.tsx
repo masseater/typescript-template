@@ -1,6 +1,6 @@
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 
-const legacyRoots = new Set(["getting-started", "guidelines", "pages", "plans"]);
+const legacyRoots = new Set(["getting-started", "pages", "plans"]);
 
 const Route = createFileRoute("/$")({
   beforeLoad: ({
