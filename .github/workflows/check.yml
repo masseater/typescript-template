@@ -59,6 +59,8 @@ jobs:
           AFFECTED_FILTERS: ${{ steps.affected.outputs.filters }}
         run: vp run --fail-if-no-match $AFFECTED_FILTERS prepr
       - if: steps.affected.outputs.paths != ''
+        run: vp run compile:paraglide
+      - if: steps.affected.outputs.paths != ''
         env:
           AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
         run: vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
