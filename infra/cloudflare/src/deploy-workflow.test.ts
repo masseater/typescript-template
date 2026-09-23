@@ -2,16 +2,32 @@ import { fileURLToPath } from "node:url";
 
 import { assert, it } from "@effect/vitest";
 import { applications } from "@repo/config";
+import {
+  budgetKeys,
+  deploymentKeys,
+  optionalDeploymentKeys,
+} from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 
 import { monitorStacks } from "./monitors.ts";
 import { layer } from "./platform.ts";
 
 const workflow = fileURLToPath(new URL("../../../.github/workflows/deploy.yml", import.meta.url));
+const setupGuide = fileURLToPath(
+  new URL(
+    "../../../apps/internal-dashboard/content/docs/getting-started/first-steps.md",
+    import.meta.url,
+  ),
+);
 const viteConfig = fileURLToPath(new URL("../vite.config.ts", import.meta.url));
 const stackBuilds = ["core", ...applications, ...monitorStacks].map(
   (unit) => `@repo/${unit}#build`,
 );
+const documentedSecrets = [
+  ...deploymentKeys,
+  ...optionalDeploymentKeys,
+  ...budgetKeys.filter((key) => !deploymentKeys.some((required) => required === key)),
+];
 
 function readText(file: string): Effect.Effect<string> {
   return Effect.gen(function* readFile() {
@@ -37,6 +53,18 @@ it.effect("deploy workflow sends main to staging and promote to production", () 
     assert.include(source, "TEMPLATE_SERVICE_MEMBER_ORIGIN");
     assert.include(source, "TEMPLATE_SERVICE_ADMIN_ORIGIN");
     assert.include(source, "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN");
+    for (const key of documentedSecrets) {
+      assert.include(source, key);
+    }
+  }),
+);
+
+it.effect("getting started names every deployment secret", () =>
+  Effect.gen(function* program() {
+    const guide = yield* readText(setupGuide);
+    for (const key of documentedSecrets) {
+      assert.include(guide, key);
+    }
   }),
 );
 

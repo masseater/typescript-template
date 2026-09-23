@@ -1,6 +1,10 @@
 import { tmpdir } from "node:os";
 
-import { deploymentKeys, optionalDeploymentKeys } from "@repo/observability/deployment-keys";
+import {
+  budgetKeys,
+  deploymentKeys,
+  optionalDeploymentKeys,
+} from "@repo/observability/deployment-keys";
 import { Effect, FileSystem, Schema } from "effect";
 
 import { layer, path } from "./platform.ts";
@@ -12,6 +16,10 @@ const retiredOriginKeys = [
   "TEMPLATE_SERVICE_ADMIN_ORIGIN",
   "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
 ] as const;
+const carriedDeploymentKeys = [
+  ...optionalDeploymentKeys,
+  ...budgetKeys.filter((key) => !deploymentKeys.some((required) => required === key)),
+];
 
 class PrepareCiEnvFailure extends Schema.TaggedError<PrepareCiEnvFailure>()("PrepareCiEnvFailure", {
   code: Schema.Literals([
@@ -73,7 +81,7 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
   }
   const lines = [
     ...required.flatMap(({ key, value }) => (value === undefined ? [] : [dotenvLine(key, value)])),
-    ...optionalDeploymentKeys.flatMap((key) => {
+    ...carriedDeploymentKeys.flatMap((key) => {
       const value = envValue(key, environment);
       return value === undefined ? [] : [dotenvLine(key, value)];
     }),
