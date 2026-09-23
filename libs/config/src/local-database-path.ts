@@ -6,7 +6,7 @@ const repositoryDirectory = paths.join(import.meta.dirname, "../../../.local/d1"
 
 const localDatabaseDirectory = (): string => {
   const override = Effect.runSync(
-    Config.option(Config.string(localDatabaseVariable)).pipe(
+    Config.option(Config.String(localDatabaseVariable)).pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
     ),
   );

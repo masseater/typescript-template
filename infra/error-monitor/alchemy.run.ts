@@ -1,13 +1,10 @@
-import { errorMonitorEnv, errorMonitorWorker } from "@repo/error-monitor/config";
+import { accountTokenRef, monitorArtifact, monitorProgram } from "@repo/infra-cloudflare/monitor";
+import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
+import { errorMonitorEnv, errorMonitorWorker } from "@repo/monitor/workers";
 import { Stack } from "alchemy";
 import { Effect } from "effect";
 
-import { monitorArtifact } from "./artifacts.ts";
-import { monitorProgram } from "./monitor.ts";
-import { stackName, stackOptions } from "./stacks.ts";
-import { accountTokenRef } from "./tokens.ts";
-
-const stack = Stack(
+export default Stack(
   stackName("error-monitor"),
   stackOptions,
   monitorProgram("error", {
@@ -24,5 +21,3 @@ const stack = Stack(
     }),
   }),
 );
-
-export default stack;

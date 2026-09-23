@@ -35,6 +35,10 @@ const failures = {
     message: "同意の対象となる規約が見つかりません。",
     status: httpStatus.notFound,
   },
+  UnderstandingFailed: {
+    message: "いまはうまく聞き取れませんでした。もう一度送るか、スキップ・終了を使ってください。",
+    status: httpStatus.serviceUnavailable,
+  },
 };
 
 const open = Effect.fn("interview.api.open")(function* open(request: Request) {

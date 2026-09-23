@@ -1,8 +1,11 @@
 const workerTestSuffix = ".worker.test.ts";
 const workerTests = `**/*${workerTestSuffix}`;
+const isolatedNodeTestSuffix = ".isolated.test.ts";
+const isolatedNodeTests = `**/*${isolatedNodeTestSuffix}`;
 const devServerTests = "**/*.dev-server.test.ts";
 const workerTestPattern = String.raw`\.worker\.test\.[cm]?[jt]sx?$`;
 const testPattern = String.raw`\.(?:test|spec)\.[cm]?[jt]sx?$`;
+const unitTestShardCount = 4;
 const nodeRuntimePackages = [
   "msw/node",
   "miniflare",
@@ -31,9 +34,12 @@ const runsInWorkerRuntime = (inspected: string): boolean => {
 
 export {
   devServerTests,
+  isolatedNodeTestSuffix,
+  isolatedNodeTests,
   nodeRuntimePackages,
   runsInWorkerRuntime,
   testPattern,
+  unitTestShardCount,
   workerRuntimeModules,
   workerTestPattern,
   workerTestSuffix,

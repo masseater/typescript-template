@@ -360,6 +360,7 @@ const lintOptions = {
           ".spec.tsx",
           ".worker.test.ts",
           ".node.test.ts",
+          ".isolated.test.ts",
         ],
       },
     ],

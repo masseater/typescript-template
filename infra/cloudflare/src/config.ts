@@ -13,7 +13,7 @@ import { maximumAlertRecipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/runtime/security";
-import { Config, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { stackNames } from "./stacks.ts";
 
@@ -79,7 +79,7 @@ const Domain = Schema.String.check(
 const HttpsUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
 );
-const Recipients = Config.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
+const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
 const SamplingRate = Schema.Number.check(
   Schema.isFinite(),
   Schema.isBetween({ maximum: 1, minimum: 0 }),

@@ -1,13 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import {
-  checkCode,
-  effectDiagnostics,
-  intentValidation,
-  lifecycle,
-  testCoverageRun,
-} from "@repo/vite-config";
+import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -15,18 +9,18 @@ export default defineConfig({
     tasks: {
       ...effectDiagnostics,
       ...intentValidation,
-      ...checkCode,
-      ...testCoverageRun,
+      ...testRun,
       "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
       "pr-affected": { cache: false, command: "./src/repository/pr-affected.ts" },
+      "can-not-now": { cache: false, command: "./src/repository/can-not-now.ts" },
       "clean:shared-task-cache": {
         cache: false,
         command: "./src/repository/clean-shared-task-cache.ts",
       },
       ...lifecycle({
-        precommit: ["check:staged", "check:code"],
+        precommit: ["check:staged"],
         prepush: ["check:effect", "check"],
-        premerge: ["test"],
+        prepr: ["test"],
       }),
     },
   },
@@ -51,6 +45,6 @@ export default defineConfig({
   pack: {
     entry: ["src/cli.ts", "src/canonical-literal-types/run-as-task.ts", "src/index.ts"],
     external: [/^vite-plus/],
-    dts: { generator: "tsgo" },
+    dts: { generator: "tsgo", tsconfig: "tsconfig.pack.json" },
   },
 });
