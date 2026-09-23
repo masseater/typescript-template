@@ -21,7 +21,7 @@ import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs
 import { MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { BatchSpanProcessor, TracerProvider } from "@opentelemetry/sdk-trace";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-import { Config, Effect, Option } from "effect";
+import { Config, ConfigProvider, Effect, Option } from "effect";
 import { attemptAsync, once } from "es-toolkit";
 
 import { reportExportFailure } from "./export-failure.ts";
@@ -191,4 +191,8 @@ export const measuredTelemetry = (serviceName: string): Effect.Effect<Telemetry>
   });
 
 export const startTelemetry = (serviceName: string): Telemetry =>
-  Effect.runSync(measuredTelemetry(serviceName));
+  Effect.runSync(
+    measuredTelemetry(serviceName).pipe(
+      Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
+    ),
+  );
