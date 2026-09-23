@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@shadcn/lint": "catalog:",
     "@storybook/addon-a11y": "10.6.0",
