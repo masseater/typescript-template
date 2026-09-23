@@ -11,7 +11,7 @@ import type { SharedConfig } from "./config.ts";
 import type { DeploymentSecrets } from "./credentials.ts";
 import type { Confidential } from "./secrets.ts";
 
-const apiToken = Config.redacted(deploymentKey.cloudflareApiToken);
+const apiToken = Config.Redacted(deploymentKey.cloudflareApiToken);
 
 function byLongest(left: Confidential, right: Confidential): number {
   return right.value.length - left.value.length;
