@@ -7,7 +7,12 @@ const OnboardingView = Schema.Struct({
   step: OnboardingStep,
 });
 
-const OnboardingAdvance = OnboardingView;
+const OnboardingTarget = OnboardingStep.pick(["choose", "profile", "interview", "done"]);
+type OnboardingTarget = typeof OnboardingTarget.Type;
+
+const OnboardingAdvance = Schema.Struct({
+  step: OnboardingTarget,
+});
 
 const FeedItem = Schema.Struct({
   actorId: Schema.String,
@@ -23,3 +28,4 @@ const HomeFeed = Schema.Struct({
 });
 
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView };
+export type { OnboardingTarget };
