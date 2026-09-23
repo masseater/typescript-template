@@ -1,6 +1,6 @@
-import { resolve } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { defineCommand } from "citty";
+import { Effect, Path } from "effect";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
 import { runLintRuleAuthoring } from "./lint-rule-authoring/run-cli.ts";
@@ -36,29 +36,35 @@ export const checkRepositoryCommand = defineCommand({
       description: "Rewrite generated parts owned by dont-review-it, then run every check",
     },
   },
-  async run({ args }) {
-    await measureCheck(async () => {
-      const repositoryRoot = resolve(args["repository-root"] ?? process.cwd());
-      if (!isDirectory(repositoryRoot)) {
-        refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
-        return;
-      }
+  run({ args }) {
+    return measureCheck(() =>
+      Effect.runPromise(
+        Effect.gen(function* checkRepository() {
+          const path = yield* Path.Path;
+          const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
+          if (!isDirectory(repositoryRoot)) {
+            refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
+            return;
+          }
 
-      if (args.write && !repairGeneratedParts(repositoryRoot)) return;
+          if (args.write && !repairGeneratedParts(repositoryRoot)) return;
 
-      process.exitCode = EXIT_SUCCESS;
-      reportProblems(repositoryRoot);
-      const afterDontReviewIt = process.exitCode ?? EXIT_SUCCESS;
-      if (afterDontReviewIt === EXIT_MISUSE) return;
+          process.exitCode = EXIT_SUCCESS;
+          reportProblems(repositoryRoot);
+          const afterDontReviewIt = process.exitCode ?? EXIT_SUCCESS;
+          if (afterDontReviewIt === EXIT_MISUSE) return;
 
-      const rootArgs = ["--repository-root", repositoryRoot];
-      const exits = [
-        afterDontReviewIt,
-        writeCliResult(runLintRuleAuthoring(["check", ...rootArgs])),
-        writeCliResult(await runStopAiSlop(["check", ...rootArgs])),
-      ];
-      const worst = Math.max(...exits);
-      if (worst !== EXIT_SUCCESS) process.exitCode = worst;
-    });
+          const rootArgs = ["--repository-root", repositoryRoot];
+          const lintRuleAuthoringExit = writeCliResult(
+            runLintRuleAuthoring(["check", ...rootArgs]),
+          );
+          const stopAiSlopExit = writeCliResult(
+            yield* Effect.promise(() => runStopAiSlop(["check", ...rootArgs])),
+          );
+          const worst = Math.max(afterDontReviewIt, lintRuleAuthoringExit, stopAiSlopExit);
+          if (worst !== EXIT_SUCCESS) process.exitCode = worst;
+        }).pipe(Effect.provide(NodeServices.layer)),
+      ),
+    );
   },
 });

@@ -1,5 +1,3 @@
-import { join, resolve } from "node:path";
-
 import { runCanonicalLiteralTypeChecks } from "./canonical-literal-types/run-canonical-literal-type-checks.ts";
 import { adoptedBundlesIn } from "./configs/bundles/adopted-bundles.ts";
 import { LINT_BUNDLE, LINT_BUNDLE_NAMES, type LintBundle } from "./configs/bundles/bundle-names.ts";
@@ -28,6 +26,7 @@ import {
 import { duplicatedClustersIn } from "./lint/oxlint/lib/duplicated-bodies/body-index.ts";
 import { buildRepositoryBodyIndex } from "./lint/oxlint/lib/duplicated-bodies/builder.ts";
 import { formatDuplicatedCluster } from "./lint/oxlint/lib/duplicated-bodies/site-report.ts";
+import { path } from "./platform/path.ts";
 import { defaultPresetAdoptionConfig } from "./preset-adoption/config.ts";
 import { runPresetAdoptionChecks } from "./preset-adoption/run-preset-adoption-checks.ts";
 import { formatRepositoryProblem } from "./problem.ts";
@@ -51,7 +50,7 @@ export type CheckReport = {
 
 const adoptedBundlesFor = (repositoryRoot: string): readonly LintBundle[] => {
   const { toolchainConfigFileName } = defaultPresetAdoptionConfig;
-  const source = readTextFile(join(repositoryRoot, toolchainConfigFileName));
+  const source = readTextFile(path.join(repositoryRoot, toolchainConfigFileName));
   const declared = source === null ? null : adoptedBundlesIn({ source, toolchainConfigFileName });
   return declared ?? LINT_BUNDLE_NAMES;
 };
@@ -141,7 +140,7 @@ const SOURCE_SCAN_CHECKS: readonly { readonly check: string; readonly unit: stri
 ];
 
 const sourceScanOutcomes = (repositoryRoot: string): readonly CheckOutcome[] => {
-  const repositoryFiles = listRepositoryFiles(resolve(repositoryRoot));
+  const repositoryFiles = listRepositoryFiles(path.resolve(repositoryRoot));
   const canonicalValues = inspectCanonicalValues({ repositoryRoot });
   const canonicalLiteralTypes =
     canonicalValues.problems.length === 0
