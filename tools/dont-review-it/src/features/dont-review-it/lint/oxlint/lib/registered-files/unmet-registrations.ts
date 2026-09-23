@@ -51,7 +51,7 @@ const registeredPathIn = (asked: {
     ? asked.pattern
     : `${asked.workspace}/${asked.pattern}`;
 
-export type UnmetRegistration = RuleMessage & { readonly workspace: string };
+type UnmetRegistration = RuleMessage & { readonly workspace: string };
 
 const contentGuaranteeOf = (registration: RequiredFileEntry): string =>
   registration.contentChecks.length === 0
@@ -128,7 +128,7 @@ const unmetFor = (
   );
 };
 
-export type RequiredFileRegistry = {
+type RequiredFileRegistry = {
   readonly repositoryRoot: string;
   readonly entries: readonly RequiredFileEntry[];
   readonly unscannedDirectoryNames: ReadonlySet<string>;

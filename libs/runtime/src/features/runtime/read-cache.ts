@@ -1,11 +1,9 @@
-import { readStorage } from "@repo/config/storage";
 import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
 import { StorageFailed } from "./storage-failed.ts";
 
 import type { KVNamespace } from "@cloudflare/workers-types";
-import type { ConfigurationInvalid } from "@repo/config";
 
 interface ReadCacheShape {
   readonly get: (key: string) => Effect.Effect<string | undefined, StorageFailed>;
@@ -83,10 +81,6 @@ class ReadCache extends Context.Service<ReadCache, ReadCacheShape>()("@repo/runt
       ReadCache,
       ReadCache.of(namespace === undefined ? unavailableCache : cacheOf(namespace)),
     );
-  }
-
-  public static fromEnvironment(env: unknown): Layer.Layer<ReadCache, ConfigurationInvalid> {
-    return Layer.unwrap(Effect.map(readStorage(env), (storage) => ReadCache.layer(storage.cache)));
   }
 }
 

@@ -349,7 +349,7 @@ describe("lifecycle contents", () => {
     ]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toEqual(
-      expect.arrayContaining(["check:effect", "knip", "check:canonical-literal-types"]),
+      expect.arrayContaining(["check:effect", "fallow", "check:canonical-literal-types"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
     expect(

@@ -24,6 +24,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

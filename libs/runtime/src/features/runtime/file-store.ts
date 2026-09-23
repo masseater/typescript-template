@@ -1,11 +1,9 @@
-import { readStorage } from "@repo/config/storage";
 import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
 import { StorageFailed } from "./storage-failed.ts";
 
 import type { R2Bucket } from "@cloudflare/workers-types";
-import type { ConfigurationInvalid } from "@repo/config";
 
 interface StoredFile {
   readonly bytes: Uint8Array;
@@ -72,10 +70,6 @@ class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runt
       FileStore,
       FileStore.of(bucket === undefined ? unavailableStore : storeOf(bucket)),
     );
-  }
-
-  public static fromEnvironment(env: unknown): Layer.Layer<FileStore, ConfigurationInvalid> {
-    return Layer.unwrap(Effect.map(readStorage(env), (storage) => FileStore.layer(storage.files)));
   }
 }
 

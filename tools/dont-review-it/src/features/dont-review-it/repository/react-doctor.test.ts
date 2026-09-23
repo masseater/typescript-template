@@ -79,7 +79,7 @@ const compilerOptions: Readonly<Record<string, unknown>> = import.meta.glob(
   { eager: true, import: "default" },
 );
 
-const knipOwnedRules = [
+const fallowOwnedRules = [
   "react-doctor/unused-dependency",
   "react-doctor/unused-dev-dependency",
   "react-doctor/unused-export",
@@ -90,7 +90,7 @@ const knipOwnedRules = [
 const oxlintOwnedRules = ["react-doctor/jsx-curly-brace-presence"] as const;
 
 const globalOffRules = [
-  ...knipOwnedRules,
+  ...fallowOwnedRules,
   ...oxlintOwnedRules,
   "react-doctor/react-compiler-no-manual-memoization",
   "react-doctor/react-in-jsx-scope",
@@ -163,7 +163,7 @@ describe("react-doctor integration", () => {
     ).toStrictEqual([]);
   });
 
-  it("keeps global offs inside knip, oxlint-owned duplicates, the JSX runtime, and a retired rule", () => {
+  it("keeps global offs inside fallow, oxlint-owned duplicates, the JSX runtime, and a retired rule", () => {
     expect.hasAssertions();
     expect(offRules()).toStrictEqual([...globalOffRules].toSorted());
     expect(field(rootRules(), "react-doctor/circular-dependency")).toStrictEqual("error");
@@ -178,11 +178,13 @@ describe("react-doctor integration", () => {
     expect(oxlintOwnedRules.filter((rule) => !offRules().includes(rule))).toStrictEqual([]);
   });
 
-  it("leaves unused rules off only while knip --strict is on the push gate", () => {
+  it("leaves unused rules off only while fallow checks production code on the push gate", () => {
     expect.hasAssertions();
-    expect(commands(".", "knip")).toStrictEqual(["knip", "knip --strict"]);
-    expect(reachable(".", ["prepush"])).toContain("knip");
-    expect(knipOwnedRules.filter((rule) => !offRules().includes(rule))).toStrictEqual([]);
+    expect(commands(".", "fallow")).toContain(
+      "fallow dead-code --config .fallowrc.production.json",
+    );
+    expect(reachable(".", ["prepush"])).toContain("fallow");
+    expect(fallowOwnedRules.filter((rule) => !offRules().includes(rule))).toStrictEqual([]);
   });
 
   it("leaves React in scope off only while the automatic JSX runtime is on", () => {

@@ -81,7 +81,7 @@ const configuration: IConfiguration = {
       severity: "error",
       to: {
         dependencyTypes: ["local"],
-        pathNot: String.raw`^$1/$2/|^libs/auth/src/features/auth/testing\.ts$|^libs/db/src/features/db/migrate-d1\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings\.ts$|^knip\.ts$`,
+        pathNot: String.raw`^$1/$2/|^libs/auth/src/features/auth/testing\.ts$|^libs/db/src/features/db/migrate-d1\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings\.ts$`,
       },
     },
     {

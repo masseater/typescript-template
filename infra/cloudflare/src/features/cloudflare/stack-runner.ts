@@ -1,7 +1,7 @@
 import { Progress, Stack as StackRoute } from "alchemy/Alchemist";
 import { Console, Effect } from "effect";
 
-import { layer } from "./alchemist.ts";
+import { alchemistLayer } from "./alchemist.ts";
 import { ArtifactWrites } from "./artifacts.ts";
 import { stateStore } from "./deployment-access.ts";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
@@ -21,7 +21,7 @@ interface Deployment {
   readonly secrets: DeploymentSecrets;
 }
 
-const alchemist = layer();
+const alchemist = alchemistLayer();
 
 function write(record: Readonly<Record<string, unknown>>): Effect.Effect<void> {
   return Console.info(JSON.stringify(record));

@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { readStorage } from "@repo/config/storage";
 import { env } from "cloudflare:workers";
 import { Effect, Layer } from "effect";
 
@@ -6,7 +7,11 @@ import { FileStore } from "./file-store.ts";
 import { ReadCache } from "./read-cache.ts";
 import { StorageFailed } from "./storage-failed.ts";
 
-const storageLayer = Layer.mergeAll(FileStore.fromEnvironment(env), ReadCache.fromEnvironment(env));
+const storageLayer = Layer.unwrap(
+  Effect.map(readStorage(env), (storage) =>
+    Layer.mergeAll(FileStore.layer(storage.files), ReadCache.layer(storage.cache)),
+  ),
+);
 
 describe("file storage and read cache", () => {
   it.effect("stores a file in R2 and reads the same bytes back", () =>

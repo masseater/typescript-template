@@ -27,6 +27,8 @@ const textModule = (code: string, moduleId: string): string | undefined =>
 const rootOwnedPaths = [
   ".claude",
   ".cursor",
+  ".fallowrc.json",
+  ".fallowrc.production.json",
   ".github",
   ".gitignore",
   ".mcp.json",
@@ -38,7 +40,6 @@ const rootOwnedPaths = [
   "DESIGN.md",
   "README.md",
   "docs",
-  "knip.ts",
   "mise.toml",
   "package.json",
   "patches",
@@ -90,11 +91,11 @@ export default defineConfig({
         command: "dont-review-it-canonical-literal-types",
         input: [...taskInput],
       },
-      knip: {
-        command: ["knip", "knip --strict"],
+      fallow: {
+        command: ["fallow", "fallow dead-code --config .fallowrc.production.json"],
         dependsOn: ["compile:paraglide"],
-        input: [...taskInput, "!node_modules/.cache/**"],
-        output: [{ auto: true }, "!node_modules/.cache/**"],
+        input: [...taskInput, "!.fallow/**"],
+        output: [{ auto: true }, "!.fallow/**"],
       },
       mutation: {
         cache: false,
@@ -133,7 +134,7 @@ export default defineConfig({
       },
       ...lifecycle({
         precommit: ["check:text", "check:code"],
-        prepush: ["check:effect", "knip", "check:canonical-literal-types"],
+        prepush: ["check:effect", "fallow", "check:canonical-literal-types"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),

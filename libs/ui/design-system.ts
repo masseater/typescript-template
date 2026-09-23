@@ -518,7 +518,6 @@ export {
   designMdViolations,
   designSystemComponents,
   declarations,
-  designSystemProbe,
   designTokens,
   linkParts,
   linkViolations,

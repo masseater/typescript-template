@@ -2,7 +2,7 @@
 import { runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 
-import { layer } from "./alchemist.ts";
+import { alchemistLayer } from "./alchemist.ts";
 import { CloudflareFailure } from "./config.ts";
 import { assertDatabaseUnclaimed } from "./database-guard.ts";
 import { databaseName, lookupDatabaseId } from "./database-lookup.ts";
@@ -47,7 +47,7 @@ runCli(
       });
       yield* Console.info(yield* encodeJson(result));
     }).pipe(
-      Effect.provide(layer()),
+      Effect.provide(alchemistLayer()),
       Effect.scoped,
       Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
     );

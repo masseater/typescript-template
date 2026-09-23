@@ -8,7 +8,7 @@ import {
   preflightAccount,
   preflightBlocked,
 } from "./account-inspection.ts";
-import { layer } from "./alchemist.ts";
+import { alchemistLayer } from "./alchemist.ts";
 import { deploymentAccess, stateStore } from "./deployment-access.ts";
 import { encodeJson } from "./platform.ts";
 import { causeRecord, reportCause } from "./secrets.ts";
@@ -46,7 +46,7 @@ runCli(
         yield* markFailed;
       }
     }).pipe(
-      Effect.provide(layer()),
+      Effect.provide(alchemistLayer()),
       Effect.scoped,
       Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)),
     );

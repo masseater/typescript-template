@@ -23,6 +23,7 @@
     "@types/node": "catalog:",
     "msw": "catalog:",
     "otpauth": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

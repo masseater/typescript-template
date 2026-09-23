@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "extends": ["./.fallowrc.json"],
+  "production": true,
+  "ignoreFindings": [
+    "**/*-fixture.ts",
+    "libs/ui/*.{ts,tsx}",
+    "libs/*/storybook/**",
+    "tools/dont-review-it/src/repository/**",
+    "tools/e2e/**"
+  ],
+  "ignoreExportsUsedInFile": true
+}

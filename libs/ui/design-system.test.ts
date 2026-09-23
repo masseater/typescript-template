@@ -21,7 +21,6 @@ import {
   designMdSource,
   designMdViolations,
   designSystemComponents,
-  designSystemProbe,
   designTokens,
   indexedComponents,
   linkParts,

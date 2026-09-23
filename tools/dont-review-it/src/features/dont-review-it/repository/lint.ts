@@ -327,7 +327,6 @@ const lintOptions = {
           "alchemy.run.ts",
           "doctor.config.ts",
           "drizzle.config.ts",
-          "knip.ts",
           "main.ts",
           "monitor-fixture.ts",
           "plugin.ts",
