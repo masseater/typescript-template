@@ -1,5 +1,6 @@
 import { FlagshipServerProvider, type FlagshipBinding } from "@cloudflare/flagship/server";
 import { OpenFeature, TypedInMemoryProvider } from "@openfeature/server-sdk";
+import { ConfigurationInvalid } from "@repo/config";
 import { Context, Effect, Layer, Ref } from "effect";
 
 import {
@@ -7,9 +8,10 @@ import {
   flagDefinitions,
   flagDefinitionByKey,
   variationForBoolean,
-  type FlagDefinition,
   type FlagKey,
 } from "./definitions.ts";
+import { evaluationFromDetails, failClosedEnabled, type FlagEvaluation } from "./evaluation.ts";
+import { FlagshipWriteFailed } from "./flagship-write.ts";
 
 export type FlagState = Readonly<{
   description: string;
@@ -18,9 +20,13 @@ export type FlagState = Readonly<{
 }>;
 
 type FeatureFlagsService = Readonly<{
+  readonly evaluateBoolean: (flagKey: FlagKey) => Effect.Effect<FlagEvaluation>;
   readonly getBoolean: (flagKey: FlagKey) => Effect.Effect<boolean>;
   readonly list: Effect.Effect<readonly FlagState[]>;
-  readonly setBoolean: (flagKey: FlagKey, enabled: boolean) => Effect.Effect<FlagState>;
+  readonly setBoolean: (
+    flagKey: FlagKey,
+    enabled: boolean,
+  ) => Effect.Effect<FlagState, FlagshipWriteFailed>;
 }>;
 
 class FeatureFlags extends Context.Service<FeatureFlags, FeatureFlagsService>()(
@@ -38,44 +44,32 @@ const memoryConfiguration = Object.fromEntries(
   ]),
 );
 
-const booleanFromClient = (
-  flagBooleanLookup: Readonly<{
-    client: ReturnType<typeof OpenFeature.getClient>;
-    defaultVariation: FlagDefinition["defaultVariation"];
-    flagKey: FlagKey;
-  }>,
-): Effect.Effect<boolean> =>
-  Effect.promise(() =>
-    flagBooleanLookup.client.getBooleanValue(
-      flagBooleanLookup.flagKey,
-      booleanForVariation(flagBooleanLookup.defaultVariation),
-    ),
+const evaluateFromClient = (
+  client: ReturnType<typeof OpenFeature.getClient>,
+  flagKey: FlagKey,
+): Effect.Effect<FlagEvaluation> =>
+  Effect.promise(() => client.getBooleanDetails(flagKey, failClosedEnabled)).pipe(
+    Effect.map(evaluationFromDetails),
   );
 
-const flagStateForDefinition = (
+const flagStateForKey = (
   client: ReturnType<typeof OpenFeature.getClient>,
-  definition: FlagDefinition,
+  flagKey: FlagKey,
 ): Effect.Effect<FlagState> =>
-  Effect.gen(function* flagStateForDefinitionProgram() {
-    const enabled = yield* booleanFromClient({
-      client,
-      defaultVariation: definition.defaultVariation,
-      flagKey: definition.key,
-    });
-    return { description: definition.description, enabled, key: definition.key };
+  Effect.gen(function* flagStateForKeyProgram() {
+    const evaluation = yield* evaluateFromClient(client, flagKey);
+    const definition = flagDefinitionByKey[flagKey];
+    return { description: definition.description, enabled: evaluation.enabled, key: flagKey };
   });
 
 const featureFlagsFromClient = (
   client: ReturnType<typeof OpenFeature.getClient>,
-  write: (flagKey: FlagKey, enabled: boolean) => Effect.Effect<FlagState>,
+  write: (flagKey: FlagKey, enabled: boolean) => Effect.Effect<FlagState, FlagshipWriteFailed>,
 ): FeatureFlagsService => ({
+  evaluateBoolean: (flagKey: FlagKey) => evaluateFromClient(client, flagKey),
   getBoolean: (flagKey: FlagKey) =>
-    booleanFromClient({
-      client,
-      defaultVariation: flagDefinitionByKey[flagKey].defaultVariation,
-      flagKey,
-    }),
-  list: Effect.forEach(flagDefinitions, (definition) => flagStateForDefinition(client, definition)),
+    evaluateFromClient(client, flagKey).pipe(Effect.map((evaluation) => evaluation.enabled)),
+  list: Effect.forEach(flagDefinitions, (definition) => flagStateForKey(client, definition.key)),
   setBoolean: (flagKey: FlagKey, enabled: boolean) => write(flagKey, enabled),
 });
 
@@ -117,12 +111,12 @@ const flagshipFeatureFlags = Effect.fn("flagshipFeatureFlags")(function* flagshi
   const provider = new FlagshipServerProvider({ binding });
   yield* Effect.promise(() => OpenFeature.setProviderAndWait(provider));
   const client = OpenFeature.getClient();
-  return featureFlagsFromClient(client, (flagKey, enabled) =>
-    Effect.succeed({
-      description: flagDefinitionByKey[flagKey].description,
-      enabled,
-      key: flagKey,
-    }),
+  return featureFlagsFromClient(client, (flagKey, _enabled) =>
+    Effect.fail(
+      new FlagshipWriteFailed({
+        detail: `remote write required for ${flagKey}`,
+      }),
+    ),
   );
 });
 
@@ -141,4 +135,20 @@ const flagshipFeatureFlagsLayer = (binding: FlagshipBinding): Layer.Layer<Featur
     ),
   );
 
-export { FeatureFlags, flagshipFeatureFlagsLayer, memoryFeatureFlagsLayer };
+const configuredFeatureFlagsLayer = (
+  config: Readonly<{ FLAGS?: FlagshipBinding; local: boolean }>,
+): Effect.Effect<Layer.Layer<FeatureFlags>, ConfigurationInvalid> => {
+  if (config.FLAGS !== undefined) {
+    return Effect.succeed(flagshipFeatureFlagsLayer(config.FLAGS));
+  }
+  return config.local
+    ? Effect.succeed(memoryFeatureFlagsLayer)
+    : Effect.fail(new ConfigurationInvalid({ reason: "FLAGS" }));
+};
+
+export {
+  configuredFeatureFlagsLayer,
+  FeatureFlags,
+  flagshipFeatureFlagsLayer,
+  memoryFeatureFlagsLayer,
+};
