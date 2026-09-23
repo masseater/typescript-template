@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import {
-  awaitingEffectDiagnostics,
+  effectDiagnostics,
   intentValidation,
   lifecycle,
   testRun,
@@ -20,7 +20,7 @@ import {
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics,
+      ...effectDiagnostics,
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,
