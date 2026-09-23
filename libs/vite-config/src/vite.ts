@@ -333,7 +333,10 @@ const paraglideAppRun = {
     },
     ...Object.fromEntries(
       (["check:effect", "check:code", "check:imports", "check:client", "check:react"] as const).map(
-        (name) => [name, { ...appRun.tasks[name], dependsOn: ["compile:paraglide"] }],
+        (gatedTask) => [
+          gatedTask,
+          { ...appRun.tasks[gatedTask], dependsOn: ["compile:paraglide"] },
+        ],
       ),
     ),
   },
