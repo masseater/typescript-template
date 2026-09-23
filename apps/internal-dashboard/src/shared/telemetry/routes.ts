@@ -15,6 +15,8 @@ export const routes = {
   "/inquiries": "inquiries",
   "/login": "login",
   "/mcp": "mcp",
+  "/recordings": "recordings",
+  "/recordings/*": "recording",
   "/security": "security",
   "/staff": "staff",
   "/wiki": "wiki",

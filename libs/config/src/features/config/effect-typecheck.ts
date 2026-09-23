@@ -12,6 +12,7 @@ const effectTypecheckInputs = [
   { base: "workspace", pattern: "!**/dist/**" },
   { base: "workspace", pattern: "!**/.paraglide/**" },
   { base: "workspace", pattern: "!**/.local/**" },
+  { base: "package", pattern: "!." },
 ] as const;
 
 export { effectTsgoNoEmit, effectTypecheckInputs };

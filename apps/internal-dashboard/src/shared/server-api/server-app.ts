@@ -4,13 +4,20 @@ import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 
 import { flagsApi } from "./flags-api.ts";
 import { serveMcp } from "./mcp.ts";
+import { recordingsApi } from "./recordings-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { wikiEditApi } from "./wiki-edit-api.ts";
 
 const api = apiRoutes(runtime, reporting);
 
 const wikiApi = createApi("")
-  .use(createApi(apiRoot).use(sessionApi(api)).use(flagsApi(api)).use(wikiEditApi(api)))
+  .use(
+    createApi(apiRoot)
+      .use(sessionApi(api))
+      .use(flagsApi(api))
+      .use(recordingsApi(api))
+      .use(wikiEditApi(api)),
+  )
   .all("/mcp", api.raw(serveMcp, unavailable))
   .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
 

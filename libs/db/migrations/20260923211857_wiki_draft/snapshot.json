@@ -1,8 +1,10 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "bb66aa80-50d6-417a-95cd-bf89509e8a4e",
-  "prevIds": ["19c6bf9b-7db4-46d0-b977-8288d59b6908"],
+  "id": "ef74bff5-0dbe-463f-9449-f19d679a2c42",
+  "prevIds": [
+    "4dd367d4-9d7d-4e76-a574-395cc3d30f54"
+  ],
   "ddl": [
     {
       "name": "account",
@@ -73,7 +75,23 @@
       "entityType": "tables"
     },
     {
+      "name": "recording",
+      "entityType": "tables"
+    },
+    {
+      "name": "recording_segment",
+      "entityType": "tables"
+    },
+    {
+      "name": "recording_speaker",
+      "entityType": "tables"
+    },
+    {
       "name": "session",
+      "entityType": "tables"
+    },
+    {
+      "name": "speaker_person",
       "entityType": "tables"
     },
     {
@@ -1743,6 +1761,216 @@
       "table": "rate_limit"
     },
     {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "byte_size",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "completed_at",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "content_type",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "duration_ms",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "failure",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "job_id",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "object_key",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "owner_id",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "status",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "title",
+      "entityType": "columns",
+      "table": "recording"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "end_ms",
+      "entityType": "columns",
+      "table": "recording_segment"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "position",
+      "entityType": "columns",
+      "table": "recording_segment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recording_id",
+      "entityType": "columns",
+      "table": "recording_segment"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "speaker_label",
+      "entityType": "columns",
+      "table": "recording_segment"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "start_ms",
+      "entityType": "columns",
+      "table": "recording_segment"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "text",
+      "entityType": "columns",
+      "table": "recording_segment"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "label",
+      "entityType": "columns",
+      "table": "recording_speaker"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "table": "recording_speaker"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recording_id",
+      "entityType": "columns",
+      "table": "recording_speaker"
+    },
+    {
       "type": "text",
       "notNull": true,
       "autoincrement": false,
@@ -1861,6 +2089,46 @@
       "name": "user_id",
       "entityType": "columns",
       "table": "session"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "consent_recorded_by",
+      "entityType": "columns",
+      "table": "speaker_person"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "consented_at",
+      "entityType": "columns",
+      "table": "speaker_person"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "speaker_person"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "speaker_person"
     },
     {
       "type": "text",
@@ -2183,9 +2451,13 @@
       "table": "wiki_draft"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2194,9 +2466,13 @@
       "table": "account"
     },
     {
-      "columns": ["author_id"],
+      "columns": [
+        "author_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -2205,9 +2481,13 @@
       "table": "board_post"
     },
     {
-      "columns": ["thread_id"],
+      "columns": [
+        "thread_id"
+      ],
       "tableTo": "board_thread",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2216,9 +2496,13 @@
       "table": "board_post"
     },
     {
-      "columns": ["author_id"],
+      "columns": [
+        "author_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -2227,9 +2511,13 @@
       "table": "board_thread"
     },
     {
-      "columns": ["followee_id"],
+      "columns": [
+        "followee_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2238,9 +2526,13 @@
       "table": "follow"
     },
     {
-      "columns": ["follower_id"],
+      "columns": [
+        "follower_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2249,9 +2541,13 @@
       "table": "follow"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2260,9 +2556,13 @@
       "table": "interview"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2271,9 +2571,13 @@
       "table": "member_onboarding"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2282,9 +2586,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["refresh_id"],
+      "columns": [
+        "refresh_id"
+      ],
       "tableTo": "oauth_refresh_token",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2293,9 +2601,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["session_id"],
+      "columns": [
+        "session_id"
+      ],
       "tableTo": "session",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -2304,9 +2616,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2315,9 +2631,13 @@
       "table": "oauth_access_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2326,9 +2646,13 @@
       "table": "oauth_client"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2337,9 +2661,13 @@
       "table": "oauth_client_resource"
     },
     {
-      "columns": ["resource_id"],
+      "columns": [
+        "resource_id"
+      ],
       "tableTo": "oauth_resource",
-      "columnsTo": ["identifier"],
+      "columnsTo": [
+        "identifier"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2348,9 +2676,13 @@
       "table": "oauth_client_resource"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2359,9 +2691,13 @@
       "table": "oauth_consent"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2370,9 +2706,13 @@
       "table": "oauth_consent"
     },
     {
-      "columns": ["client_id"],
+      "columns": [
+        "client_id"
+      ],
       "tableTo": "oauth_client",
-      "columnsTo": ["client_id"],
+      "columnsTo": [
+        "client_id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2381,9 +2721,13 @@
       "table": "oauth_refresh_token"
     },
     {
-      "columns": ["session_id"],
+      "columns": [
+        "session_id"
+      ],
       "tableTo": "session",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -2392,9 +2736,13 @@
       "table": "oauth_refresh_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2403,9 +2751,13 @@
       "table": "oauth_refresh_token"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2414,9 +2766,73 @@
       "table": "passkey"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "owner_id"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_recording_owner_id_user_id_fk",
+      "entityType": "fks",
+      "table": "recording"
+    },
+    {
+      "columns": [
+        "recording_id"
+      ],
+      "tableTo": "recording",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_recording_segment_recording_id_recording_id_fk",
+      "entityType": "fks",
+      "table": "recording_segment"
+    },
+    {
+      "columns": [
+        "person_id"
+      ],
+      "tableTo": "speaker_person",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_recording_speaker_person_id_speaker_person_id_fk",
+      "entityType": "fks",
+      "table": "recording_speaker"
+    },
+    {
+      "columns": [
+        "recording_id"
+      ],
+      "tableTo": "recording",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_recording_speaker_recording_id_recording_id_fk",
+      "entityType": "fks",
+      "table": "recording_speaker"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2425,9 +2841,28 @@
       "table": "session"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "consent_recorded_by"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_speaker_person_consent_recorded_by_user_id_fk",
+      "entityType": "fks",
+      "table": "speaker_person"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "nameExplicit": false,
@@ -2436,9 +2871,13 @@
       "table": "two_factor"
     },
     {
-      "columns": ["updated_by"],
+      "columns": [
+        "updated_by"
+      ],
       "tableTo": "user",
-      "columnsTo": ["id"],
+      "columnsTo": [
+        "id"
+      ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
@@ -2447,154 +2886,237 @@
       "table": "wiki_draft"
     },
     {
-      "columns": ["follower_id", "followee_id"],
+      "columns": [
+        "follower_id",
+        "followee_id"
+      ],
       "nameExplicit": false,
       "name": "follow_pk",
       "entityType": "pks",
       "table": "follow"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "recording_id",
+        "position"
+      ],
+      "nameExplicit": false,
+      "name": "recording_segment_pk",
+      "entityType": "pks",
+      "table": "recording_segment"
+    },
+    {
+      "columns": [
+        "recording_id",
+        "label"
+      ],
+      "nameExplicit": false,
+      "name": "recording_speaker_pk",
+      "entityType": "pks",
+      "table": "recording_speaker"
+    },
+    {
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "account_pk",
       "table": "account",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "audit_event_pk",
       "table": "audit_event",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "board_post_pk",
       "table": "board_post",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "board_thread_pk",
       "table": "board_thread",
       "entityType": "pks"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "nameExplicit": false,
       "name": "interview_pk",
       "table": "interview",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "jwks_pk",
       "table": "jwks",
       "entityType": "pks"
     },
     {
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "nameExplicit": false,
       "name": "member_onboarding_pk",
       "table": "member_onboarding",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_access_token_pk",
       "table": "oauth_access_token",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_client_pk",
       "table": "oauth_client",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_client_assertion_pk",
       "table": "oauth_client_assertion",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_client_resource_pk",
       "table": "oauth_client_resource",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_consent_pk",
       "table": "oauth_consent",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_refresh_token_pk",
       "table": "oauth_refresh_token",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "oauth_resource_pk",
       "table": "oauth_resource",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "passkey_pk",
       "table": "passkey",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "rate_limit_pk",
       "table": "rate_limit",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "recording_pk",
+      "table": "recording",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "session_pk",
       "table": "session",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "speaker_person_pk",
+      "table": "speaker_person",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "two_factor_pk",
       "table": "two_factor",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "user_pk",
       "table": "user",
       "entityType": "pks"
     },
     {
-      "columns": ["id"],
+      "columns": [
+        "id"
+      ],
       "nameExplicit": false,
       "name": "verification_pk",
       "table": "verification",
       "entityType": "pks"
     },
     {
-      "columns": ["path"],
+      "columns": [
+        "path"
+      ],
       "nameExplicit": false,
       "name": "wiki_draft_pk",
       "table": "wiki_draft",
@@ -2975,6 +3497,38 @@
       "name": "rate_limit_key_unique",
       "entityType": "indexes",
       "table": "rate_limit"
+    },
+    {
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "recording_created_at_idx",
+      "entityType": "indexes",
+      "table": "recording"
+    },
+    {
+      "columns": [
+        {
+          "value": "job_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "recording_job_id_unique",
+      "entityType": "indexes",
+      "table": "recording"
     },
     {
       "columns": [
