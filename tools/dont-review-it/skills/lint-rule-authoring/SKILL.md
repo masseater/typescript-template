@@ -1,39 +1,39 @@
 ---
 name: lint-rule-authoring
 description: >
-  Author a custom oxlint rule with @repo/dont-review-it/lint-rule-authoring: `createWorkspaceLintRule` fills `meta.docs.url` and appends the docs path to every report message, `testLintRule` runs the rule over named valid and invalid snippets, `LINT_SEVERITY` names the severities, `meta.docs.shipped` declares whether a preset carries the rule, and `lint-rule-authoring check --write` reconciles each workspace's `docs/lint/index.md` and `docs/lint/<rule>.md` against the rules under the manifest's `lintRules` directories. Load when writing or changing a rule, wording its report messages, testing it, registering it in a preset, or fixing a reported rule index or rule document.
+  Author a custom oxlint rule inside @repo/dont-review-it: `createWorkspaceLintRule` fills `meta.docs.url` and appends the docs path to every report message, `testLintRule` runs the rule over named valid and invalid snippets, `LINT_SEVERITY` names the severities, `meta.docs.shipped` declares whether a preset carries the rule, and `dont-review-it check-repository` reconciles each workspace's `docs/lint/index.md` and `docs/lint/<rule>.md` against the rules under the manifest's `lintRules` directories. Load when writing or changing a rule, wording its report messages, testing it, registering it in a preset, or fixing a reported rule index or rule document.
 
 metadata:
   type: core
-  library: "@repo/dont-review-it/lint-rule-authoring"
+  library: "@repo/dont-review-it"
   library_version: "0.0.0"
 sources:
-  - "masseater/mst:tools/dont-review-it/src/lint-rule-authoring/create-workspace-lint-rule.ts"
-  - "masseater/mst:tools/dont-review-it/src/lint-rule-authoring/rule-tester.ts"
-  - "masseater/mst:tools/dont-review-it/src/lint-rule-authoring/run-cli.ts"
+  - "masseater/mst:tools/dont-review-it/src/features/dont-review-it/lint-rule-authoring/create-workspace-lint-rule.ts"
+  - "masseater/mst:tools/dont-review-it/src/features/dont-review-it/lint-rule-authoring/rule-tester-test-fixture.ts"
+  - "masseater/mst:tools/dont-review-it/src/features/dont-review-it/lint-rule-authoring/run-cli.ts"
   - "masseater/mst:tools/dont-review-it/AGENTS.md"
 ---
 
-# @repo/dont-review-it/lint-rule-authoring — author a lint rule
+# @repo/dont-review-it — author a lint rule
 
 A rule is one unit made of three files that stay together: the implementation, its test beside it, and its prose document under `docs/lint/`. The factory wires them. It fills `meta.docs.url` from the workspace path and the rule name, and appends the repository-relative docs path to the end of every report message, so the author never writes that path anywhere.
 
 ## requires
 
-- **A `lintRules` array in the workspace manifest.** `lint-rule-authoring check` discovers rules only under the directories each `package.json` declares there. A workspace that ships rules without declaring the directory is not scanned, and the reconciliation reports nothing — a silent pass, not a clean one.
+- **A `lintRules` array in the workspace manifest.** `dont-review-it check-repository` discovers rules only under the directories each `package.json` declares there. A workspace that ships rules without declaring the directory is not scanned, and the reconciliation reports nothing — a silent pass, not a clean one.
 
 ```json
 {
-  "lintRules": ["src/lint/oxlint/rules"]
+  "lintRules": ["src/features/dont-review-it/lint/oxlint/rules"]
 }
 ```
 
 ## Setup
 
-Declare the workspace's factory alias once, in `src/create-rule.ts`:
+Declare the workspace's factory alias once, in `src/features/dont-review-it/create-rule.ts`:
 
 ```ts
-import { createWorkspaceLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import { createWorkspaceLintRule } from "./lint-rule-authoring/index.ts";
 
 export const createDontReviewItRule = createWorkspaceLintRule({
   workspaceDir: "tools/dont-review-it",
@@ -43,7 +43,7 @@ export const createDontReviewItRule = createWorkspaceLintRule({
 Register the rules in the workspace's oxlint plugin entry, and point `jsPlugins` at it:
 
 ```ts
-import { noDefaultExport } from "./lint/oxlint/rules/no-default-export--use-named-export.ts";
+import { noDefaultExport } from "./lint/oxlint/rules/writing/no-default-export--use-named-export.ts";
 
 import type { Plugin } from "@oxlint/plugins";
 
@@ -62,7 +62,7 @@ The plugin name becomes the prefix of every rule ID, so it is the package name w
 ### Define a rule through the factory
 
 ```ts
-import { createDontReviewItRule } from "../../../create-rule.ts";
+import { createDontReviewItRule } from "../../../../create-rule.ts";
 
 export const noDefaultExport = createDontReviewItRule({
   name: "no-default-export--use-named-export",
@@ -86,7 +86,7 @@ export const noDefaultExport = createDontReviewItRule({
 });
 ```
 
-The rule name doubles as both file names: `src/lint/oxlint/rules/<name>.ts` and `docs/lint/<name>.md`.
+The rule name doubles as both file names: `<lintRules directory>/<category>/<name>.ts` and `docs/lint/<name>.md`.
 
 ### Write the report message as a prohibition and a fix
 
@@ -95,7 +95,7 @@ State the prohibition with `must not` or `is forbidden`, then start the fix with
 ### Test the rule beside it
 
 ```ts
-import { testLintRule } from "@repo/dont-review-it/lint-rule-authoring";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 
 import { noDefaultExport } from "./no-default-export--use-named-export.ts";
 
@@ -129,7 +129,7 @@ The index reads rule implementations, never presets, so a rule left out of the p
 ### Register the rule at error severity
 
 ```ts
-import { LINT_SEVERITY } from "@repo/dont-review-it/lint-rule-authoring";
+import { LINT_SEVERITY } from "../lint-rule-authoring/index.ts";
 
 rules: {
   [`dont-review-it/${noDefaultExport.name}`]: LINT_SEVERITY.ERROR,
@@ -141,12 +141,12 @@ Fix every violation the new rule reports before merging it. Demoting to warn is 
 ### Reconcile the index and the documents
 
 ```sh
-pnpm exec lint-rule-authoring check --write
+vp run check:repository
 ```
 
-Without `--write` it reports what is missing, unmarked, stale, or still carrying the text a seeded document was written with, and exits non-zero. With `--write` it seeds the absent documents and regenerates every generated region.
+It reports what is missing, unmarked, stale, or still carrying the text a seeded document was written with, and exits non-zero.
 
-Two documents are regenerated per workspace. `docs/lint/index.md` is the in-repository index, and — when the workspace also has `skills/core/SKILL.md` — `skills/core/references/lint-rules.md` is the copy that ships inside the package. The shipped one exists because `docs/` stays in the repository: an installed copy has no other statement of what the rules reject, so its table links each rule to its document on GitHub rather than to a relative path.
+Two documents are reconciled per workspace. `docs/lint/index.md` is the in-repository index, and — when the workspace also has `skills/core/SKILL.md` — `skills/core/references/lint-rules.md` is the copy that ships inside the package. The shipped one exists because `docs/` stays in the repository: an installed copy has no other statement of what the rules reject, so its table links each rule to its document on GitHub rather than to a relative path.
 
 ## Common Mistakes
 
@@ -272,11 +272,13 @@ Source: masseater/mst:tools/dont-review-it/AGENTS.md
 ## Reference
 
 ```
-@repo/dont-review-it/lint-rule-authoring         createWorkspaceLintRule, testLintRule, LINT_SEVERITY,
-                                 measureStage, lintRuleIndexProblems, lintRuleDocProblems,
+lint-rule-authoring/index.ts     createWorkspaceLintRule, LINT_SEVERITY, measureStage,
+                                 lintRuleIndexProblems, lintRuleDocProblems,
                                  firstToken, matchesGlobSegment, oxlint
-@repo/dont-review-it/lint-rule-authoring/plugin  the oxlint jsPlugins entry holding this package's own rules
-lint-rule-authoring check        [--write] [--repository-root <path>]
+lint-rule-authoring/             testLintRule, for rule tests only
+  rule-tester-test-fixture.ts
+lint-rule-authoring/plugin.ts    the oxlint jsPlugins entry holding the authoring rules
+dont-review-it check-repository  [--repository-root <path>]
 docs/lint/index.md               generated index, in the repository
 skills/core/references/          generated rule reference, shipped in the package
   lint-rules.md
