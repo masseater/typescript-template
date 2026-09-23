@@ -23,8 +23,8 @@ describe("freeReferencesOf", () => {
         "const run = ({ helper }: Options): number => {\n  const [limit = 1] = helper;\n  return limit;\n};",
       ));
 
-    it("names only the type it reads from outside", ({ references }) => {
-      expect(references).toStrictEqual(["Options"]);
+    it("names nothing, leaving the annotated type out", ({ references }) => {
+      expect(references).toStrictEqual([]);
     });
   });
 
@@ -69,8 +69,48 @@ describe("freeReferencesOf", () => {
         "type Boxed<Held> = { readonly held: Held; readonly schema: Schema.Codec<Held> };",
       ));
 
-    it("names the namespace, leaving its own name and type parameter out", ({ references }) => {
-      expect(references).toStrictEqual(["Schema"]);
+    it("names nothing, since every name it reads is a type", ({ references }) => {
+      expect(references).toStrictEqual([]);
+    });
+  });
+
+  describe("a body annotating, asserting and instantiating with imported types", () => {
+    const it = test.extend("references", () =>
+      referencesOfTheOnlyDeclaration(
+        "const read = <Held extends Base>(source: Input): Output<Held> => decode<Held>(source as Raw) satisfies Checked;",
+      ));
+
+    it("names only the value it calls", ({ references }) => {
+      expect(references).toStrictEqual(["decode"]);
+    });
+  });
+
+  describe("a body reading build-time settings through import.meta", () => {
+    const it = test.extend("references", () =>
+      referencesOfTheOnlyDeclaration("const verbose = () => import.meta.env.DEV && flag;"));
+
+    it("names the outer value, leaving import.meta out", ({ references }) => {
+      expect(references).toStrictEqual(["flag"]);
+    });
+  });
+
+  describe("a body resolving and listing modules next to its own file", () => {
+    const it = test.extend("references", () =>
+      referencesOfTheOnlyDeclaration(
+        'const around = () => [import.meta.dirname, import.meta.filename, import.meta.resolve("./a.ts"), import.meta.glob("./*.ts"), import.meta[key]];',
+      ));
+
+    it("names the module it was read from and the computed key", ({ references }) => {
+      expect(references).toStrictEqual(["import.meta", "key"]);
+    });
+  });
+
+  describe("a constructor reading the class it was called through", () => {
+    const it = test.extend("references", () =>
+      referencesOfTheOnlyDeclaration("function Built() {\n  return new.target === Built;\n}"));
+
+    it("names nothing outside its own declaration", ({ references }) => {
+      expect(references).toStrictEqual([]);
     });
   });
 });

@@ -18,6 +18,22 @@ const HERE = `import { fileURLToPath } from "node:url";
 export const here = fileURLToPath(new URL("./plugin.ts", import.meta.url));
 `;
 
+const VERBOSE = `export const verbose = (value: number): boolean => {
+  const shown = import.meta.env.DEV && value > limit;
+  return shown === true;
+};
+`;
+
+const TYPED_RUN = `export const run = (value: Input): Output => {
+  const doubled = helper(value) * 2;
+  return doubled satisfies Output;
+};
+`;
+
+const OWN_TYPES = "export type Input = number;\nexport type Output = number;\n";
+
+const OTHER_TYPES = "export type Input = 1 | 2;\nexport type Output = 2 | 4;\n";
+
 const OWN_HELPER = `export const helper = (value: number): number => value + 1;
 
 export const limit = 2;
@@ -166,6 +182,40 @@ layer(NodeServices.layer)("separatedByPrivateBindings", (it) => {
       "second/package.json": MANIFEST,
       "second/src/run.ts": `import { limit } from "./helper.ts";\n\nconst helper = (value: number): number => value * 3;\n\n${RUN}`,
       "second/src/helper.ts": OTHER_HELPER,
+    });
+
+    it.effect("reports the two bodies as one duplicate", () =>
+      Effect.gen(function* program() {
+        expect(yield* fixture).toStrictEqual([["first/src/run.ts:run", "second/src/run.ts:run"]]);
+      }),
+    );
+  });
+
+  describe("two packages reading the same build-time setting through import.meta", () => {
+    const fixture = clustersAmong({
+      "first/package.json": MANIFEST,
+      "first/src/verbose.ts": `import { limit } from "shared-helpers";\n\n${VERBOSE}`,
+      "second/package.json": MANIFEST,
+      "second/src/verbose.ts": `import { limit } from "shared-helpers";\n\n${VERBOSE}`,
+    });
+
+    it.effect("reports the two bodies as one duplicate", () =>
+      Effect.gen(function* program() {
+        expect(yield* fixture).toStrictEqual([
+          ["first/src/verbose.ts:verbose", "second/src/verbose.ts:verbose"],
+        ]);
+      }),
+    );
+  });
+
+  describe("two packages annotating a shared helper call with types each declares", () => {
+    const fixture = clustersAmong({
+      "first/package.json": MANIFEST,
+      "first/src/run.ts": `import { helper } from "shared-helpers";\n\nimport type { Input, Output } from "./types.ts";\n\n${TYPED_RUN}`,
+      "first/src/types.ts": OWN_TYPES,
+      "second/package.json": MANIFEST,
+      "second/src/run.ts": `import { helper } from "shared-helpers";\n\nimport type { Input, Output } from "./types.ts";\n\n${TYPED_RUN}`,
+      "second/src/types.ts": OTHER_TYPES,
     });
 
     it.effect("reports the two bodies as one duplicate", () =>
