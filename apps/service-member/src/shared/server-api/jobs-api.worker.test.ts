@@ -27,7 +27,6 @@ import { DateTime, Effect, Layer, Schema } from "effect";
 import { jobsApi } from "./jobs-api.ts";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {

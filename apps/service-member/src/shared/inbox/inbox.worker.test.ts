@@ -5,7 +5,6 @@ import { Effect } from "effect";
 import { publishFeedPost, publishNotification, userInboxBinding } from "./index.ts";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly USER_INBOX: DurableObjectNamespace;
