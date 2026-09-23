@@ -10,7 +10,7 @@ export const noDuplicatedTest = createDontReviewItRule({
     docs: {
       description:
         "Disallow a test that another test in the same file spells with the same title and the same body, so one behaviour keeps one place that pins it",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
     },
     messages: {
       duplicatedTest:

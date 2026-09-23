@@ -48,7 +48,7 @@
   "normativeDocuments": {
     "fileName": "AGENTS.md",
     "directories": [
-      "apps/internal-dashboard/content/docs/guidelines"
+      ".claude/skills/reviews/references"
     ]
   }
 }

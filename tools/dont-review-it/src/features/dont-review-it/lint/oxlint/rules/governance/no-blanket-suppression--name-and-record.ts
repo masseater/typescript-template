@@ -54,7 +54,7 @@ export const noBlanketSuppression = createDontReviewItRule({
     docs: {
       description:
         "Disallow any lint suppression comment and disallow a repository ledger of approved suppressions, so a report ends in a repair to the code or a named exception in the lint configuration and never in a comment or a side file that takes the report away",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/enforcement.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/enforcement.md"],
     },
     messages: {
       unnamedSuppression: `A \`{{spelling}}\` comment must not stand without naming the rule it stops. Delete it and rewrite the code the linter reports. ${BEFORE_SUPPRESSING} ${REGISTERED_EXCEPTION}`,

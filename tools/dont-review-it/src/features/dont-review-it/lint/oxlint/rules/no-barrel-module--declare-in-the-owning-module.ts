@@ -29,7 +29,7 @@ export const noBarrelModule = createDontReviewItRule({
     docs: {
       description:
         "Disallow a module whose every statement is a re-export and which forwards at least one value, so the module a binding is taken from is the module that declares it",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
       shipped: false,
     },
     messages: {
