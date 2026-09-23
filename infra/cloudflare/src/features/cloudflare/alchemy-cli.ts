@@ -6,7 +6,7 @@ import { Effect, PlatformError, Schema, Stream } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 
 import { layer } from "./platform.ts";
-import { FAILED_EXIT_CODE, redact } from "./secrets.ts";
+import { redact } from "./secrets.ts";
 
 import type { WriteTarget } from "@repo/cli";
 import type { Confidential } from "./secrets.ts";
@@ -33,7 +33,7 @@ function forward(
   stream: Stream.Stream<Uint8Array, PlatformError.PlatformError>,
   target: WriteTarget,
   confidential: readonly Confidential[],
-): Effect.Effect<void> {
+): Effect.Effect<void, AlchemyFailure> {
   return Stream.decodeText(stream).pipe(
     Stream.splitLines,
     Stream.runForEach((line) =>
@@ -41,7 +41,7 @@ function forward(
         target.write(`${redact(line, confidential)}\n`);
       }),
     ),
-    Effect.ignore,
+    Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })),
   );
 }
 
@@ -65,7 +65,7 @@ function spawnAlchemy(
     );
     return yield* handle.exitCode.pipe(
       Effect.map((code) => Number(code)),
-      Effect.orElseSucceed(() => FAILED_EXIT_CODE),
+      Effect.mapError(() => new AlchemyFailure({ code: "alchemy_command_failed" })),
     );
   }).pipe(Effect.scoped, Effect.provide(layer));
 }
