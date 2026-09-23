@@ -19,7 +19,6 @@ describe("pull request check scope", () => {
     expect(workflow).not.toContain("paths-ignore");
     expect(workflow).not.toContain("paths:");
     expect(workflow).not.toMatch(/^ {6}run: vp check$/mu);
-    expect(vite).toContain('prepr: ["check:imports"]');
     expect(vite).toContain('premerge: ["test:dev-server", "test:storybook"]');
     expect(vite).toContain("isolate: false");
     expect(vite).toContain('name: "node-isolated"');

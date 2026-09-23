@@ -6,7 +6,9 @@ import {
   intentValidation,
   lifecycle,
   testRun,
+  checkCode,
   modularBoundaries,
+  workspaceCheckImports,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -14,6 +16,8 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       ...intentValidation,
       ...testRun,
@@ -34,8 +38,8 @@ export default defineConfig({
         command: "./src/features/dont-review-it/repository/clean-shared-task-cache.ts",
       },
       ...lifecycle({
-        precommit: ["check:staged"],
-        prepush: ["check:effect", "check", "check:modular"],
+        precommit: ["check:staged", "check:code"],
+        prepush: ["check:effect", "check:imports", "check", "check:modular"],
         prepr: ["test"],
       }),
     },
