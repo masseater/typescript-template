@@ -38,10 +38,9 @@ function unresolvedReferences(skill: string): string[] {
     [...readFileSync(file, "utf8").matchAll(markdownReferencePattern)]
       .map((match) => match.groups?.["path"] ?? "")
       .filter((path) => !path.includes("*") && !path.includes("<"))
-      .filter((path) => {
-        const base = path.startsWith(".claude/") ? repositoryRoot : dirname(file);
-        return !existsSync(join(base, path));
-      })
+      .filter(
+        (path) => ![dirname(file), repositoryRoot].some((base) => existsSync(join(base, path))),
+      )
       .map((path) => `${relative(repositoryRoot, file)}: ${path}`),
   );
 }
