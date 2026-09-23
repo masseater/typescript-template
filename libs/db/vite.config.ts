@@ -10,7 +10,11 @@ export default defineConfig({
         input: [{ auto: true }, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
-      "db:generate": { cache: false, command: "drizzle-kit generate" },
+      "db:generate": {
+        cache: false,
+        command: "drizzle-kit generate",
+        dependsOn: ["@repo/db-local#db:schema-document"],
+      },
       ...lifecycle({
         prepush: ["check:effect", "check"],
       }),
