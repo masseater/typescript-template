@@ -10,10 +10,10 @@ import type { InquiryStatus } from "./status-label.ts";
 
 const listPageSize = 50;
 
-const inquiryListAtom = Atom.family((status: InquiryStatus | "") =>
+const inquiryListAtom = Atom.family((status: InquiryStatus | undefined) =>
   requestAtom((): Promise<readonly AdminInquirySummary[]> => {
     const query = { limit: listPageSize, offset: 0 } as const;
-    return loadInquiries(status === "" ? query : { ...query, status }).then(
+    return loadInquiries(status === undefined ? query : { ...query, status }).then(
       (list) => list.inquiries,
     );
   }),
@@ -22,7 +22,7 @@ const inquiryListAtom = Atom.family((status: InquiryStatus | "") =>
 const useStatusFilter = localState(Option.none<InquiryStatus>());
 
 function useInquiryList(status?: InquiryStatus): RequestResult<readonly AdminInquirySummary[]> {
-  return useAtomValue(inquiryListAtom(status ?? ""));
+  return useAtomValue(inquiryListAtom(status));
 }
 
 function useInquiryStatusFilter(): Readonly<{
