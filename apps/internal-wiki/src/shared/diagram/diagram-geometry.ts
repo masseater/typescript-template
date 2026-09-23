@@ -260,5 +260,5 @@ const readGeometry = (root: Root): DiagramGeometry => {
   };
 };
 
-export { center, formatPoints, readGeometry, segmentsOf, svgOf };
+export { center, distanceToRoute, formatPoints, readGeometry, segmentsOf, svgOf, withoutSpaces };
 export type { Box, DiagramGeometry, Label, Point, Route };
