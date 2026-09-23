@@ -15,6 +15,12 @@ import {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+import {
+  recording,
+  recordingSegment,
+  recordingSpeaker,
+  speakerPerson,
+} from "./recording-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -148,7 +154,11 @@ const schema = {
   oauthResource,
   passkey,
   rateLimit,
+  recording,
+  recordingSegment,
+  recordingSpeaker,
   session,
+  speakerPerson,
   twoFactor,
   user,
   verification,
@@ -169,3 +179,9 @@ export { boardPost, boardThread } from "./board-schema.ts";
 export { session, user } from "./identity-schema.ts";
 export { interview } from "./interview-schema.ts";
 export { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+export {
+  recording,
+  recordingSegment,
+  recordingSpeaker,
+  speakerPerson,
+} from "./recording-schema.ts";

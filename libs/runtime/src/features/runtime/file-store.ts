@@ -4,18 +4,30 @@ import { Context, Effect, Layer } from "effect";
 
 import { StorageFailed } from "./storage-failed.ts";
 
-import type { R2Bucket } from "@cloudflare/workers-types";
+import type { R2Bucket, ReadableStream as BucketStream } from "@cloudflare/workers-types";
 import type { ConfigurationInvalid } from "@repo/config";
 type StoredFile = {
   readonly bytes: Uint8Array;
   readonly contentType: string | undefined;
 };
+type StreamedFile = {
+  readonly body: BucketStream;
+  readonly contentType: string | undefined;
+  readonly size: number;
+};
 type FileStoreShape = {
   readonly get: (fieldName: string) => Effect.Effect<StoredFile | undefined, StorageFailed>;
+  readonly open: (fieldName: string) => Effect.Effect<StreamedFile | undefined, StorageFailed>;
   readonly put: (fieldName: string, file: StoredFile) => Effect.Effect<void, StorageFailed>;
+  readonly putStream: (
+    fieldName: string,
+    file: Readonly<{ body: ReadableStream; contentType: string | undefined }>,
+  ) => Effect.Effect<void, StorageFailed>;
   readonly remove: (fieldNames: readonly string[]) => Effect.Effect<void, StorageFailed>;
 };
 type Bucket = Pick<R2Bucket, "delete" | "get" | "put">;
+const isBucketStream = (candidate: unknown): candidate is BucketStream =>
+  candidate instanceof ReadableStream;
 const unavailable = Effect.fail(new StorageFailed({ reason: "unavailable" }));
 const attempt = <Value>(
   operation: string,
@@ -40,6 +52,18 @@ const storeOf = (bucket: Bucket): FileStoreShape => {
           contentType: shape.httpMetadata?.contentType,
         };
       }),
+    open: (fieldName) =>
+      attempt("open", () => bucket.get(fieldName)).pipe(
+        Effect.map((shape) =>
+          shape === null
+            ? undefined
+            : {
+                body: shape.body,
+                contentType: shape.httpMetadata?.contentType,
+                size: shape.size,
+              },
+        ),
+      ),
     put: (fieldName, file) =>
       attempt("put", () =>
         bucket.put(
@@ -50,6 +74,20 @@ const storeOf = (bucket: Bucket): FileStoreShape => {
             : { httpMetadata: { contentType: file.contentType } },
         ),
       ),
+    putStream: (fieldName, file) => {
+      const { body } = file;
+      return isBucketStream(body)
+        ? attempt("put", () =>
+            bucket.put(
+              fieldName,
+              body,
+              file.contentType === undefined
+                ? undefined
+                : { httpMetadata: { contentType: file.contentType } },
+            ),
+          )
+        : Effect.fail(new StorageFailed({ reason: "operation_failed" }));
+    },
     remove: (fieldNames) =>
       fieldNames.length === 0
         ? Effect.void
@@ -58,7 +96,9 @@ const storeOf = (bucket: Bucket): FileStoreShape => {
 };
 const unavailableStore: FileStoreShape = {
   get: () => unavailable,
+  open: () => unavailable,
   put: () => unavailable,
+  putStream: () => unavailable,
   remove: () => unavailable,
 };
 class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runtime/FileStore") {
@@ -73,4 +113,4 @@ class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runt
   }
 }
 export { FileStore };
-export type { StoredFile };
+export type { StoredFile, StreamedFile };

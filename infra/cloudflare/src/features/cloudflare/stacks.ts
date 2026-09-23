@@ -9,7 +9,7 @@ const application = ["database", "flagship"] as const;
 const wikiApplication = [...application, "tokens"] as const;
 const servedApplication = [...application, "core"] as const;
 const memberServed = [...servedApplication, "storage"] as const;
-const wikiServed = [...wikiApplication, "core", "internal-wiki"] as const;
+const wikiServed = [...wikiApplication, "core", "internal-wiki", "storage"] as const;
 const stackReferences = {
   "service-admin": servedApplication,
   "budget-monitor": ["tokens"],
