@@ -13,6 +13,7 @@ import {
   configuredDirectories,
   dependencies,
   reachable,
+  reachableAcross,
   scriptNames,
   taskNames,
   testProjectDirectories,
@@ -134,15 +135,14 @@ function ungated(directory: string): string[] {
 }
 
 function slowBeforePush(directory: string): string[] {
-  return reachable(directory, ["prepush"])
-    .filter(
-      (name) =>
-        name.includes("#") ||
-        commands(directory, name).some((command) =>
-          minuteLongCommands.some((slow) => command.startsWith(slow)),
-        ),
-    )
-    .map((name) => `${directory}: ${name}`);
+  const unresolved = reachable(directory, ["prepush"]).filter((name) => name.startsWith("*#"));
+  const slow = reachableAcross(directory, "prepush").filter((entry) => {
+    const [owner = "", name = ""] = entry.split("#");
+    return commands(owner, name).some((command) =>
+      minuteLongCommands.some((prefix) => command.startsWith(prefix)),
+    );
+  });
+  return [...unresolved, ...slow].map((name) => `${directory}: ${name}`);
 }
 
 function reachesTest(directory: string, stages: string[]): boolean {
