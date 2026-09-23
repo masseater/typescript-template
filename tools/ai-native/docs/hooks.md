@@ -13,7 +13,7 @@ description: Claude Code の hook を cc-hooks-ts で書くときに守ること
 - IF: hook をツールで限定する; THEN
   - MUST: `settings.json` の `matcher` と `run` の中の `tool_name` の確認を両方置く
   - PROHIBIT: `matcher` だけに頼る
-    - 別の設定から同じ実行ファイルを呼ばれた経路が残る
+    - 別の設定から同じ実行ファイルが呼ばれたときに限定が外れる
 - IF: `tool_input` を読む; THEN
   - MUST: `unknown` として受け、必要な形を自分で確かめる
   - PROHIBIT: 宣言したツールの形で届くものとして読む

@@ -35,7 +35,7 @@
 | 意味のある props（`disabled`、`type`、`variant`、制御値と `on*Change`） | `className`、スタイル props、HTML 属性の全通し（`...props`） |
 | `data-slot` とデザイントークン | 呼び出し側での色・半径・影の上書き |
 
-見た目の上書きは `@shadcn/lint` の `no-restyle`（layout / spacing のみ許可）と `libs/ui` の design-system 検査が止める。新しい見た目が要るときはコンポーネント側に `variant` を足す。
+見た目の上書きは `@shadcn/lint` の `no-restyle`（layout / spacing のみ許可）と `libs/ui` の design-system のチェックが止める。新しい見た目が要るときはコンポーネント側に `variant` を足す。
 
 ## 制御
 

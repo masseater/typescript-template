@@ -9,7 +9,7 @@ CLI 固有の束は無い。CLI に関わるルールは `writing` に入って�
 - IF: preset のルールを一部だけ止めたくなった; THEN
   - PROHIBIT: 理由を残さずに `overrides` で off にする
   - MUST: 止めた理由を EDR に残す
-    - 適用範囲の検査が off を毎回報告する。理由が無い off は、載せ忘れと区別が付かない
+    - 適用範囲のチェックが off を毎回報告する。理由が無い off は、載せ忘れと区別が付かない
 
 ## コマンドの骨格
 
@@ -56,7 +56,7 @@ CLI 固有の束は無い。CLI に関わるルールは `writing` に入って�
   - PROHIBIT: 呼び出し側が保守するモードフラグや、複製したスクリプトで分岐する
 - IF: stdout / stderr の内容をテストする; THEN MUST: `@repo/dont-review-it/vitest` の `standardIoTest` からテストを導出し、両ストリームをスナップショットで固定する
   - 機械で強制される側は [no-handmade-standard-io-double](lint/no-handmade-standard-io-double--use-standard-io-test.md) と [require-standard-io-snapshot](lint/require-standard-io-snapshot--pin-both-streams.md) が持つ
-- IF: 検査を実行するコマンドが、どの観点をどれだけ開いたかを残す; THEN
+- IF: チェックを実行するコマンドが、どの観点をどれだけ開いたかを残す; THEN
   - MUST: 走査証跡を stderr に書く
   - PROHIBIT: stdout に混ぜる
     - 走査の事実は結果ではない。判断は [EDR 0038](../../../docs/engineering-decision-logs/0038-write-the-scan-trace-to-stderr-and-read-the-reader-from-the-runtime.md) にある
@@ -72,4 +72,4 @@ CLI 固有の束は無い。CLI に関わるルールは `writing` に入って�
 - IF: パッケージの目的がライブラリの提供である; THEN
   - PROHIBIT: `bin` フィールドを生やす
   - MUST: 実行可能エントリが要るなら、CLI を目的とするパッケージに置く
-    - ライブラリに bin が生えると、誰も保守を宣言していない第 2 の実行経路に呼び出し側が依存し始める
+    - ライブラリに bin が生えると、誰も保守を宣言していない第 2 の CLIに呼び出し側が依存し始める

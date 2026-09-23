@@ -22,7 +22,7 @@
 | テスト | `*.test.ts` / `*.test.tsx` / `*.worker.test.ts` | `action-gate.test.ts` |
 | ロケール | 言語コードの JSON（`language_territory` 形式は使わない） | `en.json`、`ja.json` |
 
-アプリの `src/` は FSD の `app` / `pages` / `widgets` / `features` / `entities` / `shared` だけ。`project/layers` と steiger が検査する。ページは `pages/<slice>/ui/*-page.tsx`、クエリは `api` セグメント。
+アプリの `src/` は FSD の `app` / `pages` / `widgets` / `features` / `entities` / `shared` だけ。`project/layers` と steiger がチェックする。ページは `pages/<slice>/ui/*-page.tsx`、クエリは `api` セグメント。
 
 ## 採らない出典
 
