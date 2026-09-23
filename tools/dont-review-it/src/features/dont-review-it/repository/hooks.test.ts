@@ -332,6 +332,7 @@ describe("lifecycle contents", () => {
   it("replays every release gate task from the cache but the ones still tied to run time state", () => {
     expect.hasAssertions();
     expect(uncachedGateTasks()).toStrictEqual([
+      ".#check:repository",
       ".#mutation",
       ".#test:dev-server",
       ".#test:storybook",

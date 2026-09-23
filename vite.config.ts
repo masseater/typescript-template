@@ -86,7 +86,7 @@ export default defineConfig({
       },
       ...effectDiagnostics,
       "check:types": {
-        command: "dont-review-it-typecheck",
+        command: rootOnDemandChecks["check:types"],
         dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
@@ -138,10 +138,11 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:text", "check:code"],
         prepush: ["check:effect", "knip", "check:canonical-literal-types"],
+        prepr: ["check:repository"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),
-      "check:repository": rootOnDemandChecks["check:repository"],
+      "check:repository": { cache: false, command: "dont-review-it check-repository" },
     },
   },
   test: {
