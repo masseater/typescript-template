@@ -1,0 +1,46 @@
+name: backlog
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  backlog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+        with:
+          node-version-file: package.json
+          cache: true
+      - uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
+        with:
+          anthropic_federation_rule_id: ${{ secrets.ANTHROPIC_FEDERATION_RULE_ID }}
+          anthropic_organization_id: ${{ secrets.ANTHROPIC_ORGANIZATION_ID }}
+          anthropic_service_account_id: ${{ secrets.ANTHROPIC_SERVICE_ACCOUNT_ID }}
+          claude_args: >-
+            --permission-mode acceptEdits --allowedTools "Bash(git:*),Bash(gh:*),Bash(vp:*),Edit,Write,Read,Glob,Grep"
+          prompt: |
+            You are working through the backlog of ${{ github.repository }}: small, low-urgency tasks that a person filed as open issues labeled `backlog` and left for you to finish.
+            Follow AGENTS.md and the skills under .claude/skills exactly as a developer of this repository would.
+
+            1. Run `gh label create backlog --force` and `gh label create backlog-needs-info --force` so both labels exist.
+            2. List the open issues labeled `backlog` with `gh issue list --label backlog --state open --json number,title,body,labels,comments --limit 100`, oldest first.
+            3. Drop every issue whose `author_association` from `gh api repos/${{ github.repository }}/issues/<number>` is not OWNER, MEMBER or COLLABORATOR, and ignore comments whose author_association is not one of those. Also drop every issue that already has an open pull request whose head branch is `backlog/issue-<number>`, found with `gh pr list --state open --head backlog/issue-<number>`.
+            4. Take up to 3 of the remaining issues, one at a time. For each one:
+               - If the issue does not say clearly enough what done looks like, or the change it asks for is not small, do not change code. Comment on the issue with exactly what is missing, then run `gh issue edit <number> --remove-label backlog --add-label backlog-needs-info`, and move on.
+               - Otherwise start from the latest main with `git fetch origin main` and `git switch -c backlog/issue-<number> origin/main`.
+               - Make the change, and prove it with the checks a contributor runs locally for the packages it touches. Never run the whole test suite.
+               - Read .claude/skills/reviews/SKILL.md and its references, review your own diff against them, and fix what the review finds.
+               - Commit with a message that explains why the change is needed and ends with `Closes #<number>`, then `git push -u origin backlog/issue-<number>`.
+               - Open the pull request against main with `gh pr create --base main --head backlog/issue-<number>`, and add the `ready-to-merge` label to it.
+            5. Finish by printing, for each issue you looked at, its number and whether you opened a pull request, asked for more information, or skipped it.
