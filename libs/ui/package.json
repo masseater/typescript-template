@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/features/ui/index.ts",
     "./shell": "./src/features/ui/shell.ts",
+    "./request-client": "./src/features/ui/request-client.ts",
     "./styles.css": "./src/features/ui/styles.css"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "class-variance-authority": "catalog:",
     "cn": "catalog:",
     "effect": "catalog:",
+    "elysia": "2.0.0-beta.16",
     "es-toolkit": "catalog:",
     "lucide-react": "catalog:",
     "motion": "catalog:",

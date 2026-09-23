@@ -6,7 +6,7 @@
     "**/*-fixture.ts",
     "libs/ui/*.{ts,tsx}",
     "libs/*/storybook/**",
-    "tools/dont-review-it/src/repository/**",
+    "tools/dont-review-it/src/features/dont-review-it/repository/**",
     "tools/e2e/**"
   ],
   "ignoreExportsUsedInFile": true

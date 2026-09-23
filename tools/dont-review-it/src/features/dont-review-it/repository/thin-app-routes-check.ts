@@ -1,42 +1,23 @@
 #!/usr/bin/env node
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 import { parseSync } from "oxc-parser";
 
+import { collectSourceFiles } from "./source-files.ts";
 import { containsJsx, isAppRouteModule } from "./thin-app-routes.ts";
 
 const violation =
   "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。";
-
-const collectFiles = (directory: string): Effect.Effect<readonly string[]> =>
-  Effect.gen(function* listRouteFiles() {
-    const entries = yield* Effect.tryPromise(() => readdir(directory, { withFileTypes: true }));
-    const nested = yield* Effect.forEach(
-      entries,
-      (entry) => {
-        const path = join(directory, entry.name);
-        if (entry.isDirectory()) {
-          return collectFiles(path);
-        }
-        if (entry.isFile() && /\.[cm]?[jt]sx?$/u.test(entry.name)) {
-          return Effect.succeed([path] as const);
-        }
-        return Effect.succeed([] as const);
-      },
-      { concurrency: "unbounded" },
-    );
-    return nested.flat();
-  });
 
 const hasJsx = (source: string, file: string): boolean =>
   containsJsx(parseSync(file, source, { lang: file.endsWith("x") ? "tsx" : "ts" }).program);
 
 const checkRoutes = (routesRoot: string): Effect.Effect<readonly string[]> =>
   Effect.gen(function* scan() {
-    const files = yield* collectFiles(routesRoot);
+    const files = yield* collectSourceFiles(routesRoot);
     const findings = yield* Effect.forEach(
       files,
       (file) =>

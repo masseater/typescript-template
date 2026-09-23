@@ -78,6 +78,21 @@ const crossesFeatureBoundary = (from: ModularLocation, target: ModularLocation):
   return from.kind === "feature" && from.slice !== target.slice;
 };
 
+const violatesModularImport = (from: ModularLocation, targetInside: string): boolean => {
+  const target = locationOf(targetInside);
+  if (target.kind === "other") {
+    return false;
+  }
+  if (from.kind === "shared") {
+    return target.kind !== "shared";
+  }
+  return (
+    target.kind === "feature" &&
+    crossesFeatureBoundary(from, target) &&
+    !isFeaturePublicApi(targetInside, target.slice)
+  );
+};
+
 const modularImportsVisitor = (inspection: LintContext): Visitor => {
   const fromFile = filename(inspection);
   const source = workspaceSource(fromFile);
@@ -93,16 +108,7 @@ const modularImportsVisitor = (inspection: LintContext): Visitor => {
     if (targetInside === undefined) {
       return;
     }
-    const target = locationOf(targetInside);
-    if (from.kind === "shared" && (target.kind === "feature" || target.kind === "app")) {
-      reportViolation(inspection, node);
-      return;
-    }
-    if (
-      crossesFeatureBoundary(from, target) &&
-      target.kind === "feature" &&
-      !isFeaturePublicApi(targetInside, target.slice)
-    ) {
+    if (violatesModularImport(from, targetInside)) {
       reportViolation(inspection, node);
     }
   });

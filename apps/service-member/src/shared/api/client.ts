@@ -1,5 +1,5 @@
 import { apiClient } from "@repo/runtime/client";
-import { requestApiClient } from "@repo/runtime/request-client";
+import { requestApiClient } from "@repo/ui/request-client";
 import { createIsomorphicFn } from "@tanstack/react-start";
 
 import type { userApi } from "#shared/server-api/index.ts";
