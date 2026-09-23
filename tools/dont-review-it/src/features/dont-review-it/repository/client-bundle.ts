@@ -75,8 +75,6 @@ async function clientBuild(
     return "";
   } catch (error: unknown) {
     return denialReason(error);
-  } finally {
-    await rm(path.join(appRoot, "dist"), { force: true, recursive: true });
   }
 }
 
