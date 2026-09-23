@@ -1270,6 +1270,9 @@ importers:
 
   libs/db-local:
     dependencies:
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-rc.117(effect@4.0.0-rc.117)(redis@6.2.1(@opentelemetry/api@1.9.1))
       '@repo/cli':
         specifier: workspace:*
         version: link:../cli
