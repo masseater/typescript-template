@@ -47,4 +47,4 @@ const ButtonAnchor = ({
 
 const ButtonLink = createLink(ButtonAnchor);
 
-export { ButtonLink };
+export { ButtonAnchor, ButtonLink };

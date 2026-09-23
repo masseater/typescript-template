@@ -1,12 +1,11 @@
 import { verifySession } from "@repo/auth";
-import { ConfigurationInvalid, httpStatus } from "@repo/config";
+import { ConfigurationInvalid, httpStatus, readConfig } from "@repo/config";
 import { FeatureFlags, requireFlagEditor, toggleFlag, toggleFlagRemote } from "@repo/feature-flags";
 import { createApi, readJsonBody, type ApiRoutes } from "@repo/runtime/http";
 import { env } from "cloudflare:workers";
 import { Effect, Redacted } from "effect";
 
 import { FlagList, FlagToggle, FlagToggled } from "#shared/contracts/index.ts";
-import { readWikiConfig } from "#shared/wiki/wiki-config.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 
@@ -30,7 +29,7 @@ const listFlags = Effect.fn("listFlags")(function* listFlags(request: Request) {
 const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
   const { user } = yield* requireFlagEditor(request.headers);
   const change = yield* readJsonBody(FlagToggle, request);
-  const config = yield* readWikiConfig(env);
+  const config = yield* readConfig(env);
   if (
     config.FLAGSHIP_API_TOKEN === undefined ||
     config.FLAGSHIP_APP_ID === undefined ||

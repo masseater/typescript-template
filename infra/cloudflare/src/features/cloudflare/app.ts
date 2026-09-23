@@ -4,6 +4,9 @@ import {
   jobsWorkflowClass,
   userInboxBinding,
   userInboxClassName,
+  wikiApiBinding,
+  wikiApiEntrypoint,
+  wikiPagesBinding,
 } from "@repo/config";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { coreEntrypoints } from "@repo/core-api/entrypoints";
@@ -26,6 +29,7 @@ import { flagshipAppRef } from "./flagship.ts";
 import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
+import { wikiWorkerRef } from "./wiki-program.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
@@ -52,6 +56,14 @@ function appEnv(target: Application, shared: SharedEnv): Effect.Effect<DeclaredE
     return withStorage;
   });
 }
+
+const wikiBindings = Effect.fn("wikiBindings")(function* wikiBindings() {
+  const wiki = yield* wikiWorkerRef();
+  return {
+    [wikiApiBinding]: WorkerEntrypoint(wiki, wikiApiEntrypoint),
+    [wikiPagesBinding]: WorkerEntrypoint(wiki),
+  };
+});
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
@@ -91,6 +103,7 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
           ...shared,
           FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
           FLAGSHIP_APP_ID: flags.appId,
+          ...(yield* wikiBindings()),
         }
       : shared),
     ...(jobsQueue === undefined
