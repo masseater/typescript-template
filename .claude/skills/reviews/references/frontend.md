@@ -1,14 +1,8 @@
 # フロントエンド
 
-この文書が守るのは、画面のコンポーネントの置き場所とページ仕様の置き場所が、実装の所有者と一致している状態です。一致が崩れると、次に同じ画面を触る者は別の根拠で置き場所を決め、見た目と仕様のどちらが正かが読み取れなくなる。
+見た目・UI 部品・レイアウトを触る前にルートの `DESIGN.md` を読むことは `AGENTS.md` が決めている。React の書き方は `.claude/skills/modern-react-guidance/SKILL.md`、非同期の瀑布は `.claude/skills/react-best-practices/SKILL.md`。
 
-## コンポーネントの基礎
-
-- UI のコンポーネントを足す場合は、`libs/ui` が持つ基礎（React 19、Base UI 1、shadcn 4、Tailwind CSS 4）の上に載せます。
-- アプリ固有の画面組み立ては各アプリの FSD 境界の内側に置き、共通にできる見た目だけを `libs/ui` へ切り出します。
-- 外部の UI キットのデモやブロック集を、依存や規範の根拠にしてはいけません。
-
-## ページ仕様の置き場所
-
-- 画面の構成と遷移の判断を文書にする場合は、`apps/internal-dashboard/content/docs/pages/` に置きます。
-- ページ仕様を `.claude/skills/reviews/references/` に混ぜることは禁止です。ここは判断基準だけを持ち、個別画面の手順は持ちません。
+- UI の部品は `libs/ui` の基礎（`libs/ui/package.json` が持つ React、shadcn、Tailwind CSS）の上に載せる。
+- アプリ固有の画面組み立ては各アプリの FSD 境界の内側に置き、共通にできる見た目だけを `libs/ui` へ切り出す。
+- 外部の UI キットのデモやブロック集を、依存や規範の根拠にしない。
+- 画面の構成と遷移の判断は `apps/internal-dashboard/content/docs/pages/` に置く。references に混ぜない。

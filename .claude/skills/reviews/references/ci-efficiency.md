@@ -1,55 +1,12 @@
----
-name: ci-efficiency
-description: pre-commit、pre-push、PR CI、merge queue CI の役割を分担し、必要な検証を維持しながらCIとローカル検証の実行量を効率化する。
----
+# CI の効率
 
-検証を実行する場所ごとに責務を分け、必要な検証を維持したまま不要な処理を減らす。
+検証は実行する場所ごとに責務を分ける。段階の定義は各 workspace の `vite.config.ts` の `lifecycle`（`precommit`・`prepush`・`prepr`・`premerge`・`prerelease`）と `.github/workflows/check.yml` が持つ。
 
-## 基準
-
-### pre-commit
-
-- 毎回実行しても負担にならない高速な静的解析を実行する。
-- lint、format、軽量な型・構造チェックなど、コミット時に完了できる検証を優先する。
-- 重いテストやビルドを常に実行しない。
-
-### pre-push
-
-- push前に、変更したコードとその影響を受けるテストを実行する。
-- 変更・影響範囲を task graph や依存関係から求め、影響を受けないテストを実行しない。
-- 必要に応じて、変更・影響範囲の typecheck、build なども実行する。
-- リポジトリ全体のテストを常に実行しない。
-
-### PR CI
-
-- PRの変更・影響範囲に対する lint、typecheck、test、build を検証する。
-- `.github/workflows` の `paths` / `paths-ignore` で変更ファイル単位の実行制御をしない。
-- `viteplus` など、リポジトリに導入されている task graph や依存関係から変更・影響範囲を求める。
-- pre-commit / pre-push と同じ検証を実行してよい。CI上で独立して品質を保証できる構成にする。
-- リポジトリ全体の重い統合テストや全体回帰テストを、PRごとに実行しない。
-
-### merge queue CI
-
-- merge queue 上で統合されたコードに対して、統合後でなければ検証できない内容を実行する。
-- integration test、E2E、全体回帰テストなど、リポジトリ全体に対する重い検証をここに集約する。
-- PR CIと同じ検証を実行してよい。統合済みコードに対する品質保証として必要な検証を独立して実行する。
-- merge queue CIで重要な検証を必須チェックとして扱える構成にする。
-
-### 共通
-
-- `.github/workflows` の `paths` / `paths-ignore` ではなく、task graph や依存関係から影響範囲を求める。
-- task cache、dependency cache、remote cache を利用して不要な処理を繰り返さない。
-- 独立した task は並列実行する。
-- CIを高速化するために検証対象そのものを不正に削らない。
-- 同じコミットの品質判定が、作業コピーや実行ホストの状態によって変わらないようにする。
-- CIやローカル検証を改善するときは、まず実行時間・実行量などを計測し、ボトルネックを特定してから改善する。
-- ボトルネックではない処理を、推測だけで最適化しない。
-- 改善後は再度計測し、ボトルネックが解消されたことと実行量が改善したことを確認する。
-
-## 判断
-
-**必要な検証を削らず、最も適切な実行単位と影響範囲で実行する。**
-
-高速な静的解析は pre-commit、変更によって影響を受けるテストと必要な検証は pre-push、PRの変更・影響範囲の品質保証は PR CI、統合済みコードに対する重い全体検証は merge queue CI に分担する。
-
-CIやローカル検証を効率化するときは、**実測したボトルネックに対して、影響範囲・task graph・cache・並列実行・実行段階を最適化する。**
+- precommit: 毎回実行しても負担にならない静的解析。重いテストやビルドを載せない。
+- prepush: 変更とその影響を受けるテスト・typecheck・build。影響範囲は task graph と依存関係から求め、全体を毎回実行しない。
+- prepr: PR の変更・影響範囲に対する lint・typecheck・test・build。`.github/workflows` の `paths` / `paths-ignore` で制御せず、task graph から影響範囲を求める。全体の重い統合テストを PR ごとに実行しない。
+- premerge: 統合後でなければ検証できないもの（integration、E2E、全体回帰）。必須チェックとして扱える構成にする。
+- 各段階で同じ検証を重ねてよい。CI 上で独立して品質を保証できる構成にする。
+- task cache・dependency cache・remote cache で不要な処理を繰り返さない。独立した task は並列実行する。
+- 高速化のために検証対象を削らない（`./verification-bypass.md`）。同じコミットの品質判定が、作業コピーや実行ホストの状態で変わらないようにする。
+- 改善するときは、実行時間と実行量を計測してボトルネックを特定してから手を入れ、改善後に再計測する。ボトルネックでない処理を推測で最適化しない。
