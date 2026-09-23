@@ -1,8 +1,7 @@
-import { resolve, sep } from "node:path";
-
 import { range } from "es-toolkit";
 
 import { matchesGlobSegment } from "../../../lint-rule-authoring/index.ts";
+import { path } from "../../../platform/path.ts";
 import { segmentsOf } from "./path-segments.ts";
 
 const matchesSegments = (
@@ -49,7 +48,7 @@ export const matchesGlobPath = ({
   if (ANCHORED_PATTERN_PREFIXES.some((prefix) => pattern.startsWith(prefix))) {
     return matchesSegments(
       pathSegments,
-      segmentsOf({ path: resolve(cwd, pattern), separator: sep }),
+      segmentsOf({ path: path.resolve(cwd, pattern), separator: path.sep }),
     );
   }
 

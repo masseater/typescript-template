@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { extendsOneOf, nearestTsconfigExtends } from "./nearest-tsconfig.ts";
@@ -10,158 +9,293 @@ const LIBRARY_PRESET = "dont-review-it/tsconfig/library.json";
 
 const APP_PRESET = "dont-review-it/tsconfig/app.json";
 
-describe("nearestTsconfigExtends", () => {
-  const workspaceTest = test.extend("workspaceRoot", ({}, { onCleanup }) => {
-    const root = mkdtempSync(join(tmpdir(), "nearest-tsconfig-"));
-    onCleanup(() => {
-      rmSync(root, { recursive: true, force: true });
-    });
-    return root;
-  });
-
+layer(NodeServices.layer)("nearestTsconfigExtends", (it) => {
   describe("a tsconfig carrying a single extends entry", () => {
-    const it = workspaceTest.extend("extendsRead", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "single");
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "tsconfig.json"), '{ "extends": "./preset.json" }\n');
-      return nearestTsconfigExtends(join(directory, "index.ts"));
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const extendsRead = yield* Effect.gen(function* extendsRead() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "single");
+        yield* filesystem.makeDirectory(directory, { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "tsconfig.json"),
+          '{ "extends": "./preset.json" }\n',
+        );
+        return nearestTsconfigExtends(paths.join(directory, "index.ts"));
+      });
+      return { workspaceRoot, extendsRead };
     });
 
-    it("reads it as a list of one beside the path it was read from", ({
-      extendsRead,
-      workspaceRoot,
-    }) => {
-      expect(extendsRead).toStrictEqual({
-        tsconfigPath: join(workspaceRoot, "single", "tsconfig.json"),
-        specifiers: ["./preset.json"],
-      });
-    });
+    it.effect("reads it as a list of one beside the path it was read from", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { extendsRead, workspaceRoot } = yield* fixtures;
+        expect(extendsRead).toStrictEqual({
+          tsconfigPath: paths.join(workspaceRoot, "single", "tsconfig.json"),
+          specifiers: ["./preset.json"],
+        });
+      }),
+    );
   });
 
   describe("a tsconfig carrying several extends entries", () => {
-    const it = workspaceTest.extend("specifiers", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "several");
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(
-        join(directory, "tsconfig.json"),
-        '{ "extends": ["./first.json", "./second.json"] }\n',
-      );
-      const read = nearestTsconfigExtends(join(directory, "index.ts"));
-      return read === null ? null : read.specifiers;
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const specifiers = yield* Effect.gen(function* specifiers() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "several");
+        yield* filesystem.makeDirectory(directory, { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "tsconfig.json"),
+          '{ "extends": ["./first.json", "./second.json"] }\n',
+        );
+        const read = nearestTsconfigExtends(paths.join(directory, "index.ts"));
+        return read === null ? null : read.specifiers;
+      });
+      return { workspaceRoot, specifiers };
     });
 
-    it("keeps every entry in the order they were written", ({ specifiers }) => {
-      expect(specifiers).toStrictEqual(["./first.json", "./second.json"]);
-    });
+    it.effect("keeps every entry in the order they were written", () =>
+      Effect.gen(function* program() {
+        const { specifiers } = yield* fixtures;
+        expect(specifiers).toStrictEqual(["./first.json", "./second.json"]);
+      }),
+    );
   });
 
   describe("a tsconfig whose extends array mixes texts with other values", () => {
-    const it = workspaceTest.extend("specifiers", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "mixed");
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "tsconfig.json"), '{ "extends": ["./first.json", 7, null] }\n');
-      const read = nearestTsconfigExtends(join(directory, "index.ts"));
-      return read === null ? null : read.specifiers;
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const specifiers = yield* Effect.gen(function* specifiers() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "mixed");
+        yield* filesystem.makeDirectory(directory, { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "tsconfig.json"),
+          '{ "extends": ["./first.json", 7, null] }\n',
+        );
+        const read = nearestTsconfigExtends(paths.join(directory, "index.ts"));
+        return read === null ? null : read.specifiers;
+      });
+      return { workspaceRoot, specifiers };
     });
 
-    it("drops the entries that are not strings", ({ specifiers }) => {
-      expect(specifiers).toStrictEqual(["./first.json"]);
-    });
+    it.effect("drops the entries that are not strings", () =>
+      Effect.gen(function* program() {
+        const { specifiers } = yield* fixtures;
+        expect(specifiers).toStrictEqual(["./first.json"]);
+      }),
+    );
   });
 
   describe("a tsconfig carrying comments and a trailing comma", () => {
-    const it = workspaceTest.extend("specifiers", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "jsonc");
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(
-        join(directory, "tsconfig.json"),
-        '{\n  // the preset\n  "extends": "./preset.json",\n}\n',
-      );
-      const read = nearestTsconfigExtends(join(directory, "index.ts"));
-      return read === null ? null : read.specifiers;
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const specifiers = yield* Effect.gen(function* specifiers() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "jsonc");
+        yield* filesystem.makeDirectory(directory, { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "tsconfig.json"),
+          '{\n  // the preset\n  "extends": "./preset.json",\n}\n',
+        );
+        const read = nearestTsconfigExtends(paths.join(directory, "index.ts"));
+        return read === null ? null : read.specifiers;
+      });
+      return { workspaceRoot, specifiers };
     });
 
-    it("reads it all the same", ({ specifiers }) => {
-      expect(specifiers).toStrictEqual(["./preset.json"]);
-    });
+    it.effect("reads it all the same", () =>
+      Effect.gen(function* program() {
+        const { specifiers } = yield* fixtures;
+        expect(specifiers).toStrictEqual(["./preset.json"]);
+      }),
+    );
   });
 
   describe("a tsconfig without an extends field", () => {
-    const it = workspaceTest.extend("specifiers", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "bare");
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(
-        join(directory, "tsconfig.json"),
-        '{ "compilerOptions": { "strict": true } }\n',
-      );
-      const read = nearestTsconfigExtends(join(directory, "index.ts"));
-      return read === null ? null : read.specifiers;
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const specifiers = yield* Effect.gen(function* specifiers() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "bare");
+        yield* filesystem.makeDirectory(directory, { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "tsconfig.json"),
+          '{ "compilerOptions": { "strict": true } }\n',
+        );
+        const read = nearestTsconfigExtends(paths.join(directory, "index.ts"));
+        return read === null ? null : read.specifiers;
+      });
+      return { workspaceRoot, specifiers };
     });
 
-    it("reports no specifier", ({ specifiers }) => {
-      expect(specifiers).toStrictEqual([]);
-    });
+    it.effect("reports no specifier", () =>
+      Effect.gen(function* program() {
+        const { specifiers } = yield* fixtures;
+        expect(specifiers).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a tsconfig that cannot be read as JSON", () => {
-    const it = workspaceTest.extend("specifiers", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "broken");
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "tsconfig.json"), "{ not json\n");
-      const read = nearestTsconfigExtends(join(directory, "index.ts"));
-      return read === null ? null : read.specifiers;
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const specifiers = yield* Effect.gen(function* specifiers() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "broken");
+        yield* filesystem.makeDirectory(directory, { recursive: true });
+        yield* filesystem.writeFileString(paths.join(directory, "tsconfig.json"), "{ not json\n");
+        const read = nearestTsconfigExtends(paths.join(directory, "index.ts"));
+        return read === null ? null : read.specifiers;
+      });
+      return { workspaceRoot, specifiers };
     });
 
-    it("reports no specifier", ({ specifiers }) => {
-      expect(specifiers).toStrictEqual([]);
-    });
+    it.effect("reports no specifier", () =>
+      Effect.gen(function* program() {
+        const { specifiers } = yield* fixtures;
+        expect(specifiers).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a source sitting deeper than the tsconfig above it", () => {
-    const it = workspaceTest.extend("extendsRead", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "nested");
-      mkdirSync(join(directory, "src", "deep"), { recursive: true });
-      writeFileSync(join(directory, "tsconfig.json"), '{ "extends": "./preset.json" }\n');
-      return nearestTsconfigExtends(join(directory, "src", "deep", "index.ts"));
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const extendsRead = yield* Effect.gen(function* extendsRead() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "nested");
+        yield* filesystem.makeDirectory(paths.join(directory, "src", "deep"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "tsconfig.json"),
+          '{ "extends": "./preset.json" }\n',
+        );
+        return nearestTsconfigExtends(paths.join(directory, "src", "deep", "index.ts"));
+      });
+      return { workspaceRoot, extendsRead };
     });
 
-    it("walks up until it meets a tsconfig", ({ extendsRead, workspaceRoot }) => {
-      expect(extendsRead).toStrictEqual({
-        tsconfigPath: join(workspaceRoot, "nested", "tsconfig.json"),
-        specifiers: ["./preset.json"],
-      });
-    });
+    it.effect("walks up until it meets a tsconfig", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { extendsRead, workspaceRoot } = yield* fixtures;
+        expect(extendsRead).toStrictEqual({
+          tsconfigPath: paths.join(workspaceRoot, "nested", "tsconfig.json"),
+          specifiers: ["./preset.json"],
+        });
+      }),
+    );
   });
 
   describe("a source with a tsconfig beside it and another one further up", () => {
-    const it = workspaceTest.extend("specifiers", ({ workspaceRoot }) => {
-      const outer = join(workspaceRoot, "outer");
-      mkdirSync(join(outer, "inner"), { recursive: true });
-      writeFileSync(join(outer, "tsconfig.json"), '{ "extends": "./outer.json" }\n');
-      writeFileSync(join(outer, "inner", "tsconfig.json"), '{ "extends": "./inner.json" }\n');
-      const read = nearestTsconfigExtends(join(outer, "inner", "index.ts"));
-      return read === null ? null : read.specifiers;
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const specifiers = yield* Effect.gen(function* specifiers() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const outer = paths.join(workspaceRoot, "outer");
+        yield* filesystem.makeDirectory(paths.join(outer, "inner"), { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(outer, "tsconfig.json"),
+          '{ "extends": "./outer.json" }\n',
+        );
+        yield* filesystem.writeFileString(
+          paths.join(outer, "inner", "tsconfig.json"),
+          '{ "extends": "./inner.json" }\n',
+        );
+        const read = nearestTsconfigExtends(paths.join(outer, "inner", "index.ts"));
+        return read === null ? null : read.specifiers;
+      });
+      return { workspaceRoot, specifiers };
     });
 
-    it("stops at the nearest tsconfig instead of the outermost one", ({ specifiers }) => {
-      expect(specifiers).toStrictEqual(["./inner.json"]);
-    });
+    it.effect("stops at the nearest tsconfig instead of the outermost one", () =>
+      Effect.gen(function* program() {
+        const { specifiers } = yield* fixtures;
+        expect(specifiers).toStrictEqual(["./inner.json"]);
+      }),
+    );
   });
 
   describe("a tsconfig removed after it was read once", () => {
-    const it = workspaceTest.extend("specifiers", ({ workspaceRoot }) => {
-      const directory = join(workspaceRoot, "remembered");
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "tsconfig.json"), '{ "extends": "./preset.json" }\n');
-      nearestTsconfigExtends(join(directory, "index.ts"));
-      rmSync(join(directory, "tsconfig.json"));
-      const read = nearestTsconfigExtends(join(directory, "index.ts"));
-      return read === null ? null : read.specifiers;
+    const fixtures = Effect.gen(function* fixtures() {
+      const workspaceRoot = yield* Effect.gen(function* workspaceRoot() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "nearest-tsconfig-" });
+
+        return root;
+      });
+      const specifiers = yield* Effect.gen(function* specifiers() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const directory = paths.join(workspaceRoot, "remembered");
+        yield* filesystem.makeDirectory(directory, { recursive: true });
+        yield* filesystem.writeFileString(
+          paths.join(directory, "tsconfig.json"),
+          '{ "extends": "./preset.json" }\n',
+        );
+        nearestTsconfigExtends(paths.join(directory, "index.ts"));
+        yield* filesystem.remove(paths.join(directory, "tsconfig.json"));
+        const read = nearestTsconfigExtends(paths.join(directory, "index.ts"));
+        return read === null ? null : read.specifiers;
+      });
+      return { workspaceRoot, specifiers };
     });
 
-    it("still answers, because the reading is remembered", ({ specifiers }) => {
-      expect(specifiers).toStrictEqual(["./preset.json"]);
-    });
+    it.effect("still answers, because the reading is remembered", () =>
+      Effect.gen(function* program() {
+        const { specifiers } = yield* fixtures;
+        expect(specifiers).toStrictEqual(["./preset.json"]);
+      }),
+    );
   });
 });
 

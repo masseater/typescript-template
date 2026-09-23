@@ -1,5 +1,4 @@
-import { dirname, relative } from "node:path";
-
+import { path } from "../../../platform/path.ts";
 import { findWorkspaceRoot } from "./canonical-values/workspace-root.ts";
 import { SUBPATH_SEPARATOR } from "./path-segments.ts";
 import { toPosixPath } from "./posix-path.ts";
@@ -62,7 +61,7 @@ export const replacedModuleAt = (input: {
   readonly fromFile: string;
   readonly vocabulary: ExternalIoVocabulary;
 }): ReplacedModule => {
-  const workspaceRoot = findWorkspaceRoot(dirname(input.fromFile));
+  const workspaceRoot = findWorkspaceRoot(path.dirname(input.fromFile));
   const resolved = resolveCoupling({
     specifier: input.specifier,
     fromFile: input.fromFile,
@@ -80,5 +79,5 @@ export const replacedModuleAt = (input: {
   );
   return boundary === null
     ? { kind: "determinedByItsInput" }
-    : { kind: "behindOwnModules", boundary: toPosixPath(relative(workspaceRoot, boundary)) };
+    : { kind: "behindOwnModules", boundary: toPosixPath(path.relative(workspaceRoot, boundary)) };
 };

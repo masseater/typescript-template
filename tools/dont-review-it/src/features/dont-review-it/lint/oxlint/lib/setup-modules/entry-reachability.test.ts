@@ -1,39 +1,48 @@
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { couplingEdgesOf, parsedProgramAt } from "./entry-reachability.ts";
 
-describe("parsedProgramAt", () => {
+layer(NodeServices.layer)("parsedProgramAt", (it) => {
   describe("a path holding no file", () => {
-    const it = test.extend("parsedProgram", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "setup-modules-entry-reachability-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixture = Effect.gen(function* parsedProgram() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "setup-modules-entry-reachability-",
       });
-      return parsedProgramAt(join(root, "never-written.ts"));
+
+      return parsedProgramAt(paths.join(root, "never-written.ts"));
     });
 
-    it("parses into no program", ({ parsedProgram }) => {
-      expect(parsedProgram).toBe(null);
-    });
+    it.effect("parses into no program", () =>
+      Effect.gen(function* program() {
+        const parsedProgram = yield* fixture;
+        expect(parsedProgram).toBe(null);
+      }),
+    );
   });
 });
 
-describe("couplingEdgesOf", () => {
+layer(NodeServices.layer)("couplingEdgesOf", (it) => {
   describe("a path holding no file", () => {
-    const it = test.extend("couplingEdges", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "setup-modules-entry-reachability-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixture = Effect.gen(function* couplingEdges() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "setup-modules-entry-reachability-",
       });
-      return couplingEdgesOf(join(root, "never-written.ts"));
+
+      return couplingEdgesOf(paths.join(root, "never-written.ts"));
     });
 
-    it("couples to nothing", ({ couplingEdges }) => {
-      expect(couplingEdges).toStrictEqual([]);
-    });
+    it.effect("couples to nothing", () =>
+      Effect.gen(function* program() {
+        const couplingEdges = yield* fixture;
+        expect(couplingEdges).toStrictEqual([]);
+      }),
+    );
   });
 });
