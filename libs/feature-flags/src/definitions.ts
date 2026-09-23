@@ -42,10 +42,10 @@ export const booleanForVariation = (variation: FlagVariation): boolean =>
   variation === FLAG_VARIATION.enabled;
 
 /** @canonical-values feature-flag.evaluation-kind */
-export const flagEvaluationKinds = ["primary", "failure"] as const;
+export const flagEvaluationKinds = ["evaluated", "fail-closed"] as const;
 export const FLAG_EVALUATION_KIND = {
-  failure: flagEvaluationKinds[1],
-  primary: flagEvaluationKinds[0],
+  evaluated: flagEvaluationKinds[0],
+  failClosed: flagEvaluationKinds[1],
 } as const;
 
 export type FlagEvaluationKind = (typeof flagEvaluationKinds)[number];

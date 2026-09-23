@@ -87,7 +87,7 @@ describe("evaluationFromDetails", () => {
           reason: StandardResolutionReasons.TARGETING_MATCH,
           value: true,
         }),
-        { enabled: true, kind: FLAG_EVALUATION_KIND.primary },
+        { enabled: true, kind: FLAG_EVALUATION_KIND.evaluated },
       );
     }),
   );
@@ -102,7 +102,7 @@ describe("evaluationFromDetails", () => {
             reason: StandardResolutionReasons.ERROR,
             value: true,
           }),
-          { enabled: failClosedEnabled, kind: FLAG_EVALUATION_KIND.failure },
+          { enabled: failClosedEnabled, kind: FLAG_EVALUATION_KIND.failClosed },
         );
         assert.strictEqual(failClosedEnabled, false);
       }),
@@ -142,7 +142,7 @@ describe("flagshipFeatureFlagsLayer", () => {
       const featureFlags = yield* FeatureFlags;
       const evaluation = yield* featureFlags.evaluateBoolean(FLAG_KEY.memberBoard);
       assert.strictEqual(evaluation.enabled, false);
-      assert.strictEqual(evaluation.kind, FLAG_EVALUATION_KIND.failure);
+      assert.strictEqual(evaluation.kind, FLAG_EVALUATION_KIND.failClosed);
     }).pipe(
       Effect.provide(
         flagshipFeatureFlagsLayer({

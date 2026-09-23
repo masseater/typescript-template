@@ -17,9 +17,9 @@ const evaluationFromDetails = (
   }>,
 ): FlagEvaluation => {
   if (details.errorCode !== undefined || details.reason === StandardResolutionReasons.ERROR) {
-    return { enabled: failClosedEnabled, kind: FLAG_EVALUATION_KIND.failure };
+    return { enabled: failClosedEnabled, kind: FLAG_EVALUATION_KIND.failClosed };
   }
-  return { enabled: details.value, kind: FLAG_EVALUATION_KIND.primary };
+  return { enabled: details.value, kind: FLAG_EVALUATION_KIND.evaluated };
 };
 
 export { evaluationFromDetails, failClosedEnabled };
