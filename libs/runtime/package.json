@@ -3,15 +3,15 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./bindings": "./src/bindings.ts",
-    "./http": "./src/http.ts",
-    "./worker": "./src/worker.ts",
-    "./client": "./src/client.ts",
-    "./account": "./src/account.ts",
-    "./jobs": "./src/jobs.ts",
-    "./testing": "./src/app-fixture.ts",
-    "./security": "./src/security.ts"
+    ".": "./src/features/runtime/index.ts",
+    "./bindings": "./src/features/runtime/bindings.ts",
+    "./http": "./src/features/runtime/http.ts",
+    "./worker": "./src/features/runtime/worker.ts",
+    "./client": "./src/features/runtime/client.ts",
+    "./account": "./src/features/runtime/account.ts",
+    "./jobs": "./src/features/runtime/jobs.ts",
+    "./testing": "./src/features/runtime/app-fixture.ts",
+    "./security": "./src/features/runtime/security.ts"
   },
   "dependencies": {
     "@cloudflare/workers-types": "catalog:",

@@ -2,8 +2,8 @@
   "name": "@repo/load",
   "private": true,
   "bin": {
-    "repo-load": "./src/cli.ts",
-    "repo-load-ci": "./src/ci.ts"
+    "repo-load": "./src/features/load/cli.ts",
+    "repo-load-ci": "./src/features/load/ci.ts"
   },
   "type": "module",
   "dependencies": {
