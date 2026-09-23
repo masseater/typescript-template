@@ -1,12 +1,19 @@
-import { appHead } from "@repo/ui/shell";
-import { createRootRoute } from "@tanstack/react-router";
+import { AppShell, appHead } from "@repo/ui/shell";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 
 import styles from "#app/styles.css?url";
 import { serviceName } from "#shared/config/index.ts";
-import { RootDocument } from "./-root-document.tsx";
+import { fieldValidationMessages } from "#shared/i18n/index.ts";
+import { routes } from "#shared/telemetry/index.ts";
+
+import type { ReactElement } from "react";
 
 const Route = createRootRoute({
-  component: RootDocument,
+  component: (): ReactElement => (
+    <AppShell fieldValidationMessages={fieldValidationMessages} routes={routes}>
+      <Outlet />
+    </AppShell>
+  ),
   head: () => appHead(serviceName, styles),
 });
 

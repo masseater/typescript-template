@@ -1,3 +1,5 @@
+import { Schema } from "effect";
+
 import { APPLICATION, applications } from "./applications.ts";
 
 import type { Application } from "./applications.ts";
@@ -15,6 +17,7 @@ type WikiWorker = typeof wikiWorker;
 
 const buildTargets = [...applications, wikiWorker] as const;
 type BuildTarget = (typeof buildTargets)[number];
+const BuildTargetName = Schema.Literals(buildTargets);
 
 const isWikiPath = (path: string): boolean =>
   path === wikiBasePath || path.startsWith(`${wikiBasePath}/`);
@@ -22,6 +25,7 @@ const isWikiPath = (path: string): boolean =>
 const hostOf = (target: BuildTarget): Application => (target === wikiWorker ? wikiHost : target);
 
 export {
+  BuildTargetName,
   buildTargets,
   hostOf,
   isWikiPath,

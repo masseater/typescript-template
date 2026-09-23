@@ -81,6 +81,7 @@ export {
 } from "./realtime.ts";
 export { respondedSuccessfully, waitUntilResponds } from "./responds.ts";
 export {
+  BuildTargetName,
   buildTargets,
   hostOf,
   isWikiPath,

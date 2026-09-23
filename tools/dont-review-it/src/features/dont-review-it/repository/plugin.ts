@@ -12,6 +12,7 @@ import {
 } from "./effect-rules.ts";
 import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
+import { lazyMotionVisitor } from "./lazy-motion.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { modularImportsVisitor } from "./modular-imports.ts";
 import { modularLayersVisitor } from "./modular-layers.ts";
@@ -268,7 +269,7 @@ const projectPlugin = definePlugin({
     boundaries: {
       create: boundariesVisitor,
       meta: metadata(
-        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/dont-review-it/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
+        `依存境界違反です。配布物に入るコードの依存先は、文字列リテラルだけで指定してください。連結・テンプレート・変数の経由と require・createRequire は、依存グラフの検査が追えないので使えません。パッケージ間の向きは dependency-cruiser が tools/dont-review-it/src/repository/dependency-cruiser.ts の規則で判定します。生 D1 操作は ${rawD1Modules.join(" と ")} だけに限定し、業務処理は計測付き ORM を使用してください。`,
       ),
     },
     "cross-request-state": {
@@ -341,6 +342,12 @@ const projectPlugin = definePlugin({
       create: logVisitor,
       meta: metadata(
         "Effect.log / logError / logWarning / logInfo などを直接呼べません。水準の判定を迂回すると、同じ事象が宛先によって違う厳しさで出ます。libs/observability の logAt / logCause を通してください。",
+      ),
+    },
+    "lazy-motion": {
+      create: lazyMotionVisitor,
+      meta: metadata(
+        'motion/react から motion と m は import できません。@repo/ui の MotionProvider は画面全体を LazyMotion strict で包みます。motion.div などは開発時のブラウザでだけ例外になり、本番では黙って全機能を同梱します。React Bits から追加した部品も含め、import * as m from "motion/react-m" の m.div などを使ってください。',
       ),
     },
     "no-internal-mocks": {

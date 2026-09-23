@@ -127,6 +127,7 @@ const lintOptions = {
         "project/example-values": LINT_SEVERITY.ERROR,
         "project/git-environment": LINT_SEVERITY.ERROR,
         "project/layers": LINT_SEVERITY.ERROR,
+        "project/lazy-motion": LINT_SEVERITY.ERROR,
         "project/modular-imports": LINT_SEVERITY.ERROR,
         "project/modular-layers": LINT_SEVERITY.ERROR,
         "project/thin-app-routes": LINT_SEVERITY.ERROR,

@@ -2,22 +2,33 @@
 const { mkdtemp, readFile, readdir, rm } = process.getBuiltinModule("fs/promises");
 const { tmpdir } = process.getBuiltinModule("os");
 const path = process.getBuiltinModule("path");
-const { fileURLToPath } = process.getBuiltinModule("url");
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
+import { type BuildTarget, BuildTargetName } from "@repo/config";
 import { serverOnlyMarkers } from "@repo/vite-config";
-import { Console, Effect } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { build } from "vite-plus";
 
-const appRoot = fileURLToPath(new URL("../../../../../../apps/service-member/", import.meta.url));
-const probeModule = path.join(appRoot, "src/pages/landing/ui/hero.tsx");
+import { repositoryRoot } from "./repository-root.ts";
 
-const clientReachable: readonly string[] = [
+const probeModules: Readonly<Record<BuildTarget, string>> = {
+  "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",
+  "internal-wiki": "src/widgets/wiki-frame/ui/wiki-frame.tsx",
+  "service-admin": "src/pages/login/ui/admin-login.tsx",
+  "service-member": "src/pages/landing/ui/hero.tsx",
+};
+
+const sharedClientReachable: readonly string[] = [
   "@repo/runtime/client",
   "@repo/auth-ui",
   "@repo/ui",
-  "#shared/api/client.ts",
 ];
+const clientReachableOf: Readonly<Record<BuildTarget, readonly string[]>> = {
+  "internal-dashboard": [...sharedClientReachable, "#shared/api/client.ts"],
+  "internal-wiki": sharedClientReachable,
+  "service-admin": [...sharedClientReachable, "#shared/api/client.ts"],
+  "service-member": [...sharedClientReachable, "#shared/api/client.ts"],
+};
 const serverOnly: readonly (readonly [string, string])[] = [
   ["@repo/runtime/http", "**/libs/runtime/src/features/runtime/**"],
   ["@repo/runtime/worker", "**/libs/runtime/src/features/runtime/**"],
@@ -36,7 +47,13 @@ function denialReason(error: unknown): string {
   );
 }
 
-async function clientBuild(specifiers: readonly string[], outDirectory: string): Promise<string> {
+async function clientBuild(
+  application: BuildTarget,
+  specifiers: readonly string[],
+  outDirectory: string,
+): Promise<string> {
+  const appRoot = path.join(repositoryRoot, "apps", application);
+  const probeModule = path.join(appRoot, probeModules[application]);
   try {
     await build({
       build: { emptyOutDir: true, outDir: outDirectory },
@@ -82,51 +99,87 @@ const temporaryOutput = Effect.acquireRelease(
   (directory) => Effect.promise(async () => rm(directory, { force: true, recursive: true })),
 );
 
-function serverOnlyProblems([specifier, pattern]: readonly [string, string]): Effect.Effect<
-  readonly string[]
-> {
+function serverOnlyProblems(
+  application: BuildTarget,
+  [specifier, pattern]: readonly [string, string | undefined],
+): Effect.Effect<readonly string[]> {
   return Effect.scoped(
     temporaryOutput.pipe(
       Effect.flatMap((outDirectory) =>
-        Effect.promise(async () => clientBuild([specifier], outDirectory)),
+        Effect.promise(async () => clientBuild(application, [specifier], outDirectory)),
       ),
-      Effect.map((denial) =>
-        denial === pattern
+      Effect.map((denial) => {
+        if (pattern === undefined) {
+          return denial === "" ? [`${specifier} reached the client bundle undeclared`] : [];
+        }
+        return denial === pattern
           ? []
-          : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`],
-      ),
+          : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`];
+      }),
     ),
   );
 }
 
-const inspect = Effect.gen(function* inspect() {
-  const reachableDirectory = yield* temporaryOutput;
-  const reachableDenial = yield* Effect.promise(async () =>
-    clientBuild(clientReachable, reachableDirectory),
+const Manifest = Schema.Struct({
+  dependencies: Schema.Record(Schema.String, Schema.String),
+});
+
+const expectedDenials = (
+  application: BuildTarget,
+): Effect.Effect<readonly (readonly [string, string | undefined])[]> =>
+  Effect.promise(async () =>
+    readFile(path.join(repositoryRoot, "apps", application, "package.json"), "utf-8"),
+  ).pipe(
+    Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(Manifest))),
+    Effect.orDie,
+    Effect.map(({ dependencies }) =>
+      serverOnly.map(([specifier, pattern]) =>
+        specifier.startsWith("#") || specifier.split("/").slice(0, 2).join("/") in dependencies
+          ? ([specifier, pattern] as const)
+          : ([specifier, undefined] as const),
+      ),
+    ),
   );
-  const markers = yield* Effect.promise(async () => bundledMarkers(reachableDirectory));
-  const denials = yield* Effect.forEach(serverOnly, serverOnlyProblems);
-  return [
-    ...(reachableDenial === ""
-      ? []
-      : [`${clientReachable.join(" ")} denied by ${reachableDenial}`]),
-    ...markers.map((marker) => `${marker} reached the client bundle`),
-    ...denials.flat(),
-  ];
-}).pipe(Effect.scoped);
+
+const inspect = (application: BuildTarget) =>
+  Effect.gen(function* inspect() {
+    const reachableDirectory = yield* temporaryOutput;
+    const reachableDenial = yield* Effect.promise(async () =>
+      clientBuild(application, clientReachableOf[application], reachableDirectory),
+    );
+    const markers = yield* Effect.promise(async () => bundledMarkers(reachableDirectory));
+    const checked = yield* expectedDenials(application);
+    const denials = yield* Effect.forEach(checked, (entry) =>
+      serverOnlyProblems(application, entry),
+    );
+    const unexpected = [
+      ...(reachableDenial === ""
+        ? []
+        : [`${clientReachableOf[application].join(" ")} denied by ${reachableDenial}`]),
+      ...markers.map((marker) => `${marker} reached the client bundle`),
+      ...denials.flat(),
+    ];
+    return { inputs: clientReachableOf[application].length + checked.length, unexpected };
+  }).pipe(Effect.scoped);
 
 runCli(
-  inspect.pipe(
-    Effect.flatMap((unexpected) =>
-      Console.log(
-        JSON.stringify({
-          event: "quality.client_bundle",
-          inputs: clientReachable.length + serverOnly.length,
-          ok: unexpected.length === 0,
-          unexpected,
-        }),
-      ).pipe(Effect.andThen(unexpected.length > 0 ? markFailed : Effect.void)),
-    ),
-  ),
+  Effect.gen(function* run() {
+    const application = yield* Schema.decodeUnknownEffect(BuildTargetName)(
+      path.basename(process.cwd()),
+    );
+    const { inputs, unexpected } = yield* inspect(application);
+    yield* Console.log(
+      JSON.stringify({
+        application,
+        event: "quality.client_bundle",
+        inputs,
+        ok: unexpected.length === 0,
+        unexpected,
+      }),
+    );
+    if (unexpected.length > 0) {
+      yield* markFailed;
+    }
+  }),
   (cause) => causeRecord("quality.client_bundle_failed", { cause }),
 );
