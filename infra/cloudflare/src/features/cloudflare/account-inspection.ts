@@ -172,7 +172,7 @@ function preflightBlocked(preflight: Readonly<Preflight>): readonly string[] {
 
 function blocked(inspection: Readonly<Inspection>): readonly string[] {
   const claimed = ["database", "dnsRecords", "workerDomains", "workerNames"] as const;
-  const { deployToken } = inspection;
+  const { alertQuota, deployToken } = inspection;
   return [
     ...new Set([
       ...Object.entries(inspection).flatMap(([name, verdict]) =>
@@ -180,6 +180,7 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
       ),
       ...claimed.filter((name) => inspection[name] === "taken"),
       ...emailBlocked(inspection),
+      ...(alertQuota === "counted" ? ["alertQuota"] : []),
       ...(inspection.workersSubdomain === "absent" ? ["workersSubdomain"] : []),
       ...(isUnreadable(deployToken) || deployToken.length === 0 ? [] : ["deployToken"]),
     ]),
