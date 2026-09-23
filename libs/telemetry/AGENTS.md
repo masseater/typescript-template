@@ -17,4 +17,4 @@ description: One OpenTelemetry provider startup for a process.
 
 エントリは `.`・`./optional-setting`・`./vitest-sdk` である。コマンドは持たない。npm へは直接出さず、公開パッケージのビルドに束ねられて出る。
 
-OpenTelemetry API 1。Logs / metrics / trace の SDK は package.json の pin に従う。
+OpenTelemetry API 1。
