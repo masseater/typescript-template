@@ -8,6 +8,10 @@ const nodePath = process.getBuiltinModule("path") as {
   readonly resolve: (...parts: readonly string[]) => string;
 };
 
+const nodeOs = process.getBuiltinModule("os") as {
+  readonly homedir: () => string;
+};
+
 const nodeCrypto = process.getBuiltinModule("crypto") as {
   readonly randomBytes: (byteCount: number) => Uint8Array;
 };
@@ -29,6 +33,8 @@ const parentPath = (location: string): string => nodePath.dirname(location);
 const baseName = (location: string): string => nodePath.basename(location);
 
 const resolvePath = (...parts: readonly string[]): string => nodePath.resolve(...parts);
+
+const homeDirectory = (): string => nodeOs.homedir();
 
 const fileExists = (location: string): boolean => nodeFs.existsSync(location);
 
@@ -68,6 +74,7 @@ export {
   baseName,
   epochMillis,
   fileExists,
+  homeDirectory,
   joinPath,
   makeDirectory,
   optionalSetting,

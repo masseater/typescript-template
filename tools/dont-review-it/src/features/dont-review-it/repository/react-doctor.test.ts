@@ -150,14 +150,19 @@ describe("react-doctor integration", () => {
     expect(
       Object.entries(workspaceConfigs)
         .filter(([file]) => file.includes("/apps/"))
-        .map(([file, config]) => [file.replace(/^(?:\.\.\/)+/u, ""), config.ignore?.files ?? []])
+        .map(([file, config]): readonly [string, readonly string[]] => [
+          file.replace(/^(?:\.\.\/)+/u, ""),
+          config.ignore?.files ?? [],
+        ])
         .toSorted(([left], [right]) => left.localeCompare(right)),
     ).toStrictEqual(
-      [
-        ["apps/internal-dashboard/doctor.config.json", ["dist/**"]],
-        ["apps/service-admin/doctor.config.json", ["dist/**"]],
-        ["apps/service-member/doctor.config.json", ["dist/**"]],
-      ].toSorted(([left], [right]) => left.localeCompare(right)),
+      (
+        [
+          ["apps/internal-dashboard/doctor.config.json", ["dist/**"]],
+          ["apps/service-admin/doctor.config.json", ["dist/**"]],
+          ["apps/service-member/doctor.config.json", ["dist/**"]],
+        ] as const
+      ).toSorted(([left], [right]) => left.localeCompare(right)),
     );
   });
 

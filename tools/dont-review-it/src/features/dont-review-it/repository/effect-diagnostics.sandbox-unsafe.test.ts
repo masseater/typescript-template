@@ -203,7 +203,7 @@ describe("effect diagnostics coverage", () => {
   it("typechecks with effect-tsgo before the bundle and before every push", () => {
     expect.assertions(3);
     expect(effectDiagnostics["check:effect"].command).toBe(effectTsgoNoEmit("tsconfig.json"));
-    expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effect"]));
+    expect(appRun.tasks.build.dependsOn).toStrictEqual(expect.arrayContaining(["check:effect"]));
     expect(
       configuredDirectories.filter(
         (directory) => !reachable(directory, ["prepush"]).includes("check:effect"),

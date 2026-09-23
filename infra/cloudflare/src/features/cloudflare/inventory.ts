@@ -254,9 +254,11 @@ function inventoryOf(shape: typeof CompiledShape.Type): StackInventory {
 
 type StackProgram = Parameters<typeof toEffect>[0];
 
+const isStackProgram = (value: unknown): value is StackProgram => Effect.isEffect(value);
+
 function stackProgram(module: unknown): StackProgram | undefined {
   const program: unknown = Predicate.isObject(module) ? Reflect.get(module, "default") : undefined;
-  return Effect.isEffect(program) ? (program as StackProgram) : undefined;
+  return isStackProgram(program) ? program : undefined;
 }
 
 const compileStack = Effect.fn("compileStack")(function* compileStack(stack: StackName) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   awaitingPresetPackages,
+  softPresetPackages,
   lintOptions,
   overridePluginMismatches,
   templateWorkspaces,
@@ -52,7 +53,6 @@ const workspaceDirectories = Object.keys(manifests)
   .toSorted();
 
 const globPrefix = (pattern: string): string => {
-  const slash = pattern.indexOf("/");
   const cut = pattern.indexOf("/**");
   if (cut === -1) {
     return pattern;
@@ -146,7 +146,8 @@ const qualityIncludesDoctor = (): boolean => {
 describe("inspection coverage", () => {
   it("keeps awaiting preset packages from growing silently", () => {
     expect.hasAssertions();
-    expect(awaitingPresetPackages).toStrictEqual([
+    expect(awaitingPresetPackages).toStrictEqual([]);
+    expect(softPresetPackages).toStrictEqual([
       "apps/service-admin/**",
       "apps/service-member/**",
       "apps/internal-dashboard/**",

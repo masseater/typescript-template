@@ -13,7 +13,6 @@ import { contactApi } from "./contact-api.ts";
 import { opsMailLayer } from "./ops-mail.ts";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
