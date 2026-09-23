@@ -1,9 +1,11 @@
 import { APPLICATION } from "@repo/config";
+import { readStorage } from "@repo/config/storage";
 import { env } from "cloudflare:workers";
-import { Layer } from "effect";
+import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 
 import { appLayer } from "./bindings.ts";
+import { FileStore } from "./file-store.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
 import type { AppServices } from "./index.ts";
@@ -37,4 +39,8 @@ function testClockRuntime(
   return workerRuntime(() => Layer.merge(services, TestClock.layer()));
 }
 
-export { appEnvironment, fixtureAuthSecret, fixtureOrigin, testClockRuntime };
+const testFileStore = Layer.orDie(
+  Layer.unwrap(Effect.map(readStorage(env), (storage) => FileStore.layer(storage.files))),
+);
+
+export { appEnvironment, fixtureAuthSecret, fixtureOrigin, testClockRuntime, testFileStore };

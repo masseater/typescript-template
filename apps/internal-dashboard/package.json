@@ -6,7 +6,6 @@
     "#*": "./src/*"
   },
   "dependencies": {
-    "@better-auth/oauth-provider": "1.7.5",
     "@effect/atom-react": "catalog:",
     "@modelcontextprotocol/server": "2.0.0",
     "@repo/auth": "workspace:*",
@@ -26,7 +25,6 @@
     "alchemy": "catalog:",
     "beautiful-mermaid": "1.1.3",
     "better-auth": "catalog:",
-    "better-call": "1.4.0",
     "effect": "catalog:",
     "fumadocs-core": "16.15.11",
     "fumadocs-mdx": "15.4.1",

@@ -35,11 +35,13 @@ export {
   receivedLink,
 } from "./mail-test-fixture.ts";
 export { signedSessionCookie, withAuth } from "./auth-test-fixture.ts";
-export { startOAuthAuthorization } from "./oauth-authorization-test-fixture.ts";
-export { UnexpectedStatus } from "./unexpected-status-test-fixture.ts";
-export { startAuthorization, wikiOrigin, wikiStaff } from "./wiki-oauth-test-fixture.ts";
 export {
-  adminOperator,
-  adminOrigin,
-  startAuthorization as startAdminAuthorization,
-} from "./admin-oauth-test-fixture.ts";
+  exchangeOAuthCode,
+  grantOAuthAuthorization,
+  startOAuthAuthorization,
+} from "./oauth-authorization-test-fixture.ts";
+export { authorizeMcpAs, mcpClient, responseStatus } from "./mcp-client-test-fixture.ts";
+export type { McpClient } from "./mcp-client-test-fixture.ts";
+export { UnexpectedStatus } from "./unexpected-status-test-fixture.ts";
+export { startWikiAuthorization, wikiOrigin, wikiStaff } from "./wiki-oauth-test-fixture.ts";
+export { adminOperator, adminOrigin, startAdminAuthorization } from "./admin-oauth-test-fixture.ts";

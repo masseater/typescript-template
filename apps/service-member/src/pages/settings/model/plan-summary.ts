@@ -42,3 +42,4 @@ function summarizePlan(plan: Plan): PlanSummary {
 }
 
 export { summarizePlan };
+export type { PlanSummary };

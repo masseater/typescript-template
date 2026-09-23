@@ -131,17 +131,30 @@ function grantedBindings(app: Application): readonly string[] {
   );
 }
 
+const applicationOnlyBindings: Readonly<Partial<Record<Application, readonly string[]>>> = {
+  [APPLICATION.user]: [
+    plainText(
+      appEnvKey.googleAnalyticsMeasurementId,
+      verificationSettings.googleAnalyticsMeasurementId,
+    ),
+  ],
+  [APPLICATION.wiki]: [
+    tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
+    `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
+  ],
+};
+
+const applicationCrons: Readonly<Partial<Record<Application, readonly string[]>>> = {
+  [APPLICATION.user]: [memberLeavePurgeCron],
+  [APPLICATION.wiki]: ["*/30 * * * *"],
+};
+
+function scheduled(app: Application): { readonly crons?: string[] } {
+  const crons = applicationCrons[app];
+  return crons === undefined ? {} : { crons: [...crons] };
+}
+
 function applicationResource(app: Application, release: string): ResourceInventory {
-  const flagshipBindings = [
-    plainText(appEnvKey.flagshipAccountId, accountId),
-    `FLAGS:flagship:appId=${stackName("flagship")}.App.appId`,
-    ...(app === APPLICATION.wiki
-      ? [
-          tokenValue(appEnvKey.flagshipApiToken, "FlagshipWrite"),
-          `${appEnvKey.flagshipAppId}:deferred:${stackName("flagship")}.App.appId`,
-        ]
-      : []),
-  ];
   return {
     adopt: false,
     bindings: [
@@ -152,15 +165,9 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `DB:d1:databaseId=${stackName("database")}.Database.databaseId`,
       `EMAIL:send_email:allowedSenderAddresses=${mailFrom}`,
       plainText(appEnvKey.emailFrom, mailFrom),
-      ...flagshipBindings,
-      ...(app === APPLICATION.user
-        ? [
-            plainText(
-              appEnvKey.googleAnalyticsMeasurementId,
-              verificationSettings.googleAnalyticsMeasurementId,
-            ),
-          ]
-        : []),
+      plainText(appEnvKey.flagshipAccountId, accountId),
+      `FLAGS:flagship:appId=${stackName("flagship")}.App.appId`,
+      ...(applicationOnlyBindings[app] ?? []),
       plainText(appEnvKey.opsEmail, budget.recipients[0] ?? mailFrom),
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
@@ -174,8 +181,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
         runWorkerFirst: true,
       },
       bundle: false,
-      ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
-      ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+      ...scheduled(app),
       domain: { name: new URL(origins[app]).hostname, zoneId: verificationSettings.zoneId },
       main: `infra/cloudflare/.artifacts/${app}/<digest>/server/index.js`,
       name: `${prefix}-${app}`,

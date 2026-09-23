@@ -1,11 +1,9 @@
 import { decodeJson } from "@repo/runtime/client";
-import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
 import { Schema } from "effect";
 import { useEffect, useState } from "react";
 
-import { serviceName } from "#shared/config/index.ts";
-import { ConsentActions } from "./consent-actions.tsx";
+import { ConsentView } from "./consent-view.tsx";
 
 import type { ReactElement } from "react";
 
@@ -72,20 +70,7 @@ function ConsentPage(): ReactElement {
   const { client_id: clientId } = consentRoute.useSearch();
   const [error, setError] = useState("");
   const client = useClientName(clientId, setError);
-  return (
-    <Page title={`${serviceName} との連携`}>
-      {clientId === undefined && (
-        <StatusMessage variant={STATUS_VARIANT.failure}>
-          連携を求めているクライアントが分かりません。
-        </StatusMessage>
-      )}
-      {client !== undefined && <ConsentActions client={client} onError={setError} />}
-      {clientId !== undefined && client === undefined && error === "" && (
-        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
-      )}
-      {error !== "" && <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>}
-    </Page>
-  );
+  return <ConsentView client={client} clientId={clientId} error={error} onError={setError} />;
 }
 
 export { ConsentPage };

@@ -1,28 +1,13 @@
 import { inquiryStatuses, roles } from "@repo/config";
-import { Effect, Schema } from "effect";
+import { Identifier, adminPageSize, maximumAdminPageSize, pageNumber } from "@repo/config/paging";
+import { Schema } from "effect";
 
-const maximumIdentifierLength = 256;
 const maximumReplyLength = 4000;
-const defaultPageSize = 50;
-const maximumPageSize = 100;
-
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const InquiryStatus = Schema.Literals(inquiryStatuses);
 
-function pageNumber(
-  fallback: number,
-  minimum: number,
-  maximum: number,
-): Schema.withDecodingDefaultKey<Schema.FiniteFromString> {
-  const range = Schema.isBetween({ maximum, minimum });
-  const bounded = Schema.FiniteFromString.check(Schema.isInt(), range);
-  const fallbackText = Effect.succeed(String(fallback));
-  return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
-}
-
 const InquiryListQuery = Schema.Struct({
-  limit: pageNumber(defaultPageSize, 1, maximumPageSize),
+  limit: pageNumber(adminPageSize, 1, maximumAdminPageSize),
   offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
   status: Schema.optionalKey(InquiryStatus),
 });

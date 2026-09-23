@@ -136,8 +136,10 @@ function containsExifMarker(bytes: Uint8Array): boolean {
 }
 
 export {
+  bytesOf,
   containsExifMarker,
   jpegMarkers,
+  jpegSegment,
   jpegWithExif,
   pngChunkTypes,
   pngWithText,

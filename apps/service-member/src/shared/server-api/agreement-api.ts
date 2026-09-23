@@ -116,25 +116,34 @@ function agreementApi(api: ApiRoutes<AppServices>) {
     .post("/agreements/withdraw", ...api.route({ response: AgreementsView }, withdraw, failures));
 }
 
+const consentExemptPrefixes = [
+  "/auth",
+  "/agreements",
+  "/invite",
+  "/recovery",
+  "/billing",
+  "/support",
+] as const;
+const consentExemptPaths: ReadonlySet<string> = new Set([
+  "/session",
+  "/health",
+  "/telemetry",
+  "/contact",
+  "/leave",
+]);
+
+const apiRelativePath = (url: string): string => {
+  const path = new URL(url).pathname.replace(/\/$/, "") || "/";
+  return path.startsWith("/api/") ? path.slice("/api".length) : path;
+};
+
 const consentExempt = (request: Request): boolean => {
-  const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
-  const relative = path.startsWith("/api/") ? path.slice("/api".length) : path;
-  if (
-    relative.startsWith("/auth") ||
-    relative.startsWith("/agreements") ||
-    relative === "/session" ||
-    relative === "/health" ||
-    relative === "/telemetry" ||
-    relative.startsWith("/invite") ||
-    relative === "/contact" ||
-    relative === "/leave" ||
-    relative.startsWith("/recovery") ||
-    relative.startsWith("/billing") ||
-    relative.startsWith("/support")
-  ) {
-    return true;
-  }
-  return relative === "/onboarding" && request.method === "GET";
+  const relative = apiRelativePath(request.url);
+  return (
+    consentExemptPaths.has(relative) ||
+    consentExemptPrefixes.some((prefix) => relative.startsWith(prefix)) ||
+    (relative === "/onboarding" && request.method === "GET")
+  );
 };
 
 const enforceAgreements = Effect.fn("consent.gate")(function* enforceAgreements(request: Request) {

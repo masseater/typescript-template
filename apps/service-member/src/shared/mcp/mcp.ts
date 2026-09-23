@@ -1,7 +1,7 @@
 import { McpServer, createMcpHandler } from "@modelcontextprotocol/server";
 import { ACCOUNT_STATE, APPLICATION, MEMBER_MCP_SCOPE, ROLE } from "@repo/config";
 import { and, eq, query, requirePaid, schema } from "@repo/db";
-import { AppOrigin, secureResponse } from "@repo/runtime/http";
+import { mcpEndpoint, toolFailure, toolRunner } from "@repo/runtime/mcp";
 import { Clock, Effect, Schema } from "effect";
 
 import { ProfileUpdate, maximumMessageBodyLength } from "#shared/contracts/index.ts";
@@ -10,7 +10,7 @@ import { MessagingMemberRequired } from "#shared/server-api/messaging-member-req
 import { openDirectConversation, sendDirectMessage } from "#shared/server-api/messaging.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-import type { AppServices } from "@repo/runtime";
+import type { RunApp, ToolFailure } from "@repo/runtime/mcp";
 import type { MemberMcpActor } from "./authorize-mcp.ts";
 
 const { session, user } = schema;
@@ -37,43 +37,12 @@ const MessageInput = Schema.toStandardJSONSchemaV1(
   ),
 );
 
-const toolFailure = (
-  message: string,
-): { content: [{ type: "text"; text: string }]; isError: true } => ({
-  content: [{ text: message, type: "text" }],
-  isError: true,
-});
-
-const failureText = (failure: { readonly _tag?: string }): string => {
-  if (failure._tag === "PaidPlanRequired") {
-    return "paid_plan_required";
-  }
-  if (failure._tag === "MessagingConversationNotFound" || failure._tag === "UserNotFound") {
-    return "target_unavailable";
-  }
-  if (failure._tag === "MessagingMemberRequired") {
-    return "member_required";
-  }
-  return "operation_failed";
-};
-
-const runTool =
-  (runMember: <Value>(program: Effect.Effect<Value, unknown, AppServices>) => Promise<Value>) =>
-  <Value>(
-    program: Effect.Effect<Value, unknown, AppServices>,
-  ): Promise<{ content: [{ type: "text"; text: string }]; isError?: true }> =>
-    runMember(
-      program.pipe(
-        Effect.flatMap((value) =>
-          Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(
-            Effect.map((text): { content: [{ type: "text"; text: string }] } => ({
-              content: [{ text, type: "text" }],
-            })),
-            Effect.orDie,
-          ),
-        ),
-      ),
-    ).catch((failure: { readonly _tag?: string }) => toolFailure(failureText(failure)));
+const failureCodes: ReadonlyMap<string, string> = new Map([
+  ["MessagingConversationNotFound", "target_unavailable"],
+  ["MessagingMemberRequired", "member_required"],
+  ["PaidPlanRequired", "paid_plan_required"],
+  ["UserNotFound", "target_unavailable"],
+]);
 
 const requireMemberSession = Effect.fn("requireMemberSession")(function* requireMemberSession(
   actor: MemberMcpActor,
@@ -110,16 +79,13 @@ const requireMemberSession = Effect.fn("requireMemberSession")(function* require
   return row.id;
 });
 
-function denied(scope: string): { content: [{ type: "text"; text: string }]; isError: true } {
+function denied(scope: string): ToolFailure {
   return toolFailure(`permission_required:${scope}`);
 }
 
-function createServer(
-  actor: MemberMcpActor,
-  runMember: <Value>(program: Effect.Effect<Value, unknown, AppServices>) => Promise<Value>,
-): McpServer {
+function createServer(actor: MemberMcpActor, runMember: RunApp): McpServer {
   const server = new McpServer({ name: APPLICATION.user, version: mcpVersion });
-  const run = runTool(runMember);
+  const run = toolRunner(runMember, failureCodes);
   const signedInMember = requireMemberSession(actor);
 
   server.registerTool(
@@ -225,19 +191,8 @@ function createServer(
   return server;
 }
 
-const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
-  const origin = yield* AppOrigin;
-  const authorized = yield* authorizeMcpRequest(request, origin);
-  if (authorized instanceof Response) {
-    return authorized;
-  }
-  const context = yield* Effect.context<AppServices>();
-  const runMember = <Value, Failure>(
-    program: Effect.Effect<Value, Failure, AppServices>,
-  ): Promise<Value> => Effect.runPromiseWith(context)(program);
-  const handler = createMcpHandler(() => createServer(authorized, runMember));
-  const response = yield* Effect.promise(() => Promise.resolve(handler.fetch(request)));
-  return secureResponse(request, response);
-});
+const serveMcp = mcpEndpoint(authorizeMcpRequest, (actor, runMember) =>
+  createMcpHandler(() => createServer(actor, runMember)),
+);
 
 export { serveMcp };

@@ -31,3 +31,6 @@ export {
 } from "./member-api-key.ts";
 export { verifySession } from "./session.ts";
 export type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";
+export { mcpAuthorization, mcpForbidden, mcpSession } from "./mcp-authorization.ts";
+export type { McpSession, McpTokenClaims } from "./mcp-authorization.ts";
+export { verifiedSessionId } from "./session-id.ts";

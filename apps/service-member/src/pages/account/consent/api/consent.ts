@@ -1,16 +1,10 @@
+import { submitConsent } from "@repo/auth-ui";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { Schema } from "effect";
 
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
-const Redirect = Schema.Struct({ url: Schema.String });
-const ConsentBody = Schema.Struct({
-  accept: Schema.Boolean,
-  oauth_query: Schema.String,
-  scope: Schema.optionalKey(Schema.String),
-});
-const encodeConsentBody = Schema.encodePromise(Schema.fromJsonString(ConsentBody));
 
 class ConsentClientUnavailable extends Schema.TaggedError<ConsentClientUnavailable>()(
   "ConsentClientUnavailable",
@@ -30,15 +24,6 @@ function getPublicClient(
   init: RequestInit,
 ): Promise<Response> {
   return fetchImpl(url, init);
-}
-
-function postConsent(fetchImpl: typeof fetch, body: string): Promise<Response> {
-  return fetchImpl("/api/auth/oauth2/consent", {
-    body,
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
 }
 
 const loadClientName = createIsomorphicFn()
@@ -75,20 +60,7 @@ const loadClientName = createIsomorphicFn()
   );
 
 function submitDecision(accept: boolean, scopes: readonly string[]): Promise<void> {
-  return encodeConsentBody({
-    accept,
-    oauth_query: globalThis.location.search.slice(1),
-    ...(accept ? { scope: scopes.join(" ") } : {}),
-  }).then((body) =>
-    postConsent(fetch, body).then((response) => {
-      if (!response.ok) {
-        throw new Error("連携の許可を処理できませんでした。");
-      }
-      return response.json().then((payload) => {
-        globalThis.location.assign(decodeJson(Redirect, payload).url);
-      });
-    }),
-  );
+  return submitConsent({ accept, ...(accept ? { scope: scopes.join(" ") } : {}) });
 }
 
 export { ConsentClientUnavailable, loadClientName, submitDecision };

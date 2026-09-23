@@ -1,10 +1,13 @@
 import { Effect, Option, Schema, SchemaGetter } from "effect";
 
+import { auditActions, metricKeys, metricPeriods } from "./dashboard-literals.ts";
+
 const adminPageSize = 50;
 const maximumAdminPageSize = 100;
 const maximumIdentifierLength = 256;
 const maximumKeywordLength = 100;
 const secondPage = 2;
+const maximumTrendDays = 365;
 
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
@@ -36,6 +39,22 @@ function laterPage(maximum: number): Schema.Codec<number, number | string> {
   );
 }
 
+const AuditPage = Schema.Struct({
+  action: Schema.optionalKey(Schema.Literals(auditActions)),
+  actorId: Schema.optionalKey(Schema.String),
+  limit: Schema.Int.check(Schema.isBetween({ maximum: maximumAdminPageSize, minimum: 1 })),
+  offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
+  targetId: Schema.optionalKey(Schema.String),
+});
+
+const TrendQuery = Schema.Struct({
+  days: Schema.optionalKey(
+    Schema.Int.check(Schema.isBetween({ maximum: maximumTrendDays, minimum: 1 })),
+  ),
+  metric: Schema.Literals(metricKeys),
+  period: Schema.Literals(metricPeriods),
+});
+
 class InvalidSearch extends Schema.TaggedError<InvalidSearch>()("InvalidSearch", {}) {}
 
 function searchNormalizer<T>(schema: Schema.Decoder<T>): (raw: unknown) => T {
@@ -44,9 +63,11 @@ function searchNormalizer<T>(schema: Schema.Decoder<T>): (raw: unknown) => T {
 }
 
 export {
+  AuditPage,
   Identifier,
   InvalidSearch,
   SearchKeyword,
+  TrendQuery,
   UserKeyword,
   adminPageSize,
   laterPage,

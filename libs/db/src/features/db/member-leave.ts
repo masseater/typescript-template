@@ -11,6 +11,8 @@ import { user } from "./schema.ts";
 import { revokeUserSessions } from "./security.ts";
 import { UserNotFound } from "./user-not-found.ts";
 
+import type { SQLiteSelect } from "drizzle-orm/sqlite-core";
+
 const retentionMilliseconds = memberRetentionDays * 24 * 60 * 60 * 1000;
 
 const MemberSnapshot = Schema.Struct({
@@ -211,6 +213,42 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
   }
 });
 
+const leaveOfWithdrawn = eq(leaveRequest.memberId, withdrawnMember.memberId);
+
+const latestPendingRecovery = <Pending extends SQLiteSelect>(
+  pending: Pending,
+  recovery: Readonly<{ checkedAt: Date; email: string }>,
+) =>
+  pending
+    .where(pendingRecovery(recovery.email, recovery.checkedAt))
+    .orderBy(desc(withdrawnMember.withdrawnAt))
+    .limit(1);
+
+const requireRecovering = Effect.fn("requireRecovering")(function* requireRecovering(
+  memberId: string,
+) {
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
+  const [member] = yield* query((database) =>
+    database
+      .select({ email: user.email, emailVerified: user.emailVerified, role: user.role })
+      .from(user)
+      .where(eq(user.id, memberId))
+      .limit(1),
+  );
+  if (member === undefined) {
+    return yield* new UserNotFound();
+  }
+  if (!member.emailVerified || member.role !== ROLE.member) {
+    return yield* new RecoveryUnavailable();
+  }
+  return { checkedAt, email: member.email };
+});
+
+const requireFound = <Row>(rows: readonly Row[]): Effect.Effect<Row, RecoveryExpired> => {
+  const [row] = rows;
+  return row === undefined ? Effect.fail(new RecoveryExpired()) : Effect.succeed(row);
+};
+
 const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryOffer(
   memberId: string,
 ) {
@@ -226,13 +264,14 @@ const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryO
     return { available: false as const };
   }
   const [pending] = yield* query((database) =>
-    database
-      .select({ name: withdrawnMember.name })
-      .from(withdrawnMember)
-      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
-      .where(pendingRecovery(member.email, checkedAt))
-      .orderBy(desc(withdrawnMember.withdrawnAt))
-      .limit(1),
+    latestPendingRecovery(
+      database
+        .select({ name: withdrawnMember.name })
+        .from(withdrawnMember)
+        .innerJoin(leaveRequest, leaveOfWithdrawn)
+        .$dynamic(),
+      { checkedAt, email: member.email },
+    ),
   );
   if (pending === undefined) {
     return { available: false as const };
@@ -241,37 +280,17 @@ const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryO
 });
 
 const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
-  const [member] = yield* query((database) =>
-    database
-      .select({
-        email: user.email,
-        emailVerified: user.emailVerified,
-        role: user.role,
-      })
-      .from(user)
-      .where(eq(user.id, memberId))
-      .limit(1),
-  );
-  if (member === undefined) {
-    return yield* new UserNotFound();
-  }
-  if (!member.emailVerified || member.role !== ROLE.member) {
-    return yield* new RecoveryUnavailable();
-  }
-  const [pending] = yield* query((database) =>
-    database
-      .select({ leave: leaveRequest, withdrawn: withdrawnMember })
-      .from(withdrawnMember)
-      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
-      .where(pendingRecovery(member.email, checkedAt))
-      .orderBy(desc(withdrawnMember.withdrawnAt))
-      .limit(1),
-  );
-  if (pending === undefined) {
-    return yield* new RecoveryExpired();
-  }
-  const { withdrawn } = pending;
+  const recovery = yield* requireRecovering(memberId);
+  const { withdrawn } = yield* query((database) =>
+    latestPendingRecovery(
+      database
+        .select({ leave: leaveRequest, withdrawn: withdrawnMember })
+        .from(withdrawnMember)
+        .innerJoin(leaveRequest, leaveOfWithdrawn)
+        .$dynamic(),
+      recovery,
+    ),
+  ).pipe(Effect.flatMap(requireFound));
   const snapshot = yield* Schema.decodeUnknownEffect(MemberSnapshot)(withdrawn.snapshot).pipe(
     Effect.tapError(() => Effect.log(`member_leave.snapshot_invalid member=${withdrawn.memberId}`)),
     Effect.mapError(() => new RecoveryUnavailable()),
@@ -306,32 +325,17 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
 });
 
 const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(memberId: string) {
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
-  const [member] = yield* query((database) =>
-    database
-      .select({ email: user.email, emailVerified: user.emailVerified, role: user.role })
-      .from(user)
-      .where(eq(user.id, memberId))
-      .limit(1),
-  );
-  if (member === undefined) {
-    return yield* new UserNotFound();
-  }
-  if (!member.emailVerified || member.role !== ROLE.member) {
-    return yield* new RecoveryUnavailable();
-  }
-  const [pending] = yield* query((database) =>
-    database
-      .select({ memberId: withdrawnMember.memberId })
-      .from(withdrawnMember)
-      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
-      .where(pendingRecovery(member.email, checkedAt))
-      .orderBy(desc(withdrawnMember.withdrawnAt))
-      .limit(1),
-  );
-  if (pending === undefined) {
-    return yield* new RecoveryExpired();
-  }
+  const recovery = yield* requireRecovering(memberId);
+  const pending = yield* query((database) =>
+    latestPendingRecovery(
+      database
+        .select({ memberId: withdrawnMember.memberId })
+        .from(withdrawnMember)
+        .innerJoin(leaveRequest, leaveOfWithdrawn)
+        .$dynamic(),
+      recovery,
+    ),
+  ).pipe(Effect.flatMap(requireFound));
   const declinedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database

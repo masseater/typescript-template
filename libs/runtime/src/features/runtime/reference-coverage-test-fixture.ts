@@ -63,4 +63,3 @@ const referenceCoverage = Effect.fn("referenceCoverage")(function* referenceCove
 });
 
 export { referenceCoverage };
-export type { ReferenceCoverage };

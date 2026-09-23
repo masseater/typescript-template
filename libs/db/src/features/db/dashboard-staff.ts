@@ -1,35 +1,15 @@
-import {
-  METRIC_KEY,
-  METRIC_PERIOD,
-  ROLE,
-  auditActions,
-  metricKeys,
-  metricPeriods,
-} from "@repo/config";
-import { and, count, desc, eq, gte, lte } from "drizzle-orm";
-import { DateTime, Effect, Schema } from "effect";
+import { METRIC_KEY, METRIC_PERIOD, ROLE, metricKeys } from "@repo/config";
+import { AuditPage, TrendQuery } from "@repo/config/paging";
+import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { DateTime, Effect } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, type ClientKind } from "./client-kind.ts";
+import { countRows } from "./count-rows.ts";
 import { query } from "./database.ts";
 import { bucketFor, currentSnapshotValues, refreshMetricSnapshots } from "./metric-snapshot.ts";
 import { auditEvent, metricSnapshot, user, type AuditAction, type MetricKey } from "./schema.ts";
 
-const MAX_PAGE_SIZE = 100;
 const DEFAULT_TREND_DAYS = 30;
-
-const AuditPage = Schema.Struct({
-  action: Schema.optionalKey(Schema.Literals(auditActions)),
-  actorId: Schema.optionalKey(Schema.String),
-  limit: Schema.Int.check(Schema.isBetween({ maximum: MAX_PAGE_SIZE, minimum: 1 })),
-  offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  targetId: Schema.optionalKey(Schema.String),
-});
-
-const TrendQuery = Schema.Struct({
-  days: Schema.optionalKey(Schema.Int.check(Schema.isBetween({ maximum: 365, minimum: 1 }))),
-  metric: Schema.Literals(metricKeys),
-  period: Schema.Literals(metricPeriods),
-});
 
 type AuditEventView = Readonly<{
   action: AuditAction;
@@ -172,12 +152,10 @@ const staffAuditEvents = Effect.fn("staffAuditEvents")(function* staffAuditEvent
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [matching] = yield* query((database) =>
-    database.select({ count: count() }).from(auditEvent).where(matchesAuditPage(page)),
-  );
+  const total = yield* countRows(auditEvent, () => matchesAuditPage(page));
   return {
     events: events satisfies readonly AuditEventView[],
-    total: matching?.count ?? 0,
+    total,
   };
 });
 
@@ -221,7 +199,7 @@ const dashboardStaff: ReadOnlyDashboardStaff = {
   overviewWithoutPii: staffOverviewWithoutPii,
 };
 
-export { AuditPage, TrendQuery, dashboardStaff, refreshMetricSnapshots };
+export { dashboardStaff, refreshMetricSnapshots };
 export type {
   AuditEventView,
   MetricTrendPoint,

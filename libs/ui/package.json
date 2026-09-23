@@ -10,7 +10,8 @@
     ".": "./src/features/ui/index.ts",
     "./shell": "./src/features/ui/shell.ts",
     "./request-client": "./src/features/ui/request-client.ts",
-    "./styles.css": "./src/features/ui/styles.css"
+    "./styles.css": "./src/features/ui/styles.css",
+    "./testing": "./src/features/ui/rendered-test-fixture.tsx"
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
@@ -45,7 +46,6 @@
     "@storybook/addon-vitest": "10.6.0",
     "@storybook/react-vite": "10.6.0",
     "@tailwindcss/vite": "catalog:",
-    "@tanstack/react-query": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitest/browser-playwright": "catalog:",

@@ -4,7 +4,7 @@ import { Telemetry } from "@repo/observability";
 import { Effect, Layer, Schema } from "effect";
 
 import { AppOrigin, apiDocs, apiRoot, apiRoutes, createApi } from "./http.ts";
-import { referenceCoverage } from "./reference-coverage-fixture.ts";
+import { referenceCoverage } from "./reference-coverage-test-fixture.ts";
 import { workerRuntime } from "./worker-runtime.ts";
 
 const ProfileView = Schema.Struct({

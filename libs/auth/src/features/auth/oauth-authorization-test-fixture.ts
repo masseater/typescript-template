@@ -1,15 +1,9 @@
 import { httpStatus, type Application } from "@repo/config";
 import { Effect, Schema } from "effect";
 
-import { clientOf } from "./auth-test-fixture.ts";
+import { AuthApps, clientOf } from "./auth-test-fixture.ts";
 import { origins, type BrowserClient } from "./browser-client-test-fixture.ts";
 import { UnexpectedStatus } from "./unexpected-status-test-fixture.ts";
-
-type AuthorizationFlow = {
-  readonly clientId: string;
-  readonly oauthQuery: string;
-  readonly verifier: string;
-};
 
 type OAuthClient = Readonly<{
   application: Application;
@@ -18,8 +12,17 @@ type OAuthClient = Readonly<{
   scope: string;
 }>;
 
+type AuthorizationFlow = Readonly<{
+  clientId: string;
+  oauth: OAuthClient;
+  oauthQuery: string;
+  verifier: string;
+}>;
+
 const VERIFIER_BYTES = 32;
 const Registration = Schema.Struct({ client_id: Schema.String });
+const Redirect = Schema.Struct({ url: Schema.String });
+const Tokens = Schema.fromJsonString(Schema.Struct({ access_token: Schema.String }));
 
 const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifier: string) {
   const digest = yield* Effect.promise(() =>
@@ -74,10 +77,58 @@ const startOAuthAuthorization = Effect.fn("startOAuthAuthorization")(
       authorizeUrl(oauth, clientId, yield* pkceChallenge(verifier)).href,
     );
     const login = new URL(redirect.headers.get("location") ?? "", origins[oauth.application]);
-    const flow: AuthorizationFlow = { clientId, oauthQuery: login.search.slice(1), verifier };
+    const flow: AuthorizationFlow = {
+      clientId,
+      oauth,
+      oauthQuery: login.search.slice(1),
+      verifier,
+    };
     return flow;
   },
 );
 
-export { startOAuthAuthorization };
-export type { AuthorizationFlow, OAuthClient };
+const redirectUrl = Effect.fn("redirectUrl")(function* redirectUrl(body: unknown, base?: string) {
+  return new URL((yield* Schema.decodeUnknownEffect(Redirect)(body)).url, base);
+});
+
+const grantOAuthAuthorization = Effect.fn("grantOAuthAuthorization")(
+  function* grantOAuthAuthorization(client: BrowserClient, oauthQuery: string, scope?: string) {
+    const continued = yield* client.json("/oauth2/continue", {
+      oauth_query: oauthQuery,
+      postLogin: true,
+    });
+    const consentPage = yield* redirectUrl(continued.body, client.origin);
+    const consented = yield* client.json("/oauth2/consent", {
+      accept: true,
+      oauth_query: consentPage.search.slice(1),
+      ...(scope === undefined ? {} : { scope }),
+    });
+    const callbackUrl = yield* redirectUrl(consented.body);
+    return callbackUrl.searchParams.get("code") ?? "";
+  },
+);
+
+const exchangeOAuthCode = Effect.fn("exchangeOAuthCode")(function* exchangeOAuthCode(
+  flow: AuthorizationFlow,
+  code: string,
+) {
+  const { instance } = (yield* AuthApps)[flow.oauth.application];
+  const origin = origins[flow.oauth.application];
+  const exchange = new Request(`${origin}/api/auth/oauth2/token`, {
+    body: new URLSearchParams({
+      client_id: flow.clientId,
+      code,
+      code_verifier: flow.verifier,
+      grant_type: "authorization_code",
+      redirect_uri: flow.oauth.redirectUri,
+      resource: `${origin}/mcp`,
+    }),
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    method: "POST",
+  });
+  const issued = yield* Effect.promise(() => instance.handler(exchange));
+  const text = yield* Effect.promise(() => issued.text());
+  return yield* Schema.decodeEffect(Tokens)(text);
+});
+
+export { exchangeOAuthCode, grantOAuthAuthorization, startOAuthAuthorization };

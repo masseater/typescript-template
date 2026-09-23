@@ -1,5 +1,12 @@
 import { Auth } from "@repo/auth";
-import { AuthApps, authTest, authTestSecret, runWith } from "@repo/auth/testing";
+import {
+  AuthApps,
+  authTest,
+  authTestSecret,
+  mcpClient,
+  responseStatus,
+  runWith,
+} from "@repo/auth/testing";
 import { APPLICATION, MEMBER_MCP_SCOPE, SUBSCRIPTION_STATUS, httpStatus } from "@repo/config";
 import { eq, query, recordSubscription, schema } from "@repo/db";
 import { unavailable } from "@repo/runtime/account";
@@ -7,24 +14,27 @@ import { appLayer } from "@repo/runtime/bindings";
 import { apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
-import { Context, DateTime, Effect, Layer, Schema } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { routes } from "#shared/telemetry/index.ts";
 import { serveMcp } from "./mcp.ts";
-import {
-  callTool,
-  mcpChallenge,
-  memberOrigin,
-  responseStatus,
-  tokenFor,
-  type FetchMcp,
-} from "./member-oauth-test-fixture.ts";
+import { mcpChallenge, memberOrigin, tokenFor } from "./member-oauth-test-fixture.ts";
+
+import type { McpClient } from "@repo/auth/testing";
 
 const { user } = schema;
 const secretBody = "MCP_SECRET_BODY_NOT_FOR_OTHER_TOOLS";
 const reporting = { service: APPLICATION.user } as const;
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
+const ToolReply = Schema.Struct({
+  result: Schema.Struct({
+    content: Schema.TupleWithRest(Schema.Tuple([Schema.Struct({ text: Schema.String })]), [
+      Schema.Unknown,
+    ]),
+  }),
+});
+const decodeToolReply = Schema.decodeUnknownOption(ToolReply);
 
 const discovery = Effect.fn("discovery")(function* discovery(path: string) {
   const member = (yield* AuthApps)[APPLICATION.user];
@@ -44,7 +54,7 @@ const discovery = Effect.fn("discovery")(function* discovery(path: string) {
 });
 
 function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
-  fetchMcp: FetchMcp;
+  mcp: McpClient;
   stop: Effect.Effect<void>;
 } {
   const memberAuth = Context.get(auth, AuthApps)[APPLICATION.user];
@@ -65,31 +75,16 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
   const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
     Effect.promise(() => Promise.resolve(app.fetch(request)));
   return {
-    fetchMcp,
+    mcp: mcpClient(memberOrigin, fetchMcp),
     stop: Effect.promise(() => Promise.resolve(runtime.dispose()).then(() => undefined)),
   };
 }
 
-const toolText = (body: unknown): string => {
-  if (typeof body !== "object" || body === null || !("result" in body)) {
-    return "";
-  }
-  const result = body.result;
-  if (typeof result !== "object" || result === null || !("content" in result)) {
-    return "";
-  }
-  const content = result.content;
-  if (!Array.isArray(content)) {
-    return "";
-  }
-  const [first] = content;
-  return typeof first === "object" &&
-    first !== null &&
-    "text" in first &&
-    typeof first.text === "string"
-    ? first.text
-    : "";
-};
+const toolText = (body: unknown): string =>
+  Option.match(decodeToolReply(body), {
+    onNone: () => "",
+    onSome: (reply) => reply.result.content[0].text,
+  });
 
 describe("member MCP authorization", () => {
   const it = authTest();
@@ -143,13 +138,9 @@ describe("member MCP authorization", () => {
         );
         const grantedRead = yield* tokenFor("reader@example.com", MEMBER_MCP_SCOPE.profileRead);
         const app = memberMcpApp(auth);
-        const profile = yield* callTool(app.fetchMcp, grantedRead.accessToken, "get_profile");
-        const deniedSearch = yield* callTool(
-          app.fetchMcp,
-          grantedRead.accessToken,
-          "search_members",
-        );
-        const deniedSend = yield* callTool(app.fetchMcp, grantedRead.accessToken, "send_message", {
+        const profile = yield* app.mcp.callTool(grantedRead.accessToken, "get_profile");
+        const deniedSearch = yield* app.mcp.callTool(grantedRead.accessToken, "search_members");
+        const deniedSend = yield* app.mcp.callTool(grantedRead.accessToken, "send_message", {
           body: secretBody,
           recipientId: "missing",
         });
@@ -170,14 +161,14 @@ describe("member MCP authorization", () => {
             stripeSubscriptionId: "sub_sender",
           },
         );
-        const searched = yield* callTool(app.fetchMcp, granted.accessToken, "search_members", {
+        const searched = yield* app.mcp.callTool(granted.accessToken, "search_members", {
           keyword: "peer",
         });
-        const sent = yield* callTool(app.fetchMcp, granted.accessToken, "send_message", {
+        const sent = yield* app.mcp.callTool(granted.accessToken, "send_message", {
           body: "こんにちは",
           recipientId: peer?.id ?? "",
         });
-        const deniedProfile = yield* callTool(app.fetchMcp, granted.accessToken, "update_profile", {
+        const deniedProfile = yield* app.mcp.callTool(granted.accessToken, "update_profile", {
           name: "sender",
           profile: "",
           socialLinks: [],

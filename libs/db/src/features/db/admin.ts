@@ -9,18 +9,20 @@ import {
   type AdminPermission,
 } from "@repo/config/identity";
 import { maximumAdminPageSize } from "@repo/config/paging";
-import { and, count, desc, eq, or, type SQL } from "drizzle-orm";
+import { and, desc, eq, or, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
 import { auditWhenTargeted, type AuditEntry } from "./audit.ts";
 import { containsKeyword } from "./contains-keyword.ts";
-import { query } from "./database.ts";
+import { countRows } from "./count-rows.ts";
+import { query, type DrizzleDatabase } from "./database.ts";
 import { issueInvite } from "./invite.ts";
 import { LastAdminRequired } from "./last-admin-required.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import { AUDIT_CHANNEL, user, type AuditChannel } from "./schema.ts";
 import { TargetUnavailable } from "./target-unavailable.ts";
 
+import type { BatchItem } from "drizzle-orm/batch";
 import type { DatabaseFailure } from "./database-failure.ts";
 
 export const UserPage = Schema.Struct({
@@ -74,23 +76,21 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
   yield* requireAdmin(sessionId);
   const checkedAt = DateTime.toDate(yield* DateTime.now);
 
+  const matching = (database: DrizzleDatabase): SQL | undefined =>
+    and(liveAdmin(database, sessionId, checkedAt), matchesPage(page));
+
   const users = yield* query((database) =>
     database
       .select(memberColumns)
       .from(user)
-      .where(and(liveAdmin(database, sessionId, checkedAt), matchesPage(page)))
+      .where(matching(database))
       .orderBy(desc(user.createdAt), user.id)
       .limit(page.limit)
       .offset(page.offset),
   );
 
-  const [matching] = yield* query((database) =>
-    database
-      .select({ count: count() })
-      .from(user)
-      .where(and(liveAdmin(database, sessionId, checkedAt), matchesPage(page))),
-  );
-  return { total: matching?.count ?? 0, users };
+  const total = yield* countRows(user, matching);
+  return { total, users };
 });
 
 const adminActor = (
@@ -195,6 +195,17 @@ export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
   return removed;
 });
 
+const transitionAdmin = <Transition extends BatchItem<"sqlite">>(
+  change: Readonly<{ adminId: string; entry: AuditEntry; sessionId: string; updatedAt: Date }>,
+  transition: (database: DrizzleDatabase, target: SQL | undefined) => Transition,
+) =>
+  query((database) => {
+    const live = liveAdmin(database, change.sessionId, change.updatedAt, ADMIN_PERMISSION.owner);
+    const audit = database.run(auditWhenTargeted(database, change.entry, live));
+    const target = and(eq(user.id, change.adminId), eq(user.role, ROLE.administrator), live);
+    return database.batch([audit, transition(database, target)] as const);
+  }).pipe(protectLastAdmin);
+
 const adminPermissionOf = (permission: string | null): AdminPermission | undefined =>
   adminPermissions.find((level) => level === permission);
 
@@ -252,23 +263,16 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
     const { adminId, channel = AUDIT_CHANNEL.ui, permission, sessionId } = change;
     const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
     const updatedAt = DateTime.toDate(yield* DateTime.now);
-    const [, changedAdmins] = yield* query((database) => {
-      const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.owner);
-      const audit = database.run(
-        auditWhenTargeted(
-          database,
-          adminEntry(actor, AUDIT_ACTION.adminPermissionChanged, adminId, channel),
-          live,
-        ),
-      );
-      const transition = database
-        .update(user)
-        .set({ permission, updatedAt })
-        .where(and(eq(user.id, adminId), eq(user.role, ROLE.administrator), live))
-        .returning({ id: user.id, permission: user.permission });
-      return database.batch([audit, transition] as const);
-    }).pipe(protectLastAdmin);
-    const [changed] = changedAdmins;
+    const entry = adminEntry(actor, AUDIT_ACTION.adminPermissionChanged, adminId, channel);
+    const [, [changed]] = yield* transitionAdmin(
+      { adminId, entry, sessionId, updatedAt },
+      (database, target) =>
+        database
+          .update(user)
+          .set({ permission, updatedAt })
+          .where(target)
+          .returning({ id: user.id, permission: user.permission }),
+    );
     if (!changed) {
       return yield* new TargetUnavailable();
     }
@@ -292,19 +296,15 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
       ? AUDIT_ACTION.adminDisabled
       : AUDIT_ACTION.adminEnabled;
   const updatedAt = DateTime.toDate(yield* DateTime.now);
-  const [, changedAdmins] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.owner);
-    const audit = database.run(
-      auditWhenTargeted(database, adminEntry(actor, action, adminId, channel), live),
-    );
-    const transition = database
-      .update(user)
-      .set({ accountState, updatedAt })
-      .where(and(eq(user.id, adminId), eq(user.role, ROLE.administrator), live))
-      .returning({ accountState: user.accountState, id: user.id });
-    return database.batch([audit, transition] as const);
-  }).pipe(protectLastAdmin);
-  const [changed] = changedAdmins;
+  const [, [changed]] = yield* transitionAdmin(
+    { adminId, entry: adminEntry(actor, action, adminId, channel), sessionId, updatedAt },
+    (database, target) =>
+      database
+        .update(user)
+        .set({ accountState, updatedAt })
+        .where(target)
+        .returning({ accountState: user.accountState, id: user.id }),
+  );
   if (!changed) {
     return yield* new TargetUnavailable();
   }

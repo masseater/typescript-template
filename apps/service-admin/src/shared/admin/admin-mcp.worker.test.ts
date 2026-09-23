@@ -3,6 +3,10 @@ import {
   AuthApps,
   adminOperator,
   authTest,
+  exchangeOAuthCode,
+  grantOAuthAuthorization,
+  mcpClient,
+  responseStatus,
   runWith,
   startAdminAuthorization,
 } from "@repo/auth/testing";
@@ -18,17 +22,10 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { routes } from "#shared/telemetry/index.ts";
-import {
-  callTool,
-  exchangeCode,
-  grantAuthorization,
-  mcpChallenge,
-  mcpRequest,
-  responseStatus,
-} from "./admin-oauth-test-fixture.ts";
+import { mcpChallenge } from "./admin-oauth-test-fixture.ts";
 import { serveMcp } from "./mcp.ts";
 
-import type { FetchMcp } from "./admin-oauth-test-fixture.ts";
+import type { McpClient } from "@repo/auth/testing";
 
 const adminOrigin = "http://127.0.0.1:3002";
 const authSecret = "integration-test-secret-at-least-32-characters-long";
@@ -53,7 +50,7 @@ const discovery = Effect.fn("discovery")(function* discovery(path: string) {
 });
 
 function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
-  fetchMcp: FetchMcp;
+  mcp: McpClient;
   stop: Effect.Effect<void>;
 } {
   const adminAuth = Context.get(auth, AuthApps)[APPLICATION.admin];
@@ -73,7 +70,7 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
   const app = createApi("").all("/mcp", ...api.raw(serveMcp, unavailable));
   const fetchMcp = (request: Request): Effect.Effect<Response, never, never> =>
     Effect.promise(() => Promise.resolve(app.fetch(request)));
-  return { fetchMcp, stop: Effect.promise(() => runtime.dispose()) };
+  return { mcp: mcpClient(adminOrigin, fetchMcp), stop: Effect.promise(() => runtime.dispose()) };
 }
 
 const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedTokens(
@@ -81,8 +78,8 @@ const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedToken
 ) {
   const flow = yield* startAdminAuthorization();
   const admin = yield* adminOperator("owner@example.com", permission);
-  const code = yield* grantAuthorization(admin, flow.oauthQuery);
-  return { tokens: yield* exchangeCode(flow, code) };
+  const code = yield* grantOAuthAuthorization(admin, flow.oauthQuery);
+  return { tokens: yield* exchangeOAuthCode(flow, code) };
 });
 
 const parseGrantedBody = (granted: Response): Effect.Effect<unknown> =>
@@ -139,8 +136,8 @@ describe("admin MCP authorization", () => {
         yield* addUser({ userId: "member" });
         const app = adminMcpApp(auth);
         const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.viewer);
-        const search = yield* callTool(app.fetchMcp, tokens.access_token, "search_members");
-        const suspend = yield* callTool(app.fetchMcp, tokens.access_token, "suspend_member", {
+        const search = yield* app.mcp.callTool(tokens.access_token, "search_members");
+        const suspend = yield* app.mcp.callTool(tokens.access_token, "suspend_member", {
           memberId: "member",
         });
         yield* app.stop;
@@ -159,7 +156,7 @@ describe("admin MCP authorization", () => {
         yield* addUser({ userId: "member" });
         const app = adminMcpApp(auth);
         const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.operator);
-        const searched = yield* callTool(app.fetchMcp, tokens.access_token, "search_members");
+        const searched = yield* app.mcp.callTool(tokens.access_token, "search_members");
         yield* app.stop;
         const text =
           (searched as { result: { content: [{ text: string }] } }).result.content[0]?.text ?? "{}";
@@ -176,7 +173,7 @@ describe("admin MCP authorization", () => {
         yield* addUser({ userId: "member" });
         const app = adminMcpApp(auth);
         const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.operator);
-        yield* callTool(app.fetchMcp, tokens.access_token, "suspend_member", {
+        yield* app.mcp.callTool(tokens.access_token, "suspend_member", {
           memberId: "member",
         });
         const audit = yield* auditActionsOf("member");
@@ -199,7 +196,7 @@ describe("admin MCP authorization", () => {
       Effect.gen(function* program() {
         const app = adminMcpApp(auth);
         const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.operator);
-        const granted = yield* mcpRequest(app.fetchMcp, tokens.access_token, {
+        const granted = yield* app.mcp.post(tokens.access_token, {
           id: 0,
           jsonrpc: "2.0",
           method: "tools/list",

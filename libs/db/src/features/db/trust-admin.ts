@@ -7,11 +7,12 @@ import {
   ROLE,
   type ReportStatus,
 } from "@repo/config";
-import { count, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { DateTime, Effect } from "effect";
 
 import { auditWhenTargeted } from "./audit.ts";
+import { countRows } from "./count-rows.ts";
 import { query } from "./database.ts";
 import { user } from "./identity-schema.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
@@ -26,6 +27,15 @@ const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 function matchesStatus(status: ReportStatus | undefined) {
   return status === undefined ? undefined : eq(memberReport.status, status);
 }
+
+const reportTarget = (reportId: string) =>
+  query((database) =>
+    database
+      .select({ targetMemberId: memberReport.targetMemberId })
+      .from(memberReport)
+      .where(eq(memberReport.id, reportId))
+      .limit(1),
+  ).pipe(Effect.map(([report]) => report));
 
 const listReports = Effect.fn("listReports")(function* listReports(
   sessionId: string,
@@ -50,9 +60,7 @@ const listReports = Effect.fn("listReports")(function* listReports(
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [total] = yield* query((database) =>
-    database.select({ count: count() }).from(memberReport).where(matchesStatus(page.status)),
-  );
+  const total = yield* countRows(memberReport, () => matchesStatus(page.status));
   return {
     reports: rows.map((row) => ({
       createdAt: row.createdAt.getTime(),
@@ -62,7 +70,7 @@ const listReports = Effect.fn("listReports")(function* listReports(
       status: row.status,
       targetName: row.targetName,
     })),
-    total: total?.count ?? 0,
+    total,
   };
 });
 
@@ -143,13 +151,7 @@ const suspendTarget = Effect.fn("suspendTarget")(function* suspendTarget(
   suspended: boolean,
 ) {
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-  const [report] = yield* query((database) =>
-    database
-      .select({ targetMemberId: memberReport.targetMemberId })
-      .from(memberReport)
-      .where(eq(memberReport.id, reportId))
-      .limit(1),
-  );
+  const report = yield* reportTarget(reportId);
   if (report?.targetMemberId == null) {
     return yield* new TrustTargetUnavailable();
   }
@@ -201,13 +203,7 @@ const warnTarget = Effect.fn("warnTarget")(function* warnTarget(
   reportId: string,
 ) {
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-  const [report] = yield* query((database) =>
-    database
-      .select({ targetMemberId: memberReport.targetMemberId })
-      .from(memberReport)
-      .where(eq(memberReport.id, reportId))
-      .limit(1),
-  );
+  const report = yield* reportTarget(reportId);
   if (report === undefined) {
     return yield* new TrustSubjectNotFound();
   }

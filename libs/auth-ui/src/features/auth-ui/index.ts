@@ -23,3 +23,5 @@ export { loadBrowserSession, provideSessionLoader, sessionOptions } from "./api/
 export { errorMessage, requireSuccess, SessionView } from "./protocol";
 export { loginPath, redirectTarget } from "./login-redirect";
 export { authClient } from "./client";
+export { sessionQueryClient } from "./api/session-query-client";
+export { submitConsent } from "./api/consent";

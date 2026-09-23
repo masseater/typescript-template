@@ -117,12 +117,7 @@ export {
   purgeExpiredWithdrawnMembers,
   withdrawMember,
 } from "./member-leave.ts";
-export {
-  AuditPage,
-  TrendQuery,
-  dashboardStaff,
-  refreshMetricSnapshots,
-} from "./dashboard-staff.ts";
+export { dashboardStaff, refreshMetricSnapshots } from "./dashboard-staff.ts";
 export type {
   AuditEventView,
   MetricTrendPoint,
@@ -160,3 +155,4 @@ export {
   suspendTarget,
   warnTarget,
 } from "./trust-admin.ts";
+export { countRows } from "./count-rows.ts";

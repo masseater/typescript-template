@@ -1,10 +1,24 @@
 import { ROLE } from "@repo/config";
-import { and, blockBetween, count, desc, eq, isNull, not, or, query, schema, sql } from "@repo/db";
+import {
+  and,
+  blockBetween,
+  countRows,
+  desc,
+  eq,
+  isNull,
+  not,
+  or,
+  query,
+  schema,
+  sql,
+} from "@repo/db";
 import { DateTime, Effect } from "effect";
 
 import { withdrawnAuthorName } from "#shared/contracts/board.ts";
 import { BoardMemberRequired } from "./board-member-required.ts";
 import { BoardThreadNotFound } from "./board-thread-not-found.ts";
+
+import type { DrizzleDatabase } from "@repo/db";
 
 const { boardPost, boardThread, user, withdrawnMember } = schema;
 
@@ -121,6 +135,14 @@ const requireBoardMember = Effect.fn("requireBoardMember")(function* requireBoar
   }
 });
 
+const boardThreads = (database: DrizzleDatabase) =>
+  database
+    .select(threadColumns)
+    .from(boardThread)
+    .leftJoin(user, and(eq(user.id, boardThread.authorId), boardMember))
+    .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
+    .$dynamic();
+
 const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThreads(
   viewerId: string,
   page: Page,
@@ -131,20 +153,14 @@ const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThread
     not(blockBetween(viewerId, sql`${boardThread.authorId}`)),
   );
   const threads = yield* query((database) =>
-    database
-      .select(threadColumns)
-      .from(boardThread)
-      .leftJoin(user, and(eq(user.id, boardThread.authorId), boardMember))
-      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
+    boardThreads(database)
       .where(visible)
       .orderBy(desc(boardThread.lastPostedAt), desc(boardThread.id))
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [total] = yield* query((database) =>
-    database.select({ count: count() }).from(boardThread).where(visible),
-  );
-  return { threads: threads.map(shownThread), total: total?.count ?? 0 };
+  const total = yield* countRows(boardThread, () => visible);
+  return { threads: threads.map(shownThread), total };
 });
 
 const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
@@ -154,13 +170,7 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
 ) {
   yield* requireBoardMember(viewerId);
   const [thread] = yield* query((database) =>
-    database
-      .select(threadColumns)
-      .from(boardThread)
-      .leftJoin(user, and(eq(user.id, boardThread.authorId), boardMember))
-      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
-      .where(eq(boardThread.id, threadId))
-      .limit(1),
+    boardThreads(database).where(eq(boardThread.id, threadId)).limit(1),
   );
   if (thread === undefined) {
     return yield* new BoardThreadNotFound();

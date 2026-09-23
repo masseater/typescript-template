@@ -30,7 +30,7 @@ const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
   return client;
 });
 
-const startAuthorization = () =>
+const startAdminAuthorization = () =>
   startOAuthAuthorization({
     application: APPLICATION.admin,
     clientName: "Test admin MCP client",
@@ -38,4 +38,4 @@ const startAuthorization = () =>
     scope: "admin:read offline_access",
   });
 
-export { adminOperator, adminOrigin, startAuthorization };
+export { adminOperator, adminOrigin, startAdminAuthorization };

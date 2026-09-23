@@ -24,33 +24,39 @@ const BootstrappedAdmin = Schema.Struct({
   role: Schema.Literals([ROLE.administrator, ROLE.staff]),
 });
 
-const bootstrapStatement = (
+const roleStatement = (
   email: typeof Email.Type,
   kind: BootstrapKind,
   updatedAt: number,
+  guard: (role: Role) => SQL,
 ): SQL => {
   const { permission, role } = bootstrapRoles[kind];
   return sql`UPDATE ${user}
     SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
-      AND ${user.emailVerified} = ${1}
-      AND ${user.role} = ${ROLE.member}
-      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${role})
+      AND ${user.emailVerified} = ${1}${guard(role)}
     RETURNING id, email, role, permission`;
 };
+
+const bootstrapStatement = (
+  email: typeof Email.Type,
+  kind: BootstrapKind,
+  updatedAt: number,
+): SQL =>
+  roleStatement(
+    email,
+    kind,
+    updatedAt,
+    (role) => sql`
+      AND ${user.role} = ${ROLE.member}
+      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${role})`,
+  );
 
 const ensureRoleStatement = (
   email: typeof Email.Type,
   kind: BootstrapKind,
   updatedAt: number,
-): SQL => {
-  const { permission, role } = bootstrapRoles[kind];
-  return sql`UPDATE ${user}
-    SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
-    WHERE ${user.email} = ${email.toLowerCase()}
-      AND ${user.emailVerified} = ${1}
-    RETURNING id, email, role, permission`;
-};
+): SQL => roleStatement(email, kind, updatedAt, () => sql``);
 
 class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
   "BootstrapUnavailable",

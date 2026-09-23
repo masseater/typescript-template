@@ -60,18 +60,19 @@ function presentation(
   }
 }
 
-const deliverNotificationEmail = Effect.fn("deliverNotificationEmail")(function* deliver(
-  payload: NotifyPayload,
-) {
-  if (
-    payload.kind !== NOTIFICATION_KIND.conversationMessage &&
-    payload.kind !== NOTIFICATION_KIND.boardPost
-  ) {
-    return;
-  }
-  const mailKey =
-    payload.kind === NOTIFICATION_KIND.conversationMessage ? "messageMail" : ("boardMail" as const);
-  const [recipient] = yield* query((database) =>
+type MailPreference = keyof NotificationPreferences;
+type MailedKind = typeof NOTIFICATION_KIND.boardPost | typeof NOTIFICATION_KIND.conversationMessage;
+
+const mailPreferences: Readonly<Record<MailedKind, MailPreference>> = {
+  [NOTIFICATION_KIND.boardPost]: "boardMail",
+  [NOTIFICATION_KIND.conversationMessage]: "messageMail",
+};
+
+const isMailed = (kind: NotificationKind): kind is MailedKind =>
+  Object.hasOwn(mailPreferences, kind);
+
+const optedInEmail = (recipientId: string, preference: MailPreference) =>
+  query((database) =>
     database
       .select({
         boardMail: notificationPreference.boardMail,
@@ -80,25 +81,34 @@ const deliverNotificationEmail = Effect.fn("deliverNotificationEmail")(function*
       })
       .from(user)
       .leftJoin(notificationPreference, eq(notificationPreference.memberId, user.id))
-      .where(eq(user.id, payload.recipientId))
+      .where(eq(user.id, recipientId))
       .limit(1),
+  ).pipe(
+    Effect.map(([recipient]) => (recipient?.[preference] === true ? recipient.email : undefined)),
   );
-  if (recipient === undefined) {
-    return;
-  }
-  const enabled =
-    mailKey === "messageMail" ? (recipient.messageMail ?? false) : (recipient.boardMail ?? false);
-  if (!enabled) {
-    return;
-  }
-  const { href } = presentation({
+
+function notificationHref(payload: NotifyPayload): string {
+  return presentation({
     actorName: payload.actorName ?? null,
     kind: payload.kind,
     subjectId: payload.subjectId,
     title: payload.title ?? null,
-  });
+  }).href;
+}
+
+const deliverNotificationEmail = Effect.fn("deliverNotificationEmail")(function* deliver(
+  payload: NotifyPayload,
+) {
+  const { kind } = payload;
+  if (!isMailed(kind)) {
+    return;
+  }
+  const email = yield* optedInEmail(payload.recipientId, mailPreferences[kind]);
+  if (email === undefined) {
+    return;
+  }
   const mail = yield* OpsMail;
-  yield* sendNotificationEmail(mail, { href, kind: payload.kind, to: recipient.email });
+  yield* sendNotificationEmail(mail, { href: notificationHref(payload), kind, to: email });
 });
 
 const notify = Effect.fn("notify")(function* notify(payload: NotifyPayload) {

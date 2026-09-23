@@ -1,4 +1,3 @@
-import { ROLE } from "@repo/config";
 import {
   CONVERSATION_KIND,
   GROUP_JOIN_POLICY,
@@ -16,7 +15,7 @@ import { mayCreateGroup } from "#shared/messaging/index.ts";
 import { GroupInviteExpired } from "./group-invite-expired.ts";
 import { GroupLimitReached } from "./group-limit-reached.ts";
 import { GroupNotFound } from "./group-not-found.ts";
-import { MessagingMemberRequired } from "./messaging-member-required.ts";
+import { requireMessagingMember } from "./messaging-member.ts";
 
 const { conversation, conversationParticipant, groupInvite, groupMembership, memberGroup, user } =
   schema;
@@ -51,24 +50,7 @@ interface GroupView {
   readonly owner: GroupOwner;
 }
 
-const messagingMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
 const clockDate = Effect.map(DateTime.now, DateTime.toDate);
-
-const requireMessagingMember = Effect.fn("requireMessagingMember")(function* requireMessagingMember(
-  userId: string,
-) {
-  const [member] = yield* query((database) =>
-    database
-      .select({ id: user.id, name: user.name })
-      .from(user)
-      .where(and(eq(user.id, userId), messagingMember))
-      .limit(1),
-  );
-  if (member === undefined) {
-    return yield* new MessagingMemberRequired();
-  }
-  return member;
-});
 
 function trimGroupName(name: string): string {
   const trimmed = name.trim();

@@ -167,4 +167,4 @@ function referencePage(audience: Application): Response {
 }
 
 export { docsPath, hidden, openApiDocument, referencePage, routeDetail };
-export type { Guard, RouteDetail, RouteSpec };
+export type { DocumentedRoute, Guard, QueryContract, RouteDetail, RouteSpec };

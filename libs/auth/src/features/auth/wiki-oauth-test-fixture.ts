@@ -14,7 +14,7 @@ const wikiStaff = Effect.fn("wikiStaff")(function* wikiStaff(email: string) {
   return client;
 });
 
-const startAuthorization = () =>
+const startWikiAuthorization = () =>
   startOAuthAuthorization({
     application: APPLICATION.wiki,
     clientName: "Test MCP client",
@@ -22,4 +22,4 @@ const startAuthorization = () =>
     scope: "wiki:read offline_access",
   });
 
-export { startAuthorization, wikiStaff, wikiOrigin };
+export { startWikiAuthorization, wikiStaff, wikiOrigin };

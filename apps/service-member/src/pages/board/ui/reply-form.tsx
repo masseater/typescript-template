@@ -1,10 +1,11 @@
-import { Button, Field, FormColumn, STATUS_VARIANT, StatusMessage, useToast } from "@repo/ui";
+import { useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { Effect } from "effect";
 
 import { pageSearch } from "#pages/board/model/board-search.ts";
 import { useReplyForm } from "#pages/board/model/reply-form.ts";
 import { maximumBoardBodyLength } from "#shared/contracts/index.ts";
+import { ReplyBodyForm } from "#shared/ui/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -41,26 +42,12 @@ function ReplyForm({
     ),
   );
   return (
-    <form onSubmit={form.handleSubmit} aria-busy={form.pending}>
-      <FormColumn>
-        <Field
-          multiline
-          label="返信"
-          name="body"
-          maxLength={maximumBoardBodyLength}
-          value={form.body}
-          onValueChange={form.handleBodyChange}
-        />
-        <div>
-          <Button type="submit" variant="primary" disabled={form.blocked}>
-            投稿する
-          </Button>
-        </div>
-        {form.error !== undefined && (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{form.error}</StatusMessage>
-        )}
-      </FormColumn>
-    </form>
+    <ReplyBodyForm
+      form={form}
+      label="返信"
+      maxLength={maximumBoardBodyLength}
+      submitLabel="投稿する"
+    />
   );
 }
 

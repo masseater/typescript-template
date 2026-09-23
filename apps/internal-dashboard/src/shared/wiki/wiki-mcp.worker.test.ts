@@ -6,23 +6,21 @@ import {
   authTest,
   bootstrapVerifiedStaff,
   clientOf,
+  exchangeOAuthCode,
+  grantOAuthAuthorization,
   registerVerified,
+  responseStatus,
   signIn,
   signInAs,
+  startWikiAuthorization,
+  wikiOrigin,
+  wikiStaff,
 } from "@repo/auth/testing";
 import { APPLICATION, ROLE, httpStatus } from "@repo/config";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import {
-  exchangeCode,
-  grantAuthorization,
-  mcpRequest,
-  responseStatus,
-  startAuthorization,
-  wikiStaff,
-  wikiOrigin,
-} from "./wiki-oauth-test-fixture.ts";
+import { mcpRequest } from "./wiki-oauth-test-fixture.ts";
 
 const tamperedSuffix = "xx";
 
@@ -36,10 +34,10 @@ const discovery = Effect.fn("discovery")(function* discovery(path: string) {
 });
 
 const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedTokens() {
-  const flow = yield* startAuthorization();
+  const flow = yield* startWikiAuthorization();
   const wiki = yield* wikiStaff("owner@example.com");
-  const code = yield* grantAuthorization(wiki, flow.oauthQuery);
-  return { tokens: yield* exchangeCode(flow, code), wiki };
+  const code = yield* grantOAuthAuthorization(wiki, flow.oauthQuery);
+  return { tokens: yield* exchangeOAuthCode(flow, code), wiki };
 });
 
 describe("wiki MCP authorization", () => {
@@ -119,7 +117,7 @@ describe("wiki MCP authorization", () => {
     Effect.runPromise(
       Effect.gen(function* refuseWeakGrant() {
         const result = yield* Effect.gen(function* program() {
-          const flow = yield* startAuthorization();
+          const flow = yield* startWikiAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
           const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
           const continued = yield* weak.json("/oauth2/continue", {

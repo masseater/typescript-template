@@ -3,6 +3,7 @@
   "ignorePatterns": ["**/routeTree.gen.ts", "**/mockServiceWorker.js"],
   "ignoreDependencies": [
     "@effect/tsgo",
+    "@scalar/api-reference",
     "@shadcn/lint",
     "@storybook/addon-mcp",
     "@stryker-mutator/vitest-runner",

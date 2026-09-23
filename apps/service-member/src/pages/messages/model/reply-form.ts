@@ -2,16 +2,8 @@ import { useAction, useTextInput } from "@repo/ui";
 
 import { sendMessage } from "#pages/messages/api/messages.ts";
 
-import type { SubmitEventHandler } from "react";
-interface ReplyForm {
-  readonly blocked: boolean;
-  readonly body: string;
-  readonly error: string | undefined;
-  readonly handleBodyChange: (value: string) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly pending: boolean;
-}
-function useReplyForm(conversationId: string, onSent: () => Promise<void>): ReplyForm {
+import type { ReplyBodyFormState } from "#shared/ui/index.ts";
+function useReplyForm(conversationId: string, onSent: () => Promise<void>): ReplyBodyFormState {
   const body = useTextInput();
   const action = useAction();
   function handleSubmit(

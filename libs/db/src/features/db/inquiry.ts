@@ -1,10 +1,12 @@
 import { ADMIN_PERMISSION, AUDIT_ACTION } from "@repo/config";
-import { and, asc, count, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, sql, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
+import { countRows } from "./count-rows.ts";
 import { query, type DrizzleDatabase } from "./database.ts";
 import { InquiryForbidden } from "./inquiry-forbidden.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
+import { adminInquiryColumns, inquiryColumns, inquiryThread } from "./inquiry-thread.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
 import {
   auditEvent,
@@ -61,6 +63,13 @@ interface MemberSummary {
   readonly name: string;
 }
 
+const adminInquiries = (database: DrizzleDatabase) =>
+  database
+    .select(adminInquiryColumns)
+    .from(inquiry)
+    .innerJoin(user, eq(inquiry.memberId, user.id))
+    .$dynamic();
+
 const requireInquiryResponder = (sessionId: string): ReturnType<typeof requireAdmin> =>
   requireAdmin(sessionId, ADMIN_PERMISSION.operator);
 
@@ -104,13 +113,7 @@ const listMemberInquiries = Effect.fn("listMemberInquiries")(function* listMembe
 ) {
   return yield* query((database) =>
     database
-      .select({
-        createdAt: inquiry.createdAt,
-        id: inquiry.id,
-        status: inquiry.status,
-        subject: inquiry.subject,
-        updatedAt: inquiry.updatedAt,
-      })
+      .select(inquiryColumns)
       .from(inquiry)
       .where(eq(inquiry.memberId, memberId))
       .orderBy(desc(inquiry.updatedAt), inquiry.id),
@@ -121,36 +124,14 @@ const getMemberInquiry = Effect.fn("getMemberInquiry")(function* getMemberInquir
   memberId: string,
   inquiryId: string,
 ) {
-  const [row] = yield* query((database) =>
+  const found = query((database) =>
     database
-      .select({
-        createdAt: inquiry.createdAt,
-        id: inquiry.id,
-        status: inquiry.status,
-        subject: inquiry.subject,
-        updatedAt: inquiry.updatedAt,
-      })
+      .select(inquiryColumns)
       .from(inquiry)
       .where(and(eq(inquiry.id, inquiryId), eq(inquiry.memberId, memberId)))
       .limit(1),
   );
-  if (!row) {
-    return yield* new InquiryNotFound();
-  }
-  const messages = yield* query((database) =>
-    database
-      .select({
-        authorId: inquiryMessage.authorId,
-        authorKind: inquiryMessage.authorKind,
-        body: inquiryMessage.body,
-        createdAt: inquiryMessage.createdAt,
-        id: inquiryMessage.id,
-      })
-      .from(inquiryMessage)
-      .where(eq(inquiryMessage.inquiryId, inquiryId))
-      .orderBy(asc(inquiryMessage.createdAt), inquiryMessage.id),
-  );
-  return { ...row, messages } satisfies InquiryThread;
+  return (yield* inquiryThread(inquiryId, found)) satisfies InquiryThread;
 });
 
 const createMemberInquiry = Effect.fn("createMemberInquiry")(function* createMemberInquiry(
@@ -228,27 +209,14 @@ const listAdminInquiries = Effect.fn("listAdminInquiries")(function* listAdminIn
   yield* requireAdmin(sessionId);
   const where = matchesInquiryPage(page);
   const inquiries = yield* query((database) =>
-    database
-      .select({
-        createdAt: inquiry.createdAt,
-        id: inquiry.id,
-        memberId: inquiry.memberId,
-        memberName: user.name,
-        status: inquiry.status,
-        subject: inquiry.subject,
-        updatedAt: inquiry.updatedAt,
-      })
-      .from(inquiry)
-      .innerJoin(user, eq(inquiry.memberId, user.id))
+    adminInquiries(database)
       .where(where)
       .orderBy(desc(inquiry.updatedAt), inquiry.id)
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [matching] = yield* query((database) =>
-    database.select({ count: count() }).from(inquiry).where(where),
-  );
-  return { inquiries, total: matching?.count ?? 0 };
+  const total = yield* countRows(inquiry, () => where);
+  return { inquiries, total };
 });
 
 const getAdminInquiry = Effect.fn("getAdminInquiry")(function* getAdminInquiry(
@@ -256,39 +224,10 @@ const getAdminInquiry = Effect.fn("getAdminInquiry")(function* getAdminInquiry(
   inquiryId: string,
 ) {
   yield* requireAdmin(sessionId);
-  const [row] = yield* query((database) =>
-    database
-      .select({
-        createdAt: inquiry.createdAt,
-        id: inquiry.id,
-        memberId: inquiry.memberId,
-        memberName: user.name,
-        status: inquiry.status,
-        subject: inquiry.subject,
-        updatedAt: inquiry.updatedAt,
-      })
-      .from(inquiry)
-      .innerJoin(user, eq(inquiry.memberId, user.id))
-      .where(eq(inquiry.id, inquiryId))
-      .limit(1),
+  const found = query((database) =>
+    adminInquiries(database).where(eq(inquiry.id, inquiryId)).limit(1),
   );
-  if (!row) {
-    return yield* new InquiryNotFound();
-  }
-  const messages = yield* query((database) =>
-    database
-      .select({
-        authorId: inquiryMessage.authorId,
-        authorKind: inquiryMessage.authorKind,
-        body: inquiryMessage.body,
-        createdAt: inquiryMessage.createdAt,
-        id: inquiryMessage.id,
-      })
-      .from(inquiryMessage)
-      .where(eq(inquiryMessage.inquiryId, inquiryId))
-      .orderBy(asc(inquiryMessage.createdAt), inquiryMessage.id),
-  );
-  return { ...row, messages } satisfies AdminInquiryThread;
+  return (yield* inquiryThread(inquiryId, found)) satisfies AdminInquiryThread;
 });
 
 const countPendingInquiries = Effect.fn("countPendingInquiries")(function* countPendingInquiries(

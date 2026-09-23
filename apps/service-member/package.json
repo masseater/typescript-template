@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@better-auth/api-key": "catalog:",
-    "@better-auth/oauth-provider": "1.7.5",
     "@cloudflare/tanstack-ai": "0.2.1",
     "@effect/atom-react": "catalog:",
     "@inlang/paraglide-js": "catalog:",
@@ -34,7 +33,6 @@
     "@tanstack/react-virtual": "3.14.13",
     "alchemy": "catalog:",
     "better-auth": "catalog:",
-    "better-call": "1.4.0",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",

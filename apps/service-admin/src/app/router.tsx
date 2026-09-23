@@ -1,6 +1,5 @@
-import { loadBrowserSession, provideSessionLoader } from "@repo/auth-ui";
+import { loadBrowserSession, sessionQueryClient } from "@repo/auth-ui";
 import { createAppRouter } from "@repo/ui/shell";
-import { QueryClient } from "@tanstack/react-query";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
 import { deLocalizeUrl, localizeUrl } from "#shared/i18n/index.ts";
@@ -13,10 +12,7 @@ declare module "@tanstack/react-router" {
 }
 
 function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
-  const queryClient = new QueryClient({
-    defaultOptions: { mutations: { networkMode: "always" }, queries: { networkMode: "always" } },
-  });
-  provideSessionLoader(queryClient, loadBrowserSession);
+  const queryClient = sessionQueryClient(loadBrowserSession);
   const router = createAppRouter(routeTree, {
     localizedUrls: { deLocalizeUrl, localizeUrl },
     routerContext: { queryClient },

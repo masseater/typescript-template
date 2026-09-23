@@ -106,4 +106,4 @@ const resolveVerifyEnvironment = Effect.fn("resolveVerifyEnvironment")(
 );
 
 export { resolveVerifyEnvironment, VerifyEnvironment };
-export type { ResolvedVerifyEnvironment };
+export type { ResolvedVerifyEnvironment, VerifyEnvironmentName };

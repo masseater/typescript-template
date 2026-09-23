@@ -3,16 +3,7 @@ import { Effect } from "effect";
 
 import { replyToThread } from "#pages/board/api/board.ts";
 
-import type { SubmitEventHandler } from "react";
-
-interface ReplyForm {
-  readonly blocked: boolean;
-  readonly body: string;
-  readonly error: string | undefined;
-  readonly handleBodyChange: (value: string) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly pending: boolean;
-}
+import type { ReplyBodyFormState } from "#shared/ui/index.ts";
 
 const useBody = localState("");
 
@@ -31,7 +22,7 @@ function postReply(
   );
 }
 
-function useReplyForm(threadId: string, onPosted: () => Promise<void>): ReplyForm {
+function useReplyForm(threadId: string, onPosted: () => Promise<void>): ReplyBodyFormState {
   const [body, setBody] = useBody();
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
