@@ -2,7 +2,7 @@ import { it } from "@effect/vitest";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import { compareGitHubPullRequest } from "./github-comparison.ts";
+import { compareGitHubPullRequest, GitHubComparisonIncomplete } from "./github-comparison.ts";
 import { GitHubRequestFailed, type GitHubApi } from "./github-request.ts";
 import { UndecodableSource } from "./repository-comparison.ts";
 
@@ -47,11 +47,13 @@ describe("compareGitHubPullRequest", () => {
               {
                 filename: "src/legacy.ts",
                 status: "modified",
+                changes: 1,
                 patch: "@@ -1,2 +1,1 @@\n-export const legacyMode = true;\n",
               },
               {
                 filename: "src/legacy-api.test.ts",
                 status: "added",
+                changes: 1,
                 patch: '@@ -0,0 +1,1 @@\n+expect(legacy).not.toHaveProperty("legacyMode");\n',
               },
             ],
@@ -105,6 +107,7 @@ describe("compareGitHubPullRequest", () => {
             {
               filename: "src/legacy.ts",
               status: "modified",
+              changes: 1,
               patch: "@@ -1,2 +1,1 @@\n-export const legacyMode = true;\n",
             },
           ],
@@ -148,6 +151,7 @@ describe("compareGitHubPullRequest", () => {
               {
                 filename: "src/legacy.ts",
                 status: "modified",
+                changes: 1,
                 patch: "@@ -1,2 +1,1 @@\n-export const legacyMode = true;\n",
               },
             ],
@@ -182,6 +186,7 @@ describe("compareGitHubPullRequest", () => {
               {
                 filename: "src/added.ts",
                 status: "added",
+                changes: 1,
                 patch: "@@ -0,0 +1,1 @@\n+export const added = true;\n",
               },
             ],
@@ -211,14 +216,16 @@ describe("compareGitHubPullRequest", () => {
               {
                 filename: "src/gone.ts",
                 status: "removed",
+                changes: 1,
                 patch: "@@ -1,1 +0,0 @@\n-export const gone = true;\n",
               },
               {
                 filename: "src/moved.ts",
                 status: "renamed",
                 previous_filename: "src/was-here.ts",
+                changes: 0,
               },
-              { filename: "src/copy.ts", status: "copied" },
+              { filename: "src/copy.ts", status: "copied", changes: 0 },
             ],
           },
           {
@@ -273,7 +280,7 @@ describe("compareGitHubPullRequest", () => {
 
   describe("a pull request that changed nothing", () => {
     const emptyComparison = pullRequestComparedThrough(
-      apiAnswering({ merge_base_commit: { sha: "basesha" } }, {}),
+      apiAnswering({ merge_base_commit: { sha: "basesha" }, files: [] }, {}),
     );
 
     it.effect("compares nothing when the pull request changed nothing", () =>
@@ -284,6 +291,78 @@ describe("compareGitHubPullRequest", () => {
           headRevision: "headsha",
           files: [],
         });
+      }),
+    );
+  });
+
+  describe("a compare that left out part of the change", () => {
+    const addedFile = (index: number) => ({
+      filename: `src/added-${index}.ts`,
+      status: "added" as const,
+      changes: 1,
+      patch: "@@ -0,0 +1,1 @@\n+export const added = true;\n",
+    });
+
+    const refusalOf = (compared: Compared) =>
+      Effect.flip(pullRequestComparedThrough(apiAnswering(compared, {})));
+
+    it.effect("refuses a compare that answered no changed files", () =>
+      Effect.gen(function* program() {
+        expect(yield* refusalOf({ merge_base_commit: { sha: "basesha" } })).toStrictEqual(
+          new GitHubComparisonIncomplete({
+            message:
+              "Do not pass a change the GitHub compare answered without its changed files: fetch the merge with its parents so the checkout compares it locally.",
+          }),
+        );
+      }),
+    );
+
+    it.effect("refuses a compare that answered as many files as it can list", () =>
+      Effect.gen(function* program() {
+        expect(
+          yield* refusalOf({
+            merge_base_commit: { sha: "basesha" },
+            files: Array.from({ length: 300 }, (_, index) => addedFile(index)),
+          }),
+        ).toStrictEqual(
+          new GitHubComparisonIncomplete({
+            message:
+              "Do not pass a change the GitHub compare may have cut short: it lists at most 300 files and answered 300. Fetch the merge with its parents so the checkout compares it locally.",
+          }),
+        );
+      }),
+    );
+
+    it.effect("reads a compare that answered one file fewer than it can list", () =>
+      Effect.gen(function* program() {
+        const compared: Compared = {
+          merge_base_commit: { sha: "basesha" },
+          files: Array.from({ length: 299 }, (_, index) => addedFile(index)),
+        };
+        const comparison = yield* pullRequestComparedThrough({
+          compare: () => Effect.succeed(compared),
+          contents: () => Effect.succeed(utf8("export const added = true;\n")),
+        });
+        expect(comparison.files).toHaveLength(299);
+      }),
+    );
+
+    it.effect("refuses a changed text file the compare answered without its diff", () =>
+      Effect.gen(function* program() {
+        expect(
+          yield* refusalOf({
+            merge_base_commit: { sha: "basesha" },
+            files: [
+              { filename: "src/large.ts", status: "modified", changes: 4000 },
+              { filename: "assets/logo.png", status: "modified", changes: 0 },
+            ],
+          }),
+        ).toStrictEqual(
+          new GitHubComparisonIncomplete({
+            message:
+              "Do not pass a change whose diff the GitHub compare left out: src/large.ts. Fetch the merge with its parents so the checkout compares it locally.",
+          }),
+        );
       }),
     );
   });
