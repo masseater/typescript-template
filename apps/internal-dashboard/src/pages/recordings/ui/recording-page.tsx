@@ -1,3 +1,4 @@
+import { RECORDING_STATUS } from "@repo/config";
 import { Button, ConfirmDialog, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
@@ -14,9 +15,9 @@ import type { ReactElement } from "react";
 const failureLabels: Readonly<Record<RecordingFailure, string>> = {
   audio_missing: "録音ファイルが見つかりませんでした。",
   enqueue_failed: "文字起こしの順番待ちに入れられませんでした。",
-  invalid_output: "文字起こしの結果を読み取れませんでした。",
-  model_failed: "文字起こしのモデルが失敗しました。",
-  unavailable: "文字起こしのモデルを使えない環境です。",
+  output_unreadable: "文字起こしの結果を読み取れませんでした。",
+  model_rejected: "文字起こしのモデルが失敗しました。",
+  ai_unbound: "文字起こしのモデルを使えない環境です。",
 };
 
 function RecordingPage({ recording }: Readonly<{ recording: RecordingDetail }>): ReactElement {
@@ -29,7 +30,9 @@ function RecordingPage({ recording }: Readonly<{ recording: RecordingDetail }>):
   const { durationMs, failure, status, title } = recording.recording;
   return (
     <OpsPage title={title}>
-      <StatusMessage variant={status === "failed" ? STATUS_VARIANT.failure : STATUS_VARIANT.empty}>
+      <StatusMessage
+        variant={status === RECORDING_STATUS.failed ? STATUS_VARIANT.failure : STATUS_VARIANT.empty}
+      >
         {statusLabels[status]}
         {durationMs === null ? "" : `（${clockOf(durationMs)}）`}
         {failure === null ? "" : ` ${failureLabels[failure]}`}
@@ -38,7 +41,7 @@ function RecordingPage({ recording }: Readonly<{ recording: RecordingDetail }>):
         <Button type="button" disabled={actions.blocked} action={() => router.invalidate()}>
           状態を更新する
         </Button>
-        {status === "failed" ? (
+        {status === RECORDING_STATUS.failed ? (
           <Button
             type="button"
             variant="primary"

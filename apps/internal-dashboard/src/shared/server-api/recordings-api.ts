@@ -1,5 +1,5 @@
 import { verifySession } from "@repo/auth";
-import { httpStatus, jobsQueueBinding, readJobs } from "@repo/config";
+import { RECORDING_FAILURE, httpStatus, jobsQueueBinding, readJobs } from "@repo/config";
 import { RequestRejected } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
 import {
@@ -84,7 +84,9 @@ const enqueue = Effect.fn("enqueueRecording")(function* enqueue(
     try: () => jobs[jobsQueueBinding].send(packet),
   }).pipe(
     Effect.tapError(() =>
-      CoreRecords.use((core) => core.failRecording({ failure: "enqueue_failed", recordingId })),
+      CoreRecords.use((core) =>
+        core.failRecording({ failure: RECORDING_FAILURE.enqueueFailed, recordingId }),
+      ),
     ),
   );
 });

@@ -1,3 +1,4 @@
+import { RECORDING_FAILURE } from "@repo/config";
 import { logAt, logCause } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
 import { Cause, Effect } from "effect";
@@ -7,8 +8,8 @@ import { Transcriber, transcriptionModel } from "./transcriber.ts";
 import { TranscriptionFailed } from "./transcription-failed.ts";
 
 const dependencyFailures: ReadonlySet<TranscriptionFailed["reason"]> = new Set([
-  "invalid_output",
-  "model_failed",
+  RECORDING_FAILURE.outputUnreadable,
+  RECORDING_FAILURE.modelRejected,
 ]);
 
 function transcriptionFailure(recordingId: string, failed: TranscriptionFailed) {
@@ -36,7 +37,7 @@ const transcribeJob = Effect.fn("transcribeJob")(function* transcribeJob(jobId: 
   return yield* Effect.gen(function* transcribeRecording() {
     const audio = yield* (yield* FileStore).open(started.objectKey);
     if (audio === undefined) {
-      return yield* new TranscriptionFailed({ reason: "audio_missing" });
+      return yield* new TranscriptionFailed({ reason: RECORDING_FAILURE.audioMissing });
     }
     const transcript = yield* (yield* Transcriber).transcribe({
       body: audio.body,

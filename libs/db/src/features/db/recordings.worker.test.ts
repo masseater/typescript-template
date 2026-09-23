@@ -83,7 +83,7 @@ describe("a retried recording", () => {
       Effect.gen(function* program() {
         yield* queuedMeeting;
         const early = yield* retryRecording("meeting", "second-job").pipe(Effect.flip);
-        yield* failRecording("meeting", "model_failed");
+        yield* failRecording("meeting", "model_rejected");
         yield* retryRecording("meeting", "second-job");
         const replaced = yield* beginTranscription("first-job");
         const { recording } = yield* findRecording("meeting");

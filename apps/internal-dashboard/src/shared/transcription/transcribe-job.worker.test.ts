@@ -97,10 +97,10 @@ describe("transcribeJob", () => {
       const found = yield* (yield* CoreRecords).findRecording({ recordingId: id });
       assert.deepStrictEqual(outcome, { jobId, outcome: "failed" });
       assert.strictEqual(found.recording.status, RECORDING_STATUS.failed);
-      assert.strictEqual(found.recording.failure, "model_failed");
+      assert.strictEqual(found.recording.failure, "model_rejected");
     }).pipe(
       Effect.provide(
-        services(() => Effect.fail(new TranscriptionFailed({ reason: "model_failed" }))),
+        services(() => Effect.fail(new TranscriptionFailed({ reason: "model_rejected" }))),
       ),
     ),
   );

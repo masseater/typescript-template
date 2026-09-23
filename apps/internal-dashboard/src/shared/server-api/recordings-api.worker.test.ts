@@ -237,7 +237,7 @@ describe("recordings api", () => {
       assert.strictEqual(early.status, httpStatus.conflict);
       yield* Effect.provide(
         CoreRecords.use((records) =>
-          records.failRecording({ failure: "model_failed", recordingId: id }),
+          records.failRecording({ failure: "model_rejected", recordingId: id }),
         ),
         core,
       );

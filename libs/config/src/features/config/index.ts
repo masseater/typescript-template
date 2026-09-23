@@ -60,6 +60,7 @@ export {
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
 export {
+  RECORDING_FAILURE,
   RECORDING_STATUS,
   recordingFailures,
   recordingStatuses,
