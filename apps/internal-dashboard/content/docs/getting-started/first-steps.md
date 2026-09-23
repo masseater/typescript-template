@@ -36,17 +36,13 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - 両方でキー名は同じです。`TEMPLATE_PREFIX` と、そこから決まる origin・送信ドメインは環境ごとに分けます。
   - 必須キーは `libs/observability/src/deployment-keys.ts` の `deploymentKeys` です。
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
-    - `BUDGET_JPY`: 正の数。円を `TEMPLATE_JPY_PER_USD` で割った値が、`TEMPLATE_FIXED_COST_USD` と `TEMPLATE_RESERVE_USD` の合計より大きいこと。
+    - `BUDGET_JPY`: 正の数。予算監視は実行のたびに取得した為替レートで米ドルに換算し、固定費と予備費を引いた残りを使える額とします。残りが無いと予算監視が失敗を通知します。
     - `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_ZONE_ID`: 16進 32 文字。
     - `CLOUDFLARE_API_TOKEN`: Cloudflare API トークン。
     - `TEMPLATE_APP_DOMAIN`: URL ではなくホスト名（`example.com`）。`workers.dev` は不可。origin は `https://{TEMPLATE_PREFIX}-member.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-admin.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-dashboard.{TEMPLATE_APP_DOMAIN}` になります。
     - `TEMPLATE_AUTH_SECRET`: 32 文字以上、異なる文字が 16 種以上、前後に空白を付けない。
-    - `TEMPLATE_FIXED_COST_USD`: 0 以上の数。
-    - `TEMPLATE_JPY_PER_USD`: 正の数。
     - `TEMPLATE_MAIL_FROM`: メールアドレス。`@` 以降は `{TEMPLATE_PREFIX}.` で始まること。
-    - `TEMPLATE_OBSERVABILITY_SAMPLING`: 0 以上 1 以下の数。
     - `TEMPLATE_PREFIX`: 先頭は英小文字、続きは英小文字・数字・ハイフン。全体で 3〜36 文字。
-    - `TEMPLATE_RESERVE_USD`: 0 以上の数。
   - 空でも適用は始まります。値があるときだけデプロイへ渡ります。
     - `TEMPLATE_OTLP_ENDPOINT`: https の URL。
     - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。

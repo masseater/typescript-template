@@ -4,7 +4,12 @@ import { readStorage } from "@repo/config/storage";
 import { otlpSignalUrl } from "@repo/observability";
 import { Effect } from "effect";
 
-import { parseDeploymentCommand, traceDestination, workerObservability } from "./config.ts";
+import {
+  observabilitySampling,
+  parseDeploymentCommand,
+  traceDestination,
+  workerObservability,
+} from "./config.ts";
 import { stackNames } from "./stacks.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
@@ -122,7 +127,7 @@ it.effect("a Worker without an OTLP endpoint declares no trace destination", () 
   Effect.sync(() => {
     assert.deepStrictEqual(workerObservability({ ...settings, otlp: undefined }).traces, {
       enabled: true,
-      headSamplingRate: settings.observabilitySampling,
+      headSamplingRate: observabilitySampling,
     });
     assert.isUndefined(traceDestination({ ...settings, otlp: undefined }));
   }),
@@ -152,7 +157,7 @@ it.effect("a disabled OTLP destination keeps the Worker declaration and the reso
     assert.deepStrictEqual(workerObservability(disabled).traces, {
       destinations: [`${settings.prefix}-traces`],
       enabled: true,
-      headSamplingRate: settings.observabilitySampling,
+      headSamplingRate: observabilitySampling,
       persist: true,
     });
   }),

@@ -95,7 +95,6 @@ describe("deployment value leaks", () => {
         `TEMPLATE_PREFIX="${unusablePrefix}"`,
         "TEMPLATE_APP_DOMAIN=deployment.example",
         "BUDGET_JPY=5000",
-        "TEMPLATE_JPY_PER_USD=150",
         "UNRELATED=some-other-value",
         "# comment",
       ].join("\n"),

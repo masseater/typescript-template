@@ -7,6 +7,7 @@ export default defineConfig({
       ...effectDiagnostics,
       "db:bootstrap:local": { cache: false, command: "./src/bootstrap-local.ts" },
       "db:migrate:local": { cache: false, command: "./src/migrate-local.ts" },
+      "db:schema-document": { cache: false, command: "./src/write-schema-document.ts" },
       ...lifecycle({ prepush: ["check:effect"] }),
     },
   },

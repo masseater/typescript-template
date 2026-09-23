@@ -7,13 +7,9 @@ const verificationSettings = {
   accountId: "a".repeat(HEX_ID_LENGTH),
   budget: {
     budgetJpy: 5000,
-    fixedCostUsd: 5,
-    jpyPerUsd: 151,
     recipients: ["billing@example.com"],
-    reserveUsd: 2,
   },
   mailFrom: "mail@template-verify.example.com",
-  observabilitySampling: 0.5,
   origins: {
     "internal-dashboard": "https://template-verify-dashboard.example.com",
     "service-admin": "https://template-verify-admin.example.com",
@@ -33,15 +29,11 @@ const verificationEnvironment: Readonly<Record<string, string>> = {
   [deploymentKey.cloudflareZoneId]: verificationSettings.zoneId,
   [deploymentKey.appDomain]: "example.com",
   [deploymentKey.authSecret]: verificationAuthSecret,
-  [deploymentKey.fixedCostUsd]: String(verificationSettings.budget.fixedCostUsd),
-  [deploymentKey.jpyPerUsd]: String(verificationSettings.budget.jpyPerUsd),
   [deploymentKey.mailFrom]: verificationSettings.mailFrom,
-  [deploymentKey.observabilitySampling]: String(verificationSettings.observabilitySampling),
   [deploymentKey.otlpAuthorization]: verificationSettings.otlpAuthorization,
   [deploymentKey.otlpEnabled]: String(verificationSettings.otlp.enabled),
   [deploymentKey.otlpEndpoint]: verificationSettings.otlp.endpoint,
   [deploymentKey.prefix]: verificationSettings.prefix,
-  [deploymentKey.reserveUsd]: String(verificationSettings.budget.reserveUsd),
 };
 
 export { verificationAuthSecret, verificationEnvironment, verificationSettings };
