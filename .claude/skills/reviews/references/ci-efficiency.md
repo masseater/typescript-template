@@ -1,6 +1,6 @@
 # CI の効率
 
-検証は実行する場所ごとに責務を分ける。段階の定義は各 workspace の `vite.config.ts` の `lifecycle`（`precommit`・`prepush`・`prepr`・`premerge`・`prerelease`）と `.github/workflows/check.yml` が持つ。
+検証は実行する場所ごとに責務を分ける。
 
 - precommit: 毎回実行しても負担にならない静的解析。重いテストやビルドを載せない。
 - prepush: 変更とその影響を受けるテスト・typecheck・build。影響範囲は task graph と依存関係から求め、全体を毎回実行しない。

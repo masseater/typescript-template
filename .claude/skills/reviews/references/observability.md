@@ -1,6 +1,6 @@
 # 観測性
 
-Workers Observability と監視 Worker が運ぶ未解決の記録を、いま直すべきものの一覧と一致させる。出口は `@repo/observability` の OTLP 送出、アラートは `infra/error-monitor`・`infra/budget-monitor`・`infra/health-monitor` と `libs/monitor`。秘密と個人を特定できる値を出力から落とす判断を先に当てる。
+監視が運ぶ未解決の記録を、いま直すべきものの一覧と一致させる。秘密と個人を特定できる値を出力から落とす判断を先に当てる。
 
 ## 監視へ送る対象
 
