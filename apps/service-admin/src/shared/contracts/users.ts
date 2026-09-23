@@ -1,7 +1,6 @@
 import { roles } from "@repo/config";
 import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
 import {
-  CreatedResource,
   Identifier,
   IdentifierQuery,
   SearchKeyword,
@@ -10,7 +9,7 @@ import {
   maximumKeywordLength,
   pageNumber,
 } from "@repo/runtime/contracts";
-import { Schema } from "effect";
+import { Schema, Struct } from "effect";
 
 const Role = Schema.Literals(roles);
 
@@ -42,7 +41,7 @@ const RoleChanged = Schema.Struct({ id: Schema.String, role: Role });
 
 const UserDeletion = IdentifierQuery;
 
-const UserDeleted = CreatedResource;
+const UserDeleted = Schema.Struct(Struct.pick(UserSummary.fields, ["id"]));
 
 export {
   BooleanText,
