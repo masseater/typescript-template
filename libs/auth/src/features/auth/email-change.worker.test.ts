@@ -167,14 +167,24 @@ describe("email change", () => {
           const client = yield* strongMember();
           yield* requestChange(client);
           const confirmed = yield* confirmChange(client);
+          const completed = yield* receivedLink(OLD_EMAIL, mailSubjects.emailChangeCompleted);
           const session = yield* client.verify();
-          return { confirmed, email: session.user.email, signIn: yield* signInStatuses() };
+          return {
+            completed,
+            confirmed,
+            email: session.user.email,
+            signIn: yield* signInStatuses(),
+          };
         }),
       ),
     );
 
     it("is accepted", ({ outcome }) => {
       expect(outcome.confirmed).toBe(httpStatus.ok);
+    });
+
+    it("tells the old address that the change is complete", ({ outcome }) => {
+      expect(outcome.completed.pathname).toBe("/settings/security");
     });
 
     it("moves the session to the new address", ({ outcome }) => {

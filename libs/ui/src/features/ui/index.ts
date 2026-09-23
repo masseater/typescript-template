@@ -16,6 +16,7 @@ export { Field } from "./shared/ui/field";
 export { LocaleSwitch } from "./shared/ui/locale-switch";
 export { localizedFieldValidationMessages } from "./shared/ui/field-validation-messages";
 export type { FieldValidationMessages } from "./shared/ui/field-validation-messages";
+export { FileField } from "./shared/ui/file-field";
 export type { UiNode } from "./shared/ui/types";
 export { FormColumn } from "./shared/ui/form-column";
 export { Heading } from "./shared/ui/heading";

@@ -78,7 +78,6 @@ const EmailChangeForm = ({
           label="新しいメールアドレス"
           name="new-email"
           type="email"
-          required
           value={newEmail.value}
           onValueChange={newEmail.handleChange}
         />

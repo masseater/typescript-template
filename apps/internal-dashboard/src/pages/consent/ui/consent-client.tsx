@@ -1,5 +1,4 @@
-import { STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
-import { AsyncResult } from "effect/unstable/reactivity";
+import { Button, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { useClientName } from "#pages/consent/model/client-name.ts";
 import { ConsentActions } from "./consent-actions.tsx";
@@ -8,14 +7,23 @@ import type { ReactElement } from "react";
 
 function ConsentClient({ clientId }: Readonly<{ clientId: string }>): ReactElement {
   const clientName = useClientName(clientId);
-  const failure = resultError(clientName);
-  if (failure !== undefined) {
-    return <StatusMessage variant={STATUS_VARIANT.failure}>{failure}</StatusMessage>;
+  const retry = (): void => {
+    void clientName.refetch();
+  };
+  if (clientName.isError) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <StatusMessage variant={STATUS_VARIANT.failure}>{clientName.error.message}</StatusMessage>
+        <Button onClick={retry} type="button" variant="secondary">
+          再試行
+        </Button>
+      </div>
+    );
   }
-  if (!AsyncResult.isSuccess(clientName) || clientName.value === undefined) {
+  if (clientName.data === undefined) {
     return <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>;
   }
-  return <ConsentActions client={clientName.value} />;
+  return <ConsentActions client={clientName.data} />;
 }
 
 export { ConsentClient };

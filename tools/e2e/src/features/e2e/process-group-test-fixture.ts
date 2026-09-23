@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { failed } from "./journey-failure-test-fixture.ts";
+import { failed } from "./journey-failure.ts";
 
 import type { ChildProcessSpawner } from "effect/unstable/process";
 

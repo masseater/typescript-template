@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { NotificationsPage } from "#pages/notifications/index.ts";
+import { NotificationsRoute, loadNotifications } from "#pages/notifications/index.ts";
 
 const Route = createFileRoute("/_member/notifications")({
-  component: NotificationsPage,
+  component: NotificationsRoute,
+  loader: () => loadNotifications().then((items) => ({ items })),
 });
 
 export { Route };

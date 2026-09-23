@@ -8,7 +8,11 @@ import { type Application, ApplicationName } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
-import { ANALYSIS_TIMEOUT, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
+import {
+  ANALYSIS_TIMEOUT,
+  REACT_DOCTOR_SKIP_DETAIL,
+  skippedOnlyByTimeout,
+} from "./react-doctor-timeout.ts";
 import { reactDoctorPassed } from "./react-doctor-verdict.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
@@ -80,7 +84,7 @@ const findingsOf = (entry: typeof Project.Type): string[] => {
 const skippedOf = (entry: typeof Project.Type): string[] => {
   const name = entry.project.projectName;
   return [
-    ...(entry.complete ? [] : [`${name} incomplete`]),
+    ...(entry.complete ? [] : [`${name} ${REACT_DOCTOR_SKIP_DETAIL.incomplete}`]),
     ...entry.skippedChecks.map((check) => `${name} ${check}`),
     ...Object.entries(entry.skippedCheckReasons ?? {}).map(
       ([check, reason]) => `${name} ${check} ${reason}`,

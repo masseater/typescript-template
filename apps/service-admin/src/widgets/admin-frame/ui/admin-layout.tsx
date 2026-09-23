@@ -1,4 +1,4 @@
-import { SessionGate } from "@repo/auth-ui";
+import { SessionGate, SessionUserProvider } from "@repo/auth-ui";
 import { ROLE } from "@repo/config";
 import { Outlet } from "@tanstack/react-router";
 
@@ -10,9 +10,11 @@ function AdminLayout(): ReactElement {
   return (
     <SessionGate role={ROLE.administrator}>
       {(session) => (
-        <AdminFrame email={session.user.email} name={session.user.name}>
-          <Outlet />
-        </AdminFrame>
+        <SessionUserProvider user={session.user}>
+          <AdminFrame email={session.user.email} name={session.user.name}>
+            <Outlet />
+          </AdminFrame>
+        </SessionUserProvider>
       )}
     </SessionGate>
   );

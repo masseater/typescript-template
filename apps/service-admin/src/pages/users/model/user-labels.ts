@@ -1,22 +1,27 @@
-import { ROLE } from "@repo/config";
+import { ACCOUNT_STATE } from "@repo/config";
 
-import { Role } from "#shared/contracts/index.ts";
+import { AccountState } from "#shared/contracts/index.ts";
 
-const roleLabels: Readonly<Record<typeof Role.Type, string>> = {
-  [ROLE.administrator]: "管理者",
-  [ROLE.member]: "一般ユーザー",
+const accountStateLabels: Readonly<Record<typeof AccountState.Type, string>> = {
+  [ACCOUNT_STATE.active]: "利用中",
+  [ACCOUNT_STATE.suspended]: "停止中",
 };
 
-const nextRoles: Readonly<Record<typeof Role.Type, typeof Role.Type>> = {
-  [ROLE.administrator]: ROLE.member,
-  [ROLE.member]: ROLE.administrator,
+const nextAccountStates: Readonly<Record<typeof AccountState.Type, typeof AccountState.Type>> = {
+  [ACCOUNT_STATE.active]: ACCOUNT_STATE.suspended,
+  [ACCOUNT_STATE.suspended]: ACCOUNT_STATE.active,
+};
+
+const stateChangeLabels: Readonly<Record<typeof AccountState.Type, string>> = {
+  [ACCOUNT_STATE.active]: "利用を停止する",
+  [ACCOUNT_STATE.suspended]: "停止を解除する",
 };
 
 const verificationLabels = { false: "未確認", true: "確認済み" } as const;
 
-const roleOptions = [
+const accountStateOptions = [
   { label: "すべて", value: "" },
-  ...Role.literals.map((role) => ({ label: roleLabels[role], value: role })),
+  ...AccountState.literals.map((state) => ({ label: accountStateLabels[state], value: state })),
 ];
 
 const verificationOptions = [
@@ -25,9 +30,24 @@ const verificationOptions = [
   { label: verificationLabels.false, value: "false" },
 ];
 
+function stateChangeConfirmation(
+  user: Readonly<{ accountState: typeof AccountState.Type; email: string }>,
+): Readonly<{ description: string; variant: "danger" | "primary" }> {
+  if (nextAccountStates[user.accountState] === ACCOUNT_STATE.suspended) {
+    return {
+      description: `${user.email} の利用を停止します。停止中はログインできず、他の利用者から見えなくなります。`,
+      variant: "danger",
+    };
+  }
+  return {
+    description: `${user.email} の停止を解除します。再びログインでき、他の利用者から見えるようになります。`,
+    variant: "primary",
+  };
+}
+
 function rowConfirmation(
   deleting: boolean,
-  user: Readonly<{ email: string; role: typeof Role.Type }>,
+  user: Readonly<{ accountState: typeof AccountState.Type; email: string }>,
 ): Readonly<{
   confirmLabel: string;
   description: string;
@@ -42,19 +62,16 @@ function rowConfirmation(
       variant: "danger",
     };
   }
-  return {
-    confirmLabel: "変更する",
-    description: `${user.email} を${roleLabels[nextRoles[user.role]]}に変更します。対象ユーザーの既存セッションは失効します。`,
-    title: "権限を変更しますか？",
-    variant: "primary",
-  };
+  const stateChange = stateChangeLabels[user.accountState];
+  return { confirmLabel: stateChange, title: `${stateChange}か？`, ...stateChangeConfirmation(user) };
 }
 
 export {
-  nextRoles,
-  roleLabels,
+  accountStateLabels,
+  accountStateOptions,
+  nextAccountStates,
   rowConfirmation,
-  roleOptions,
+  stateChangeLabels,
   verificationLabels,
   verificationOptions,
 };

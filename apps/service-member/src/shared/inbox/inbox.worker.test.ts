@@ -1,5 +1,5 @@
 import { assert, it } from "@effect/vitest";
-import { userInboxBinding } from "@repo/config";
+import { NOTIFICATION_KIND, userInboxBinding } from "@repo/config";
 import { env } from "cloudflare:workers";
 import { Effect, Schema } from "effect";
 
@@ -44,7 +44,7 @@ it.effect("stores a notification and a feed post for one user", () =>
       }).pipe(Effect.orDie);
     const notification = yield* posted("notifications", CreateNotification, NotificationRecord, {
       id: "n1",
-      kind: "follow",
+      kind: NOTIFICATION_KIND.follow,
       subjectId: "actor-1",
     });
     const post = yield* posted("posts", CreateFeedPost, FeedPostRecord, {

@@ -1,9 +1,11 @@
 import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
+import { QueryClient } from "@tanstack/react-query";
 import { Effect, Exit } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/unstable/http";
+import { expect } from "vite-plus/test";
 
-import { clientNameOf } from "./consent.ts";
+import { clientNameOf, clientNameOptions } from "./consent.ts";
 
 function responseOf(body: string, status: number): HttpClientResponse.HttpClientResponse {
   return HttpClientResponse.fromWeb(
@@ -39,4 +41,20 @@ describe("clientNameOf", () => {
       assert.isTrue(Exit.isFailure(exit));
     }),
   );
+});
+
+describe("oauth client name queries", () => {
+  it("keeps each client name on its own key", () => {
+    expect.hasAssertions();
+    const client = new QueryClient();
+    const ada = clientNameOptions("ada");
+    const bob = clientNameOptions("bob");
+    client.setQueryData(ada.queryKey, "Ada");
+    client.setQueryData(bob.queryKey, "Bob");
+    return client.invalidateQueries({ queryKey: ada.queryKey }).then(() => {
+      expect(client.getQueryState(ada.queryKey)?.isInvalidated).toBe(true);
+      expect(client.getQueryState(bob.queryKey)?.isInvalidated).toBe(false);
+      expect(client.getQueryData(bob.queryKey)).toBe("Bob");
+    });
+  });
 });

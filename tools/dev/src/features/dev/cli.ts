@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { causeRecord, firstUserArgumentIndex, runCli } from "@repo/cli";
+import { ADMIN_PERMISSION } from "@repo/config/identity";
 import { Console, Effect } from "effect";
 
 import { connection, logs, start, status, stop } from "./applications.ts";
@@ -8,7 +9,7 @@ import { browser, browserCommand } from "./browser.ts";
 import { ciRunner } from "./ci-runner.ts";
 import { failure } from "./failure.ts";
 import { application, root, run } from "./local-environment.ts";
-import { ensureOperator, operatorExists } from "./operator-account.ts";
+import { ensureOperators, operatorExists } from "./operator-account.ts";
 import { layer } from "./platform.ts";
 import { setup } from "./setup.ts";
 import { storybook } from "./storybook.ts";
@@ -19,18 +20,18 @@ import type { DevServices } from "./platform.ts";
 
 type Command = Effect.Effect<unknown, LocalCommandFailure, DevServices>;
 
-const operator = Effect.fn("operator")(function* operator(_args: readonly string[]) {
+const operator = Effect.fn(ADMIN_PERMISSION.operator)(function* operator(_args: readonly string[]) {
   if (!(yield* operatorExists())) {
     yield* run("vp", ["run", "--filter", "@repo/db-local", "db:migrate:local"], { cwd: root });
   }
-  yield* ensureOperator();
+  yield* ensureOperators();
   return { event: "local.operator_ready", ok: true as const, secretsPrinted: false as const };
 });
 
 const globalCommands = new Map<string, (args: readonly string[]) => Command>([
   ["ci-runner", ciRunner],
   ["connect", connection],
-  ["operator", operator as (args: readonly string[]) => Command],
+  [ADMIN_PERMISSION.operator, operator as (args: readonly string[]) => Command],
   ["setup", setup],
   ["status", status],
   ["storybook", (_args) => storybook()],

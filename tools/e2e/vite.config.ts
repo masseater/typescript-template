@@ -20,6 +20,7 @@ export default defineConfig({
         command: "vp test run",
         dependsOn: ["@repo/dev#setup"],
       },
+      verify: { cache: false, command: "./src/features/e2e/verify/cli.ts" },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check:modular"],

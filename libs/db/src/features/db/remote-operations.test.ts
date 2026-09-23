@@ -1,4 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
+import { APPLICATION } from "@repo/config";
 import { EmptyTestDatabase, TestBinding, deployMigrations, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -254,7 +255,7 @@ describe("bootstrapDatabase", () => {
             database
               .insert(session)
               .values({
-                audience: "service-member",
+                audience: APPLICATION.user,
                 authenticationMethod: "password",
                 createdAt,
                 expiresAt: DateTime.toDate(
@@ -269,7 +270,7 @@ describe("bootstrapDatabase", () => {
               .then(() => undefined),
           );
           yield* bootstrapDatabase(database, "FIRST@example.test");
-          return yield* getSessionSecurity("old-session", "service-member");
+          return yield* getSessionSecurity("old-session", APPLICATION.user);
         }).pipe(Effect.provide(EmptyTestDatabase)),
       ));
 
@@ -313,7 +314,7 @@ describe("bootstrapDatabase", () => {
 describe("the last administrator guard of the migrated database", () => {
   describe.for([
     ["a direct delete", "DELETE FROM user WHERE id = ?"],
-    ["a direct demotion", "UPDATE user SET role = 'user' WHERE id = ?"],
+    ["a direct demotion", "UPDATE user SET role = 'member' WHERE id = ?"],
   ] as const)("%s of the only administrator", ([, statement]) => {
     const it = test.extend("remainingAdministrator", () =>
       Effect.runPromise(

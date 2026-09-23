@@ -19,7 +19,7 @@ function UserRowActions({
         user={user}
         disabled={action.pending}
         onDelete={action.handleDelete}
-        onRoleChange={action.handleRoleChange}
+        onStateChange={action.handleStateChange}
       />
       <ConfirmDialog
         open={action.confirming !== undefined}

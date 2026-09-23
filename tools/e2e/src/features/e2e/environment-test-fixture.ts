@@ -6,11 +6,11 @@ import { serveApplication } from "./app-servers-test-fixture.ts";
 import { generateAuthSecret, replaceDevVars } from "./dev-vars-test-fixture.ts";
 import { newDisposerStack } from "./disposers-test-fixture.ts";
 import { documentPaths } from "./documents-test-fixture.ts";
-import { type Journey, type JourneyFailure } from "./journey-failure-test-fixture.ts";
+import { type Journey, type JourneyFailure } from "./journey-failure.ts";
 import { type JourneyRole, roleApplications } from "./journey-roles-test-fixture.ts";
 import { type IsolatedDatabase, startIsolatedDatabase } from "./local-database-test-fixture.ts";
-import { type MailSink, startMailSink } from "./mail-test-fixture.ts";
-import { freePort, loopbackOrigin } from "./ports-test-fixture.ts";
+import { type MailSink, startMailSink } from "./mail.ts";
+import { freePort, loopbackOrigin } from "./ports.ts";
 
 type Collect = (disposer: Effect.Effect<void, JourneyFailure>) => void;
 

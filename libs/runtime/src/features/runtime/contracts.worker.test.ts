@@ -13,7 +13,7 @@ type Matches<View, Fields extends keyof UserRecord> = [View] extends [Pick<UserR
 
 const sessionUserMatchesRecord: Matches<
   (typeof SessionView.Type)["user"],
-  "email" | "id" | "name" | "role" | "twoFactorEnabled"
+  "email" | "id" | "name" | "permission" | "role" | "twoFactorEnabled"
 > = true;
 
 describe("session user view", () => {

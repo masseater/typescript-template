@@ -7,7 +7,7 @@ import {
 } from "@repo/ui";
 import { EllipsisIcon } from "lucide-react";
 
-import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
+import { stateChangeLabels } from "#pages/users/model/user-labels.ts";
 
 import type { ListedUser } from "#pages/users/model/user-list.ts";
 import type { ReactElement } from "react";
@@ -15,12 +15,12 @@ import type { ReactElement } from "react";
 function RowActionMenu({
   disabled,
   onDelete,
-  onRoleChange,
+  onStateChange,
   user,
 }: Readonly<{
   disabled: boolean;
   onDelete: () => void;
-  onRoleChange: () => void;
+  onStateChange: () => void;
   user: ListedUser;
 }>): ReactElement {
   return (
@@ -29,8 +29,8 @@ function RowActionMenu({
         <Icon icon={EllipsisIcon} size="small" />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={onRoleChange}>
-          {`${roleLabels[nextRoles[user.role]]}にする`}
+        <DropdownMenuItem onClick={onStateChange}>
+          {stateChangeLabels[user.accountState]}
         </DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onClick={onDelete}>
           削除

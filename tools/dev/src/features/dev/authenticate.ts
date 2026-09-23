@@ -3,9 +3,10 @@ import { Effect } from "effect";
 import { URI } from "otpauth";
 
 import { agent, configuredOrigin, sessionName } from "./agent-session.ts";
+import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
 import { failure } from "./failure.ts";
 import { readCredentials, refreshBrowserConfig } from "./local-environment.ts";
-import { ensureOperator, operatorFile } from "./operator-account.ts";
+import { ensureOperators, operatorFile } from "./operator-account.ts";
 import { urlPath } from "./platform.ts";
 
 import type { App, Credentials } from "./local-environment.ts";
@@ -25,13 +26,15 @@ interface AuthenticateReport {
 const loginSettleMilliseconds = "2500";
 
 const submitLoginForm = [
-  "eval",
+  BROWSER_AGENT_COMMAND.eval,
   "(() => { const form = document.querySelector('form'); if (form === null) { throw new Error('login_form_missing'); } form.requestSubmit(); return true; })()",
 ] as const;
 
-function postLoginPath(app: App): string {
-  return app === APPLICATION.admin ? "/members" : "/home";
-}
+const postLoginPaths: Readonly<Record<App, string>> = {
+  [APPLICATION.admin]: "/members",
+  [APPLICATION.user]: "/home",
+  [APPLICATION.wiki]: "/",
+};
 
 const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInThroughBrowser(
   app: App,
@@ -40,34 +43,46 @@ const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInT
 ) {
   const socketDirectory = yield* refreshBrowserConfig();
   const origin = configuredOrigin(app, credentials);
-  yield* agent(app, credentials, socketDirectory, ["open", `${origin}/login`]);
+  yield* agent(app, credentials, socketDirectory, [BROWSER_AGENT_COMMAND.open, `${origin}/login`]);
   yield* agent(app, credentials, socketDirectory, [
-    "find",
-    "label",
+    BROWSER_AGENT_COMMAND.find,
+    BROWSER_AGENT_COMMAND.label,
     "メールアドレス",
-    "fill",
+    BROWSER_AGENT_COMMAND.fill,
     operator.email,
   ]);
   yield* agent(app, credentials, socketDirectory, [
-    "find",
-    "label",
+    BROWSER_AGENT_COMMAND.find,
+    BROWSER_AGENT_COMMAND.label,
     "パスワード",
-    "fill",
+    BROWSER_AGENT_COMMAND.fill,
     operator.password,
   ]);
   yield* agent(app, credentials, socketDirectory, [...submitLoginForm]);
-  yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
   yield* agent(app, credentials, socketDirectory, [
-    "find",
-    "label",
+    BROWSER_AGENT_COMMAND.wait,
+    loginSettleMilliseconds,
+  ]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.find,
+    BROWSER_AGENT_COMMAND.label,
     "認証アプリの確認コード",
-    "fill",
+    BROWSER_AGENT_COMMAND.fill,
     URI.parse(operator.totpURI).generate(),
   ]);
   yield* agent(app, credentials, socketDirectory, [...submitLoginForm]);
-  yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
-  yield* agent(app, credentials, socketDirectory, ["open", `${origin}${postLoginPath(app)}`]);
-  yield* agent(app, credentials, socketDirectory, ["wait", loginSettleMilliseconds]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.wait,
+    loginSettleMilliseconds,
+  ]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.open,
+    `${origin}${postLoginPaths[app]}`,
+  ]);
+  yield* agent(app, credentials, socketDirectory, [
+    BROWSER_AGENT_COMMAND.wait,
+    loginSettleMilliseconds,
+  ]);
   return origin;
 });
 
@@ -76,7 +91,7 @@ const authenticate = Effect.fn("authenticate")(function* authenticate(
   _args: readonly string[] = [],
 ) {
   const credentials = yield* readCredentials();
-  const operator = yield* ensureOperator();
+  const operator = (yield* ensureOperators())[app];
   const origin = yield* signInThroughBrowser(app, credentials, operator).pipe(
     Effect.mapError(() => failure("browser_authentication_failed")),
   );

@@ -13,10 +13,7 @@ const TotpField = ({ code }: Readonly<{ code: TextInput }>): ReactElement => {
       name={CHALLENGE_MODE.totp}
       inputMode="numeric"
       autoComplete="one-time-code"
-      pattern="[0-9]{6}"
-      minLength={TOTP_LENGTH}
       maxLength={TOTP_LENGTH}
-      required
       value={code.value}
       onValueChange={code.handleChange}
     />

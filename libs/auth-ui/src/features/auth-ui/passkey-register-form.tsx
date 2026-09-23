@@ -58,8 +58,7 @@ const PasskeyRegisterForm = ({
       ),
     );
   };
-  const recoveringAdmin =
-    session.user.role === ROLE.administrator && !session.strong && recovery === "1";
+  const recoveringAdmin = session.user.role !== ROLE.member && !session.strong && recovery === "1";
   return (
     <form onSubmit={submit}>
       <FormColumn>
@@ -67,7 +66,6 @@ const PasskeyRegisterForm = ({
           label="パスキーの名前"
           name="passkey-name"
           maxLength={100}
-          required
           value={passkeyName.value}
           onValueChange={passkeyName.handleChange}
         />

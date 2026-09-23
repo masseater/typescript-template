@@ -8,12 +8,14 @@ import {
   runDocumentJourney,
   runMemberJourney,
   runOperatorJourney,
+  runVerifyMemberJourney,
 } from "./journeys-test-fixture.ts";
-import { pageStep } from "./screens-test-fixture.ts";
+import { pageStep } from "./screens.ts";
 
 const backupCodesIssuedOnEnrollment = 10;
 const documentsReadByAnyone = 2;
 const robotsDirective = "noindex, nofollow";
+const aiAgentUserAgent = "Mozilla/5.0 (compatible; Cursor/1.0) AI-Agent/playwright";
 
 describe("アプリ全体の導線", () => {
   const it = journeyTest
@@ -29,6 +31,11 @@ describe("アプリ全体の導線", () => {
     )
     .extend("documentJourney", ({ environment, page }) =>
       Effect.runPromise(runDocumentJourney({ environment, page })),
+    )
+    .extend("verifyMemberJourney", ({ environment, page }) =>
+      Effect.runPromise(
+        runVerifyMemberJourney({ environment, page }).pipe(Effect.provide(NodeServices.layer)),
+      ),
     )
     .extend("robotsTags", ({ environment, page }) =>
       Effect.runPromise(
@@ -75,5 +82,18 @@ describe("アプリ全体の導線", () => {
 
   it("どのアプリも検索エンジンの索引に載らない", ({ robotsTags }) => {
     expect(robotsTags).toStrictEqual(journeyRoles.map(() => robotsDirective));
+  });
+
+  it("AI エージェントは会員登録からパスキー・TOTP まで通し、識別可能な User-Agent を送る", ({
+    verifyMemberJourney,
+  }) => {
+    expect(verifyMemberJourney).toStrictEqual({
+      browserUserAgent: aiAgentUserAgent,
+      enrolledTotp: true,
+      observabilityRecorded: true,
+      passkeyRegistered: true,
+      sessionEstablished: true,
+      userAgent: aiAgentUserAgent,
+    });
   });
 });

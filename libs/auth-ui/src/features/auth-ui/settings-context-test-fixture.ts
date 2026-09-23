@@ -7,6 +7,7 @@ const memberUser: SessionView["user"] = {
   email: "taro@example.com",
   id: "user_01",
   name: "山田 太郎",
+  permission: null,
   role: ROLE.member,
   twoFactorEnabled: false,
 };

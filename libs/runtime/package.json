@@ -8,6 +8,7 @@
     "./http": "./src/features/runtime/http.ts",
     "./worker": "./src/features/runtime/worker.ts",
     "./client": "./src/features/runtime/client.ts",
+    "./contracts": "./src/features/runtime/contracts.ts",
     "./account": "./src/features/runtime/account.ts",
     "./jobs": "./src/features/runtime/jobs.ts",
     "./testing": "./src/features/runtime/app-test-fixture.ts",

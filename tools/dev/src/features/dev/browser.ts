@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { agent, configuredOrigin, sessionArguments, sessionName } from "./agent-session.ts";
+import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
 import { failure } from "./failure.ts";
 import { readCredentials, refreshBrowserConfig, root } from "./local-environment.ts";
 
@@ -26,7 +27,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const origin = configuredOrigin(app, credentials);
   yield* agent(app, credentials, socketDirectory, [
-    "open",
+    BROWSER_AGENT_COMMAND.open,
     `${origin}${applicationReadyPaths[app]}`,
   ]);
   const report: BrowserReport = {

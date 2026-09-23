@@ -23,6 +23,7 @@ import { Route as DashboardInquiriesRouteImport } from './routes/_dashboard/inqu
 import { Route as DashboardSecurityRouteImport } from './routes/_dashboard/security'
 import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as WikiIndexRouteImport } from './routes/wiki/index'
 import { Route as WikiSplatRouteImport } from './routes/wiki/$'
 
@@ -95,6 +96,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WikiIndexRoute = WikiIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/security': typeof DashboardSecurityRoute
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/wiki/$': typeof WikiSplatRoute
   '/wiki/': typeof WikiIndexRoute
 }
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/security': typeof DashboardSecurityRoute
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/wiki/$': typeof WikiSplatRoute
   '/': typeof DashboardIndexRoute
   '/wiki': typeof WikiIndexRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_dashboard/security': typeof DashboardSecurityRoute
   '/_dashboard/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/wiki/$': typeof WikiSplatRoute
   '/_dashboard/': typeof DashboardIndexRoute
   '/wiki/': typeof WikiIndexRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/staff'
     | '/api/$'
+    | '/invite/$token'
     | '/wiki/$'
     | '/wiki/'
   fileRoutesByTo: FileRoutesByTo
@@ -189,6 +199,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/staff'
     | '/api/$'
+    | '/invite/$token'
     | '/wiki/$'
     | '/'
     | '/wiki'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/_dashboard/security'
     | '/_dashboard/staff'
     | '/api/$'
+    | '/invite/$token'
     | '/wiki/$'
     | '/_dashboard/'
     | '/wiki/'
@@ -221,6 +233,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/wiki/': {
       id: '/wiki/'
       path: '/'
@@ -385,6 +405,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiSplatRoute: ApiSplatRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

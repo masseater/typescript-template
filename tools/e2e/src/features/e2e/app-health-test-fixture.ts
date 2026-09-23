@@ -1,7 +1,7 @@
 import { Duration, Effect, FileSystem } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
-import { failed, spelled } from "./journey-failure-test-fixture.ts";
+import { failed, spelled } from "./journey-failure.ts";
 
 const servingHealth = "serving";
 

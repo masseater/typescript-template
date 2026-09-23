@@ -53,7 +53,6 @@ function NewThreadForm(): ReactElement {
           <Field
             label="題"
             name="title"
-            required
             maxLength={maximumBoardTitleLength}
             value={form.title}
             onValueChange={form.handleTitleChange}
@@ -62,7 +61,6 @@ function NewThreadForm(): ReactElement {
             multiline
             label="本文"
             name="body"
-            required
             maxLength={maximumBoardBodyLength}
             value={form.body}
             onValueChange={form.handleBodyChange}

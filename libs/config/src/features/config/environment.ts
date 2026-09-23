@@ -2,6 +2,7 @@ import { Effect, Predicate, Schema } from "effect";
 
 import { loopbackHosts, mailpitSendPath } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
+import { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
 
 import type { Ai, D1Database, Flagship, SendEmail } from "@cloudflare/workers-types";
 
@@ -37,6 +38,7 @@ const appEnvKey = {
   flagshipAccountId: "FLAGSHIP_ACCOUNT_ID",
   flagshipApiToken: "FLAGSHIP_API_TOKEN",
   flagshipAppId: "FLAGSHIP_APP_ID",
+  googleAnalyticsMeasurementId: "GOOGLE_ANALYTICS_MEASUREMENT_ID",
   mailpitUrl: "MAILPIT_URL",
   opsEmail: "OPS_EMAIL",
   otlpAuthorization: "OTLP_AUTHORIZATION",
@@ -66,6 +68,7 @@ const Scalars = Schema.Struct({
   [appEnvKey.flagshipAccountId]: Schema.optionalKey(NonEmpty),
   [appEnvKey.flagshipApiToken]: Schema.optionalKey(NonEmpty),
   [appEnvKey.flagshipAppId]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.googleAnalyticsMeasurementId]: Schema.optionalKey(GoogleAnalyticsMeasurementId),
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
   [appEnvKey.opsEmail]: Email,
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
@@ -91,6 +94,23 @@ const Bindings = Schema.Struct({
 const AiBindings = Schema.Struct({
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
 });
+
+const stripeKeyModes = ["live", "test"] as const;
+type StripeKeyMode = (typeof stripeKeyModes)[number];
+const StripeSecretKey = Schema.String.check(
+  Schema.isPattern(/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/u),
+);
+const StripeWebhookSecret = Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u));
+const StripePriceId = Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u));
+const StripeScalars = Schema.Struct({
+  APP_ORIGIN: Origin,
+  STRIPE_PRICE_ID: StripePriceId,
+  STRIPE_SECRET_KEY: StripeSecretKey,
+  STRIPE_WEBHOOK_SECRET: StripeWebhookSecret,
+});
+
+const stripeKeyMode = (secretKey: string): StripeKeyMode =>
+  secretKey.split("_")[1] === "live" ? "live" : "test";
 
 const isLocalLanHostname = (hostname: string): boolean =>
   /^[a-z0-9-]+\.local$/u.test(hostname) || /^[a-z0-9-]+\.local\.example\.test$/u.test(hostname);
@@ -167,6 +187,22 @@ const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   return AI;
 });
 
+const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfig(input: unknown) {
+  const scalars = yield* decode(StripeScalars, input);
+  const mode = stripeKeyMode(scalars.STRIPE_SECRET_KEY);
+  if (mode === "live" && isLocalDevelopmentOrigin(scalars.APP_ORIGIN)) {
+    return yield* invalid("Stripe live keys are restricted to deployed origins");
+  }
+  return {
+    mode,
+    priceId: scalars.STRIPE_PRICE_ID,
+    secretKey: scalars.STRIPE_SECRET_KEY,
+    webhookSecret: scalars.STRIPE_WEBHOOK_SECRET,
+  };
+});
+
+type StripeConfig = Effect.Success<ReturnType<typeof readStripeConfig>>;
+
 export {
   AuthSecret,
   Email,
@@ -180,5 +216,7 @@ export {
   readAi,
   readConfig,
   readEnvironment,
+  readStripeConfig,
+  stripeKeyModes,
 };
-export type { AppConfig, AssetFetcher };
+export type { AppConfig, AssetFetcher, StripeConfig, StripeKeyMode };

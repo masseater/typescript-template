@@ -1,10 +1,14 @@
 {
   "name": "@repo/e2e",
   "private": true,
+  "bin": {
+    "repo-e2e-verify": "./src/features/e2e/verify/cli.ts"
+  },
   "type": "module",
   "devDependencies": {
     "@effect/platform-node": "catalog:",
     "@mergifyio/vitest": "catalog:",
+    "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",

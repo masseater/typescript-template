@@ -1,6 +1,6 @@
 import { Effect, Ref } from "effect";
 
-import type { JourneyFailure } from "./journey-failure-test-fixture.ts";
+import type { JourneyFailure } from "./journey-failure.ts";
 
 type Disposer = Effect.Effect<void, JourneyFailure>;
 

@@ -1,46 +1,26 @@
 import { InvalidSearch } from "@repo/config/paging";
-import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Schema } from "effect";
 
-import {
-  UsersFailed,
-  UsersPending,
-  UsersRoute,
-  loadMembers,
-  normalizeUsersSearch,
-} from "#pages/users/index.ts";
+import { normalizeUsersSearch } from "#pages/users/index.ts";
 
 import type { UsersSearch } from "#pages/users/index.ts";
 
-function requireUsersSearch(raw: unknown): UsersSearch {
+function usersSearchOrEmpty(raw: unknown): UsersSearch {
   try {
     return normalizeUsersSearch(raw);
   } catch (error) {
     if (Schema.is(InvalidSearch)(error)) {
-      throw redirect({ replace: true, search: {}, to: "/users" });
+      return {};
     }
     throw error;
   }
 }
 
 const Route = createFileRoute("/_member/users/")({
-  validateSearch: requireUsersSearch,
-  loaderDeps: ({ search }: Readonly<{ search: UsersSearch }>) => search,
-  beforeLoad: ({
-    location,
-    search,
-  }: Readonly<{
-    location: Readonly<{ searchStr: string }>;
-    search: UsersSearch;
-  }>) => {
-    if (location.searchStr !== defaultStringifySearch(search)) {
-      throw redirect({ replace: true, search, to: "/users" });
-    }
+  beforeLoad: ({ search }) => {
+    throw redirect({ replace: true, search: usersSearchOrEmpty(search), to: "/search" });
   },
-  loader: ({ deps }: Readonly<{ deps: UsersSearch }>) => loadMembers(deps),
-  component: UsersRoute,
-  errorComponent: UsersFailed,
-  pendingComponent: UsersPending,
 });
 
 export { Route };

@@ -2,13 +2,19 @@ import { Effect } from "effect";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { test } from "vite-plus/test";
 
-import { browserHeaders } from "./client-address-test-fixture.ts";
+import { agentUserAgent } from "./agent-user-agent.ts";
+import { browserHeaders } from "./client-address.ts";
 import { type JourneyEnvironment, startJourneyEnvironment } from "./environment-test-fixture.ts";
-import { type JourneyFailure } from "./journey-failure-test-fixture.ts";
-import { pageStep } from "./screens-test-fixture.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
+import { enableVirtualAuthenticator } from "./passkey.ts";
+import { pageStep } from "./screens.ts";
 
 const launchedBrowser = (): Effect.Effect<Browser, JourneyFailure> =>
-  pageStep(() => chromium.launch());
+  pageStep(() =>
+    chromium.launch({
+      args: ["--disable-dev-shm-usage", "--enable-features=WebAuthentication"],
+    }),
+  );
 
 const closeBrowser = (browser: Browser): Promise<void> =>
   Effect.runPromise(pageStep(() => browser.close()));
@@ -20,7 +26,13 @@ const scheduleBrowserClose = (browser: Browser, onCleanup: Cleanup): void => {
 };
 
 const openedSession = (browser: Browser): Effect.Effect<BrowserContext, JourneyFailure> =>
-  pageStep(() => browser.newContext({ extraHTTPHeaders: browserHeaders(), locale: "ja-JP" }));
+  pageStep(() =>
+    browser.newContext({
+      extraHTTPHeaders: browserHeaders(),
+      locale: "ja-JP",
+      userAgent: agentUserAgent,
+    }),
+  );
 
 const closeSession = (session: BrowserContext): Promise<void> =>
   Effect.runPromise(pageStep(() => session.close()));
@@ -35,6 +47,12 @@ const scheduleStop = (environment: JourneyEnvironment, onCleanup: Cleanup): void
 
 const openedPage = (session: BrowserContext): Effect.Effect<Page, JourneyFailure> =>
   pageStep(() => session.newPage());
+
+const armPasskeyPage = (page: Page): Effect.Effect<void, JourneyFailure> =>
+  Effect.tryPromise({
+    catch: (cause) => failed("E2E_PAGE_STEP_FAILED", cause),
+    try: () => enableVirtualAuthenticator(page),
+  });
 
 const journeyTest = test
   .extend("browser", { scope: "worker" }, ({}, { onCleanup }) =>
@@ -60,7 +78,9 @@ const journeyTest = test
       Effect.gen(function* openPage() {
         const session = yield* openedSession(browser);
         scheduleSessionClose(session, onCleanup);
-        return yield* openedPage(session);
+        const page = yield* openedPage(session);
+        yield* armPasskeyPage(page);
+        return page;
       }),
     ),
   );

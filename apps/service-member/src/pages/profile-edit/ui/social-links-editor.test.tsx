@@ -5,7 +5,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { maximumSocialLinks } from "#shared/contracts/index.ts";
 import { SocialLinksEditor } from "./social-links-editor.tsx";
 
-import type { DraftLink } from "#pages/profile-edit/model/draft-link.ts";
+import type { SocialLinkField } from "#pages/profile-edit/model/social-link-field.ts";
 
 const validationMessages = {
   patternMismatch: "形式が違います。",
@@ -17,10 +17,10 @@ const validationMessages = {
 
 const invalidMessage = "https で始まる URL を入力してください。";
 
-function rendered(values: readonly DraftLink[]): string {
+function rendered(values: readonly SocialLinkField[], errors: readonly unknown[] = []): string {
   return renderToStaticMarkup(
     <AppProviders fieldValidationMessages={validationMessages}>
-      <SocialLinksEditor onChange={() => undefined} values={values} />
+      <SocialLinksEditor errors={errors} onChange={() => undefined} values={values} />
     </AppProviders>,
   );
 }
@@ -44,6 +44,13 @@ describe("social links editor", () => {
   it("asks for https when a URL is not https", () => {
     expect.hasAssertions();
     expect(rendered([{ id: "a", url: "http://example.com/me" }])).toContain(invalidMessage);
+  });
+
+  it("shows the first submit error for the links", () => {
+    expect.hasAssertions();
+    expect(rendered([{ id: "a", url: "" }], [{ message: "URL が多すぎます。" }])).toContain(
+      "URL が多すぎます。",
+    );
   });
 
   it("stops offering to add once the limit is reached", () => {

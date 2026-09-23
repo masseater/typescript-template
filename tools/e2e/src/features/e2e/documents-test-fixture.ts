@@ -1,6 +1,6 @@
 import { Effect, FileSystem, Path } from "effect";
 
-import { failed, type JourneyFailure } from "./journey-failure-test-fixture.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
 import { applicationRoot } from "./repository-test-fixture.ts";
 
 import type { Application } from "@repo/config";

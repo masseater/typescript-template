@@ -1,4 +1,4 @@
-import { SessionGate } from "@repo/auth-ui";
+import { SessionGate, SessionUserProvider } from "@repo/auth-ui";
 import { Outlet } from "@tanstack/react-router";
 
 import { DashboardFrame } from "./dashboard-frame.tsx";
@@ -9,9 +9,11 @@ function DashboardLayout(): ReactElement {
   return (
     <SessionGate>
       {(session) => (
-        <DashboardFrame email={session.user.email} name={session.user.name}>
-          <Outlet />
-        </DashboardFrame>
+        <SessionUserProvider user={session.user}>
+          <DashboardFrame email={session.user.email} name={session.user.name}>
+            <Outlet />
+          </DashboardFrame>
+        </SessionUserProvider>
       )}
     </SessionGate>
   );

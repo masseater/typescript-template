@@ -8,7 +8,7 @@ import { reporting, runtime } from "./runtime.ts";
 const api = apiRoutes(runtime, reporting);
 
 const wikiProtocol = createApi("")
-  .all("/mcp", api.raw(serveMcp, unavailable))
-  .all("/.well-known/oauth-*", api.raw(handleAuthRequest, unavailable));
+  .all("/mcp", ...api.raw(serveMcp, unavailable))
+  .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));
 
 export { wikiProtocol };

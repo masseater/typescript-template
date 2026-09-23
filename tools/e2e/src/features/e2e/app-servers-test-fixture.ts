@@ -3,11 +3,11 @@ import { Effect, Exit, FileSystem, Path, Scope, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { healthReport, logTail, servingHealth, unavailable } from "./app-health-test-fixture.ts";
-import { failed, type JourneyFailure } from "./journey-failure-test-fixture.ts";
-import { loopback, loopbackOrigin } from "./ports-test-fixture.ts";
+import { failed, type JourneyFailure } from "./journey-failure.ts";
+import { loopback, loopbackOrigin } from "./ports.ts";
 import { stopGroup } from "./process-group-test-fixture.ts";
 import { applicationRoot, vitePlus } from "./repository-test-fixture.ts";
-import { deadlineIn, until } from "./waiting-test-fixture.ts";
+import { deadlineIn, until } from "./waiting.ts";
 
 import type { Application } from "@repo/config";
 import type { Disposer } from "./disposers-test-fixture.ts";
