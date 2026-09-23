@@ -24,7 +24,7 @@
     "agent-browser": "0.37.1",
     "better-auth": "catalog:",
     "effect": "catalog:",
-    "otpauth": "9.5.2",
+    "otpauth": "catalog:",
     "playwright": "catalog:",
     "portless": "0.15.6",
     "vite-plus": "catalog:"
