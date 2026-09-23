@@ -26,7 +26,8 @@ export default defineConfig({
       storybook: { cache: false, command: "./src/cli.ts storybook" },
       ...lifecycle({
         premerge: ["check:exported"],
-        prepush: ["check:effect", "check:code", "check:imports"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports"],
       }),
     },
   },

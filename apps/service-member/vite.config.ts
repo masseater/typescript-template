@@ -4,5 +4,5 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig((env) => ({
   ...appConfig(APPLICATION.user, [paraglideAppPlugin()])(env),
-  run: paraglideAppRun(APPLICATION.user),
+  run: paraglideAppRun,
 }));

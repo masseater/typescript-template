@@ -337,28 +337,19 @@ describe("lifecycle contents", () => {
       'textlint "apps/internal-dashboard/content/docs/**/*.md"',
     ]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
-    expect(dependencies(".", "prepush")).toContain("check:code");
     expect(reachable(".", ["prepush"])).toEqual(
-      expect.arrayContaining([
-        "check:code",
-        "check:effect",
-        "knip",
-        "check:canonical-literal-types",
-      ]),
+      expect.arrayContaining(["check:effect", "knip", "check:canonical-literal-types"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
     expect(
-      ["check:client", "check:imports", "check:react"].filter((name) =>
-        taskNames(".").includes(name),
+      configuredDirectories.filter(
+        (directory) => !reachable(directory, ["precommit"]).includes("check:code"),
       ),
     ).toStrictEqual([]);
     expect(
       configuredDirectories.filter(
         (directory) =>
-          directory !== "." &&
-          !["check:code", "check:imports"].every((name) =>
-            reachable(directory, ["prepush"]).includes(name),
-          ),
+          directory !== "." && !reachable(directory, ["prepush"]).includes("check:imports"),
       ),
     ).toStrictEqual([]);
     expect(

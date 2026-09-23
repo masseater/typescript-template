@@ -74,7 +74,7 @@ export default defineConfig({
     tasks: {
       "compile:paraglide": workspaceParaglideCompile,
       "check:code": {
-        command: `vp check --no-error-on-unmatched-pattern ${rootOwnedPaths.join(" ")}`,
+        command: `vp check ${rootOwnedPaths.join(" ")}`,
         input: [...taskInput],
       },
       ...effectDiagnostics,
@@ -128,8 +128,8 @@ export default defineConfig({
         ],
       },
       ...lifecycle({
-        precommit: ["check:text"],
-        prepush: ["check:code", "check:effect", "knip", "check:canonical-literal-types"],
+        precommit: ["check:text", "check:code"],
+        prepush: ["check:effect", "knip", "check:canonical-literal-types"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),

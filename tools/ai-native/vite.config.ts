@@ -20,7 +20,8 @@ export default defineConfig({
       ...intentValidation,
       ...testRun,
       ...lifecycle({
-        prepush: ["check:effect", "check:code", "check:imports", "check"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check"],
         prepr: ["test"],
       }),
     },

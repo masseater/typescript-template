@@ -26,8 +26,8 @@ export default defineConfig({
         command: "./src/repository/clean-shared-task-cache.ts",
       },
       ...lifecycle({
-        precommit: ["check:staged"],
-        prepush: ["check:effect", "check:code", "check:imports", "check"],
+        precommit: ["check:staged", "check:code"],
+        prepush: ["check:effect", "check:imports", "check"],
         prepr: ["test"],
       }),
     },

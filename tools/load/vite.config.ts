@@ -27,7 +27,7 @@ export default defineConfig({
         ],
       },
       load: { cache: false, command: "./src/cli.ts" },
-      ...lifecycle({ prepush: ["check:effect", "check:code", "check:imports"] }),
+      ...lifecycle({ precommit: ["check:code"], prepush: ["check:effect", "check:imports"] }),
     },
   },
   test: {

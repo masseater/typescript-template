@@ -13,7 +13,7 @@ export default defineConfig({
         command: "vp test run",
         dependsOn: ["@repo/dev#setup"],
       },
-      ...lifecycle({ prepush: ["check:effect", "check:code", "check:imports"] }),
+      ...lifecycle({ precommit: ["check:code"], prepush: ["check:effect", "check:imports"] }),
     },
   },
   test: {

@@ -2,7 +2,6 @@
 const { mkdtemp, readFile, readdir, rm } = process.getBuiltinModule("fs/promises");
 const { tmpdir } = process.getBuiltinModule("os");
 const path = process.getBuiltinModule("path");
-const { fileURLToPath } = process.getBuiltinModule("url");
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type Application, ApplicationName } from "@repo/config";
@@ -10,17 +9,13 @@ import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, Schema } from "effect";
 import { build } from "vite-plus";
 
-const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
+import { repositoryRoot } from "./repository-root.ts";
 
 const probeModules: Readonly<Record<Application, string>> = {
   "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",
   "service-admin": "src/pages/login/ui/admin-login.tsx",
   "service-member": "src/pages/landing/ui/hero.tsx",
 };
-
-const Arguments = Schema.Struct({
-  application: ApplicationName,
-});
 
 const clientReachable: readonly string[] = [
   "@repo/runtime/client",
@@ -139,13 +134,13 @@ const inspect = (application: Application) =>
 
 runCli(
   Effect.gen(function* run() {
-    const arguments_ = yield* Schema.decodeUnknownEffect(Arguments)({
-      application: process.argv[2] === "--application" ? process.argv[3] : undefined,
-    });
-    const unexpected = yield* inspect(arguments_.application);
+    const application = yield* Schema.decodeUnknownEffect(ApplicationName)(
+      path.basename(process.cwd()),
+    );
+    const unexpected = yield* inspect(application);
     yield* Console.log(
       JSON.stringify({
-        application: arguments_.application,
+        application,
         event: "quality.client_bundle",
         inputs: clientReachable.length + serverOnly.length,
         ok: unexpected.length === 0,

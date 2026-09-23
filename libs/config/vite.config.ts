@@ -10,7 +10,7 @@ export default defineConfig({
         input: [...effectTypecheckInputs],
       },
       "check:code": {
-        command: "vp check --no-error-on-unmatched-pattern",
+        command: "vp check",
         input: [
           { auto: true },
           { base: "workspace", pattern: "!node_modules/.modules.yaml" },
@@ -25,11 +25,8 @@ export default defineConfig({
           { base: "workspace", pattern: "!**/node_modules/.bin/**" },
         ],
       },
-      precommit: { command: [], dependsOn: [] },
-      prepush: {
-        command: [],
-        dependsOn: ["precommit", "check:effect", "check:code", "check:imports"],
-      },
+      precommit: { command: [], dependsOn: ["check:code"] },
+      prepush: { command: [], dependsOn: ["precommit", "check:effect", "check:imports"] },
       prepr: { command: [], dependsOn: ["prepush"] },
       premerge: { command: [], dependsOn: [] },
       prerelease: { command: [], dependsOn: ["prepr", "premerge"] },

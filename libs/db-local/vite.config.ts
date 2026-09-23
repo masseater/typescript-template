@@ -9,7 +9,7 @@ export default defineConfig({
       ...workspaceCheckImports,
       "db:bootstrap:local": { cache: false, command: "./src/bootstrap-local.ts" },
       "db:migrate:local": { cache: false, command: "./src/migrate-local.ts" },
-      ...lifecycle({ prepush: ["check:effect", "check:code", "check:imports"] }),
+      ...lifecycle({ precommit: ["check:code"], prepush: ["check:effect", "check:imports"] }),
     },
   },
   test: {

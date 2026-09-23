@@ -14,7 +14,8 @@ export default defineConfig({
       },
       "db:generate": { cache: false, command: "drizzle-kit generate" },
       ...lifecycle({
-        prepush: ["check:effect", "check:code", "check:imports", "check"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check"],
       }),
     },
   },

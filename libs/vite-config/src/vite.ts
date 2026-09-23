@@ -244,17 +244,11 @@ const lifecycle = (
 });
 
 const checkCode = {
-  "check:code": {
-    command: "vp check --no-error-on-unmatched-pattern",
-    input: [...taskInput],
-  },
+  "check:code": { command: "vp check", input: [...taskInput] },
 } satisfies Tasks;
 
 const workspaceCheckImports = {
-  "check:imports": {
-    command: "quality-check-imports",
-    input: [...taskInput],
-  },
+  "check:imports": { command: "quality-check-imports", input: [...taskInput] },
 } satisfies Tasks;
 
 const effectRun = {
@@ -262,70 +256,51 @@ const effectRun = {
     ...effectDiagnostics,
     ...checkCode,
     ...workspaceCheckImports,
-    ...lifecycle({ prepush: ["check:effect", "check:code", "check:imports"] }),
+    ...lifecycle({ precommit: ["check:code"], prepush: ["check:effect", "check:imports"] }),
   },
 } satisfies RunConfig;
 
-const checkClient = (app: Application) =>
-  ({
-    "check:client": {
-      command: `quality-check-client --application ${app}`,
-      input: [
-        ...taskInput,
-        "!**/dist/**",
-        "!**/node_modules/.cache/**",
-        { base: "workspace", pattern: "!.local" },
-        { base: "workspace", pattern: "!.local/**" },
-      ],
+const appChecks = {
+  "check:client": {
+    command: "quality-check-client",
+    input: [...taskInput, "!**/dist/**", "!**/node_modules/.cache/**", ...withoutLocalState],
+    output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
+  },
+  "check:react": {
+    command: "quality-check-react",
+    input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+    output: [{ auto: true }, "!**/node_modules/.cache/**"],
+  },
+} satisfies Tasks;
+
+const appRun = {
+  tasks: {
+    ...effectDiagnostics,
+    ...checkCode,
+    ...workspaceCheckImports,
+    ...appChecks,
+    check: sliceBoundaries.check,
+    build: {
+      command: "vp build",
+      dependsOn: ["@repo/dev#setup", "check:effect"],
+      input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
-  }) satisfies Tasks;
-
-const checkReact = (app: Application) =>
-  ({
-    "check:react": {
-      command: `quality-check-react --application ${app}`,
-      input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
-      output: [{ auto: true }, "!**/node_modules/.cache/**"],
+    "check:dev": {
+      cache: false,
+      command: "../../tools/dev/src/dev-start.ts",
+      dependsOn: ["@repo/dev#setup"],
     },
-  }) satisfies Tasks;
-
-const appRun = (app: Application) =>
-  ({
-    tasks: {
-      ...effectDiagnostics,
-      ...checkCode,
-      ...workspaceCheckImports,
-      ...checkClient(app),
-      ...checkReact(app),
-      check: sliceBoundaries.check,
-      build: {
-        command: "vp build",
-        dependsOn: ["@repo/dev#setup", "check:effect"],
-        input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
-        output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-      },
-      "check:dev": {
-        cache: false,
-        command: "../../tools/dev/src/dev-start.ts",
-        dependsOn: ["@repo/dev#setup"],
-      },
-      dev: { cache: false, command: "vp dev" },
-      preview: { cache: false, command: "vp preview" },
-      ...lifecycle({
-        prepush: [
-          "check:effect",
-          "check:code",
-          "check",
-          "check:imports",
-          "check:client",
-          "check:react",
-        ],
-        prepr: ["build"],
-        premerge: ["build", "check:dev"],
-      }),
-    },
-  }) satisfies RunConfig;
+    dev: { cache: false, command: "vp dev" },
+    preview: { cache: false, command: "vp preview" },
+    ...lifecycle({
+      precommit: ["check:code"],
+      prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+      prepr: ["build"],
+      premerge: ["build", "check:dev"],
+    }),
+  },
+} satisfies RunConfig;
 
 const workspaceParaglideCompile = {
   command: "./libs/vite-config/src/compile-workspace-paraglide.ts",
@@ -348,28 +323,21 @@ const paraglideCompileInputs = [
   { base: "workspace", pattern: "libs/vite-config/src/compile-paraglide.ts" },
 ] as const;
 
-const paraglideAppRun = (app: Application) =>
-  ({
-    tasks: {
-      ...appRun(app).tasks,
-      "compile:paraglide": {
-        command: "../../libs/vite-config/src/compile-paraglide.ts",
-        input: [...paraglideCompileInputs],
-        output: [".paraglide/**"],
-      },
-      "check:effect": {
-        ...effectDiagnostics["check:effect"],
-        dependsOn: ["compile:paraglide"],
-      },
-      "check:code": { ...checkCode["check:code"], dependsOn: ["compile:paraglide"] },
-      "check:imports": {
-        ...workspaceCheckImports["check:imports"],
-        dependsOn: ["compile:paraglide"],
-      },
-      "check:client": { ...checkClient(app)["check:client"], dependsOn: ["compile:paraglide"] },
-      "check:react": { ...checkReact(app)["check:react"], dependsOn: ["compile:paraglide"] },
+const paraglideAppRun = {
+  tasks: {
+    ...appRun.tasks,
+    "compile:paraglide": {
+      command: "../../libs/vite-config/src/compile-paraglide.ts",
+      input: [...paraglideCompileInputs],
+      output: [".paraglide/**"],
     },
-  }) satisfies RunConfig;
+    ...Object.fromEntries(
+      (["check:effect", "check:code", "check:imports", "check:client", "check:react"] as const).map(
+        (name) => [name, { ...appRun.tasks[name], dependsOn: ["compile:paraglide"] }],
+      ),
+    ),
+  },
+} satisfies RunConfig;
 
 const toolTest: NonNullable<UserConfig["test"]> = {
   mockReset: true,
@@ -469,7 +437,7 @@ const appConfig = (
       ]),
     ],
     preview: appServer(app),
-    run: appRun(app),
+    run: appRun,
     server: appServer(app),
   });
 };

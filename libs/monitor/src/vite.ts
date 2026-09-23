@@ -26,7 +26,8 @@ function monitorWorkerVite() {
         ...workspaceCheckImports,
         build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
         ...lifecycle({
-          prepush: ["check:effect", "check:code", "check:imports"],
+          precommit: ["check:code"],
+          prepush: ["check:effect", "check:imports"],
           prepr: ["build"],
         }),
       },

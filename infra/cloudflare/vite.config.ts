@@ -47,7 +47,8 @@ export default defineConfig({
         input: [...taskInput],
       },
       ...lifecycle({
-        prepush: ["check:effect", "check:code", "check:imports"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports"],
         prepr: ["verify:stacks"],
         prerelease: ["verify:account"],
       }),

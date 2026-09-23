@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type Application, ApplicationName } from "@repo/config";
@@ -48,10 +48,6 @@ const Rules = Schema.fromJsonString(
     Schema.Struct({ key: Schema.String, severity: Schema.String, source: Schema.String }),
   ),
 );
-
-const Arguments = Schema.Struct({
-  application: ApplicationName,
-});
 
 const require = createRequire(import.meta.url);
 const executable = join(dirname(require.resolve("react-doctor")), "..", "bin", "react-doctor.js");
@@ -168,10 +164,8 @@ const inspect = (application: Application) =>
 
 runCli(
   Effect.gen(function* run() {
-    const arguments_ = yield* Schema.decodeUnknownEffect(Arguments)({
-      application: process.argv[2] === "--application" ? process.argv[3] : undefined,
-    });
-    const result = yield* inspect(arguments_.application);
+    const application = yield* Schema.decodeUnknownEffect(ApplicationName)(basename(process.cwd()));
+    const result = yield* inspect(application);
     yield* Console.log(JSON.stringify({ event: "quality.react_doctor", ...result }));
     if (!result.ok) {
       yield* markFailed;

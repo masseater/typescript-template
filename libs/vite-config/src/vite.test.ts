@@ -49,25 +49,22 @@ describe("lifecycle", () => {
 describe("effectRun", () => {
   const it = test.extend("effectWorkspaceRun", () => effectRun);
 
-  it("keeps the effect workspace on its own typecheck, lint and imports before push", ({
+  it("lints the workspace before commit and typechecks it and its imports before push", ({
     effectWorkspaceRun,
   }) => {
     expect(effectWorkspaceRun).toStrictEqual({
       tasks: {
         ...effectDiagnostics,
-        "check:code": {
-          command: "vp check --no-error-on-unmatched-pattern",
-          input: [...taskInput],
-        },
-        "check:imports": { command: "quality-check-imports", input: [...taskInput] },
-        ...lifecycle({ prepush: ["check:effect", "check:code", "check:imports"] }),
+        ...checkCode,
+        ...workspaceCheckImports,
+        ...lifecycle({ precommit: ["check:code"], prepush: ["check:effect", "check:imports"] }),
       },
     });
   });
 });
 
 describe("appRun", () => {
-  const it = test.extend("applicationRun", () => appRun("service-member"));
+  const it = test.extend("applicationRun", () => appRun);
 
   it("type-checks, builds, and starts before the stages that ship an app", ({ applicationRun }) => {
     expect(applicationRun).toStrictEqual({
@@ -76,7 +73,7 @@ describe("appRun", () => {
         ...checkCode,
         ...workspaceCheckImports,
         "check:client": {
-          command: "quality-check-client --application service-member",
+          command: "quality-check-client",
           input: [
             ...taskInput,
             "!**/dist/**",
@@ -87,7 +84,7 @@ describe("appRun", () => {
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },
         "check:react": {
-          command: "quality-check-react --application service-member",
+          command: "quality-check-react",
           input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
           output: [{ auto: true }, "!**/node_modules/.cache/**"],
         },
@@ -114,14 +111,8 @@ describe("appRun", () => {
         dev: { cache: false, command: "vp dev" },
         preview: { cache: false, command: "vp preview" },
         ...lifecycle({
-          prepush: [
-            "check:effect",
-            "check:code",
-            "check",
-            "check:imports",
-            "check:client",
-            "check:react",
-          ],
+          precommit: ["check:code"],
+          prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
           prepr: ["build"],
           premerge: ["build", "check:dev"],
         }),
@@ -131,15 +122,14 @@ describe("appRun", () => {
 });
 
 describe("paraglideAppRun", () => {
-  const it = test.extend("localizedApplicationRun", () => paraglideAppRun("service-admin"));
+  const it = test.extend("localizedApplicationRun", () => paraglideAppRun);
 
   it("compiles message catalogs before typecheck and the workspace checks", ({
     localizedApplicationRun,
   }) => {
-    const { tasks } = appRun("service-admin");
     expect(localizedApplicationRun).toStrictEqual({
       tasks: {
-        ...tasks,
+        ...appRun.tasks,
         "compile:paraglide": {
           command: "../../libs/vite-config/src/compile-paraglide.ts",
           input: [
@@ -155,10 +145,13 @@ describe("paraglideAppRun", () => {
           ...effectDiagnostics["check:effect"],
           dependsOn: ["compile:paraglide"],
         },
-        "check:code": { ...tasks["check:code"], dependsOn: ["compile:paraglide"] },
-        "check:imports": { ...tasks["check:imports"], dependsOn: ["compile:paraglide"] },
-        "check:client": { ...tasks["check:client"], dependsOn: ["compile:paraglide"] },
-        "check:react": { ...tasks["check:react"], dependsOn: ["compile:paraglide"] },
+        "check:code": { ...checkCode["check:code"], dependsOn: ["compile:paraglide"] },
+        "check:imports": {
+          ...workspaceCheckImports["check:imports"],
+          dependsOn: ["compile:paraglide"],
+        },
+        "check:client": { ...appRun.tasks["check:client"], dependsOn: ["compile:paraglide"] },
+        "check:react": { ...appRun.tasks["check:react"], dependsOn: ["compile:paraglide"] },
       },
     });
   });

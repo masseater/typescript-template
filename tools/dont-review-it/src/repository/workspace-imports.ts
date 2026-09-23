@@ -1,16 +1,12 @@
 #!/usr/bin/env node
-// oxlint-disable-next-line import/no-nodejs-modules
 import path from "node:path";
-// oxlint-disable-next-line import/no-nodejs-modules
-import { fileURLToPath } from "node:url";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { cruise, format } from "dependency-cruiser";
 import { Effect } from "effect";
 
 import configuration from "./dependency-cruiser.ts";
-
-const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
+import { repositoryRoot } from "./repository-root.ts";
 
 function workspaceFromCwd(): string {
   const relative = path.relative(repositoryRoot, process.cwd());
@@ -50,7 +46,7 @@ function depcruise(workspace: string): Effect.Effect<number> {
 
 runCli(
   Effect.gen(function* run() {
-    const workspace = process.argv[2] ?? workspaceFromCwd();
+    const workspace = workspaceFromCwd();
     const code = yield* depcruise(workspace);
     if (code !== 0) {
       yield* markFailed;
