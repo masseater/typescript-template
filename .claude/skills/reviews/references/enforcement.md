@@ -1,6 +1,6 @@
 # 強制の機構
 
-判定するツールと、それが実行される手順の両方が要る。機械が見る分は `docs/lint-rules-by-guideline.md` の enforcement の節にある。ここに書くのはその外だけ。変更量を理由にした例外は `./verification-bypass.md`、設定の上書きは `./config-cleanup.md`、実行段階の分担は `./ci-efficiency.md`。
+判定するツールと、それが実行される手順の両方が要る。ここに書くのは lint が判定できないものだけ。
 
 ## 実行されなかった確認を成功と数えない
 

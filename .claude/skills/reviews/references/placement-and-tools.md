@@ -1,6 +1,6 @@
 # 置き場所とツール
 
-機械が見る分は `docs/lint-rules-by-guideline.md` の placement-and-tools の節にある。ここに書くのはその外だけ。区分の内側の配置は `./colocation.md`。
+ここに書くのは lint が判定できないものだけ。
 
 ## 外に出る面
 

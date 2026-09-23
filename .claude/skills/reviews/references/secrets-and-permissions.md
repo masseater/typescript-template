@@ -1,6 +1,6 @@
 # 秘密と権限
 
-秘密は、持っていること自体が「誰かとして振る舞ってよい」根拠になる値。接続先のアカウントを名指しする識別子も同じに扱う。機械が見る分は `docs/lint-rules-by-guideline.md` の secrets-and-permissions の節と、`.vite-hooks/pre-commit` が起動する `precommit` の確認（平文の環境変数ファイル、非公開ディレクトリの混入、決まった形の資格情報、デプロイ用の秘匿値と同じ文字列）にある。ここに書くのはその外だけ。
+秘密は、持っていること自体が「誰かとして振る舞ってよい」根拠になる値。接続先のアカウントを名指しする識別子も同じに扱う。平文の環境変数ファイル、非公開ディレクトリの混入、決まった形の資格情報、デプロイ用の秘匿値と同じ文字列は `precommit` が見る。ここに書くのは lint と `precommit` が判定できないものだけ。
 
 秘密が動く場所は、開発者の手元（`apps/<app>/.dev.vars`）、Workers の実行環境（secret binding）、Cloudflare の Secrets Store、Alchemy の state store の 4 つ。
 

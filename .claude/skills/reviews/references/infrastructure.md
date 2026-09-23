@@ -1,6 +1,6 @@
 # インフラ
 
-Cloudflare の状態は、Worker を所有するパッケージの `alchemy.run.ts` と `infra/cloudflare` の共有 Stack が宣言から作る。GitHub Environment にデプロイ先が揃っているとき、main への統合が staging へ自動適用し、本番は Environment `production` の承認を経た昇格だけが適用する。差分の確認は `alchemy plan`。IaC だけで表現できないかを先に調べることは `AGENTS.md` が決めている。
+Cloudflare の状態は、Worker を所有するパッケージの `alchemy.run.ts` と `infra/cloudflare` の共有 Stack が宣言から作る。GitHub Environment にデプロイ先が揃っているとき、main への統合が staging へ自動適用し、本番は Environment `production` の承認を経た昇格だけが適用する。差分の確認は `alchemy plan`。
 
 ## 資源の持ち主と、変えられる口
 

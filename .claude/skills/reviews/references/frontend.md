@@ -1,7 +1,5 @@
 # フロントエンド
 
-見た目・UI コンポーネント・レイアウトを触る前にルートの `DESIGN.md` を読むことは `AGENTS.md` が決めている。React の書き方とフックの選び方は `.claude/skills/modern-react-guidance/SKILL.md`、非同期の瀑布は `.claude/skills/react-best-practices/SKILL.md`。
-
 ## コンポーネントと仕様の置き場所
 
 - UI のコンポーネントは `libs/ui` の基礎（`libs/ui/package.json` が持つ React、shadcn、Tailwind CSS）の上に載せる。
@@ -11,7 +9,7 @@
 
 ## サーバー状態と UI 状態
 
-サーバー状態は TanStack Query、UI 状態は Effect Atom が持つ。TanStack Query の導入は `apps/internal-dashboard/content/docs/plans/modernization.md` が未着手としており、導入されるまでのサーバー読み取りは `@repo/ui` の `requestAtom` を通す。
+サーバー状態は TanStack Query、UI 状態は Effect Atom が持つ。TanStack Query は未導入で、導入されるまでのサーバー読み取りは `@repo/ui` の `requestAtom` を通す。
 
 - サーバーにある事実（一覧、詳細、権限、集計）は TanStack Query が取得とキャッシュを担う。`queryOptions` は FSD の `api` セグメントに置く。応答を Effect Atom や `useState` に写さない。
 - 画面の一時状態（選択、開閉、フィルタの入力、タブ、下書き）は Effect Atom が持つ。Atom にサーバーの応答やその複製を載せない。
