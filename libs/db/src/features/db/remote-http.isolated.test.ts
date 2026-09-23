@@ -1,7 +1,7 @@
 import {
   EmptyTestDatabase,
   TestBinding,
-  executeD1HttpBatch,
+  deployMigrations,
   executeD1RawBatch,
 } from "@repo/db-local";
 import { DateTime, Effect, ManagedRuntime } from "effect";
@@ -11,9 +11,8 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { runRemoteDatabaseCommand } from "../../../../../infra/cloudflare/src/features/cloudflare/remote-command.ts";
 import { query } from "./database.ts";
-import { remoteDatabase, remoteExecutor } from "./remote-http.ts";
 import { RemoteFailure } from "./remote-input.ts";
-import { loadRemoteMigrations, migrateDatabase, readMigrationStatus } from "./remote-operations.ts";
+import { loadRemoteMigrations, migrateD1 } from "./remote-operations.ts";
 import { user } from "./schema.ts";
 
 const d1Target = {
@@ -22,7 +21,7 @@ const d1Target = {
   databaseId: "22222222-2222-4222-8222-222222222222",
 };
 
-describe("remoteDatabase", () => {
+describe("the remote database connection", () => {
   describe.for([
     [
       "a redirect elsewhere",
@@ -56,8 +55,8 @@ describe("remoteDatabase", () => {
       return Effect.runPromise(
         Effect.flip(
           runRemoteDatabaseCommand(
-            ["migrate", "--execute", "--confirm-database", d1Target.databaseId],
-            d1Target,
+            ["bootstrap", "--execute", "--confirm-database", d1Target.databaseId],
+            { ...d1Target, email: "private@example.test" },
           ),
         ),
       );
@@ -115,18 +114,6 @@ describe("a database reached over the D1 API", () => {
         const binding = yield* TestBinding;
         const services = yield* Effect.context();
         const d1Api = setupServer(
-          http.post(`${d1Endpoint}/query`, ({ request }) =>
-            Effect.runPromiseWith(services)(
-              Effect.gen(function* respondToQuery() {
-                if (request.headers.get("authorization") !== `Bearer ${d1Target.apiToken}`) {
-                  return HttpResponse.json({ error: "unauthorized" }, { status: 401 });
-                }
-                const requestJson = yield* Effect.promise(() => request.json());
-                const executedBatch = yield* executeD1HttpBatch(binding, requestJson);
-                return HttpResponse.json(executedBatch as Record<string, unknown>);
-              }),
-            ),
-          ),
           http.post(`${d1Endpoint}/raw`, ({ request }) =>
             Effect.runPromiseWith(services)(
               Effect.gen(function* respondToRaw() {
@@ -149,33 +136,12 @@ describe("a database reached over the D1 API", () => {
     );
   });
 
-  describe("a migration executed twice through the D1 HTTP batch contract", () => {
-    const it = remoteTest.extend("secondReport", ({ remoteD1 }) =>
-      remoteD1.runPromise(
-        Effect.gen(function* migrateTwice() {
-          const execute = ["--execute", "--confirm-database", d1Target.databaseId];
-          yield* runRemoteDatabaseCommand(["migrate", ...execute], d1Target);
-          return yield* runRemoteDatabaseCommand(["migrate", ...execute], d1Target);
-        }),
-      ),
-    );
-
-    it("applies nothing the second time", { timeout: 60_000 }, ({ secondReport }) => {
-      expect(secondReport).toStrictEqual({
-        applied: 0,
-        databaseId: d1Target.databaseId,
-        event: "database.remote_migrated",
-        ok: true,
-      });
-    });
-  });
-
   describe("a bootstrap executed through the D1 HTTP batch contract", () => {
     const it = remoteTest.extend("promotedUsers", ({ remoteD1 }) =>
       remoteD1.runPromise(
         Effect.gen(function* bootstrapRemote() {
           const execute = ["--execute", "--confirm-database", d1Target.databaseId];
-          yield* runRemoteDatabaseCommand(["migrate", ...execute], d1Target);
+          yield* deployMigrations(yield* TestBinding);
           const createdAt = DateTime.toDate(yield* DateTime.now);
           yield* query((database) =>
             database.insert(user).values({
@@ -207,95 +173,28 @@ describe("a database reached over the D1 API", () => {
     );
   });
 
-  describe("the migration status of a database reached over the D1 API", () => {
-    const it = remoteTest
-      .extend("declaredMigrations", () =>
-        Effect.runPromise(Effect.map(loadRemoteMigrations(), (migrations) => migrations.length)),
-      )
-      .extend("statusBeforeMigrating", ({ remoteD1 }) =>
-        remoteD1.runPromise(readMigrationStatus(d1Target)),
-      )
-      .extend("statusAfterMigrating", ({ remoteD1 }) =>
-        remoteD1.runPromise(
-          Effect.gen(function* program() {
-            const { apply, database } = remoteDatabase(d1Target);
-            yield* migrateDatabase({ apply, database });
-            return yield* readMigrationStatus(d1Target);
-          }),
-        ),
-      );
-
-    it(
-      "leaves every declared migration to apply on an empty database",
-      { timeout: 60_000 },
-      ({ declaredMigrations, statusBeforeMigrating }) => {
-        expect(statusBeforeMigrating).toStrictEqual({
-          applied: 0,
-          declared: declaredMigrations,
-          pending: declaredMigrations,
-          state: "recorded",
-        });
-      },
+  describe("a bootstrap before the deployment applied the migrations", () => {
+    const it = remoteTest.extend("refusal", ({ remoteD1 }) =>
+      remoteD1.runPromise(
+        Effect.gen(function* bootstrapTooEarly() {
+          yield* migrateD1(yield* TestBinding);
+          const execute = ["--execute", "--confirm-database", d1Target.databaseId];
+          return yield* Effect.flip(
+            runRemoteDatabaseCommand(["bootstrap", ...execute], {
+              ...d1Target,
+              email: "private@example.test",
+            }),
+          );
+        }),
+      ),
     );
 
     it(
-      "leaves nothing to apply once every migration ran",
+      "refuses until the deployment has recorded every migration",
       { timeout: 60_000 },
-      ({ declaredMigrations, statusAfterMigrating }) => {
-        expect(statusAfterMigrating).toStrictEqual({
-          applied: declaredMigrations,
-          declared: declaredMigrations,
-          pending: 0,
-          state: "recorded",
-        });
+      ({ refusal }) => {
+        expect(refusal).toStrictEqual(new RemoteFailure({ code: "REMOTE_MIGRATIONS_REQUIRED" }));
       },
     );
-  });
-
-  describe("a database whose tables were made without a recorded history", () => {
-    const it = remoteTest
-      .extend("declaredMigrations", () =>
-        Effect.runPromise(Effect.map(loadRemoteMigrations(), (migrations) => migrations.length)),
-      )
-      .extend("unrecordedStatus", ({ remoteD1 }) =>
-        remoteD1.runPromise(
-          Effect.gen(function* program() {
-            yield* remoteExecutor(d1Target).batch([
-              { params: [], sql: "CREATE TABLE made_by_hand (id TEXT)" },
-            ]);
-            return yield* readMigrationStatus(d1Target);
-          }),
-        ),
-      )
-      .extend("migrationRefusal", ({ remoteD1 }) =>
-        remoteD1.runPromise(
-          Effect.gen(function* program() {
-            yield* remoteExecutor(d1Target).batch([
-              { params: [], sql: "CREATE TABLE made_by_hand (id TEXT)" },
-            ]);
-            const { apply, database } = remoteDatabase(d1Target);
-            return yield* Effect.flip(migrateDatabase({ apply, database }));
-          }),
-        ),
-      );
-
-    it(
-      "is reported as unrecorded with nothing applied",
-      { timeout: 60_000 },
-      ({ declaredMigrations, unrecordedStatus }) => {
-        expect(unrecordedStatus).toStrictEqual({
-          applied: 0,
-          declared: declaredMigrations,
-          pending: declaredMigrations,
-          state: "unrecorded",
-        });
-      },
-    );
-
-    it("refuses to migrate", { timeout: 60_000 }, ({ migrationRefusal }) => {
-      expect(migrationRefusal).toStrictEqual(
-        new RemoteFailure({ code: "REMOTE_MIGRATION_HISTORY_MISSING" }),
-      );
-    });
   });
 });

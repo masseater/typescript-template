@@ -2,7 +2,6 @@ import {
   bootstrapDatabase,
   fail,
   loadRemoteMigrations,
-  migrateDatabase,
   parseRemoteInput,
   remoteDatabase,
 } from "@repo/db/migrations";
@@ -38,22 +37,12 @@ const planReport = (
 };
 
 const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
-  operation,
   target,
 }: Readonly<RemoteInput>) {
   if (target.apiToken === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
-  const { apply, database } = remoteDatabase({ ...target, apiToken: target.apiToken });
-  if (operation === "migrate") {
-    const applied = yield* migrateDatabase({ apply, database });
-    return {
-      applied,
-      databaseId: target.databaseId,
-      event: "database.remote_migrated",
-      ok: true,
-    } as const;
-  }
+  const database = remoteDatabase({ ...target, apiToken: target.apiToken });
   if (target.email === undefined) {
     return yield* fail("REMOTE_INPUT_INVALID");
   }
@@ -63,12 +52,6 @@ const executeRemote = Effect.fn("executeRemote")(function* executeRemote({
 
 type RemoteCommandResult =
   | PlanReport
-  | {
-      readonly applied: number;
-      readonly databaseId: string;
-      readonly event: "database.remote_migrated";
-      readonly ok: true;
-    }
   | {
       readonly databaseId: string;
       readonly event: "database.remote_admin_bootstrapped";

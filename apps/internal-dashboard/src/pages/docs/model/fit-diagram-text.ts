@@ -31,7 +31,7 @@ const squeeze = (text: SVGTextContentElement, box: DOMRect): void => {
 };
 
 const frameOf = (group: Element): DOMRect => {
-  const outline = group.querySelector(":scope > rect, :scope > polygon");
+  const outline = group.querySelector(":scope > rect, :scope > polygon, :scope > circle");
   if (!(outline instanceof SVGGraphicsElement)) {
     throw new Error("a diagram shape has no outline to fit its text in");
   }

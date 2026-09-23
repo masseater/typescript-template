@@ -104,7 +104,7 @@
         "file": "src/features/db/remote-http.ts",
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 5
+        "count": 3
       },
       {
         "file": "src/features/db/remote-operations.test.ts",
