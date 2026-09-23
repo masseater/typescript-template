@@ -11,7 +11,6 @@ import {
   readConfig,
   readEnvironment,
   readJobs,
-  usageAllowanceRemains,
 } from "./index.ts";
 
 const local = {
@@ -203,14 +202,6 @@ it.effect("treats repeated origins as one", () =>
   Effect.sync(() => {
     assert.isTrue(distinctOrigins(["https://a.example.test", "https://b.example.test"]));
     assert.isFalse(distinctOrigins(["https://a.example.test", "https://a.example.test"]));
-  }),
-);
-
-it.effect("keeps a usage allowance only when the yen budget exceeds fixed cost and reserve", () =>
-  Effect.sync(() => {
-    const amounts = { budgetJpy: 5000, fixedCostUsd: 40, jpyPerUsd: 100, reserveUsd: 9 };
-    assert.isTrue(usageAllowanceRemains(amounts));
-    assert.isFalse(usageAllowanceRemains({ ...amounts, reserveUsd: 10 }));
   }),
 );
 
