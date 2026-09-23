@@ -62,7 +62,6 @@ export {
 export { scopeLabel } from "./mcp.ts";
 export { Blocked, BlockMember, ReportCreate, ReportFiled } from "./trust.ts";
 export { FollowList, FollowMember, FollowMemberQuery, FollowState } from "./follow.ts";
-export { MemberFlags } from "./flags.ts";
 export {
   GroupCreate,
   GroupCreated,
