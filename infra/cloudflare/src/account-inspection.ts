@@ -148,6 +148,28 @@ const inspectAccount = Effect.fn("inspectAccount")(function* inspectAccount<Fail
 
 type Inspection = Effect.Success<ReturnType<typeof inspectAccount>>;
 
+const preflightAccount = Effect.fn("preflightAccount")(function* preflightAccount(
+  access: AccountAccess,
+) {
+  const subdomain = yield* workersSubdomain(access).pipe(
+    Effect.catchTag("CloudflareFailure", unreadableVerdict),
+  );
+  return {
+    deployToken: yield* tokenVerdict(access),
+    workersSubdomain: readVerdict(subdomain, (found) => presence(found !== undefined)),
+  };
+});
+
+type Preflight = Effect.Success<ReturnType<typeof preflightAccount>>;
+
+function preflightBlocked(preflight: Readonly<Preflight>): readonly string[] {
+  const { deployToken, workersSubdomain: subdomain } = preflight;
+  return [
+    ...(isUnreadable(deployToken) || deployToken.length > 0 ? ["deployToken"] : []),
+    ...(isUnreadable(subdomain) || subdomain === "absent" ? ["workersSubdomain"] : []),
+  ];
+}
+
 function blocked(inspection: Readonly<Inspection>): readonly string[] {
   const claimed = ["database", "dnsRecords", "workerDomains", "workerNames"] as const;
   const { deployToken } = inspection;
@@ -164,4 +186,4 @@ function blocked(inspection: Readonly<Inspection>): readonly string[] {
   ];
 }
 
-export { blocked, inspectAccount };
+export { blocked, inspectAccount, preflightAccount, preflightBlocked };
