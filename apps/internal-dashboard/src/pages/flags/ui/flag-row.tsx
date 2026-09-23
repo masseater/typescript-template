@@ -36,11 +36,11 @@ function FlagRow({
           <p className="text-sm text-muted-foreground">{entry.description}</p>
         </div>
         <CheckboxField
-          aria-label={`${entry.key} を${entry.enabled ? "オフ" : "オン"}にする`}
+          aria-label={`${String(entry.key)} を${entry.enabled ? "オフ" : "オン"}にする`}
           checked={entry.enabled}
           disabled={action.pending}
           label={entry.enabled ? "オン" : "オフ"}
-          name={`flag-${entry.key}`}
+          name={`flag-${String(entry.key)}`}
           onCheckedChange={(checked) => {
             action.run(() => toggleFlag(onToggle, entry.key, checked === true));
           }}
