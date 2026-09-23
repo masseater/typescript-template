@@ -22,4 +22,7 @@ const HealthView = Schema.Struct({
   release: Schema.String,
   service: Schema.Literals(applications),
 });
+type Decodable = Schema.Top & { readonly DecodingServices: never };
+
 export { EmailVerificationRequest, EmailVerified, ErrorBody, HealthView, SessionView };
+export type { Decodable };
