@@ -6,6 +6,7 @@ import { posixPath } from "../platform/path.ts";
 import {
   declaredDependencies,
   field,
+  rootManifests,
   workspaceManifests,
   type WorkspaceManifest,
 } from "./dependencies.ts";
@@ -42,14 +43,6 @@ const scriptExtensions = new Set([
 ]);
 
 const callPrefixes = ["import.meta.resolve(", "require.resolve(", "import(", "require("] as const;
-
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../../../../../package.json",
-  {
-    eager: true,
-    import: "default",
-  },
-);
 
 interface Finding {
   readonly id: string;
