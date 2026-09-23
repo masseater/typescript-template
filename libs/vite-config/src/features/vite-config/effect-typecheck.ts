@@ -205,4 +205,4 @@ const runTypecheckGate = (
   return runEffectTypecheck(defaultGate({ cwd, gateArguments }));
 };
 
-export { runTypecheckGate };
+export { baselinePath, runTypecheckGate };

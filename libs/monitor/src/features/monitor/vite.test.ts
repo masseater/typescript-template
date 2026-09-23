@@ -1,8 +1,10 @@
+import { repositoryRoot } from "@repo/config/repository-root";
 import {
   checkCode,
   effectDiagnostics,
   lifecycle,
   modularBoundaries,
+  paths,
   taskInput,
   workspaceCheckImports,
 } from "@repo/vite-config";
@@ -10,8 +12,10 @@ import { describe, expect, test } from "vite-plus/test";
 
 import { monitorWorkerVite } from "./vite.ts";
 
+const errorMonitorRoot = paths.join(repositoryRoot, "infra/error-monitor");
+
 describe("monitorWorkerVite", () => {
-  const it = test.extend("workerVite", () => monitorWorkerVite("error-monitor"));
+  const it = test.extend("workerVite", () => monitorWorkerVite(errorMonitorRoot));
 
   it("packs each monitor from its feature worker and builds that artifact before the pull request gate", ({
     workerVite,
@@ -31,7 +35,7 @@ describe("monitorWorkerVite", () => {
       },
       run: {
         tasks: {
-          ...effectDiagnostics,
+          ...effectDiagnostics(errorMonitorRoot),
           ...checkCode,
           ...workspaceCheckImports,
           ...modularBoundaries,
@@ -57,7 +61,7 @@ describe("monitorWorkerVite", () => {
 
 describe("the pack extension", () => {
   const it = test.extend("packedExtension", () => {
-    const { outExtensions } = monitorWorkerVite("error-monitor").pack;
+    const { outExtensions } = monitorWorkerVite(errorMonitorRoot).pack;
     if (outExtensions === undefined) {
       throw new Error("monitorWorkerVite pack must declare outExtensions");
     }
