@@ -78,20 +78,22 @@ it.effect("what the model understood is applied to the sheet", () => {
   }).pipe(Effect.provide(services(understand)));
 });
 
-it.effect("a failing model is returned to the member instead of continuing as rules success", () => {
-  const failure = new UnderstandingFailed({ reason: "model_failed" });
-  function understand(): ReturnType<Understand> {
-    return Effect.fail(failure);
-  }
-  return Effect.gen(function* program() {
-    yield* addMember("member");
-    const refused = yield* takeTurn("member", { kind: "text", text: "たろう" }).pipe(Effect.flip);
-    assert.strictEqual(refused._tag, "UnderstandingFailed");
-    assert.strictEqual(refused.reason, "model_failed");
-    const opened = yield* openInterview("member");
-    assert.deepStrictEqual(opened.messages, [greeting]);
-  }).pipe(Effect.provide(services(understand)));
-});
+it.effect(
+  "a failing model is returned to the member instead of continuing as rules success",
+  () => {
+    const failure = new UnderstandingFailed({ reason: "model_failed" });
+    function understand(): ReturnType<Understand> {
+      return Effect.fail(failure);
+    }
+    return Effect.gen(function* program() {
+      yield* addMember("member");
+      const refused = yield* takeTurn("member", { kind: "text", text: "たろう" }).pipe(Effect.flip);
+      assert.deepStrictEqual(refused, failure);
+      const opened = yield* openInterview("member");
+      assert.deepStrictEqual(opened.messages, [greeting]);
+    }).pipe(Effect.provide(services(understand)));
+  },
+);
 
 it.effect("saving keeps the sheet and is refused while questions remain", () =>
   Effect.gen(function* program() {

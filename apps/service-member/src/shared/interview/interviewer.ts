@@ -100,9 +100,10 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
                 understanding: understandByRules(state, utterance),
               })
             : complete(access, state, utterance).pipe(
-                Effect.map(
-                  (understanding): InterviewReading => ({ source: "model", understanding }),
-                ),
+                Effect.map((understanding): InterviewReading => ({
+                  source: "model",
+                  understanding,
+                })),
               ),
       }),
     );
@@ -118,4 +119,3 @@ class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
 }
 
 export { Interviewer };
-export type { InterviewReading };
