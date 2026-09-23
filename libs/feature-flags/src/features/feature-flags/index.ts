@@ -1,13 +1,17 @@
 export {
   auditTargetForToggle,
   booleanForVariation,
+  FLAG_EVALUATION_KIND,
   FLAG_KEY,
   flagDefinitionByKey,
   flagDefinitions,
+  flagEvaluationKinds,
   flagKeys,
   variationForBoolean,
 } from "./definitions.ts";
-export type { FlagDefinition, FlagKey, FlagVariation } from "./definitions.ts";
+export type { FlagDefinition, FlagEvaluationKind, FlagKey, FlagVariation } from "./definitions.ts";
+export { evaluationFromDetails, failClosedEnabled } from "./evaluation.ts";
+export type { FlagEvaluation } from "./evaluation.ts";
 export { FlagEditorAccess, allowAllEditors, editorsOnly } from "./flag-editor-access.ts";
 export { FlagEditorRequired } from "./flag-editor-required.ts";
 export { requireFlagEditor } from "./require-flag-editor.ts";
