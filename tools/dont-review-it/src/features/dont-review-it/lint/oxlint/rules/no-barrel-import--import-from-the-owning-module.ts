@@ -1,6 +1,5 @@
-import { posix } from "node:path";
-
 import { createDontReviewItRule } from "../../../create-rule.ts";
+import { path } from "../../../platform/path.ts";
 import { importCarriesValues, reExportCarriesValues } from "../lib/carried-values.ts";
 
 import type { ESTree } from "@oxlint/plugins";
@@ -17,9 +16,9 @@ const isRelativeSpecifier = (specifier: string): boolean =>
 
 const namesReExportModule = (specifier: string): boolean => {
   if (!isRelativeSpecifier(specifier)) return false;
-  if (specifier.endsWith(posix.sep)) return true;
-  if (DIRECTORY_SEGMENTS.includes(posix.basename(specifier))) return true;
-  return posix.basename(specifier, posix.extname(specifier)) === RE_EXPORT_MODULE_STEM;
+  if (specifier.endsWith(path.sep)) return true;
+  if (DIRECTORY_SEGMENTS.includes(path.basename(specifier))) return true;
+  return path.basename(specifier, path.extname(specifier)) === RE_EXPORT_MODULE_STEM;
 };
 
 const writtenSpecifierOf = (source: ESTree.Node): string | null => {

@@ -1,15 +1,17 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem, Path } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { loadCatalogEntries } from "../../lib/dependency-catalog/catalog-entries.ts";
 import { loadWorkspaceDependencies } from "../../lib/dependency-catalog/workspace-manifests.ts";
 import { createNoVersionRange } from "./no-version-range--pin-the-exact-version.ts";
 
-const fixtureDir = mkdtempSync(join(tmpdir(), "dont-review-it-no-version-range-"));
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-no-version-range-" });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 const MODULE_SOURCE = "export const shipped = true;\n";
 
@@ -82,19 +84,25 @@ const SOURCE_BY_FIXTURE_PATH: Readonly<Record<string, string>> = {
   "manifestless/loose.ts": MODULE_SOURCE,
 };
 
-for (const [fixturePath, fixtureSource] of Object.entries(SOURCE_BY_FIXTURE_PATH)) {
-  mkdirSync(dirname(join(fixtureDir, fixturePath)), { recursive: true });
-  writeFileSync(join(fixtureDir, fixturePath), fixtureSource);
-}
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const paths = yield* Path.Path;
+  for (const [fixturePath, fixtureSource] of Object.entries(SOURCE_BY_FIXTURE_PATH)) {
+    yield* filesystem.makeDirectory(paths.dirname(paths.join(fixtureDir, fixturePath)), {
+      recursive: true,
+    });
+    yield* filesystem.writeFileString(paths.join(fixtureDir, fixturePath), fixtureSource);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
-const rangedRootEntry = join(fixtureDir, "ranged/entry.ts");
-const alphaEntry = join(fixtureDir, "ranged/packages/alpha/entry.ts");
-const betaEntry = join(fixtureDir, "ranged/packages/beta/entry.ts");
-const exactRootEntry = join(fixtureDir, "exact/entry.ts");
-const exactMemberEntry = join(fixtureDir, "exact/packages/one/entry.ts");
-const definitionlessEntry = join(fixtureDir, "no-definition/entry.ts");
-const unparsableEntry = join(fixtureDir, "unparsable/entry.ts");
-const manifestlessEntry = join(fixtureDir, "manifestless/loose.ts");
+const rangedRootEntry = path.join(fixtureDir, "ranged/entry.ts");
+const alphaEntry = path.join(fixtureDir, "ranged/packages/alpha/entry.ts");
+const betaEntry = path.join(fixtureDir, "ranged/packages/beta/entry.ts");
+const exactRootEntry = path.join(fixtureDir, "exact/entry.ts");
+const exactMemberEntry = path.join(fixtureDir, "exact/packages/one/entry.ts");
+const definitionlessEntry = path.join(fixtureDir, "no-definition/entry.ts");
+const unparsableEntry = path.join(fixtureDir, "unparsable/entry.ts");
+const manifestlessEntry = path.join(fixtureDir, "manifestless/loose.ts");
 
 const INTENTIONAL = [{ intentionalRanges: ["knip", "react"] }];
 

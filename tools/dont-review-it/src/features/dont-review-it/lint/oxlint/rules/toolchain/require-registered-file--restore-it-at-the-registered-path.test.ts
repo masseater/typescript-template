@@ -1,13 +1,15 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { requireRegisteredFile } from "./require-registered-file--restore-it-at-the-registered-path.ts";
 
-const fixtureDir = mkdtempSync(join(tmpdir(), "dont-review-it-require-registered-file-"));
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-require-registered-file-" });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 const MODULE_SOURCE = "export const shipped = true;\n";
 
@@ -20,68 +22,29 @@ const RELEASE_REASON = "the release notes are read from it";
 const UNCHECKED_CONTENT =
   "What this file holds is read by no check, so this row asks only that it exists and holds something.";
 
-const heldRepository = join(fixtureDir, "held");
-mkdirSync(heldRepository, { recursive: true });
-writeFileSync(join(heldRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(heldRepository, "package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(
-  join(heldRepository, "CHANGELOG.md"),
-  "nothing a check reads, and enough to hold the row\n",
-  "utf8",
-);
-const heldEntry = join(heldRepository, "entry.ts");
-writeFileSync(heldEntry, MODULE_SOURCE, "utf8");
+const heldRepository = path.join(fixtureDir, "held");
+const heldEntry = path.join(heldRepository, "entry.ts");
 
-const absentRepository = join(fixtureDir, "absent");
-mkdirSync(absentRepository, { recursive: true });
-writeFileSync(join(absentRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(absentRepository, "package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-const absentEntry = join(absentRepository, "entry.ts");
-writeFileSync(absentEntry, MODULE_SOURCE, "utf8");
+const absentRepository = path.join(fixtureDir, "absent");
+const absentEntry = path.join(absentRepository, "entry.ts");
 
-const emptiedRepository = join(fixtureDir, "emptied");
-mkdirSync(emptiedRepository, { recursive: true });
-writeFileSync(join(emptiedRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(emptiedRepository, "package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(join(emptiedRepository, "CHANGELOG.md"), "", "utf8");
-const emptiedEntry = join(emptiedRepository, "entry.ts");
-writeFileSync(emptiedEntry, MODULE_SOURCE, "utf8");
+const emptiedRepository = path.join(fixtureDir, "emptied");
+const emptiedEntry = path.join(emptiedRepository, "entry.ts");
 
-const ownedRepository = join(fixtureDir, "owned");
-const alphaWorkspace = join(ownedRepository, "packages/alpha");
-const betaWorkspace = join(ownedRepository, "packages/beta");
-mkdirSync(alphaWorkspace, { recursive: true });
-mkdirSync(betaWorkspace, { recursive: true });
-writeFileSync(join(ownedRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(ownedRepository, "package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(join(alphaWorkspace, "package.json"), '{ "name": "alpha" }\n', "utf8");
-writeFileSync(join(alphaWorkspace, "README.md"), "what alpha publishes\n", "utf8");
-writeFileSync(join(betaWorkspace, "package.json"), '{ "name": "beta" }\n', "utf8");
-const alphaEntry = join(alphaWorkspace, "entry.ts");
-writeFileSync(alphaEntry, MODULE_SOURCE, "utf8");
-const betaEntry = join(betaWorkspace, "entry.ts");
-writeFileSync(betaEntry, MODULE_SOURCE, "utf8");
+const ownedRepository = path.join(fixtureDir, "owned");
+const alphaWorkspace = path.join(ownedRepository, "packages/alpha");
+const betaWorkspace = path.join(ownedRepository, "packages/beta");
+const alphaEntry = path.join(alphaWorkspace, "entry.ts");
+const betaEntry = path.join(betaWorkspace, "entry.ts");
 
-const retiredRepository = join(fixtureDir, "retired");
-mkdirSync(retiredRepository, { recursive: true });
-writeFileSync(join(retiredRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(retiredRepository, "package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-const retiredEntry = join(retiredRepository, "entry.ts");
-writeFileSync(retiredEntry, MODULE_SOURCE, "utf8");
+const retiredRepository = path.join(fixtureDir, "retired");
+const retiredEntry = path.join(retiredRepository, "entry.ts");
 
-const unregisteredRepository = join(fixtureDir, "unregistered");
-mkdirSync(unregisteredRepository, { recursive: true });
-writeFileSync(join(unregisteredRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(unregisteredRepository, "package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(join(unregisteredRepository, "CHANGELOG.md"), "what shipped\n", "utf8");
-const unregisteredEntry = join(unregisteredRepository, "entry.ts");
-writeFileSync(unregisteredEntry, MODULE_SOURCE, "utf8");
+const unregisteredRepository = path.join(fixtureDir, "unregistered");
+const unregisteredEntry = path.join(unregisteredRepository, "entry.ts");
 
-const unmanagedDirectory = join(fixtureDir, "unmanaged");
-mkdirSync(unmanagedDirectory, { recursive: true });
-writeFileSync(join(unmanagedDirectory, "pnpm-workspace.yaml"), "packages: []\n", "utf8");
-const looseEntry = join(unmanagedDirectory, "loose.ts");
-writeFileSync(looseEntry, MODULE_SOURCE, "utf8");
+const unmanagedDirectory = path.join(fixtureDir, "unmanaged");
+const looseEntry = path.join(unmanagedDirectory, "loose.ts");
 
 const CHANGELOG_ROW = [{ requiredFiles: [{ pattern: "CHANGELOG.md", reason: RELEASE_REASON }] }];
 
@@ -97,6 +60,60 @@ const README_ROW = [
     ],
   },
 ];
+
+const FIXTURE_DIRECTORIES: readonly string[] = [
+  heldRepository,
+  absentRepository,
+  emptiedRepository,
+  alphaWorkspace,
+  betaWorkspace,
+  retiredRepository,
+  unregisteredRepository,
+  unmanagedDirectory,
+];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(heldRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(heldRepository, "package.json"), ROOT_PACKAGE_MANIFEST],
+  [
+    path.join(heldRepository, "CHANGELOG.md"),
+    "nothing a check reads, and enough to hold the row\n",
+  ],
+  [heldEntry, MODULE_SOURCE],
+  [path.join(absentRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(absentRepository, "package.json"), ROOT_PACKAGE_MANIFEST],
+  [absentEntry, MODULE_SOURCE],
+  [path.join(emptiedRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(emptiedRepository, "package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(emptiedRepository, "CHANGELOG.md"), ""],
+  [emptiedEntry, MODULE_SOURCE],
+  [path.join(ownedRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(ownedRepository, "package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(alphaWorkspace, "package.json"), '{ "name": "alpha" }\n'],
+  [path.join(alphaWorkspace, "README.md"), "what alpha publishes\n"],
+  [path.join(betaWorkspace, "package.json"), '{ "name": "beta" }\n'],
+  [alphaEntry, MODULE_SOURCE],
+  [betaEntry, MODULE_SOURCE],
+  [path.join(retiredRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(retiredRepository, "package.json"), ROOT_PACKAGE_MANIFEST],
+  [retiredEntry, MODULE_SOURCE],
+  [path.join(unregisteredRepository, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(unregisteredRepository, "package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(unregisteredRepository, "CHANGELOG.md"), "what shipped\n"],
+  [unregisteredEntry, MODULE_SOURCE],
+  [path.join(unmanagedDirectory, "pnpm-workspace.yaml"), "packages: []\n"],
+  [looseEntry, MODULE_SOURCE],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/require-registered-file--restore-it-at-the-registered-path", () => {
   testLintRule(requireRegisteredFile, {

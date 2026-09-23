@@ -1,8 +1,7 @@
-import { join } from "node:path";
-
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { buildValueDeclarationIndex } from "../../lib/value-declarations/declaration-index.ts";
 import { createNoDuplicateValueDeclaration } from "./no-duplicate-value-declaration--reuse-authoritative-value.ts";
@@ -15,7 +14,7 @@ const SUBJECT_PATH = "packages/dont-review-it/src/subject.ts";
 
 const OTHER_PATH = "packages/repository-checks/src/other.ts";
 
-const subjectFilename = join(repositoryRoot, SUBJECT_PATH);
+const subjectFilename = path.join(repositoryRoot, SUBJECT_PATH);
 
 const MANIFEST_BODY = "manifest";
 
@@ -128,12 +127,12 @@ describe("dont-review-it/no-duplicate-value-declaration--reuse-authoritative-val
       {
         name: "a test file is never linted, so it is never reported",
         code: MANIFEST_SOURCE,
-        filename: join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
       },
       {
         name: "a file the index does not know is left alone",
         code: MANIFEST_SOURCE,
-        filename: join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
       },
     ],
     invalid: [

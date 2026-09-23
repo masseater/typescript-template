@@ -1,44 +1,59 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { forbidTestHook } from "./forbid-test-hook--move-setup-into-fixture.ts";
 
 const SPEC_FILENAME = "order.test.ts";
 
-const fixtureDir = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-forbid-test-hook-"));
-rmSync(fixtureDir, { recursive: true, force: true });
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.realPath(
+    yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-forbid-test-hook-" }),
+  );
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
-mkdirSync(join(fixtureDir, "hooks"), { recursive: true });
+const FIXTURE_DIRECTORIES: readonly string[] = [path.join(fixtureDir, "hooks")];
 
-writeFileSync(
-  join(fixtureDir, "hooks/imported.ts"),
-  "import { beforeEach } from 'vitest';\n\nexport const installClock = () => {\n  beforeEach(() => {\n    seed();\n  });\n};\n",
-);
-writeFileSync(
-  join(fixtureDir, "hooks/injected.ts"),
-  "export const installStore = () => {\n  afterEach(() => {\n    drop();\n  });\n};\n",
-);
-writeFileSync(
-  join(fixtureDir, "hooks/relay.ts"),
-  "import { installClock } from './imported.ts';\n\nexport const installEverything = () => {\n  installClock();\n};\n",
-);
-writeFileSync(join(fixtureDir, "hooks/plain.ts"), "export const build = () => ({ amount: 3 });\n");
-writeFileSync(
-  join(fixtureDir, "hooks/harness.ts"),
-  "const harness = { beforeEach: (run: () => void) => run() };\n\nexport const installHarness = () => {\n  harness.beforeEach(() => {\n    seed();\n  });\n};\n",
-);
-writeFileSync(
-  join(fixtureDir, "hooks/indexed.ts"),
-  "export const installRow = (rows: readonly number[], position: number) => {\n  beforeEach(() => {\n    seed(rows[position]);\n  });\n};\n",
-);
-writeFileSync(
-  join(fixtureDir, "hooks/shadowed.ts"),
-  "const beforeEach = (run: () => void): void => {\n  run();\n};\n\nexport const installOwn = () => {\n  beforeEach(() => {\n    seed();\n  });\n};\n",
-);
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [
+    path.join(fixtureDir, "hooks/imported.ts"),
+    "import { beforeEach } from 'vitest';\n\nexport const installClock = () => {\n  beforeEach(() => {\n    seed();\n  });\n};\n",
+  ],
+  [
+    path.join(fixtureDir, "hooks/injected.ts"),
+    "export const installStore = () => {\n  afterEach(() => {\n    drop();\n  });\n};\n",
+  ],
+  [
+    path.join(fixtureDir, "hooks/relay.ts"),
+    "import { installClock } from './imported.ts';\n\nexport const installEverything = () => {\n  installClock();\n};\n",
+  ],
+  [path.join(fixtureDir, "hooks/plain.ts"), "export const build = () => ({ amount: 3 });\n"],
+  [
+    path.join(fixtureDir, "hooks/harness.ts"),
+    "const harness = { beforeEach: (run: () => void) => run() };\n\nexport const installHarness = () => {\n  harness.beforeEach(() => {\n    seed();\n  });\n};\n",
+  ],
+  [
+    path.join(fixtureDir, "hooks/indexed.ts"),
+    "export const installRow = (rows: readonly number[], position: number) => {\n  beforeEach(() => {\n    seed(rows[position]);\n  });\n};\n",
+  ],
+  [
+    path.join(fixtureDir, "hooks/shadowed.ts"),
+    "const beforeEach = (run: () => void): void => {\n  run();\n};\n\nexport const installOwn = () => {\n  beforeEach(() => {\n    seed();\n  });\n};\n",
+  ],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/forbid-test-hook--move-setup-into-fixture", () => {
   testLintRule(forbidTestHook, {
@@ -79,17 +94,17 @@ describe("dont-review-it/forbid-test-hook--move-setup-into-fixture", () => {
       {
         name: "a call into a module that names no hook is left alone",
         code: "import { build } from './hooks/plain.ts';\nconst order = build();",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
       },
       {
         name: "a module that declares the hook spelling itself reaches no runner hook",
         code: "import { installOwn } from './hooks/shadowed.ts';\ninstallOwn();",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
       },
       {
         name: "a module that carries the hook spelling as a member of its own receiver reaches no runner hook",
         code: "import { installHarness } from './hooks/harness.ts';\ninstallHarness();",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
       },
       {
         name: "a member spelled like a hook on a receiver that is no name at all is left alone",
@@ -219,31 +234,31 @@ describe("dont-review-it/forbid-test-hook--move-setup-into-fixture", () => {
       {
         name: "a call into a module that names a hook is reported at the call",
         code: "import { installClock } from './hooks/imported.ts';\ninstallClock();",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
         errors: [{ messageId: "testHookThroughCallee" }],
       },
       {
         name: "a call into a module that leans on an injected hook is reported at the call",
         code: "import { installStore } from './hooks/injected.ts';\ninstallStore();",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
         errors: [{ messageId: "testHookThroughCallee" }],
       },
       {
         name: "a call into a module that reaches a hook through another module is reported at the call",
         code: "import { installEverything } from './hooks/relay.ts';\ninstallEverything();",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
         errors: [{ messageId: "testHookThroughCallee" }],
       },
       {
         name: "a module that reads a row by a key decided at run time is still read for the hook it names",
         code: "import { installRow } from './hooks/indexed.ts';\ninstallRow(rows, 1);",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
         errors: [{ messageId: "testHookThroughCallee" }],
       },
       {
         name: "every call into a module that reaches a hook is reported",
         code: "import { installClock } from './hooks/imported.ts';\ninstallClock();\ninstallClock();",
-        filename: join(fixtureDir, "caller.test.ts"),
+        filename: path.join(fixtureDir, "caller.test.ts"),
         errors: [{ messageId: "testHookThroughCallee" }, { messageId: "testHookThroughCallee" }],
       },
       {
