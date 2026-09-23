@@ -312,6 +312,112 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("compareRevis
     );
   });
 
+  describe("a changed file whose path carries a newline", () => {
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/with\nnewline.ts", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/with\nnewline.ts", "export const value = 2;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+        }),
+      };
+    });
+
+    it.effect("keeps the newline in the path and reads both blobs whole", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/with\nnewline.ts",
+              afterPath: "src/with\nnewline.ts",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 2;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
+  });
+
+  describe("a binary base source that spells a blob header, read before another source", () => {
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"));
+      yield* filesystem.writeFile(
+        paths.join(repositoryRoot, "src/a.ts"),
+        Uint8Array.from([
+          0xff,
+          0x0a,
+          ...new TextEncoder().encode(`${"0".repeat(40)} blob 2\nno\n`),
+          0x00,
+        ]),
+      );
+      yield* writeSource(repositoryRoot, "src/b.ts", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/a.ts", "export const binary = false;\n");
+      yield* writeSource(repositoryRoot, "src/b.ts", "export const value = 2;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+        }),
+      };
+    });
+
+    it.effect("reads the binary base as absent and every later blob whole", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/a.ts",
+              afterPath: "src/a.ts",
+              beforeSource: null,
+              afterSource: "export const binary = false;\n",
+              addedLines: [],
+              firstAddedLine: null,
+            },
+            {
+              kind: "changed",
+              beforePath: "src/b.ts",
+              afterPath: "src/b.ts",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 2;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
+  });
+
   describe("a head whose source carries a NUL", () => {
     const comparedRepository = Effect.gen(function* comparedRepository() {
       const repositoryRoot = yield* newRepository;

@@ -220,7 +220,8 @@ const diffArguments = ({
   "-c",
   "diff.renameLimit=0",
   "diff",
-  "--default-prefix",
+  "--src-prefix=a/",
+  "--dst-prefix=b/",
   "--find-renames",
   "--no-ext-diff",
   "--no-color",
@@ -231,33 +232,78 @@ const diffArguments = ({
   "--",
 ];
 
-const NUL = 0;
+type RawInventory = Readonly<{
+  inventoryOutput: string;
+  objectAt: ReadonlyMap<string, string>;
+}>;
 
-const indexAfter = (bytes: Uint8Array, from: number, wanted: number): number => {
-  const found = bytes.indexOf(wanted, from);
-  return found === -1 ? bytes.length : found;
-};
+const RAW_RECORD_HEADER =
+  /^:\d{6} \d{6} ([\da-f]{40}(?:[\da-f]{24})?) ([\da-f]{40}(?:[\da-f]{24})?) ([A-Z]\d{0,3})$/u;
+
+const rawInventoryOf = (rawOutput: string): Effect.Effect<RawInventory, DiffUnreadable> =>
+  Effect.suspend(() => {
+    const fields = rawOutput.split("\0");
+    const unreadableRecord = new DiffUnreadable({ message: "Invalid NUL-delimited Git raw diff" });
+    if (fields.pop() !== "") return Effect.fail(unreadableRecord);
+    const records: string[] = [];
+    const objectAt = new Map<string, string>();
+    let index = 0;
+    while (index < fields.length) {
+      const [, beforeObject, afterObject, status] =
+        RAW_RECORD_HEADER.exec(fields[index] ?? "") ?? [];
+      const pathCount = status?.startsWith("R") === true ? 2 : 1;
+      const recordPaths = fields.slice(index + 1, index + 1 + pathCount);
+      const [beforePath, afterPath = beforePath] = recordPaths;
+      if (
+        status === undefined ||
+        beforeObject === undefined ||
+        afterObject === undefined ||
+        beforePath === undefined ||
+        afterPath === undefined ||
+        recordPaths.length !== pathCount
+      ) {
+        return Effect.fail(unreadableRecord);
+      }
+      objectAt.set(requestKey({ side: "base", sourcePath: beforePath }), beforeObject);
+      objectAt.set(requestKey({ side: "head", sourcePath: afterPath }), afterObject);
+      records.push([status, ...recordPaths, ""].join("\0"));
+      index += 1 + pathCount;
+    }
+    return Effect.succeed({ inventoryOutput: records.join(""), objectAt });
+  });
+
+type RequestedBlob = Readonly<{ objectName: string; blobObject: string }>;
+
+const LINE_FEED = 10;
 
 const batchedBlobs = (
   output: Uint8Array,
-  objectNames: readonly string[],
+  requestedBlobs: readonly RequestedBlob[],
 ): Effect.Effect<readonly Uint8Array[], BlobUnreadable> =>
   Effect.suspend(() => {
     const blobs: Uint8Array[] = [];
     const headerDecoder = new TextDecoder("utf-8");
     let offset = 0;
-    for (const objectName of objectNames) {
-      const headerEnd = indexAfter(output, offset, NUL);
-      const [, type, size] = headerDecoder.decode(output.subarray(offset, headerEnd)).split(" ");
+    for (const { objectName, blobObject } of requestedBlobs) {
+      const headerEnd = output.indexOf(LINE_FEED, offset);
+      const [answeredObject, type, size] =
+        headerEnd === -1 ? [] : headerDecoder.decode(output.subarray(offset, headerEnd)).split(" ");
       const length = Number(size);
-      if (type !== "blob" || !Number.isSafeInteger(length)) {
+      const contentEnd = headerEnd + 1 + length;
+      if (
+        answeredObject !== blobObject ||
+        type !== "blob" ||
+        !Number.isSafeInteger(length) ||
+        output[contentEnd] !== LINE_FEED
+      ) {
         return Effect.fail(new BlobUnreadable({ message: `Git holds no blob at ${objectName}` }));
       }
-      blobs.push(output.subarray(headerEnd + 1, headerEnd + 1 + length));
-      offset = headerEnd + 1 + length + 1;
+      blobs.push(output.subarray(headerEnd + 1, contentEnd));
+      offset = contentEnd + 1;
     }
     return Effect.succeed(blobs);
   });
+
 export const compareRevisions = Effect.fn("compareRevisions")(function* compareRevisions({
   repositoryRoot,
   baseRevision,
@@ -270,11 +316,15 @@ export const compareRevisions = Effect.fn("compareRevisions")(function* compareR
     ],
     { concurrency: "unbounded" },
   );
-  const [inventoryOutput, diff] = yield* Effect.all(
+  const [rawOutput, diff] = yield* Effect.all(
     [
       runGitText({
         repositoryRoot,
-        args: diffArguments({ baseObject, headObject, presentation: ["--name-status", "-z"] }),
+        args: diffArguments({
+          baseObject,
+          headObject,
+          presentation: ["--raw", "--no-abbrev", "-z"],
+        }),
       }),
       runGitText({
         repositoryRoot,
@@ -283,20 +333,29 @@ export const compareRevisions = Effect.fn("compareRevisions")(function* compareR
     ],
     { concurrency: "unbounded" },
   );
+  const { inventoryOutput, objectAt } = yield* rawInventoryOf(rawOutput);
+  const requestedBlobOf = (
+    request: SourceRequest,
+  ): Effect.Effect<RequestedBlob, BlobUnreadable> => {
+    const objectName = `${request.side === "base" ? baseObject : headObject}:${request.sourcePath}`;
+    const blobObject = objectAt.get(requestKey(request));
+    return blobObject === undefined
+      ? Effect.fail(new BlobUnreadable({ message: `Git diff lists no object at ${objectName}` }))
+      : Effect.succeed({ objectName, blobObject });
+  };
   const readBlobs = (requests: readonly SourceRequest[]) => {
     if (requests.length === 0) return Effect.succeed([]);
-    const objectNames = requests.map(
-      ({ side, sourcePath }) => `${side === "base" ? baseObject : headObject}:${sourcePath}`,
-    );
-    return Effect.flatMap(
-      runGitBuffer({
-        repositoryRoot,
-        args: ["cat-file", "--batch", "-Z"],
-        input: new TextEncoder().encode(
-          objectNames.map((objectName) => `${objectName}\0`).join(""),
-        ),
-      }),
-      (output) => batchedBlobs(output, objectNames),
+    return Effect.flatMap(Effect.forEach(requests, requestedBlobOf), (requestedBlobs) =>
+      Effect.flatMap(
+        runGitBuffer({
+          repositoryRoot,
+          args: ["cat-file", "--batch"],
+          input: new TextEncoder().encode(
+            requestedBlobs.map(({ blobObject }) => `${blobObject}\n`).join(""),
+          ),
+        }),
+        (output) => batchedBlobs(output, requestedBlobs),
+      ),
     );
   };
 
