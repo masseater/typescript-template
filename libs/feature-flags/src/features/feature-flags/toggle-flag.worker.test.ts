@@ -39,26 +39,26 @@ describe("FlagEditorAccess", () => {
 });
 
 describe("toggleFlag", () => {
-  it.effect("turns member-board on then off, and records each audit row", () =>
+  it.effect("turns member-board off then on, and records each audit row", () =>
     Effect.gen(function* toggleBoard() {
-      const enabledFlag = yield* toggleFlag({
-        actorId: "staff-actor",
-        enabled: true,
-        key: FLAG_KEY.memberBoard,
-      });
-      assert.strictEqual(enabledFlag.enabled, true);
-
       const disabledFlag = yield* toggleFlag({
         actorId: "staff-actor",
         enabled: false,
         key: FLAG_KEY.memberBoard,
       });
       assert.strictEqual(disabledFlag.enabled, false);
-      assert.strictEqual(disabledFlag.key, FLAG_KEY.memberBoard);
+
+      const enabledFlag = yield* toggleFlag({
+        actorId: "staff-actor",
+        enabled: true,
+        key: FLAG_KEY.memberBoard,
+      });
+      assert.strictEqual(enabledFlag.enabled, true);
+      assert.strictEqual(enabledFlag.key, FLAG_KEY.memberBoard);
 
       const featureFlags = yield* FeatureFlags;
       const memberBoardEnabled = yield* featureFlags.getBoolean(FLAG_KEY.memberBoard);
-      assert.strictEqual(memberBoardEnabled, false);
+      assert.strictEqual(memberBoardEnabled, true);
 
       const auditRows = yield* query((database) =>
         database.select().from(auditEvent).orderBy(auditEvent.createdAt),
@@ -70,11 +70,11 @@ describe("toggleFlag", () => {
       assert.strictEqual(flagToggleAuditRows[0]?.actorId, "staff-actor");
       assert.strictEqual(
         flagToggleAuditRows[0]?.targetId,
-        auditTargetForToggle({ flagKey: FLAG_KEY.memberBoard, from: false, to: true }),
+        auditTargetForToggle({ flagKey: FLAG_KEY.memberBoard, from: true, to: false }),
       );
       assert.strictEqual(
         flagToggleAuditRows[1]?.targetId,
-        auditTargetForToggle({ flagKey: FLAG_KEY.memberBoard, from: true, to: false }),
+        auditTargetForToggle({ flagKey: FLAG_KEY.memberBoard, from: false, to: true }),
       );
     }).pipe(Effect.provide(services)),
   );
@@ -153,7 +153,7 @@ describe("flagshipFeatureFlagsLayer", () => {
               errorMessage: "provider not ready",
               flagKey,
               reason: "ERROR",
-              value: defaultValue,
+              value: !defaultValue,
             }),
           getBooleanValue: (_flagKey: string, defaultValue: boolean) =>
             Promise.resolve(defaultValue),
