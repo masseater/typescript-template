@@ -8,6 +8,7 @@ import {
   type WorkspaceManifest,
 } from "./dependencies.ts";
 import { directoryEntries } from "./directory-entries.ts";
+import { posixPath } from "./repository-path.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 const areas = new Set(["apps", "libs", "infra", "tools"]);
@@ -239,7 +240,7 @@ const moduleSpecifiers = (filename: string, text: string): readonly string[] => 
   if (filename.endsWith(".json")) {
     return extendsSpecifiers(text);
   }
-  return scriptExtensions.has(path.extname(filename)) ? codeSpecifiers(text) : [];
+  return scriptExtensions.has(posixPath.extname(filename)) ? codeSpecifiers(text) : [];
 };
 
 const skippedDirectory = (name: string): boolean => name.startsWith(".") || skippedNames.has(name);
@@ -308,7 +309,7 @@ const workspaceOf = (file: string): string => {
 };
 
 const directoryOf = (file: string): string => {
-  const directory = path.dirname(file);
+  const directory = posixPath.dirname(file);
   return directory === "." || directory === "" ? "root" : directory;
 };
 

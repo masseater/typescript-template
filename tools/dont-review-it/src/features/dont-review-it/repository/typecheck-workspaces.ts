@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, cliStderr, markFailed, runCli } from "@repo/cli";
-import { Effect, Path } from "effect";
+import { Effect, Path, Schema } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
 import { capturedProcess } from "./captured-process.ts";
@@ -12,7 +12,14 @@ import { typecheckProjects } from "./typecheck-projects.ts";
 
 const require = createRequire(import.meta.url);
 
-const FAILED_TO_START = -1;
+class TypecheckUnstarted extends Schema.TaggedError<TypecheckUnstarted>()("TypecheckUnstarted", {
+  cause: Schema.Defect(),
+  project: Schema.String,
+}) {
+  public override get message(): string {
+    return `typecheck could not start for ${this.project}`;
+  }
+}
 
 const typecheckWorkspaces = Effect.gen(function* typecheckWorkspaces() {
   const paths = yield* Path.Path;
@@ -45,7 +52,7 @@ const typecheckWorkspaces = Effect.gen(function* typecheckWorkspaces() {
           stdout: "inherit",
         }),
       )
-      .pipe(Effect.orElseSucceed(() => FAILED_TO_START)),
+      .pipe(Effect.mapError((cause) => new TypecheckUnstarted({ cause, project }))),
   );
   if (exitCodes.some((exitCode) => exitCode !== 0)) {
     yield* markFailed;

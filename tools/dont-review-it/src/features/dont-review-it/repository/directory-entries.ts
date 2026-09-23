@@ -1,5 +1,7 @@
 import { Effect, FileSystem, Path, type PlatformError } from "effect";
 
+import { failureCodeOf } from "../repository-checks/index.ts";
+
 type EntryKind = "directory" | "file" | "other";
 
 interface DirectoryEntry {
@@ -14,7 +16,10 @@ const entryKind = (
     const filesystem = yield* FileSystem.FileSystem;
     const linked = yield* filesystem.readLink(entryPath).pipe(
       Effect.as(true),
-      Effect.orElseSucceed(() => false),
+      Effect.catchIf(
+        (error) => failureCodeOf(error.reason.cause) === "EINVAL",
+        () => Effect.succeed(false),
+      ),
     );
     if (linked) {
       return "other";
@@ -41,4 +46,4 @@ const directoryEntries = (
     );
   });
 
-export { directoryEntries, entryKind };
+export { directoryEntries };

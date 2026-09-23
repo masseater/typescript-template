@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type Application, ApplicationName } from "@repo/config";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, Schema, type PlatformError } from "effect";
 import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
@@ -57,11 +57,9 @@ const executable = path.join(
   "react-doctor.js",
 );
 
-const UNSTARTED: Scan = { failed: true, stderr: "", stdout: "" };
-
 const scan = (
   args: readonly string[],
-): Effect.Effect<Scan, never, ChildProcessSpawner.ChildProcessSpawner> =>
+): Effect.Effect<Scan, PlatformError.PlatformError, ChildProcessSpawner.ChildProcessSpawner> =>
   capturedProcess(
     ChildProcess.make(executable, [...args, "--no-score"], {
       cwd: repositoryRoot,
@@ -69,7 +67,6 @@ const scan = (
     }),
   ).pipe(
     Effect.map(({ exitCode, stderr, stdout }) => ({ failed: exitCode !== 0, stderr, stdout })),
-    Effect.orElseSucceed(() => UNSTARTED),
   );
 
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));

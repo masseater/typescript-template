@@ -1,9 +1,9 @@
 import { NodeServices } from "@effect/platform-node";
-import { Effect, FileSystem, Path, Schema } from "effect";
+import { Effect, FileSystem, Path, Schema, type PlatformError } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
-import { directoryEntries, entryKind } from "./directory-entries.ts";
+import { directoryEntries } from "./directory-entries.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 const frontmatterPattern = /^---\n(?<body>[\s\S]*?)\n---\n/u;
@@ -29,17 +29,24 @@ const skillNames = await Effect.runPromise(
   }).pipe(Effect.provide(NodeServices.layer)),
 );
 
-const markdownFiles = (directory: string) =>
-  Effect.gen(function* markdownFiles() {
-    const filesystem = yield* FileSystem.FileSystem;
+const markdownFiles = (
+  directory: string,
+): Effect.Effect<
+  readonly string[],
+  PlatformError.PlatformError,
+  FileSystem.FileSystem | Path.Path
+> =>
+  Effect.gen(function* collectMarkdown() {
     const paths = yield* Path.Path;
-    const listed = yield* filesystem.readDirectory(directory, { recursive: true });
-    const markdown = listed
-      .filter((entry) => entry.endsWith(".md"))
-      .map((entry) => paths.join(directory, entry));
-    return yield* Effect.filter(markdown, (file) =>
-      Effect.map(entryKind(file), (kind) => kind === "file"),
-    );
+    const entries = yield* directoryEntries(directory);
+    const nested = yield* Effect.forEach(entries, (entry) => {
+      const entryPath = paths.join(directory, entry.name);
+      if (entry.kind === "directory") {
+        return markdownFiles(entryPath);
+      }
+      return Effect.succeed(entry.kind === "file" && entry.name.endsWith(".md") ? [entryPath] : []);
+    });
+    return nested.flat();
   });
 
 const frontmatter = (skill: string) =>

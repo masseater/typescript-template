@@ -1,10 +1,8 @@
 import { secretsFile, secretsFileConfigured } from "@repo/infra-cloudflare/deployment";
-import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
+import { Effect, FileSystem, Option, Path, PlatformError, Schema } from "effect";
 
 import { failureCodeOf } from "../repository-checks/index.ts";
 import { deploymentValues, type DeploymentValue } from "./secrets.ts";
-
-const NOT_FOUND = "ENOENT";
 
 const Manifest = Schema.fromJsonString(Schema.Struct({ name: Schema.String }));
 
@@ -65,22 +63,19 @@ const absent: DeploymentCredentials = { source: "absent", values: [] };
 
 const readCredentials = (
   filename: string,
-): Effect.Effect<DeploymentCredentials, CredentialsUnavailable, FileSystem.FileSystem> => {
-  const contents = Effect.gen(function* credentialsText() {
+): Effect.Effect<DeploymentCredentials, CredentialsUnavailable, FileSystem.FileSystem> =>
+  Effect.gen(function* credentialsText() {
     const filesystem = yield* FileSystem.FileSystem;
     return yield* filesystem.readFileString(filename);
-  }).pipe(Effect.mapError(unavailable("credentials-unreadable")));
-  return contents.pipe(
-    Effect.flatMap(scannable),
+  }).pipe(
+    Effect.asSome,
     Effect.catchIf(
-      (failure) =>
-        failure.reason === "credentials-unreadable" &&
-        failure.code === NOT_FOUND &&
-        !secretsFileConfigured(),
-      () => Effect.succeed(absent),
+      (error) => error.reason._tag === "NotFound" && !secretsFileConfigured(),
+      () => Effect.succeedNone,
     ),
+    Effect.mapError(unavailable("credentials-unreadable")),
+    Effect.flatMap(Option.match({ onNone: () => Effect.succeed(absent), onSome: scannable })),
   );
-};
 
 const deploymentCredentials = Effect.fn("deploymentCredentials")(function* deploymentCredentials(
   root: string,

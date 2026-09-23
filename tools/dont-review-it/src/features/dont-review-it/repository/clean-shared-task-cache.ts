@@ -34,6 +34,7 @@ runCli(
       });
     }
     return uncheckedRecord({
+      cause: Cause.pretty(cause),
       error: defect instanceof Error ? defect.name : typeof defect,
       reason: "shared-task-cache-clean-failed",
     });

@@ -13,6 +13,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { path } from "../platform/path.ts";
 import { field } from "./dependencies.ts";
+import { posixPath } from "./repository-path.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { commands, configuredDirectories, reachable } from "./tasks.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
@@ -140,7 +141,9 @@ const effectCheckedProjects = [
           return [];
         }
         return [
-          packageDirectory === "." ? project : path.normalize(path.join(packageDirectory, project)),
+          packageDirectory === "."
+            ? project
+            : posixPath.normalize(posixPath.join(packageDirectory, project)),
         ];
       });
     }),

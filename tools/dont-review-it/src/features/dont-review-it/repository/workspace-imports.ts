@@ -41,10 +41,10 @@ const depcruise = (workspace: string): Effect.Effect<number, CruiseFailed> =>
           {
             ...configuration.options,
             baseDir: repositoryRoot,
-            ruleSet: { forbidden: configuration.forbidden ?? [] },
+            ruleSet: { forbidden: configuration.forbidden },
             validate: true,
           },
-          configuration.options?.enhancedResolveOptions,
+          configuration.options.enhancedResolveOptions,
         ),
     });
     if (typeof output === "string") {

@@ -9,10 +9,10 @@ import configuration from "./dependency-cruiser.ts";
 
 type Case = readonly [string, Fixture];
 
-const forbidden = configuration.forbidden ?? [];
+const { forbidden } = configuration;
 const configuredRules = new Set<string>();
 for (const rule of forbidden) {
-  configuredRules.add(rule.name ?? "");
+  configuredRules.add(rule.name);
 }
 
 const reportedRules = (
@@ -50,7 +50,7 @@ const cruiseModules = (
             ruleSet: { forbidden },
             validate: true,
           },
-          configuration.options?.enhancedResolveOptions,
+          configuration.options.enhancedResolveOptions,
         ),
     });
     if (typeof output === "string") {

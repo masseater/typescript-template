@@ -27,6 +27,9 @@ const onDiskSandboxUnsafe = Effect.map(qualityFiles, (files) =>
     .toSorted(),
 );
 
+const needsRepositoryLayout = (source: string): boolean =>
+  sandboxUnsafeReasons.some((reason) => source.includes(reason));
+
 const unmarkedSandboxUnsafe = Effect.gen(function* unmarkedSandboxUnsafe() {
   const filesystem = yield* FileSystem.FileSystem;
   const paths = yield* Path.Path;
@@ -34,8 +37,9 @@ const unmarkedSandboxUnsafe = Effect.gen(function* unmarkedSandboxUnsafe() {
     (file) => file.endsWith(".test.ts") && !file.endsWith(".sandbox-unsafe.test.ts"),
   );
   const unmarked = yield* Effect.filter(candidates, (file) =>
-    Effect.map(filesystem.readFileString(paths.join(qualityDirectory, file)), (source) =>
-      sandboxUnsafeReasons.some((reason) => source.includes(reason)),
+    Effect.map(
+      filesystem.readFileString(paths.join(qualityDirectory, file)),
+      needsRepositoryLayout,
     ),
   );
   return unmarked.map((file) => `${REPOSITORY_DIRECTORY}/${file}`).toSorted();
@@ -54,6 +58,22 @@ describe("stryker sandbox unsafe tests", () => {
         expect(yield* onDiskSandboxUnsafe).toStrictEqual([...sandboxUnsafeTests].toSorted());
       }).pipe(Effect.provide(NodeServices.layer)),
     ));
+
+  it.for([
+    "yield* filesystem.readLink(entry)",
+    "yield* filesystem.symlink(target, link)",
+    'info.type === "SymbolicLink"',
+    "readlinkSync(entry)",
+    "symlinkSync(target, link)",
+    "lstatSync(entry).isSymbolicLink()",
+    'paths.join(root, "tsconfig.json")',
+  ])("treats a test calling %s as needing the real repository layout", (source) => {
+    expect(needsRepositoryLayout(source)).toBe(true);
+  });
+
+  it("leaves a test that only reads file contents in the sandbox", () => {
+    expect(needsRepositoryLayout("yield* filesystem.readFileString(file)")).toBe(false);
+  });
 
   it("marks every test that needs the real repository layout", () =>
     Effect.runPromise(

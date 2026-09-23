@@ -30,10 +30,7 @@ const cleanSharedTaskCache = (
   Effect.gen(function* cleanSharedTaskCache() {
     const filesystem = yield* FileSystem.FileSystem;
     const retired = `${sharedTaskCache}.retired.${runId}`;
-    const present = yield* filesystem.access(sharedTaskCache).pipe(
-      Effect.as(true),
-      Effect.orElseSucceed(() => false),
-    );
+    const present = yield* filesystem.exists(sharedTaskCache);
     if (present) {
       yield* filesystem.rename(sharedTaskCache, retired);
     }

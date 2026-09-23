@@ -48,6 +48,7 @@ runCli(
     }
     const defect: unknown = Cause.squash(cause);
     return uncheckedRecord({
+      cause: Cause.pretty(cause),
       error: defect instanceof Error ? defect.name : typeof defect,
       reason: "unexpected",
     });

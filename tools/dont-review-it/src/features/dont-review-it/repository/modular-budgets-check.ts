@@ -60,29 +60,37 @@ const directoryLines = (directory: string): SourceScan<number> =>
     return counts.reduce((total, count) => total + count, 0);
   });
 
+const whenPresent = <Scanned>(
+  directory: string,
+  absent: Scanned,
+  scan: (present: string) => SourceScan<Scanned>,
+): SourceScan<Scanned> =>
+  Effect.gen(function* whenPresent() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return (yield* filesystem.exists(directory)) ? yield* scan(directory) : absent;
+  });
+
 const budgetFindings = (srcRoot: string): SourceScan<readonly string[]> =>
   Effect.gen(function* scan() {
     const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
     const findings: string[] = [];
-    const appLines = yield* directoryLines(paths.join(srcRoot, "app")).pipe(
-      Effect.orElseSucceed(() => 0),
-    );
+    const appLines = yield* whenPresent(paths.join(srcRoot, "app"), 0, directoryLines);
     if (appLines > modularBudgets.app) {
       findings.push(
         `app: ${appLines} lines exceeds ${modularBudgets.app}. Move composition out into features/<name>.`,
       );
     }
-    const sharedLines = yield* directoryLines(paths.join(srcRoot, "shared")).pipe(
-      Effect.orElseSucceed(() => 0),
-    );
+    const sharedLines = yield* whenPresent(paths.join(srcRoot, "shared"), 0, directoryLines);
     if (sharedLines > modularBudgets.shared) {
       findings.push(
         `shared: ${sharedLines} lines exceeds ${modularBudgets.shared}. Extract a features/<name> slice.`,
       );
     }
-    const featureEntries = yield* directoryEntries(paths.join(srcRoot, "features")).pipe(
-      Effect.orElseSucceed(() => []),
+    const featureEntries = yield* whenPresent(
+      paths.join(srcRoot, "features"),
+      [],
+      directoryEntries,
     );
     for (const entry of featureEntries) {
       if (entry.kind !== "directory") {
@@ -90,9 +98,8 @@ const budgetFindings = (srcRoot: string): SourceScan<readonly string[]> =>
         continue;
       }
       const sliceRoot = paths.join(srcRoot, "features", entry.name);
-      const hasPublicApi = yield* filesystem.readDirectory(sliceRoot).pipe(
-        Effect.map((names) => names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name))),
-        Effect.orElseSucceed(() => false),
+      const hasPublicApi = (yield* filesystem.readDirectory(sliceRoot)).some((name) =>
+        /^index\.[cm]?[jt]sx?$/u.test(name),
       );
       if (!hasPublicApi) {
         findings.push(

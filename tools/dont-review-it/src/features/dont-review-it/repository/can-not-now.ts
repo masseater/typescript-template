@@ -9,31 +9,10 @@ import {
   type HttpClientError,
 } from "effect/unstable/http";
 
-import { pendingIssues, trustedComments } from "./can-not-now-scope.ts";
+import { Comment, Issue, Pull, pendingIssues, trustedComments } from "./can-not-now-scope.ts";
 
 const API_ORIGIN = "https://api.github.com";
 const PAGE_SIZE = 100;
-
-const Issue = Schema.Struct({
-  author_association: Schema.String,
-  body: Schema.NullOr(Schema.String),
-  number: Schema.Int,
-  pull_request: Schema.optionalKey(Schema.Unknown),
-  title: Schema.String,
-});
-
-const Comment = Schema.Struct({
-  author_association: Schema.String,
-  body: Schema.NullOr(Schema.String),
-  user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
-});
-
-const Pull = Schema.Struct({
-  head: Schema.Struct({
-    ref: Schema.String,
-    repo: Schema.NullOr(Schema.Struct({ full_name: Schema.String })),
-  }),
-});
 
 class GitHubApiFailure extends Schema.TaggedError<GitHubApiFailure>()("GitHubApiFailure", {
   status: Schema.Int,

@@ -8,16 +8,11 @@ import { field, workspaceManifests } from "./dependencies.ts";
 const localizedApps = ["service-member", "service-admin"] as const;
 const locales = ["ja", "en"] as const;
 
-const JsonText = Schema.fromJsonString(Schema.Unknown);
+const MessageCatalog = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown));
 
 const InlangSettings = Schema.fromJsonString(
   Schema.Struct({ baseLocale: Schema.String, locales: Schema.Array(Schema.String) }),
 );
-
-class MessagesNotAnObject extends Schema.TaggedError<MessagesNotAnObject>()("MessagesNotAnObject", {
-  app: Schema.String,
-  locale: Schema.String,
-}) {}
 
 const appFile = (app: (typeof localizedApps)[number], ...segments: readonly string[]) =>
   Effect.gen(function* appFile() {
@@ -28,13 +23,10 @@ const appFile = (app: (typeof localizedApps)[number], ...segments: readonly stri
 
 const messageKeys = (app: (typeof localizedApps)[number], locale: (typeof locales)[number]) =>
   Effect.gen(function* messageKeys() {
-    const parsed = yield* Schema.decodeEffect(JsonText)(
+    const catalog = yield* Schema.decodeEffect(MessageCatalog)(
       yield* appFile(app, "messages", `${locale}.json`),
     );
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return yield* new MessagesNotAnObject({ app, locale });
-    }
-    return Object.keys(parsed)
+    return Object.keys(catalog)
       .filter((key) => key !== "$schema")
       .toSorted();
   });
