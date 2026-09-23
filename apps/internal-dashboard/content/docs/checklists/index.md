@@ -7,6 +7,8 @@ description: 事業の案が出てから畳むまで、場面ごとに決める�
 
 骨組みは [PMBOK ガイド第 8 版](https://www.pmi.org/standards/pmbok) に合わせています。節は Focus Area（活動の種類）を場面に読み替えたもので、各節の小見出しは Performance Domain（並行して動く分野）です。
 
+計測、請求、法令、企業への販売のように、詳しい人がいないと存在に気づかない事業の決めごとは [ビジネス面のチェックリスト](/getting-started/business-checklist) に同じ場面の順で並べています。
+
 ## 節
 
 | 節 | 始めるきっかけ | Focus Area |
