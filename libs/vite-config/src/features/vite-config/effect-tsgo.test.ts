@@ -6,6 +6,7 @@ import { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit } from "
 import { baselinePath } from "./effect-typecheck.ts";
 import { filesystem, paths } from "./host.ts";
 import { taskInput } from "./task-input.ts";
+import { workspaceDependencyRanges } from "./workspace-packages.ts";
 
 const generatedTreeExclusions = [
   { base: "workspace", pattern: "!**/node_modules/**" },
@@ -18,24 +19,19 @@ describe("effectDiagnostics", () => {
   const it = test
     .extend("libraryDiagnostics", () =>
       effectDiagnostics(paths.join(repositoryRoot, "libs/db-local")))
-    .extend("rootDiagnostics", () => effectDiagnostics(repositoryRoot));
+    .extend("rootDiagnostics", () => effectDiagnostics(repositoryRoot))
+    .extend("repositoryRanges", () => Effect.runPromise(workspaceDependencyRanges(repositoryRoot)));
 
   it("names the files of the package and of every workspace package it depends on, without the package root listing", ({
     libraryDiagnostics,
+    repositoryRanges,
   }) => {
     expect(libraryDiagnostics).toStrictEqual({
       "check:effect": {
         command: effectTsgoNoEmit("tsconfig.json"),
         input: [
           ...taskInput,
-          ...[
-            "libs/cli",
-            "libs/config",
-            "libs/db",
-            "libs/db-local",
-            "libs/observability",
-            "libs/vite-config",
-          ].flatMap((directory) => [
+          ...(repositoryRanges.get("libs/db-local") ?? []).flatMap((directory) => [
             { base: "workspace", pattern: `${directory}/**/*.{ts,tsx}` },
             { base: "workspace", pattern: `${directory}/**/package.json` },
             { base: "workspace", pattern: `${directory}/**/tsconfig*.json` },
@@ -48,6 +44,7 @@ describe("effectDiagnostics", () => {
   });
 
   it("covers the root and its dependencies, excludes the nested packages it does not depend on, and keeps the root listing that `!.` would turn into every path", ({
+    repositoryRanges,
     rootDiagnostics,
   }) => {
     expect(rootDiagnostics).toStrictEqual({
@@ -58,44 +55,16 @@ describe("effectDiagnostics", () => {
           { base: "workspace", pattern: "**/*.{ts,tsx}" },
           { base: "workspace", pattern: "**/package.json" },
           { base: "workspace", pattern: "**/tsconfig*.json" },
-          ...[
-            "infra/cloudflare",
-            "libs/auth",
-            "libs/cli",
-            "libs/config",
-            "libs/core-api",
-            "libs/db",
-            "libs/db-local",
-            "libs/feature-flags",
-            "libs/monitor",
-            "libs/observability",
-            "libs/runtime",
-            "libs/vite-config",
-            "tools/ai-native-telemetry",
-            "tools/dont-review-it",
-          ].flatMap((directory) => [
-            { base: "workspace", pattern: `${directory}/**/*.{ts,tsx}` },
-            { base: "workspace", pattern: `${directory}/**/package.json` },
-            { base: "workspace", pattern: `${directory}/**/tsconfig*.json` },
-          ]),
-          ...[
-            "apps/core",
-            "apps/internal-dashboard",
-            "apps/internal-wiki",
-            "apps/service-admin",
-            "apps/service-member",
-            "infra/budget-monitor",
-            "infra/error-monitor",
-            "infra/github",
-            "infra/health-monitor",
-            "infra/local",
-            "libs/auth-ui",
-            "libs/ui",
-            "tools/ai-native",
-            "tools/dev",
-            "tools/e2e",
-            "tools/load",
-          ].map((directory) => ({ base: "workspace", pattern: `!${directory}/**` })),
+          ...(repositoryRanges.get(".") ?? [])
+            .filter((directory) => directory !== ".")
+            .flatMap((directory) => [
+              { base: "workspace", pattern: `${directory}/**/*.{ts,tsx}` },
+              { base: "workspace", pattern: `${directory}/**/package.json` },
+              { base: "workspace", pattern: `${directory}/**/tsconfig*.json` },
+            ]),
+          ...[...repositoryRanges.keys()]
+            .filter((directory) => !(repositoryRanges.get(".") ?? []).includes(directory))
+            .map((directory) => ({ base: "workspace", pattern: `!${directory}/**` })),
           ...generatedTreeExclusions,
         ],
       },
