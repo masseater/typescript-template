@@ -1,6 +1,6 @@
 import Link from "fumadocs-core/link";
 
-import { resolveWikiDocHref } from "#shared/content/index.ts";
+import { resolveWikiDocHref } from "#shared/wiki-link/index.ts";
 
 import type { ComponentProps, ReactElement } from "react";
 

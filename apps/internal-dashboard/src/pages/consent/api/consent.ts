@@ -7,17 +7,11 @@ import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effec
 const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 const Redirect = Schema.Struct({ url: Schema.String });
 
-function loadClientName(clientId: string): Effect.Effect<string | undefined> {
-  return Effect.gen(function* loadName() {
-    const response = yield* HttpClient.get(
-      `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
-    ).pipe(
-      Effect.provide(browserHttp),
-      Effect.provideService(FetchHttpClient.RequestInit, {
-        cache: "no-store",
-        credentials: "same-origin",
-      }),
-    );
+function clientNameOf(
+  clientId: string,
+  response: HttpClientResponse.HttpClientResponse,
+): Effect.Effect<string | undefined> {
+  return Effect.gen(function* readName() {
     if (response.status === httpStatus.unauthorized) {
       globalThis.location.assign(`/login${globalThis.location.search}`);
       return undefined;
@@ -27,6 +21,20 @@ function loadClientName(clientId: string): Effect.Effect<string | undefined> {
     }
     return (yield* HttpClientResponse.schemaBodyJson(ClientView)(response)).client_name ?? clientId;
   }).pipe(Effect.orDie);
+}
+
+function loadClientName(clientId: string): Effect.Effect<string | undefined> {
+  return HttpClient.get(
+    `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
+  ).pipe(
+    Effect.provide(browserHttp),
+    Effect.provideService(FetchHttpClient.RequestInit, {
+      cache: "no-store",
+      credentials: "same-origin",
+    }),
+    Effect.flatMap((response) => clientNameOf(clientId, response)),
+    Effect.orDie,
+  );
 }
 
 function submitDecision(accept: boolean): Effect.Effect<void> {
@@ -45,4 +53,4 @@ function submitDecision(accept: boolean): Effect.Effect<void> {
   }).pipe(Effect.orDie);
 }
 
-export { loadClientName, submitDecision };
+export { clientNameOf, loadClientName, submitDecision };

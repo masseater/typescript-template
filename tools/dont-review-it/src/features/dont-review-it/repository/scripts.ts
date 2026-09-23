@@ -33,6 +33,13 @@ const stringTokens = (tokens: readonly unknown[]): string[] => {
   return tokens.flatMap((token) => (typeof token === "string" ? [token] : []));
 };
 
+const separatesSegments = (token: unknown): boolean =>
+  typeof token === "object" &&
+  token !== null &&
+  "op" in token &&
+  typeof token.op === "string" &&
+  segmentOperators.has(token.op);
+
 const words = (command: string): readonly (readonly string[])[] => {
   assertBalancedShellQuotes(command);
   return command.split(/\n/u).flatMap((line) => {
@@ -44,18 +51,9 @@ const words = (command: string): readonly (readonly string[])[] => {
         current.push(token);
         continue;
       }
-      if (
-        typeof token === "object" &&
-        token !== null &&
-        "op" in token &&
-        typeof token.op === "string" &&
-        segmentOperators.has(token.op)
-      ) {
-        if (current.length > 0) {
-          segments.push(current);
-          current = [];
-        }
-        continue;
+      if (separatesSegments(token) && current.length > 0) {
+        segments.push(current);
+        current = [];
       }
     }
     if (current.length > 0) {

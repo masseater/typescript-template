@@ -66,23 +66,24 @@ const hoverOnlyActionViolations = (source: string): string[] => {
     : [];
 };
 
+const isUnnamedControl = (fragment: string): boolean => {
+  const selfClosing = /^<[^>]*\/>/u.exec(fragment)?.[0];
+  if (selfClosing !== undefined) {
+    return !namedControl.test(selfClosing);
+  }
+  const paired = /^<(\w+)[^>]*>([\s\S]*?)<\/\1>/u.exec(fragment);
+  return paired !== null && !namedControl.test(paired[0]) && iconOnlyBody.test(paired[2] ?? "");
+};
+
 const unnamedControlViolations = (source: string): string[] => {
   const openings = [...source.matchAll(interactiveOpen)];
-  return openings.flatMap((match) => {
-    const after = source.slice(match.index);
-    const selfClosing = /^<[^>]*\/>/u.exec(after)?.[0];
-    const paired = /^<(\w+)[^>]*>([\s\S]*?)<\/\1>/u.exec(after);
-    const element = selfClosing ?? paired?.[0];
-    if (element === undefined || namedControl.test(element)) {
-      return [];
-    }
-    const body = paired?.[2] ?? "";
-    return selfClosing !== undefined || iconOnlyBody.test(body)
+  return openings.flatMap((match) =>
+    isUnnamedControl(source.slice(match.index))
       ? [
           "unnamed-control: ボタンとリンクには一意の名前が要ります。文言か aria-label を付けてください。",
         ]
-      : [];
-  });
+      : [],
+  );
 };
 
 const urlHoldsScreenState = (href: string, paramNames: readonly string[]): boolean => {

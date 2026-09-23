@@ -4,10 +4,10 @@ import { applyMdxPreset } from "fumadocs-mdx/config";
 import { defineDocs } from "fumadocs-mdx/macro";
 import { SourceMapGenerator } from "source-map";
 
+import { WIKI_DOCS_BASE_URL } from "#shared/wiki-link/index.ts";
 import { processedMarkdown } from "./mermaid-markdown.ts";
 import { remarkMermaidSvg } from "./remark-mermaid-svg.ts";
 import { remarkWikiTerm } from "./remark-wiki-term.ts";
-import { WIKI_DOCS_BASE_URL } from "./resolve-wiki-doc-href.ts";
 
 const docs = defineDocs({
   dir: "content/docs",

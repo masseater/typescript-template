@@ -7,8 +7,7 @@ import { saveProfile } from "#shared/api/index.ts";
 
 import type { Profile } from "#shared/api/index.ts";
 import type { SubmitEventHandler } from "react";
-
-type DraftLink = Readonly<{ id: string; url: string }>;
+import type { DraftLink } from "./draft-link.ts";
 
 interface ProfileFields {
   readonly name: string;
@@ -92,4 +91,4 @@ function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>
 }
 
 export { useProfileForm };
-export type { DraftLink, ProfileForm };
+export type { ProfileForm };

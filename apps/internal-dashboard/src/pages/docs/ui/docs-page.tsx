@@ -2,7 +2,8 @@ import { notFound } from "@tanstack/react-router";
 import { useFumadocsLoader } from "fumadocs-core/source/client";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 
-import { docs, WIKI_DOCS_BASE_URL } from "#shared/content/index.ts";
+import { docs } from "#shared/content/index.ts";
+import { WIKI_DOCS_BASE_URL } from "#shared/wiki-link/index.ts";
 import { DocsContent } from "./docs-content.tsx";
 
 import type { Root } from "fumadocs-core/page-tree";

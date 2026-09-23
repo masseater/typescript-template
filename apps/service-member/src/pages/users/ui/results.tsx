@@ -3,12 +3,15 @@ import { PageNavigation, TextLink } from "@repo/ui";
 import { MemberCard } from "#widgets/member-search/index.ts";
 import { MemberPageLink } from "./member-page-link.tsx";
 
-import type { Members } from "#pages/users/api/load-members.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
+import type { MemberList } from "#shared/contracts/index.ts";
 import type { PageTarget } from "@repo/ui";
 import type { ReactElement } from "react";
 
-function Results({ list, search }: Readonly<{ list: Members; search: UsersSearch }>): ReactElement {
+function Results({
+  list,
+  search,
+}: Readonly<{ list: typeof MemberList.Type; search: UsersSearch }>): ReactElement {
   const current = search.page ?? 1;
   function pageLink(target: PageTarget): ReactElement {
     return <MemberPageLink search={search} target={target} />;

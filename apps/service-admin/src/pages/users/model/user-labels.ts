@@ -25,4 +25,36 @@ const verificationOptions = [
   { label: verificationLabels.false, value: "false" },
 ];
 
-export { nextRoles, roleLabels, roleOptions, verificationLabels, verificationOptions };
+function rowConfirmation(
+  deleting: boolean,
+  user: Readonly<{ email: string; role: typeof Role.Type }>,
+): Readonly<{
+  confirmLabel: string;
+  description: string;
+  title: string;
+  variant: "danger" | "primary";
+}> {
+  if (deleting) {
+    return {
+      confirmLabel: "削除する",
+      description: `${user.email} を削除します。この操作は取り消せません。`,
+      title: "ユーザーを削除しますか？",
+      variant: "danger",
+    };
+  }
+  return {
+    confirmLabel: "変更する",
+    description: `${user.email} を${roleLabels[nextRoles[user.role]]}に変更します。対象ユーザーの既存セッションは失効します。`,
+    title: "権限を変更しますか？",
+    variant: "primary",
+  };
+}
+
+export {
+  nextRoles,
+  roleLabels,
+  rowConfirmation,
+  roleOptions,
+  verificationLabels,
+  verificationOptions,
+};

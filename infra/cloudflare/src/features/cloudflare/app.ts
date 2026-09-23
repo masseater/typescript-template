@@ -29,7 +29,7 @@ import { accountTokenRef } from "./tokens.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { DeclaredEnv, SharedEnv } from "./bindings.ts";
+import type { CapabilityEnv, DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
 function appEnv(
@@ -57,6 +57,43 @@ function appEnv(
   });
 }
 
+function otlpEnv(
+  config: SharedConfig,
+  authorization: Redacted.Redacted | undefined,
+): Pick<SharedEnv, "OTLP_AUTHORIZATION" | "OTLP_ENABLED" | "OTLP_ENDPOINT"> {
+  if (config.otlp === undefined) {
+    return {};
+  }
+  return {
+    OTLP_ENABLED: String(config.otlp.enabled),
+    OTLP_ENDPOINT: config.otlp.endpoint,
+    ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+  };
+}
+
+const wikiEnv = Effect.fn("wikiEnv")(function* wikiEnv(target: Application, shared: DeclaredEnv) {
+  if (target !== APPLICATION.wiki) {
+    return shared;
+  }
+  return {
+    ...shared,
+    FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
+    FLAGSHIP_APP_ID: shared.FLAGS.appId,
+  };
+});
+
+function jobsEnv(jobsQueue: Queues.Queue | undefined): Partial<CapabilityEnv["jobs"]> {
+  if (jobsQueue === undefined) {
+    return {};
+  }
+  return {
+    JOBS: jobsQueue,
+    PROCESS: Workflow<{ jobId: string }>("Process", {
+      className: jobsWorkflowClass,
+    }),
+  };
+}
+
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
 ) {
@@ -81,31 +118,9 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
     FLAGSHIP_ACCOUNT_ID: config.accountId,
     FLAGS: flags,
     OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
-    ...(config.otlp === undefined
-      ? {}
-      : {
-          OTLP_ENABLED: String(config.otlp.enabled),
-          OTLP_ENDPOINT: config.otlp.endpoint,
-          ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
-        }),
+    ...otlpEnv(config, authorization),
   });
-  const env = {
-    ...(target === APPLICATION.wiki
-      ? {
-          ...shared,
-          FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
-          FLAGSHIP_APP_ID: flags.appId,
-        }
-      : shared),
-    ...(jobsQueue === undefined
-      ? {}
-      : {
-          JOBS: jobsQueue,
-          PROCESS: Workflow<{ jobId: string }>("Process", {
-            className: jobsWorkflowClass,
-          }),
-        }),
-  };
+  const env = { ...(yield* wikiEnv(target, shared)), ...jobsEnv(jobsQueue) };
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,

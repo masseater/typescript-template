@@ -84,9 +84,6 @@
     "unused-dev-dependencies": "error",
     "unused-dependency-overrides": "error"
   },
-  "health": {
-    "maxCrap": 0
-  },
   "duplicates": {
     "ignore": ["**/vite.config.ts"],
     "threshold": 0.0001

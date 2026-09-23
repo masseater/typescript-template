@@ -46,26 +46,28 @@ const loadOptions: Options = {
 
 const tokenMarker = "#token=";
 
-const tokenIn = (mailText: unknown): string | undefined => {
-  const start = typeof mailText === "string" ? mailText.indexOf(tokenMarker) : -1;
-  return typeof mailText === "string" && start >= 0
-    ? mailText.slice(start + tokenMarker.length).split(/\s/u)[0]
-    : undefined;
+const tokenIn = (mailText: unknown): string => {
+  const mailBody = typeof mailText === "string" ? mailText : "";
+  const start = mailBody.indexOf(tokenMarker);
+  return start >= 0 ? (mailBody.slice(start + tokenMarker.length).split(/\s/u)[0] ?? "") : "";
 };
 
 const mail = __ENV.LOAD_MAILPIT_ORIGIN ?? "";
+
+const mailedToken = (email: string): string => {
+  const query = encodeURIComponent(`to:${email}`);
+  const messageId = http.get(`${mail}/api/v1/search?query=${query}`).json("messages.0.ID");
+  return typeof messageId === "string"
+    ? tokenIn(http.get(`${mail}/api/v1/message/${messageId}`).json("Text"))
+    : "";
+};
 
 const verificationToken = (email: string, attempt = 0): string => {
   if (attempt >= mailAttempts) {
     return fail(`no verification mail arrived for ${email}`);
   }
-  const query = encodeURIComponent(`to:${email}`);
-  const messageId = http.get(`${mail}/api/v1/search?query=${query}`).json("messages.0.ID");
-  const token =
-    typeof messageId === "string"
-      ? tokenIn(http.get(`${mail}/api/v1/message/${messageId}`).json("Text"))
-      : "";
-  if (token !== undefined && token !== "") {
+  const token = mailedToken(email);
+  if (token !== "") {
     return token;
   }
   sleep(mailWaitSeconds);

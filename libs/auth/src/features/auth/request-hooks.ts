@@ -126,6 +126,15 @@ const registersLoopbackClient = function registersLoopbackClient(
   );
 };
 
+const normalizeOauthFields = function normalizeOauthFields(path: string, fields: object): void {
+  if ("oauth_query" in fields && !oauthQueryPaths.has(path)) {
+    deny("OAUTH_QUERY_NOT_ACCEPTED");
+  }
+  if (registersLoopbackClient(path, fields)) {
+    Object.assign(fields, { application_type: "native" });
+  }
+};
+
 const rejectUnsafeFields = function rejectUnsafeFields(
   ctx: Readonly<Pick<HookContext, "body" | "path">>,
 ): void {
@@ -134,12 +143,7 @@ const rejectUnsafeFields = function rejectUnsafeFields(
   if ("trustDevice" in fields && fields["trustDevice"] === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }
-  if ("oauth_query" in fields && !oauthQueryPaths.has(ctx.path)) {
-    deny("OAUTH_QUERY_NOT_ACCEPTED");
-  }
-  if (registersLoopbackClient(ctx.path, fields)) {
-    Object.assign(fields, { application_type: "native" });
-  }
+  normalizeOauthFields(ctx.path, fields);
   if (
     ctx.path === "/passkey/verify-registration" &&
     "createSession" in fields &&

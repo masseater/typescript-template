@@ -1,7 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { Effect, Option } from "effect";
 
-import { denied, sessionPresence } from "./access-decision.ts";
+import { decideAccess, sessionPresence } from "./access-decision.ts";
 
 type SessionEffect = ReturnType<typeof verifySession>;
 type SessionServices = Effect.Services<SessionEffect>;
@@ -43,9 +43,7 @@ const guardAccess = Effect.fn("guardAccess")(function* guardAccess(request: Requ
   if (isPublic(path)) {
     return Option.none<Response>();
   }
-  const current = yield* currentSession(request);
-  const allowed = Option.isSome(current) && (current.value.strong || path === "/security");
-  return allowed ? Option.none<Response>() : Option.some(denied(path, Option.isSome(current)));
+  return decideAccess(path, yield* currentSession(request));
 });
 
 export { guardAccess };

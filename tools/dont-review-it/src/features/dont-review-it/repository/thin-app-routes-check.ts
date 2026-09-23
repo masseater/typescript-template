@@ -6,7 +6,7 @@ import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { isAppRouteModule } from "./thin-app-routes.ts";
+import { containsJsx, isAppRouteModule } from "./thin-app-routes.ts";
 
 const violation =
   "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。";
@@ -31,27 +31,8 @@ const collectFiles = (directory: string): Effect.Effect<readonly string[]> =>
     return nested.flat();
   });
 
-const hasJsx = (source: string, file: string): boolean => {
-  const { program } = parseSync(file, source, { lang: file.endsWith("x") ? "tsx" : "ts" });
-  const stack: unknown[] = [program];
-  while (stack.length > 0) {
-    const node = stack.pop();
-    if (typeof node !== "object" || node === null) {
-      continue;
-    }
-    if ("type" in node && (node.type === "JSXElement" || node.type === "JSXFragment")) {
-      return true;
-    }
-    for (const value of Object.values(node)) {
-      if (Array.isArray(value)) {
-        stack.push(...value);
-      } else {
-        stack.push(value);
-      }
-    }
-  }
-  return false;
-};
+const hasJsx = (source: string, file: string): boolean =>
+  containsJsx(parseSync(file, source, { lang: file.endsWith("x") ? "tsx" : "ts" }).program);
 
 const checkRoutes = (routesRoot: string): Effect.Effect<readonly string[]> =>
   Effect.gen(function* scan() {

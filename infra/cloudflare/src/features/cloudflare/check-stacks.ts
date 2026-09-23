@@ -48,7 +48,7 @@ import {
 import { cacheNamespaceTitle, fileBucketName } from "./storage.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-import type { Application } from "@repo/config";
+import type { Application, Capability } from "@repo/config";
 import type { StackInventory } from "./inventory.ts";
 import type { StackName } from "./stacks.ts";
 
@@ -97,6 +97,31 @@ function tokenValue(name: string, resource: string): string {
   return `${name}:deferred:${stackName("tokens")}.${resource}.value`;
 }
 
+const capabilityBindings: readonly (readonly [Capability, readonly string[]])[] = [
+  ["ai", ["AI:ai"]],
+  [
+    "jobs",
+    [
+      `${jobsQueueBinding}:queue:queueId=<unresolved PropExpr>:queueName=<unresolved PropExpr>`,
+      `${jobsWorkflowBinding}:workflow:className=${jobsWorkflowClass}:workflowName=<unresolved EffectExpr>`,
+    ],
+  ],
+  ["realtime", [`${userInboxBinding}:durable_object_namespace:className=${userInboxClassName}`]],
+  [
+    "storage",
+    [
+      `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
+      `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
+    ],
+  ],
+];
+
+function grantedBindings(app: Application): readonly string[] {
+  return capabilityBindings.flatMap(([capability, bindings]) =>
+    grants(app, capability) ? bindings : [],
+  );
+}
+
 function applicationResource(app: Application, release: string): ResourceInventory {
   const flagshipBindings = [
     plainText(appEnvKey.flagshipAccountId, accountId),
@@ -123,22 +148,7 @@ function applicationResource(app: Application, release: string): ResourceInvento
       `${appEnvKey.otlpAuthorization}:secret_text:text=$${deploymentKey.otlpAuthorization}`,
       plainText(appEnvKey.otlpEnabled, String(otlp.enabled)),
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
-      ...(grants(app, "ai") ? ["AI:ai"] : []),
-      ...(grants(app, "jobs")
-        ? [
-            `${jobsQueueBinding}:queue:queueId=<unresolved PropExpr>:queueName=<unresolved PropExpr>`,
-            `${jobsWorkflowBinding}:workflow:className=${jobsWorkflowClass}:workflowName=<unresolved EffectExpr>`,
-          ]
-        : []),
-      ...(grants(app, "realtime")
-        ? [`${userInboxBinding}:durable_object_namespace:className=${userInboxClassName}`]
-        : []),
-      ...(grants(app, "storage")
-        ? [
-            `${cacheNamespaceBinding}:kv_namespace:namespaceId=${stackName("storage")}.Cache.namespaceId`,
-            `${fileBucketBinding}:r2_bucket:bucketName=${stackName("storage")}.Files.bucketName:jurisdiction=<unresolved ApplyExpr>`,
-          ]
-        : []),
+      ...grantedBindings(app),
     ].toSorted(),
     declared: {
       ...sharedWorker,
@@ -421,16 +431,22 @@ const rolesDiffer = Effect.fn("rolesDiffer")(function* rolesDiffer(
   return differs;
 });
 
+const coreExposed = Effect.fn("coreExposed")(function* coreExposed(
+  stack: StackName,
+  inventory: StackInventory,
+) {
+  const violation = stack === "core" ? assertCoreNotPublic(inventory) : undefined;
+  if (violation === undefined) {
+    return false;
+  }
+  yield* Console.error(yield* encodeJson({ event: "core.public_entry", stack, violation }));
+  return true;
+});
+
 const verifyStack = Effect.fn("verifyStack")(function* verifyStack(stack: StackName) {
   const inventory = yield* compileStack(stack);
   const expected = yield* expectedStack(stack);
-  const coreViolation = stack === "core" ? assertCoreNotPublic(inventory) : undefined;
-  const matches = coreViolation === undefined && isDeepStrictEqual(inventory, expected);
-  if (coreViolation !== undefined) {
-    yield* Console.error(
-      yield* encodeJson({ event: "core.public_entry", stack, violation: coreViolation }),
-    );
-  }
+  const matches = !(yield* coreExposed(stack, inventory)) && isDeepStrictEqual(inventory, expected);
   if (!matches) {
     yield* Console.error(
       yield* encodeJson({ actual: inventory, event: "stacks.differs", expected, stack }),

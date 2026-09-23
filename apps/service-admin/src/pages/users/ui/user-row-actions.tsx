@@ -1,6 +1,6 @@
 import { ConfirmDialog } from "@repo/ui";
 
-import { nextRoles, roleLabels } from "#pages/users/model/user-labels.ts";
+import { rowConfirmation } from "#pages/users/model/user-labels.ts";
 import { useUserRowAction } from "#pages/users/model/user-row-action.ts";
 import { RowActionMenu } from "./row-action-menu.tsx";
 
@@ -12,8 +12,7 @@ function UserRowActions({
   user,
 }: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement {
   const action = useUserRowAction(user, onChanged);
-  const deleting = action.confirming === "delete";
-  const nextRole = roleLabels[nextRoles[user.role]];
+  const confirmation = rowConfirmation(action.confirming === "delete", user);
   return (
     <>
       <RowActionMenu
@@ -25,14 +24,10 @@ function UserRowActions({
       <ConfirmDialog
         open={action.confirming !== undefined}
         onOpenChange={action.handleOpenChange}
-        title={deleting ? "ユーザーを削除しますか？" : "権限を変更しますか？"}
-        description={
-          deleting
-            ? `${user.email} を削除します。この操作は取り消せません。`
-            : `${user.email} を${nextRole}に変更します。対象ユーザーの既存セッションは失効します。`
-        }
-        confirmLabel={deleting ? "削除する" : "変更する"}
-        variant={deleting ? "danger" : "primary"}
+        title={confirmation.title}
+        description={confirmation.description}
+        confirmLabel={confirmation.confirmLabel}
+        variant={confirmation.variant}
         onConfirm={action.handleConfirm}
       />
     </>

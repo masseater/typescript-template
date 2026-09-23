@@ -20,12 +20,10 @@ import {
 import { HttpServer, HttpServerResponse } from "effect/unstable/http";
 import { URI } from "otpauth";
 
-import { failure } from "./failure.ts";
+import { LocalCommandFailure, failure } from "./failure.ts";
 import { local, readCredentials } from "./local-environment.ts";
 import { isNotFound, urlPath, withFileSystem } from "./platform.ts";
 import { assertOwnerOnly, replacePrivateFile } from "./private-files.ts";
-
-import type { LocalCommandFailure } from "./failure.ts";
 
 const OPERATOR_EMAIL = "local-operator@example.test";
 const OPERATOR_NAME = "Local Operator";
@@ -76,6 +74,12 @@ const mailSink = Effect.acquireRelease(
   ({ scope }) => Scope.close(scope, Exit.succeed(undefined)).pipe(Effect.ignore),
 );
 
+function cookieEntry(header: string): ReadonlyArray<readonly [string, string]> {
+  const [pair = ""] = header.split(";");
+  const separator = pair.indexOf("=");
+  return pair === "" ? [] : [[pair.slice(0, separator), pair.slice(separator + 1)]];
+}
+
 class CookieJar {
   public readonly cookies = new Map<string, string>();
 
@@ -87,19 +91,12 @@ class CookieJar {
   }
 
   public store(response: Response): void {
-    for (const header of response.headers.getSetCookie()) {
-      const [pair] = header.split(";");
-      if (pair === undefined || pair === "") {
-        continue;
-      }
-      const separator = pair.indexOf("=");
-      const key = pair.slice(0, separator);
-      const value = pair.slice(separator + 1);
+    for (const [key, value] of response.headers.getSetCookie().flatMap(cookieEntry)) {
       if (value === "") {
         this.cookies.delete(key);
-        continue;
+      } else {
+        this.cookies.set(key, value);
       }
-      this.cookies.set(key, value);
     }
   }
 }
@@ -260,17 +257,9 @@ const ensureOperator = Effect.fn("ensureOperator")(function* ensureOperator() {
         return yield* createOperator(yield* Auth, origin, credentials.authSecret);
       }).pipe(
         Effect.provide(authLayer),
-        Effect.mapError((cause): LocalCommandFailure => {
-          if (
-            typeof cause === "object" &&
-            cause !== null &&
-            "_tag" in cause &&
-            cause._tag === "LocalCommandFailure"
-          ) {
-            return cause;
-          }
-          return failure("operator_provision_failed");
-        }),
+        Effect.mapError((cause): LocalCommandFailure =>
+          Schema.is(LocalCommandFailure)(cause) ? cause : failure("operator_provision_failed"),
+        ),
       );
     }),
   );

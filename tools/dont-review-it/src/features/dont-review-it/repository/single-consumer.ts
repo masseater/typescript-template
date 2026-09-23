@@ -85,9 +85,15 @@ const skipSpace = (text: string, index: number): number => {
   return cursor;
 };
 
+const isQuote = (char: string | undefined): char is '"' | "'" | "`" =>
+  char === '"' || char === "'" || char === "`";
+
+const opensInterpolation = (text: string, cursor: number, quote: string): boolean =>
+  quote === "`" && text[cursor] === "$" && text[cursor + 1] === "{";
+
 const readString = (text: string, index: number): Read | undefined => {
   const quote = text[index];
-  if (quote !== '"' && quote !== "'" && quote !== "`") {
+  if (!isQuote(quote)) {
     return undefined;
   }
   let value = "";
@@ -99,7 +105,7 @@ const readString = (text: string, index: number): Read | undefined => {
       cursor += 2;
       continue;
     }
-    if (quote === "`" && char === "$" && text[cursor + 1] === "{") {
+    if (opensInterpolation(text, cursor, quote)) {
       return undefined;
     }
     if (char === quote) {

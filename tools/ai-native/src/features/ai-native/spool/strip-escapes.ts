@@ -38,14 +38,18 @@ const escapeLead: StripState = {
   consume: (byte) => ({ state: escapeLeadTarget(byte), emitted: "" }),
 };
 
+const stringIntroducers: ReadonlySet<number> = new Set([0x50, 0x58, 0x5d, 0x5e, 0x5f]);
+
+const isIntermediate = (byte: number): boolean => byte >= 0x20 && byte <= 0x2f;
+
 const escapeLeadTarget = (byte: number): StripState => {
   if (byte === 0x5b) {
     return csiBody;
   }
-  if (byte === 0x5d || byte === 0x50 || byte === 0x58 || byte === 0x5e || byte === 0x5f) {
+  if (stringIntroducers.has(byte)) {
     return stringBody;
   }
-  if (byte >= 0x20 && byte <= 0x2f) {
+  if (isIntermediate(byte)) {
     return escapeIntermediate;
   }
   return byte === ESC ? escapeLead : ground;
@@ -53,7 +57,7 @@ const escapeLeadTarget = (byte: number): StripState => {
 
 const escapeIntermediate: StripState = {
   consume: (byte) => ({
-    state: byte >= 0x20 && byte <= 0x2f ? escapeIntermediate : ground,
+    state: isIntermediate(byte) ? escapeIntermediate : ground,
     emitted: "",
   }),
 };
