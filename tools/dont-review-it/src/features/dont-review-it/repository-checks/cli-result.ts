@@ -14,15 +14,14 @@ export type CliResult = {
   readonly error: string;
 };
 
-const safelyRunCli = async (operation: () => Promise<CliResult>): Promise<CliResult> => {
-  const [failure, completedRun] = await attemptAsync(operation);
-  if (completedRun !== null) return completedRun;
-  return {
-    exitCode: EXIT_MISUSE,
-    out: "",
-    error: `${failure instanceof Error ? failure.message : String(failure)}\n`,
-  };
-};
+const misuseOf = (failure: unknown): CliResult => ({
+  exitCode: EXIT_MISUSE,
+  out: "",
+  error: `${failure instanceof Error ? failure.message : String(failure)}\n`,
+});
+
+const safelyRunCli = (operation: () => Promise<CliResult>): Promise<CliResult> =>
+  attemptAsync(operation).then(([failure, completedRun]) => completedRun ?? misuseOf(failure));
 
 export const createCliRunner =
   <Arguments extends readonly unknown[]>(

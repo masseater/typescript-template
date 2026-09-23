@@ -1,3 +1,5 @@
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -189,39 +191,42 @@ describe("inspection coverage", () => {
     expect(reachable(".", ["premerge"])).not.toContain("check:repository");
   });
 
-  it("typechecks every workspace even when oxlint ignorePatterns skip it", () => {
-    expect.hasAssertions();
-    const projects = typecheckProjects(repositoryRoot);
-    const discovered = [
-      "tsconfig.json",
-      ...Object.keys(tsconfigs).map((key) => workspacePath(key)),
-      ...Object.keys(nestedTsconfigs).map((key) => workspacePath(key)),
-    ]
-      .filter((project, index, all) => all.indexOf(project) === index)
-      .toSorted();
-    const skippedByLint = discovered.filter((project) =>
-      lintOptions.ignorePatterns.some((pattern) => {
-        const prefix = pattern.endsWith("/**") ? pattern.slice(0, -3) : undefined;
-        return prefix !== undefined && project.startsWith(`${prefix}/`);
-      }),
-    );
-    expect(projects).toStrictEqual(discovered);
-    expect(
-      [
-        ...new Set(
-          skippedByLint.map((project) => {
-            const directory = project.replace(/\/tsconfig\.json$/u, "");
-            const [group = "", name = ""] = directory.split("/");
-            return name === "" ? directory : `${group}/${name}`;
+  it("typechecks every workspace even when oxlint ignorePatterns skip it", () =>
+    Effect.runPromise(
+      Effect.gen(function* typechecksEveryWorkspace() {
+        expect.hasAssertions();
+        const projects = yield* typecheckProjects(repositoryRoot);
+        const discovered = [
+          "tsconfig.json",
+          ...Object.keys(tsconfigs).map((key) => workspacePath(key)),
+          ...Object.keys(nestedTsconfigs).map((key) => workspacePath(key)),
+        ]
+          .filter((project, index, all) => all.indexOf(project) === index)
+          .toSorted();
+        const skippedByLint = discovered.filter((project) =>
+          lintOptions.ignorePatterns.some((pattern) => {
+            const prefix = pattern.endsWith("/**") ? pattern.slice(0, -3) : undefined;
+            return prefix !== undefined && project.startsWith(`${prefix}/`);
           }),
-        ),
-      ].toSorted(),
-    ).toStrictEqual(
-      awaitingPresetPackages.map((pattern) => pattern.replace(/\/\*\*$/u, "")).toSorted(),
-    );
-    expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
-    expect(reachable(".", ["prepush", "prepr", "premerge"])).not.toContain("check:types");
-  });
+        );
+        expect(projects).toStrictEqual(discovered);
+        expect(
+          [
+            ...new Set(
+              skippedByLint.map((project) => {
+                const directory = project.replace(/\/tsconfig\.json$/u, "");
+                const [group = "", name = ""] = directory.split("/");
+                return name === "" ? directory : `${group}/${name}`;
+              }),
+            ),
+          ].toSorted(),
+        ).toStrictEqual(
+          awaitingPresetPackages.map((pattern) => pattern.replace(/\/\*\*$/u, "")).toSorted(),
+        );
+        expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
+        expect(reachable(".", ["prepush", "prepr", "premerge"])).not.toContain("check:types");
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 
   it("typechecks workspace vite configs and the quality doctor config", () => {
     expect.hasAssertions();
