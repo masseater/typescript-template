@@ -22,6 +22,7 @@ import react from "@vitejs/plugin-react";
 import { Effect } from "effect";
 import {
   defineConfig,
+  lazyPlugins,
   type ConfigEnv,
   type Plugin,
   type PluginOption,
@@ -358,68 +359,70 @@ const appConfig = (
   return ({ command, isPreview }: Readonly<ConfigEnv>): UserConfig => ({
     build: { sourcemap: "hidden" },
     plugins: [
-      failOnBrokenSourceMaps(),
-      previewDevVars(appRoot),
-      privateSourceMaps(app),
-      devBoundary(app),
-      elysiaAot(appRoot),
-      elysiaWorkerdJit(),
-      cloudflare({
-        auxiliaryWorkers: [coreDevWorker],
-        config: (config) => ({
-          ...config,
-          assets: {
-            binding: "ASSETS",
-            run_worker_first: command !== "serve" || isPreview === true,
-          },
-          compatibility_date: workerCompatibility.date,
-          compatibility_flags: [...workerCompatibility.flags],
-          d1_databases: [localDatabase],
-          ...(realtime
-            ? {
-                durable_objects: {
-                  bindings: [localUserInbox],
-                },
-                migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
-              }
-            : {}),
-          main: "./src/app/server.ts",
-          name: `template-${app}`,
-          services: [
-            ...(config.services ?? []),
-            {
-              binding: "CORE",
-              entrypoint: coreEntrypoints[app],
-              service: "template-core",
+      lazyPlugins(() => [
+        failOnBrokenSourceMaps(),
+        previewDevVars(appRoot),
+        privateSourceMaps(app),
+        devBoundary(app),
+        elysiaAot(appRoot),
+        elysiaWorkerdJit(),
+        cloudflare({
+          auxiliaryWorkers: [coreDevWorker],
+          config: (config) => ({
+            ...config,
+            assets: {
+              binding: "ASSETS",
+              run_worker_first: command !== "serve" || isPreview === true,
             },
-          ],
-          ...(grants(app, "jobs")
-            ? {
-                queues: {
-                  consumers: [{ queue: jobsQueueName }],
-                  producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
-                },
-                workflows: [
-                  {
-                    binding: jobsWorkflowBinding,
-                    class_name: jobsWorkflowClass,
-                    name: jobsWorkflowName,
+            compatibility_date: workerCompatibility.date,
+            compatibility_flags: [...workerCompatibility.flags],
+            d1_databases: [localDatabase],
+            ...(realtime
+              ? {
+                  durable_objects: {
+                    bindings: [localUserInbox],
                   },
-                ],
-              }
-            : {}),
-          ...(grants(app, "storage")
-            ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
-            : {}),
+                  migrations: [{ new_sqlite_classes: [userInboxClassName], tag: "v1" }],
+                }
+              : {}),
+            main: "./src/app/server.ts",
+            name: `template-${app}`,
+            services: [
+              ...(config.services ?? []),
+              {
+                binding: "CORE",
+                entrypoint: coreEntrypoints[app],
+                service: "template-core",
+              },
+            ],
+            ...(grants(app, "jobs")
+              ? {
+                  queues: {
+                    consumers: [{ queue: jobsQueueName }],
+                    producers: [{ binding: jobsQueueBinding, queue: jobsQueueName }],
+                  },
+                  workflows: [
+                    {
+                      binding: jobsWorkflowBinding,
+                      class_name: jobsWorkflowClass,
+                      name: jobsWorkflowName,
+                    },
+                  ],
+                }
+              : {}),
+            ...(grants(app, "storage")
+              ? { kv_namespaces: [localCacheNamespace], r2_buckets: [localFileBucket] }
+              : {}),
+          }),
+          inspectorPort: false,
+          persistState: { path: localDatabaseDirectory() },
+          viteEnvironment: { name: "ssr" },
         }),
-        inspectorPort: false,
-        persistState: { path: localDatabaseDirectory() },
-        viteEnvironment: { name: "ssr" },
-      }),
-      ...plugins,
-      tailwindcss(),
-      ...withoutEnvFileLoader(tanstackStart(startOptions)),
-      reactCompiler(),
+        ...plugins,
+        tailwindcss(),
+        ...withoutEnvFileLoader(tanstackStart(startOptions)),
+        reactCompiler(),
+      ]),
     ],
     preview: appServer(app),
     run: appRun,

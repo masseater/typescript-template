@@ -68,7 +68,7 @@ const mailSink = Effect.acquireRelease(
         }),
       )
       .pipe(Scope.provide(scope));
-    if (server.address._tag !== "TcpAddress") {
+    if (server.address._tag === "UnixPathAddress") {
       return yield* failure("operator_provision_failed");
     }
     return { origin: `http://127.0.0.1:${server.address.port}`, scope };
