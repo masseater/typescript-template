@@ -1,37 +1,64 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import path from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { causeRecord, cliStderr, markFailed, runCli } from "@repo/cli";
+import { Effect, Path, Schema } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+
+import { capturedProcess } from "./captured-process.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 
 const require = createRequire(import.meta.url);
-const effectTsgoCli = path.join(
-  path.dirname(require.resolve("@effect/tsgo/package.json")),
-  "dist",
-  "effect-tsgo.cjs",
-);
 
-const resolved = spawnSync(process.execPath, [effectTsgoCli, "get-exe-path"], {
-  cwd: repositoryRoot,
-  encoding: "utf8",
-});
-
-if (resolved.status !== 0) {
-  process.stderr.write(resolved.stderr);
-  process.exitCode = 1;
-} else {
-  const effectTsc = resolved.stdout.trim();
-  const failed = typecheckProjects(repositoryRoot).filter((project) => {
-    const result = spawnSync(effectTsc, ["--pretty", "false", "--noEmit", "-p", project], {
-      cwd: repositoryRoot,
-      stdio: "inherit",
-    });
-    return result.status !== 0;
-  });
-
-  if (failed.length > 0) {
-    process.exitCode = 1;
+class TypecheckUnstarted extends Schema.TaggedError<TypecheckUnstarted>()("TypecheckUnstarted", {
+  cause: Schema.Defect(),
+  project: Schema.String,
+}) {
+  public override get message(): string {
+    return `typecheck could not start for ${this.project}`;
   }
 }
+
+const typecheckWorkspaces = Effect.gen(function* typecheckWorkspaces() {
+  const paths = yield* Path.Path;
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const effectTsgoCli = paths.join(
+    paths.dirname(require.resolve("@effect/tsgo/package.json")),
+    "dist",
+    "effect-tsgo.cjs",
+  );
+
+  const resolved = yield* capturedProcess(
+    ChildProcess.make(process.execPath, [effectTsgoCli, "get-exe-path"], {
+      cwd: repositoryRoot,
+    }),
+  );
+  if (resolved.exitCode !== 0) {
+    yield* Effect.sync(() => cliStderr.write(resolved.stderr));
+    return yield* markFailed;
+  }
+
+  const effectTsc = resolved.stdout.trim();
+  const projects = yield* typecheckProjects(repositoryRoot);
+  const exitCodes = yield* Effect.forEach(projects, (project) =>
+    spawner
+      .exitCode(
+        ChildProcess.make(effectTsc, ["--pretty", "false", "--noEmit", "-p", project], {
+          cwd: repositoryRoot,
+          stderr: "inherit",
+          stdin: "inherit",
+          stdout: "inherit",
+        }),
+      )
+      .pipe(Effect.mapError((cause) => new TypecheckUnstarted({ cause, project }))),
+  );
+  if (exitCodes.some((exitCode) => exitCode !== 0)) {
+    yield* markFailed;
+  }
+});
+
+runCli(typecheckWorkspaces.pipe(Effect.provide(NodeServices.layer)), (cause) =>
+  causeRecord("quality.typecheck_failed", { cause }),
+);
