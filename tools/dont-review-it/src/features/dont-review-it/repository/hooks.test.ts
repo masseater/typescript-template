@@ -460,7 +460,7 @@ const MergifyConfig = Schema.Struct({
   ),
 });
 
-function parsedSource<S extends Schema.Top>(
+function parsedSource<S extends Schema.Top & { readonly DecodingServices: never }>(
   sources: Readonly<Record<string, string>>,
   file: string,
   schema: S,

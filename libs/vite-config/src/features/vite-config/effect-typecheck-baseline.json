@@ -2721,6 +2721,18 @@
         "count": 3
       },
       {
+        "file": "src/features/dont-review-it/repository/claude-skills.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/features/dont-review-it/repository/claude-skills.test.ts",
+        "code": "TS377057",
+        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
         "file": "src/features/dont-review-it/repository/clean-shared-task-cache.ts",
         "code": "TS377021",
         "message": "The `catch` callback in `Effect.tryPromise` returns `unknown`, so the Effect error type stays untyped. A specific typed error preserves error-channel information, for example by narrowing the value or wrapping it in `Data.TaggedError`. effect(unknownInEffectCatch)",
@@ -2832,6 +2844,12 @@
         "file": "src/features/dont-review-it/repository/hooks.test.ts",
         "code": "TS377057",
         "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
+        "count": 1
+      },
+      {
+        "file": "src/features/dont-review-it/repository/hooks.test.ts",
+        "code": "TS377130",
+        "message": "`Schema.decodeUnknownSync` executes synchronously. Use `Schema.decodeUnknownEffect` to compose this operation through Effect without throwing. effect(schemaSync)",
         "count": 1
       },
       {
