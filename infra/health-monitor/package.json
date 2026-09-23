@@ -2,6 +2,9 @@
   "name": "@repo/health-monitor",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/features/health-monitor/index.ts"
+  },
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
