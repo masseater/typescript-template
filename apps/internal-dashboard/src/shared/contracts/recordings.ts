@@ -1,6 +1,4 @@
 import {
-  RecordingSegment,
-  RecordingSpeaker,
   RecordingSummary,
   RecordingView,
   RegisteredPerson,
@@ -15,8 +13,6 @@ const maximumRecordingBytes = 100 * 1024 * 1024;
 
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
-type RecordingSummary = typeof RecordingSummary.Type;
-
 const RecordingList = Schema.Struct({ recordings: Schema.Array(RecordingSummary) });
 
 const RecordingUpload = Schema.Struct({
@@ -24,10 +20,6 @@ const RecordingUpload = Schema.Struct({
 });
 
 const RecordingQuery = Schema.Struct({ id: Identifier });
-
-type RecordingSegment = typeof RecordingSegment.Type;
-
-type RecordingSpeaker = typeof RecordingSpeaker.Type;
 
 type RecordingView = typeof RecordingView.Type;
 
@@ -40,8 +32,6 @@ const SpeakerAssignment = Schema.Struct({
   personId: Schema.NullOr(Identifier),
   recordingId: Identifier,
 });
-
-type RegisteredPerson = typeof RegisteredPerson.Type;
 
 const PeopleList = Schema.Struct({ people: Schema.Array(RegisteredPerson) });
 
@@ -56,13 +46,9 @@ export {
   RecordingAccepted,
   RecordingList,
   RecordingQuery,
-  RecordingSegment,
-  RecordingSpeaker,
-  RecordingSummary,
   RecordingTarget,
   RecordingUpload,
   RecordingView,
-  RegisteredPerson,
   SpeakerAssignment,
   maximumPersonNameLength,
   maximumRecordingBytes,

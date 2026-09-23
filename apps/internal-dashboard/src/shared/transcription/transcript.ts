@@ -75,4 +75,4 @@ function transcriptOf(output: typeof TranscriptionOutput.Type): Transcript {
 }
 
 export { TranscriptionOutput, transcriptOf };
-export type { Segment, Transcript };
+export type { Transcript };

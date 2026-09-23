@@ -73,4 +73,3 @@ class Transcriber extends Context.Service<Transcriber, TranscriberShape>()(
 }
 
 export { Transcriber, transcriptionModel };
-export type { Audio };
