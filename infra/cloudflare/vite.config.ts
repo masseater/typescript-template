@@ -1,5 +1,12 @@
 import { applications } from "@repo/config";
-import { effectDiagnostics, lifecycle, taskInput, modularBoundaries } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  taskInput,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/features/cloudflare/monitors.ts";
@@ -12,6 +19,8 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       "bootstrap:state": { cache: false, command: "./src/features/cloudflare/bootstrap-state.ts" },
       "db:bootstrap:remote": {
@@ -43,7 +52,8 @@ export default defineConfig({
         input: [...taskInput],
       },
       ...lifecycle({
-        prepush: ["check:effect", "check:modular"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check:modular"],
         prepr: ["verify:stacks"],
         prerelease: ["verify:account"],
       }),

@@ -202,7 +202,7 @@ const config = ({
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
-      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
+      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
       "apps/*": app,
       "apps/core": {
         entry: ["alchemy.run.ts!", "src/features/core/worker.ts!", ...modularFeaturePublicApi],
