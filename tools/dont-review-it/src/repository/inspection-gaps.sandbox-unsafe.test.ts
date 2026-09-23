@@ -20,6 +20,11 @@ const tsconfigs: Readonly<Record<string, { readonly default?: unknown }>> = impo
   { eager: true },
 );
 
+const nestedTsconfigs: Readonly<Record<string, { readonly default?: unknown }>> = import.meta.glob(
+  "../../../../{apps,libs,infra,tools}/*/**/tsconfig.json",
+  { eager: true },
+);
+
 const qualityTsconfig: Readonly<Record<string, { readonly default?: unknown }>> = import.meta.glob(
   "../../tsconfig.json",
   { eager: true },
@@ -199,7 +204,10 @@ describe("inspection coverage", () => {
     const discovered = [
       "tsconfig.json",
       ...Object.keys(tsconfigs).map((key) => workspacePath(key)),
-    ].toSorted();
+      ...Object.keys(nestedTsconfigs).map((key) => workspacePath(key)),
+    ]
+      .filter((project, index, all) => all.indexOf(project) === index)
+      .toSorted();
     const skippedByLint = discovered.filter((project) =>
       lintOptions.ignorePatterns.some((pattern) => {
         const prefix = pattern.endsWith("/**") ? pattern.slice(0, -3) : undefined;
@@ -208,7 +216,15 @@ describe("inspection coverage", () => {
     );
     expect(projects).toStrictEqual(discovered);
     expect(
-      skippedByLint.map((project) => project.replace(/\/tsconfig\.json$/u, "")).toSorted(),
+      [
+        ...new Set(
+          skippedByLint.map((project) => {
+            const directory = project.replace(/\/tsconfig\.json$/u, "");
+            const [group = "", name = ""] = directory.split("/");
+            return name === "" ? directory : `${group}/${name}`;
+          }),
+        ),
+      ].toSorted(),
     ).toStrictEqual(
       awaitingPresetPackages.map((pattern) => pattern.replace(/\/\*\*$/u, "")).toSorted(),
     );

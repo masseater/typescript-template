@@ -55,4 +55,7 @@ const monitorProgram = Effect.fn("monitorProgram")(function* monitorProgram(
   return { crons: worker.crons, workerName: worker.workerName };
 });
 
+export { monitorArtifact } from "./artifacts.ts";
+export { accountTokenRef } from "./tokens.ts";
 export { monitorProgram };
+export type { SharedConfig };

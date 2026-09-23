@@ -29,6 +29,22 @@ const argumentHolder = (input: {
   return input.checker.getResolvedSignature(input.call)?.parameters[position];
 };
 
+export const declaredHolderSymbol = (input: {
+  readonly checker: ts.TypeChecker;
+  readonly node: ts.Node;
+}): ts.Symbol | undefined => {
+  const { parent } = input.node;
+  if (ts.isVariableDeclaration(parent) && parent.initializer === input.node) {
+    return input.checker.getSymbolAtLocation(parent.name);
+  }
+  if (ts.isPropertyAssignment(parent) && ts.isObjectLiteralExpression(parent.parent)) {
+    return propertyHolder({ assignment: parent, checker: input.checker });
+  }
+  return ts.isCallExpression(parent) || ts.isNewExpression(parent)
+    ? argumentHolder({ call: parent, checker: input.checker, node: input.node })
+    : undefined;
+};
+
 export const contextualOriginSymbol = (input: {
   readonly checker: ts.TypeChecker;
   readonly contextualType: ts.Type;
@@ -47,7 +63,7 @@ export const contextualOriginSymbol = (input: {
 
 const DEPENDENCY_PATH_SEGMENT = "/node_modules/";
 
-const isDependencySource = (input: {
+export const isDependencySource = (input: {
   readonly program: ts.Program;
   readonly sourceFile: ts.SourceFile;
 }): boolean =>

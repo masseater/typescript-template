@@ -1,16 +1,13 @@
-import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/budget-monitor/config";
+import { accountTokenRef, monitorArtifact, monitorProgram } from "@repo/infra-cloudflare/monitor";
+import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
+import { budgetMonitorEnv, budgetMonitorWorker } from "@repo/monitor/workers";
 import { Stack } from "alchemy";
 import { Effect } from "effect";
 
-import { monitorArtifact } from "./artifacts.ts";
-import { monitorProgram } from "./monitor.ts";
-import { stackName, stackOptions } from "./stacks.ts";
-import { accountTokenRef } from "./tokens.ts";
-
-const stack = Stack(
+export default Stack(
   stackName("budget-monitor"),
   stackOptions,
-  monitorProgram(budgetMonitorWorker.name, {
+  monitorProgram("budget", {
     artifact: monitorArtifact("budget-monitor"),
     className: budgetMonitorWorker.className,
     cron: budgetMonitorWorker.cron,
@@ -28,5 +25,3 @@ const stack = Stack(
     }),
   }),
 );
-
-export default stack;

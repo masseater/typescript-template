@@ -1,6 +1,6 @@
 import { GoogleAnalyticsMeasurementId } from "@repo/config";
 import { deploymentKey } from "@repo/observability/deployment-keys";
-import { Config, Effect, Option, Redacted } from "effect";
+import { Config, Effect, Option, Redacted, Schema } from "effect";
 
 import {
   AuthSecret,
@@ -26,12 +26,18 @@ const budget = Config.all({
   budgetJpy: Config.schema(Positive, deploymentKey.budgetJpy),
   fixedCostUsd: Config.schema(Nonnegative, deploymentKey.fixedCostUsd),
   jpyPerUsd: Config.schema(Positive, deploymentKey.jpyPerUsd),
-  recipients: Config.schema(Recipients, deploymentKey.alertEmail),
+  recipients: Config.Array(Email, deploymentKey.alertEmail).pipe(
+    Config.mapEffect((recipients) =>
+      Schema.decodeEffect(Recipients)(recipients).pipe(
+        Effect.mapError((error) => new Config.ConfigError(error)),
+      ),
+    ),
+  ),
   reserveUsd: Config.schema(Nonnegative, deploymentKey.reserveUsd),
 });
 
 const otlpDestination = Config.all({
-  enabled: optional(Config.boolean(deploymentKey.otlpEnabled)),
+  enabled: optional(Config.Boolean(deploymentKey.otlpEnabled)),
   endpoint: optional(Config.schema(HttpsUrl, deploymentKey.otlpEndpoint)),
 });
 
@@ -63,7 +69,7 @@ const authSecret = Config.schema(AuthSecret, deploymentKey.authSecret).pipe(
   Config.map(Redacted.make),
 );
 
-const otlpAuthorization = optional(Config.redacted(deploymentKey.otlpAuthorization));
+const otlpAuthorization = optional(Config.Redacted(deploymentKey.otlpAuthorization));
 
 const stripeSettings = Config.all({
   STRIPE_PRICE_ID: Config.redacted(deploymentKey.stripePriceId),

@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 
 import { failed, type JourneyFailure } from "./journey-failure.ts";
-import { deliveryTimeout, mailLinkPattern } from "./mail.ts";
+import { deliveryTimeout, mailLinkPattern } from "./mail-link.ts";
 import { deadlineIn, until } from "./waiting.ts";
 
 const linksInDelivery = (deliveryLink: string, linkPattern: Readonly<RegExp>): readonly string[] =>

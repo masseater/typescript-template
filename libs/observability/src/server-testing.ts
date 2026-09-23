@@ -25,9 +25,13 @@ const fixedSpanId = "c".repeat(16);
 const fixedTraceId = "c".repeat(32);
 
 class FixedSpan extends Tracer.NativeSpan {
-  public override readonly spanId: string = fixedSpanId;
-  public override readonly traceId: string =
-    Option.getOrUndefined(this.parent)?.traceId ?? fixedTraceId;
+  public override get spanId(): string {
+    return fixedSpanId;
+  }
+
+  public override get traceId(): string {
+    return Option.getOrUndefined(this.parent)?.traceId ?? fixedTraceId;
+  }
 }
 
 export const fixedSpans: Tracer.Tracer = Tracer.make({

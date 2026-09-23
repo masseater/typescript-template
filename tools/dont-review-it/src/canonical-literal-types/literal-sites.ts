@@ -21,7 +21,7 @@ const negatedSpelling = (node: ts.PrefixUnaryExpression): CanonicalValue | undef
   return typeof operand === "number" ? -operand : undefined;
 };
 
-const spellingOf = (node: ts.Node): CanonicalValue | undefined => {
+export const spellingOf = (node: ts.Node): CanonicalValue | undefined => {
   if (ts.isPrefixUnaryExpression(node)) return negatedSpelling(node);
   return scalarSpelling(node);
 };

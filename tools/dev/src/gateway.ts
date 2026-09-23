@@ -1,7 +1,8 @@
 import { NodeSocket, NodeSocketServer } from "@effect/platform-node";
 import { causeRecord, runCli } from "@repo/cli";
 import { loopbackAddress } from "@repo/config";
-import { Console, Effect, Schema } from "effect";
+import { Console, Effect, Schema, Stream } from "effect";
+import { toStream } from "effect/unstable/socket/Socket";
 import { SocketServer } from "effect/unstable/socket/SocketServer";
 
 import type { Scope } from "effect";
@@ -34,12 +35,12 @@ function proxyConnection(target: number, client: Socket): Effect.Effect<void, ne
           ? Effect.void
           : Effect.scoped(
               Effect.gen(function* forward() {
-                const writeUpstream = yield* upstream.writer;
-                const writeClient = yield* client.writer;
+                const upstreamWriter = yield* upstream.writer;
+                const clientWriter = yield* client.writer;
                 yield* Effect.all(
                   [
-                    client.run((chunk) => writeUpstream(chunk).pipe(Effect.orDie)),
-                    upstream.run((chunk) => writeClient(chunk).pipe(Effect.orDie)),
+                    Stream.runForEach(toStream(client), upstreamWriter.write),
+                    Stream.runForEach(toStream(upstream), clientWriter.write),
                   ],
                   { concurrency: "unbounded", discard: true },
                 ).pipe(Effect.orDie);

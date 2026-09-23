@@ -3,7 +3,8 @@ import { redirect } from "@tanstack/react-router";
 import { Effect } from "effect";
 
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
-import { onboardingOptions } from "#pages/account/welcome/index.ts";
+import { loadSession } from "#entities/session/index.ts";
+import { loadOnboardingStep, onboardingOptions } from "#pages/account/welcome/index.ts";
 import { loadMemberFlags } from "#pages/flags/index.ts";
 import { loadRecoveryOffer } from "#pages/recovery/index.ts";
 
@@ -25,8 +26,16 @@ const welcomePath = {
 
 const recoveryPath = "/welcome/recovery";
 
-function currentSession(queries: QueryClient): Promise<Session | undefined> {
-  return queries.fetchQuery(sessionOptions);
+async function currentSession(queries: QueryClient): Promise<Session | undefined> {
+  const session = await loadSession();
+  queries.setQueryData(sessionOptions.queryKey, session);
+  return session;
+}
+
+async function currentOnboardingStep(queries: QueryClient): Promise<OnboardingStep> {
+  const step = await loadOnboardingStep();
+  queries.setQueryData(onboardingOptions.queryKey, step);
+  return step;
 }
 
 function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void> {
@@ -54,7 +63,7 @@ function enterMemberFrame(
       if (session === undefined) {
         throw redirect({ href: loginPath(href) });
       }
-      const step = yield* Effect.promise(() => queries.fetchQuery(onboardingOptions));
+      const step = yield* Effect.promise(() => currentOnboardingStep(queries));
       if (step !== "done") {
         const offer = yield* Effect.promise(() => loadRecoveryOffer());
         if (offer.available) {
@@ -86,7 +95,7 @@ function enterWelcomeFrame(
       if (session === undefined) {
         throw redirect({ href: loginPath(href) });
       }
-      const step = yield* Effect.promise(() => queries.fetchQuery(onboardingOptions));
+      const step = yield* Effect.promise(() => currentOnboardingStep(queries));
       if (step === "done") {
         throw redirect({ to: "/home" });
       }

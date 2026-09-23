@@ -1,9 +1,15 @@
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import {
+  canonicalValueKey,
+  type CanonicalValuesCatalog,
+  type CanonicalValuesEntry,
+} from "../../lib/canonical-values/catalog.ts";
 import { analyzeLocalFiniteValues } from "../../lib/canonical-values/local-finite-value-analysis.ts";
 import {
   OWNERSHIP_POLICY_SCHEMA,
   ownershipPolicyOf,
 } from "../../lib/canonical-values/ownership-policy.ts";
+import { formatValues } from "../../lib/canonical-values/verify-format.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { describeLibraryOwner } from "../../lib/library-vocabulary/owner-description.ts";
 import { libraryOwnersOf } from "../../lib/library-vocabulary/vocabulary-index.ts";
@@ -11,7 +17,6 @@ import { isOutOfScopeLintSource } from "../../lib/out-of-scope-source.ts";
 
 import type { WorkspaceLintRule } from "../../../../lint-rule-authoring/index.ts";
 import type { CanonicalValuesCatalogLoader } from "../../lib/canonical-values/catalog-loader.ts";
-import type { CanonicalValuesEntry } from "../../lib/canonical-values/catalog.ts";
 import type { CanonicalValue } from "../../lib/canonical-values/fingerprint.ts";
 import type { LibraryVocabularyLoader } from "../../lib/library-vocabulary/vocabulary-loader.ts";
 import type { RuleMessage } from "../../lib/rule-message.ts";
@@ -40,7 +45,48 @@ const catalogOwnerReport = (input: {
       };
 };
 
+const overlappingOwnerReport = (input: {
+  readonly catalog: CanonicalValuesCatalog;
+  readonly ownershipPolicy: string;
+  readonly values: readonly CanonicalValue[];
+}): RuleMessage | null => {
+  const overlapping = [
+    ...new Set(
+      input.values.flatMap(
+        (value) => input.catalog.entriesByValue.get(canonicalValueKey(value)) ?? [],
+      ),
+    ),
+  ];
+  if (overlapping.length === 0) return null;
+  const heldBy = (owner: CanonicalValuesEntry): ReadonlySet<string> =>
+    new Set(owner.values.map(canonicalValueKey));
+  const supersets = overlapping.filter((owner) =>
+    input.values.every((value) => heldBy(owner).has(canonicalValueKey(value))),
+  );
+  if (supersets.length > 0) {
+    return {
+      messageId: "localFiniteValueSetSubsetOfOwner",
+      data: {
+        owners: supersets.map(ownerDescription).join(", "),
+        ownershipPolicy: input.ownershipPolicy,
+      },
+    };
+  }
+  const sharedValues = input.values.filter((value) =>
+    overlapping.some((owner) => heldBy(owner).has(canonicalValueKey(value))),
+  );
+  return {
+    messageId: "localFiniteValueSetOverlapsOwner",
+    data: {
+      owners: overlapping.map(ownerDescription).join(", "),
+      ownershipPolicy: input.ownershipPolicy,
+      sharedValues: formatValues(sharedValues),
+    },
+  };
+};
+
 const libraryOwnerReport = (input: {
+  readonly catalog: CanonicalValuesCatalog;
   readonly loadLibraryVocabulary: LibraryVocabularyLoader;
   readonly filename: string;
   readonly ownershipPolicy: string;
@@ -56,10 +102,12 @@ const libraryOwnerReport = (input: {
   );
   const [onlyLibrary] = libraries;
   if (libraries.length === 0) {
-    return {
-      messageId: "localFiniteValueSetWithoutOwner",
-      data: { ownershipPolicy: input.ownershipPolicy },
-    };
+    return (
+      overlappingOwnerReport(input) ?? {
+        messageId: "localFiniteValueSetWithoutOwner",
+        data: { ownershipPolicy: input.ownershipPolicy },
+      }
+    );
   }
   if (libraries.length === 1 && onlyLibrary !== undefined) {
     return {
@@ -80,6 +128,7 @@ const libraryOwnerReport = (input: {
 };
 
 const preparedReport = (input: {
+  readonly catalog: CanonicalValuesCatalog;
   readonly diagnostic: ReturnType<typeof analyzeLocalFiniteValues>[number];
   readonly filename: string;
   readonly loadLibraryVocabulary: LibraryVocabularyLoader;
@@ -126,6 +175,10 @@ export const createNoLocalFiniteValueSet = ({
           "Defining a finite value set inside a file that does not own it is forbidden. Delete the local values and derive them from the matching owner among {{owners}}. Ownership policy: {{ownershipPolicy}}.",
         localFiniteValueSetWithoutOwner:
           "Defining a finite value set without an owner is forbidden. Register the runtime values in the module that owns the concept. Ownership policy: {{ownershipPolicy}}.",
+        localFiniteValueSetSubsetOfOwner:
+          "Defining part of a declared vocabulary as a new finite value set is forbidden. Derive the subset from {{owners}}, for example with Extract or the schema's extract, instead of spelling the values again. Ownership policy: {{ownershipPolicy}}.",
+        localFiniteValueSetOverlapsOwner:
+          "Defining a finite value set without an owner is forbidden. {{sharedValues}} already belong to {{owners}}: derive from that owner when this is the same concept, otherwise register these runtime values as a separate concept. Ownership policy: {{ownershipPolicy}}.",
         localFiniteValueSetOwnedByLibraryType:
           "Defining a finite value set that a dependency already owns is forbidden. Delete the local values and derive the type from {{owner}}. Ownership policy: {{ownershipPolicy}}.",
         localFiniteValueSetOwnedByLibraryTypeCandidates:
@@ -147,6 +200,7 @@ export const createNoLocalFiniteValueSet = ({
         sourceCode: inspection.sourceCode,
       }).map((diagnostic) =>
         preparedReport({
+          catalog,
           diagnostic,
           filename: inspection.filename,
           loadLibraryVocabulary,

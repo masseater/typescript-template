@@ -16,7 +16,7 @@ const worker = yield* Worker("Worker", {
 
 `env.DB` が、Worker から見る binding になる。binding 自体は [Cloudflare](/tech-stack/cloudflare) に書く。上の形は v2 で、v1 のサンプルは `async` / `await` で資源を作る。
 
-各アプリの Stack は `apps/<app>/alchemy.run.ts` に置く。共有資源の Stack は `infra/cloudflare` が持つ。何を一つのプログラムにまとめるか、誰が適用するか、状態ファイルをどこに置くかは [インフラ](/guidelines/infrastructure) が持つ。
+Worker を所有するパッケージの Stack は、そのパッケージの `alchemy.run.ts` に置く。共有資源の Stack は `infra/cloudflare` が持つ。何を一つのプログラムにまとめるか、誰が適用するか、状態ファイルをどこに置くかは [インフラ](/guidelines/infrastructure) が持つ。
 
 ## 採ると
 

@@ -58,11 +58,13 @@ const resolveFrames = Effect.fn("resolveFrames")(function* resolveFrames(input: 
 const symbolicateCommand = Command.make(
   "symbolicate",
   {
-    app: Flag.choice("app", applications).pipe(Flag.withDescription("Application to symbolicate")),
-    locations: Argument.variadic(Argument.string("location")).pipe(
+    app: Flag.Literals("app", applications).pipe(
+      Flag.withDescription("Application to symbolicate"),
+    ),
+    locations: Argument.variadic(Argument.String("location")).pipe(
       Argument.withDescription("Workers log locations"),
     ),
-    release: Flag.string("release").pipe(Flag.withDescription("Release id")),
+    release: Flag.String("release").pipe(Flag.withDescription("Release id")),
   },
   Effect.fn(function* resolve({ app, locations, release }) {
     yield* resolveFrames({

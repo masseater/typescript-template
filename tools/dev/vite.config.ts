@@ -16,7 +16,7 @@ export default defineConfig({
       observe: { cache: false, command: "./src/observe/cli.ts" },
       "check:exported": { cache: false, command: "./src/observe/receiver-check.ts" },
       symbolicate: { cache: false, command: "./src/observe/symbolicate.ts" },
-      verify: { cache: false, command: "./src/verify/cli.ts" },
+      verify: { cache: false, command: "./src/observe/verify.ts" },
       setup: { cache: false, command: "./src/cli.ts setup" },
       start: { cache: false, command: "./src/cli.ts start" },
       status: { cache: false, command: "./src/cli.ts status" },

@@ -71,8 +71,8 @@ const bindingReason = (cause: unknown): string => {
 const loadedBinding = Effect.gen(function* loadedBinding() {
   const database = yield* WorkerDatabase;
   const assets = yield* WorkerAssets;
-  const secret = Redacted.value(yield* Config.redacted("AUTH_SECRET"));
-  const authorization = Option.match(yield* Config.option(Config.redacted("OTLP_AUTHORIZATION")), {
+  const secret = Redacted.value(yield* Config.Redacted("AUTH_SECRET"));
+  const authorization = Option.match(yield* Config.option(Config.Redacted("OTLP_AUTHORIZATION")), {
     onNone: (): string | undefined => undefined,
     onSome: (value) => Redacted.value(value),
   });

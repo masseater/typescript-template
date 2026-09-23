@@ -30,7 +30,6 @@ import { State } from "./state.ts";
 import { TurnRejected } from "./turn-rejected.ts";
 
 import type { InterviewState, MemberUtterance } from "./state.ts";
-import type { UnderstandingFailed } from "./understanding-failed.ts";
 import type { UnderstandingData } from "./understanding.ts";
 
 const dailyModelTurns = 60;
@@ -39,7 +38,7 @@ const decodeState = Schema.decodeUnknownOption(State);
 const encodeState = Schema.encodeEffect(State);
 
 interface Reading {
-  readonly source: "model" | "rules" | UnderstandingFailed["reason"];
+  readonly source: "model" | "rules";
   readonly understanding?: UnderstandingData;
 }
 
@@ -84,21 +83,7 @@ const understood = Effect.fn("interview.understand")(function* understood(
   }
   yield* countInterviewTurn(userId, dailyModelTurns);
   const interviewer = yield* Interviewer;
-  return yield* interviewer.understand(state, spoken(utterance)).pipe(
-    Effect.map((understanding): Reading => ({ source: "model", understanding })),
-    Effect.catchTag("UnderstandingFailed", (failure) =>
-      Effect.as(
-        logAt("Warn", {
-          attributes: {
-            ...(failure.cause === undefined ? {} : { cause: String(failure.cause) }),
-            reason: failure.reason,
-          },
-          eventName: "interview.model_failed",
-        }),
-        { source: failure.reason } satisfies Reading,
-      ),
-    ),
-  );
+  return yield* interviewer.understand(state, spoken(utterance));
 });
 
 const openInterview = Effect.fn("interview.open")(function* openInterview(userId: string) {

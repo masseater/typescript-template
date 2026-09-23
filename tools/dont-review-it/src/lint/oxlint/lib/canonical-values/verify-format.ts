@@ -57,7 +57,7 @@ export const formatCanonicalValuesProblem = (problem: CanonicalValuesProblem): s
   return `${location} ${problemMessage(problem)}`;
 };
 
-const formatValues = (canonicalLiterals: readonly CanonicalValue[]): string =>
+export const formatValues = (canonicalLiterals: readonly CanonicalValue[]): string =>
   [...new Set(canonicalLiterals.map((canonicalLiteral) => JSON.stringify(canonicalLiteral)))]
     .toSorted()
     .join(", ");

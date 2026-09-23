@@ -20,7 +20,7 @@ type ResolvedVerifyEnvironment = {
 
 const readOptionalEnv = (envKey: string): string | undefined =>
   Effect.runSync(
-    Config.option(Config.string(envKey)).pipe(
+    Config.option(Config.String(envKey)).pipe(
       Effect.provideService(ConfigProvider.ConfigProvider, ConfigProvider.fromEnv()),
       Effect.map(Option.getOrUndefined),
     ),
