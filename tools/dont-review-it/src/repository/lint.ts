@@ -549,7 +549,10 @@ const lintOptions = {
       },
     },
     {
-      files: ["libs/auth/src/email-change.worker.test.ts"],
+      files: [
+        "libs/auth/src/email-change.worker.test.ts",
+        "libs/runtime/src/worker-runtime.dev-server.test.ts",
+      ],
       rules: {
         "dont-review-it/no-dry-test-setup--inline-owned-setup": LINT_SEVERITY.OFF,
       },
@@ -582,6 +585,7 @@ const lintOptions = {
       {
         toolRequiredFileNames: [
           "alchemy.run.ts",
+          "cold-start-fixture.ts",
           "doctor.config.ts",
           "drizzle.config.ts",
           "knip.ts",
@@ -622,6 +626,7 @@ const lintOptions = {
           ".worker.test.ts",
           ".node.test.ts",
           ".isolated.test.ts",
+          ".dev-server.test.ts",
         ],
       },
     ],

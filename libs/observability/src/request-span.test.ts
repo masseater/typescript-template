@@ -14,8 +14,8 @@ describe("RequestEntropy", () => {
           yield* TestClock.setTime(fixedNow);
           const entropy = yield* RequestEntropy;
           return {
-            epochMilliseconds: entropy.epochMilliseconds(),
-            monotonicMilliseconds: entropy.monotonicMilliseconds(),
+            epochMilliseconds: yield* entropy.epochMilliseconds,
+            monotonicMilliseconds: yield* entropy.monotonicMilliseconds,
           };
         }).pipe(Effect.provide(TestClock.layer())),
       ));
@@ -25,30 +25,6 @@ describe("RequestEntropy", () => {
         epochMilliseconds: fixedNow,
         monotonicMilliseconds: fixedNow,
       });
-    });
-  });
-
-  describe("a read outside a fiber", () => {
-    const it = test
-      .extend("epochWithinHostClock", () => {
-        const epochBefore = Date.now();
-        const epochMilliseconds = RequestEntropy.defaultValue().epochMilliseconds();
-        return epochBefore <= epochMilliseconds && epochMilliseconds <= Date.now();
-      })
-      .extend("monotonicWithinHostClock", () => {
-        const monotonicBefore = performance.now();
-        const monotonicMilliseconds = RequestEntropy.defaultValue().monotonicMilliseconds();
-        return (
-          monotonicBefore <= monotonicMilliseconds && monotonicMilliseconds <= performance.now()
-        );
-      });
-
-    it("falls back to the host wall clock", ({ epochWithinHostClock }) => {
-      expect(epochWithinHostClock).toBe(true);
-    });
-
-    it("falls back to the host monotonic clock", ({ monotonicWithinHostClock }) => {
-      expect(monotonicWithinHostClock).toBe(true);
     });
   });
 });

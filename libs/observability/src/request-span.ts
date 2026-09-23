@@ -1,5 +1,5 @@
 import { httpStatus } from "@repo/config";
-import { Cause, Clock, Context, Effect, Fiber, Predicate, Tracer } from "effect";
+import { Cause, Clock, Context, Effect, Predicate, Tracer } from "effect";
 
 import { annotateLogs, annotateSpan, withSpan, type Attributes } from "./annotations.ts";
 import { CurrentRequest, type RequestContext } from "./current-request.ts";
@@ -14,22 +14,16 @@ import { logAt, statusSeverity } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
 type Entropy = {
   readonly requestId: () => string;
-  readonly epochMilliseconds: () => number;
-  readonly monotonicMilliseconds: () => number;
+  readonly epochMilliseconds: Effect.Effect<number>;
+  readonly monotonicMilliseconds: Effect.Effect<number>;
 };
 const nanosPerMillisecond = 1000000n;
-const activeClock = (): Clock.Clock | undefined => {
-  return Fiber.getCurrent()?.getRef(Clock.Clock);
-};
 export const RequestEntropy = Context.Reference<Entropy>("@repo/observability/RequestEntropy", {
   defaultValue: (): Entropy => ({
-    epochMilliseconds: (): number => activeClock()?.currentTimeMillisUnsafe() ?? Date.now(),
-    monotonicMilliseconds: (): number => {
-      const clock = activeClock();
-      return clock === undefined
-        ? performance.now()
-        : Number(clock.monotonicTimeNanosUnsafe() / nanosPerMillisecond);
-    },
+    epochMilliseconds: Clock.currentTimeMillis,
+    monotonicMilliseconds: Effect.map(Clock.monotonicTimeNanos, (monotonicNanos) =>
+      Number(monotonicNanos / nanosPerMillisecond),
+    ),
     requestId: (): string => crypto.randomUUID(),
   }),
 });
@@ -120,7 +114,7 @@ const recordRequest = (served: {
     const telemetry = yield* Telemetry;
     const entropy = yield* RequestEntropy;
     const attributes = {
-      duration_ms: entropy.monotonicMilliseconds() - served.startedAt,
+      duration_ms: (yield* entropy.monotonicMilliseconds) - served.startedAt,
       method: httpMethod(served.incoming.method),
       route: routeLabel(new URL(served.incoming.url).pathname, telemetry.routes),
       status: served.responseStatus,
@@ -141,7 +135,7 @@ const respond = <Requirements>(served: {
 }): Effect.Effect<Response, never, Telemetry | Exclude<Requirements, CurrentRequest>> => {
   const { entropy, handle, incoming, requestContext } = served;
   return Effect.gen(function* respondProgram() {
-    const startedAt = entropy.monotonicMilliseconds();
+    const startedAt = yield* entropy.monotonicMilliseconds;
     const handled = yield* handle(incoming).pipe(
       Effect.provideService(CurrentRequest, requestContext),
       Effect.catchCause(failureResponse),

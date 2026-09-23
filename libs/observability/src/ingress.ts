@@ -130,10 +130,11 @@ const readEvents = Effect.fn("readEvents")(function* readEvents(incoming: Ingres
   if (Result.isFailure(jsonBody)) {
     return emptyResponse({ status: rejectionStatus[jsonBody.failure.reason] });
   }
+  const receivedAt = yield* entropy.epochMilliseconds;
   const browserEvents = yield* Effect.result(
     parseBrowserEvents({
       body: jsonBody.success,
-      receivedAt: entropy.epochMilliseconds(),
+      receivedAt,
       routeLabels: telemetry.labels,
     }),
   );

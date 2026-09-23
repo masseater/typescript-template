@@ -15,12 +15,9 @@ class FixedSpan extends Tracer.NativeSpan {
 }
 
 const fixedSpans = Tracer.make({ span: (spanOptions) => new FixedSpan(spanOptions) });
-const clockEntropy = RequestEntropy.defaultValue();
-
 const fixedEntropy = Layer.merge(
   Layer.succeed(RequestEntropy, {
-    epochMilliseconds: () => clockEntropy.epochMilliseconds(),
-    monotonicMilliseconds: () => clockEntropy.monotonicMilliseconds(),
+    ...RequestEntropy.defaultValue(),
     requestId: () => "22222222-2222-4222-8222-222222222222",
   }),
   Layer.effectDiscard(TestClock.setTime(fixedNow)).pipe(Layer.provideMerge(TestClock.layer())),
