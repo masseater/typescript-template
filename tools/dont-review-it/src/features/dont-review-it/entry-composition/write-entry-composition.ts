@@ -1,8 +1,7 @@
-import { writeFileSync } from "node:fs";
-
-import { attempt } from "es-toolkit";
+import { Effect, FileSystem } from "effect";
 import { applyEdits, modify, type ModificationOptions } from "jsonc-parser";
 
+import { failureMessageOf } from "../platform/file-system.ts";
 import {
   composedPrefixOf,
   wrapperNameOf,
@@ -11,6 +10,8 @@ import {
 } from "./config.ts";
 import { entryFindingsIn } from "./entry-composition-problems.ts";
 import { readEntryManifests, type EntryManifest } from "./entry-manifests.ts";
+
+import type { TreeFailure } from "../platform/directory-entries.ts";
 
 export type EntryCompositionWriteReport = {
   readonly failures: readonly string[];
@@ -86,26 +87,29 @@ export const writeEntryComposition = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: EntryCompositionConfig;
-}): EntryCompositionWriteReport => {
-  const listing = readEntryManifests({ repositoryRoot, config });
-  const writeFailures = listing.manifests.flatMap((manifest) => {
-    const rewritten = editedEntriesOf({ manifest, config }).reduce(
-      (writtenText, [entryName, held]) =>
-        applyEdits(
-          writtenText,
-          modify(writtenText, [config.scriptsKey, entryName], held, MODIFICATION_OPTIONS),
+}): Effect.Effect<EntryCompositionWriteReport, TreeFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* writeEntryComposition() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const listing = yield* readEntryManifests({ repositoryRoot, config });
+    const writeFailures = yield* Effect.forEach(listing.manifests, (manifest) => {
+      const rewritten = editedEntriesOf({ manifest, config }).reduce(
+        (writtenText, [entryName, held]) =>
+          applyEdits(
+            writtenText,
+            modify(writtenText, [config.scriptsKey, entryName], held, MODIFICATION_OPTIONS),
+          ),
+        manifest.source,
+      );
+      if (rewritten === manifest.source) return Effect.succeed([]);
+      return filesystem.writeFileString(manifest.absolutePath, rewritten).pipe(
+        Effect.as([]),
+        Effect.catch((unwritable) =>
+          Effect.succeed([
+            `${manifest.relativePath} could not be rewritten: ${failureMessageOf(unwritable)}`,
+          ]),
         ),
-      manifest.source,
-    );
-    if (rewritten === manifest.source) return [];
-    const [unwritable] = attempt<null, Error>(() => {
-      writeFileSync(manifest.absolutePath, rewritten);
-      return null;
+      );
     });
-    return unwritable === null
-      ? []
-      : [`${manifest.relativePath} could not be rewritten: ${unwritable.message}`];
-  });
 
-  return { failures: [...listing.failures, ...writeFailures].toSorted() };
-};
+    return { failures: [...listing.failures, ...writeFailures.flat()].toSorted() };
+  });

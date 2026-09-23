@@ -3,8 +3,8 @@ import { realpathSync } from "node:fs";
 
 import { memoize } from "es-toolkit";
 
+import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
-import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 import { isDirectory, isFile } from "../canonical-values/source-files.ts";
 import { segmentsOf } from "../path-segments.ts";
 import { toPosixPath } from "../posix-path.ts";

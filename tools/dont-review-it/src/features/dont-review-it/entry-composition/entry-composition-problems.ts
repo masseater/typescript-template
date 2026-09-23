@@ -1,8 +1,10 @@
+import { Effect, type FileSystem } from "effect";
 import { findNodeAtLocation, type Node } from "jsonc-parser";
 
 import { composedPrefixOf, type EntryCompositionConfig } from "./config.ts";
 import { readEntryManifests, type EntryManifest } from "./entry-manifests.ts";
 
+import type { TreeFailure } from "../platform/directory-entries.ts";
 import type { RepositoryProblem } from "../problem.ts";
 
 export type EntryCompositionReport = {
@@ -89,15 +91,15 @@ export const entryCompositionProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: EntryCompositionConfig;
-}): EntryCompositionReport => {
-  const listing = readEntryManifests({ repositoryRoot, config });
-  return {
-    problems: listing.manifests.flatMap((manifest) =>
-      entryFindingsIn({ manifest, config }).map((finding) =>
-        problemOf({ manifest, finding, config }),
+}): Effect.Effect<EntryCompositionReport, TreeFailure, FileSystem.FileSystem> =>
+  readEntryManifests({ repositoryRoot, config }).pipe(
+    Effect.map((listing) => ({
+      problems: listing.manifests.flatMap((manifest) =>
+        entryFindingsIn({ manifest, config }).map((finding) =>
+          problemOf({ manifest, finding, config }),
+        ),
       ),
-    ),
-    failures: listing.failures,
-    scanned: listing.manifests.length,
-  };
-};
+      failures: listing.failures,
+      scanned: listing.manifests.length,
+    })),
+  );

@@ -1,8 +1,7 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { shippedRuleReferenceProblems } from "./shipped-rule-reference.ts";
 
@@ -58,14 +57,13 @@ const WRITTEN_REFERENCE = [
   "",
 ].join("\n");
 
-describe("shippedRuleReferenceProblems", () => {
+layer(NodeServices.layer)("shippedRuleReferenceProblems", (it) => {
   describe("a workspace that declares rules but ships no skill", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "shipped-rule-reference-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      return shippedRuleReferenceProblems({
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "shipped-rule-reference-" });
+
+      return yield* shippedRuleReferenceProblems({
         repositoryRoot: root,
         workspaceDir: WORKSPACE_DIR,
         rules,
@@ -73,20 +71,25 @@ describe("shippedRuleReferenceProblems", () => {
       });
     });
 
-    it("asks for no reference at all", ({ problems }) => {
-      expect(problems).toStrictEqual([]);
-    });
+    it.effect("asks for no reference at all", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a reference that is missing while the check only reads", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "shipped-rule-reference-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "shipped-rule-reference-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/skills/core"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/skills/core"), { recursive: true });
-      writeFileSync(join(root, SKILL_PATH), SKILL_SOURCE, "utf8");
-      return shippedRuleReferenceProblems({
+      yield* filesystem.writeFileString(paths.join(root, SKILL_PATH), SKILL_SOURCE);
+      return yield* shippedRuleReferenceProblems({
         repositoryRoot: root,
         workspaceDir: WORKSPACE_DIR,
         rules,
@@ -94,43 +97,53 @@ describe("shippedRuleReferenceProblems", () => {
       });
     });
 
-    it("is reported against the path it should have been written to", ({ problems }) => {
-      expect(problems).toStrictEqual([{ file: REFERENCE_PATH, message: MISSING_REFERENCE }]);
-    });
+    it.effect("is reported against the path it should have been written to", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([{ file: REFERENCE_PATH, message: MISSING_REFERENCE }]);
+      }),
+    );
   });
 
   describe("a reference that is missing while the check may write", () => {
-    const it = test.extend("written", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "shipped-rule-reference-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const writtenFixture = Effect.gen(function* written() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "shipped-rule-reference-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/skills/core"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/skills/core"), { recursive: true });
-      writeFileSync(join(root, SKILL_PATH), SKILL_SOURCE, "utf8");
-      shippedRuleReferenceProblems({
+      yield* filesystem.writeFileString(paths.join(root, SKILL_PATH), SKILL_SOURCE);
+      yield* shippedRuleReferenceProblems({
         repositoryRoot: root,
         workspaceDir: WORKSPACE_DIR,
         rules,
         write: true,
       });
-      return readFileSync(join(root, REFERENCE_PATH), "utf8");
+      return yield* filesystem.readFileString(paths.join(root, REFERENCE_PATH));
     });
 
-    it("writes the table inside a generated region", ({ written }) => {
-      expect(written).toBe(WRITTEN_REFERENCE);
-    });
+    it.effect("writes the table inside a generated region", () =>
+      Effect.gen(function* program() {
+        const written = yield* writtenFixture;
+        expect(written).toBe(WRITTEN_REFERENCE);
+      }),
+    );
   });
 
   describe("a reference whose generated region was removed", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "shipped-rule-reference-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "shipped-rule-reference-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/skills/core/references"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/skills/core/references"), { recursive: true });
-      writeFileSync(join(root, SKILL_PATH), SKILL_SOURCE, "utf8");
-      writeFileSync(join(root, REFERENCE_PATH), HANDWRITTEN_REFERENCE, "utf8");
-      return shippedRuleReferenceProblems({
+      yield* filesystem.writeFileString(paths.join(root, SKILL_PATH), SKILL_SOURCE);
+      yield* filesystem.writeFileString(paths.join(root, REFERENCE_PATH), HANDWRITTEN_REFERENCE);
+      return yield* shippedRuleReferenceProblems({
         repositoryRoot: root,
         workspaceDir: WORKSPACE_DIR,
         rules,
@@ -138,21 +151,26 @@ describe("shippedRuleReferenceProblems", () => {
       });
     });
 
-    it("asks for the markers back", ({ problems }) => {
-      expect(problems).toStrictEqual([{ file: REFERENCE_PATH, message: MISSING_MARKERS }]);
-    });
+    it.effect("asks for the markers back", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([{ file: REFERENCE_PATH, message: MISSING_MARKERS }]);
+      }),
+    );
   });
 
   describe("a reference whose region no longer matches the rules", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "shipped-rule-reference-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "shipped-rule-reference-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/skills/core/references"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/skills/core/references"), { recursive: true });
-      writeFileSync(join(root, SKILL_PATH), SKILL_SOURCE, "utf8");
-      writeFileSync(join(root, REFERENCE_PATH), STALE_REGION_REFERENCE, "utf8");
-      return shippedRuleReferenceProblems({
+      yield* filesystem.writeFileString(paths.join(root, SKILL_PATH), SKILL_SOURCE);
+      yield* filesystem.writeFileString(paths.join(root, REFERENCE_PATH), STALE_REGION_REFERENCE);
+      return yield* shippedRuleReferenceProblems({
         repositoryRoot: root,
         workspaceDir: WORKSPACE_DIR,
         rules,
@@ -160,8 +178,11 @@ describe("shippedRuleReferenceProblems", () => {
       });
     });
 
-    it("reports it as fallen behind the rule implementations", ({ problems }) => {
-      expect(problems).toStrictEqual([{ file: REFERENCE_PATH, message: STALE_REFERENCE }]);
-    });
+    it.effect("reports it as fallen behind the rule implementations", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([{ file: REFERENCE_PATH, message: STALE_REFERENCE }]);
+      }),
+    );
   });
 });

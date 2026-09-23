@@ -1,20 +1,23 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { defaultWorkflowChecksConfig } from "./config.ts";
 import { runWorkflowChecks } from "./run-workflow-checks.ts";
 
-describe("runWorkflowChecks", () => {
+layer(NodeServices.layer)("runWorkflowChecks", (it) => {
   describe("a definition that keeps every discipline", () => {
-    const it = test.extend("scan", () => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-run-workflow-checks-"));
-      const directory = join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(
-        join(directory, "ci.yml"),
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-run-workflow-checks-",
+      });
+      const directory = paths.join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
+      yield* filesystem.makeDirectory(directory, { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(directory, "ci.yml"),
         `name: CI
 on:
   push:
@@ -30,74 +33,107 @@ jobs:
 `,
       );
 
-      return runWorkflowChecks({ repositoryRoot, config: defaultWorkflowChecksConfig });
+      return yield* runWorkflowChecks({ repositoryRoot, config: defaultWorkflowChecksConfig });
     });
 
-    it("says nothing about it and counts the one definition it read", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("says nothing about it and counts the one definition it read", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("one definition that breaks several disciplines", () => {
-    const it = test.extend("linesOfTheProblems", () => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-run-workflow-checks-"));
-      const directory = join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(
-        join(directory, "ci.yml"),
+    const linesOfTheProblemsFixture = Effect.gen(function* linesOfTheProblems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-run-workflow-checks-",
+      });
+      const directory = paths.join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
+      yield* filesystem.makeDirectory(directory, { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(directory, "ci.yml"),
         "on:\n  pull_request:\n    paths: [src/**]\njobs:\n  build:\n    steps:\n      - run: npm test || true\n",
       );
 
-      return runWorkflowChecks({
+      return (yield* runWorkflowChecks({
         repositoryRoot,
         config: defaultWorkflowChecksConfig,
-      }).problems.map((problem) => problem.line);
+      })).problems.map((problem) => problem.line);
     });
 
-    it("reports them in the order they were written", ({ linesOfTheProblems }) => {
-      expect(linesOfTheProblems).toStrictEqual([3, 5, 7, 7]);
-    });
+    it.effect("reports them in the order they were written", () =>
+      Effect.gen(function* program() {
+        const linesOfTheProblems = yield* linesOfTheProblemsFixture;
+        expect(linesOfTheProblems).toStrictEqual([3, 5, 7, 7]);
+      }),
+    );
   });
 
   describe("a definition whose syntax is broken", () => {
-    const it = test.extend("messagesOfTheProblems", () => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-run-workflow-checks-"));
-      const directory = join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "ci.yml"), "jobs:\n build:\n   x: 1\n  y: 2\n");
+    const messagesOfTheProblemsFixture = Effect.gen(function* messagesOfTheProblems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-run-workflow-checks-",
+      });
+      const directory = paths.join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
+      yield* filesystem.makeDirectory(directory, { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(directory, "ci.yml"),
+        "jobs:\n build:\n   x: 1\n  y: 2\n",
+      );
 
-      return runWorkflowChecks({
+      return (yield* runWorkflowChecks({
         repositoryRoot,
         config: defaultWorkflowChecksConfig,
-      }).problems.map((problem) => problem.message);
+      })).problems.map((problem) => problem.message);
     });
 
-    it("reports only that the definition cannot be read", ({ messagesOfTheProblems }) => {
-      expect(messagesOfTheProblems).toStrictEqual([
-        "A workflow definition that does not parse must not stay in the repository, because every check below reads it as an empty file and reports nothing. Fix the YAML here so the definition can be read.",
-      ]);
-    });
+    it.effect("reports only that the definition cannot be read", () =>
+      Effect.gen(function* program() {
+        const messagesOfTheProblems = yield* messagesOfTheProblemsFixture;
+        expect(messagesOfTheProblems).toStrictEqual([
+          "A workflow definition that does not parse must not stay in the repository, because every check below reads it as an empty file and reports nothing. Fix the YAML here so the definition can be read.",
+        ]);
+      }),
+    );
   });
 
   describe("several definitions that each break a discipline", () => {
-    const it = test.extend("filesOfTheProblems", () => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-run-workflow-checks-"));
-      const directory = join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
-      mkdirSync(directory, { recursive: true });
-      writeFileSync(join(directory, "ci.yml"), "jobs:\n  build:\n    steps: []\n");
-      writeFileSync(join(directory, "release.yml"), "jobs:\n  publish:\n    steps: []\n");
+    const filesOfTheProblemsFixture = Effect.gen(function* filesOfTheProblems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-run-workflow-checks-",
+      });
+      const directory = paths.join(repositoryRoot, defaultWorkflowChecksConfig.workflowDirectory);
+      yield* filesystem.makeDirectory(directory, { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(directory, "ci.yml"),
+        "jobs:\n  build:\n    steps: []\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(directory, "release.yml"),
+        "jobs:\n  publish:\n    steps: []\n",
+      );
 
-      return runWorkflowChecks({
+      return (yield* runWorkflowChecks({
         repositoryRoot,
         config: defaultWorkflowChecksConfig,
-      }).problems.map((problem) => problem.file);
+      })).problems.map((problem) => problem.file);
     });
 
-    it("orders the problems by the file they were found in", ({ filesOfTheProblems }) => {
-      expect(filesOfTheProblems).toStrictEqual([
-        ".github/workflows/ci.yml",
-        ".github/workflows/release.yml",
-      ]);
-    });
+    it.effect("orders the problems by the file they were found in", () =>
+      Effect.gen(function* program() {
+        const filesOfTheProblems = yield* filesOfTheProblemsFixture;
+        expect(filesOfTheProblems).toStrictEqual([
+          ".github/workflows/ci.yml",
+          ".github/workflows/release.yml",
+        ]);
+      }),
+    );
   });
 });

@@ -3,8 +3,8 @@ import { readdirSync, readFileSync } from "node:fs";
 
 import { isPlainObject } from "es-toolkit";
 
+import { readUnlessMissing } from "../platform/path-failure.ts";
 import { path } from "../platform/path.ts";
-import { readUnlessMissing } from "./path-failure.ts";
 
 export type NormativeDocumentPlaces = {
   readonly fileName: string;

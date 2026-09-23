@@ -1,3 +1,5 @@
+import { Effect, type FileSystem, type PlatformError, Schema } from "effect";
+
 import { runCanonicalLiteralTypeChecks } from "./canonical-literal-types/run-canonical-literal-type-checks.ts";
 import { adoptedBundlesIn } from "./configs/bundles/adopted-bundles.ts";
 import { LINT_BUNDLE, LINT_BUNDLE_NAMES, type LintBundle } from "./configs/bundles/bundle-names.ts";
@@ -13,10 +15,7 @@ import {
   lintRuleDocProblems,
   lintRuleIndexProblems,
 } from "./lint-rule-authoring/index.ts";
-import {
-  listRepositoryFiles,
-  readTextFile,
-} from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import { listRepositoryFiles } from "./lint/oxlint/lib/canonical-values/source-files.ts";
 import {
   findEquivalentConcepts,
   formatCanonicalValuesProblem,
@@ -26,9 +25,13 @@ import {
 import { duplicatedClustersIn } from "./lint/oxlint/lib/duplicated-bodies/body-index.ts";
 import { buildRepositoryBodyIndex } from "./lint/oxlint/lib/duplicated-bodies/builder.ts";
 import { formatDuplicatedCluster } from "./lint/oxlint/lib/duplicated-bodies/site-report.ts";
+import { textOrNull } from "./platform/file-system.ts";
 import { path } from "./platform/path.ts";
 import { defaultPresetAdoptionConfig } from "./preset-adoption/config.ts";
-import { runPresetAdoptionChecks } from "./preset-adoption/run-preset-adoption-checks.ts";
+import {
+  runPresetAdoptionChecks,
+  type PresetAdoptionReport,
+} from "./preset-adoption/run-preset-adoption-checks.ts";
 import { formatRepositoryProblem } from "./problem.ts";
 import { defaultRequiredFileFormConfig } from "./required-file-form/config.ts";
 import { runRequiredFileFormChecks } from "./required-file-form/run-required-file-form-checks.ts";
@@ -37,9 +40,14 @@ import { shippablePackagesProblems } from "./shippable-packages/shippable-packag
 import { defaultTelemetryWiringConfig } from "./telemetry-wiring/config.ts";
 import { runTelemetryWiringChecks } from "./telemetry-wiring/run-telemetry-wiring-checks.ts";
 import { defaultWorkflowChecksConfig } from "./workflows/config.ts";
-import { workflowOutcomesOf } from "./workflows/workflow-outcomes.ts";
+import { workflowOutcomesOf, type WorkflowOutcomes } from "./workflows/workflow-outcomes.ts";
 
-import type { CheckOutcome } from "./repository-checks/index.ts";
+import type { ManifestReadFailure } from "./dependency-catalog/manifest-files.ts";
+import type { DependencyCatalogReport } from "./dependency-catalog/problem.ts";
+import type { EntryCompositionReport } from "./entry-composition/entry-composition-problems.ts";
+import type { LintRuleCheckReport } from "./lint-rule-authoring/lint-rule-problem.ts";
+import type { LintRuleWorkspaceFailure } from "./lint-rule-authoring/rule-index/lint-rule-workspaces.ts";
+import type { CheckOutcome, ScannedProblems } from "./repository-checks/index.ts";
 
 export type CheckReport = {
   readonly outcomes: readonly CheckOutcome[];
@@ -48,11 +56,33 @@ export type CheckReport = {
   readonly failures: readonly string[];
 };
 
-const adoptedBundlesFor = (repositoryRoot: string): readonly LintBundle[] => {
-  const { toolchainConfigFileName } = defaultPresetAdoptionConfig;
-  const source = readTextFile(path.join(repositoryRoot, toolchainConfigFileName));
-  const declared = source === null ? null : adoptedBundlesIn({ source, toolchainConfigFileName });
-  return declared ?? LINT_BUNDLE_NAMES;
+type ScanFailure = LintRuleWorkspaceFailure | ManifestReadFailure;
+
+class RepositoryUnreadable extends Schema.TaggedError<RepositoryUnreadable>()(
+  "RepositoryUnreadable",
+  { cause: Schema.Defect() },
+) {
+  override get message(): string {
+    const reason = this.cause instanceof Error ? this.cause.message : String(this.cause);
+    return `The repository checks stopped before reporting, because what they scan could not be read: ${reason}`;
+  }
+}
+
+const adoptedBundlesFor = (
+  repositoryRoot: string,
+): Effect.Effect<readonly LintBundle[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* adoptedBundlesFor() {
+    const { toolchainConfigFileName } = defaultPresetAdoptionConfig;
+    const source = yield* textOrNull(path.join(repositoryRoot, toolchainConfigFileName));
+    const declared = source === null ? null : adoptedBundlesIn({ source, toolchainConfigFileName });
+    return declared ?? LINT_BUNDLE_NAMES;
+  });
+
+const NOT_SCANNED: LintRuleCheckReport = { problems: [], scanned: 0 };
+
+type LintRuleOutcomes = {
+  readonly index: LintRuleCheckReport;
+  readonly docs: LintRuleCheckReport;
 };
 
 const lintRuleOutcomesOf = ({
@@ -61,59 +91,62 @@ const lintRuleOutcomesOf = ({
 }: {
   readonly repositoryRoot: string;
   readonly unreadable: boolean;
-}) => ({
-  index: unreadable
-    ? { problems: [], scanned: 0 }
-    : lintRuleIndexProblems({ repositoryRoot, write: false }),
-  docs: unreadable
-    ? { problems: [], scanned: 0 }
-    : lintRuleDocProblems({ repositoryRoot, write: false }),
-});
+}): Effect.Effect<LintRuleOutcomes, ScanFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* lintRuleOutcomesOf() {
+    if (unreadable) return { index: NOT_SCANNED, docs: NOT_SCANNED };
+    return {
+      index: yield* lintRuleIndexProblems({ repositoryRoot, write: false }),
+      docs: yield* lintRuleDocProblems({ repositoryRoot, write: false }),
+    };
+  });
 
 type ScannedReports = {
   readonly repositoryRoot: string;
   readonly adopted: readonly LintBundle[];
-  readonly dependencyCatalog: ReturnType<typeof runDependencyCatalogChecks>;
-  readonly entryComposition: ReturnType<typeof entryCompositionProblems>;
-  readonly workflows: ReturnType<typeof workflowOutcomesOf>;
-  readonly presetAdoption: ReturnType<typeof runPresetAdoptionChecks>;
-  readonly requiredFileForm: ReturnType<typeof runRequiredFileFormChecks>;
-  readonly telemetryWiring: ReturnType<typeof runTelemetryWiringChecks>;
-  readonly lintRules: ReturnType<typeof lintRuleOutcomesOf>;
+  readonly dependencyCatalog: DependencyCatalogReport;
+  readonly entryComposition: EntryCompositionReport;
+  readonly workflows: WorkflowOutcomes;
+  readonly presetAdoption: PresetAdoptionReport;
+  readonly requiredFileForm: ScannedProblems;
+  readonly telemetryWiring: ScannedProblems;
+  readonly lintRules: LintRuleOutcomes;
 };
 
-const scannedReportsOf = (repositoryRoot: string): ScannedReports => {
-  const dependencyCatalog = runDependencyCatalogChecks({
-    repositoryRoot,
-    config: defaultDependencyCatalogChecksConfig,
+const scannedReportsOf = (
+  repositoryRoot: string,
+): Effect.Effect<ScannedReports, ScanFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* scannedReportsOf() {
+    const dependencyCatalog = yield* runDependencyCatalogChecks({
+      repositoryRoot,
+      config: defaultDependencyCatalogChecksConfig,
+    });
+    return {
+      repositoryRoot,
+      adopted: yield* adoptedBundlesFor(repositoryRoot),
+      dependencyCatalog,
+      entryComposition: yield* entryCompositionProblems({
+        repositoryRoot,
+        config: defaultEntryCompositionConfig,
+      }),
+      workflows: yield* workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig }),
+      presetAdoption: yield* runPresetAdoptionChecks({
+        repositoryRoot,
+        config: defaultPresetAdoptionConfig,
+      }),
+      requiredFileForm: yield* runRequiredFileFormChecks({
+        repositoryRoot,
+        config: defaultRequiredFileFormConfig,
+      }),
+      telemetryWiring: yield* runTelemetryWiringChecks({
+        repositoryRoot,
+        config: defaultTelemetryWiringConfig,
+      }),
+      lintRules: yield* lintRuleOutcomesOf({
+        repositoryRoot,
+        unreadable: dependencyCatalog.definitionUnreadable,
+      }),
+    };
   });
-  return {
-    repositoryRoot,
-    adopted: adoptedBundlesFor(repositoryRoot),
-    dependencyCatalog,
-    entryComposition: entryCompositionProblems({
-      repositoryRoot,
-      config: defaultEntryCompositionConfig,
-    }),
-    workflows: workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig }),
-    presetAdoption: runPresetAdoptionChecks({
-      repositoryRoot,
-      config: defaultPresetAdoptionConfig,
-    }),
-    requiredFileForm: runRequiredFileFormChecks({
-      repositoryRoot,
-      config: defaultRequiredFileFormConfig,
-    }),
-    telemetryWiring: runTelemetryWiringChecks({
-      repositoryRoot,
-      config: defaultTelemetryWiringConfig,
-    }),
-    lintRules: lintRuleOutcomesOf({
-      repositoryRoot,
-      unreadable: dependencyCatalog.definitionUnreadable,
-    }),
-  };
-};
 
 const BUNDLE_NOT_ADOPTED = "bundle not adopted";
 
@@ -194,32 +227,38 @@ const sourceScanOutcomes = (repositoryRoot: string): readonly CheckOutcome[] => 
   ];
 };
 
-const manifestScanOutcomes = (repositoryRoot: string): readonly CheckOutcome[] => {
-  const shippablePackages = shippablePackagesProblems({
-    repositoryRoot,
-    config: defaultShippablePackagesConfig,
-  });
-  const skills = shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+const manifestScanOutcomes = (
+  repositoryRoot: string,
+): Effect.Effect<readonly CheckOutcome[], ScanFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* manifestScanOutcomes() {
+    const shippablePackages = yield* shippablePackagesProblems({
+      repositoryRoot,
+      config: defaultShippablePackagesConfig,
+    });
+    const skills = yield* shippedSkillsProblems({
+      repositoryRoot,
+      config: defaultIntentSkillsConfig,
+    });
 
-  return [
-    {
-      check: "shippable-packages",
-      unit: "manifest",
-      count: shippablePackages.scanned,
-      skippedReason: null,
-      problems: shippablePackages.problems.map(formatRepositoryProblem).toSorted(),
-      warnings: [],
-    },
-    {
-      check: "intent-skills",
-      unit: "manifest",
-      count: skills.scanned,
-      skippedReason: null,
-      problems: skills.problems.map(formatRepositoryProblem).toSorted(),
-      warnings: [],
-    },
-  ];
-};
+    return [
+      {
+        check: "shippable-packages",
+        unit: "manifest",
+        count: shippablePackages.scanned,
+        skippedReason: null,
+        problems: shippablePackages.problems.map(formatRepositoryProblem).toSorted(),
+        warnings: [],
+      },
+      {
+        check: "intent-skills",
+        unit: "manifest",
+        count: skills.scanned,
+        skippedReason: null,
+        problems: skills.problems.map(formatRepositoryProblem).toSorted(),
+        warnings: [],
+      },
+    ];
+  });
 
 const NO_WORKFLOW_DEFINITION = "no workflow definition";
 
@@ -239,7 +278,10 @@ const outcomesOf = ({
   requiredFileForm,
   telemetryWiring,
   lintRules,
-}: ScannedReports): readonly CheckOutcome[] => [
+  manifestScans,
+}: ScannedReports & {
+  readonly manifestScans: readonly CheckOutcome[];
+}): readonly CheckOutcome[] => [
   {
     check: "entry-composition",
     unit: "manifest",
@@ -315,7 +357,7 @@ const outcomesOf = ({
     problems: telemetryWiring.problems.map(formatRepositoryProblem).toSorted(),
     warnings: [],
   },
-  ...manifestScanOutcomes(repositoryRoot),
+  ...manifestScans,
 ];
 
 const CHECK_BUNDLES: Readonly<Record<string, LintBundle>> = {
@@ -355,15 +397,24 @@ const withinAdoption = ({
     };
   });
 
-export const runChecks = (repositoryRoot: string): CheckReport => {
-  const reports = scannedReportsOf(repositoryRoot);
-  const { adopted, entryComposition } = reports;
-  const carried = withinAdoption({ outcomes: outcomesOf(reports), adopted });
+export const runChecks = (
+  repositoryRoot: string,
+): Effect.Effect<CheckReport, RepositoryUnreadable, FileSystem.FileSystem> =>
+  Effect.gen(function* runChecks() {
+    const reports = yield* scannedReportsOf(repositoryRoot);
+    const manifestScans = yield* manifestScanOutcomes(repositoryRoot);
+    const { adopted, entryComposition } = reports;
+    const carried = withinAdoption({
+      outcomes: outcomesOf({ ...reports, manifestScans }),
+      adopted,
+    });
 
-  return {
-    outcomes: carried,
-    problems: carried.flatMap((ranCheck) => ranCheck.problems).toSorted(),
-    warnings: carried.flatMap((ranCheck) => ranCheck.warnings).toSorted(),
-    failures: adopted.includes(LINT_BUNDLE.publishing) ? entryComposition.failures.toSorted() : [],
-  };
-};
+    return {
+      outcomes: carried,
+      problems: carried.flatMap((ranCheck) => ranCheck.problems).toSorted(),
+      warnings: carried.flatMap((ranCheck) => ranCheck.warnings).toSorted(),
+      failures: adopted.includes(LINT_BUNDLE.publishing)
+        ? entryComposition.failures.toSorted()
+        : [],
+    };
+  }).pipe(Effect.mapError((unread) => new RepositoryUnreadable({ cause: unread })));

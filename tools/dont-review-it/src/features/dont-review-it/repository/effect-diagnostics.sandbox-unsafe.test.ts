@@ -12,8 +12,8 @@ import { Effect, FileSystem } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { path } from "../platform/path.ts";
+import { posixPath } from "../platform/path.ts";
 import { field } from "./dependencies.ts";
-import { posixPath } from "./repository-path.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { commands, configuredDirectories, reachable } from "./tasks.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";

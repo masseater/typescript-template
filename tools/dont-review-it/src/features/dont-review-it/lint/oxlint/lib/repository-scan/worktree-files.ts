@@ -3,8 +3,8 @@ import { readdirSync } from "node:fs";
 
 import { memoize } from "es-toolkit";
 
+import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
-import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 import { toPosixPath } from "../posix-path.ts";
 
 import type { Context } from "@oxlint/plugins";

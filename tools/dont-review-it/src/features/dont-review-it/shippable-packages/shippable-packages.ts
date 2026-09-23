@@ -1,3 +1,4 @@
+import { Effect, type FileSystem, type PlatformError } from "effect";
 import { isPlainObject, uniq } from "es-toolkit";
 
 import { lineOfProperty, propertyValueOf, stringEntriesOf } from "../intent-skills/manifest.ts";
@@ -110,17 +111,19 @@ export const shippablePackagesProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: ShippablePackagesConfig;
-}): ScannedProblems => {
-  const workspaces = readShippableWorkspaces(repositoryRoot);
-  const withheldNames = workspaces
-    .filter((workspace) => workspace.withheld)
-    .map((workspace) => workspace.packageName);
-  const shippable = workspaces.filter((workspace) => !workspace.withheld);
+}): Effect.Effect<ScannedProblems, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  readShippableWorkspaces(repositoryRoot).pipe(
+    Effect.map((workspaces) => {
+      const withheldNames = workspaces
+        .filter((workspace) => workspace.withheld)
+        .map((workspace) => workspace.packageName);
+      const shippable = workspaces.filter((workspace) => !workspace.withheld);
 
-  return {
-    problems: shippable.flatMap((workspace) =>
-      packageProblems({ workspace, withheldNames, config }),
-    ),
-    scanned: shippable.length,
-  };
-};
+      return {
+        problems: shippable.flatMap((workspace) =>
+          packageProblems({ workspace, withheldNames, config }),
+        ),
+        scanned: shippable.length,
+      };
+    }),
+  );

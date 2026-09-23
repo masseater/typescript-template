@@ -1,9 +1,15 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { Effect, FileSystem, type PlatformError } from "effect";
 
+import { pathExists, unlessMissing } from "../platform/file-system.ts";
+import { path, posixPath } from "../platform/path.ts";
 import { parseWorkflowDocument, type WorkflowDocument } from "./workflow-document.ts";
 
 import type { WorkflowChecksConfig } from "./config.ts";
+
+type WorkflowTree =
+  | { readonly kind: "no-ci-tree" }
+  | { readonly kind: "workflows-omitted" }
+  | { readonly kind: "read"; readonly documents: readonly WorkflowDocument[] };
 
 export const readWorkflowDocuments = ({
   repositoryRoot,
@@ -11,26 +17,32 @@ export const readWorkflowDocuments = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: WorkflowChecksConfig;
-}): readonly WorkflowDocument[] => {
-  const directory = join(repositoryRoot, config.workflowDirectory);
-  if (!existsSync(directory)) {
-    const githubDirectory = dirname(directory);
-    if (existsSync(githubDirectory)) {
-      readdirSync(directory);
+}): Effect.Effect<WorkflowTree, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* readWorkflowDocuments() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const directory = path.join(repositoryRoot, config.workflowDirectory);
+    const entryNames = yield* unlessMissing(filesystem.readDirectory(directory));
+    if (entryNames === null) {
+      return (yield* pathExists(path.dirname(directory)))
+        ? { kind: "workflows-omitted" }
+        : { kind: "no-ci-tree" };
     }
-    return [];
-  }
-  const entryNames = readdirSync(directory);
 
-  return entryNames
-    .filter((spelled) =>
-      config.workflowFileExtensions.some((extension) => spelled.endsWith(extension)),
-    )
-    .toSorted()
-    .map((spelled) =>
-      parseWorkflowDocument({
-        relativePath: `${config.workflowDirectory}/${spelled}`,
-        source: readFileSync(join(directory, spelled), "utf8"),
-      }),
+    const documents = yield* Effect.forEach(
+      entryNames
+        .filter((spelled) =>
+          config.workflowFileExtensions.some((extension) => spelled.endsWith(extension)),
+        )
+        .toSorted(),
+      (spelled) =>
+        filesystem.readFileString(path.join(directory, spelled)).pipe(
+          Effect.map((source) =>
+            parseWorkflowDocument({
+              relativePath: posixPath.join(config.workflowDirectory, spelled),
+              source,
+            }),
+          ),
+        ),
     );
-};
+    return { kind: "read", documents };
+  });
