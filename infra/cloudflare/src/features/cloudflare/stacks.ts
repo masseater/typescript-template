@@ -9,7 +9,7 @@ const application = ["database", "flagship"] as const;
 const wikiApplication = [...application, "tokens"] as const;
 const servedApplication = [...application, "core"] as const;
 const memberServed = [...servedApplication, "storage"] as const;
-const wikiServed = [...wikiApplication, "core"] as const;
+const wikiServed = [...wikiApplication, "core", "internal-wiki"] as const;
 const stackReferences = {
   "service-admin": servedApplication,
   "budget-monitor": ["tokens"],
@@ -24,6 +24,7 @@ const stackReferences = {
   tokens: [],
   "service-member": memberServed,
   "internal-dashboard": wikiServed,
+  "internal-wiki": [],
   zone: [],
 } as const satisfies Readonly<Record<string, readonly string[]>> &
   Readonly<
@@ -35,7 +36,11 @@ const stackReferences = {
 
 type StackName = keyof typeof stackReferences;
 
-const packageStacks = [...applications, "core"] as const satisfies readonly StackName[];
+const packageStacks = [
+  ...applications,
+  "core",
+  "internal-wiki",
+] as const satisfies readonly StackName[];
 type PackageStack = (typeof packageStacks)[number];
 
 const traceDestinationStack = "observability" as const satisfies StackName;
@@ -45,6 +50,7 @@ const dependenciesByName: Readonly<Partial<Record<StackName, readonly StackName[
   "service-admin": [traceDestinationStack],
   "service-member": [traceDestinationStack],
   "internal-dashboard": [traceDestinationStack],
+  "internal-wiki": [traceDestinationStack],
 } satisfies Readonly<Record<PackageStack, readonly StackName[]>>;
 
 function stackDependencies(stack: StackName): readonly StackName[] {
@@ -59,6 +65,7 @@ const stackNames = [
   "storage",
   "observability",
   "core",
+  "internal-wiki",
   "tokens",
   ...monitorStacks,
   APPLICATION.user,

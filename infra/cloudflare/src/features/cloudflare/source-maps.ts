@@ -5,7 +5,7 @@ import { ArtifactFailure, fail } from "./artifact-io.ts";
 import { isNotFound, layer, path } from "./platform.ts";
 import { retainGenerations } from "./retention.ts";
 
-import type { Application } from "@repo/config";
+import type { BuildTarget } from "@repo/config";
 
 const OWNER_ONLY_DIRECTORY_MODE = 0o700;
 const OWNER_ONLY_FILE_MODE = 0o600;
@@ -99,7 +99,7 @@ function fileExists(file: string): Effect.Effect<boolean> {
 const EmittedMaps = Schema.fromJsonString(Schema.Array(Schema.String).check(Schema.isMinLength(1)));
 
 const requireClientSourceMaps = Effect.fn("requireClientSourceMaps")(
-  function* requireClientSourceMaps(repositoryRoot: string, target: Application) {
+  function* requireClientSourceMaps(repositoryRoot: string, target: BuildTarget) {
     const filesystem = yield* FileSystem.FileSystem;
     const { client } = sourceMapDirectories(repositoryRoot, target);
     const declared = yield* filesystem
@@ -119,14 +119,14 @@ const requireClientSourceMaps = Effect.fn("requireClientSourceMaps")(
 
 function requireClientSourceMapsProvided(
   repositoryRoot: string,
-  target: Application,
+  target: BuildTarget,
 ): Effect.Effect<void, ArtifactFailure> {
   return requireClientSourceMaps(repositoryRoot, target).pipe(Effect.provide(layer));
 }
 
 const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* archiveSourceMaps(
   repositoryRoot: string,
-  target: Application,
+  target: BuildTarget,
   release: string,
 ) {
   const directories = sourceMapDirectories(repositoryRoot, target);
@@ -151,7 +151,7 @@ const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* archiveSource
 
 function retainArchivedSourceMaps(
   repositoryRoot: string,
-  target: Application,
+  target: BuildTarget,
   release: string,
 ): Effect.Effect<void, ArtifactFailure> {
   return retainGenerations(

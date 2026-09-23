@@ -88,11 +88,24 @@ const fetchAsset = (httpRequest: Request): Effect.Effect<Response, never, Assets
     return yield* Effect.promise(() => assets.fetch(httpRequest));
   });
 };
+const assetRequest = (httpRequest: Request, assetBase: string): Request => {
+  if (assetBase === "") {
+    return httpRequest;
+  }
+  const url = new URL(httpRequest.url);
+  return new Request(
+    new URL(`${url.pathname.slice(assetBase.length)}${url.search}`, url.origin),
+    httpRequest,
+  );
+};
 const serveApp = <Requirements>(asked: {
   readonly runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>;
   readonly route: AppRoute<Requirements>;
   readonly reporting: Reporting;
+  readonly assetBase?: string | undefined;
 }): FetchWorker => {
+  const assetBase = asked.assetBase ?? "";
+  const assetPrefix = `${assetBase}/assets/`;
   return serveWorker({
     runtime: asked.runtime,
     reporting: asked.reporting,
@@ -104,7 +117,9 @@ const serveApp = <Requirements>(asked: {
       if (path.endsWith(".map")) {
         return Effect.succeed(new Response(undefined, { status: httpStatus.notFound }));
       }
-      return path.startsWith("/assets/") ? fetchAsset(httpRequest) : asked.route(httpRequest, path);
+      return path.startsWith(assetPrefix)
+        ? fetchAsset(assetRequest(httpRequest, assetBase))
+        : asked.route(httpRequest, path);
     },
   });
 };
@@ -130,11 +145,13 @@ const appServerEntry = <Requirements>(asked: {
   readonly runtime: WorkerRuntime<Assets | Requirements | Telemetry | TelemetryFlusher, unknown>;
   readonly routeHandler: StartHandler;
   readonly reporting: Reporting;
+  readonly assetBase?: string | undefined;
 }): FetchWorker => {
   return serveApp({
     runtime: asked.runtime,
     reporting: asked.reporting,
     route: startRoute(asked.routeHandler),
+    assetBase: asked.assetBase,
   });
 };
 const withQueue = (
@@ -150,6 +167,8 @@ const withQueue = (
   return { ...worker, queue };
 };
 export { appServerEntry, serveApp, serveWorker, startRoute, withQueue };
+export { configuredSiteLayer } from "./site.ts";
+export type { SiteServices } from "./site.ts";
 export { workerRuntime } from "./worker-runtime.ts";
 export type { AppRoute, FetchWorker };
 export type { WorkerRuntime } from "./worker-runtime.ts";

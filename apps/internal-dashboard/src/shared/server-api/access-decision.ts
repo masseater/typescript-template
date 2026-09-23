@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/config";
+import { httpStatus, wikiBasePath, wikiServerFnBase } from "@repo/config";
 import { jsonResponse } from "@repo/runtime/http";
 import { Option } from "effect";
 
@@ -20,8 +20,10 @@ function sessionPresence(
   return Option.none();
 }
 
+const apiPrefixes = ["/api/", "/_serverFn/", `${wikiBasePath}/api/`, `${wikiServerFnBase}/`];
+
 function denied(path: string, signedIn: boolean): Response {
-  if (path.startsWith("/api/") || path.startsWith("/_serverFn/")) {
+  if (apiPrefixes.some((prefix) => path.startsWith(prefix))) {
     return jsonResponse({ error: "ログインしてください。" }, httpStatus.unauthorized);
   }
   return new Response(undefined, {

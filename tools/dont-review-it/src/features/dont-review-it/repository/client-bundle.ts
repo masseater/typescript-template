@@ -1,25 +1,31 @@
 #!/usr/bin/env node
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { type Application, ApplicationName } from "@repo/config";
+import { type BuildTarget, BuildTargetName } from "@repo/config";
 import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, FileSystem, Path, Schema } from "effect";
 import { build } from "vite-plus";
 
 import { repositoryRoot } from "./repository-root.ts";
 
-const probeModules: Readonly<Record<Application, string>> = {
+const probeModules: Readonly<Record<BuildTarget, string>> = {
   "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",
+  "internal-wiki": "src/widgets/wiki-frame/ui/wiki-frame.tsx",
   "service-admin": "src/pages/login/ui/admin-login.tsx",
   "service-member": "src/pages/landing/ui/hero.tsx",
 };
 
-const clientReachable: readonly string[] = [
+const sharedClientReachable: readonly string[] = [
   "@repo/runtime/client",
   "@repo/auth-ui",
   "@repo/ui",
-  "#shared/api/client.ts",
 ];
+const clientReachableOf: Readonly<Record<BuildTarget, readonly string[]>> = {
+  "internal-dashboard": [...sharedClientReachable, "#shared/api/client.ts"],
+  "internal-wiki": sharedClientReachable,
+  "service-admin": [...sharedClientReachable, "#shared/api/client.ts"],
+  "service-member": [...sharedClientReachable, "#shared/api/client.ts"],
+};
 const serverOnly: readonly (readonly [string, string])[] = [
   ["@repo/runtime/http", "**/libs/runtime/src/features/runtime/**"],
   ["@repo/runtime/worker", "**/libs/runtime/src/features/runtime/**"],
@@ -43,7 +49,7 @@ class BuildDenied extends Schema.TaggedError<BuildDenied>()("BuildDenied", {
 }) {}
 
 const clientBuild = (
-  application: Application,
+  application: BuildTarget,
   specifiers: readonly string[],
   outDirectory: string,
 ): Effect.Effect<string, never, Path.Path> =>
@@ -104,49 +110,74 @@ const temporaryOutput = Effect.gen(function* temporaryOutput() {
 });
 
 const serverOnlyProblems = (
-  application: Application,
-  [specifier, pattern]: readonly [string, string],
+  application: BuildTarget,
+  [specifier, pattern]: readonly [string, string | undefined],
 ) =>
   Effect.scoped(
     temporaryOutput.pipe(
       Effect.flatMap((outDirectory) => clientBuild(application, [specifier], outDirectory)),
-      Effect.map((denial) =>
-        denial === pattern
+      Effect.map((denial) => {
+        if (pattern === undefined) {
+          return denial === "" ? [`${specifier} reached the client bundle undeclared`] : [];
+        }
+        return denial === pattern
           ? []
-          : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`],
-      ),
+          : [`${specifier} denied by ${denial || "nothing"} instead of ${pattern}`];
+      }),
     ),
   );
 
-const inspect = (application: Application) =>
+const Manifest = Schema.Struct({
+  dependencies: Schema.Record(Schema.String, Schema.String),
+});
+
+const expectedDenials = (application: BuildTarget) =>
+  Effect.gen(function* expectedDenials() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const manifestText = yield* filesystem.readFileString(
+      paths.join(repositoryRoot, "apps", application, "package.json"),
+    );
+    const { dependencies } = yield* Schema.decodeEffect(Schema.fromJsonString(Manifest))(
+      manifestText,
+    );
+    return serverOnly.map(([specifier, pattern]) =>
+      specifier.startsWith("#") || specifier.split("/").slice(0, 2).join("/") in dependencies
+        ? ([specifier, pattern] as const)
+        : ([specifier, undefined] as const),
+    );
+  });
+
+const inspect = (application: BuildTarget) =>
   Effect.gen(function* inspect() {
+    const reachable = clientReachableOf[application];
     const reachableDirectory = yield* temporaryOutput;
-    const reachableDenial = yield* clientBuild(application, clientReachable, reachableDirectory);
+    const reachableDenial = yield* clientBuild(application, reachable, reachableDirectory);
     const markers = yield* bundledMarkers(reachableDirectory);
-    const denials = yield* Effect.forEach(serverOnly, (entry) =>
+    const checked = yield* expectedDenials(application);
+    const denials = yield* Effect.forEach(checked, (entry) =>
       serverOnlyProblems(application, entry),
     );
-    return [
-      ...(reachableDenial === ""
-        ? []
-        : [`${clientReachable.join(" ")} denied by ${reachableDenial}`]),
+    const unexpected = [
+      ...(reachableDenial === "" ? [] : [`${reachable.join(" ")} denied by ${reachableDenial}`]),
       ...markers.map((marker) => `${marker} reached the client bundle`),
       ...denials.flat(),
     ];
+    return { inputs: reachable.length + checked.length, unexpected };
   }).pipe(Effect.scoped);
 
 runCli(
   Effect.gen(function* run() {
     const paths = yield* Path.Path;
-    const application = yield* Schema.decodeUnknownEffect(ApplicationName)(
+    const application = yield* Schema.decodeUnknownEffect(BuildTargetName)(
       paths.basename(process.cwd()),
     );
-    const unexpected = yield* inspect(application);
+    const { inputs, unexpected } = yield* inspect(application);
     yield* Console.log(
       yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
         application,
         event: "quality.client_bundle",
-        inputs: clientReachable.length + serverOnly.length,
+        inputs,
         ok: unexpected.length === 0,
         unexpected,
       }),
