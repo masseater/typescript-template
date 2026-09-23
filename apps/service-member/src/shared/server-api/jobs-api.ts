@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { JobPayload, readJobs, httpStatus } from "@repo/config";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { enqueueJob, jobStatus } from "@repo/runtime/jobs";
 import { env } from "cloudflare:workers";
@@ -23,7 +23,7 @@ const JobStatusView = Schema.Struct({
 });
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   ConfigurationInvalid: "unexpected" as const,
   InputInvalid: { message: "入力内容を確認してください。", status: httpStatus.badRequest },
   JobLookupFailed: "unexpected" as const,
