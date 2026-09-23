@@ -11,8 +11,13 @@ const AppShell = ({
   children,
   lang = "ja",
   routes,
+  themedDocument = false,
 }: Children &
-  Readonly<{ lang?: string; routes: Readonly<Record<string, string>> }>): ReactElement => {
+  Readonly<{
+    lang?: string;
+    routes: Readonly<Record<string, string>>;
+    themedDocument?: boolean;
+  }>): ReactElement => {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
     return (): void => {
@@ -20,7 +25,7 @@ const AppShell = ({
     };
   }, [routes]);
   return (
-    <html lang={lang}>
+    <html lang={lang} suppressHydrationWarning={themedDocument}>
       <head>
         <HeadContent />
       </head>
