@@ -5,7 +5,7 @@ import { BaseListPlugin } from "@platejs/list";
 import { MarkdownPlugin, defaultRules } from "@platejs/markdown";
 import { BaseImagePlugin } from "@platejs/media";
 import { BaseTablePlugin } from "@platejs/table";
-import { remarkWikiTerm, wikiTermSyntax } from "@repo/wiki-markdown";
+import { remarkWikiTerm, wikiTermSyntax } from "@repo/markdown-terms";
 import { Effect, Schema } from "effect";
 import { createSlateEditor, createSlatePlugin } from "platejs";
 import * as markdownPrinter from "prettier/plugins/markdown";

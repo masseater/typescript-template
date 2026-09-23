@@ -1,9 +1,9 @@
 {
-  "name": "@repo/wiki-markdown",
+  "name": "@repo/markdown-terms",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/features/wiki-markdown/index.ts"
+    ".": "./src/features/markdown-terms/index.ts"
   },
   "dependencies": {
     "mdast-util-find-and-replace": "3.0.2"

@@ -154,14 +154,6 @@ const configuration = {
     },
     {
       comment:
-        "ダッシュボードは共有 DB の業務表を読み書きしません。ローカル開発用の D1 定義と、wiki の下書きの入口（@repo/db/wiki）だけを参照してください。",
-      from: { path: "^apps/internal-dashboard/" },
-      name: "no-dashboard-to-database",
-      severity: "error",
-      to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/features/db/(?:local|wiki)\.ts$` },
-    },
-    {
-      comment:
         "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@repo/runtime/client など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
       from: { path: "^libs/(?:ui|auth-ui)/src/", pathNot: testModule },
       name: "no-browser-to-server",

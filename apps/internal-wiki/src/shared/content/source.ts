@@ -1,5 +1,5 @@
 import { wikiBasePath } from "@repo/config";
-import { remarkWikiTerm } from "@repo/wiki-markdown";
+import { remarkWikiTerm } from "@repo/markdown-terms";
 import { remarkMdxMermaid } from "fumadocs-core/mdx-plugins";
 import { loader } from "fumadocs-core/source";
 import { applyMdxPreset } from "fumadocs-mdx/config";

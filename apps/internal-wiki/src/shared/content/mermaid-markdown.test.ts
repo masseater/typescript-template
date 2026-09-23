@@ -1,4 +1,4 @@
-import { remarkWikiTerm } from "@repo/wiki-markdown";
+import { remarkWikiTerm } from "@repo/markdown-terms";
 import { Effect } from "effect";
 import { remarkMdxMermaid } from "fumadocs-core/mdx-plugins";
 import { remarkLLMs } from "fumadocs-core/mdx-plugins/remark-llms";

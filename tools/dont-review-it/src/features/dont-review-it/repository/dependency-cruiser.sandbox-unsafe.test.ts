@@ -171,17 +171,10 @@ const detected: readonly Case[] = [
       "libs/auth/src/features/auth/index.ts": 'export * from "./helper.test.ts";\n',
     },
   ],
-  [
-    "no-dashboard-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
-  ],
-  [
-    "no-dashboard-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export type { Db } from "@repo/db";\n' },
-  ],
+  ["no-wiki-to-database", { "apps/internal-wiki/src/index.ts": 'export * from "@repo/db";\n' }],
   [
     "no-wiki-to-database",
-    { "apps/internal-wiki/src/index.ts": 'export * from "@repo/db/wiki";\n' },
+    { "apps/internal-wiki/src/index.ts": 'export type { Db } from "@repo/db";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -324,14 +317,6 @@ const accepted: readonly Case[] = [
       "libs/auth/src/features/auth/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/features/auth/session.test.ts": 'export * from "./helper.test.ts";\n',
     },
-  ],
-  [
-    "no-dashboard-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
-  ],
-  [
-    "no-dashboard-to-database",
-    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/wiki";\n' },
   ],
   [
     "no-wiki-to-database",

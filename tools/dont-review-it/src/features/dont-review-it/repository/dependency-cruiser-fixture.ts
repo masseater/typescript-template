@@ -19,7 +19,6 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     "./local": "./src/features/db/local.ts",
     "./remote": "./src/features/db/remote-command.ts",
     "./testing": "./src/features/db/testing.ts",
-    "./wiki": "./src/features/db/wiki.ts",
   },
   "libs/observability": {
     ".": "./src/features/observability/index.ts",

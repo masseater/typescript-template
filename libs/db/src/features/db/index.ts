@@ -30,3 +30,4 @@ export {
   storeInterview,
 } from "./interview.ts";
 export { clockDate } from "./clock-date.ts";
+export { WikiDraftConflict, discardWikiDraft, findWikiDraft, saveWikiDraft } from "./wiki-draft.ts";

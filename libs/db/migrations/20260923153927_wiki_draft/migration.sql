@@ -1,7 +1,7 @@
 CREATE TABLE `wiki_draft` (
 	`base_revision` text,
 	`markdown` text NOT NULL,
-	`path` text PRIMARY KEY,
+	`path` text PRIMARY KEY NOT NULL,
 	`updated_at` integer NOT NULL,
 	`updated_by` text,
 	`version` integer DEFAULT 1 NOT NULL,

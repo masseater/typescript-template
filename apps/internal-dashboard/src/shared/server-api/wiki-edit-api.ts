@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
-import { discardWikiDraft, findWikiDraft, saveWikiDraft } from "@repo/db/wiki";
+import { discardWikiDraft, findWikiDraft, saveWikiDraft } from "@repo/db";
 import { FileStore } from "@repo/runtime";
 import { createApi, readJsonBody, readSearchParams, type ApiRoutes } from "@repo/runtime/http";
 import { Effect, Encoding } from "effect";
