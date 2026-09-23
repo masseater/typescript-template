@@ -1,3 +1,4 @@
+import { japaneseFieldValidationMessages } from "@repo/ui";
 import { AppProviders } from "@repo/ui/shell";
 import {
   createMemoryHistory,
@@ -11,7 +12,6 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
 
-import { fieldValidationMessages } from "#shared/i18n/index.ts";
 import { DashboardFrame } from "./dashboard-frame.tsx";
 
 const SPACING_PX = 4;
@@ -30,7 +30,7 @@ function renderDashboardFrame(defaultCollapsed: boolean): Promise<string> {
               email: "ada@example.com",
               name: "Ada",
             }),
-            fieldValidationMessages: fieldValidationMessages,
+            fieldValidationMessages: japaneseFieldValidationMessages,
           }),
       });
       const router = createRouter({
