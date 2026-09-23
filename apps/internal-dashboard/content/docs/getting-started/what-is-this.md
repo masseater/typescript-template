@@ -28,6 +28,22 @@ Web サービスの立ち上げと継続的な開発において、次の課題�
 - **開発と確認の自動化**: Vite+ による高速なビルド、型チェック、lint、テスト、および git hooks や GitHub Actions による品質の確認。
 - **設計文書**: データモデルの ER 図、ドメイン用語集、画面仕様、実装とレビューの判断基準。
 
+## 含まれていないもの
+
+次の機能は、このテンプレートには意図的に含めていません。テンプレートに無いだけで、実際の開発ではサービスの規模に合わせて入れるかどうかを検討してください。
+
+- **セッションリプレイ**: 利用者の操作を DOM の変化として録画し、trace id でトレースと結びつけて再生する機能。
+  - 含めない理由: 録画は 1 セッションごとに DOM の全変化を持つため、保存と検索の費用がログやスパンより桁で大きく、規模が決まる前に費用だけが先に立つ。
+  - 入れるときに要るもの: OTLP の宛先の切り替えと `traceparent` の伝搬は既にある。足りないのは録画のセッション識別子を要求へ載せる部分だけ。
+  - 検討する時期: エラーの再現に利用者の操作の再現が要るようになったとき。エラーが起きたセッションだけを録画する構成から始める。
+  - OSS の例: [rrweb](https://github.com/rrweb-io/rrweb)（記録と再生のライブラリのみ）、[OpenReplay](https://github.com/openreplay/openreplay)（リプレイ専用）、[ClickStack / HyperDX](https://github.com/hyperdxio/hyperdx)（ログ・トレースと同じ基盤）、[PostHog](https://github.com/PostHog/posthog)（製品分析と同居）
+  - SaaS の例: [PostHog Cloud](https://posthog.com/session-replay)、[Sentry](https://sentry.io/for/session-replay/)、[Microsoft Clarity](https://clarity.microsoft.com/)、[LogRocket](https://logrocket.com/)、[FullStory](https://www.fullstory.com/)、[Datadog RUM](https://www.datadoghq.com/product/real-user-monitoring/)
+- **行動分析**: ヒートマップ、ファネル、リテンションなど、利用者の操作を集計して製品の改善に使う機能。
+  - 含めない理由: テンプレートの観測性はログ・トレース・メトリクスで不具合を直すことを目的にしており、何を集計するかはサービスごとに決まる。
+  - 入れるときに要るもの: 上のセッションリプレイと同じ計測基盤に載せると、識別子を二重に持たずに済む。
+  - OSS の例: [PostHog](https://github.com/PostHog/posthog)（ファネルやリテンションまで）、[Matomo](https://github.com/matomo-org/matomo)、[Umami](https://github.com/umami-software/umami)、[Plausible](https://github.com/plausible/analytics)（ページ単位の集計）
+  - SaaS の例: [PostHog Cloud](https://posthog.com/product-analytics)、[Mixpanel](https://mixpanel.com/)、[Amplitude](https://amplitude.com/)、[Hotjar](https://www.hotjar.com/)（ヒートマップ中心）、[Google Analytics](https://marketingplatform.google.com/about/analytics/)
+
 ## 主要な技術スタック
 
 各技術の定義と参照は [技術スタック](/tech-stack) に記載します。この表が持つのは領域の対応だけです。信号がブラウザから SLI まで通る層は [Observability](/observability) に記載します。
