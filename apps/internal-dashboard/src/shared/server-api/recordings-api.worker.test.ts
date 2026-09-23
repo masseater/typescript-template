@@ -3,6 +3,7 @@ import { APPLICATION, RECORDING_STATUS, httpStatus } from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { accountApi } from "@repo/runtime/account";
 import { appLayer } from "@repo/runtime/bindings";
+import { CreatedResource } from "@repo/runtime/contracts";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
@@ -10,12 +11,7 @@ import { applyD1Migrations, reset, type D1Migration } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { Effect, Layer, Schema } from "effect";
 
-import {
-  PeopleList,
-  RecordingAccepted,
-  RecordingList,
-  RecordingView,
-} from "#shared/contracts/index.ts";
+import { PeopleList, RecordingList, RecordingView } from "#shared/contracts/index.ts";
 import { CoreRecords } from "#shared/transcription/index.ts";
 import { recordingsApi } from "./recordings-api.ts";
 
@@ -40,7 +36,7 @@ const migrated = Effect.promise(() => reset()).pipe(
 const core = CoreRecords.layer(env.CORE);
 const password = "test-password-safe-123";
 const audio = new Uint8Array([0x49, 0x44, 0x33, 1, 2, 3, 4, 5]);
-const decodeAccepted = Schema.decodeUnknownEffect(RecordingAccepted);
+const decodeAccepted = Schema.decodeUnknownEffect(CreatedResource);
 const decodeList = Schema.decodeUnknownEffect(RecordingList);
 const decodePeople = Schema.decodeUnknownEffect(PeopleList);
 const decodeView = Schema.decodeUnknownEffect(RecordingView);

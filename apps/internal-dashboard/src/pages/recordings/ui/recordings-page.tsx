@@ -1,7 +1,6 @@
-import { useToast } from "@repo/ui";
+import { Page, useToast } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { PeopleSection } from "./people-section.tsx";
 import { RecordingTable } from "./recording-table.tsx";
 import { UploadSection } from "./upload-section.tsx";
@@ -19,11 +18,11 @@ function RecordingsPage({ overview }: Readonly<{ overview: RecordingsOverview }>
     return navigate({ params: { id: recordingId }, to: "/recordings/$id" });
   };
   return (
-    <OpsPage title="録音">
+    <Page title="録音">
       <UploadSection onUploaded={openUploaded} />
       <RecordingTable recordings={overview.recordings} />
       <PeopleSection people={overview.people} onChanged={reload} />
-    </OpsPage>
+    </Page>
   );
 }
 
