@@ -1,6 +1,7 @@
 import { parseSync } from "oxc-parser";
 
 import { NODE_TYPE_FIELD } from "../ast-node.ts";
+import { freeReferencesOf } from "./free-references.ts";
 
 import type { UnknownFields } from "../../../../lint-rule-authoring/index.ts";
 
@@ -54,17 +55,25 @@ export type BodyDeclaration = {
   readonly nodeCount: number;
 };
 
+type ReferencingDeclaration = BodyDeclaration & { readonly references: readonly string[] };
+
 const declarationFrom = ({
   source,
   described,
 }: {
   readonly source: string;
-  readonly described: { readonly name: string; readonly start: number; readonly body: unknown };
-}): BodyDeclaration => ({
+  readonly described: {
+    readonly name: string;
+    readonly start: number;
+    readonly body: unknown;
+    readonly declaration: unknown;
+  };
+}): ReferencingDeclaration => ({
   name: described.name,
   line: source.slice(0, described.start).split("\n").length,
   structure: structureOf(described.body),
   nodeCount: nodeCountOf(described.body),
+  references: freeReferencesOf(described.declaration),
 });
 
 const namedBindingIn = (binding: UnknownFields): string | null => {
@@ -82,7 +91,7 @@ const bindingBodyOf = (binding: UnknownFields): unknown => ({
 const bindingDeclarationsIn = (
   source: string,
   statement: UnknownFields,
-): readonly BodyDeclaration[] =>
+): readonly ReferencingDeclaration[] =>
   bindingsOf(statement).flatMap((binding) => {
     const declarationName = namedBindingIn(binding);
     if (declarationName === null) return [];
@@ -93,6 +102,7 @@ const bindingDeclarationsIn = (
           name: declarationName,
           start: startOf(statement),
           body: bindingBodyOf(binding),
+          declaration: binding,
         },
       }),
     ];
@@ -130,7 +140,7 @@ const declaredNameOf = (statement: UnknownFields): string =>
 const namedDeclarationsIn = (
   source: string,
   statement: UnknownFields,
-): readonly BodyDeclaration[] => {
+): readonly ReferencingDeclaration[] => {
   const bodyOf = BODY_BY_STATEMENT_KIND[String(statement[NODE_TYPE_FIELD])];
   if (bodyOf === undefined) return [];
 
@@ -138,7 +148,12 @@ const namedDeclarationsIn = (
   return [
     declarationFrom({
       source,
-      described: { name: declarationName, start: startOf(statement), body: bodyOf(statement) },
+      described: {
+        name: declarationName,
+        start: startOf(statement),
+        body: bodyOf(statement),
+        declaration: statement,
+      },
     }),
   ];
 };
@@ -146,7 +161,7 @@ const namedDeclarationsIn = (
 const declarationsFromStatement = (
   source: string,
   statement: unknown,
-): readonly BodyDeclaration[] => {
+): readonly ReferencingDeclaration[] => {
   if (!isNode(statement)) return [];
 
   const statementKind = statement[NODE_TYPE_FIELD];
@@ -157,7 +172,7 @@ const declarationsFromStatement = (
   return namedDeclarationsIn(source, statement);
 };
 
-export const declarationsIn = (source: string): readonly BodyDeclaration[] => {
+export const declarationsIn = (source: string): readonly ReferencingDeclaration[] => {
   const parsedSource = parseSync(DEFAULT_SOURCE_NAME, source);
   return parsedSource.program.body.flatMap((statement) =>
     declarationsFromStatement(source, statement),

@@ -164,6 +164,16 @@ const forbiddenCode = [
     "process-boundary",
   ],
   [
+    "libs/cli/src/features/cli/exit-code.ts",
+    "export const write = (line: string) => process.stdout.write(line);",
+    "process-boundary",
+  ],
+  [
+    "libs/cli/src/features/cli/exit-code.ts",
+    'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',
+    "process-boundary",
+  ],
+  [
     "tools/dev/src/features/dev/probe.ts",
     "export const write = (line: string) => process.stderr.write(line);",
     "process-boundary",
@@ -354,6 +364,10 @@ const validBoundaries = [
   ["libs/shared/src/shared/probe.ts", 'export { http } from "msw";'],
   ["libs/config/src/features/config/probe.ts", "export const value = process.env;"],
   ["libs/cli/src/features/cli/cli.ts", "export const done = () => { process.exitCode = 0; };"],
+  [
+    "libs/cli/src/features/cli/exit-code.ts",
+    "export const done = () => { process.exitCode = 0; };",
+  ],
   [
     "libs/cli/src/features/cli/cli.ts",
     'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',

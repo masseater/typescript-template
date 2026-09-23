@@ -15,6 +15,7 @@
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:",

@@ -9,6 +9,7 @@ import {
   wikiAdministrator,
   wikiOrigin,
 } from "../../../../../libs/auth/src/features/auth/testing.ts";
+import { Redirect } from "../contracts/index.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 import type {
@@ -16,7 +17,7 @@ import type {
   BrowserClient,
 } from "../../../../../libs/auth/src/features/auth/testing.ts";
 
-const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
+const decodeRedirect = Schema.decodeUnknownEffect(Redirect);
 const Tokens = Schema.Struct({ access_token: Schema.String });
 
 function responseStatus(value: unknown): number | undefined {

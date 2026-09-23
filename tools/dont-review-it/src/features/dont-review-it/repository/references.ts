@@ -364,4 +364,4 @@ export {
   staticText,
   variableOf,
 };
-export type { Origin, Resolve };
+export type { Origin, Resolve, ScopeLink };

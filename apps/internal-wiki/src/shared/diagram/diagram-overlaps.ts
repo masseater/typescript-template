@@ -163,5 +163,13 @@ const overlapsOf = (geometry: DiagramGeometry): readonly Overlap[] => {
   ];
 };
 
-export { boxesOverlap, collinearOverlap, markZones, overlapsOf, segmentEntersBox, shareAnEnd };
+export {
+  boxesOverlap,
+  collinearOverlap,
+  markZones,
+  overlapsOf,
+  segmentBox,
+  segmentEntersBox,
+  shareAnEnd,
+};
 export type { Overlap, Segment };

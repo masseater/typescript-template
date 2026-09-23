@@ -8,6 +8,7 @@
     "./http": "./src/features/runtime/http.ts",
     "./worker": "./src/features/runtime/worker.ts",
     "./client": "./src/features/runtime/client.ts",
+    "./contracts": "./src/features/runtime/contracts.ts",
     "./account": "./src/features/runtime/account.ts",
     "./jobs": "./src/features/runtime/jobs.ts",
     "./testing": "./src/features/runtime/app-fixture.ts",
@@ -24,12 +25,13 @@
     "@repo/observability": "workspace:*",
     "effect": "catalog:",
     "effect-cf": "0.47.0",
-    "elysia": "2.0.0-beta.16"
+    "elysia": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "msw": "catalog:",
     "typescript": "catalog:",

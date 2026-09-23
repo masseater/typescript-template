@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { comparisonFrom, type RepositoryComparison } from "./repository-comparison.ts";
 
@@ -12,7 +12,43 @@ export type GitHubPullRequestComparison = Readonly<{
   api: GitHubApi;
 }>;
 
+export class GitHubComparisonIncomplete extends Schema.TaggedError<GitHubComparisonIncomplete>()(
+  "GitHubComparisonIncomplete",
+  { message: Schema.String },
+) {}
+
 const CONTENTS_CONCURRENCY = 8;
+
+const COMPARE_FILE_LIMIT = 300;
+
+const completeFilesOf = (
+  files: readonly ComparedFile[] | undefined,
+): Effect.Effect<readonly ComparedFile[], GitHubComparisonIncomplete> => {
+  if (files === undefined) {
+    return Effect.fail(
+      new GitHubComparisonIncomplete({
+        message:
+          "Do not pass a change the GitHub compare answered without its changed files: fetch the merge with its parents so the checkout compares it locally.",
+      }),
+    );
+  }
+  if (files.length >= COMPARE_FILE_LIMIT) {
+    return Effect.fail(
+      new GitHubComparisonIncomplete({
+        message: `Do not pass a change the GitHub compare may have cut short: it lists at most ${COMPARE_FILE_LIMIT} files and answered ${files.length}. Fetch the merge with its parents so the checkout compares it locally.`,
+      }),
+    );
+  }
+  const unpatched = files.filter((file) => file.patch === undefined && file.changes > 0);
+  if (unpatched.length > 0) {
+    return Effect.fail(
+      new GitHubComparisonIncomplete({
+        message: `Do not pass a change whose diff the GitHub compare left out: ${unpatched.map((file) => file.filename).join(", ")}. Fetch the merge with its parents so the checkout compares it locally.`,
+      }),
+    );
+  }
+  return Effect.succeed(files);
+};
 
 const formerPathOf = (file: ComparedFile): string =>
   file.status === "renamed" ? file.previous_filename : file.filename;
@@ -68,10 +104,11 @@ export const compareGitHubPullRequest = Effect.fn("compareGitHubPullRequest")(
     headRevision,
     api,
   }: GitHubPullRequestComparison) {
-    const { merge_base_commit: mergeBase, files = [] } = yield* api.compare(repository, {
+    const { merge_base_commit: mergeBase, files: answeredFiles } = yield* api.compare(repository, {
       base: baseRevision,
       head: headRevision,
     });
+    const files = yield* completeFilesOf(answeredFiles);
     const comparison: RepositoryComparison = {
       repositoryRoot,
       baseRevision: mergeBase.sha,

@@ -1,10 +1,9 @@
 import { RECORDING_STATUS } from "@repo/config";
-import { Button, ConfirmDialog, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { Button, ConfirmDialog, Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 
 import { useRecordingActions } from "#pages/recordings/model/recording-actions.ts";
 import { clockOf, statusLabels } from "#pages/recordings/model/recording-labels.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { SpeakerNames } from "./speaker-names.tsx";
 import { TranscriptSection } from "./transcript-section.tsx";
 
@@ -29,7 +28,7 @@ function RecordingPage({ recording }: Readonly<{ recording: RecordingDetail }>):
   });
   const { durationMs, failure, status, title } = recording.recording;
   return (
-    <OpsPage title={title}>
+    <Page title={title}>
       <StatusMessage
         variant={status === RECORDING_STATUS.failed ? STATUS_VARIANT.failure : STATUS_VARIANT.empty}
       >
@@ -82,7 +81,7 @@ function RecordingPage({ recording }: Readonly<{ recording: RecordingDetail }>):
         variant="danger"
         onConfirm={actions.handleConfirmDelete}
       />
-    </OpsPage>
+    </Page>
   );
 }
 
