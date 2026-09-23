@@ -98,6 +98,7 @@ catalog:
   elysia: 2.0.0-beta.16
   storybook: 10.6.0
   zod: 4.6.5
+  yaml: 2.9.1
 peerDependencyRules:
   allowAny:
     - vite

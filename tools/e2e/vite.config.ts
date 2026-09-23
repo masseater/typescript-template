@@ -21,7 +21,7 @@ const applicationChecks = Object.values(roleApplications).flatMap((application) 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...effectDiagnostics(import.meta.dirname),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

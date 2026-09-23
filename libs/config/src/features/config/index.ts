@@ -166,7 +166,7 @@ export {
   readJobs,
 } from "./jobs.ts";
 export type { JobResult, JobsBindings } from "./jobs.ts";
-export { effectTsgoNoEmit, effectTypecheckInputs } from "./effect-typecheck.ts";
+export { effectTsgoNoEmit } from "./effect-typecheck.ts";
 export { adminPageSize, maximumAdminPageSize } from "./paging.ts";
 export type {
   AppConfig,
