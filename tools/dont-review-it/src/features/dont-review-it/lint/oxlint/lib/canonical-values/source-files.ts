@@ -195,9 +195,15 @@ const scannedDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent
   }
   if (directoryEntry.isSymbolicLink()) return scannedSymbolicLink(input, directoryEntry);
   if (directoryEntry.isDirectory()) {
-    return scannedFilesUnder({ ...input, directory: absolutePath });
+    return input.sourceScope.isIgnored(absolutePath)
+      ? EMPTY_SCANNED_FILES
+      : scannedFilesUnder({ ...input, directory: absolutePath });
   }
-  if (!directoryEntry.isFile() || !input.includesFileName(directoryEntry.name)) {
+  if (
+    !directoryEntry.isFile() ||
+    !input.includesFileName(directoryEntry.name) ||
+    input.sourceScope.isIgnored(absolutePath)
+  ) {
     return EMPTY_SCANNED_FILES;
   }
   return scannedRegularFile(input, absolutePath);
@@ -327,10 +333,7 @@ export const listRepositoryFiles = (
     sourceScope,
     ancestry: new Set([realRoot]),
   });
-  const cacheInputs = sortBy(
-    scannedRepository.files.filter((file) => !sourceScope.isIgnored(file.absolutePath)),
-    ["relativePath"],
-  );
+  const cacheInputs = sortBy(scannedRepository.files, ["relativePath"]);
   const scanned = cacheInputs.filter(isScannedSourcePath);
   const [manifests, otherScannedFiles] = partition(scanned, isManifest);
   const commentSources = uniquePhysicalFiles(otherScannedFiles.filter(isCommentSource));
