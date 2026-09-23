@@ -13,7 +13,7 @@ Disallow a named function whose whole body forwards its own parameters unchanged
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-identity-wrapper--call-the-target-directly.ts`](../../src/lint/oxlint/rules/writing/no-identity-wrapper--call-the-target-directly.ts)
+- Source: [`no-identity-wrapper--call-the-target-directly.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-identity-wrapper--call-the-target-directly.ts)
 
 <!-- END GENERATED rule-header -->
 

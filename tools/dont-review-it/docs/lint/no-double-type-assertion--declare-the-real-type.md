@@ -13,7 +13,7 @@ Disallow asserting the type of an expression that is already the result of a typ
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-double-type-assertion--declare-the-real-type.ts`](../../src/lint/oxlint/rules/writing/no-double-type-assertion--declare-the-real-type.ts)
+- Source: [`no-double-type-assertion--declare-the-real-type.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-double-type-assertion--declare-the-real-type.ts)
 
 <!-- END GENERATED rule-header -->
 

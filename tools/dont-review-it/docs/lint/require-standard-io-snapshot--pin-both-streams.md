@@ -13,7 +13,7 @@ Require a spec that derives tests from `standardIoTest` to pin both captured str
 - Suggestions: no
 - Options: no
 - Bundle: `testing`
-- Source: [`require-standard-io-snapshot--pin-both-streams.ts`](../../src/lint/oxlint/rules/testing/require-standard-io-snapshot--pin-both-streams.ts)
+- Source: [`require-standard-io-snapshot--pin-both-streams.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/require-standard-io-snapshot--pin-both-streams.ts)
 
 <!-- END GENERATED rule-header -->
 

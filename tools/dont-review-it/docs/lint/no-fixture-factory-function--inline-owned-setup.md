@@ -13,7 +13,7 @@ Disallow a fixture handing back a function that builds the subject, so the setup
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-fixture-factory-function--inline-owned-setup.ts`](../../src/lint/oxlint/rules/testing/no-fixture-factory-function--inline-owned-setup.ts)
+- Source: [`no-fixture-factory-function--inline-owned-setup.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-fixture-factory-function--inline-owned-setup.ts)
 
 <!-- END GENERATED rule-header -->
 

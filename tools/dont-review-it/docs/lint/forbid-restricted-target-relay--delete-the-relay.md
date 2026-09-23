@@ -13,7 +13,7 @@ Disallow a local module passing a restricted target straight to its own public s
 - Suggestions: no
 - Options: yes
 - Bundle: `governance`
-- Source: [`forbid-restricted-target-relay--delete-the-relay.ts`](../../src/lint/oxlint/rules/governance/forbid-restricted-target-relay--delete-the-relay.ts)
+- Source: [`forbid-restricted-target-relay--delete-the-relay.ts`](../../src/features/dont-review-it/lint/oxlint/rules/governance/forbid-restricted-target-relay--delete-the-relay.ts)
 
 <!-- END GENERATED rule-header -->
 

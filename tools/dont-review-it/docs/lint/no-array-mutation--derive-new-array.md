@@ -13,7 +13,7 @@ Disallow calling an array method that changes the receiver in place, so a change
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-array-mutation--derive-new-array.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-array-mutation--derive-new-array.ts)
+- Source: [`no-array-mutation--derive-new-array.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-array-mutation--derive-new-array.ts)
 
 <!-- END GENERATED rule-header -->
 

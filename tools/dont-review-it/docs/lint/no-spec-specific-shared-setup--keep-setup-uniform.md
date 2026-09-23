@@ -13,7 +13,7 @@ Disallow a shared setup module or a runner configuration telling one spec from a
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-spec-specific-shared-setup--keep-setup-uniform.ts`](../../src/lint/oxlint/rules/testing/no-spec-specific-shared-setup--keep-setup-uniform.ts)
+- Source: [`no-spec-specific-shared-setup--keep-setup-uniform.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-spec-specific-shared-setup--keep-setup-uniform.ts)
 
 <!-- END GENERATED rule-header -->
 

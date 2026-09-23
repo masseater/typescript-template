@@ -17,11 +17,6 @@ const withoutInlangState = [
   "!project.inlang/.lix/**",
 ] as const;
 
-const paraglideSources = [
-  "libs/vite-config/src/features/vite-config/paraglide-options.ts",
-  "libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-] as const;
-
 const workspaceParaglideCompile = {
   command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
   input: [
@@ -32,25 +27,20 @@ const workspaceParaglideCompile = {
       base: "workspace" as const,
       pattern: pattern.replace("!", "!apps/*/"),
     })),
-    ...[
-      ...paraglideSources,
-      "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
-    ].map((pattern) => ({ base: "workspace" as const, pattern })),
+    {
+      base: "workspace",
+      pattern: "libs/vite-config/src/features/vite-config/paraglide-options.ts",
+    },
+    {
+      base: "workspace",
+      pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+    },
   ],
   output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
 } satisfies NonNullable<NonNullable<NonNullable<UserConfig["run"]>["tasks"]>[string]>;
 
-const paraglideCompileInputs = [
-  ...taskInput,
-  "messages/**",
-  "project.inlang/settings.json",
-  ...withoutInlangState,
-  ...paraglideSources.map((pattern) => ({ base: "workspace" as const, pattern })),
-];
-
 export {
   paraglideAppPlugin,
-  paraglideCompileInputs,
   paraglideCompileOptions,
   paraglideStrategy,
   withoutInlangState,

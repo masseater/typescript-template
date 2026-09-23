@@ -13,7 +13,7 @@ Disallow reading `expect` out of the context a test block hands its callback, so
 - Suggestions: no
 - Options: no
 - Bundle: `testing`
-- Source: [`no-vitest-context-expect--import-expect-from-vitest.ts`](../../src/lint/oxlint/rules/testing/no-vitest-context-expect--import-expect-from-vitest.ts)
+- Source: [`no-vitest-context-expect--import-expect-from-vitest.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-vitest-context-expect--import-expect-from-vitest.ts)
 
 <!-- END GENERATED rule-header -->
 

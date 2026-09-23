@@ -13,7 +13,7 @@ Disallow a test block reaching more assertions than the budget set for it, count
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`forbid-multi-expect-it--split-into-separate-it.ts`](../../src/lint/oxlint/rules/testing/forbid-multi-expect-it--split-into-separate-it.ts)
+- Source: [`forbid-multi-expect-it--split-into-separate-it.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/forbid-multi-expect-it--split-into-separate-it.ts)
 
 <!-- END GENERATED rule-header -->
 

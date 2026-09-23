@@ -34,11 +34,7 @@ import { devBoundary } from "./dev-boundary.ts";
 import { effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { filesystem, isNotFound, paths } from "./host.ts";
-import {
-  paraglideCompileInputs,
-  withoutInlangState,
-  workspaceParaglideCompile,
-} from "./paraglide.ts";
+import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
 import { taskInput } from "./task-input.ts";
 
@@ -325,16 +321,11 @@ const appRun = {
 const paraglideAppRun = {
   tasks: {
     ...appRun.tasks,
-    "compile:paraglide": {
-      command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-      input: [...paraglideCompileInputs],
-      output: [".paraglide/**"],
-    },
     ...Object.fromEntries(
       (["check:effect", "check:code", "check:imports", "check:client", "check:react"] as const).map(
         (gatedTask) => [
           gatedTask,
-          { ...appRun.tasks[gatedTask], dependsOn: ["compile:paraglide"] },
+          { ...appRun.tasks[gatedTask], dependsOn: ["typescript-template#compile:paraglide"] },
         ],
       ),
     ),
