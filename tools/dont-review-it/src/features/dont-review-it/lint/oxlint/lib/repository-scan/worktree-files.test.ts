@@ -3,6 +3,7 @@ import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { gitOutput } from "../git-output.ts";
 import {
   UNSCANNED_DIRECTORY_NAMES,
   unscannedDirectoryNamesFrom,
@@ -31,6 +32,33 @@ layer(NodeServices.layer)("worktreeFilePathsUnder", (it) => {
       Effect.gen(function* program() {
         const paths = yield* fixture;
         expect(paths).toStrictEqual(["README.md", "packages/alpha/package.json"]);
+      }),
+    );
+  });
+
+  describe("a worktree holding a directory git ignores", () => {
+    const fixture = Effect.gen(function* paths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "worktree-files-" });
+
+      gitOutput(["init", "--quiet"], { cwd: root, env: process.env });
+      yield* filesystem.writeFileString(pathService.join(root, ".gitignore"), ".local/\n");
+      yield* filesystem.makeDirectory(pathService.join(root, ".local", "source-maps"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(root, ".local", "source-maps", "entry.js.map"),
+        "held\n",
+      );
+      yield* filesystem.writeFileString(pathService.join(root, "entry.ts"), "held\n");
+      return worktreeFilePathsUnder({ root, unscannedDirectoryNames: UNSCANNED_DIRECTORY_NAMES });
+    });
+
+    it.effect("keeps only the files git would track", () =>
+      Effect.gen(function* program() {
+        const paths = yield* fixture;
+        expect(paths).toStrictEqual([".gitignore", "entry.ts"]);
       }),
     );
   });
