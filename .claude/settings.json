@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
+            "command": "[ -f \"$HOME/.config/vite-plus/env\" ] && . \"$HOME/.config/vite-plus/env\"; command -v vp >/dev/null 2>&1 || { echo \"sync-base skipped: vp is not on PATH\" >&2; exit 0; }; exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/sync-base/cli.ts"
           }
         ]
       }
@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
+            "command": "[ -f \"$HOME/.config/vite-plus/env\" ] && . \"$HOME/.config/vite-plus/env\"; command -v vp >/dev/null 2>&1 || { echo \"sync-base skipped: vp is not on PATH\" >&2; exit 0; }; exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/sync-base/cli.ts"
           }
         ]
       }
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
+            "command": "[ -f \"$HOME/.config/vite-plus/env\" ] && . \"$HOME/.config/vite-plus/env\"; command -v vp >/dev/null 2>&1 || { echo \"sync-base skipped: vp is not on PATH\" >&2; exit 0; }; exec vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/sync-base/cli.ts"
           }
         ]
       }
