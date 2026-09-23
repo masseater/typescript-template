@@ -1,5 +1,5 @@
 import { CloudflareId } from "@repo/config";
-import { Effect, Schema } from "effect";
+import { Effect, Schema, SchemaIssue } from "effect";
 
 import { ErrorMonitorFailure } from "./config.ts";
 
@@ -126,9 +126,20 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
     try: () => telemetryResponse.json(),
   });
   const telemetryEnvelope = yield* Schema.decodeUnknownEffect(QueryEnvelope)(telemetryPayload).pipe(
-    Effect.mapError(
-      () => new ErrorMonitorFailure({ code: "telemetry_response_invalid", keys: [] }),
-    ),
+    Effect.mapError((decodeError) => {
+      const { issues } = SchemaIssue.makeFormatterStandardSchemaV1({
+        leafHook: (leafIssue) => leafIssue._tag,
+      })(decodeError.issue);
+      return new ErrorMonitorFailure({
+        code: "telemetry_response_invalid",
+        keys: issues.map((mismatch) => {
+          const mismatchPath = (mismatch.path ?? [])
+            .map((segment) => (typeof segment === "object" ? String(segment.key) : String(segment)))
+            .join(".");
+          return `${mismatchPath === "" ? "$" : mismatchPath}:${mismatch.message}`;
+        }),
+      });
+    }),
   );
   return telemetryEnvelope.result.calculations.flatMap(
     (calculationRow) => calculationRow.aggregates,
@@ -159,7 +170,7 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
   queryWindow: QueryWindow,
 ): Generator<
   Effect.Effect<unknown, ErrorMonitorFailure>,
-  { readonly dropped: number; readonly groups: readonly ErrorGroup[] },
+  { readonly groups: readonly ErrorGroup[] },
   never
 > {
   if (!isCloudflareId(queryWindow.accountId)) {
@@ -167,11 +178,17 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
   }
   const aggregates = yield* collectPages({ aggregates: [], offsetBy: 0, queryWindow });
   const collected = aggregates.map((aggregateRow) => groupedError(aggregateRow));
+  const droppedCount = collected.reduce(
+    (droppedTotal, collectedGroup) => droppedTotal + collectedGroup.dropped,
+    0,
+  );
+  if (droppedCount > 0) {
+    return yield* new ErrorMonitorFailure({
+      code: "telemetry_groups_dropped",
+      keys: [`dropped:${String(droppedCount)}`],
+    });
+  }
   return {
-    dropped: collected.reduce(
-      (droppedCount, collectedGroup) => droppedCount + collectedGroup.dropped,
-      0,
-    ),
     groups: collected.flatMap((collectedGroup) =>
       collectedGroup.grouped === undefined ? [] : [collectedGroup.grouped],
     ),

@@ -17,6 +17,11 @@ const localCacheNamespace = {
 } as const;
 
 const StorageBindings = Schema.Struct({
+  [cacheNamespaceBinding]: bindingWith<KVNamespace>("KVNamespace", ["get", "put", "delete"]),
+  [fileBucketBinding]: bindingWith<R2Bucket>("R2Bucket", ["get", "put", "delete"]),
+});
+
+const OptionalStorageBindings = Schema.Struct({
   [cacheNamespaceBinding]: Schema.optionalKey(
     bindingWith<KVNamespace>("KVNamespace", ["get", "put", "delete"]),
   ),
@@ -33,10 +38,21 @@ const readStorage = Effect.fn("readStorage")(function* readStorage(input: unknow
   };
 });
 
+const readOptionalStorage = Effect.fn("readOptionalStorage")(function* readOptionalStorage(
+  input: unknown,
+) {
+  const bindings = yield* decode(OptionalStorageBindings, input);
+  return {
+    cache: bindings[cacheNamespaceBinding],
+    files: bindings[fileBucketBinding],
+  };
+});
+
 export {
   cacheNamespaceBinding,
   fileBucketBinding,
   localCacheNamespace,
   localFileBucket,
+  readOptionalStorage,
   readStorage,
 };

@@ -18,7 +18,7 @@ const errorMonitor = monitorWorker<MonitorBindings & ErrorMonitorEnv>({
     return Effect.gen(function* program() {
       const config = yield* parseErrorMonitorConfig(env);
       const observedAtMs = yield* Clock.currentTimeMillis;
-      const { dropped, groups } = yield* fetchErrorGroups({
+      const { groups } = yield* fetchErrorGroups({
         accountId: config.CLOUDFLARE_ACCOUNT_ID,
         from: observedAtMs - LOOKBACK_MS,
         queryEndpoint: observabilityQueryEndpoint(config.CLOUDFLARE_ACCOUNT_ID),
@@ -40,7 +40,7 @@ const errorMonitor = monitorWorker<MonitorBindings & ErrorMonitorEnv>({
         });
       }
       yield* Effect.promise(() => ctx.storage.put("seen", decision.seen));
-      return { dropped, groups: groups.length, notified: decision.notifications.length };
+      return { groups: groups.length, notified: decision.notifications.length };
     }).pipe(withSpan("ErrorMonitor.check"));
   },
   event: errorMonitorWorker.event,

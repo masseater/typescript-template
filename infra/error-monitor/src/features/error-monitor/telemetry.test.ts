@@ -48,7 +48,7 @@ const telemetryEnvelope = {
   result: {
     calculations: [
       {
-        aggregates: [fingerprintedAggregate, personalAggregate],
+        aggregates: [fingerprintedAggregate],
         calculation: "count",
         series: [{ data: [1], time: [1] }],
       },
@@ -80,7 +80,6 @@ describe("fetchErrorGroups", () => {
     observedGroups,
   }) => {
     expect(observedGroups).toStrictEqual({
-      dropped: 1,
       groups: [
         {
           count: GROUPED_EVENTS,
@@ -92,6 +91,41 @@ describe("fetchErrorGroups", () => {
         },
       ],
     });
+  });
+});
+
+describe("a group with an invalid fingerprint", () => {
+  const it = test.extend("queryFailure", ({}, { onCleanup }) => {
+    const telemetryApi = setupServer(
+      http.post(queryEndpoint, () =>
+        HttpResponse.json({
+          ...telemetryEnvelope,
+          result: {
+            ...telemetryEnvelope.result,
+            calculations: [
+              {
+                aggregates: [fingerprintedAggregate, personalAggregate],
+                calculation: "count",
+                series: [{ data: [1], time: [1] }],
+              },
+            ],
+          },
+        }),
+      ),
+    );
+    telemetryApi.listen({ onUnhandledRequest: "error" });
+    onCleanup(() => {
+      telemetryApi.close();
+    });
+    return Effect.runPromise(Effect.flip(fetchErrorGroups(queryWindow)));
+  });
+
+  it("fails the check with only the dropped count instead of reporting a successful drop", ({
+    queryFailure,
+  }) => {
+    expect(queryFailure).toStrictEqual(
+      new ErrorMonitorFailure({ code: "telemetry_groups_dropped", keys: ["dropped:1"] }),
+    );
   });
 });
 
@@ -109,9 +143,14 @@ describe("a response without calculations", () => {
     return Effect.runPromise(Effect.flip(fetchErrorGroups(queryWindow)));
   });
 
-  it("fails rather than returning zero errors", ({ queryFailure }) => {
+  it("fails naming the missing calculations rather than returning zero errors", ({
+    queryFailure,
+  }) => {
     expect(queryFailure).toStrictEqual(
-      new ErrorMonitorFailure({ code: "telemetry_response_invalid", keys: [] }),
+      new ErrorMonitorFailure({
+        code: "telemetry_response_invalid",
+        keys: ["result.calculations:MissingKey"],
+      }),
     );
   });
 });
@@ -170,7 +209,6 @@ describe("a group with only a fingerprint", () => {
 
   it("reports absent fields as undefined", ({ observedGroups }) => {
     expect(observedGroups).toStrictEqual({
-      dropped: 0,
       groups: [
         {
           count: GROUPED_EVENTS,
@@ -311,7 +349,6 @@ describe("grouped results past the query limit", () => {
   }) => {
     expect(pagedQuery).toStrictEqual({
       observedGroups: {
-        dropped: 0,
         groups: Array.from({ length: 2001 }, (_unused, groupIndex) => ({
           count: GROUPED_EVENTS,
           event: undefined,
