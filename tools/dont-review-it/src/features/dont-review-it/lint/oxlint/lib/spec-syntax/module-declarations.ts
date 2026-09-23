@@ -1,8 +1,9 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
 
 import { parseSync } from "oxc-parser";
 
+import { path } from "../../../../platform/path.ts";
 import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 
 import type { ESTree } from "@oxlint/plugins";
@@ -113,14 +114,14 @@ export const moduleDeclarationsOf = (
   forwardedSpecifiers: writtenBody.flatMap(forwardedSpecifiersIn),
 });
 
-const parsedModuleAt = (path: string): ModuleDeclarations | null => {
-  const source = readUnlessMissing(() => readFileSync(path, "utf8"));
+const parsedModuleAt = (filePath: string): ModuleDeclarations | null => {
+  const source = readUnlessMissing(() => readFileSync(filePath, "utf8"));
   if (source === null) return null;
 
-  const writtenBody = parseSync(path, source).program.body.map(
+  const writtenBody = parseSync(filePath, source).program.body.map(
     (statement) => statement as SpecStatement,
   );
-  return moduleDeclarationsOf(path, writtenBody);
+  return moduleDeclarationsOf(filePath, writtenBody);
 };
 
 const declaredUnderName = (reading: {
@@ -159,14 +160,14 @@ export const importedDeclarationOf = (asked: {
   const { from, imported, visited } = asked;
   if (!REPOSITORY_SPECIFIER.test(imported.specifier)) return null;
 
-  const path = resolve(dirname(from.filename), imported.specifier);
-  if (visited.has(path)) return null;
+  const filePath = path.resolve(path.dirname(from.filename), imported.specifier);
+  if (visited.has(filePath)) return null;
 
-  const module = parsedModuleAt(path);
+  const module = parsedModuleAt(filePath);
   if (module === null) return null;
   return declaredUnderName({
     module,
     exported: imported.exported,
-    visited: new Set([...visited, path]),
+    visited: new Set([...visited, filePath]),
   });
 };

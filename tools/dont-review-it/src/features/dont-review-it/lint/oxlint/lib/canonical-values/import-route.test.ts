@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { analyzeCanonicalValuesRepository } from "./builder.ts";
@@ -9,7 +8,7 @@ import { buildCatalog } from "./catalog.ts";
 import { fingerprintValues } from "./fingerprint.ts";
 import { importRouteStatus } from "./import-route.ts";
 
-describe("importRouteStatus", () => {
+layer(NodeServices.layer)("importRouteStatus", (it) => {
   describe("a binding the public specifier does not export", () => {
     const it = test.extend("statusOfAShadowBindingOnThePublicSpecifier", () =>
       importRouteStatus(
@@ -227,22 +226,27 @@ describe("importRouteStatus", () => {
   });
 
   describe("a relative route into a module the source scope ignores", () => {
-    const it = test.extend("statusOfARouteIntoAnIgnoredModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-ignored-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfARouteIntoAnIgnoredModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-ignored-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/order-status.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/order-status.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "./order-status.ts",
-          filename: join(repositoryRoot, "src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog(
@@ -266,28 +270,36 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("carries no registered entry", ({ statusOfARouteIntoAnIgnoredModule }) => {
-      expect(statusOfARouteIntoAnIgnoredModule).toBe("external");
-    });
+    it.effect("carries no registered entry", () =>
+      Effect.gen(function* program() {
+        const statusOfARouteIntoAnIgnoredModule = yield* fixture;
+        expect(statusOfARouteIntoAnIgnoredModule).toBe("external");
+      }),
+    );
   });
 
   describe("a relative owner route written with the ts extension", () => {
-    const it = test.extend("statusOfARelativeOwnerRouteWithTheTsExtension", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-relative-ts-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfARelativeOwnerRouteWithTheTsExtension() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-relative-ts-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/order-status.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/order-status.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "./order-status.ts",
-          filename: join(repositoryRoot, "src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -308,28 +320,36 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is registered", ({ statusOfARelativeOwnerRouteWithTheTsExtension }) => {
-      expect(statusOfARelativeOwnerRouteWithTheTsExtension).toBe("registered");
-    });
+    it.effect("is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfARelativeOwnerRouteWithTheTsExtension = yield* fixture;
+        expect(statusOfARelativeOwnerRouteWithTheTsExtension).toBe("registered");
+      }),
+    );
   });
 
   describe("a relative owner route written without an extension", () => {
-    const it = test.extend("statusOfARelativeOwnerRouteWithoutAnExtension", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-relative-bare-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfARelativeOwnerRouteWithoutAnExtension() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-relative-bare-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/order-status.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/order-status.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "./order-status",
-          filename: join(repositoryRoot, "src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -350,30 +370,36 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("resolves the same way and is registered", ({
-      statusOfARelativeOwnerRouteWithoutAnExtension,
-    }) => {
-      expect(statusOfARelativeOwnerRouteWithoutAnExtension).toBe("registered");
-    });
+    it.effect("resolves the same way and is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfARelativeOwnerRouteWithoutAnExtension = yield* fixture;
+        expect(statusOfARelativeOwnerRouteWithoutAnExtension).toBe("registered");
+      }),
+    );
   });
 
   describe("a relative owner route written with the js extension", () => {
-    const it = test.extend("statusOfARelativeOwnerRouteWithTheJsExtension", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-relative-js-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfARelativeOwnerRouteWithTheJsExtension() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-relative-js-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/order-status.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/order-status.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "./order-status.js",
-          filename: join(repositoryRoot, "src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -394,32 +420,36 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("resolves to the ts declaration and is registered", ({
-      statusOfARelativeOwnerRouteWithTheJsExtension,
-    }) => {
-      expect(statusOfARelativeOwnerRouteWithTheJsExtension).toBe("registered");
-    });
+    it.effect("resolves to the ts declaration and is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfARelativeOwnerRouteWithTheJsExtension = yield* fixture;
+        expect(statusOfARelativeOwnerRouteWithTheJsExtension).toBe("registered");
+      }),
+    );
   });
 
   describe("a binding the relative declaration route does not own", () => {
-    const it = test.extend("statusOfANonOwnerBindingOnARelativeDeclarationRoute", ({}, {
-      onCleanup,
-    }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-relative-binding-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfANonOwnerBindingOnARelativeDeclarationRoute() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-relative-binding-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/order-status.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/order-status.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "PUBLIC_STATUSES",
           specifier: "./order-status.ts",
-          filename: join(repositoryRoot, "src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -440,9 +470,12 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is unregistered", ({ statusOfANonOwnerBindingOnARelativeDeclarationRoute }) => {
-      expect(statusOfANonOwnerBindingOnARelativeDeclarationRoute).toBe("unregistered");
-    });
+    it.effect("is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfANonOwnerBindingOnARelativeDeclarationRoute = yield* fixture;
+        expect(statusOfANonOwnerBindingOnARelativeDeclarationRoute).toBe("unregistered");
+      }),
+    );
   });
 
   describe("a relative route walking out of a consumer that does not exist", () => {
@@ -488,24 +521,27 @@ describe("importRouteStatus", () => {
   });
 
   describe("an absolute repository path naming the declaration", () => {
-    const it = test.extend("statusOfAnAbsoluteRepositoryPathToTheDeclaration", ({}, {
-      onCleanup,
-    }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-absolute-owner-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAnAbsoluteRepositoryPathToTheDeclaration() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-absolute-owner-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/order-status.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/order-status.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
-          specifier: join(repositoryRoot, "src/order-status.ts"),
-          filename: join(repositoryRoot, "src/schema.ts"),
+          specifier: pathService.join(repositoryRoot, "src/order-status.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -526,30 +562,36 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is registered", ({ statusOfAnAbsoluteRepositoryPathToTheDeclaration }) => {
-      expect(statusOfAnAbsoluteRepositoryPathToTheDeclaration).toBe("registered");
-    });
+    it.effect("is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfAnAbsoluteRepositoryPathToTheDeclaration = yield* fixture;
+        expect(statusOfAnAbsoluteRepositoryPathToTheDeclaration).toBe("registered");
+      }),
+    );
   });
 
   describe("a binding the absolute repository path does not own", () => {
-    const it = test.extend("statusOfANonOwnerBindingOnAnAbsoluteRepositoryPath", ({}, {
-      onCleanup,
-    }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-absolute-binding-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfANonOwnerBindingOnAnAbsoluteRepositoryPath() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-absolute-binding-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/order-status.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/order-status.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "PUBLIC_STATUSES",
-          specifier: join(repositoryRoot, "src/order-status.ts"),
-          filename: join(repositoryRoot, "src/schema.ts"),
+          specifier: pathService.join(repositoryRoot, "src/order-status.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -570,9 +612,12 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is unregistered", ({ statusOfANonOwnerBindingOnAnAbsoluteRepositoryPath }) => {
-      expect(statusOfANonOwnerBindingOnAnAbsoluteRepositoryPath).toBe("unregistered");
-    });
+    it.effect("is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfANonOwnerBindingOnAnAbsoluteRepositoryPath = yield* fixture;
+        expect(statusOfANonOwnerBindingOnAnAbsoluteRepositoryPath).toBe("unregistered");
+      }),
+    );
   });
 
   describe("an absolute repository path beside the declaration", () => {
@@ -660,32 +705,42 @@ describe("importRouteStatus", () => {
   });
 
   describe("a configured path alias naming the declaration", () => {
-    const it = test.extend("statusOfAPathAliasNamingTheDeclaration", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-alias-owner-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAPathAliasNamingTheDeclaration() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-alias-owner-",
       });
-      mkdirSync(join(repositoryRoot, "packages/order-vocabulary/src"), { recursive: true });
-      mkdirSync(join(repositoryRoot, "packages/order/src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src"),
+        { recursive: true },
+      );
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "packages/order/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@internal/owner": ["packages/order-vocabulary/src/order-status.ts"] },
           },
         }),
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(join(repositoryRoot, "packages/order/src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "@internal/owner",
-          filename: join(repositoryRoot, "packages/order/src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -706,40 +761,51 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("keeps the repository route and is registered", ({
-      statusOfAPathAliasNamingTheDeclaration,
-    }) => {
-      expect(statusOfAPathAliasNamingTheDeclaration).toBe("registered");
-    });
+    it.effect("keeps the repository route and is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfAPathAliasNamingTheDeclaration = yield* fixture;
+        expect(statusOfAPathAliasNamingTheDeclaration).toBe("registered");
+      }),
+    );
   });
 
   describe("a binding the aliased declaration does not own", () => {
-    const it = test.extend("statusOfANonOwnerBindingOnAPathAlias", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-alias-binding-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfANonOwnerBindingOnAPathAlias() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-alias-binding-",
       });
-      mkdirSync(join(repositoryRoot, "packages/order-vocabulary/src"), { recursive: true });
-      mkdirSync(join(repositoryRoot, "packages/order/src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src"),
+        { recursive: true },
+      );
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "packages/order/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@internal/owner": ["packages/order-vocabulary/src/order-status.ts"] },
           },
         }),
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(join(repositoryRoot, "packages/order/src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "SHADOW_STATUSES",
           specifier: "@internal/owner",
-          filename: join(repositoryRoot, "packages/order/src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -760,44 +826,55 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("keeps the binding identity and is unregistered", ({
-      statusOfANonOwnerBindingOnAPathAlias,
-    }) => {
-      expect(statusOfANonOwnerBindingOnAPathAlias).toBe("unregistered");
-    });
+    it.effect("keeps the binding identity and is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfANonOwnerBindingOnAPathAlias = yield* fixture;
+        expect(statusOfANonOwnerBindingOnAPathAlias).toBe("unregistered");
+      }),
+    );
   });
 
   describe("a configured path alias naming a sibling of the declaration", () => {
-    const it = test.extend("statusOfAPathAliasNamingASiblingModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-alias-sibling-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAPathAliasNamingASiblingModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-alias-sibling-",
       });
-      mkdirSync(join(repositoryRoot, "packages/order-vocabulary/src"), { recursive: true });
-      mkdirSync(join(repositoryRoot, "packages/order/src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src"),
+        { recursive: true },
+      );
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "packages/order/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@internal/shadow": ["packages/order-vocabulary/src/shadow.ts"] },
           },
         }),
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/shadow.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/shadow.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(join(repositoryRoot, "packages/order/src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "@internal/shadow",
-          filename: join(repositoryRoot, "packages/order/src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -818,38 +895,51 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is unregistered", ({ statusOfAPathAliasNamingASiblingModule }) => {
-      expect(statusOfAPathAliasNamingASiblingModule).toBe("unregistered");
-    });
+    it.effect("is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfAPathAliasNamingASiblingModule = yield* fixture;
+        expect(statusOfAPathAliasNamingASiblingModule).toBe("unregistered");
+      }),
+    );
   });
 
   describe("a configured path alias naming a module that is not there", () => {
-    const it = test.extend("statusOfAPathAliasNamingAMissingModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-alias-missing-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAPathAliasNamingAMissingModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-alias-missing-",
       });
-      mkdirSync(join(repositoryRoot, "packages/order-vocabulary/src"), { recursive: true });
-      mkdirSync(join(repositoryRoot, "packages/order/src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src"),
+        { recursive: true },
+      );
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "packages/order/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@internal/missing": ["packages/missing/statuses.ts"] },
           },
         }),
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(join(repositoryRoot, "packages/order/src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "@internal/missing",
-          filename: join(repositoryRoot, "packages/order/src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -870,40 +960,51 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("stays inside the repository and is unregistered", ({
-      statusOfAPathAliasNamingAMissingModule,
-    }) => {
-      expect(statusOfAPathAliasNamingAMissingModule).toBe("unregistered");
-    });
+    it.effect("stays inside the repository and is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfAPathAliasNamingAMissingModule = yield* fixture;
+        expect(statusOfAPathAliasNamingAMissingModule).toBe("unregistered");
+      }),
+    );
   });
 
   describe("a wildcard path alias naming a module that is not there", () => {
-    const it = test.extend("statusOfAWildcardAliasNamingAMissingModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-alias-wildcard-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAWildcardAliasNamingAMissingModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-alias-wildcard-",
       });
-      mkdirSync(join(repositoryRoot, "packages/order-vocabulary/src"), { recursive: true });
-      mkdirSync(join(repositoryRoot, "packages/order/src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src"),
+        { recursive: true },
+      );
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "packages/order/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@internal/missing/*": ["packages/missing/*"] },
           },
         }),
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(join(repositoryRoot, "packages/order/src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "@internal/missing/statuses",
-          filename: join(repositoryRoot, "packages/order/src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -924,40 +1025,51 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("stays inside the repository and is unregistered", ({
-      statusOfAWildcardAliasNamingAMissingModule,
-    }) => {
-      expect(statusOfAWildcardAliasNamingAMissingModule).toBe("unregistered");
-    });
+    it.effect("stays inside the repository and is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfAWildcardAliasNamingAMissingModule = yield* fixture;
+        expect(statusOfAWildcardAliasNamingAMissingModule).toBe("unregistered");
+      }),
+    );
   });
 
   describe("a specifier no configured path alias matches", () => {
-    const it = test.extend("statusOfASpecifierNoPathAliasMatches", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-alias-unmatched-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfASpecifierNoPathAliasMatches() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-alias-unmatched-",
       });
-      mkdirSync(join(repositoryRoot, "packages/order-vocabulary/src"), { recursive: true });
-      mkdirSync(join(repositoryRoot, "packages/order/src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src"),
+        { recursive: true },
+      );
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "packages/order/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@internal/owner": ["packages/order-vocabulary/src/order-status.ts"] },
           },
         }),
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(join(repositoryRoot, "packages/order/src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "@vite/unresolved-alias",
-          filename: join(repositoryRoot, "packages/order/src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -978,38 +1090,51 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is external", ({ statusOfASpecifierNoPathAliasMatches }) => {
-      expect(statusOfASpecifierNoPathAliasMatches).toBe("external");
-    });
+    it.effect("is external", () =>
+      Effect.gen(function* program() {
+        const statusOfASpecifierNoPathAliasMatches = yield* fixture;
+        expect(statusOfASpecifierNoPathAliasMatches).toBe("external");
+      }),
+    );
   });
 
   describe("a bare specifier inside a repository that configures path aliases", () => {
-    const it = test.extend("statusOfABareSpecifierBesidePathAliases", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-alias-bare-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfABareSpecifierBesidePathAliases() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-alias-bare-",
       });
-      mkdirSync(join(repositoryRoot, "packages/order-vocabulary/src"), { recursive: true });
-      mkdirSync(join(repositoryRoot, "packages/order/src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src"),
+        { recursive: true },
+      );
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "packages/order/src"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@internal/owner": ["packages/order-vocabulary/src/order-status.ts"] },
           },
         }),
       );
-      writeFileSync(
-        join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order-vocabulary/src/order-status.ts"),
         "export const ORDER_STATUSES = [];\n",
       );
-      writeFileSync(join(repositoryRoot, "packages/order/src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "order-statuses",
-          filename: join(repositoryRoot, "packages/order/src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "packages/order/src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -1030,31 +1155,39 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is external", ({ statusOfABareSpecifierBesidePathAliases }) => {
-      expect(statusOfABareSpecifierBesidePathAliases).toBe("external");
-    });
+    it.effect("is external", () =>
+      Effect.gen(function* program() {
+        const statusOfABareSpecifierBesidePathAliases = yield* fixture;
+        expect(statusOfABareSpecifierBesidePathAliases).toBe("external");
+      }),
+    );
   });
 
   describe("a path alias a TypeScript config above the repository defines", () => {
-    const it = test.extend("statusOfAnAliasDefinedAboveTheRepositoryRoot", ({}, { onCleanup }) => {
-      const enclosingDirectory = mkdtempSync(join(tmpdir(), "canonical-values-parent-config-"));
-      onCleanup(() => {
-        rmSync(enclosingDirectory, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAnAliasDefinedAboveTheRepositoryRoot() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const enclosingDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-parent-config-",
       });
-      const repositoryRoot = join(enclosingDirectory, "repository");
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(enclosingDirectory, "tsconfig.json"),
-        JSON.stringify({
+
+      const repositoryRoot = pathService.join(enclosingDirectory, "repository");
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(enclosingDirectory, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: {
             baseUrl: ".",
             paths: { "@external/statuses": ["repository/src/statuses.ts"] },
           },
         }),
       );
-      writeFileSync(join(repositoryRoot, "src/consumer.ts"), "export {};\n");
-      writeFileSync(
-        join(repositoryRoot, "src/statuses.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/consumer.ts"),
+        "export {};\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/statuses.ts"),
         '/** @canonical-values order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
       const nestedCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
@@ -1062,166 +1195,207 @@ describe("importRouteStatus", () => {
         {
           importedName: "ORDER_STATUSES",
           specifier: "@external/statuses",
-          filename: join(repositoryRoot, "src/consumer.ts"),
+          filename: pathService.join(repositoryRoot, "src/consumer.ts"),
           repositoryRoot,
         },
         nestedCatalog,
       );
     });
 
-    it("cannot redefine a route inside the repository", ({
-      statusOfAnAliasDefinedAboveTheRepositoryRoot,
-    }) => {
-      expect(statusOfAnAliasDefinedAboveTheRepositoryRoot).toBe("external");
-    });
+    it.effect("cannot redefine a route inside the repository", () =>
+      Effect.gen(function* program() {
+        const statusOfAnAliasDefinedAboveTheRepositoryRoot = yield* fixture;
+        expect(statusOfAnAliasDefinedAboveTheRepositoryRoot).toBe("external");
+      }),
+    );
   });
 
   describe("a relative route the TypeScript resolver sends to the ts module", () => {
-    const it = test.extend("statusOfARelativeRouteToTheResolvedModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-competing-relative-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfARelativeRouteToTheResolvedModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-competing-relative-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({ compilerOptions: { module: "nodenext", moduleResolution: "nodenext" } }),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          compilerOptions: { module: "nodenext", moduleResolution: "nodenext" },
+        }),
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.ts"),
         '/** @canonical-values order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.tsx"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.tsx"),
         'export const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(join(repositoryRoot, "src/consumer.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/consumer.ts"),
+        "export {};\n",
+      );
       const directCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "./status.js",
-          filename: join(repositoryRoot, "src/consumer.ts"),
+          filename: pathService.join(repositoryRoot, "src/consumer.ts"),
           repositoryRoot,
         },
         directCatalog,
       );
     });
 
-    it("is registered", ({ statusOfARelativeRouteToTheResolvedModule }) => {
-      expect(statusOfARelativeRouteToTheResolvedModule).toBe("registered");
-    });
+    it.effect("is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfARelativeRouteToTheResolvedModule = yield* fixture;
+        expect(statusOfARelativeRouteToTheResolvedModule).toBe("registered");
+      }),
+    );
   });
 
   describe("a relative route naming the competing extension", () => {
-    const it = test.extend("statusOfARelativeRouteToTheCompetingModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-competing-rival-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfARelativeRouteToTheCompetingModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-competing-rival-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({ compilerOptions: { module: "nodenext", moduleResolution: "nodenext" } }),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          compilerOptions: { module: "nodenext", moduleResolution: "nodenext" },
+        }),
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.ts"),
         '/** @canonical-values order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.tsx"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.tsx"),
         'export const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(join(repositoryRoot, "src/consumer.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/consumer.ts"),
+        "export {};\n",
+      );
       const directCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "./status.jsx",
-          filename: join(repositoryRoot, "src/consumer.ts"),
+          filename: pathService.join(repositoryRoot, "src/consumer.ts"),
           repositoryRoot,
         },
         directCatalog,
       );
     });
 
-    it("is unregistered", ({ statusOfARelativeRouteToTheCompetingModule }) => {
-      expect(statusOfARelativeRouteToTheCompetingModule).toBe("unregistered");
-    });
+    it.effect("is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfARelativeRouteToTheCompetingModule = yield* fixture;
+        expect(statusOfARelativeRouteToTheCompetingModule).toBe("unregistered");
+      }),
+    );
   });
 
   describe("an absolute route the TypeScript resolver sends to the ts module", () => {
-    const it = test.extend("statusOfAnAbsoluteRouteToTheResolvedModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-competing-absolute-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAnAbsoluteRouteToTheResolvedModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-competing-absolute-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({ compilerOptions: { module: "nodenext", moduleResolution: "nodenext" } }),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          compilerOptions: { module: "nodenext", moduleResolution: "nodenext" },
+        }),
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.ts"),
         '/** @canonical-values order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.tsx"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.tsx"),
         'export const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(join(repositoryRoot, "src/consumer.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/consumer.ts"),
+        "export {};\n",
+      );
       const directCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
-          specifier: join(repositoryRoot, "src/status.js"),
-          filename: join(repositoryRoot, "src/consumer.ts"),
+          specifier: pathService.join(repositoryRoot, "src/status.js"),
+          filename: pathService.join(repositoryRoot, "src/consumer.ts"),
           repositoryRoot,
         },
         directCatalog,
       );
     });
 
-    it("is registered", ({ statusOfAnAbsoluteRouteToTheResolvedModule }) => {
-      expect(statusOfAnAbsoluteRouteToTheResolvedModule).toBe("registered");
-    });
+    it.effect("is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfAnAbsoluteRouteToTheResolvedModule = yield* fixture;
+        expect(statusOfAnAbsoluteRouteToTheResolvedModule).toBe("registered");
+      }),
+    );
   });
 
   describe("an absolute route naming the competing extension", () => {
-    const it = test.extend("statusOfAnAbsoluteRouteToTheCompetingModule", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-competing-rival-path-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAnAbsoluteRouteToTheCompetingModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-competing-rival-path-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "tsconfig.json"),
-        JSON.stringify({ compilerOptions: { module: "nodenext", moduleResolution: "nodenext" } }),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "tsconfig.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          compilerOptions: { module: "nodenext", moduleResolution: "nodenext" },
+        }),
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.ts"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.ts"),
         '/** @canonical-values order.status */\nexport const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(
-        join(repositoryRoot, "src/status.tsx"),
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/status.tsx"),
         'export const ORDER_STATUSES = ["draft", "published"] as const;\n',
       );
-      writeFileSync(join(repositoryRoot, "src/consumer.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/consumer.ts"),
+        "export {};\n",
+      );
       const directCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
-          specifier: join(repositoryRoot, "src/status.jsx"),
-          filename: join(repositoryRoot, "src/consumer.ts"),
+          specifier: pathService.join(repositoryRoot, "src/status.jsx"),
+          filename: pathService.join(repositoryRoot, "src/consumer.ts"),
           repositoryRoot,
         },
         directCatalog,
       );
     });
 
-    it("is unregistered", ({ statusOfAnAbsoluteRouteToTheCompetingModule }) => {
-      expect(statusOfAnAbsoluteRouteToTheCompetingModule).toBe("unregistered");
-    });
+    it.effect("is unregistered", () =>
+      Effect.gen(function* program() {
+        const statusOfAnAbsoluteRouteToTheCompetingModule = yield* fixture;
+        expect(statusOfAnAbsoluteRouteToTheCompetingModule).toBe("unregistered");
+      }),
+    );
   });
 
   describe("a relative specifier the catalog does not resolve", () => {
@@ -1309,27 +1483,35 @@ describe("importRouteStatus", () => {
   });
 
   describe("a subpath specifier the package manifest resolves to a published route", () => {
-    const it = test.extend("statusOfAResolvedSubpathImport", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-subpath-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfAResolvedSubpathImport() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-subpath-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "package.json"),
-        JSON.stringify({
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           imports: { "#internal/statuses": "./src/statuses.ts" },
           name: "@fixture/consumer",
           type: "module",
         }),
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
-      writeFileSync(join(repositoryRoot, "src/statuses.ts"), "export const ORDER_STATUSES = [];\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/statuses.ts"),
+        "export const ORDER_STATUSES = [];\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "#internal/statuses",
-          filename: join(repositoryRoot, "src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -1356,9 +1538,12 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("is registered", ({ statusOfAResolvedSubpathImport }) => {
-      expect(statusOfAResolvedSubpathImport).toBe("registered");
-    });
+    it.effect("is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfAResolvedSubpathImport = yield* fixture;
+        expect(statusOfAResolvedSubpathImport).toBe("registered");
+      }),
+    );
   });
 
   describe("a bare specifier that reaches no registered owner", () => {
@@ -1404,24 +1589,27 @@ describe("importRouteStatus", () => {
   });
 
   describe("a declaration reached through an index module", () => {
-    const it = test.extend("statusOfADeclarationReachedThroughAnIndexModule", ({}, {
-      onCleanup,
-    }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-index-module-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* statusOfADeclarationReachedThroughAnIndexModule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-index-module-",
       });
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(
-        join(repositoryRoot, "src/index.ts"),
+
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/index.ts"),
         "export const ORDER_STATUSES = [] as const;\n",
       );
-      writeFileSync(join(repositoryRoot, "src/schema.ts"), "export {};\n");
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/schema.ts"),
+        "export {};\n",
+      );
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "./index.ts",
-          filename: join(repositoryRoot, "src/schema.ts"),
+          filename: pathService.join(repositoryRoot, "src/schema.ts"),
           repositoryRoot,
         },
         buildCatalog([
@@ -1442,11 +1630,12 @@ describe("importRouteStatus", () => {
       );
     });
 
-    it("keeps resolving to its owner and is registered", ({
-      statusOfADeclarationReachedThroughAnIndexModule,
-    }) => {
-      expect(statusOfADeclarationReachedThroughAnIndexModule).toBe("registered");
-    });
+    it.effect("keeps resolving to its owner and is registered", () =>
+      Effect.gen(function* program() {
+        const statusOfADeclarationReachedThroughAnIndexModule = yield* fixture;
+        expect(statusOfADeclarationReachedThroughAnIndexModule).toBe("registered");
+      }),
+    );
   });
 
   describe("a route naming the directory a declaration's index module sits in", () => {

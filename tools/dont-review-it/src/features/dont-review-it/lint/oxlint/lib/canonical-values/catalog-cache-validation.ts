@@ -1,6 +1,7 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { createHash } from "node:crypto";
-import { isAbsolute, posix } from "node:path";
 
+import { path } from "../../../../platform/path.ts";
 import {
   canonicalValueKey,
   fingerprintValues,
@@ -80,8 +81,11 @@ const hasNonemptyStringProperty = (
   return typeof propertyValue === "string" && propertyValue.length > 0;
 };
 
-const staysWithinRepository = (path: string): boolean =>
-  !isAbsolute(path) && !/^[A-Za-z]:\//u.test(path) && path !== ".." && !path.startsWith("../");
+const staysWithinRepository = (filePath: string): boolean =>
+  !path.isAbsolute(filePath) &&
+  !/^[A-Za-z]:\//u.test(filePath) &&
+  filePath !== ".." &&
+  !filePath.startsWith("../");
 
 const isResolvedSourcePath = (candidate: unknown): candidate is string =>
   typeof candidate === "string" &&
@@ -89,7 +93,7 @@ const isResolvedSourcePath = (candidate: unknown): candidate is string =>
   candidate !== "." &&
   !candidate.includes("\0") &&
   !candidate.includes("\\") &&
-  posix.normalize(candidate) === candidate &&
+  path.normalize(candidate) === candidate &&
   staysWithinRepository(candidate);
 
 const hasResolvedSourcePaths = (candidate: object): boolean => {

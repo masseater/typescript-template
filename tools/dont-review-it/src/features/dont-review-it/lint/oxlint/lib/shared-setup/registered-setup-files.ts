@@ -1,7 +1,6 @@
-import { join } from "node:path";
-
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { LINT_CONFIGURATION_FILE } from "../lint-suppression/lint-config-suppression.ts";
 import { ARRAY_EXPRESSION } from "../node-kinds.ts";
 import { toPosixPath } from "../posix-path.ts";
@@ -124,7 +123,7 @@ const registeredEntriesUnder = (workspaceRoot: string): readonly string[] =>
   })
     .filter(isRunnerConfigurationFile)
     .flatMap((relativePath) => {
-      const configPath = join(workspaceRoot, relativePath);
+      const configPath = path.join(workspaceRoot, relativePath);
       const program = parsedProgramAt(configPath);
       const runnerBlock = program === null ? null : runnerBlockIn(program);
       if (program === null || runnerBlock === null) return [];
@@ -165,7 +164,7 @@ export const sharedSetupFilesUnder = memoize(
     readonly workspaceRoot: string;
     readonly declaredEntries: readonly string[];
   }): ReadonlySet<string> => {
-    const declared = declaredEntries.map((relativePath) => join(workspaceRoot, relativePath));
+    const declared = declaredEntries.map((relativePath) => path.join(workspaceRoot, relativePath));
     const frontier = declared.length === 0 ? registeredEntriesUnder(workspaceRoot) : declared;
     return reachedFrom({ frontier, reached: new Set(), workspaceRoot });
   },

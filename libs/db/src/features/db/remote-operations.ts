@@ -7,13 +7,32 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { Clock, Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import { remoteDatabase } from "./remote-http.ts";
-import { RemoteFailure, fail, parseRemoteInput } from "./remote-input.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
 import type { MigrationConfig } from "drizzle-orm/migrator";
 import type { SQLiteAsyncDatabase } from "drizzle-orm/sqlite-core";
 import type { Email } from "./bootstrap-statement.ts";
+
+const RemoteFailureCode = Schema.Literals([
+  "REMOTE_COMMAND_INVALID",
+  "REMOTE_INPUT_INVALID",
+  "REMOTE_TARGET_MISMATCH",
+  "REMOTE_QUERY_FAILED",
+  "REMOTE_RESPONSE_INVALID",
+  "REMOTE_MIGRATIONS_INVALID",
+  "REMOTE_MIGRATION_HISTORY_MISMATCH",
+  "REMOTE_MIGRATION_HISTORY_MISSING",
+  "REMOTE_MIGRATIONS_REQUIRED",
+  "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
+]);
+
+class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure", {
+  code: RemoteFailureCode,
+}) {}
+
+const fail = (code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteFailure> => {
+  return Effect.fail(new RemoteFailure({ code }));
+};
 
 const migrationsFolder = fileURLToPath(new URL("../../../migrations/", import.meta.url));
 
@@ -200,6 +219,4 @@ export {
   migrateD1,
   migrateDatabase,
   migrationsFolder,
-  parseRemoteInput,
-  remoteDatabase,
 };

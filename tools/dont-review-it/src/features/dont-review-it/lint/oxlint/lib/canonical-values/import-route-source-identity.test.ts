@@ -1,97 +1,121 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { repositoryModuleLocation } from "./import-route-source-identity.ts";
 
-describe("repositoryModuleLocation", () => {
+layer(NodeServices.layer)("repositoryModuleLocation", (it) => {
   describe("a symlink standing outside the repository and pointing into it", () => {
-    const it = test
-      .extend("theRootHoldingAnExternalSymlink", ({}, { onCleanup }) => {
-        const fixtureRoot = mkdtempSync(join(tmpdir(), "canonical-values-"));
-        onCleanup(() => {
-          rmSync(fixtureRoot, { recursive: true, force: true });
-        });
-        mkdirSync(join(fixtureRoot, "repository", "src"), { recursive: true });
-        writeFileSync(
-          join(fixtureRoot, "repository", "src", "status.ts"),
-          "export const status = 1;\n",
-          "utf8",
-        );
-        symlinkSync(
-          join(fixtureRoot, "repository", "src", "status.ts"),
-          join(fixtureRoot, "status.ts"),
-        );
-        return fixtureRoot;
-      })
-      .extend("theLocationOfAnExternalSymlink", ({ theRootHoldingAnExternalSymlink }) =>
-        repositoryModuleLocation({
-          repositoryRoot: join(theRootHoldingAnExternalSymlink, "repository"),
-          resolvedPath: join(theRootHoldingAnExternalSymlink, "status.ts"),
-        }),
-      );
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const theRootHoldingAnExternalSymlink = yield* Effect.gen(
+        function* theRootHoldingAnExternalSymlink() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "canonical-values-",
+          });
 
-    it("keeps the physical repository identity of the module", ({
-      theRootHoldingAnExternalSymlink,
-      theLocationOfAnExternalSymlink,
-    }) => {
-      expect(theLocationOfAnExternalSymlink).toStrictEqual({
-        kind: "repository",
-        path: join(
-          realpathSync.native(theRootHoldingAnExternalSymlink),
-          "repository",
-          "src",
-          "status.ts",
-        ),
-        sourcePaths: [
-          join(
-            realpathSync.native(theRootHoldingAnExternalSymlink),
+          yield* filesystem.makeDirectory(paths.join(fixtureRoot, "repository", "src"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(fixtureRoot, "repository", "src", "status.ts"),
+            "export const status = 1;\n",
+          );
+          yield* filesystem.symlink(
+            paths.join(fixtureRoot, "repository", "src", "status.ts"),
+            paths.join(fixtureRoot, "status.ts"),
+          );
+          return fixtureRoot;
+        },
+      );
+      const theLocationOfAnExternalSymlink = repositoryModuleLocation({
+        repositoryRoot: paths.join(theRootHoldingAnExternalSymlink, "repository"),
+        resolvedPath: paths.join(theRootHoldingAnExternalSymlink, "status.ts"),
+      });
+      return { theRootHoldingAnExternalSymlink, theLocationOfAnExternalSymlink };
+    });
+
+    it.effect("keeps the physical repository identity of the module", () =>
+      Effect.gen(function* program() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const { theRootHoldingAnExternalSymlink, theLocationOfAnExternalSymlink } = yield* fixtures;
+        expect(theLocationOfAnExternalSymlink).toStrictEqual({
+          kind: "repository",
+          path: paths.join(
+            yield* filesystem.realPath(theRootHoldingAnExternalSymlink),
             "repository",
             "src",
             "status.ts",
           ),
-        ],
-      });
-    });
+          sourcePaths: [
+            paths.join(
+              yield* filesystem.realPath(theRootHoldingAnExternalSymlink),
+              "repository",
+              "src",
+              "status.ts",
+            ),
+          ],
+        });
+      }),
+    );
   });
 
   describe("a symlink standing inside the repository and pointing into it", () => {
-    const it = test
-      .extend("theRootHoldingALexicalSymlink", ({}, { onCleanup }) => {
-        const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-"));
-        onCleanup(() => {
-          rmSync(repositoryRoot, { recursive: true, force: true });
-        });
-        mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-        writeFileSync(
-          join(repositoryRoot, "src", "status.ts"),
-          "export const status = 1;\n",
-          "utf8",
-        );
-        symlinkSync(join(repositoryRoot, "src", "status.ts"), join(repositoryRoot, "status.ts"));
-        return repositoryRoot;
-      })
-      .extend("theLocationOfALexicalSymlink", ({ theRootHoldingALexicalSymlink }) =>
-        repositoryModuleLocation({
-          repositoryRoot: theRootHoldingALexicalSymlink,
-          resolvedPath: join(theRootHoldingALexicalSymlink, "status.ts"),
-        }),
-      );
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const theRootHoldingALexicalSymlink = yield* Effect.gen(
+        function* theRootHoldingALexicalSymlink() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+            prefix: "canonical-values-",
+          });
 
-    it("keeps both the physical and the lexical source identity", ({
-      theRootHoldingALexicalSymlink,
-      theLocationOfALexicalSymlink,
-    }) => {
-      expect(theLocationOfALexicalSymlink).toStrictEqual({
-        kind: "repository",
-        path: join(realpathSync.native(theRootHoldingALexicalSymlink), "src", "status.ts"),
-        sourcePaths: [
-          join(realpathSync.native(theRootHoldingALexicalSymlink), "src", "status.ts"),
-          join(theRootHoldingALexicalSymlink, "status.ts"),
-        ],
+          yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(repositoryRoot, "src", "status.ts"),
+            "export const status = 1;\n",
+          );
+          yield* filesystem.symlink(
+            paths.join(repositoryRoot, "src", "status.ts"),
+            paths.join(repositoryRoot, "status.ts"),
+          );
+          return repositoryRoot;
+        },
+      );
+      const theLocationOfALexicalSymlink = repositoryModuleLocation({
+        repositoryRoot: theRootHoldingALexicalSymlink,
+        resolvedPath: paths.join(theRootHoldingALexicalSymlink, "status.ts"),
       });
+      return { theRootHoldingALexicalSymlink, theLocationOfALexicalSymlink };
     });
+
+    it.effect("keeps both the physical and the lexical source identity", () =>
+      Effect.gen(function* program() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const { theRootHoldingALexicalSymlink, theLocationOfALexicalSymlink } = yield* fixtures;
+        expect(theLocationOfALexicalSymlink).toStrictEqual({
+          kind: "repository",
+          path: paths.join(
+            yield* filesystem.realPath(theRootHoldingALexicalSymlink),
+            "src",
+            "status.ts",
+          ),
+          sourcePaths: [
+            paths.join(
+              yield* filesystem.realPath(theRootHoldingALexicalSymlink),
+              "src",
+              "status.ts",
+            ),
+            paths.join(theRootHoldingALexicalSymlink, "status.ts"),
+          ],
+        });
+      }),
+    );
   });
 });
