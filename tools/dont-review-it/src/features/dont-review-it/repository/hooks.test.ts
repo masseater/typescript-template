@@ -221,7 +221,7 @@ function uncoveredToolTestPackages(): string[] {
 describe("cloud agent environment", () => {
   it("installs dependencies and reconnects pre-push through the agent hook dispatcher", () => {
     expect.hasAssertions();
-    const root = fileURLToPath(new URL("../../../..", import.meta.url));
+    const root = fileURLToPath(new URL("../../../../../..", import.meta.url));
     const environment = JSON.parse(
       readFileSync(join(root, ".cursor/environment.json"), "utf8"),
     ) as {

@@ -1,1 +1,1 @@
-export * from "./testing-node.ts";
+export * from "./local-platform.ts";

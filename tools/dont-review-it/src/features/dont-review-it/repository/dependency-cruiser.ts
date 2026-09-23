@@ -17,9 +17,9 @@ const anyOf = (values: readonly string[]): string => {
 const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const databaseAdmin = String.raw`^libs/db/src/features/db/admin\.ts$`;
-const databaseOperations = String.raw`^libs/db(?:-local)?/src/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
-const databaseInternal = String.raw`^libs/db(?:-local)?/src/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
-const testingEntry = String.raw`^libs/[^/]+/src/testing[^/]*\.ts$`;
+const databaseOperations = String.raw`^libs/(db(?:-local)?)/src/features/\1/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
+const databaseInternal = String.raw`^libs/(db(?:-local)?)/src/features/\1/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
+const testingEntry = String.raw`^libs/([^/]+)/src/features/\1/testing[^/]*\.ts$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
 const deploymentConfig = String.raw`^infra/cloudflare/src/features/cloudflare/deployment\.ts$`;
 const objectStorage = String.raw`^libs/config/src/features/config/storage\.ts$`;

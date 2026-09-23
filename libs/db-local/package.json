@@ -7,8 +7,8 @@
   },
   "type": "module",
   "exports": {
-    ".": "./src/features/db-local/index.ts",
-    "./platform": "./src/features/db-local/local-platform.ts"
+    ".": "./src/features/db-local/testing-node.ts",
+    "./platform": "./src/features/db-local/index.ts"
   },
   "dependencies": {
     "@repo/cli": "workspace:*",

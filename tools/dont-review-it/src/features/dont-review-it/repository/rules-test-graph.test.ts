@@ -2,7 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { reported, reportedRules } from "./lint-harness.ts";
 
-const testFile = "libs/shared/src/probe.test.ts";
+const testFile = "libs/shared/src/shared/probe.test.ts";
 
 const outOfGraphDependencies = [
   ["child-process", 'import { spawn } from "node:child_process"; spawn("node");'],

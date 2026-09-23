@@ -91,12 +91,16 @@ const detected: readonly Case[] = [
   ],
   [
     "no-package-escape",
-    { "libs/auth/src/features/auth/index.ts": 'export * from "../../db/src/index.ts";\n' },
+    {
+      "libs/auth/src/features/auth/index.ts":
+        'export * from "../../../../db/src/features/db/index.ts";\n',
+    },
   ],
   [
     "no-package-escape",
     {
-      "libs/auth/src/features/auth/index.ts": 'export type { Row } from "../../db/src/index.ts";\n',
+      "libs/auth/src/features/auth/index.ts":
+        'export type { Row } from "../../../../db/src/features/db/index.ts";\n',
     },
   ],
   [

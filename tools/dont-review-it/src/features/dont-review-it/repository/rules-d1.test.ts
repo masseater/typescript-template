@@ -211,7 +211,7 @@ describe("project lint rules on raw D1 access", () => {
 
   it.for(nonD1Operations)("allows non-D1 operation: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reportedRules({ code, filename: "libs/shared/src/probe.ts" })).toStrictEqual([]);
+    expect(reportedRules({ code, filename: "libs/shared/src/shared/probe.ts" })).toStrictEqual([]);
   });
 
   it.for(rawD1Adapters)("allows raw D1 in the %s adapter", ([name]) => {

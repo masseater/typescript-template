@@ -180,7 +180,7 @@ describe("react-doctor integration", () => {
         .flatMap((override) => override.files.map((target) => `${workspace}/${target}`));
     });
     expect(spreadingFiles.toSorted()).toStrictEqual(
-      linkWrapperFiles.map((file) => `../../../../${file}`).toSorted(),
+      linkWrapperFiles.map((file) => `../../../../../../${file}`).toSorted(),
     );
   });
 });

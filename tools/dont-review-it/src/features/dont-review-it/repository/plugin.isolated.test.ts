@@ -342,10 +342,16 @@ const validBoundaries = [
   ["apps/internal-dashboard/vite.config.ts", 'export { localDatabase } from "@repo/db/local";'],
   ["apps/internal-dashboard/src/app/probe.ts", 'export * from "@repo/auth";'],
   ["apps/service-member/src/app/probe.ts", 'export const load = () => import("./feature");'],
-  ["libs/shared/src/probe.ts", "export const fn = (process: { env: string }) => process.env;"],
-  ["libs/shared/src/probe.ts", "export const fn = (vi: { mock: () => number }) => vi.mock();"],
-  ["libs/shared/src/probe.ts", "export const location = import.meta.url;"],
-  ["libs/shared/src/probe.ts", 'export { http } from "msw";'],
+  [
+    "libs/shared/src/shared/probe.ts",
+    "export const fn = (process: { env: string }) => process.env;",
+  ],
+  [
+    "libs/shared/src/shared/probe.ts",
+    "export const fn = (vi: { mock: () => number }) => vi.mock();",
+  ],
+  ["libs/shared/src/shared/probe.ts", "export const location = import.meta.url;"],
+  ["libs/shared/src/shared/probe.ts", 'export { http } from "msw";'],
   ["libs/config/src/features/config/probe.ts", "export const value = process.env;"],
   ["libs/cli/src/features/cli/cli.ts", "export const done = () => { process.exitCode = 0; };"],
   [

@@ -100,7 +100,7 @@ describe("the models", () => {
           const applied =
             latestMigration === undefined
               ? undefined
-              : snapshots[`../migrations/${latestMigration.name}/snapshot.json`];
+              : snapshots[`../../../migrations/${latestMigration.name}/snapshot.json`];
           if (applied === undefined) {
             return ["no migration snapshot found"];
           }

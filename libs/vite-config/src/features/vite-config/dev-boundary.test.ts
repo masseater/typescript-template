@@ -84,7 +84,7 @@ describe.each(applications)("the %s development server", (application) => {
           yield* Effect.forEach(
             [
               ...applications.map((candidate) => `apps/${candidate}/src`),
-              "libs/db/src",
+              "libs/db/src/features/db",
               "libs/ui",
               ".local",
               "tools",

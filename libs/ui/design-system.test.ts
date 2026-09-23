@@ -85,7 +85,7 @@ const reports = (rule: RuleName, className: string): boolean => {
 describe("design token table", () => {
   it("reads the stylesheet the linter resolves from components.json", () => {
     expect.hasAssertions();
-    expect(stylesheetPath()).toMatch(/libs\/ui\/src\/styles\.css$/u);
+    expect(stylesheetPath()).toMatch(/libs\/ui\/src\/features\/ui\/styles\.css$/u);
   });
 
   it("keeps every ported token at the design token table value", () => {

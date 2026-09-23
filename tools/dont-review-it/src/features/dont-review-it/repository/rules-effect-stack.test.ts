@@ -3,14 +3,20 @@ import { describe, expect, it } from "vite-plus/test";
 import { reported, reportedRules } from "./lint-harness.ts";
 
 const forbiddenStacks = [
-  ["libs/shared/src/probe.ts", 'import * as v from "valibot"; export const schema = v.string();'],
-  ["libs/shared/src/probe.ts", 'export * from "elysia";'],
-  ["libs/shared/src/probe.ts", 'export { t } from "elysia";'],
   [
-    "libs/shared/src/probe.ts",
+    "libs/shared/src/shared/probe.ts",
+    'import * as v from "valibot"; export const schema = v.string();',
+  ],
+  ["libs/shared/src/shared/probe.ts", 'export * from "elysia";'],
+  ["libs/shared/src/shared/probe.ts", 'export { t } from "elysia";'],
+  [
+    "libs/shared/src/shared/probe.ts",
     'export const load = () => import("elysia/adapter/cloudflare-worker");',
   ],
-  ["libs/shared/src/probe.ts", 'import type { Infer } from "valibot"; export type T = Infer;'],
+  [
+    "libs/shared/src/shared/probe.ts",
+    'import type { Infer } from "valibot"; export type T = Infer;',
+  ],
   [
     "apps/service-member/src/api.ts",
     'import { Elysia } from "elysia"; export const api = new Elysia();',
@@ -46,9 +52,12 @@ const allowedStacks = [
     "libs/runtime/src/features/runtime/http.ts",
     'import { Elysia } from "elysia"; export const api = new Elysia();',
   ],
-  ["libs/shared/src/probe.ts", 'import type { Elysia } from "elysia"; export type Api = Elysia;'],
-  ["libs/shared/src/probe.ts", 'export { helper } from "pre-elysia";'],
-  ["libs/shared/src/probe.ts", 'export { helper } from "my-valibot";'],
+  [
+    "libs/shared/src/shared/probe.ts",
+    'import type { Elysia } from "elysia"; export type Api = Elysia;',
+  ],
+  ["libs/shared/src/shared/probe.ts", 'export { helper } from "pre-elysia";'],
+  ["libs/shared/src/shared/probe.ts", 'export { helper } from "my-valibot";'],
   [
     "apps/service-member/src/app/routes/api.probe.ts",
     'import { createFileRoute } from "@tanstack/react-router"; import { elysiaServer } from "@repo/runtime/http"; import { userApi } from "../api.ts"; export const Route = createFileRoute("/api/$")({ server: elysiaServer(userApi) });',
