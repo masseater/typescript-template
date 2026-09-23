@@ -6,9 +6,11 @@
     ".": "./src/features/db/index.ts",
     "./admin": "./src/features/db/admin.ts",
     "./bootstrap": "./src/features/db/bootstrap-statement.ts",
+    "./staff": "./src/features/db/staff.ts",
     "./testing": "./src/features/db/testing.ts",
     "./migrations": "./src/features/db/remote-operations.ts",
-    "./local": "./src/features/db/local.ts"
+    "./local": "./src/features/db/local.ts",
+    "./inquiry-staff": "./src/features/db/inquiry-staff.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
@@ -21,6 +23,7 @@
     "@cloudflare/vitest-plugin": "catalog:",
     "@cloudflare/workers-types": "catalog:",
     "@effect/platform-node": "catalog:",
+    "@effect/vitest": "catalog:",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
     "drizzle-kit": "catalog:",

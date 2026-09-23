@@ -1,12 +1,15 @@
 export {
   AuthApps,
   PASSWORD,
+  assignAdminPermissionByEmail,
   assignRoleByEmail,
+  authTestSecret,
   assignRoleById,
   audienceInputs,
   audienceOnEmptyDatabase,
   authTest,
   bootstrapVerifiedAdmin,
+  bootstrapVerifiedStaff,
   clientOf,
   enableTotp,
   missingSchemaFields,
@@ -26,12 +29,16 @@ export {
 export { BrowserClient, origins } from "./browser-client.ts";
 export { requestEmailChange } from "./email-change.ts";
 export { mailSubjects } from "./email.ts";
+export { MockNetwork } from "./mock-network-fixture.ts";
 export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixture.ts";
+export { signedSessionCookie } from "./auth-test-fixture.ts";
+export { startClientAuthorization } from "./oauth-client-fixture.ts";
 export { UnexpectedStatus } from "./unexpected-status.ts";
+export { redirectUri, startAuthorization, wikiOrigin, wikiStaff } from "./wiki-oauth-fixture.ts";
+export type { AuthorizationFlow } from "./oauth-client-fixture.ts";
 export {
-  redirectUri,
-  startAuthorization,
-  wikiAdministrator,
-  wikiOrigin,
-} from "./wiki-oauth-fixture.ts";
-export type { AuthorizationFlow } from "./wiki-oauth-fixture.ts";
+  adminOperator,
+  adminOrigin,
+  adminRedirectUri,
+  startAuthorization as startAdminAuthorization,
+} from "./admin-oauth-fixture.ts";

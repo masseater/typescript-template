@@ -5,7 +5,10 @@ class VerificationTokenInvalid extends Schema.TaggedError<VerificationTokenInval
   {},
 ) {}
 
-const VerificationClaims = Schema.Struct({ updateTo: Schema.optional(Schema.String) });
+const VerificationClaims = Schema.Struct({
+  email: Schema.optional(Schema.String),
+  updateTo: Schema.optional(Schema.String),
+});
 
 const decodeClaims = Schema.decodeUnknownResult(Schema.fromJsonString(VerificationClaims));
 
@@ -23,4 +26,16 @@ const emailChangeTarget = (
   return Result.succeed(decoded.success.updateTo);
 };
 
-export { emailChangeTarget };
+const emailChangePrevious = (token: string): string | undefined => {
+  const [, claims] = token.split(".");
+  if (claims === undefined) {
+    return undefined;
+  }
+  const decoded = Result.flatMap(Encoding.decodeBase64UrlString(claims), decodeClaims);
+  if (Result.isFailure(decoded)) {
+    return undefined;
+  }
+  return decoded.success.updateTo === undefined ? undefined : decoded.success.email;
+};
+
+export { emailChangePrevious, emailChangeTarget };

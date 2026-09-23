@@ -1,20 +1,17 @@
 import { Auth } from "@repo/auth";
-import { APPLICATION } from "@repo/config";
-import { Effect, Schema } from "effect";
-
 import {
   AuthApps,
   redirectUri,
   startAuthorization,
-  wikiAdministrator,
   wikiOrigin,
-} from "../../../../../libs/auth/src/features/auth/testing.ts";
+  wikiStaff,
+} from "@repo/auth/testing";
+import { APPLICATION } from "@repo/config";
+import { Effect, Schema } from "effect";
+
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-import type {
-  AuthorizationFlow,
-  BrowserClient,
-} from "../../../../../libs/auth/src/features/auth/testing.ts";
+import type { AuthorizationFlow, BrowserClient } from "@repo/auth/testing";
 
 const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Tokens = Schema.Struct({ access_token: Schema.String });
@@ -77,6 +74,6 @@ export {
   mcpRequest,
   responseStatus,
   startAuthorization,
-  wikiAdministrator,
+  wikiStaff,
   wikiOrigin,
 };

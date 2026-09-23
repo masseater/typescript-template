@@ -15,7 +15,7 @@ function MemberPageLink({
 }: Readonly<{ search: UsersSearch; target: PageTarget }>): ReactElement {
   return (
     <PaginationLink
-      to="/users"
+      to="/search"
       search={usersSearchAtPage(search, target.page)}
       current={target.current}
       aria-label={target.label}

@@ -1,7 +1,7 @@
 import { registerHooks } from "node:module";
 import { fileURLToPath } from "node:url";
 
-import { Effect } from "effect";
+import { Effect, Ref, Result, Schema } from "effect";
 import { aot } from "elysia/plugin/aot/vite";
 
 import { load, resolve } from "./cloudflare-workers-loader.ts";
@@ -13,6 +13,11 @@ const elysiaEntry = fileURLToPath(import.meta.resolve("elysia"));
 
 registerHooks({ load, resolve });
 
+class AotStartFailed extends Schema.TaggedError<AotStartFailed>()("AotStartFailed", {
+  cause: Schema.optionalKey(Schema.Defect()),
+  message: Schema.String,
+}) {}
+
 const elysiaAot = (appRoot: string): Plugin => {
   const compiled = aot(paths.join(appRoot, "src/shared/server-api/server-app.ts"), {
     strip: true,
@@ -20,17 +25,37 @@ const elysiaAot = (appRoot: string): Plugin => {
   });
   const { apply: _buildOnly, ...hooks } = compiled;
   void _buildOnly;
+  const startFailure = Ref.makeUnsafe<AotStartFailed | undefined>(undefined);
   const start = (): Promise<void> =>
     Effect.runPromise(
-      Effect.as(
-        Effect.promise(() => Promise.resolve(compiled.buildStart())),
-        undefined,
-      ),
+      Effect.gen(function* captureStart() {
+        yield* Ref.set(startFailure, undefined);
+        const compiledStart = yield* Effect.result(
+          Effect.tryPromise({
+            try: () => Promise.resolve(compiled.buildStart()),
+            catch: (cause) =>
+              new AotStartFailed({
+                cause,
+                message: cause instanceof Error ? cause.message : String(cause),
+              }),
+          }),
+        );
+        if (Result.isFailure(compiledStart)) {
+          yield* Ref.set(startFailure, compiledStart.failure);
+        }
+      }),
     );
   return {
     ...hooks,
     applyToEnvironment: (environment: Readonly<{ name: string }>) => environment.name === "ssr",
     buildStart: start,
+    buildEnd: (): void | Promise<void> => {
+      const failure = Ref.getUnsafe(startFailure);
+      if (failure !== undefined) {
+        return Promise.reject(failure);
+      }
+      hooks.buildEnd();
+    },
     configureServer: start,
     resolveId: (specifier: string): string | undefined => {
       if (specifier === "elysia") {

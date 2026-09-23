@@ -8,6 +8,13 @@ import {
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
+import { roleApplications } from "./src/features/e2e/journey-roles.ts";
+
+const applicationChecks = Object.values(roleApplications).flatMap((application) => [
+  `@repo/${application}#build`,
+  `@repo/${application}#check:dev`,
+]);
+
 export default defineConfig({
   run: {
     tasks: {
@@ -18,8 +25,9 @@ export default defineConfig({
       "test:e2e": {
         cache: false,
         command: "vp test run",
-        dependsOn: ["@repo/dev#setup"],
+        dependsOn: ["@repo/dev#setup", ...applicationChecks],
       },
+      verify: { cache: false, command: "./src/features/e2e/verify/cli.ts" },
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check:modular"],

@@ -1,4 +1,4 @@
-import { Email, ROLE } from "@repo/config";
+import { ADMIN_PERMISSION, Email, ROLE, STAFF_PERMISSION, type Role } from "@repo/config";
 import { sql, type SQL } from "drizzle-orm";
 import { Clock, Effect, Schema, Struct } from "effect";
 
@@ -7,26 +7,47 @@ import { query } from "./database.ts";
 import { UserRow } from "./identity-schema.ts";
 import { user } from "./schema.ts";
 
+/** @canonical-values db.bootstrap-kind */
+const bootstrapKinds = ["admin", "staff"] as const;
+const BOOTSTRAP_KIND = { admin: bootstrapKinds[0], staff: bootstrapKinds[1] } as const;
+const BootstrapKind = Schema.Literals(bootstrapKinds);
+type BootstrapKind = typeof BootstrapKind.Type;
+
+const bootstrapRoles = {
+  [BOOTSTRAP_KIND.admin]: { permission: ADMIN_PERMISSION.owner, role: ROLE.administrator },
+  [BOOTSTRAP_KIND.staff]: { permission: STAFF_PERMISSION.editor, role: ROLE.staff },
+} as const satisfies Readonly<Record<BootstrapKind, { permission: string; role: Role }>>;
+
 const BootstrappedAdmin = Schema.Struct({
   ...Struct.pick(UserRow.fields, ["email", "id"]),
-  role: Schema.Literal(ROLE.administrator),
+  permission: Schema.Literals([ADMIN_PERMISSION.owner, STAFF_PERMISSION.editor]),
+  role: Schema.Literals([ROLE.administrator, ROLE.staff]),
 });
 
-const bootstrapStatement = (email: typeof Email.Type, updatedAt: number): SQL => {
+type RolePromotion = Readonly<{
+  bootstrapKind: BootstrapKind;
+  email: typeof Email.Type;
+  updatedAt: number;
+}>;
+
+const bootstrapStatement = ({ bootstrapKind, email, updatedAt }: RolePromotion): SQL => {
+  const { permission, role } = bootstrapRoles[bootstrapKind];
   return sql`UPDATE ${user}
-    SET role = ${ROLE.administrator}, updated_at = ${updatedAt}
+    SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
-      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${ROLE.administrator})
-    RETURNING id, email, role`;
+      AND ${user.role} = ${ROLE.member}
+      AND NOT EXISTS (SELECT 1 FROM ${user} WHERE role = ${role})
+    RETURNING id, email, role, permission`;
 };
 
-const ensureAdminStatement = (email: typeof Email.Type, updatedAt: number): SQL => {
+const ensureRoleStatement = ({ bootstrapKind, email, updatedAt }: RolePromotion): SQL => {
+  const { permission, role } = bootstrapRoles[bootstrapKind];
   return sql`UPDATE ${user}
-    SET role = ${ROLE.administrator}, updated_at = ${updatedAt}
+    SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
       AND ${user.emailVerified} = ${1}
-    RETURNING id, email, role`;
+    RETURNING id, email, role, permission`;
 };
 
 class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
@@ -36,10 +57,11 @@ class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
 
 const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof Email.Type,
+  bootstrapKind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   const updatedAt = yield* Clock.currentTimeMillis;
   const [promotedRow] = yield* query((database) =>
-    database.all(bootstrapStatement(email, updatedAt)),
+    database.all(bootstrapStatement({ bootstrapKind, email, updatedAt })),
   );
   if (promotedRow === undefined) {
     return yield* new BootstrapUnavailable();
@@ -51,10 +73,11 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
 
 const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   email: typeof Email.Type,
+  bootstrapKind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   const updatedAt = yield* Clock.currentTimeMillis;
   const [adminRow] = yield* query((database) =>
-    database.all(ensureAdminStatement(email, updatedAt)),
+    database.all(ensureRoleStatement({ bootstrapKind, email, updatedAt })),
   );
   if (adminRow === undefined) {
     return yield* new BootstrapUnavailable();
@@ -65,6 +88,8 @@ const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
 });
 
 export {
+  BOOTSTRAP_KIND,
+  BootstrapKind,
   BootstrappedAdmin,
   BootstrapUnavailable,
   Email,

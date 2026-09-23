@@ -1,6 +1,7 @@
 import {
   CloudflareId,
   Email,
+  GoogleAnalyticsMeasurementId,
   HttpsOrigin,
   ROLE,
   distinctOrigins,
@@ -86,6 +87,7 @@ const SharedSettings = Schema.Struct({
     budgetJpy: Positive,
     recipients: Recipients,
   }),
+  googleAnalyticsMeasurementId: Schema.optional(GoogleAnalyticsMeasurementId),
   mailFrom: Email,
   origins: Schema.Struct({
     "internal-dashboard": Origin,

@@ -5,17 +5,17 @@ import { Effect, Exit, Option } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
 import { adminClient } from "#shared/api/index.ts";
-import { RoleChanged, UserDeleted } from "#shared/contracts/index.ts";
-import { nextRoles } from "./user-labels.ts";
+import { MemberStateChanged, UserDeleted } from "#shared/contracts/index.ts";
+import { accountStateLabels, nextAccountStates } from "./user-labels.ts";
 
 import type { ListedUser } from "./user-list.ts";
 
-type RowOperation = "delete" | "role";
+type RowOperation = "delete" | "state";
 
 interface UserRowAction {
   readonly handleConfirm: () => void;
   readonly handleDelete: () => void;
-  readonly handleRoleChange: () => void;
+  readonly handleStateChange: () => void;
   readonly confirming: RowOperation | undefined;
   readonly handleOpenChange: (open: boolean) => void;
   readonly pending: boolean;
@@ -28,9 +28,12 @@ function perform(user: ListedUser, operation: RowOperation): Effect.Effect<strin
       apiData(UserDeleted, yield* Effect.promise(() => users.delete({ id: user.id })));
       return `${user.email} を削除しました。`;
     }
-    const role = nextRoles[user.role];
-    apiData(RoleChanged, yield* Effect.promise(() => users.patch({ id: user.id, role })));
-    return `${user.email} の権限を変更しました。対象ユーザーの既存セッションは失効しました。`;
+    const accountState = nextAccountStates[user.accountState];
+    const changed = apiData(
+      MemberStateChanged,
+      yield* Effect.promise(() => users.patch({ accountState, id: user.id })),
+    );
+    return `${user.email} を${accountStateLabels[changed.accountState]}にしました。`;
   });
 }
 
@@ -72,8 +75,8 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
   const notify = useToast();
   const [confirming, setConfirming] = useRowConfirming();
   const [changeState, run] = useAtom(changeAtom(user.id), { mode: "promiseExit" });
-  function handleRoleChange(): void {
-    setConfirming(Option.some("role"));
+  function handleStateChange(): void {
+    setConfirming(Option.some("state"));
   }
   function handleDelete(): void {
     setConfirming(Option.some("delete"));
@@ -98,7 +101,7 @@ function useUserRowAction(user: ListedUser, onChanged: () => void): UserRowActio
     handleConfirm,
     handleDelete,
     handleOpenChange,
-    handleRoleChange,
+    handleStateChange,
     pending: changeState.waiting,
   };
 }

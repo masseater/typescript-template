@@ -13,7 +13,7 @@ function UsersFailed(): ReactElement {
   return (
     <UsersBody>
       <StatusMessage variant={STATUS_VARIANT.failure}>
-        ユーザー一覧を取得できませんでした。
+        利用者一覧を取得できませんでした。
       </StatusMessage>
       <Button type="button" onClick={retry}>
         再試行

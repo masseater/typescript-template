@@ -5,13 +5,13 @@ import http, { type Params } from "k6/http";
 import type { Options } from "k6/options";
 
 const ok = 200;
+const paymentRequired = 402;
 const mailAttempts = 20;
 const mailWaitSeconds = 0.5;
 const password = "Load-Test-Passw0rd!";
 const keyword = encodeURIComponent("負荷");
 
 const targetOrigin = __ENV.LOAD_TARGET_ORIGIN ?? "";
-const memberPageSize = Number(__ENV.LOAD_MEMBER_PAGE_SIZE ?? "0");
 const peakUsers = Number(__ENV.LOAD_PEAK_USERS ?? "0");
 
 const rampSeconds = __ENV.LOAD_RAMP ?? "0s";
@@ -196,26 +196,26 @@ const readProfile = (): void => {
   });
 };
 
+const paidOnly = (tagName: string): Params => {
+  return { ...read(tagName), responseCallback: http.expectedStatuses(paymentRequired) };
+};
+
 const readMembers = (): void => {
-  const answered = http.get(`${targetOrigin}/api/members?page=1`, read("members"));
+  const answered = http.get(`${targetOrigin}/api/members?page=1`, paidOnly("members"));
   const { status } = answered;
-  const paged = answered.json("pageSize") === memberPageSize;
   check(answered, {
-    "member list answers 200": () => status === ok,
-    "member list serves the page size the screen draws": () => paged,
+    "member list refuses a free member with 402": () => status === paymentRequired,
   });
 };
 
 const searchMembers = (): void => {
   const answered = http.get(
     `${targetOrigin}/api/members?keyword=${keyword}&page=1`,
-    read("members-search"),
+    paidOnly("members-search"),
   );
   const { status } = answered;
-  const counted = typeof answered.json("total") === "number";
   check(answered, {
-    "member search answers 200": () => status === ok,
-    "member search counts its matches": () => counted,
+    "member search refuses a free member with 402": () => status === paymentRequired,
   });
 };
 
