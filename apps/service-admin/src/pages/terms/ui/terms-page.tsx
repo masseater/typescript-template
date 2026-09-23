@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 function TermsPage(): ReactElement {
   return (
     <OpsPage title="規約">
-      <StatusMessage variant={STATUS_VARIANT.pending}>規約の一覧はまだありません。</StatusMessage>
+      <StatusMessage variant={STATUS_VARIANT.empty}>規約の一覧はまだありません。</StatusMessage>
     </OpsPage>
   );
 }

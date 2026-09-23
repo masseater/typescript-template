@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 function AdminsPage(): ReactElement {
   return (
     <OpsPage title="管理者">
-      <StatusMessage variant={STATUS_VARIANT.pending}>管理者の一覧はまだありません。</StatusMessage>
+      <StatusMessage variant={STATUS_VARIANT.empty}>管理者の一覧はまだありません。</StatusMessage>
     </OpsPage>
   );
 }

@@ -2,6 +2,8 @@ import { AccountMenu as SessionMenu } from "@repo/auth-ui";
 import { DropdownMenuLinkItem, Icon } from "@repo/ui";
 import { ChevronDownIcon, UserRoundIcon } from "lucide-react";
 
+import { m } from "#shared/i18n/index.ts";
+
 import type { ReactElement } from "react";
 
 function AccountMenu({
@@ -19,10 +21,10 @@ function AccountMenu({
       items={
         <>
           <DropdownMenuLinkItem params={{ id: userId }} to="/users/$id">
-            プロフィール
+            {m.nav_profile()}
           </DropdownMenuLinkItem>
-          <DropdownMenuLinkItem to="/settings">設定</DropdownMenuLinkItem>
-          <DropdownMenuLinkItem to="/support">お問い合わせ</DropdownMenuLinkItem>
+          <DropdownMenuLinkItem to="/settings">{m.title_settings()}</DropdownMenuLinkItem>
+          <DropdownMenuLinkItem to="/support">{m.title_support()}</DropdownMenuLinkItem>
         </>
       }
       label={name}

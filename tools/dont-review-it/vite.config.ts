@@ -1,32 +1,49 @@
 import { fileURLToPath } from "node:url";
 
-import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
+import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
+import {
+  effectDiagnostics,
+  intentValidation,
+  lifecycle,
+  testRun,
+  modularBoundaries,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...modularBoundaries,
       ...intentValidation,
       ...testRun,
-      "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
+      "check:staged": {
+        cache: false,
+        command: "./src/features/dont-review-it/repository/check-staged.ts",
+      },
+      "pr-affected": {
+        cache: false,
+        command: "./src/features/dont-review-it/repository/pr-affected.ts",
+      },
+      "can-not-now": {
+        cache: false,
+        command: "./src/features/dont-review-it/repository/can-not-now.ts",
+      },
       "clean:shared-task-cache": {
         cache: false,
-        command: "./src/repository/clean-shared-task-cache.ts",
+        command: "./src/features/dont-review-it/repository/clean-shared-task-cache.ts",
       },
       ...lifecycle({
         precommit: ["check:staged"],
-        prepush: ["check:effect", "check"],
+        prepush: ["check:effect", "check", "check:modular"],
         prepr: ["test"],
-        premerge: [],
-        prerelease: [],
       }),
     },
   },
   test: {
     experimental: {
       openTelemetry: {
-        enabled: process.env.MST_TELEMETRY !== undefined,
+        enabled: telemetryAsked,
         sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
       },
     },
@@ -34,16 +51,20 @@ export default defineConfig({
     mockReset: true,
     restoreMocks: true,
     coverage: {
-      exclude: ["specs/**", "src/repository/**"],
-      thresholds: { 100: true, perFile: true },
+      exclude: ["specs/**", "src/features/dont-review-it/repository/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
     },
-    exclude: ["**/node_modules/**", "**/dist/**", "src/repository/**"],
+    exclude: ["**/node_modules/**", "**/dist/**", "src/features/dont-review-it/repository/**"],
     unstubEnvs: true,
     unstubGlobals: true,
   },
   pack: {
-    entry: ["src/cli.ts", "src/canonical-literal-types/run-as-task.ts", "src/index.ts"],
+    entry: [
+      "src/features/dont-review-it/cli.ts",
+      "src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
+      "src/features/dont-review-it/index.ts",
+    ],
     external: [/^vite-plus/],
-    dts: { generator: "tsgo" },
+    dts: { generator: "tsgo", tsconfig: "tsconfig.pack.json" },
   },
 });

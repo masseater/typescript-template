@@ -1,6 +1,6 @@
 import { PageNavigation, TextLink } from "@repo/ui";
 
-import { MemberCard } from "./member-card.tsx";
+import { MemberCard } from "#widgets/member-search/index.ts";
 import { MemberPageLink } from "./member-page-link.tsx";
 
 import type { Members } from "#pages/users/api/load-members.ts";

@@ -6,7 +6,4 @@ const readWikiConfig = Effect.fn("readWikiConfig")(function* readWikiConfig(inpu
   return { ...config, AI: yield* readAi(input) };
 });
 
-type WikiConfig = Effect.Success<ReturnType<typeof readWikiConfig>>;
-
 export { readWikiConfig };
-export type { WikiConfig };

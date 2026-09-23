@@ -1,5 +1,6 @@
 import { useAtom } from "@effect/atom-react";
 import { useAction } from "@repo/ui";
+import { Effect } from "effect";
 import { Atom } from "effect/unstable/reactivity";
 
 import { saveProfile } from "#pages/profile-edit/api/profile.ts";
@@ -51,15 +52,26 @@ const fieldsAtom = Atom.family((initial: Profile) =>
   }),
 );
 
+function saveDraft(
+  name: string,
+  profile: string,
+  socialLinks: readonly DraftLink[],
+  onSaved: () => Promise<void>,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* persist() {
+      yield* Effect.promise(() => saveProfile(name, profile, savedLinks(socialLinks)));
+      yield* Effect.promise(() => onSaved());
+    }),
+  );
+}
+
 function useProfileForm(initial: Readonly<Profile>, onSaved: () => Promise<void>): ProfileForm {
   const [fields, setFields] = useAtom(fieldsAtom(initial));
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      await saveProfile(fields.name, fields.profile, savedLinks(fields.socialLinks));
-      await onSaved();
-    });
+    action.run(() => saveDraft(fields.name, fields.profile, fields.socialLinks, onSaved));
   }
   return {
     ...fields,

@@ -5,10 +5,6 @@
   "imports": {
     "#*": "./src/*"
   },
-  "scripts": {
-    "dev": "vp dev",
-    "preview": "vp preview"
-  },
   "dependencies": {
     "@better-auth/oauth-provider": "1.7.5",
     "@effect/atom-react": "catalog:",
@@ -17,14 +13,18 @@
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/feature-flags": "workspace:*",
+    "@repo/infra-cloudflare": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",
+    "@xyflow/react": "12.11.6",
+    "alchemy": "catalog:",
     "better-auth": "catalog:",
     "better-call": "1.4.0",
     "effect": "catalog:",
+    "elkjs": "0.12.0",
     "fumadocs-core": "16.15.11",
     "fumadocs-mdx": "15.4.1",
     "fumadocs-ui": "16.15.11",
@@ -33,14 +33,14 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "source-map": "0.8.0",
-    "unist-util-visit-parents": "^6.0.2",
+    "unist-util-visit-parents": "6.0.2",
     "zod": "4.6.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@repo/vite-config": "workspace:*",
-    "@types/mdast": "^4.0.4",
+    "@types/mdast": "4.0.4",
     "@types/mdx": "2.0.14",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

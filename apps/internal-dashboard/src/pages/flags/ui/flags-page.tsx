@@ -13,7 +13,7 @@ function FlagsPage(): ReactElement {
   return (
     <OpsPage title="機能フラグ">
       {failure !== undefined ? (
-        <StatusMessage variant={STATUS_VARIANT.error}>
+        <StatusMessage variant={STATUS_VARIANT.failure}>
           {failure}
           <button aria-label="再読み込み" className="ml-2 underline" onClick={reload} type="button">
             再読み込み

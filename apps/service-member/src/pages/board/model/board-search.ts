@@ -14,9 +14,10 @@ const ThreadSearchParams = Schema.Struct({
 type BoardSearch = typeof BoardSearchParams.Type;
 type ThreadSearch = typeof ThreadSearchParams.Type;
 
-class InvalidBoardSearch extends Error {
-  override readonly name = "InvalidBoardSearch";
-}
+class InvalidBoardSearch extends Schema.TaggedError<InvalidBoardSearch>()(
+  "InvalidBoardSearch",
+  {},
+) {}
 
 const decodeBoardSearch = Schema.decodeUnknownOption(BoardSearchParams);
 const decodeThreadSearch = Schema.decodeUnknownOption(ThreadSearchParams);

@@ -1,4 +1,4 @@
-import { httpStatus } from "@repo/observability";
+import { httpStatus } from "@repo/config";
 import { jsonResponse } from "@repo/runtime/http";
 import { Option } from "effect";
 

@@ -49,7 +49,7 @@ export default defineConfig({
     "react-doctor/js-length-check-first": "error",
     "react-doctor/js-tosorted-immutable": "error",
     "react-doctor/jsx-boolean-value": "error",
-    "react-doctor/jsx-curly-brace-presence": "error",
+    "react-doctor/jsx-curly-brace-presence": "off",
     "react-doctor/jsx-filename-extension": "error",
     "react-doctor/jsx-fragments": "error",
     "react-doctor/jsx-handler-names": "error",

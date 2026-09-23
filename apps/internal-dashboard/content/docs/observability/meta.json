@@ -1,0 +1,21 @@
+{
+  "title": "Observability",
+  "pages": [
+    "index",
+    "browser",
+    "web-performance-api",
+    "http",
+    "trace-context",
+    "opentelemetry-sdk",
+    "otlp",
+    "collector",
+    "kubernetes",
+    "gateway-api",
+    "service-mesh",
+    "ebpf",
+    "prometheus",
+    "exemplars",
+    "signals",
+    "sli-slo"
+  ]
+}

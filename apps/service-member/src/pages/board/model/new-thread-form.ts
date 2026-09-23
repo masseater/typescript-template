@@ -1,8 +1,22 @@
 import { useAction, useTextInput } from "@repo/ui";
+import { Effect } from "effect";
 
 import { openThread } from "#pages/board/api/board.ts";
 
 import type { SubmitEventHandler } from "react";
+
+function createThread(
+  title: string,
+  body: string,
+  onCreated: (threadId: string) => Promise<void>,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* publishThread() {
+      const threadId = yield* Effect.promise(() => openThread(title, body));
+      yield* Effect.promise(() => onCreated(threadId));
+    }),
+  );
+}
 
 interface NewThreadForm {
   readonly blocked: boolean;
@@ -21,9 +35,7 @@ function useNewThreadForm(onCreated: (threadId: string) => Promise<void>): NewTh
   const action = useAction();
   function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
     event.preventDefault();
-    action.run(async () => {
-      await onCreated(await openThread(title.value, body.value));
-    });
+    action.run(() => createThread(title.value, body.value, onCreated));
   }
   return {
     blocked: action.blocked,

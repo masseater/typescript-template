@@ -31,7 +31,7 @@ Code this rule rejects.
 
 ```ts
 // pinning stdout alone leaves stderr unpinned
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 standardIoTest("pins stdout", ({ stdout }) => {
   expect(stdout.text).toMatchInlineSnapshot();
 });
@@ -39,7 +39,7 @@ standardIoTest("pins stdout", ({ stdout }) => {
 
 ```ts
 // a snapshot rooted at a binding unrelated to the streams pins neither of them
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 standardIoTest("snapshots an unrelated subject", ({ stdout, stderr }) => {
   expect(buffer.text).toMatchInlineSnapshot();
 });
@@ -49,7 +49,7 @@ Code this rule accepts.
 
 ```ts
 // the stream bindings standing as the subjects pin both streams
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 const it = standardIoTest.extend("theRun", { auto: true }, () => {
   runTheCli();
 });
@@ -63,7 +63,7 @@ it("pins stderr", ({ stderr }) => {
 
 ```ts
 // a stream reached through a chain of fixtures still counts as pinned
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 const it = standardIoTest
   .extend("theRun", ({ stdout }) => runTheCli(stdout))
   .extend("theOutcomeOfTheRun", ({ theRun }) => theRun.settle())

@@ -5,12 +5,13 @@ import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { docs, WIKI_DOCS_BASE_URL } from "#shared/content/index.ts";
 import { DocsContent } from "./docs-content.tsx";
 
+import type { Root } from "fumadocs-core/page-tree";
 import type { ReactElement } from "react";
 
 const nav = { title: "Wiki", url: WIKI_DOCS_BASE_URL };
 
 type DocsLoaderData = Readonly<{
-  pageTree: unknown;
+  pageTree: Root;
   path: string;
 }>;
 

@@ -3,19 +3,21 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./local-database-path": "./src/local-database-path.ts",
-    "./repository-root": "./src/repository-root.ts",
-    "./paging": "./src/paging.ts",
-    "./worker": "./src/worker.ts",
-    "./identity": "./src/identity.ts"
+    ".": "./src/features/config/index.ts",
+    "./local-database-path": "./src/features/config/local-database-path.ts",
+    "./realtime": "./src/features/config/realtime.ts",
+    "./repository-root": "./src/features/config/repository-root.ts",
+    "./paging": "./src/features/config/paging.ts",
+    "./storage": "./src/features/config/storage.ts",
+    "./worker": "./src/features/config/worker.ts",
+    "./identity": "./src/features/config/identity.ts"
   },
-  "scripts": {},
   "dependencies": {
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",

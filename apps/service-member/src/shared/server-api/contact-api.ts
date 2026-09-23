@@ -1,6 +1,6 @@
 import { sendContactEmail } from "@repo/auth";
+import { httpStatus } from "@repo/config";
 import { consumeRateLimit } from "@repo/db";
-import { httpStatus } from "@repo/observability";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";

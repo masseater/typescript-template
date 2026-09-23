@@ -9,22 +9,40 @@ import {
   useToast,
 } from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Effect } from "effect";
 
 import { useNewThreadForm } from "#pages/board/model/new-thread-form.ts";
 import { maximumBoardBodyLength, maximumBoardTitleLength } from "#shared/contracts/index.ts";
 
 import type { ReactElement } from "react";
 
+function showCreated(
+  threadId: string,
+  invalidate: () => Promise<unknown>,
+  goToThread: (threadId: string) => Promise<unknown>,
+  notify: (kind: "success", message: string) => void,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* afterCreate() {
+      yield* Effect.promise(() => invalidate());
+      yield* Effect.promise(() => goToThread(threadId));
+      notify("success", "スレッドを立てました。");
+    }),
+  );
+}
+
 function NewThreadForm(): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
   const notify = useToast();
-  async function showCreated(threadId: string): Promise<void> {
-    await router.invalidate();
-    await navigate({ params: { id: threadId }, to: "/board/$id" });
-    notify("success", "スレッドを立てました。");
-  }
-  const form = useNewThreadForm(showCreated);
+  const form = useNewThreadForm((threadId) =>
+    showCreated(
+      threadId,
+      () => router.invalidate(),
+      (id) => navigate({ params: { id }, to: "/board/$id" }),
+      notify,
+    ),
+  );
   return (
     <section aria-labelledby="new-thread-heading" className="flex flex-col gap-4">
       <Heading as="h2" size="section">

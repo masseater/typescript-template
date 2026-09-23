@@ -5,9 +5,10 @@ import { HomeFeed } from "#shared/contracts/index.ts";
 
 import type { FeedItem } from "#shared/contracts/index.ts";
 
-async function loadHomeFeed(): Promise<readonly FeedItem[]> {
-  const { api } = await userClient();
-  return apiData(HomeFeed, await api.home.feed.get()).items;
+function loadHomeFeed(): Promise<readonly FeedItem[]> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.home.feed.get().then((response) => apiData(HomeFeed, response).items),
+  );
 }
 
 export { loadHomeFeed };

@@ -2,14 +2,17 @@
   "name": "@repo/db-local",
   "private": true,
   "bin": {
-    "repo-db-bootstrap-local": "./src/bootstrap-local.ts",
-    "repo-db-migrate-local": "./src/migrate-local.ts"
+    "repo-db-bootstrap-local": "./src/features/db-local/bootstrap-local.ts",
+    "repo-db-migrate-local": "./src/features/db-local/migrate-local.ts",
+    "repo-db-schema-document": "./src/features/db-local/write-schema-document.ts"
   },
   "type": "module",
   "exports": {
-    ".": "./src/testing-node.ts"
+    ".": "./src/features/db-local/testing-node.ts",
+    "./platform": "./src/features/db-local/index.ts"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",

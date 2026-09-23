@@ -62,7 +62,7 @@ Code this rule accepts.
 ```ts
 // a spec that imports the fixture may exercise the process streams directly
 // in /repo/src/cli.test.ts
-import { standardIoTest } from "@repo/dont-review-it/vitest";
+import { standardIoTest } from "@repo/dont-review-it";
 standardIoTest("captures", ({ stdout }) => {
   process.stdout.write("result");
   expect(stdout.text).toBe("result");
@@ -89,9 +89,9 @@ const result = { stdout: "captured text", stderr: "" };
 
 | messageId | Text |
 | --- | --- |
-| `ownFixture` | A spec must not declare a \`{{name}}\` fixture of its own. Import \`standardIoTest\` from \`@repo/dont-review-it/vitest\` and derive the test from it. |
-| `directStream` | A spec must not reach \`process.{{name}}\` by hand. Import \`standardIoTest\` from \`@repo/dont-review-it/vitest\`; its \`{{name}}\` fixture hands the captured stream to the test. |
-| `streamShapedDouble` | A spec must not assemble a \`{{name}}\`-shaped write double. Import \`standardIoTest\` from \`@repo/dont-review-it/vitest\` and assert on its \`{{name}}\` fixture instead. |
+| `ownFixture` | A spec must not declare a \`{{name}}\` fixture of its own. Import \`standardIoTest\` from \`@repo/dont-review-it\` and derive the test from it. |
+| `directStream` | A spec must not reach \`process.{{name}}\` by hand. Import \`standardIoTest\` from \`@repo/dont-review-it\`; its \`{{name}}\` fixture hands the captured stream to the test. |
+| `streamShapedDouble` | A spec must not assemble a \`{{name}}\`-shaped write double. Import \`standardIoTest\` from \`@repo/dont-review-it\` and assert on its \`{{name}}\` fixture instead. |
 
 <!-- END GENERATED messages -->
 
