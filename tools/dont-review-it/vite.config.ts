@@ -12,7 +12,7 @@ export default defineConfig({
       ...testRun,
       "check:staged": { cache: false, command: "./src/repository/check-staged.ts" },
       "pr-affected": { cache: false, command: "./src/repository/pr-affected.ts" },
-      "claude-later": { cache: false, command: "./src/repository/claude-later.ts" },
+      "can-not-now": { cache: false, command: "./src/repository/can-not-now.ts" },
       "clean:shared-task-cache": {
         cache: false,
         command: "./src/repository/clean-shared-task-cache.ts",

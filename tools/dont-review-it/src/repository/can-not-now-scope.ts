@@ -1,6 +1,6 @@
 const trustedAssociations: ReadonlySet<string> = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 
-const claudeLaterLimit = 3;
+const canNotNowLimit = 3;
 
 export type IssueRecord = Readonly<{
   author_association: string;
@@ -20,7 +20,7 @@ export type PullRecord = Readonly<{
   head: Readonly<{ ref: string; repo: Readonly<{ full_name: string }> | null }>;
 }>;
 
-const claudeLaterHead = (issueNumber: number): string => `claude-later/issue-${issueNumber}`;
+const canNotNowHead = (issueNumber: number): string => `can-not-now/issue-${issueNumber}`;
 
 export const pendingIssues = ({
   issues,
@@ -39,10 +39,10 @@ export const pendingIssues = ({
       (issue) =>
         issue.pull_request === undefined &&
         trustedAssociations.has(issue.author_association) &&
-        !openHeads.has(claudeLaterHead(issue.number)),
+        !openHeads.has(canNotNowHead(issue.number)),
     )
     .toSorted((left, right) => left.number - right.number)
-    .slice(0, claudeLaterLimit);
+    .slice(0, canNotNowLimit);
 };
 
 export const trustedComments = (

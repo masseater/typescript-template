@@ -1,6 +1,6 @@
-name: claude-later
-description: A small task left for the scheduled claude-later run to turn into a pull request
-labels: [claude-later]
+name: can-not-now
+description: A small task left for the scheduled can-not-now run to turn into a pull request
+labels: [can-not-now]
 body:
   - type: textarea
     id: task

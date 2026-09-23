@@ -7,7 +7,7 @@ import {
   type CommentRecord,
   type IssueRecord,
   type PullRecord,
-} from "./claude-later-scope.ts";
+} from "./can-not-now-scope.ts";
 
 const API_ORIGIN = "https://api.github.com";
 const PAGE_SIZE = 100;
@@ -45,7 +45,7 @@ const everyPage = async <Item>(path: string, page = 1): Promise<readonly Item[]>
 };
 
 const [issues, openPulls] = await Promise.all([
-  everyPage<IssueRecord>("/issues?labels=claude-later&state=open"),
+  everyPage<IssueRecord>("/issues?labels=can-not-now&state=open"),
   everyPage<PullRecord>("/pulls?state=open"),
 ]);
 

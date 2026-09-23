@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { pendingIssues, trustedComments, type IssueRecord } from "./claude-later-scope.ts";
+import { pendingIssues, trustedComments, type IssueRecord } from "./can-not-now-scope.ts";
 
 const repository = "owner/name";
 
@@ -11,7 +11,7 @@ const issue = (number: number, author_association: string): IssueRecord => ({
   title: `title ${number}`,
 });
 
-describe("issues handed to the claude-later run", () => {
+describe("issues handed to the can-not-now run", () => {
   it("keeps only issues written by people with write access to the repository", () => {
     expect.hasAssertions();
     expect(
@@ -46,8 +46,8 @@ describe("issues handed to the claude-later run", () => {
       pendingIssues({
         issues: [issue(1, "OWNER"), issue(2, "OWNER")],
         openPulls: [
-          { head: { ref: "claude-later/issue-1", repo: { full_name: repository } } },
-          { head: { ref: "claude-later/issue-2", repo: { full_name: "fork/name" } } },
+          { head: { ref: "can-not-now/issue-1", repo: { full_name: repository } } },
+          { head: { ref: "can-not-now/issue-2", repo: { full_name: "fork/name" } } },
         ],
         repository,
       }).map((kept) => kept.number),
