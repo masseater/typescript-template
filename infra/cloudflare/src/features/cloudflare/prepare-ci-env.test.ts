@@ -21,6 +21,27 @@ function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
   }).pipe(Effect.orDie, Effect.provide(layer));
 }
 
+it.effect("writes required keys to an explicit destination", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const filename = path.join(directory, "config", "cloudflare.env");
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const preparation = yield* writeCiSecretsFile(required, filename);
+    assert.strictEqual(preparation.status, "ready");
+    if (preparation.status !== "ready") {
+      return;
+    }
+    assert.strictEqual(preparation.filename, filename);
+    const contents = yield* Effect.gen(function* readContents() {
+      const filesystem = yield* FileSystem.FileSystem;
+      return yield* filesystem.readFileString(filename);
+    }).pipe(Effect.orDie, Effect.provide(layer));
+    assert.include(contents, "TEMPLATE_PREFIX=");
+  }).pipe(Effect.scoped),
+);
+
 it.effect("writes an owner-only env file from required deployment keys", () =>
   Effect.gen(function* program() {
     const directory = yield* temporaryDirectory();

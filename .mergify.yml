@@ -12,6 +12,7 @@ queue_rules:
   - name: default
     batch_size: 5
     batch_max_wait_time: 5 min
+    checks_timeout: 45 min
     merge_method: merge
     queue_conditions:
       - or:
@@ -21,5 +22,7 @@ queue_rules:
     merge_conditions:
       - check-success = merge-queue
       - check-success = e2e
+
 merge_queue:
   mode: isolated
+  max_parallel_checks: 5
