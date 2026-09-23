@@ -31,6 +31,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
     "./application": "./src/app.ts",
     "./core-program": "./src/core-program.ts",
     "./deployment": "./src/deployment.ts",
+    "./monitor": "./src/monitor.ts",
     "./stacks": "./src/stacks.ts",
   },
   "tools/dev": { ".": "./src/index.ts" },
