@@ -23,6 +23,8 @@ const workspaceParaglideCompile = {
     ...taskInput,
     { base: "workspace", pattern: "apps/*/messages/**" },
     { base: "workspace", pattern: "apps/*/project.inlang/settings.json" },
+    { base: "workspace", pattern: "!apps/*" },
+    { base: "workspace", pattern: "!apps/*/project.inlang" },
     ...withoutInlangState.map((pattern) => ({
       base: "workspace" as const,
       pattern: pattern.replace("!", "!apps/*/"),
