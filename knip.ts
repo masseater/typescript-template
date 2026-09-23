@@ -53,10 +53,7 @@ const workspaces = {
     project: ["src/**/*.ts!"],
   },
   "libs/observability": {
-    entry: [
-      "src/features/observability/browser-testing.ts",
-      "src/features/observability/server-testing.ts",
-    ],
+    entry: ["src/features/observability/server-testing.ts"],
   },
   "libs/runtime": {
     entry: ["src/features/runtime/*-fixture.ts"],

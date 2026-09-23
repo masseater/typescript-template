@@ -1,5 +1,5 @@
-import { ConfigurationInvalid, readEnvironment } from "@repo/config";
-import { readStorage } from "@repo/config/storage";
+import { ConfigurationInvalid, grants, readEnvironment } from "@repo/config";
+import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { Config, Effect, Layer, Option, Redacted } from "effect";
 import {
   Binding,
@@ -120,13 +120,16 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
     return yield* new ConfigurationInvalid({ reason: "An email delivery binding is required" });
   }
   const flags = Reflect.get(env, "FLAGS");
+  if (flags !== undefined && !isFlagship(flags)) {
+    return yield* new ConfigurationInvalid({ reason: "FLAGS" });
+  }
   const config: WorkerAppConfig = {
     ...scalars,
     AI: loaded.AI,
     ASSETS: loaded.ASSETS,
     DB: loaded.DB,
     ...(loaded.EMAIL === undefined ? {} : { EMAIL: loaded.EMAIL }),
-    ...(isFlagship(flags) ? { FLAGS: flags } : {}),
+    ...(flags === undefined ? {} : { FLAGS: flags }),
   };
   return config;
 });
@@ -139,9 +142,12 @@ function appLayer(
   return Layer.unwrap(
     readWorkerConfig(env).pipe(
       Effect.flatMap((config) =>
-        Effect.map(readStorage(env), (storage) =>
-          configuredAppLayer(config, audience, routes, storage),
-        ),
+        Effect.gen(function* withStorage() {
+          const storage = grants(audience, "storage")
+            ? yield* readStorage(env)
+            : yield* readOptionalStorage(env);
+          return configuredAppLayer(config, audience, routes, storage);
+        }),
       ),
     ),
   );

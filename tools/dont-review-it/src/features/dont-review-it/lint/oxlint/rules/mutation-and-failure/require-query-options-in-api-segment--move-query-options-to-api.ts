@@ -1,6 +1,5 @@
-import { sep } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { segmentsOf } from "../../lib/path-segments.ts";
 import { staticMemberOf } from "../../lib/static-member.ts";
 
@@ -17,7 +16,7 @@ const isQueryFactoryCallee = (callee: ESTree.Expression): boolean => {
 };
 
 const sitsInApiSegment = (filename: string): boolean =>
-  segmentsOf({ path: filename, separator: sep }).includes("api");
+  segmentsOf({ path: filename, separator: path.sep }).includes("api");
 
 export const requireQueryOptionsInApiSegment = createDontReviewItRule({
   name: "require-query-options-in-api-segment--move-query-options-to-api",

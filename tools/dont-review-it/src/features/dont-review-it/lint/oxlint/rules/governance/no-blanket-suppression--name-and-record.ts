@@ -1,6 +1,5 @@
-import { dirname, join, resolve } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { isFile } from "../../lib/canonical-values/source-files.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { LINT_CONFIGURATION_FILE } from "../../lib/lint-suppression/lint-config-suppression.ts";
@@ -45,7 +44,7 @@ const unmetConditionFor = (directive: SuppressionDirective): RuleMessage | null 
 };
 
 const ledgerPresentAt = (repositoryRoot: string): boolean =>
-  isFile(join(repositoryRoot, LEDGER_FILE_NAME));
+  isFile(path.join(repositoryRoot, LEDGER_FILE_NAME));
 
 export const noBlanketSuppression = createDontReviewItRule({
   name: "no-blanket-suppression--name-and-record",
@@ -66,8 +65,8 @@ export const noBlanketSuppression = createDontReviewItRule({
     schema: [],
   },
   create(inspection) {
-    const absolutePath = resolve(inspection.cwd, inspection.filename);
-    const repositoryRoot = findWorkspaceRoot(dirname(absolutePath));
+    const absolutePath = path.resolve(inspection.cwd, inspection.filename);
+    const repositoryRoot = findWorkspaceRoot(path.dirname(absolutePath));
 
     const reportDirective = ({
       comment,

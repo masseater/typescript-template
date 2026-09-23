@@ -135,13 +135,18 @@ const archiveSourceMaps = Effect.fn("archiveSourceMaps")(function* archiveSource
   if (client === 0) {
     return yield* fail("source_maps_missing");
   }
-  return {
-    client,
-    server: yield* copyMaps(
-      path.join(repositoryRoot, "apps", target, "dist", "server"),
-      path.join(destination, "server"),
-    ),
-  };
+  const server = yield* copyMaps(
+    path.join(repositoryRoot, "apps", target, "dist", "server"),
+    path.join(destination, "server"),
+  );
+  if (server === 0) {
+    yield* Effect.gen(function* removeIncomplete() {
+      const filesystem = yield* FileSystem.FileSystem;
+      yield* filesystem.remove(destination, { recursive: true }).pipe(Effect.mapError(ioFailed));
+    }).pipe(Effect.provide(layer));
+    return yield* fail("source_maps_missing");
+  }
+  return { client, server };
 });
 
 function retainArchivedSourceMaps(

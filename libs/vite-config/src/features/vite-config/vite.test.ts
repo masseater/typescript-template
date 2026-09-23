@@ -9,9 +9,9 @@ import {
   effectRun,
   lifecycle,
   modularBoundaries,
+  paraglideAppRun,
   sliceBoundaries,
   taskInput,
-  testRun,
   workspaceCheckImports,
 } from "./vite.ts";
 
@@ -50,7 +50,7 @@ describe("lifecycle", () => {
 describe("effectRun", () => {
   const it = test.extend("effectWorkspaceRun", () => effectRun);
 
-  it("keeps the effect workspace on typecheck and modular budgets before push", ({
+  it("lints the workspace before commit and checks types, imports and budgets before push", ({
     effectWorkspaceRun,
   }) => {
     expect(effectWorkspaceRun).toStrictEqual({
@@ -69,18 +69,16 @@ describe("effectRun", () => {
 });
 
 describe("appRun", () => {
-  const it = test.extend("applicationRun", () => appRun("service-member"));
+  const it = test.extend("applicationRun", () => appRun);
 
   it("type-checks, builds, and starts before the stages that ship an app", ({ applicationRun }) => {
     expect(applicationRun).toStrictEqual({
       tasks: {
         ...effectDiagnostics,
-        check: sliceBoundaries.check,
         ...checkCode,
         ...workspaceCheckImports,
-        ...testRun,
         "check:client": {
-          command: "quality-check-client --application service-member",
+          command: "quality-check-client",
           input: [
             ...taskInput,
             "!**/dist/**",
@@ -91,10 +89,11 @@ describe("appRun", () => {
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },
         "check:react": {
-          command: "quality-check-react --application service-member",
+          command: "quality-check-react",
           input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
           output: [{ auto: true }, "!**/node_modules/.cache/**"],
         },
+        check: sliceBoundaries.check,
         build: {
           command: "vp build",
           dependsOn: ["@repo/dev#setup", "check:effect"],
@@ -118,10 +117,49 @@ describe("appRun", () => {
         preview: { cache: false, command: "vp preview" },
         ...lifecycle({
           precommit: ["check:code"],
-          prepush: ["check:effect", "check", "check:imports", "check:react", "check:client"],
+          prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
           prepr: ["build"],
-          premerge: ["test", "check:dev"],
+          premerge: ["build", "check:dev"],
         }),
+      },
+    });
+  });
+});
+
+describe("paraglideAppRun", () => {
+  const it = test.extend("localizedApplicationRun", () => paraglideAppRun);
+
+  it("compiles message catalogs before typecheck and the workspace checks", ({
+    localizedApplicationRun,
+  }) => {
+    expect(localizedApplicationRun).toStrictEqual({
+      tasks: {
+        ...appRun.tasks,
+        "compile:paraglide": {
+          command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
+          input: [
+            ...taskInput,
+            "messages/**",
+            "project.inlang/**",
+            { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
+            {
+              base: "workspace",
+              pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts",
+            },
+          ],
+          output: [".paraglide/**"],
+        },
+        "check:effect": {
+          ...effectDiagnostics["check:effect"],
+          dependsOn: ["compile:paraglide"],
+        },
+        "check:code": { ...checkCode["check:code"], dependsOn: ["compile:paraglide"] },
+        "check:imports": {
+          ...workspaceCheckImports["check:imports"],
+          dependsOn: ["compile:paraglide"],
+        },
+        "check:client": { ...appRun.tasks["check:client"], dependsOn: ["compile:paraglide"] },
+        "check:react": { ...appRun.tasks["check:react"], dependsOn: ["compile:paraglide"] },
       },
     });
   });

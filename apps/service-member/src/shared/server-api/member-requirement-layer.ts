@@ -1,4 +1,4 @@
-import { flagshipFeatureFlagsLayer, memoryFeatureFlagsLayer } from "@repo/feature-flags";
+import { configuredFeatureFlagsLayer } from "@repo/feature-flags";
 import { readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
@@ -12,12 +12,9 @@ function memberRequirementLayer(environment: unknown) {
   return Layer.mergeAll(
     Layer.unwrap(
       readWorkerConfig(environment).pipe(
-        Effect.map((config) =>
-          Layer.mergeAll(
-            opsMailLayer(config),
-            config.FLAGS === undefined
-              ? memoryFeatureFlagsLayer
-              : flagshipFeatureFlagsLayer(config.FLAGS),
+        Effect.flatMap((config) =>
+          configuredFeatureFlagsLayer(config).pipe(
+            Effect.map((flags) => Layer.mergeAll(opsMailLayer(config), flags)),
           ),
         ),
       ),

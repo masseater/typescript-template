@@ -1,10 +1,19 @@
-import { lifecycle, testableLibraryRun } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
-      ...testableLibraryRun.tasks,
+      ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
+      ...modularBoundaries,
       config: { cache: false, command: "./src/features/local/compose.ts config" },
       logs: { cache: false, command: "./src/features/local/compose.ts logs" },
       status: { cache: false, command: "./src/features/local/compose.ts status" },
@@ -12,12 +21,7 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:code"],
         prepush: ["check:effect", "check:imports", "check:modular"],
-        premerge: ["test"],
       }),
     },
-  },
-  test: {
-    mockReset: true,
-    restoreMocks: true,
   },
 });

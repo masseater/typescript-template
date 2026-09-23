@@ -41,6 +41,15 @@ export const variationForBoolean = (isEnabled: boolean): FlagVariation =>
 export const booleanForVariation = (variation: FlagVariation): boolean =>
   variation === FLAG_VARIATION.enabled;
 
+/** @canonical-values feature-flag.evaluation-kind */
+export const flagEvaluationKinds = ["evaluated", "fail-closed"] as const;
+export const FLAG_EVALUATION_KIND = {
+  evaluated: flagEvaluationKinds[0],
+  failClosed: flagEvaluationKinds[1],
+} as const;
+
+export type FlagEvaluationKind = (typeof flagEvaluationKinds)[number];
+
 export const auditTargetForToggle = (
   toggle: Readonly<{
     flagKey: FlagKey;

@@ -1,4 +1,3 @@
-import { FieldValidationMessageProvider } from "@repo/ui";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
@@ -16,13 +15,15 @@ const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: (): ReactElement => {
     const locale = getLocale();
     return (
-      <MemberShell lang={locale} routes={routes}>
-        <FieldValidationMessageProvider messages={fieldValidationMessages(locale)}>
-          <Outlet />
-          <TanStackDevtools
-            plugins={[{ name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> }]}
-          />
-        </FieldValidationMessageProvider>
+      <MemberShell
+        fieldValidationMessages={fieldValidationMessages(locale)}
+        lang={locale}
+        routes={routes}
+      >
+        <Outlet />
+        <TanStackDevtools
+          plugins={[{ name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> }]}
+        />
       </MemberShell>
     );
   },

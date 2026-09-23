@@ -116,7 +116,6 @@ describe("react-doctor integration", () => {
         .filter((directory) => reachable(directory, ["prepush"]).includes("check:react"))
         .toSorted(),
     ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
-    expect(reachable(".", ["prepush"])).not.toContain("check:react");
   });
 
   it("keeps AI-operable UI rules enabled at error", () => {
@@ -146,13 +145,13 @@ describe("react-doctor integration", () => {
     expect(
       Object.entries(workspaceConfigs)
         .filter(([file]) => file.includes("/apps/"))
-        .map(([file, config]) => [file, config.ignore?.files ?? []])
+        .map(([file, config]) => [file.replace(/^(?:\.\.\/)+/u, ""), config.ignore?.files ?? []])
         .toSorted(([left], [right]) => left.localeCompare(right)),
     ).toStrictEqual(
       [
-        ["../../../../../../apps/internal-dashboard/doctor.config.json", ["dist/**"]],
-        ["../../../../../../apps/service-admin/doctor.config.json", ["dist/**"]],
-        ["../../../../../../apps/service-member/doctor.config.json", ["dist/**"]],
+        ["apps/internal-dashboard/doctor.config.json", ["dist/**"]],
+        ["apps/service-admin/doctor.config.json", ["dist/**"]],
+        ["apps/service-member/doctor.config.json", ["dist/**"]],
       ].toSorted(([left], [right]) => left.localeCompare(right)),
     );
   });

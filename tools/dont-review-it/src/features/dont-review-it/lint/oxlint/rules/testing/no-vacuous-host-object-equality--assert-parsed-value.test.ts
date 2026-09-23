@@ -1,10 +1,9 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { noVacuousHostObjectEquality } from "./no-vacuous-host-object-equality--assert-parsed-value.ts";
 
 const SPEC_FILENAME = "order.test.ts";
@@ -17,31 +16,46 @@ const PARTIAL_SHAPE = { messageId: "vacuousPartialShape" };
 
 const SNAPSHOT_RECORD = { messageId: "vacuousSnapshotRecord" };
 
-const recordedDir = mkdtempSync(join(tmpdir(), "dont-review-it-no-vacuous-host-object-equality-"));
+const recordedDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({
+    prefix: "dont-review-it-no-vacuous-host-object-equality-",
+  });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
-mkdirSync(join(recordedDir, "__snapshots__"), { recursive: true });
+const recordedSpec = path.join(recordedDir, SPEC_FILENAME);
 
-const recordedSpec = join(recordedDir, SPEC_FILENAME);
+const FIXTURE_DIRECTORIES: readonly string[] = [path.join(recordedDir, "__snapshots__")];
 
-writeFileSync(
-  join(recordedDir, "__snapshots__", `${SPEC_FILENAME}.snap`),
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
   [
-    "// Vitest Snapshot v1",
-    "",
-    "exports[`outer > names the response 1`] = `Response {}`;",
-    "",
-    "exports[`outer > names the response 2`] = `{",
-    '  "id": 1,',
-    "}`;",
-    "",
-    "exports[`outer > names the headers 1`] = `Headers {}`;",
-    "",
-  ].join("\n"),
-);
+    path.join(recordedDir, "__snapshots__", `${SPEC_FILENAME}.snap`),
+    [
+      "// Vitest Snapshot v1",
+      "",
+      "exports[`outer > names the response 1`] = `Response {}`;",
+      "",
+      "exports[`outer > names the response 2`] = `{",
+      '  "id": 1,',
+      "}`;",
+      "",
+      "exports[`outer > names the headers 1`] = `Headers {}`;",
+      "",
+    ].join("\n"),
+  ],
+  [path.join(recordedDir, "response-record.txt"), "Response {}\n"],
+  [path.join(recordedDir, "order-record.txt"), '{\n  "id": 1,\n}\n'],
+];
 
-writeFileSync(join(recordedDir, "response-record.txt"), "Response {}\n");
-
-writeFileSync(join(recordedDir, "order-record.txt"), '{\n  "id": 1,\n}\n');
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-vacuous-host-object-equality--assert-parsed-value", () => {
   testLintRule(noVacuousHostObjectEquality, {

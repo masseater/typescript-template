@@ -1,16 +1,17 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { existsSync } from "node:fs";
-import { resolve, sep } from "node:path";
 
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { segmentsOf } from "../../lib/path-segments.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
 
 const DEFAULT_TEST_FILE_SUFFIXES = [".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx"];
 
-const pathExists = memoize((path: string): boolean => existsSync(path));
+const pathExists = memoize((filePath: string): boolean => existsSync(filePath));
 
 const stringsFrom = (
   ruleOptions: Readonly<Options>,
@@ -23,9 +24,9 @@ const stringsFrom = (
   return configured.filter((candidate): candidate is string => typeof candidate === "string");
 };
 
-const longestMatchingSuffix = (path: string, suffixes: readonly string[]): string | null =>
+const longestMatchingSuffix = (filePath: string, suffixes: readonly string[]): string | null =>
   suffixes
-    .filter((suffix) => path.endsWith(suffix))
+    .filter((suffix) => filePath.endsWith(suffix))
     .reduce<string | null>(
       (longest, suffix) => (longest === null || suffix.length > longest.length ? suffix : longest),
       null,
@@ -64,7 +65,7 @@ const findingFor = (
   readonly data: Readonly<Record<string, string>>;
 } | null => {
   const suffix = longestMatchingSuffix(testPath, suffixes);
-  const pathSegments = segmentsOf({ path: testPath, separator: sep });
+  const pathSegments = segmentsOf({ path: testPath, separator: path.sep });
   if (suffix === null || isExemptPath(pathSegments, exemptPaths)) return null;
 
   const sourcePath = sourcePathFor(testPath, suffix);
@@ -111,7 +112,7 @@ export const noDetachedTestFile = createDontReviewItRule({
 
     return {
       Program(node: ESTree.Program) {
-        const finding = findingFor(resolve(inspection.cwd, inspection.filename), {
+        const finding = findingFor(path.resolve(inspection.cwd, inspection.filename), {
           suffixes,
           exemptPaths,
         });

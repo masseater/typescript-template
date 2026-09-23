@@ -19,8 +19,9 @@ it("packs each monitor from its feature worker and builds that artifact in the p
     dependsOn: ["prepush", "build"],
   });
   assert.deepStrictEqual(config.run.tasks.premerge, { command: [], dependsOn: [] });
+  assert.deepStrictEqual(config.run.tasks.precommit, { command: [], dependsOn: ["check:code"] });
   assert.deepStrictEqual(config.run.tasks.prepush, {
     command: [],
-    dependsOn: ["precommit", "check:effect", "check:modular"],
+    dependsOn: ["precommit", "check:effect", "check:imports", "check:modular"],
   });
 });
