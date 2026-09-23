@@ -206,7 +206,7 @@ it.effect("requires every permission the deployment actually exercises", () =>
   Effect.sync(() => {
     const required = deployTokenPermissions.map((permission) => permission.dashboard);
     assert.includeMembers(required, [
-      "Account / Workers Scripts / Edit",
+      "Account / Workers / Admin",
       "Account / D1 / Edit",
       "Account / Secrets Store / Edit",
       "Account / API Tokens / Edit",
@@ -227,8 +227,8 @@ it.effect("requires every permission the deployment actually exercises", () =>
       "Account / Email Routing Addresses / Read",
       "Account / Email Sending / Write",
       "Account / Secrets Store / Edit",
+      "Account / Workers / Admin",
       "Account / Workers Observability / Write",
-      "Account / Workers Scripts / Edit",
       "Zone / Workers Routes / Edit",
       "Zone / Zone Settings / Edit",
     ]);
@@ -263,7 +263,9 @@ it.effect("names the deploy token permissions the account token does not carry",
     assert.deepStrictEqual(missingPermissions(granted), []);
     assert.deepStrictEqual(
       missingPermissions(
-        deployTokenPermissions.map((required) => ({ id: required.satisfiedBy[0].id })),
+        deployTokenPermissions.flatMap((required) =>
+          required.satisfiedBy.flatMap((group) => ("id" in group ? [{ id: group.id }] : [])),
+        ),
       ),
       [],
     );

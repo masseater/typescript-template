@@ -1,6 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import {
@@ -201,25 +200,33 @@ describe("AI-operable UI source rules", () => {
     ).toBe(true);
   });
 
-  it("keeps shipped UI free of captcha, browser confirm, and hover-only actions", () => {
-    expect.hasAssertions();
-    const violations = Object.keys(shippedModules)
-      .map((file) => file.replace(/^(?:\.\.\/)+/u, ""))
-      .filter(
-        (file) =>
-          !file.includes(".stories.") &&
-          !file.includes(".test.") &&
-          !file.endsWith("routeTree.gen.ts"),
-      )
-      .toSorted()
-      .flatMap((file) => {
-        const absolute = path.join(repositoryRoot, file);
-        return existsSync(absolute)
-          ? shippedUiRuleViolations(readFileSync(absolute, "utf8")).map(
+  it("keeps shipped UI free of captcha, browser confirm, and hover-only actions", () =>
+    Effect.runPromise(
+      Effect.gen(function* shippedUiViolations() {
+        expect.hasAssertions();
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const files = Object.keys(shippedModules)
+          .map((file) => file.replace(/^(?:\.\.\/)+/u, ""))
+          .filter(
+            (file) =>
+              !file.includes(".stories.") &&
+              !file.includes(".test.") &&
+              !file.endsWith("routeTree.gen.ts"),
+          )
+          .toSorted();
+        const violations = yield* Effect.forEach(files, (file) =>
+          Effect.gen(function* fileViolations() {
+            const absolute = paths.join(repositoryRoot, file);
+            if (!(yield* filesystem.exists(absolute))) {
+              return [];
+            }
+            return shippedUiRuleViolations(yield* filesystem.readFileString(absolute)).map(
               (violation) => `${file}: ${violation}`,
-            )
-          : [];
-      });
-    expect(violations).toStrictEqual([]);
-  });
+            );
+          }),
+        );
+        expect(violations.flat()).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 });

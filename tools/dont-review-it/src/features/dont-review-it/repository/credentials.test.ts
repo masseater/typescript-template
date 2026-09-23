@@ -1,127 +1,132 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
-import { Effect } from "effect";
-import { describe, expect, it } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import { describe, expect, vi } from "vite-plus/test";
 
 import { deploymentCredentials } from "./credentials.ts";
 
 const unusablePrefix = "NOT-A-DEPLOYABLE-PREFIX";
 const project = "template-project";
 
-const environment = process.env;
+const stubbedEnvironment = (entries: Readonly<Record<string, string | undefined>>) =>
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      for (const [name, value] of Object.entries(entries)) {
+        vi.stubEnv(name, value);
+      }
+    }),
+    () =>
+      Effect.sync(() => {
+        vi.unstubAllEnvs();
+      }),
+  );
 
-interface Fixture {
-  readonly filename: string;
-  readonly root: string;
-}
+const fixture = Effect.gen(function* fixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const paths = yield* Path.Path;
+  const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "template-credentials-" });
+  const home = yield* filesystem.makeTempDirectoryScoped({ prefix: "template-config-" });
+  yield* stubbedEnvironment({ TEMPLATE_CLOUDFLARE_ENV_FILE: undefined, XDG_CONFIG_HOME: home });
+  yield* filesystem.writeFileString(
+    paths.join(root, "package.json"),
+    yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name: project }),
+  );
+  return { filename: paths.join(home, project, "cloudflare.env"), root };
+});
 
-const restore = (entries: Readonly<Record<string, string | undefined>>): void => {
-  for (const [name, value] of Object.entries(entries)) {
-    delete environment[name];
-    Object.assign(environment, value === undefined ? {} : { [name]: value });
-  }
-};
-
-const withFixture = async (scenario: (fixture: Fixture) => Promise<void>): Promise<void> => {
-  const previous = {
-    TEMPLATE_CLOUDFLARE_ENV_FILE: environment.TEMPLATE_CLOUDFLARE_ENV_FILE,
-    XDG_CONFIG_HOME: environment.XDG_CONFIG_HOME,
-  };
-  const root = await mkdtemp(path.join(tmpdir(), "template-credentials-"));
-  const home = await mkdtemp(path.join(tmpdir(), "template-config-"));
-  restore({ TEMPLATE_CLOUDFLARE_ENV_FILE: undefined, XDG_CONFIG_HOME: home });
-  try {
-    await writeFile(path.join(root, "package.json"), JSON.stringify({ name: project }));
-    await scenario({ filename: path.join(home, project, "cloudflare.env"), root });
-  } finally {
-    restore(previous);
-    await rm(root, { force: true, recursive: true });
-    await rm(home, { force: true, recursive: true });
-  }
-};
-
-const writeCredentials = async (filename: string, contents: string): Promise<void> => {
-  await mkdir(path.dirname(filename), { recursive: true });
-  await writeFile(filename, contents);
-};
-
-const report = async (root: string): Promise<Readonly<Record<string, unknown>>> => {
-  const failure = await Effect.runPromise(Effect.flip(deploymentCredentials(root)));
-  return failure.report;
-};
-
-describe("deployment credentials the staged-diff check scans for", () => {
-  it("reports no credentials configured when the default file was never created", async () => {
-    expect.assertions(1);
-    await withFixture(async ({ root }) => {
-      await expect(Effect.runPromise(deploymentCredentials(root))).resolves.toStrictEqual({
-        source: "absent",
-        values: [],
-      });
-    });
+const writeCredentials = (filename: string, contents: string) =>
+  Effect.gen(function* writeCredentials() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    yield* filesystem.makeDirectory(paths.dirname(filename), { recursive: true });
+    yield* filesystem.writeFileString(filename, contents);
   });
 
-  it("reads the file the deploy command resolves", async () => {
-    expect.assertions(1);
-    await withFixture(async ({ filename, root }) => {
-      await writeCredentials(filename, `TEMPLATE_PREFIX="${unusablePrefix}"\nBUDGET_JPY=5000\n`);
-      await expect(Effect.runPromise(deploymentCredentials(root))).resolves.toStrictEqual({
+const report = (root: string) =>
+  Effect.map(Effect.flip(deploymentCredentials(root)), (failure) => failure.report);
+
+layer(NodeServices.layer)("deployment credentials the staged-diff check scans for", (it) => {
+  it.effect("reports no credentials configured when the default file was never created", () =>
+    Effect.gen(function* program() {
+      const { root } = yield* fixture;
+      expect(yield* deploymentCredentials(root)).toStrictEqual({ source: "absent", values: [] });
+    }),
+  );
+
+  it.effect("reads the file the deploy command resolves", () =>
+    Effect.gen(function* program() {
+      const { filename, root } = yield* fixture;
+      yield* writeCredentials(filename, `TEMPLATE_PREFIX="${unusablePrefix}"\nBUDGET_JPY=5000\n`);
+      expect(yield* deploymentCredentials(root)).toStrictEqual({
         source: "file",
         values: [{ key: "TEMPLATE_PREFIX", value: unusablePrefix }],
       });
-    });
-  });
+    }),
+  );
 
-  it("keeps the credentials path out of what it reports", async () => {
-    expect.assertions(1);
-    await withFixture(async ({ filename, root }) => {
-      restore({ TEMPLATE_CLOUDFLARE_ENV_FILE: filename });
-      expect(JSON.stringify(await report(root))).not.toContain(path.dirname(filename));
-    });
-  });
+  it.effect("keeps the credentials path out of what it reports", () =>
+    Effect.gen(function* program() {
+      const paths = yield* Path.Path;
+      const { filename, root } = yield* fixture;
+      yield* stubbedEnvironment({ TEMPLATE_CLOUDFLARE_ENV_FILE: filename });
+      const reported = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+        yield* report(root),
+      );
+      expect(reported).not.toContain(paths.dirname(filename));
+    }),
+  );
 });
 
-describe("deployment credentials that cannot be scanned", () => {
-  it("refuses to pass when the configured file is not there", async () => {
-    expect.assertions(1);
-    await withFixture(async ({ filename, root }) => {
-      restore({ TEMPLATE_CLOUDFLARE_ENV_FILE: filename });
-      await expect(report(root)).resolves.toStrictEqual({
-        code: "ENOENT",
-        reason: "credentials-unreadable",
-      });
-    });
+layer(NodeServices.layer)("deployment credentials that cannot be scanned", (it) => {
+  describe("a configured file that is not there", () => {
+    it.effect("refuses to pass", () =>
+      Effect.gen(function* program() {
+        const { filename, root } = yield* fixture;
+        yield* stubbedEnvironment({ TEMPLATE_CLOUDFLARE_ENV_FILE: filename });
+        expect(yield* report(root)).toStrictEqual({
+          code: "ENOENT",
+          reason: "credentials-unreadable",
+        });
+      }),
+    );
   });
 
-  it("refuses to pass when the file is there but cannot be read", async () => {
-    expect.assertions(1);
-    await withFixture(async ({ filename, root }) => {
-      await mkdir(filename, { recursive: true });
-      await expect(report(root)).resolves.toStrictEqual({
-        code: "EISDIR",
-        reason: "credentials-unreadable",
-      });
-    });
+  describe("a file that is there but cannot be read", () => {
+    it.effect("refuses to pass", () =>
+      Effect.gen(function* program() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const { filename, root } = yield* fixture;
+        yield* filesystem.makeDirectory(filename, { recursive: true });
+        expect(yield* report(root)).toStrictEqual({
+          code: "EISDIR",
+          reason: "credentials-unreadable",
+        });
+      }),
+    );
   });
 
-  it("refuses to pass when the file holds no deployment value to scan for", async () => {
-    expect.assertions(1);
-    await withFixture(async ({ filename, root }) => {
-      await writeCredentials(filename, "BUDGET_JPY=5000\n# nothing private here\n");
-      await expect(report(root)).resolves.toStrictEqual({ reason: "credentials-without-values" });
-    });
+  describe("a file that holds no deployment value to scan for", () => {
+    it.effect("refuses to pass", () =>
+      Effect.gen(function* program() {
+        const { filename, root } = yield* fixture;
+        yield* writeCredentials(filename, "BUDGET_JPY=5000\n# nothing private here\n");
+        expect(yield* report(root)).toStrictEqual({ reason: "credentials-without-values" });
+      }),
+    );
   });
 
-  it("refuses to pass when the project manifest cannot be read", async () => {
-    expect.assertions(1);
-    await withFixture(async ({ root }) => {
-      await rm(path.join(root, "package.json"));
-      await expect(report(root)).resolves.toStrictEqual({
-        code: "ENOENT",
-        reason: "manifest-unreadable",
-      });
-    });
+  describe("a project manifest that cannot be read", () => {
+    it.effect("refuses to pass", () =>
+      Effect.gen(function* program() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const { root } = yield* fixture;
+        yield* filesystem.remove(paths.join(root, "package.json"));
+        expect(yield* report(root)).toStrictEqual({
+          code: "ENOENT",
+          reason: "manifest-unreadable",
+        });
+      }),
+    );
   });
 });
