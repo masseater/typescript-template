@@ -437,7 +437,9 @@ describe("test ownership", () => {
     expect(commands(".", "test")).toStrictEqual([
       "vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts'",
     ]);
-    expect(commands(".", "test:dev-server")).toStrictEqual(["vp test run --project dev-server"]);
+    expect(commands(".", "test:dev-server")).toStrictEqual([
+      "vp test run --passWithNoTests --project dev-server",
+    ]);
     expect(commands(".", "test:storybook")).toStrictEqual(["vp test run --project storybook"]);
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });

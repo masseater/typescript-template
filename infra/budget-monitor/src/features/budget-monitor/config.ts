@@ -22,9 +22,8 @@ class BudgetFailure extends Schema.TaggedError<BudgetFailure>()("BudgetFailure",
   ]),
 }) {}
 
-function fail(code: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> {
-  return Effect.fail(new BudgetFailure({ code }));
-}
+const fail = (failureCode: BudgetFailure["code"]): Effect.Effect<never, BudgetFailure> =>
+  Effect.fail(new BudgetFailure({ code: failureCode }));
 
 const DecimalText = Schema.String.check(Schema.isPattern(/^\d+(?:\.\d+)?$/u));
 const FiniteNumber = Schema.Number.check(Schema.isFinite());

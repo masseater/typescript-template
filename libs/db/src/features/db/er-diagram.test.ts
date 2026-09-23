@@ -7,7 +7,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { erDiagram } from "./er-diagram.ts";
 
@@ -57,34 +57,49 @@ const friendship = sqliteTable(
 );
 
 describe("erDiagram", () => {
-  const diagram = erDiagram({ pet, owner, licence, friendship }).split("\n");
+  const it = test
+    .extend("diagram", () => erDiagram({ pet, owner, licence, friendship }).split("\n"))
+    .extend("outline", ({ diagram }) =>
+      diagram.filter((line) => !line.startsWith("    ") && !line.includes("--")),
+    )
+    .extend("columnLines", ({ diagram }) => diagram.filter((line) => line.startsWith("    ")))
+    .extend("relationships", ({ diagram }) => diagram.filter((line) => line.includes("--")));
 
-  it("opens a Mermaid ER diagram whose entities follow the table names in order", () => {
-    expect(diagram.filter((line) => line.endsWith("{"))).toStrictEqual([
+  it("opens a Mermaid ER diagram whose entities follow the table names in order", ({ outline }) => {
+    expect(outline).toStrictEqual([
+      "erDiagram",
       "  friendship {",
+      "  }",
       "  licence {",
+      "  }",
       "  owner {",
+      "  }",
       "  pet {",
+      "  }",
     ]);
-    expect(diagram[0]).toBe("erDiagram");
   });
 
-  it("marks primary, foreign and unique keys and the columns that accept null", () => {
-    expect(diagram).toStrictEqual(
-      expect.arrayContaining([
-        "    text email UK",
-        "    text id PK",
-        '    text nickname "nullable"',
-        "    text owner_id FK",
-        '    text sitter_id FK "nullable"',
-        "    text from_id PK, FK",
-        "    text owner_id PK, FK",
-      ]),
-    );
+  it("marks primary, foreign and unique keys and the columns that accept null", ({
+    columnLines,
+  }) => {
+    expect(columnLines).toStrictEqual([
+      "    text from_id PK, FK",
+      "    text to_id PK, FK",
+      "    integer number",
+      "    text owner_id PK, FK",
+      "    text email UK",
+      "    text id PK",
+      '    text nickname "nullable"',
+      "    text id PK",
+      "    text owner_id FK",
+      '    text sitter_id FK "nullable"',
+    ]);
   });
 
-  it("draws each foreign key from the referenced table with the cardinality its columns allow", () => {
-    expect(diagram.filter((line) => line.includes("--"))).toStrictEqual([
+  it("draws each foreign key from the referenced table with the cardinality its columns allow", ({
+    relationships,
+  }) => {
+    expect(relationships).toStrictEqual([
       '  owner ||--o{ friendship : "from_id"',
       '  owner ||--o{ friendship : "to_id"',
       '  owner ||--o| licence : "owner_id"',

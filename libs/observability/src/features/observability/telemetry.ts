@@ -1,42 +1,36 @@
 import { Context, Effect, Layer } from "effect";
 
-import { otlpExport } from "./otlp.ts";
+import { otlpExport, type OtlpDestination, type TelemetryFlusher } from "./otlp.ts";
 import { isRoutes } from "./protocol.ts";
-import { serviceLabel, structuredLogs } from "./structured-logs.ts";
+import { serviceLabel, structuredLogs, type StructuredLogOptions } from "./structured-logs.ts";
 import { TelemetryInvalid } from "./telemetry-invalid.ts";
 
-import type { OtlpDestination, TelemetryFlusher } from "./otlp.ts";
 import type { ServiceName } from "./service-name.ts";
-import type { StructuredLogOptions } from "./structured-logs.ts";
-
-interface TelemetryShape {
-  readonly serviceName: ServiceName;
-  readonly release: string;
-  readonly routes: Readonly<Record<string, string>>;
-  readonly labels: Readonly<ReadonlySet<string>>;
-}
-interface TelemetryOptions extends StructuredLogOptions {
-  readonly otlp?: OtlpDestination | undefined;
-  readonly routes: Readonly<Record<string, string>>;
-}
-
-class Telemetry extends Context.Service<Telemetry, TelemetryShape>()(
-  "@repo/observability/Telemetry",
-) {
+class Telemetry extends Context.Service<
+  Telemetry,
+  {
+    readonly serviceName: ServiceName;
+    readonly release: string;
+    readonly routes: Readonly<Record<string, string>>;
+    readonly labels: Readonly<ReadonlySet<string>>;
+  }
+>()("@repo/observability/Telemetry") {
   public static layer(
-    options: TelemetryOptions,
+    settings: StructuredLogOptions & {
+      readonly otlp?: OtlpDestination | undefined;
+      readonly routes: Readonly<Record<string, string>>;
+    },
   ): Layer.Layer<Telemetry | TelemetryFlusher, TelemetryInvalid> {
-    const { release, routes, serviceName } = options;
-    const labels = new Set([...Object.values(routes), "unmatched"]);
+    const { release, routes, serviceName } = settings;
+    const attributeLabels = new Set([...Object.values(routes), "unmatched"]);
     const service = serviceLabel(serviceName);
     const telemetry = isRoutes(routes)
-      ? Effect.succeed(Telemetry.of({ labels, release, routes, serviceName }))
+      ? Effect.succeed(Telemetry.of({ labels: attributeLabels, release, routes, serviceName }))
       : Effect.fail(new TelemetryInvalid({ reason: "routes" }));
     return Layer.effect(Telemetry, telemetry).pipe(
-      Layer.provideMerge(otlpExport({ otlp: options.otlp, release, service })),
-      Layer.provideMerge(structuredLogs(options)),
+      Layer.provideMerge(otlpExport({ otlp: settings.otlp, release, service })),
+      Layer.provideMerge(structuredLogs(settings)),
     );
   }
 }
-
 export { Telemetry };
