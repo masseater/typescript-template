@@ -219,7 +219,7 @@ const config = ({
       "apps/internal-wiki": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
-        project: ["src/**/*.{ts,tsx,mdx}!", "src/**/*.css"],
+        project: ["src/**/*.{ts,tsx,mdx}!"],
       },
       "apps/service-admin": {
         ...app,
