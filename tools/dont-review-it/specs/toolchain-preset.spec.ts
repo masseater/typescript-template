@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { oxfmt } from "../src/configs/oxfmt.ts";
-import { specDirectoryOverrides } from "../src/configs/spec-directory-overrides.ts";
-import { withGitExcludes } from "../src/configs/with-git-excludes.ts";
+import { oxfmt } from "../src/features/dont-review-it/configs/oxfmt.ts";
+import { specDirectoryOverrides } from "../src/features/dont-review-it/configs/spec-directory-overrides.ts";
+import { withGitExcludes } from "../src/features/dont-review-it/configs/with-git-excludes.ts";
 
 const SPECS_DIRECTORY_OVERRIDE = {
   files: ["**/specs/**"],

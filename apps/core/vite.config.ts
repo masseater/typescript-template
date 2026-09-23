@@ -1,9 +1,10 @@
 import {
-  checkCode,
   effectDiagnostics,
   lifecycle,
-  taskInput,
+  checkCode,
+  modularBoundaries,
   workspaceCheckImports,
+  taskInput,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -13,7 +14,7 @@ export default defineConfig({
       alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
       onlyBundle: ["@better-auth/core", "better-call", "drizzle-orm", "effect", "msgpackr"],
     },
-    entry: { index: "src/worker.ts" },
+    entry: { index: "src/features/core/worker.ts" },
     format: "esm" as const,
     outExtensions: () => ({ js: ".js" }),
     platform: "browser" as const,
@@ -24,10 +25,11 @@ export default defineConfig({
       ...effectDiagnostics,
       ...checkCode,
       ...workspaceCheckImports,
+      ...modularBoundaries,
       build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports"],
+        prepush: ["check:effect", "check:imports", "check:modular"],
         prepr: ["build"],
         premerge: [],
         prerelease: [],

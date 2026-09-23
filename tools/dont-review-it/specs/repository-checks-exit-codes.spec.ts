@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { EXIT_MISUSE, EXIT_PROBLEMS_FOUND, EXIT_SUCCESS } from "../src/repository-checks/index.ts";
+import {
+  EXIT_MISUSE,
+  EXIT_PROBLEMS_FOUND,
+  EXIT_SUCCESS,
+} from "../src/features/dont-review-it/repository-checks/index.ts";
 
 describe("CLI の終了コード", () => {
   it("成功を 0 で表す", () => {

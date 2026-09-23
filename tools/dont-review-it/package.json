@@ -13,13 +13,14 @@
     "directory": "tools/dont-review-it"
   },
   "bin": {
-    "dont-review-it": "./src/cli.ts",
-    "dont-review-it-canonical-literal-types": "./src/canonical-literal-types/run-as-task.ts",
-    "dont-review-it-typecheck": "./src/repository/typecheck-workspaces.ts",
-    "quality-check-client": "./src/repository/client-bundle.ts",
-    "quality-check-imports": "./src/repository/workspace-imports.ts",
-    "quality-check-react": "./src/repository/react-doctor.ts",
-    "quality-check-thin-app-routes": "./src/repository/thin-app-routes-check.ts"
+    "dont-review-it": "./src/features/dont-review-it/cli.ts",
+    "dont-review-it-canonical-literal-types": "./src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
+    "dont-review-it-typecheck": "./src/features/dont-review-it/repository/typecheck-workspaces.ts",
+    "quality-check-client": "./src/features/dont-review-it/repository/client-bundle.ts",
+    "quality-check-imports": "./src/features/dont-review-it/repository/workspace-imports.ts",
+    "quality-check-modular": "./src/features/dont-review-it/repository/modular-budgets-check.ts",
+    "quality-check-react": "./src/features/dont-review-it/repository/react-doctor.ts",
+    "quality-check-thin-app-routes": "./src/features/dont-review-it/repository/thin-app-routes-check.ts"
   },
   "files": [
     "dist",
@@ -29,7 +30,7 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/workspace-entry.ts",
+    ".": "./src/features/dont-review-it/workspace-entry.ts",
     "./tsconfig/*": "./tsconfig/*",
     "./package.json": "./package.json"
   },
@@ -49,6 +50,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
     "@opentelemetry/api": "catalog:",
     "@repo/ai-native-telemetry": "workspace:*",
@@ -75,6 +77,7 @@
     "yaml": "catalog:"
   },
   "devDependencies": {
+    "@effect/vitest": "catalog:",
     "@opentelemetry/core": "catalog:",
     "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
     "@opentelemetry/exporter-trace-otlp-http": "catalog:",
@@ -92,7 +95,7 @@
     "vite-plus": "^1.0.0-rc.0"
   },
   "lintRules": [
-    "src/lint/oxlint/rules",
-    "src/lint-rule-authoring/lint/oxlint/rules"
+    "src/features/dont-review-it/lint/oxlint/rules",
+    "src/features/dont-review-it/lint-rule-authoring/lint/oxlint/rules"
   ]
 }

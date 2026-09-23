@@ -1,6 +1,7 @@
+import { checkCode, modularBoundaries, workspaceCheckImports } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
-import { effectTsgoNoEmit, effectTypecheckInputs } from "./src/effect-typecheck.ts";
+import { effectTsgoNoEmit, effectTypecheckInputs } from "./src/features/config/effect-typecheck.ts";
 
 export default defineConfig({
   run: {
@@ -9,24 +10,14 @@ export default defineConfig({
         command: effectTsgoNoEmit("tsconfig.json"),
         input: [...effectTypecheckInputs],
       },
-      "check:code": {
-        command: "vp check --no-error-on-unmatched-pattern",
-        input: [
-          { auto: true },
-          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-        ],
-      },
-      "check:imports": {
-        command: "quality-check-imports",
-        input: [
-          { auto: true },
-          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-        ],
-      },
+      ...checkCode,
+      ...workspaceCheckImports,
+      ...modularBoundaries,
       precommit: { command: [], dependsOn: ["check:code"] },
-      prepush: { command: [], dependsOn: ["precommit", "check:effect", "check:imports"] },
+      prepush: {
+        command: [],
+        dependsOn: ["precommit", "check:effect", "check:imports", "check:modular"],
+      },
       prepr: { command: [], dependsOn: ["prepush"] },
       premerge: { command: [], dependsOn: [] },
       prerelease: { command: [], dependsOn: ["prepr", "premerge"] },

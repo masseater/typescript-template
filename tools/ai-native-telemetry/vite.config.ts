@@ -2,11 +2,12 @@ import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import {
-  checkCode,
   effectDiagnostics,
   intentValidation,
   lifecycle,
   testRun,
+  checkCode,
+  modularBoundaries,
   workspaceCheckImports,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
@@ -17,11 +18,12 @@ export default defineConfig({
       ...effectDiagnostics,
       ...checkCode,
       ...workspaceCheckImports,
+      ...modularBoundaries,
       ...intentValidation,
       ...testRun,
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check"],
+        prepush: ["check:effect", "check:imports", "check", "check:modular"],
         prepr: ["test"],
       }),
     },
@@ -46,9 +48,9 @@ export default defineConfig({
   },
   pack: {
     entry: [
-      "src/telemetry/optional-setting.ts",
-      "src/telemetry/telemetry.ts",
-      "src/telemetry/vitest-sdk.ts",
+      "src/features/ai-native-telemetry/telemetry/optional-setting.ts",
+      "src/features/ai-native-telemetry/telemetry/telemetry.ts",
+      "src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
     ],
     dts: { generator: "tsgo" },
   },

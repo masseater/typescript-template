@@ -1,4 +1,10 @@
-import { checkCode, effectDiagnostics, lifecycle, workspaceCheckImports } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
@@ -7,6 +13,7 @@ export default defineConfig({
       ...effectDiagnostics,
       ...checkCode,
       ...workspaceCheckImports,
+      ...modularBoundaries,
       check: {
         command: "drizzle-kit check",
         input: [{ auto: true }, "!node_modules/.cache/**"],
@@ -19,7 +26,7 @@ export default defineConfig({
       },
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check"],
+        prepush: ["check:effect", "check:imports", "check", "check:modular"],
       }),
     },
   },
