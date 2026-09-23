@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/features/health-monitor/index.ts",
-    "./config": "./src/features/health-monitor/config.ts"
+    ".": "./src/features/health-monitor/index.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
+    "@repo/infra-cloudflare": "workspace:*",
     "@repo/monitor": "workspace:*",
+    "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {

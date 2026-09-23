@@ -1,6 +1,7 @@
 const cloudflareSourceFiles = [
   "infra/cloudflare/src/features/cloudflare/**",
   "apps/**/alchemy.run.ts",
+  "infra/**/alchemy.run.ts",
 ];
 
 const cloudflareNewCapExceptions = {

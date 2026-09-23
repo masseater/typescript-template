@@ -1,18 +1,16 @@
 import { APPLICATION } from "@repo/config";
-import { healthMonitorWorker, healthOriginKey } from "@repo/health-monitor/config";
+import { monitorArtifact, monitorProgram } from "@repo/infra-cloudflare/monitor";
+import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
+import { healthMonitorWorker, healthOriginKey } from "@repo/monitor/workers";
 import { Stack } from "alchemy";
 import { Effect } from "effect";
 
-import { monitorArtifact } from "./artifacts.ts";
-import { monitorProgram } from "./monitor.ts";
-import { stackName, stackOptions } from "./stacks.ts";
+import type { SharedConfig } from "@repo/infra-cloudflare/monitor";
 
-import type { SharedConfig } from "./config.ts";
-
-const stack = Stack(
+export default Stack(
   stackName("health-monitor"),
   stackOptions,
-  monitorProgram(healthMonitorWorker.name, {
+  monitorProgram("health", {
     artifact: monitorArtifact("health-monitor"),
     className: healthMonitorWorker.className,
     cron: healthMonitorWorker.cron,
@@ -25,5 +23,3 @@ const stack = Stack(
       }),
   }),
 );
-
-export default stack;

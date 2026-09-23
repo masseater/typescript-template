@@ -4,10 +4,12 @@
   "type": "module",
   "exports": {
     ".": "./src/features/monitor/index.ts",
-    "./vite": "./src/features/monitor/vite.ts"
+    "./vite": "./src/features/monitor/vite.ts",
+    "./workers": "./src/features/monitor/workers.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
+    "@repo/observability": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "effect": "catalog:"
   },

@@ -1,4 +1,4 @@
-import { devServerTests, workerTests } from "@repo/dont-review-it";
+import { devServerTests, isolatedNodeTests, workerTests } from "@repo/dont-review-it";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -12,7 +12,13 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          exclude: [...defaultExclude, workerTests, devServerTests, "**/*.sandbox-unsafe.test.ts"],
+          exclude: [
+            ...defaultExclude,
+            workerTests,
+            devServerTests,
+            isolatedNodeTests,
+            "**/*.sandbox-unsafe.test.ts",
+          ],
           include: [
             "libs/config/**/*.test.ts",
             "libs/runtime/**/*.test.ts",
