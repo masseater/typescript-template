@@ -186,14 +186,18 @@ describe("a group with only a fingerprint", () => {
 });
 
 describe("the query sent for one window", () => {
-  const it = test.extend("askedQueries", async ({}, { onCleanup }) => {
-    const askedBodies = Effect.runSync(Ref.make<readonly unknown[]>([]));
+  const it = test.extend("askedQueries", ({}, { onCleanup }) => {
+    const askedBodies = Ref.makeUnsafe<readonly unknown[]>([]);
     const telemetryApi = setupServer(
-      http.post(queryEndpoint, async ({ request }) => {
-        const askedBody: unknown = await request.json();
-        await Effect.runPromise(Ref.update(askedBodies, (earlier) => [...earlier, askedBody]));
-        return HttpResponse.json(telemetryEnvelope);
-      }),
+      http.post(queryEndpoint, ({ request }) =>
+        Effect.runPromise(
+          Effect.gen(function* recordAskedBody() {
+            const askedBody: unknown = yield* Effect.promise(() => request.json());
+            yield* Ref.update(askedBodies, (earlier) => [...earlier, askedBody]);
+            return HttpResponse.json(telemetryEnvelope);
+          }),
+        ),
+      ),
     );
     telemetryApi.listen({ onUnhandledRequest: "error" });
     onCleanup(() => {
@@ -233,16 +237,14 @@ describe("the query sent for one window", () => {
 });
 
 describe("grouped results past the query limit", () => {
-  const it = test.extend("pagedQuery", async ({}, { onCleanup }) => {
-    const askedPages = Effect.runSync(
-      Ref.make<
-        readonly {
-          readonly limit: number;
-          readonly offsetBy: number;
-          readonly parameters: { readonly limit: number };
-        }[]
-      >([]),
-    );
+  const it = test.extend("pagedQuery", ({}, { onCleanup }) => {
+    const askedPages = Ref.makeUnsafe<
+      readonly {
+        readonly limit: number;
+        readonly offsetBy: number;
+        readonly parameters: { readonly limit: number };
+      }[]
+    >([]);
     const telemetryApi = setupServer(
       http.post<
         Record<string, string>,
@@ -251,44 +253,46 @@ describe("grouped results past the query limit", () => {
           readonly offsetBy: number;
           readonly parameters: { readonly limit: number };
         }
-      >(queryEndpoint, async ({ request }) => {
-        const askedPage = await request.json();
-        await Effect.runPromise(
-          Ref.update(askedPages, (earlier) => [
-            ...earlier,
-            {
-              limit: askedPage.limit,
-              offsetBy: askedPage.offsetBy,
-              parameters: { limit: askedPage.parameters.limit },
-            },
-          ]),
-        );
-        return HttpResponse.json({
-          ...telemetryEnvelope,
-          result: {
-            ...telemetryEnvelope.result,
-            calculations: [
+      >(queryEndpoint, ({ request }) =>
+        Effect.runPromise(
+          Effect.gen(function* answerPage() {
+            const askedPage = yield* Effect.promise(() => request.json());
+            yield* Ref.update(askedPages, (earlier) => [
+              ...earlier,
               {
-                aggregates: Array.from(
-                  { length: askedPage.offsetBy === 0 ? askedPage.limit : 1 },
-                  (_unused, pageIndex) => ({
-                    ...fingerprintedAggregate,
-                    groups: [
-                      {
-                        key: "error.fingerprint",
-                        value: (askedPage.offsetBy + pageIndex).toString(16).padStart(8, "0"),
-                      },
-                      { key: "error.tag", value: "Overflow" },
-                    ],
-                  }),
-                ),
-                calculation: "count",
-                series: [],
+                limit: askedPage.limit,
+                offsetBy: askedPage.offsetBy,
+                parameters: { limit: askedPage.parameters.limit },
               },
-            ],
-          },
-        });
-      }),
+            ]);
+            return HttpResponse.json({
+              ...telemetryEnvelope,
+              result: {
+                ...telemetryEnvelope.result,
+                calculations: [
+                  {
+                    aggregates: Array.from(
+                      { length: askedPage.offsetBy === 0 ? askedPage.limit : 1 },
+                      (_unused, pageIndex) => ({
+                        ...fingerprintedAggregate,
+                        groups: [
+                          {
+                            key: "error.fingerprint",
+                            value: (askedPage.offsetBy + pageIndex).toString(16).padStart(8, "0"),
+                          },
+                          { key: "error.tag", value: "Overflow" },
+                        ],
+                      }),
+                    ),
+                    calculation: "count",
+                    series: [],
+                  },
+                ],
+              },
+            });
+          }),
+        ),
+      ),
     );
     telemetryApi.listen({ onUnhandledRequest: "error" });
     onCleanup(() => {

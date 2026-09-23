@@ -21,20 +21,20 @@ const vitalEvent = {
 } as const;
 
 describe("vitals reported around the stop", () => {
-  const it = test.extend("deliveredBatches", async () => {
+  const it = test.extend("deliveredBatches", () => {
     const deliveredBatches = Ref.makeUnsafe<readonly (readonly BrowserEvent[])[]>([]);
-    const eventQueue = makeEventQueue(async (batch) => {
-      Effect.runSync(Ref.update(deliveredBatches, (earlier) => [...earlier, batch]));
-      return Promise.resolve();
-    });
+    const eventQueue = makeEventQueue((batch) =>
+      Effect.runPromise(Ref.update(deliveredBatches, (earlier) => [...earlier, batch])),
+    );
     const vitals = stoppableVitals((metric) => {
       eventQueue.enqueue({ ...vitalEvent, name: metric.name, value: metric.value });
     });
     vitals.report({ name: "INP", value: 1 });
     vitals.stop();
     vitals.report({ name: "LCP", value: 2 });
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    return Ref.getUnsafe(deliveredBatches);
+    return Effect.runPromise(
+      Effect.andThen(Effect.ignore(Effect.tryPromise(eventQueue.flush)), Ref.get(deliveredBatches)),
+    );
   });
 
   it("carries the vital reported before the stop and nothing after it", ({ deliveredBatches }) => {

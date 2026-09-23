@@ -1,6 +1,5 @@
-import { globSync, readFileSync } from "node:fs";
-import path from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { applications } from "./applications.ts";
@@ -53,27 +52,38 @@ describe("retired application and role spellings", () => {
       'default("user")',
       "IN ('user', 'admin')",
     ];
-    const authoredFiles = new Set(
-      globSync(
-        [
-          `**/*.${authoredExtensions}`,
-          `**/.*/**/*.${authoredExtensions}`,
-          `**/.*.${authoredExtensions}`,
-        ],
-        {
-          cwd: repositoryRoot,
-          exclude: (candidate) => skippedDirectories.has(path.basename(candidate)),
-        },
-      ),
+    const authoredPatterns = [
+      `**/*.${authoredExtensions}`,
+      `**/.*/**/*.${authoredExtensions}`,
+      `**/.*.${authoredExtensions}`,
+    ];
+    return Effect.runPromise(
+      Effect.gen(function* retiredSpellingHits() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const matchedFiles = yield* Effect.forEach(authoredPatterns, (authoredPattern) =>
+          filesystem.glob(authoredPattern, {
+            root: repositoryRoot,
+            exclude: [...skippedDirectories].map((skippedDirectory) => `**/${skippedDirectory}`),
+          }),
+        );
+        const authoredFiles = [...new Set(matchedFiles.flat())].filter(
+          (authoredFile) => authoredFile !== "libs/config/src/applications.test.ts",
+        );
+        const hitsPerFile = yield* Effect.forEach(authoredFiles, (authoredFile) =>
+          filesystem
+            .readFileString(paths.join(repositoryRoot, authoredFile))
+            .pipe(
+              Effect.map((authoredText) =>
+                retiredSpellings
+                  .filter((retiredSpelling) => authoredText.includes(retiredSpelling))
+                  .map((retiredSpelling) => `${authoredFile}: ${retiredSpelling}`),
+              ),
+            ),
+        );
+        return hitsPerFile.flat();
+      }).pipe(Effect.provide(NodeServices.layer)),
     );
-    return [...authoredFiles]
-      .filter((authoredFile) => authoredFile !== "libs/config/src/applications.test.ts")
-      .flatMap((authoredFile) => {
-        const authoredText = readFileSync(path.join(repositoryRoot, authoredFile), "utf-8");
-        return retiredSpellings
-          .filter((retiredSpelling) => authoredText.includes(retiredSpelling))
-          .map((retiredSpelling) => `${authoredFile}: ${retiredSpelling}`);
-      });
   });
 
   it("do not remain in authored sources", ({ retiredSpellingHits }) => {

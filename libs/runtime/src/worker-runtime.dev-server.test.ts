@@ -1,5 +1,5 @@
 import { workerCompatibility } from "@repo/config/worker";
-import { Effect } from "effect";
+import { Effect, Exit, Fiber, Scope } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 import { unstable_dev } from "wrangler";
 
@@ -21,9 +21,9 @@ describe("a worker whose runtime is still building its layer", () => {
         return yield* Effect.forEach(
           ["first", "second", "third", "fourth"],
           () =>
-            Effect.promise(async () => {
-              const answered = await worker.fetch();
-              return `${String(answered.status)} ${await answered.text()}`;
+            Effect.gen(function* answerProgram() {
+              const answered = yield* Effect.promise(() => worker.fetch());
+              return `${String(answered.status)} ${yield* Effect.promise(() => answered.text())}`;
             }),
           { concurrency: "unbounded" },
         );
@@ -48,15 +48,21 @@ describe("a worker whose first request was cut off while its layer was building"
           }),
         );
         onCleanup(() => worker.stop());
-        const cutOff = new AbortController();
-        const abandoned = Promise.allSettled([worker.fetch(undefined, { signal: cutOff.signal })]);
+        const cutOff = yield* Scope.make();
+        const signal = yield* Scope.provide(Effect.abortSignal, cutOff);
+        const abandoned = yield* Effect.tryPromise(() => worker.fetch(undefined, { signal })).pipe(
+          Effect.match({ onFailure: () => "rejected", onSuccess: () => "fulfilled" }),
+          Effect.forkChild({ startImmediately: true }),
+        );
         yield* Effect.sleep("0 millis");
-        const waiting = worker.fetch();
-        cutOff.abort();
-        const [abandonedSettlement] = yield* Effect.promise(() => abandoned);
-        const retried = yield* Effect.promise(() => waiting);
+        const waiting = yield* Effect.promise(() => worker.fetch()).pipe(
+          Effect.forkChild({ startImmediately: true }),
+        );
+        yield* Scope.close(cutOff, Exit.void);
+        const abandonedSettlement = yield* Fiber.join(abandoned);
+        const retried = yield* Fiber.join(waiting);
         return {
-          abandoned: abandonedSettlement.status,
+          abandoned: abandonedSettlement,
           retried: `${String(retried.status)} ${yield* Effect.promise(() => retried.text())}`,
         };
       }),

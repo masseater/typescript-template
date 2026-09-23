@@ -1,4 +1,4 @@
-import { Effect, Ref } from "effect";
+import { Data, Effect, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { makeEventQueue } from "./browser-queue.ts";
@@ -9,6 +9,8 @@ const retryBackoffMilliseconds = 1000;
 const secondAttempt = 2;
 const settleMilliseconds = 50;
 const queueTimeout = 60_000;
+
+class DeliveryRefused extends Data.TaggedError("DeliveryRefused") {}
 
 const vitalEvent = {
   duration: 0,
@@ -25,16 +27,24 @@ const vitalEvent = {
 } as const;
 
 describe("a batch whose delivery is refused", () => {
-  const it = test.extend("deliveredBatches", async () => {
+  const it = test.extend("deliveredBatches", () => {
     const deliveredBatches = Ref.makeUnsafe<readonly (readonly BrowserEvent[])[]>([]);
-    const eventQueue = makeEventQueue(async (batch) => {
-      Effect.runSync(Ref.update(deliveredBatches, (earlier) => [...earlier, batch]));
-      return Promise.reject(new Error("delivery refused"));
-    });
+    const eventQueue = makeEventQueue((batch) =>
+      Effect.runPromise(
+        Effect.andThen(
+          Ref.update(deliveredBatches, (earlier) => [...earlier, batch]),
+          Effect.fail(new DeliveryRefused()),
+        ),
+      ),
+    );
     eventQueue.enqueue(vitalEvent);
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    return Ref.getUnsafe(deliveredBatches);
+    return Effect.runPromise(
+      Effect.gen(function* refusedDeliveries() {
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        return yield* Ref.get(deliveredBatches);
+      }),
+    );
   });
 
   it("is not resent within the backoff", { timeout: queueTimeout }, ({ deliveredBatches }) => {
@@ -43,20 +53,26 @@ describe("a batch whose delivery is refused", () => {
 });
 
 describe("a batch flushed again once the backoff has passed", () => {
-  const it = test.extend("deliveredBatches", async () => {
+  const it = test.extend("deliveredBatches", () => {
     const deliveredBatches = Ref.makeUnsafe<readonly (readonly BrowserEvent[])[]>([]);
-    const eventQueue = makeEventQueue(async (batch) => {
-      Effect.runSync(Ref.update(deliveredBatches, (earlier) => [...earlier, batch]));
-      return Promise.reject(new Error("delivery refused"));
-    });
-    eventQueue.enqueue(vitalEvent);
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    await Effect.runPromise(
-      Effect.sleep(`${retryBackoffMilliseconds + settleMilliseconds} millis`),
+    const eventQueue = makeEventQueue((batch) =>
+      Effect.runPromise(
+        Effect.andThen(
+          Ref.update(deliveredBatches, (earlier) => [...earlier, batch]),
+          Effect.fail(new DeliveryRefused()),
+        ),
+      ),
     );
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    return Ref.getUnsafe(deliveredBatches);
+    eventQueue.enqueue(vitalEvent);
+    return Effect.runPromise(
+      Effect.gen(function* refusedDeliveries() {
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        yield* Effect.sleep(`${retryBackoffMilliseconds + settleMilliseconds} millis`);
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        return yield* Ref.get(deliveredBatches);
+      }),
+    );
   });
 
   it("is sent once more", { timeout: queueTimeout }, ({ deliveredBatches }) => {
@@ -65,25 +81,31 @@ describe("a batch flushed again once the backoff has passed", () => {
 });
 
 describe("a batch refused as many times as the queue allows", () => {
-  const it = test.extend("deliveredBatches", async () => {
+  const it = test.extend("deliveredBatches", () => {
     const deliveredBatches = Ref.makeUnsafe<readonly (readonly BrowserEvent[])[]>([]);
-    const eventQueue = makeEventQueue(async (batch) => {
-      Effect.runSync(Ref.update(deliveredBatches, (earlier) => [...earlier, batch]));
-      return Promise.reject(new Error("delivery refused"));
-    });
+    const eventQueue = makeEventQueue((batch) =>
+      Effect.runPromise(
+        Effect.andThen(
+          Ref.update(deliveredBatches, (earlier) => [...earlier, batch]),
+          Effect.fail(new DeliveryRefused()),
+        ),
+      ),
+    );
     eventQueue.enqueue(vitalEvent);
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    await Effect.runPromise(
-      Effect.sleep(`${retryBackoffMilliseconds + settleMilliseconds} millis`),
+    return Effect.runPromise(
+      Effect.gen(function* refusedDeliveries() {
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        yield* Effect.sleep(`${retryBackoffMilliseconds + settleMilliseconds} millis`);
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        yield* Effect.sleep(
+          `${retryBackoffMilliseconds * secondAttempt + settleMilliseconds} millis`,
+        );
+        yield* Effect.ignore(Effect.tryPromise(eventQueue.flush));
+        yield* Effect.sync(eventQueue.flushBeforeUnload);
+        yield* Effect.sleep(`${settleMilliseconds} millis`);
+        return yield* Ref.get(deliveredBatches);
+      }),
     );
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    await Effect.runPromise(
-      Effect.sleep(`${retryBackoffMilliseconds * secondAttempt + settleMilliseconds} millis`),
-    );
-    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
-    eventQueue.flushBeforeUnload();
-    await Effect.runPromise(Effect.sleep(`${settleMilliseconds} millis`));
-    return Ref.getUnsafe(deliveredBatches);
   });
 
   it("stops at the limit", { timeout: queueTimeout }, ({ deliveredBatches }) => {

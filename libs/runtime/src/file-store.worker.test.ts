@@ -16,7 +16,8 @@ describe("FileStore", () => {
             bytes: new Uint8Array([1, 2, 3, 4, 5]),
             contentType: "application/octet-stream",
           });
-          onCleanup(() => Effect.runPromise(store.remove([fileName])));
+          const storeServices = yield* Effect.context();
+          onCleanup(() => Effect.runPromiseWith(storeServices)(store.remove([fileName])));
           return yield* store.get(fileName);
         }).pipe(Effect.provide(FileStore.fromEnvironment(env))),
       ));

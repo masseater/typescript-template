@@ -12,7 +12,8 @@ describe("ReadCache", () => {
         Effect.gen(function* cachedReadsProgram() {
           const cache = yield* ReadCache;
           const cacheKey = `cache/${crypto.randomUUID()}`;
-          onCleanup(() => Effect.runPromise(cache.remove(cacheKey)));
+          const cacheServices = yield* Effect.context();
+          onCleanup(() => Effect.runPromiseWith(cacheServices)(cache.remove(cacheKey)));
           const loadCount = yield* Ref.make(0);
           const load = Ref.updateAndGet(loadCount, (loadsSoFar) => loadsSoFar + 1).pipe(
             Effect.map((loadNumber) => `value-${loadNumber}`),

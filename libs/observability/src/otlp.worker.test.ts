@@ -17,6 +17,7 @@ const exportedTraceIds = /"traceId":"(?<traceId>[0-9a-f]{32})"/gu;
 const traceparentTraceId = /^00-(?<traceId>[0-9a-f]{32})-[0-9a-f]{16}-01$/u;
 const traceIdPattern = /^[0-9a-f]{32}$/u;
 const loggedLine = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown));
+const jsonText = Schema.fromJsonString(Schema.Unknown);
 
 describe("an exported request", () => {
   const it = test.extend("sharedTrace", ({}, { onCleanup }) =>
@@ -30,11 +31,12 @@ describe("an exported request", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -55,11 +57,13 @@ describe("an exported request", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         const answered = yield* observeRequest(new Request("http://localhost/"), () =>
@@ -84,10 +88,10 @@ describe("an exported request", () => {
           "";
         const loggedRecords = yield* Ref.get(loggedLines);
         const sentExports = yield* Ref.get(receivedExports);
-        const exportedLogText = JSON.stringify(
+        const exportedLogText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "logs").map((sent) => sent.exported),
         );
-        const exportedTraceText = JSON.stringify(
+        const exportedTraceText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "traces").map((sent) => sent.exported),
         );
         return {
@@ -142,11 +146,12 @@ describe("a request without an OTLP destination", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -167,11 +172,13 @@ describe("a request without an OTLP destination", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         const answered = yield* observeRequest(new Request("http://localhost/"), () =>
@@ -196,10 +203,10 @@ describe("a request without an OTLP destination", () => {
           "";
         const loggedRecords = yield* Ref.get(loggedLines);
         const sentExports = yield* Ref.get(receivedExports);
-        const exportedLogText = JSON.stringify(
+        const exportedLogText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "logs").map((sent) => sent.exported),
         );
-        const exportedTraceText = JSON.stringify(
+        const exportedTraceText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "traces").map((sent) => sent.exported),
         );
         return {
@@ -233,11 +240,12 @@ describe("client requests refused with client errors", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -258,11 +266,13 @@ describe("client requests refused with client errors", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         yield* observeRequest(new Request("http://localhost/"), () =>
@@ -294,7 +304,7 @@ describe("client requests refused with client errors", () => {
           Effect.orDie,
         );
         const sentExports = yield* Ref.get(receivedExports);
-        const exportedLogText = JSON.stringify(
+        const exportedLogText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "logs").map((sent) => sent.exported),
         );
         return [
@@ -325,11 +335,12 @@ describe("a receiver that rejects the export", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -350,11 +361,13 @@ describe("a receiver that rejects the export", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         yield* observeRequest(new Request("http://localhost/"), () =>

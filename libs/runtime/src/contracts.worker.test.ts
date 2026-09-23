@@ -1,5 +1,5 @@
 import { getSchemaShape } from "@repo/db/testing";
-import { Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { SessionView } from "./contracts.ts";
@@ -16,10 +16,9 @@ const storedUser: Pick<UserRecord, "email" | "id" | "name" | "role" | "twoFactor
 
 describe("session user view", () => {
   const it = test
-    .extend("decodedSessionUser", (): Pick<
-      UserRecord,
-      "email" | "id" | "name" | "role" | "twoFactorEnabled"
-    > => Schema.decodeSync(SessionView.fields.user)(storedUser))
+    .extend("decodedSessionUser", (): Promise<
+      Pick<UserRecord, "email" | "id" | "name" | "role" | "twoFactorEnabled">
+    > => Effect.runPromise(Schema.decodeEffect(SessionView.fields.user)(storedUser)))
     .extend("fieldsMissingFromUserRow", () =>
       new Set(Object.keys(SessionView.fields.user.fields)).difference(
         new Set(getSchemaShape()["user"]),

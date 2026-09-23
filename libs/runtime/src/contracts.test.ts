@@ -8,7 +8,7 @@ const maximumTokenLength = 4096;
 describe("an email verification request carrying the token the mail link holds", () => {
   const it = test.extend("decodedRequest", () =>
     Effect.runPromise(
-      Schema.decodeUnknownEffect(EmailVerificationRequest, { onExcessProperty: "error" })({
+      Schema.decodeEffect(EmailVerificationRequest, { onExcessProperty: "error" })({
         token: "a".repeat(maximumTokenLength),
       }),
     ));

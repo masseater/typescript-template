@@ -235,11 +235,9 @@ describe("ingestBrowser", () => {
           const logs = recordingSink();
           yield* ingestBrowser(
             new Request(new URL("/api/telemetry", testOrigin), {
-              body: Effect.runSync(
-                Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
-                  { ...requestEvent, spanId, status: answeredStatus },
-                ]),
-              ),
+              body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+                { ...requestEvent, spanId, status: answeredStatus },
+              ]),
               headers: { "content-type": "application/json", origin: "http://localhost" },
               method: "POST",
             }),
@@ -297,9 +295,9 @@ describe("ingestBrowser", () => {
           const logs = recordingSink();
           const resend = ingestBrowser(
             new Request(new URL("/api/telemetry", testOrigin), {
-              body: Effect.runSync(
-                Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([requestEvent]),
-              ),
+              body: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))([
+                requestEvent,
+              ]),
               headers: { "content-type": "application/json", origin: "http://localhost" },
               method: "POST",
             }),

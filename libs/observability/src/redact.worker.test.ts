@@ -15,6 +15,7 @@ const endpoint = "https://otlp.example.test";
 const authorization = "Bearer otlp-test-token";
 const leaked = "otlp-test-value-at-least-32-characters-long";
 const loggedLine = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown));
+const jsonText = Schema.fromJsonString(Schema.Unknown);
 
 describe("a secret an attribute carries", () => {
   const it = test.extend("attributeSecret", ({}, { onCleanup }) =>
@@ -28,11 +29,12 @@ describe("a secret an attribute carries", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -53,11 +55,13 @@ describe("a secret an attribute carries", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         yield* observeRequest(new Request("http://localhost/"), () =>
@@ -84,7 +88,7 @@ describe("a secret an attribute carries", () => {
         );
         const loggedRecords = yield* Ref.get(loggedLines);
         const sentExports = yield* Ref.get(receivedExports);
-        const exportedLogText = JSON.stringify(
+        const exportedLogText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "logs").map((sent) => sent.exported),
         );
         return {
@@ -94,7 +98,7 @@ describe("a secret an attribute carries", () => {
           failureLines: loggedRecords
             .filter((line) => line["event"] === "authentication.failed")
             .map((line) => ({ AUTH_SECRET: line["AUTH_SECRET"], reason: line["reason"] })),
-          loggedLeak: JSON.stringify(loggedRecords).includes(leaked),
+          loggedLeak: (yield* Schema.encodeEffect(jsonText)(loggedRecords)).includes(leaked),
         };
       }),
     ));
@@ -122,11 +126,12 @@ describe("a secret an annotation or a span attribute carries", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -147,11 +152,13 @@ describe("a secret an annotation or a span attribute carries", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         yield* observeRequest(new Request("http://localhost/"), () =>
@@ -181,10 +188,10 @@ describe("a secret an annotation or a span attribute carries", () => {
         );
         const loggedRecords = yield* Ref.get(loggedLines);
         const sentExports = yield* Ref.get(receivedExports);
-        const exportedLogText = JSON.stringify(
+        const exportedLogText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "logs").map((sent) => sent.exported),
         );
-        const exportedTraceText = JSON.stringify(
+        const exportedTraceText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "traces").map((sent) => sent.exported),
         );
         return {
@@ -223,11 +230,12 @@ describe("a secret withSpan attributes carry", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -248,11 +256,13 @@ describe("a secret withSpan attributes carry", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         yield* observeRequest(new Request("http://localhost/"), () =>
@@ -279,7 +289,7 @@ describe("a secret withSpan attributes carry", () => {
           Effect.orDie,
         );
         const sentExports = yield* Ref.get(receivedExports);
-        const exportedTraceText = JSON.stringify(
+        const exportedTraceText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "traces").map((sent) => sent.exported),
         );
         return {
@@ -311,11 +321,12 @@ describe("a secret the cause of a failure carries", () => {
           }[]
         >([]);
         const loggedLines = yield* Ref.make<readonly Readonly<Record<string, unknown>>[]>([]);
+        const services = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${endpoint}/v1/:signal`, ({ params, request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(services)(
               Effect.gen(function* collectExport() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(receivedExports, (earlier) => [
@@ -336,11 +347,13 @@ describe("a secret the cause of a failure carries", () => {
           network.disable();
         });
         const recordLine = (line: string): void => {
-          Effect.runSync(
-            Ref.update(loggedLines, (earlier) => [
-              ...earlier,
-              Effect.runSync(Schema.decodeUnknownEffect(loggedLine)(line).pipe(Effect.orDie)),
-            ]),
+          Effect.runSyncWith(services)(
+            Schema.decodeEffect(loggedLine)(line).pipe(
+              Effect.orDie,
+              Effect.flatMap((decoded) =>
+                Ref.update(loggedLines, (earlier) => [...earlier, decoded]),
+              ),
+            ),
           );
         };
         yield* observeRequest(new Request("http://localhost/"), () =>
@@ -366,7 +379,7 @@ describe("a secret the cause of a failure carries", () => {
           Effect.orDie,
         );
         const sentExports = yield* Ref.get(receivedExports);
-        const exportedLogText = JSON.stringify(
+        const exportedLogText = yield* Schema.encodeEffect(jsonText)(
           sentExports.filter((sent) => sent.signal === "logs").map((sent) => sent.exported),
         );
         return {

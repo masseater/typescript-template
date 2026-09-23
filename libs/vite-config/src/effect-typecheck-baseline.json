@@ -217,12 +217,6 @@
         "count": 2
       },
       {
-        "file": "src/request-span.ts",
-        "code": "TS377066",
-        "message": "This code uses `Date.now()`, time access is represented through `Clock` from Effect. effect(globalDate)",
-        "count": 1
-      },
-      {
         "file": "src/request.ts",
         "code": "TS377042",
         "message": "This code uses `instanceof` with an Effect Schema type. `Schema.is` is the schema-aware runtime check for this case. effect(instanceOfSchema)",

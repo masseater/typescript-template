@@ -280,11 +280,12 @@ describe("a worker exporting telemetry", () => {
         const otlpEndpoint = "https://otlp.example.test";
         const traceExports = yield* Ref.make<readonly unknown[]>([]);
         const logExports = yield* Ref.make<readonly unknown[]>([]);
+        const exporterServices = yield* Effect.context();
         const network = setupNetwork();
         network.configure({ onUnhandledFrame: "error" });
         network.use(
           http.post(`${otlpEndpoint}/v1/traces`, ({ request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(exporterServices)(
               Effect.gen(function* collectTraces() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(traceExports, (earlier) => [...earlier, exported]);
@@ -293,7 +294,7 @@ describe("a worker exporting telemetry", () => {
             ),
           ),
           http.post(`${otlpEndpoint}/v1/logs`, ({ request }) =>
-            Effect.runPromise(
+            Effect.runPromiseWith(exporterServices)(
               Effect.gen(function* collectLogs() {
                 const exported: unknown = yield* Effect.promise(() => request.json());
                 yield* Ref.update(logExports, (earlier) => [...earlier, exported]);
@@ -315,7 +316,7 @@ describe("a worker exporting telemetry", () => {
           ),
         );
         onCleanup(() =>
-          Effect.runPromise(
+          Effect.runPromiseWith(exporterServices)(
             Effect.promise(() => runtime.dispose()).pipe(
               Effect.ensuring(
                 Effect.sync(() => {

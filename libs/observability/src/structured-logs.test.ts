@@ -1,4 +1,4 @@
-import { Cause, Effect, Ref } from "effect";
+import { Cause, Effect, Ref, Schema } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { annotateLogs } from "./annotations.ts";
@@ -15,7 +15,7 @@ const telemetrySettings = {
 } as const;
 
 describe("an authentication failure carrying a secret in its attributes", () => {
-  const it = test.extend("loggedLines", async () => {
+  const it = test.extend("loggedLines", () => {
     const loggedLines = Ref.makeUnsafe<
       readonly { readonly line: unknown; readonly stream: keyof LogSink }[]
     >([]);
@@ -32,17 +32,19 @@ describe("an authentication failure carrying a secret in its attributes", () => 
       info: recordInto("info"),
       warn: recordInto("warn"),
     };
-    await Effect.runPromise(
-      logAt("Error", {
-        attributes: {
-          AUTH_SECRET: leaked,
-          headers: `authorization: Bearer ${leaked}`,
-          reason: "invalid token",
-        },
-        eventName: "authentication.failed",
-      }).pipe(Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink }))),
+    return Effect.runPromise(
+      Effect.andThen(
+        logAt("Error", {
+          attributes: {
+            AUTH_SECRET: leaked,
+            headers: `authorization: Bearer ${leaked}`,
+            reason: "invalid token",
+          },
+          eventName: "authentication.failed",
+        }).pipe(Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink }))),
+        Ref.get(loggedLines),
+      ),
     );
-    return Ref.getUnsafe(loggedLines);
   });
 
   it("is logged with the secret hidden", ({ loggedLines }) => {
@@ -63,7 +65,7 @@ describe("an authentication failure carrying a secret in its attributes", () => 
 });
 
 describe("a model failure whose error carries a secret", () => {
-  const it = test.extend("loggedLines", async () => {
+  const it = test.extend("loggedLines", () => {
     const loggedLines = Ref.makeUnsafe<
       readonly { readonly line: unknown; readonly stream: keyof LogSink }[]
     >([]);
@@ -80,16 +82,18 @@ describe("a model failure whose error carries a secret", () => {
       info: recordInto("info"),
       warn: recordInto("warn"),
     };
-    await Effect.runPromise(
-      logAt("Warn", {
-        attributes: {
-          cause: `D1_ERROR: no such table: jwks (AUTH_SECRET=${leaked})`,
-          reason: "model_failed",
-        },
-        eventName: "interview.model_failed",
-      }).pipe(Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink }))),
+    return Effect.runPromise(
+      Effect.andThen(
+        logAt("Warn", {
+          attributes: {
+            cause: `D1_ERROR: no such table: jwks (AUTH_SECRET=${leaked})`,
+            reason: "model_failed",
+          },
+          eventName: "interview.model_failed",
+        }).pipe(Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink }))),
+        Ref.get(loggedLines),
+      ),
     );
-    return Ref.getUnsafe(loggedLines);
   });
 
   it("keeps the error readable while hiding the secret", ({ loggedLines }) => {
@@ -109,7 +113,7 @@ describe("a model failure whose error carries a secret", () => {
 });
 
 describe("an annotation carrying a secret", () => {
-  const it = test.extend("loggedLines", async () => {
+  const it = test.extend("loggedLines", () => {
     const loggedLines = Ref.makeUnsafe<
       readonly { readonly line: unknown; readonly stream: keyof LogSink }[]
     >([]);
@@ -126,16 +130,18 @@ describe("an annotation carrying a secret", () => {
       info: recordInto("info"),
       warn: recordInto("warn"),
     };
-    await Effect.runPromise(
-      logAt("Info", {
-        attributes: { route: "home", status: 200 },
-        eventName: "http.server.request",
-      }).pipe(
-        annotateLogs({ cookie: `template-user.session=${leaked}`, request_id: "abc" }),
-        Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink })),
+    return Effect.runPromise(
+      Effect.andThen(
+        logAt("Info", {
+          attributes: { route: "home", status: 200 },
+          eventName: "http.server.request",
+        }).pipe(
+          annotateLogs({ cookie: `template-user.session=${leaked}`, request_id: "abc" }),
+          Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink })),
+        ),
+        Ref.get(loggedLines),
       ),
     );
-    return Ref.getUnsafe(loggedLines);
   });
 
   it("is hidden as well as the attributes of the call", ({ loggedLines }) => {
@@ -157,7 +163,7 @@ describe("an annotation carrying a secret", () => {
 });
 
 describe("a failure whose cause carries a secret", () => {
-  const it = test.extend("loggedLines", async () => {
+  const it = test.extend("loggedLines", () => {
     const loggedLines = Ref.makeUnsafe<
       readonly { readonly line: unknown; readonly stream: keyof LogSink }[]
     >([]);
@@ -174,23 +180,28 @@ describe("a failure whose cause carries a secret", () => {
       info: recordInto("info"),
       warn: recordInto("warn"),
     };
-    class BrokenTable extends Error {
-      public override readonly stack = `Error: no such table: jwks (AUTH_SECRET=${leaked})\n    at readJwks`;
+    class BrokenTable extends Schema.TaggedError<BrokenTable>()("BrokenTable", {
+      message: Schema.String,
+    }) {
+      public override readonly stack = `BrokenTable: no such table: jwks (AUTH_SECRET=${leaked})\n    at readJwks`;
     }
-    const brokenTable = new BrokenTable(`no such table: jwks (AUTH_SECRET=${leaked})`);
-    await Effect.runPromise(
-      logCause({ cause: Cause.fail(brokenTable), eventName: "application.error" }).pipe(
-        Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink })),
+    const brokenTable = new BrokenTable({ message: `no such table: jwks (AUTH_SECRET=${leaked})` });
+    return Effect.runPromise(
+      Effect.andThen(
+        logCause({ cause: Cause.fail(brokenTable), eventName: "application.error" }).pipe(
+          Effect.provide(Telemetry.layer({ ...telemetrySettings, log: logSink })),
+        ),
+        Ref.get(loggedLines),
       ),
     );
-    return Ref.getUnsafe(loggedLines);
   });
 
   it("keeps the cause in the line minus the secret", ({ loggedLines }) => {
     expect(loggedLines).toStrictEqual([
       {
         line: {
-          "error.cause": "Error: no such table: jwks (AUTH_SECRET=[redacted])\n    at readJwks",
+          "error.cause":
+            "BrokenTable: no such table: jwks (AUTH_SECRET=[redacted])\n    at readJwks",
           event: "application.error",
           release: "abc123",
           service: "service-member-server",
