@@ -1,4 +1,5 @@
-import { Option, Schema } from "effect";
+import { searchValidator } from "@repo/ui";
+import { Schema } from "effect";
 
 import { BooleanText, Role, SearchKeyword, laterPage } from "#shared/contracts/index.ts";
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
@@ -21,9 +22,7 @@ class InvalidUsersSearch extends Schema.TaggedError<InvalidUsersSearch>()(
 
 const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
 
-function normalizeUsersSearch(raw: unknown): UsersSearch {
-  return Option.getOrThrowWith(decodeUsersSearch(raw), () => new InvalidUsersSearch());
-}
+const normalizeUsersSearch = searchValidator(decodeUsersSearch, () => new InvalidUsersSearch());
 
 function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
   return {
