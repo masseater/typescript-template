@@ -1,6 +1,6 @@
 import { FormControl } from "baseui/form-control";
 
-import { controlClassName, fieldClassName, labelClassName } from "./control";
+import { controlClassName, fieldClassName, hintClassName, labelClassName } from "./control";
 
 import type { ReactElement } from "react";
 
@@ -28,7 +28,10 @@ const FileField = ({
   };
   return (
     <div data-slot="field" className={fieldClassName}>
-      <FormControl label={<span className={labelClassName}>{label}</span>} caption={hint ?? null}>
+      <FormControl
+        label={<span className={labelClassName}>{label}</span>}
+        caption={hint === undefined ? null : <span className={hintClassName}>{hint}</span>}
+      >
         <input
           aria-label={label}
           type="file"
