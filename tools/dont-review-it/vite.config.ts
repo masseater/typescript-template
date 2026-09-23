@@ -25,6 +25,10 @@ export default defineConfig({
         cache: false,
         command: "./src/features/dont-review-it/repository/pr-affected.ts",
       },
+      "can-not-now": {
+        cache: false,
+        command: "./src/features/dont-review-it/repository/can-not-now.ts",
+      },
       "clean:shared-task-cache": {
         cache: false,
         command: "./src/features/dont-review-it/repository/clean-shared-task-cache.ts",
@@ -61,6 +65,6 @@ export default defineConfig({
       "src/features/dont-review-it/index.ts",
     ],
     external: [/^vite-plus/],
-    dts: { generator: "tsgo" },
+    dts: { generator: "tsgo", tsconfig: "tsconfig.pack.json" },
   },
 });

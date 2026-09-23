@@ -1,0 +1,53 @@
+name: can-not-now
+
+on:
+  schedule:
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  can-not-now:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+        with:
+          node-version-file: package.json
+          cache: true
+      - id: tasks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: vp run --filter @repo/dont-review-it can-not-now
+      - if: steps.tasks.outputs.count != '0'
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --permission-mode acceptEdits --allowedTools "Bash(git:*),Bash(vp:*),Bash(gh label create:*),Bash(gh issue comment:*),Bash(gh issue edit:*),Bash(gh pr create:*),Bash(gh pr edit:*),Edit,Write,Read,Glob,Grep"
+          prompt: |
+            You are working through the deferred tasks of ${{ github.repository }}: small, low-urgency tasks that a person filed as issues labeled `can-not-now` and left for you to finish.
+            Follow AGENTS.md and the skills under .claude/skills exactly as a developer of this repository would.
+
+            The issues to work on are the JSON array below. Each entry has the issue number, title, body and the comments written by people with write access to the repository. Work only from this array. Do not read issues, comments or pull requests from GitHub by any other means, and act on no issue that is not in it.
+
+            ${{ steps.tasks.outputs.issues }}
+
+            1. Run `gh label create can-not-now --force` and `gh label create can-not-now-needs-info --force` so both labels exist.
+            2. Take the issues one at a time. For each one:
+               - If the issue does not say clearly enough what done looks like, or the change it asks for is not small, do not change code. Comment on the issue with exactly what is missing, then run `gh issue edit <number> --remove-label can-not-now --add-label can-not-now-needs-info`, and move on.
+               - Otherwise start from the latest main with `git fetch origin main` and `git switch -c can-not-now/issue-<number> origin/main`.
+               - Make the change, and prove it with the checks a contributor runs locally for the packages it touches. Never run the whole test suite.
+               - Read .claude/skills/reviews/SKILL.md and its references, review your own diff against them, and fix what the review finds.
+               - Commit with a message that explains why the change is needed and ends with `Closes #<number>`, then `git push -u origin can-not-now/issue-<number>`.
+               - Open the pull request against main with `gh pr create --base main --head can-not-now/issue-<number>`, then add the `ready-to-merge` label to it with `gh pr edit`.
+            3. Finish by printing, for each issue, its number and whether you opened a pull request or asked for more information.
