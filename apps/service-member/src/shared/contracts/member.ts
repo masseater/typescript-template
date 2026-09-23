@@ -1,5 +1,6 @@
 import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
 import {
+  Acknowledged,
   Identifier,
   IdentifierQuery,
   SearchKeyword,
@@ -96,11 +97,11 @@ const ContactSubmission = Schema.Struct({
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactNameLength)),
 });
 
-const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+const ContactAccepted = Acknowledged;
 
 const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
 
-const LeaveAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+const LeaveAccepted = Acknowledged;
 
 const RecoveryOfferAvailable = Schema.Struct({
   available: Schema.Literal(true),
@@ -113,7 +114,9 @@ const RecoveryOfferUnavailable = Schema.Struct({
 
 const RecoveryOfferView = Schema.Union([RecoveryOfferAvailable, RecoveryOfferUnavailable]);
 
-const RecoveryAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+const RecoveryAccepted = Acknowledged;
+
+const MemberReference = Schema.Struct({ id: Schema.String, name: Schema.String });
 
 export {
   ContactAccepted,
@@ -125,6 +128,7 @@ export {
   MemberListQuery,
   MemberPhotoQuery,
   MemberQuery,
+  MemberReference,
   MemberView,
   PhotoQuery,
   PhotoView,

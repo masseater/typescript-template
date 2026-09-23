@@ -2,11 +2,11 @@ CREATE TABLE `inquiry` (
 	`created_at` integer NOT NULL,
 	`id` text PRIMARY KEY NOT NULL,
 	`member_id` text NOT NULL,
-	`status` text DEFAULT 'open' NOT NULL,
+	`status` text DEFAULT 'inquiry_open' NOT NULL,
 	`subject` text NOT NULL,
 	`updated_at` integer NOT NULL,
 	CONSTRAINT `fk_inquiry_member_id_user_id_fk` FOREIGN KEY (`member_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-	CONSTRAINT "inquiry_status" CHECK("status" IN ('open', 'answered', 'closed'))
+	CONSTRAINT "inquiry_status" CHECK("status" IN ('inquiry_open', 'inquiry_answered', 'inquiry_closed'))
 );
 --> statement-breakpoint
 CREATE TABLE `inquiry_message` (

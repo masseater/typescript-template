@@ -4,27 +4,22 @@ import {
   registerVerified,
   signInAs,
   startClientAuthorization,
+  McpJson,
+  McpTokens,
+  callMcpTool,
+  decodeOAuthRedirect,
+  responseStatus,
   type AuthorizationFlow,
   type BrowserClient,
+  type FetchMcp,
 } from "@repo/auth/testing";
 import { APPLICATION, memberMcpScopes } from "@repo/config";
-import { Data, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-type FetchMcp = (request: Request) => Effect.Effect<Response, never, never>;
-
-class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData") {}
-
 const memberOrigin = "http://127.0.0.1:3001";
 const redirectUri = "http://127.0.0.1:43124/callback";
-const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
-const Tokens = Schema.Struct({ access_token: Schema.String });
-const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
-
-function responseStatus(value: unknown): number | undefined {
-  return value instanceof Response ? value.status : undefined;
-}
 
 const startMemberAuthorization = Effect.fn("startMemberAuthorization")(
   function* startMemberAuthorization() {
@@ -46,13 +41,13 @@ const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthor
     oauth_query: oauthQuery,
     postLogin: true,
   });
-  const consentPage = new URL((yield* decodeRedirect(continued.body)).url, memberOrigin);
+  const consentPage = new URL((yield* decodeOAuthRedirect(continued.body)).url, memberOrigin);
   const consented = yield* member.json("/oauth2/consent", {
     accept: true,
     oauth_query: consentPage.search.slice(1),
     scope,
   });
-  const callbackUrl = new URL((yield* decodeRedirect(consented.body)).url);
+  const callbackUrl = new URL((yield* decodeOAuthRedirect(consented.body)).url);
   return callbackUrl.searchParams.get("code") ?? "";
 });
 
@@ -84,8 +79,8 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
     return yield* Effect.die("MEMBER_HANDLER_UNAVAILABLE");
   }
   const text = yield* Effect.promise(() => issued.text());
-  const tokens = yield* Schema.decodeEffect(JsonUnknown)(text);
-  return yield* Schema.decodeUnknownEffect(Tokens)(tokens);
+  const tokens = yield* Schema.decodeEffect(McpJson)(text);
+  return yield* Schema.decodeUnknownEffect(McpTokens)(tokens);
 });
 
 const memberTokens = Effect.fn("memberTokens")(function* memberTokens(email: string) {
@@ -117,50 +112,13 @@ const mcpChallenge = Effect.fn("mcpChallenge")(function* mcpChallenge() {
   );
 });
 
-const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(
-  fetchMcp: FetchMcp,
-  token: string,
-  body?: unknown,
-) {
-  const encoded = body === undefined ? undefined : yield* Schema.encodeEffect(JsonUnknown)(body);
-  const incoming = new Request(`${memberOrigin}/mcp`, {
-    ...(encoded === undefined ? {} : { body: encoded }),
-    headers: {
-      accept: "application/json, text/event-stream",
-      ...(encoded === undefined ? {} : { "content-type": "application/json" }),
-      authorization: `Bearer ${token}`,
-    },
-    method: "POST",
-  });
-  return yield* fetchMcp(incoming);
-});
-
-const parseMcpBody = Effect.fn("parseMcpBody")(function* parseMcpBody(response: Response) {
-  const contentType = response.headers.get("content-type") ?? "";
-  const text = yield* Effect.promise(() => response.text());
-  if (contentType.includes("application/json")) {
-    return yield* Schema.decodeEffect(JsonUnknown)(text);
-  }
-  const dataLine = text.split("\n").find((line) => line.startsWith("data: "));
-  if (dataLine === undefined) {
-    return yield* new McpResponseMissingData();
-  }
-  return yield* Schema.decodeEffect(JsonUnknown)(dataLine.slice("data: ".length));
-});
-
 const callTool = Effect.fn("callTool")(function* callTool(
   fetchMcp: FetchMcp,
   token: string,
   name: string,
   args: Readonly<Record<string, unknown>> = {},
 ) {
-  const response = yield* mcpRequest(fetchMcp, token, {
-    id: 1,
-    jsonrpc: "2.0",
-    method: "tools/call",
-    params: { arguments: args, name },
-  });
-  return yield* parseMcpBody(response);
+  return yield* callMcpTool({ fetchMcp, origin: memberOrigin, token }, { arguments: args, name });
 });
 
 export type { FetchMcp };

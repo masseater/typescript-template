@@ -8,6 +8,9 @@ const adminPermissionLabels: Readonly<Record<typeof AdminPermission.Type, string
   [ADMIN_PERMISSION.owner]: "管理者を追加できる",
 };
 
+const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
+  AdminPermission.literals.some((permission) => permission === value);
+
 const adminPermissionOptions = AdminPermission.literals.map((permission) => ({
   label: adminPermissionLabels[permission],
   value: permission,
@@ -31,4 +34,5 @@ export {
   adminStateChangeLabels,
   adminStateLabels,
   adminsTableColumns,
+  isAdminPermission,
 };

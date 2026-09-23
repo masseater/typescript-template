@@ -1,4 +1,3 @@
-import { ROLE } from "@repo/config";
 import {
   CONVERSATION_KIND,
   and,
@@ -21,7 +20,9 @@ import { DateTime, Effect } from "effect";
 import { maySendGroupMessage } from "#shared/messaging/index.ts";
 import { canReadGroupConversation } from "./groups.ts";
 import { MessagingConversationNotFound } from "./messaging-conversation-not-found.ts";
-import { MessagingMemberRequired } from "./messaging-member-required.ts";
+import { clockDate, requireMessagingMember, verifiedMember } from "./verified-member.ts";
+
+import type { OffsetPage } from "./verified-member.ts";
 
 const { conversation, conversationParticipant, directMessage, memberGroup, user } = schema;
 
@@ -35,11 +36,6 @@ function visibleInThread(viewerId: string, conversationId: string, hideBlocked: 
     return inThread;
   }
   return and(inThread, not(blockBetween(viewerId, directMessage.senderId)));
-}
-
-interface Page {
-  readonly limit: number;
-  readonly offset: number;
 }
 
 interface MessageSender {
@@ -93,9 +89,6 @@ interface ConversationView {
   readonly total: number;
 }
 
-const messagingMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
-const clockDate = Effect.map(DateTime.now, DateTime.toDate);
-
 function directKeyFor(memberA: string, memberB: string): string {
   return [memberA, memberB].sort((left, right) => left.localeCompare(right)).join(":");
 }
@@ -133,22 +126,6 @@ function shownMessage(
     sender: shownSender(row),
   };
 }
-
-const requireMessagingMember = Effect.fn("requireMessagingMember")(function* requireMessagingMember(
-  userId: string,
-) {
-  const [member] = yield* query((database) =>
-    database
-      .select({ id: user.id, name: user.name })
-      .from(user)
-      .where(and(eq(user.id, userId), messagingMember))
-      .limit(1),
-  );
-  if (member === undefined) {
-    return yield* new MessagingMemberRequired();
-  }
-  return member;
-});
 
 const requireGroupParticipant = Effect.fn("requireGroupParticipant")(
   function* requireGroupParticipant(viewerId: string, conversationId: string) {
@@ -201,7 +178,7 @@ const peerOf = Effect.fn("peerOf")(function* peerOf(viewerId: string, conversati
         memberName: conversationParticipant.memberName,
       })
       .from(conversationParticipant)
-      .leftJoin(user, and(eq(user.id, conversationParticipant.memberId), messagingMember))
+      .leftJoin(user, and(eq(user.id, conversationParticipant.memberId), verifiedMember))
       .where(eq(conversationParticipant.conversationId, conversationId)),
   );
   const viewerMembership = participants.find((row) => row.memberId === viewerId);
@@ -272,7 +249,7 @@ const unreadCountFor = Effect.fn("unreadCountFor")(function* unreadCountFor(
 
 const listGroupConversations = Effect.fn("listGroupConversations")(function* listGroupConversations(
   viewerId: string,
-  page: Page,
+  page: OffsetPage,
 ) {
   yield* requireMessagingMember(viewerId);
   const memberships = yield* query((database) =>
@@ -330,7 +307,7 @@ const listGroupConversations = Effect.fn("listGroupConversations")(function* lis
 const findGroupConversation = Effect.fn("findGroupConversation")(function* findGroupConversation(
   viewerId: string,
   conversationId: string,
-  page: Page,
+  page: OffsetPage,
 ) {
   yield* requireMessagingMember(viewerId);
   yield* requireGroupParticipant(viewerId, conversationId);
@@ -430,7 +407,7 @@ const sendGroupMessage = Effect.fn("sendGroupMessage")(function* sendGroupMessag
 });
 
 const listDirectConversations = Effect.fn("listDirectConversations")(
-  function* listDirectConversations(viewerId: string, page: Page) {
+  function* listDirectConversations(viewerId: string, page: OffsetPage) {
     yield* requireMessagingMember(viewerId);
     const memberships = yield* query((database) =>
       database
@@ -487,7 +464,7 @@ const listDirectConversations = Effect.fn("listDirectConversations")(
   },
 );
 
-const listInbox = Effect.fn("listInbox")(function* listInbox(viewerId: string, page: Page) {
+const listInbox = Effect.fn("listInbox")(function* listInbox(viewerId: string, page: OffsetPage) {
   const directs = yield* listDirectConversations(viewerId, { limit: 1_000_000, offset: 0 });
   const groups = yield* listGroupConversations(viewerId, { limit: 1_000_000, offset: 0 });
   const conversations = [...directs.conversations, ...groups.conversations].sort(
@@ -502,7 +479,7 @@ const listInbox = Effect.fn("listInbox")(function* listInbox(viewerId: string, p
 const findDirectConversation = Effect.fn("findDirectConversation")(function* findDirectConversation(
   viewerId: string,
   conversationId: string,
-  page: Page,
+  page: OffsetPage,
 ) {
   yield* requireMessagingMember(viewerId);
   yield* requireParticipant(viewerId, conversationId);
@@ -556,7 +533,7 @@ const findDirectConversation = Effect.fn("findDirectConversation")(function* fin
 const findConversation = Effect.fn("findConversation")(function* findConversation(
   viewerId: string,
   conversationId: string,
-  page: Page,
+  page: OffsetPage,
 ) {
   const [thread] = yield* query((database) =>
     database
@@ -584,7 +561,7 @@ const openDirectConversation = Effect.fn("openDirectConversation")(function* ope
     database
       .select({ id: user.id, name: user.name })
       .from(user)
-      .where(and(eq(user.id, recipientId), messagingMember))
+      .where(and(eq(user.id, recipientId), verifiedMember))
       .limit(1),
   );
   if (recipient === undefined || recipient.id === senderId) {

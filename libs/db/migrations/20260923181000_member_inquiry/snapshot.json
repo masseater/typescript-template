@@ -870,7 +870,7 @@
       "type": "text",
       "notNull": true,
       "autoincrement": false,
-      "default": "'open'",
+      "default": "'inquiry_open'",
       "generated": null,
       "name": "status",
       "entityType": "columns",
@@ -4958,7 +4958,7 @@
       "table": "agreement_version"
     },
     {
-      "value": "\"status\" IN ('open', 'answered', 'closed')",
+      "value": "\"status\" IN ('inquiry_open', 'inquiry_answered', 'inquiry_closed')",
       "name": "inquiry_status",
       "entityType": "checks",
       "table": "inquiry"

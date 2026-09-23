@@ -1,4 +1,4 @@
-import { CreatedResource } from "@repo/runtime/contracts";
+import { CreatedResource, Tally } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { Identifier, pageNumber } from "./member.ts";
@@ -104,7 +104,7 @@ const ConversationLookupResult = Schema.Struct({
 
 const ConversationRead = Schema.Struct({ conversationId: Identifier });
 
-const UnreadCount = Schema.Struct({ count: Schema.Finite });
+const UnreadCount = Tally;
 
 export {
   ConversationList,

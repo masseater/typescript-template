@@ -22,3 +22,8 @@ export const agreementPolicies = {
   privacy: { blocksUntilReaccepted: false, requiredAtSignup: true, withdrawable: false },
   terms: { blocksUntilReaccepted: true, requiredAtSignup: true, withdrawable: false },
 } as const satisfies Readonly<Record<AgreementKind, AgreementPolicy>>;
+export const agreementKindLabels: Readonly<Record<AgreementKind, string>> = {
+  interview_history: "AI インタビューの履歴の利用",
+  privacy: "プライバシーポリシー",
+  terms: "利用規約",
+};

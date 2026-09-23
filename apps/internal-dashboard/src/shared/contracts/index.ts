@@ -26,7 +26,6 @@ export {
   maximumRecordingBytes,
   maximumRecordingTitleLength,
 } from "./recordings.ts";
-export { Redirect } from "./redirect.ts";
 export {
   StaffInvitation,
   StaffInvited,

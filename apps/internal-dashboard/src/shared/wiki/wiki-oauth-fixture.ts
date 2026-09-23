@@ -1,7 +1,10 @@
 import { Auth } from "@repo/auth";
 import {
   AuthApps,
+  McpTokens,
+  decodeOAuthRedirect,
   redirectUri,
+  responseStatus,
   startAuthorization,
   wikiOrigin,
   wikiStaff,
@@ -9,17 +12,9 @@ import {
 import { APPLICATION } from "@repo/config";
 import { Effect, Schema } from "effect";
 
-import { Redirect } from "../contracts/index.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 import type { AuthorizationFlow, BrowserClient } from "@repo/auth/testing";
-
-const decodeRedirect = Schema.decodeUnknownEffect(Redirect);
-const Tokens = Schema.Struct({ access_token: Schema.String });
-
-function responseStatus(value: unknown): number | undefined {
-  return value instanceof Response ? value.status : undefined;
-}
 
 const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthorization(
   wiki: BrowserClient,
@@ -29,12 +24,12 @@ const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthor
     oauth_query: oauthQuery,
     postLogin: true,
   });
-  const consentPage = new URL((yield* decodeRedirect(continued.body)).url, wikiOrigin);
+  const consentPage = new URL((yield* decodeOAuthRedirect(continued.body)).url, wikiOrigin);
   const consented = yield* wiki.json("/oauth2/consent", {
     accept: true,
     oauth_query: consentPage.search.slice(1),
   });
-  const callbackUrl = new URL((yield* decodeRedirect(consented.body)).url);
+  const callbackUrl = new URL((yield* decodeOAuthRedirect(consented.body)).url);
   return callbackUrl.searchParams.get("code") ?? "";
 });
 
@@ -57,7 +52,7 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
   });
   const issued = yield* Effect.promise(() => wiki.instance.handler(exchange));
   const tokens = yield* Effect.promise(() => issued.json() as Promise<unknown>);
-  return yield* Schema.decodeUnknownEffect(Tokens)(tokens);
+  return yield* Schema.decodeUnknownEffect(McpTokens)(tokens);
 });
 
 const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(token?: string) {

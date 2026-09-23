@@ -1,12 +1,10 @@
 import { browserHttp } from "@repo/auth-ui";
+import { OAuthClientView } from "@repo/auth-ui/consent";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
-import { Effect, Schema } from "effect";
+import { Redirect } from "@repo/runtime/contracts";
+import { Effect } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
-
-import { Redirect } from "#shared/contracts/index.ts";
-
-const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 
 function loadClientName(clientId: string): Effect.Effect<string | undefined> {
   return Effect.gen(function* loadName() {
@@ -26,7 +24,9 @@ function loadClientName(clientId: string): Effect.Effect<string | undefined> {
     if (response.status < 200 || response.status >= 300) {
       return yield* Effect.die("クライアントの情報を取得できませんでした。");
     }
-    return (yield* HttpClientResponse.schemaBodyJson(ClientView)(response)).client_name ?? clientId;
+    return (
+      (yield* HttpClientResponse.schemaBodyJson(OAuthClientView)(response)).client_name ?? clientId
+    );
   }).pipe(Effect.orDie);
 }
 

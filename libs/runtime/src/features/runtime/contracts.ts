@@ -55,6 +55,17 @@ const HealthView = Schema.Struct({
 
 const IdentifierQuery = Schema.Struct({ id: Identifier });
 const CreatedResource = Schema.Struct({ id: Schema.String });
+const Acknowledged = Schema.Struct({ ok: Schema.Literal(true) });
+const Tally = Schema.Struct({ count: Schema.Finite });
+const Redirect = Schema.Struct({ url: Schema.String });
+const InvitationIssued = Schema.Struct({ email: Schema.String, expiresAt: Schema.DateFromString });
+const InquiryMessage = Schema.Struct({
+  authorId: Schema.String,
+  authorKind: Role,
+  body: Schema.String,
+  createdAt: Schema.DateFromString,
+  id: Schema.String,
+});
 
 const pageNumber = ({
   fallback,
@@ -93,6 +104,7 @@ type Decodable = Schema.Top & { readonly DecodingServices: never };
 
 export {
   AccountPermission,
+  Acknowledged,
   CreatedResource,
   EmailVerificationRequest,
   EmailVerified,
@@ -100,13 +112,17 @@ export {
   HealthView,
   Identifier,
   IdentifierQuery,
+  InquiryMessage,
+  InvitationIssued,
   InviteAcceptance,
   InviteAccepted,
   InvitePreview,
   InvitePreviewQuery,
+  Redirect,
   Role,
   SearchKeyword,
   SessionView,
+  Tally,
   UserKeyword,
   laterPage,
   maximumIdentifierLength,

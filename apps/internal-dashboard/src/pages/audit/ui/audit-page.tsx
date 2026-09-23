@@ -7,6 +7,7 @@ import {
   STATUS_VARIANT,
   StatusMessage,
   resultError,
+  formatWarekiDateTime,
 } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
@@ -14,12 +15,6 @@ import { useAuditList } from "#pages/audit/model/audit-list.ts";
 import { DataTable } from "#shared/ui/data-table.tsx";
 
 import type { ReactElement } from "react";
-
-const createdAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 function AuditPage(): ReactElement {
   const {
@@ -73,7 +68,7 @@ function AuditPage(): ReactElement {
             label="監査ログ一覧"
             rows={page.events.map((event) => (
               <tr key={event.id} className="border-b border-border">
-                <td className="p-2">{createdAtLabel.format(event.createdAt)}</td>
+                <td className="p-2">{formatWarekiDateTime(event.createdAt.getTime())}</td>
                 <td className="p-2">{event.action}</td>
                 <td className="p-2">{event.actorId}</td>
                 <td className="p-2">{event.targetId}</td>

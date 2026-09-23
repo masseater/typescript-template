@@ -1,21 +1,16 @@
-import { roles } from "@repo/config";
-import { IdentifierQuery } from "@repo/runtime/contracts";
+import { INQUIRY_STATUS } from "@repo/config";
+import { IdentifierQuery, InquiryMessage } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const InquiryStatus = Schema.String;
 
 const InquiryStatusCount = Schema.Struct({
-  answered: Schema.Finite,
-  closed: Schema.Finite,
-  open: Schema.Finite,
+  [INQUIRY_STATUS.answered]: Schema.Finite,
+  [INQUIRY_STATUS.closed]: Schema.Finite,
+  [INQUIRY_STATUS.open]: Schema.Finite,
 });
 
-const InquiryDailyTrend = Schema.Struct({
-  answered: Schema.Finite,
-  closed: Schema.Finite,
-  day: Schema.String,
-  open: Schema.Finite,
-});
+const InquiryDailyTrend = Schema.Struct({ ...InquiryStatusCount.fields, day: Schema.String });
 
 const StaffInquiryCounts = Schema.Struct({
   byStatus: InquiryStatusCount,
@@ -31,17 +26,9 @@ const StaffInquirySummary = Schema.Struct({
   updatedAt: Schema.DateFromString,
 });
 
-const StaffInquiryMessage = Schema.Struct({
-  authorId: Schema.String,
-  authorKind: Schema.Literals(roles),
-  body: Schema.String,
-  createdAt: Schema.DateFromString,
-  id: Schema.String,
-});
-
 const StaffInquiryThread = Schema.Struct({
   ...StaffInquirySummary.fields,
-  messages: Schema.Array(StaffInquiryMessage),
+  messages: Schema.Array(InquiryMessage),
 });
 
 const StaffInquiryList = Schema.Struct({ inquiries: Schema.Array(StaffInquirySummary) });

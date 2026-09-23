@@ -9,10 +9,10 @@ import { interviewProfileLayout } from "./default.ts";
 import { LayoutFailed } from "./layout-failed.ts";
 import { profileBlock, ProfileLayout } from "./schema.ts";
 
+import type { ModelAccess } from "#shared/interview/interviewer.ts";
 import type { SheetData } from "#shared/interview/sheet.ts";
 import type { ConfigurationInvalid } from "@repo/config";
 import type { ProfileLayoutData } from "./schema.ts";
-type ModelAccess = Parameters<typeof createWorkersAiChat>[1];
 const model = "@cf/google/gemma-4-26b-a4b-it";
 const patience = "20 seconds";
 const modelOptions = {

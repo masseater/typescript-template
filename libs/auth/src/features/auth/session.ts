@@ -81,4 +81,11 @@ const verifySession = (
   allowEnrollment = false,
 ): ReturnType<typeof verifySessionWith> => verifySessionWith(headers, allowEnrollment);
 
-export { verifySession };
+const verifiedSessionId = Effect.fn("verifiedSessionId")(function* verifiedSessionId(
+  incoming: Readonly<{ headers: Headers }>,
+) {
+  const { session } = yield* verifySession(incoming.headers);
+  return session.id;
+});
+
+export { verifiedSessionId, verifySession };

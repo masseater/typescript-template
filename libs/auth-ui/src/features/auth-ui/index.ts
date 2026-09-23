@@ -6,6 +6,8 @@ export { EmailChangeVerification } from "./email-change-verification";
 export { EmailVerification } from "./email-verification";
 export { ForbiddenNotice } from "./forbidden-notice";
 export { InviteAcceptance } from "./invite-acceptance";
+export { InvitePending } from "./invite-pending";
+export { inviteRoute } from "./invite-route";
 export { previewInvitation } from "./invite-preview";
 export type { Invitation } from "./invite-preview";
 export { LoginForm } from "./login-form";

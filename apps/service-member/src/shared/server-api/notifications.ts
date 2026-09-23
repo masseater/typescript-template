@@ -5,6 +5,7 @@ import { Effect, DateTime } from "effect";
 import { NotificationNotFound } from "./notification-not-found.ts";
 import { OpsMail } from "./ops-mail.ts";
 
+import type { NavBadges } from "#shared/contracts/index.ts";
 import type { NotificationKind } from "@repo/db";
 
 const { notification, notificationPreference, user } = schema;
@@ -30,10 +31,6 @@ type NotificationItem = Readonly<{
 type NotificationPreferences = Readonly<{
   boardMail: boolean;
   messageMail: boolean;
-}>;
-
-type NavBadges = Readonly<{
-  notifications: number;
 }>;
 
 function presentation(

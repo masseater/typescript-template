@@ -109,7 +109,11 @@ describe("staffInquiryCounts", () => {
 
   it("aggregates inquiry counts by status and day", ({ inquiryTally }) => {
     expect(inquiryTally).toStrictEqual({
-      byStatus: { answered: 1, closed: 1, open: 1 },
+      byStatus: {
+        [INQUIRY_STATUS.answered]: 1,
+        [INQUIRY_STATUS.closed]: 1,
+        [INQUIRY_STATUS.open]: 1,
+      },
       pending: 1,
       trendRecorded: true,
     });

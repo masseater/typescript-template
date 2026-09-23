@@ -2,13 +2,13 @@ import { groupJoinPolicies } from "@repo/config";
 import { CreatedResource, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
-import { Identifier } from "./member.ts";
+import { Identifier, MemberReference } from "./member.ts";
 
 const maximumGroupNameLength = 100;
 
 const GroupJoinPolicy = Schema.Literals(groupJoinPolicies);
 
-const GroupOwner = Schema.Struct({ id: Schema.String, name: Schema.String });
+const GroupOwner = MemberReference;
 
 const GroupMemberView = Schema.Struct({
   id: Schema.String,

@@ -1,4 +1,9 @@
-export { AGREEMENT_KIND, agreementKinds, agreementPolicies } from "./agreements.ts";
+export {
+  AGREEMENT_KIND,
+  agreementKindLabels,
+  agreementKinds,
+  agreementPolicies,
+} from "./agreements.ts";
 export type { AgreementKind, AgreementPolicy } from "./agreements.ts";
 export {
   APPLICATION,
@@ -184,7 +189,7 @@ export { NOTIFICATION_KIND, notificationKinds } from "./notifications.ts";
 export type { NotificationKind } from "./notifications.ts";
 export { GROUP_JOIN_POLICY, groupJoinPolicies } from "./group-join-policy.ts";
 export type { GroupJoinPolicy } from "./group-join-policy.ts";
-export { INQUIRY_STATUS, inquiryStatuses } from "./inquiry-status.ts";
+export { INQUIRY_STATUS, inquiryStatusLabels, inquiryStatuses } from "./inquiry-status.ts";
 export type { InquiryStatus } from "./inquiry-status.ts";
 export {
   AUDIT_ACTION,

@@ -1,5 +1,12 @@
 import { useAtomValue } from "@effect/atom-react";
-import { NavigationLink, Page, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
+import {
+  NavigationLink,
+  Page,
+  STATUS_VARIANT,
+  StatusMessage,
+  resultError,
+  formatWarekiDateTime,
+} from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useInquiryList, useInquiryStatusFilter } from "#pages/inquiries/model/inquiry-list.ts";
@@ -7,12 +14,6 @@ import { INQUIRY_STATUS, inquiryStatusLabel } from "#pages/inquiries/model/statu
 import { pendingCountAtom } from "#shared/api/index.ts";
 
 import type { ReactElement } from "react";
-
-const updatedAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 const statusFilters = [
   INQUIRY_STATUS.open,
@@ -79,7 +80,7 @@ function InquiriesPage(): ReactElement {
                 <td className="p-2">会員</td>
                 <td className="p-2">{inquiryStatusLabel(inquiry.status)}</td>
                 <td className="p-2">{inquiry.memberName}</td>
-                <td className="p-2">{updatedAtLabel.format(inquiry.updatedAt)}</td>
+                <td className="p-2">{formatWarekiDateTime(inquiry.updatedAt.getTime())}</td>
               </tr>
             ))}
           </tbody>

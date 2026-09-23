@@ -1,25 +1,13 @@
-import { REPORT_REASON, REPORT_STATUS } from "@repo/config";
 import { apiData } from "@repo/runtime/client";
 import { Button, Heading, Page, TextLink, useAction } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 
+import { reasonLabel, statusLabel } from "#pages/reports/model/report-labels.ts";
 import { adminClient } from "#shared/api/index.ts";
 import { ReportActionResult } from "#shared/contracts/index.ts";
 
 import type { ReportItem } from "#pages/reports/api/load-reports.ts";
 import type { ReactElement } from "react";
-
-const reasonLabel = {
-  [REPORT_REASON.harassment]: "迷惑行為",
-  [REPORT_REASON.other]: "その他",
-  [REPORT_REASON.spam]: "スパム",
-} as const;
-
-const statusLabel = {
-  [REPORT_STATUS.actioned]: "処置済み",
-  [REPORT_STATUS.dismissed]: "却下",
-  [REPORT_STATUS.open]: "未対応",
-} as const;
 
 function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement {
   const router = useRouter();

@@ -1,41 +1,11 @@
-import { useAction, useTextInput } from "@repo/ui";
+import { useTextSubmission } from "@repo/ui";
 
 import { sendMessage } from "#pages/messages/api/messages.ts";
 
-import type { SubmitEventHandler } from "react";
-interface ReplyForm {
-  readonly blocked: boolean;
-  readonly body: string;
-  readonly error: string | undefined;
-  readonly handleBodyChange: (value: string) => void;
-  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
-  readonly pending: boolean;
+import type { TextSubmission } from "@repo/ui";
+
+function useReplyForm(conversationId: string, onSent: () => Promise<void>): TextSubmission {
+  return useTextSubmission((body) => sendMessage(conversationId, body), onSent);
 }
-function useReplyForm(conversationId: string, onSent: () => Promise<void>): ReplyForm {
-  const body = useTextInput();
-  const action = useAction();
-  function handleSubmit(
-    event: Readonly<{
-      preventDefault: () => void;
-    }>,
-  ): void {
-    event.preventDefault();
-    action.run(() =>
-      sendMessage(conversationId, body.value).then(() =>
-        Promise.resolve().then(() => {
-          body.handleChange("");
-          return onSent().then(() => undefined);
-        }),
-      ),
-    );
-  }
-  return {
-    blocked: action.blocked,
-    body: body.value,
-    error: action.error,
-    handleBodyChange: body.handleChange,
-    handleSubmit,
-    pending: action.pending,
-  };
-}
+
 export { useReplyForm };

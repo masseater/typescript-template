@@ -46,6 +46,7 @@ catalog:
   "@better-auth/passkey": 1.7.5
   "@cloudflare/vitest-plugin": 1.1.12
   "@cloudflare/workers-types": 5.20260916.1
+  "@modelcontextprotocol/server": 2.0.0
   "@msw/cloudflare": 0.0.1
   "@opentelemetry/api": 1.9.1
   "@opentelemetry/core": 2.10.0
@@ -94,7 +95,6 @@ catalog:
   "@opentelemetry/resources": 2.10.0
   "@opentelemetry/sdk-logs": 0.221.0
   "@opentelemetry/sdk-trace": 2.10.0
-  better-call: 1.4.0
   elysia: 2.0.0-beta.16
   storybook: 10.6.0
   zod: 4.6.5

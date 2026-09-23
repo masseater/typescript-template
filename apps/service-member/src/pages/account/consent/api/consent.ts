@@ -1,16 +1,9 @@
+import { OAuthClientView, encodeConsentBody, postConsent } from "@repo/auth-ui/consent";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
+import { Redirect } from "@repo/runtime/contracts";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { Schema } from "effect";
-
-const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
-const Redirect = Schema.Struct({ url: Schema.String });
-const ConsentBody = Schema.Struct({
-  accept: Schema.Boolean,
-  oauth_query: Schema.String,
-  scope: Schema.optionalKey(Schema.String),
-});
-const encodeConsentBody = Schema.encodePromise(Schema.fromJsonString(ConsentBody));
 
 class ConsentClientUnavailable extends Schema.TaggedError<ConsentClientUnavailable>()(
   "ConsentClientUnavailable",
@@ -21,7 +14,9 @@ function clientNameFrom(response: Response, clientId: string): Promise<string> {
   if (!response.ok) {
     return Promise.reject(new ConsentClientUnavailable());
   }
-  return response.json().then((payload) => decodeJson(ClientView, payload).client_name ?? clientId);
+  return response
+    .json()
+    .then((payload) => decodeJson(OAuthClientView, payload).client_name ?? clientId);
 }
 
 function getPublicClient(
@@ -30,15 +25,6 @@ function getPublicClient(
   init: RequestInit,
 ): Promise<Response> {
   return fetchImpl(url, init);
-}
-
-function postConsent(fetchImpl: typeof fetch, body: string): Promise<Response> {
-  return fetchImpl("/api/auth/oauth2/consent", {
-    body,
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
 }
 
 const loadClientName = createIsomorphicFn()

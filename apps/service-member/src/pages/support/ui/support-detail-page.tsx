@@ -1,16 +1,18 @@
-import { Heading, Page, STATUS_VARIANT, StatusMessage, TextLink, resultError } from "@repo/ui";
+import {
+  Heading,
+  Page,
+  STATUS_VARIANT,
+  StatusMessage,
+  TextLink,
+  resultError,
+  formatWarekiDateTime,
+} from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useInquiryThread } from "#pages/support/model/inquiry-thread.ts";
 import { InquiryReplyForm } from "./inquiry-reply-form.tsx";
 
 import type { ReactElement } from "react";
-
-const createdAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): ReactElement {
   const { reload, thread } = useInquiryThread(inquiryId);
@@ -53,7 +55,7 @@ function SupportDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
             </p>
             <p className="text-base leading-normal whitespace-pre-wrap">{message.body}</p>
             <p className="text-xs leading-normal text-muted-foreground">
-              {createdAtLabel.format(message.createdAt)}
+              {formatWarekiDateTime(message.createdAt.getTime())}
             </p>
           </li>
         ))}

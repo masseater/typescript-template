@@ -1,4 +1,4 @@
-import { verifySession } from "@repo/auth";
+import { verifiedSessionId } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import {
   closeInquiry,
@@ -33,42 +33,37 @@ const failures = {
   InquiryNotFound: { message: "問い合わせが見つかりません。", status: httpStatus.notFound },
 };
 
-const sessionOf = Effect.fn("sessionOf")(function* sessionOf(request: Request) {
-  const { session } = yield* verifySession(request.headers);
-  return session.id;
-});
-
 const listInquiries = Effect.fn("listInquiries")(function* listInquiries(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const page = yield* readSearchParams(InquiryListQuery, request);
   return yield* listAdminInquiries(sessionId, page);
 });
 
 const pendingCount = Effect.fn("pendingCount")(function* pendingCount(request: Request) {
-  const count = yield* countPendingInquiries(yield* sessionOf(request));
+  const count = yield* countPendingInquiries(yield* verifiedSessionId(request));
   return { count };
 });
 
 const inquiryDetail = Effect.fn("inquiryDetail")(function* inquiryDetail(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readSearchParams(InquiryQuery, request);
   return yield* getAdminInquiry(sessionId, id);
 });
 
 const memberSummary = Effect.fn("memberSummary")(function* memberSummary(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readSearchParams(MemberQuery, request);
   return yield* getInquiryMemberSummary(sessionId, id);
 });
 
 const reply = Effect.fn("reply")(function* reply(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { body, id } = yield* readJsonBody(InquiryReply, request);
   return yield* replyAsAdmin({ body, inquiryId: id, sessionId });
 });
 
 const close = Effect.fn("close")(function* close(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readJsonBody(InquiryClose, request);
   return yield* closeInquiry(sessionId, id);
 });

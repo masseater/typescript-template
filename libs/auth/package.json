@@ -10,12 +10,13 @@
     "@better-auth/api-key": "catalog:",
     "@better-auth/drizzle-adapter": "1.7.5",
     "@better-auth/mcp": "1.7.5",
+    "@better-auth/oauth-provider": "1.7.5",
     "@better-auth/passkey": "catalog:",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
     "better-auth": "catalog:",
-    "better-call": "catalog:",
+    "better-call": "1.4.0",
     "effect": "catalog:"
   },
   "devDependencies": {

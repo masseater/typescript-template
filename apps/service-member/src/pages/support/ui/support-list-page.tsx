@@ -7,6 +7,7 @@ import {
   StatusMessage,
   localState,
   resultError,
+  formatWarekiDateTime,
 } from "@repo/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { AsyncResult } from "effect/unstable/reactivity";
@@ -15,12 +16,6 @@ import { useInquiryList } from "#pages/support/model/inquiry-list.ts";
 import { NewInquiryForm } from "./new-inquiry-form.tsx";
 
 import type { ReactElement } from "react";
-
-const updatedAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 const useCreating = localState(false);
 
@@ -70,7 +65,7 @@ function SupportListPage(): ReactElement {
                   {inquiry.subject}
                 </Heading>
                 <p className="text-sm leading-normal text-muted-foreground">
-                  {inquiry.statusLabel}・{updatedAtLabel.format(inquiry.updatedAt)}
+                  {inquiry.statusLabel}・{formatWarekiDateTime(inquiry.updatedAt.getTime())}
                 </p>
               </NavigationLink>
             </li>

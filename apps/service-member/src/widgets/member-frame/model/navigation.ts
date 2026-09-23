@@ -9,6 +9,7 @@ import {
 
 import { m } from "#shared/i18n/index.ts";
 
+import type { NavBadges } from "#shared/contracts/index.ts";
 import type { LucideIcon } from "lucide-react";
 
 type MemberNavItem = Readonly<
@@ -59,10 +60,6 @@ type MemberNavItem = Readonly<
 >;
 
 const memberHasPaidPlan = false;
-
-type NavBadges = Readonly<{
-  notifications: number;
-}>;
 
 const emptyNavBadges: NavBadges = { notifications: 0 };
 
@@ -143,4 +140,3 @@ function titleForPath(pathname: string): string {
 }
 
 export { memberHasPaidPlan, memberNavItems, titleForPath };
-export type { NavBadges };
