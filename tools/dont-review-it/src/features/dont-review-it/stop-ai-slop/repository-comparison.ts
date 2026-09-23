@@ -1,8 +1,8 @@
 import { Effect, Schema } from "effect";
 import { attempt, uniqBy, zip } from "es-toolkit";
 
+import { posixPath } from "../platform/path.ts";
 import { failingWhenThrown } from "./expected-throw.ts";
-import { gitPath } from "./git-path.ts";
 import { runGitBuffer, runGitText } from "./git-text.ts";
 import {
   DiffUnreadable,
@@ -98,7 +98,7 @@ const SOURCE_EXTENSIONS: readonly string[] = [
 ];
 
 const isSource = (sourcePath: string): boolean =>
-  SOURCE_EXTENSIONS.includes(gitPath.extname(sourcePath).toLowerCase());
+  SOURCE_EXTENSIONS.includes(posixPath.extname(sourcePath).toLowerCase());
 
 const utf8SourceOf = (sourceBytes: Uint8Array): string | null => {
   const [undecodable, decoded] = attempt<string, Error>(() =>
