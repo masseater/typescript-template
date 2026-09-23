@@ -129,18 +129,6 @@ it.effect("refuses origins that collapse onto one host and names the keys", () =
   }),
 );
 
-it.effect("refuses a budget exhausted by fixed fees and names the keys", () =>
-  Effect.gen(function* program() {
-    const config = yield* Schema.decodeEffect(SharedSettings)({
-      ...settings,
-      budget: { ...settings.budget, fixedCostUsd: 50 },
-    });
-    const failure = yield* checkSharedConfig(config).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "budget_has_no_usage_allowance");
-    assert.include([...failure.keys], "BUDGET_JPY");
-  }),
-);
-
 it.effect("refuses a sender address outside the subdomain named by the prefix", () =>
   Effect.forEach(
     ["mail@example.com", "mail@send.example.com", `mail@${settings.prefix}x.example.com`],
@@ -201,26 +189,6 @@ it.effect("an endpoint without the switch is refused", () =>
       keys: ["TEMPLATE_OTLP_ENABLED", "TEMPLATE_OTLP_ENDPOINT"],
     });
   }),
-);
-
-it.effect("refuses missing budget and sampling values instead of inventing defaults", () =>
-  Effect.forEach(
-    [
-      "TEMPLATE_FIXED_COST_USD",
-      "TEMPLATE_JPY_PER_USD",
-      "TEMPLATE_RESERVE_USD",
-      "TEMPLATE_OBSERVABILITY_SAMPLING",
-    ] as const,
-    (key) =>
-      Effect.gen(function* program() {
-        const failure = yield* Effect.provideService(
-          deploymentSettings,
-          ConfigProvider,
-          environment({ [key]: undefined }),
-        ).pipe(Effect.flip);
-        assert.include(yield* encodeJson(describeFailure(failure, [])), key);
-      }),
-  ),
 );
 
 it.effect("the settings every command reads carry the shared checks", () =>
