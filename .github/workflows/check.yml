@@ -68,7 +68,7 @@ jobs:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
 
-  merge-queue:
+  merge-queue-packages:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
     runs-on: *runner
     timeout-minutes: 30
@@ -85,6 +85,34 @@ jobs:
         with:
           path: node_modules/.vite/task-cache
           key: ${{ steps.vite-task-cache.outputs.cache-primary-key }}
+
+  merge-queue-unit:
+    if: startsWith(github.head_ref, 'mergify/merge-queue/')
+    runs-on: *runner
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - *checkout
+      - *browser-cache
+      - *setup
+      - *vite-task-cache
+      - run: vp run compile:paraglide
+      - run: vp test run --project node --project node-isolated --project workers --shard=${{ matrix.shard }}/4
+        env:
+          MERGIFY_TOKEN: ${{ secrets.MERGIFY_TOKEN }}
+
+  merge-queue:
+    if: ${{ always() && startsWith(github.head_ref, 'mergify/merge-queue/') }}
+    needs: [merge-queue-packages, merge-queue-unit]
+    runs-on: *runner
+    timeout-minutes: 5
+    steps:
+      - run: |
+          test "${{ needs.merge-queue-packages.result }}" = "success"
+          test "${{ needs.merge-queue-unit.result }}" = "success"
 
   e2e:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')
