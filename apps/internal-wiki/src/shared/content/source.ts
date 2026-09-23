@@ -1,4 +1,5 @@
 import { wikiBasePath } from "@repo/config";
+import { remarkWikiTerm } from "@repo/wiki-markdown";
 import { remarkMdxMermaid } from "fumadocs-core/mdx-plugins";
 import { loader } from "fumadocs-core/source";
 import { applyMdxPreset } from "fumadocs-mdx/config";
@@ -7,7 +8,6 @@ import { SourceMapGenerator } from "source-map";
 
 import { processedMarkdown } from "./mermaid-markdown.ts";
 import { remarkMermaidSvg } from "./remark-mermaid-svg.ts";
-import { remarkWikiTerm } from "./remark-wiki-term.ts";
 
 const docs = defineDocs({
   dir: "../internal-dashboard/content/docs",

@@ -22,6 +22,7 @@ import { Route as DashboardInquiriesRouteImport } from './routes/_dashboard/inqu
 import { Route as DashboardSecurityRouteImport } from './routes/_dashboard/security'
 import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as DashboardWikiEditSplatRouteImport } from './routes/_dashboard/wiki-edit/$'
 
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
@@ -87,6 +88,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardWikiEditSplatRoute = DashboardWikiEditSplatRouteImport.update({
+  id: '/wiki-edit/$',
+  path: '/wiki-edit/$',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/security': typeof DashboardSecurityRoute
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/wiki-edit/$': typeof DashboardWikiEditSplatRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/': typeof DashboardIndexRoute
+  '/wiki-edit/$': typeof DashboardWikiEditSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/_dashboard/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/_dashboard/': typeof DashboardIndexRoute
+  '/_dashboard/wiki-edit/$': typeof DashboardWikiEditSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/staff'
     | '/api/$'
+    | '/wiki-edit/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/$'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/api/$'
     | '/'
+    | '/wiki-edit/$'
   id:
     | '__root__'
     | '/$'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/_dashboard/staff'
     | '/api/$'
     | '/_dashboard/'
+    | '/_dashboard/wiki-edit/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -281,6 +293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/wiki-edit/$': {
+      id: '/_dashboard/wiki-edit/$'
+      path: '/wiki-edit/$'
+      fullPath: '/wiki-edit/$'
+      preLoaderRoute: typeof DashboardWikiEditSplatRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -291,6 +310,7 @@ interface DashboardRouteChildren {
   DashboardSecurityRoute: typeof DashboardSecurityRoute
   DashboardStaffRoute: typeof DashboardStaffRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardWikiEditSplatRoute: typeof DashboardWikiEditSplatRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -300,6 +320,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSecurityRoute: DashboardSecurityRoute,
   DashboardStaffRoute: DashboardStaffRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardWikiEditSplatRoute: DashboardWikiEditSplatRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

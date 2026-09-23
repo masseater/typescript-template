@@ -1,3 +1,4 @@
+import { wikiTermSyntax } from "@repo/wiki-markdown";
 import { Schema } from "effect";
 
 import type { LLMsOptions } from "fumadocs-core/mdx-plugins";
@@ -24,8 +25,7 @@ function termLinkMarkdown(node: { readonly attributes: readonly unknown[] }): st
   if (term === undefined) {
     return undefined;
   }
-  const label = attributes.find((attribute) => attribute.name === "label")?.value;
-  return label === undefined || label === term ? `[[${term}]]` : `[[${term}|${label}]]`;
+  return wikiTermSyntax(term, attributes.find((attribute) => attribute.name === "label")?.value);
 }
 
 const processedMarkdown: LLMsOptions = {

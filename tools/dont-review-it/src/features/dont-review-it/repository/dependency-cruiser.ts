@@ -147,10 +147,18 @@ const configuration = {
     },
     {
       comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
-      from: { path: "^apps/(?:internal-dashboard|internal-wiki)/" },
+      from: { path: "^apps/internal-wiki/" },
       name: "no-wiki-to-database",
       severity: "error",
       to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/features/db/local\.ts$` },
+    },
+    {
+      comment:
+        "ダッシュボードは共有 DB の業務表を読み書きしません。ローカル開発用の D1 定義と、wiki の下書きの入口（@repo/db/wiki）だけを参照してください。",
+      from: { path: "^apps/internal-dashboard/" },
+      name: "no-dashboard-to-database",
+      severity: "error",
+      to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/features/db/(?:local|wiki)\.ts$` },
     },
     {
       comment:
