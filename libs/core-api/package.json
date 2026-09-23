@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/features/core-api/index.ts",
-    "./entrypoints": "./src/features/core-api/entrypoints.ts"
+    "./entrypoints": "./src/features/core-api/entrypoints.ts",
+    "./recording-schemas": "./src/features/core-api/recording-schemas.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",
