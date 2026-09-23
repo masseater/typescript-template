@@ -7,15 +7,13 @@ import { readMigrationFiles } from "drizzle-orm/migrator";
 import { Clock, Effect, Schema } from "effect";
 
 import { BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import { remoteDatabase, remoteExecutor } from "./remote-http.ts";
+import { remoteDatabase } from "./remote-http.ts";
 import { RemoteFailure, fail, parseRemoteInput } from "./remote-input.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
 import type { MigrationConfig } from "drizzle-orm/migrator";
 import type { SQLiteAsyncDatabase } from "drizzle-orm/sqlite-core";
 import type { Email } from "./bootstrap-statement.ts";
-import type { DatabaseExecutor } from "./remote-http.ts";
-import type { MigrationStatusTarget } from "./remote-input.ts";
 
 const migrationsFolder = fileURLToPath(new URL("../../../migrations/", import.meta.url));
 
@@ -31,7 +29,6 @@ type Migration = typeof MigrationFile.Type;
 
 const Names = Schema.Array(Schema.Tuple([Schema.String]));
 const HistoryRows = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
-const History = Schema.Array(Schema.Struct({ hash: Schema.String, name: Schema.String }));
 const BootstrappedRow = Schema.Tuple([Schema.Unknown, Schema.Unknown, Schema.Unknown]);
 
 const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' AND name NOT LIKE '\_cf\_%' ESCAPE '\' AND name NOT IN ('__drizzle_migrations', 'd1_migrations')`;
@@ -144,72 +141,36 @@ const migrateD1 = (
   return migrateDatabase(database, (config) => applyD1MigrationFiles(database, config), folder);
 };
 
-const readHistory = Effect.fn("readHistory")(function* readHistory(
-  executor: DatabaseExecutor,
-  migrations: readonly Migration[],
-) {
-  const [historyRows] = yield* executor.batch([
-    { params: [], sql: "SELECT hash, name FROM __drizzle_migrations ORDER BY id" },
-  ]);
-  const history = yield* Schema.decodeUnknownEffect(History)(historyRows).pipe(
-    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_MIGRATION_HISTORY_MISMATCH" })),
-  );
-  if (
-    history.some(
-      (appliedMigration, index) =>
-        appliedMigration.hash !== migrations.at(index)?.hash ||
-        appliedMigration.name !== migrations.at(index)?.name,
-    )
-  ) {
-    return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
-  }
-  return history.length;
-});
+const ALCHEMY_HISTORY_PRESENT =
+  "SELECT name FROM sqlite_master WHERE type = 'table' AND name = '__alchemy_migrations'";
 
-const applicationTables = Effect.fn("applicationTables")(function* applicationTables(
-  executor: DatabaseExecutor,
-) {
-  const [listedTables] = yield* executor.batch([{ params: [], sql: APPLICATION_TABLES }]);
-  if (listedTables === undefined) {
-    return yield* fail("REMOTE_RESPONSE_INVALID");
-  }
-  return listedTables.length;
-});
-
-const migrationStatus = Effect.fn("migrationStatus")(function* migrationStatus(
-  executor: DatabaseExecutor,
-  migrations: readonly Migration[],
-) {
-  const [recorded] = yield* executor.batch([{ params: [], sql: MIGRATIONS_TABLE_PRESENT }]);
-  if (recorded === undefined) {
-    return yield* fail("REMOTE_RESPONSE_INVALID");
-  }
-  const applied = recorded.length === 0 ? 0 : yield* readHistory(executor, migrations);
-  const declared = migrations.length;
-  const unrecorded = applied === 0 && (yield* applicationTables(executor)) > 0;
-  return {
-    applied,
-    declared,
-    pending: declared - applied,
-    state: unrecorded ? ("unrecorded" as const) : ("recorded" as const),
-  } as const;
-});
-
-const readMigrationStatus = Effect.fn("readMigrationStatus")(function* readMigrationStatus(
-  d1Database: typeof MigrationStatusTarget.Type,
-) {
-  return yield* migrationStatus(remoteExecutor(d1Database), yield* loadRemoteMigrations());
-});
+const deployedMigrations = <Result>(
+  database: SQLiteAsyncDatabase<"async", Result>,
+  migrations: readonly Pick<Migration, "hash">[],
+): Effect.Effect<void, RemoteFailure> => {
+  return Effect.gen(function* deployedHistory() {
+    if ((yield* listedNames(database, ALCHEMY_HISTORY_PRESENT)).length === 0) {
+      return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
+    }
+    const hashes = yield* listedNames(
+      database,
+      "SELECT hash FROM __alchemy_migrations ORDER BY id",
+    );
+    if (hashes.length !== migrations.length) {
+      return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
+    }
+    if (hashes.some((hash, index) => hash !== migrations[index]?.hash)) {
+      return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
+    }
+  });
+};
 
 const bootstrapDatabase = <Result>(
   database: SQLiteAsyncDatabase<"async", Result>,
   email: typeof Email.Type,
 ): Effect.Effect<void, RemoteFailure> => {
   return Effect.gen(function* bootstrap() {
-    const migrations = yield* loadRemoteMigrations();
-    if ((yield* appliedMigrations(database, migrations)) !== migrations.length) {
-      return yield* fail("REMOTE_MIGRATIONS_REQUIRED");
-    }
+    yield* deployedMigrations(database, yield* loadRemoteMigrations());
     const rows = yield* queryValues(
       database,
       bootstrapStatement(email, yield* Clock.currentTimeMillis),
@@ -232,8 +193,6 @@ const bootstrapDatabase = <Result>(
 };
 
 export {
-  APPLICATION_TABLES,
-  MIGRATIONS_TABLE_PRESENT,
   RemoteFailure,
   bootstrapDatabase,
   fail,
@@ -242,6 +201,5 @@ export {
   migrateDatabase,
   migrationsFolder,
   parseRemoteInput,
-  readMigrationStatus,
   remoteDatabase,
 };

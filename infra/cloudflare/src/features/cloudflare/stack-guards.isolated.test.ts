@@ -1,20 +1,15 @@
 import { assert, it } from "@effect/vitest";
-import { loadRemoteMigrations } from "@repo/db/migrations";
 import { Effect } from "effect";
-import { HttpResponse, http } from "msw";
 
 import { mockServer } from "./account-fixture.ts";
 import {
-  FORBIDDEN_STATUS,
   access,
-  account,
   accountHandlers,
   config,
   databaseId,
   deployedDatabases,
   deployedState,
   emptyState,
-  migrationQuery,
   sendingRecords,
 } from "./inspection-fixture.ts";
 import { describeFailure } from "./secrets.ts";
@@ -24,9 +19,6 @@ import { sendingStacks, stackDependencies, traceDestinationStack } from "./stack
 const deployment = { access, config };
 const applications = ["service-admin", "service-member", "internal-dashboard"] as const;
 const withoutOtlp = { access, config: { ...config, otlp: undefined } };
-const migrations = await Effect.runPromise(loadRemoteMigrations());
-const declaredMigrations = migrations.length;
-const noMigrationsApplied = 0;
 
 it.effect("stops the onboarding unit on an account that already holds the sending domain", () =>
   Effect.gen(function* program() {
@@ -71,10 +63,7 @@ it.effect("reads nothing for the units that claim no account-wide name", () =>
 it.effect("refuses an application before the unit that declares its trace destination ran", () =>
   Effect.forEach(applications, (stack) =>
     Effect.gen(function* program() {
-      yield* mockServer(
-        ...accountHandlers({ databases: deployedDatabases }),
-        migrationQuery(declaredMigrations),
-      );
+      yield* mockServer(...accountHandlers({ databases: deployedDatabases }));
       assert.include(stackDependencies(stack), traceDestinationStack);
       const failure = yield* assertStackReady(stack, deployment, emptyState()).pipe(Effect.flip);
       assert.deepStrictEqual(describeFailure(failure, []), {
@@ -86,63 +75,10 @@ it.effect("refuses an application before the unit that declares its trace destin
   ),
 );
 
-it.effect("separates a database whose tables were made without a recorded history", () =>
-  Effect.forEach(applications, (stack) =>
-    Effect.gen(function* program() {
-      yield* mockServer(
-        ...accountHandlers({ databases: deployedDatabases }),
-        migrationQuery(noMigrationsApplied, ["service-member"]),
-      );
-      const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
-      assert.deepStrictEqual(describeFailure(failure, []), {
-        code: "database_migration_history_missing",
-        keys: [String(declaredMigrations)],
-      });
-    }).pipe(Effect.scoped),
-  ),
-);
-
-it.effect("names the read as the reason when the migration history cannot be read", () =>
-  Effect.forEach(applications, (stack) =>
-    Effect.gen(function* program() {
-      yield* mockServer(
-        ...accountHandlers({ databases: deployedDatabases }),
-        http.post(`${account}/d1/database/${databaseId}/query`, () =>
-          HttpResponse.json({ error: "forbidden" }, { status: FORBIDDEN_STATUS }),
-        ),
-      );
-      const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
-      assert.deepStrictEqual(describeFailure(failure, []), {
-        code: "database_migration_status_unreadable",
-        keys: ["REMOTE_QUERY_FAILED"],
-      });
-    }).pipe(Effect.scoped),
-  ),
-);
-
-it.effect("refuses an application whose database has migrations left to apply", () =>
-  Effect.forEach(applications, (stack) =>
-    Effect.gen(function* program() {
-      yield* mockServer(
-        ...accountHandlers({ databases: deployedDatabases }),
-        migrationQuery(noMigrationsApplied),
-      );
-      const failure = yield* assertStackReady(stack, deployment, deployedState()).pipe(Effect.flip);
-      assert.deepStrictEqual(describeFailure(failure, []), {
-        code: "database_migrations_pending",
-        keys: [String(noMigrationsApplied), String(declaredMigrations)],
-      });
-    }).pipe(Effect.scoped),
-  ),
-);
-
 it.effect("lets an application run without the trace destination unit when OTLP is unset", () =>
   Effect.forEach(applications, (stack) =>
     Effect.gen(function* program() {
-      yield* mockServer(
-        ...accountHandlers({ databases: deployedDatabases }),
-        migrationQuery(declaredMigrations),
-      );
+      yield* mockServer(...accountHandlers({ databases: deployedDatabases }));
       yield* assertStackReady(
         stack,
         withoutOtlp,
