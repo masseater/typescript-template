@@ -1,4 +1,6 @@
-import { env as processEnvironment } from "node:process";
+import process from "node:process";
+
+const processEnvironment = process.env;
 
 const optionalSetting = (variable: string): string | undefined => {
   const setting = processEnvironment[variable];
@@ -8,7 +10,7 @@ const optionalSetting = (variable: string): string | undefined => {
 const definedEnvironment = (): Readonly<Record<string, string>> =>
   Object.fromEntries(
     Object.entries(processEnvironment).flatMap(([variable, setting]) =>
-      setting === undefined ? [] : [[variable, setting] as const],
+      typeof setting === "string" ? [[variable, setting] as const] : [],
     ),
   );
 
