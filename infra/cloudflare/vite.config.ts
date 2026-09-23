@@ -14,7 +14,6 @@ export default defineConfig({
       ...effectDiagnostics,
       "bootstrap:state": { cache: false, command: "./src/bootstrap-state.ts" },
       "db:bootstrap:remote": { cache: false, command: "./src/database-command.ts bootstrap" },
-      "db:migrate:remote": { cache: false, command: "./src/database-command.ts migrate" },
       deploy: {
         cache: false,
         command: "./src/cli.ts deploy",
