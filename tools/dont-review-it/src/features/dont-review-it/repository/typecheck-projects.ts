@@ -1,6 +1,6 @@
-import { Effect, type FileSystem, Path, type PlatformError } from "effect";
+import { Effect, type FileSystem, Path } from "effect";
 
-import { directoryEntries } from "../platform/directory-entries.ts";
+import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
 
 const workspaceGroups = ["apps", "libs", "infra", "tools"] as const;
@@ -17,7 +17,7 @@ const skippedDirectoryNames = new Set([
 
 type ProjectDiscovery<Discovered> = Effect.Effect<
   Discovered,
-  PlatformError.PlatformError,
+  TreeFailure,
   FileSystem.FileSystem | Path.Path
 >;
 

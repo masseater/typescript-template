@@ -1,20 +1,16 @@
 #!/usr/bin/env node
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { Console, Effect, FileSystem, Path, type PlatformError } from "effect";
+import { Console, Effect, FileSystem, Path } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { directoryEntries } from "../platform/directory-entries.ts";
+import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { isAppRouteModule } from "./thin-app-routes.ts";
 
 const violation =
   "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。";
 
-type RouteScan<Scanned> = Effect.Effect<
-  Scanned,
-  PlatformError.PlatformError,
-  FileSystem.FileSystem | Path.Path
->;
+type RouteScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
 const collectFiles = (directory: string): RouteScan<readonly string[]> =>
   Effect.gen(function* listRouteFiles() {

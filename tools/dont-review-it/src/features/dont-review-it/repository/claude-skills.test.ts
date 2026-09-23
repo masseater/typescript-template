@@ -1,9 +1,9 @@
 import { NodeServices } from "@effect/platform-node";
-import { Effect, FileSystem, Path, Schema, type PlatformError } from "effect";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
-import { directoryEntries } from "../platform/directory-entries.ts";
+import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { pathExists } from "../platform/file-system.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
@@ -32,11 +32,7 @@ const skillNames = await Effect.runPromise(
 
 const markdownFiles = (
   directory: string,
-): Effect.Effect<
-  readonly string[],
-  PlatformError.PlatformError,
-  FileSystem.FileSystem | Path.Path
-> =>
+): Effect.Effect<readonly string[], TreeFailure, FileSystem.FileSystem | Path.Path> =>
   Effect.gen(function* collectMarkdown() {
     const paths = yield* Path.Path;
     const entries = yield* directoryEntries(directory);

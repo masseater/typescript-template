@@ -1,8 +1,8 @@
 import { NodeServices } from "@effect/platform-node";
-import { Effect, FileSystem, Path, type PlatformError } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { directoryEntries } from "../platform/directory-entries.ts";
+import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { commands } from "./tasks.ts";
 import {
@@ -12,11 +12,7 @@ import {
   unitTestShardCount,
 } from "./test-runtime.ts";
 
-type TreeScan<Scanned> = Effect.Effect<
-  Scanned,
-  PlatformError.PlatformError,
-  FileSystem.FileSystem | Path.Path
->;
+type TreeScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
 const repositoryText = (file: string): TreeScan<string> =>
   Effect.gen(function* repositoryText() {

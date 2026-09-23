@@ -1,10 +1,10 @@
 import { Effect, FileSystem, type PlatformError, Schema } from "effect";
 
 import { unlessMissing } from "./file-system.ts";
-import { isNotALink } from "./path-failure.ts";
+import { isLinkLoop, isMissingPath, isNotALink } from "./path-failure.ts";
 import { path } from "./path.ts";
 
-type EntryKind = "directory" | "file" | "symlink" | "dangling-symlink" | "other";
+type EntryKind = "directory" | "file" | "other";
 
 interface DirectoryEntry {
   readonly kind: EntryKind;
@@ -19,56 +19,164 @@ class DanglingSymlink extends Schema.TaggedError<DanglingSymlink>()("DanglingSym
   }
 }
 
-export type TreeFailure = PlatformError.PlatformError | DanglingSymlink;
+class EscapingSymlink extends Schema.TaggedError<EscapingSymlink>()("EscapingSymlink", {
+  path: Schema.String,
+  target: Schema.String,
+  root: Schema.String,
+}) {
+  override get message(): string {
+    return `${this.path} is a symbolic link to ${this.target}, outside ${this.root}, so what it holds is not part of the tree being read.`;
+  }
+}
 
-const entryKind = (
-  entryPath: string,
-): Effect.Effect<EntryKind, PlatformError.PlatformError, FileSystem.FileSystem> =>
-  Effect.gen(function* entryKind() {
+class SymlinkCycle extends Schema.TaggedError<SymlinkCycle>()("SymlinkCycle", {
+  path: Schema.String,
+  target: Schema.String,
+}) {
+  override get message(): string {
+    return `${this.path} leads back into ${this.target}, which already encloses it, so following it would never end.`;
+  }
+}
+
+export type TreeFailure =
+  | PlatformError.PlatformError
+  | DanglingSymlink
+  | EscapingSymlink
+  | SymlinkCycle;
+
+type Descent = Readonly<{
+  root: string;
+  realRoot: string;
+  enclosing: readonly string[];
+}>;
+
+type ResolvedEntry = DirectoryEntry & Readonly<{ realPath: string }>;
+
+type EntryUse = (entry: DirectoryEntry) => boolean;
+
+type Listing = Readonly<{
+  directory: string;
+  realDirectory: string;
+  names: readonly string[];
+  descent: Descent;
+  uses: EntryUse;
+}>;
+
+const isWithin = (realRoot: string, realPath: string): boolean => {
+  const relative = path.relative(realRoot, realPath);
+  return relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+};
+
+const kindOf = (type: FileSystem.File.Type): EntryKind =>
+  type === "Directory" ? "directory" : type === "File" ? "file" : "other";
+
+const linkedEntry = ({
+  entryPath,
+  linkText,
+  descent,
+  uses,
+}: Readonly<{
+  entryPath: string;
+  linkText: string;
+  descent: Descent;
+  uses: EntryUse;
+}>): Effect.Effect<ResolvedEntry | null, TreeFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* linkedEntry() {
     const filesystem = yield* FileSystem.FileSystem;
-    const linked = yield* filesystem.readLink(entryPath).pipe(
-      Effect.as(true),
-      Effect.catchIf(isNotALink, () => Effect.succeed(false)),
+    const { type } = yield* filesystem.stat(entryPath).pipe(
+      Effect.mapError((failure): TreeFailure => {
+        if (isMissingPath(failure)) return new DanglingSymlink({ path: entryPath });
+        if (isLinkLoop(failure)) return new SymlinkCycle({ path: entryPath, target: linkText });
+        return failure;
+      }),
     );
-    if (linked) {
-      const reached = yield* unlessMissing(filesystem.stat(entryPath));
-      return reached === null ? "dangling-symlink" : "symlink";
+    const entry = { kind: kindOf(type), name: path.basename(entryPath) };
+    if (!uses(entry)) return null;
+    const realPath = yield* filesystem.realPath(entryPath);
+    if (!isWithin(descent.realRoot, realPath)) {
+      return yield* new EscapingSymlink({ path: entryPath, target: realPath, root: descent.root });
     }
-    const { type } = yield* filesystem.stat(entryPath);
-    return type === "Directory" ? "directory" : type === "File" ? "file" : "other";
+    return { ...entry, realPath };
+  });
+
+const resolvedEntry = ({
+  directory,
+  realDirectory,
+  name,
+  descent,
+  uses,
+}: Omit<Listing, "names"> & Readonly<{ name: string }>): Effect.Effect<
+  ResolvedEntry | null,
+  TreeFailure,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* resolvedEntry() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const entryPath = path.join(directory, name);
+    const linkText = yield* filesystem
+      .readLink(entryPath)
+      .pipe(Effect.catchIf(isNotALink, () => Effect.succeed(null)));
+    const resolved =
+      linkText === null
+        ? yield* Effect.map(filesystem.stat(entryPath), ({ type }) => {
+            const entry = { kind: kindOf(type), name };
+            return uses(entry) ? { ...entry, realPath: path.join(realDirectory, name) } : null;
+          })
+        : yield* linkedEntry({ entryPath, linkText, descent, uses });
+    if (resolved?.kind === "directory" && descent.enclosing.includes(resolved.realPath)) {
+      return yield* new SymlinkCycle({ path: entryPath, target: resolved.realPath });
+    }
+    return resolved;
+  });
+
+const resolvedEntries = ({
+  names,
+  ...listing
+}: Listing): Effect.Effect<readonly ResolvedEntry[], TreeFailure, FileSystem.FileSystem> =>
+  Effect.map(
+    Effect.forEach(names.toSorted(), (name) => resolvedEntry({ ...listing, name }), {
+      concurrency: "unbounded",
+    }),
+    (resolved) => resolved.filter((entry) => entry !== null),
+  );
+
+const rootListing = (
+  root: string,
+  uses: EntryUse,
+): Effect.Effect<Listing, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* rootListing() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const realRoot = yield* filesystem.realPath(root);
+    return {
+      directory: root,
+      realDirectory: realRoot,
+      names: yield* filesystem.readDirectory(root),
+      descent: { root, realRoot, enclosing: [realRoot] },
+      uses,
+    };
   });
 
 export const directoryEntries = (
   directory: string,
-): Effect.Effect<readonly DirectoryEntry[], PlatformError.PlatformError, FileSystem.FileSystem> =>
-  Effect.gen(function* directoryEntries() {
-    const filesystem = yield* FileSystem.FileSystem;
-    const names = yield* filesystem.readDirectory(directory);
-    return yield* Effect.forEach(
-      names.toSorted(),
-      (name) => Effect.map(entryKind(path.join(directory, name)), (kind) => ({ kind, name })),
-      { concurrency: "unbounded" },
-    );
-  });
-
-const settledEntries = (
-  directory: string,
-  entries: readonly DirectoryEntry[],
-): Effect.Effect<readonly DirectoryEntry[], DanglingSymlink> => {
-  const dangling = entries.find((entry) => entry.kind === "dangling-symlink");
-  return dangling === undefined
-    ? Effect.succeed(entries)
-    : Effect.fail(new DanglingSymlink({ path: path.join(directory, dangling.name) }));
-};
+): Effect.Effect<readonly DirectoryEntry[], TreeFailure, FileSystem.FileSystem> =>
+  Effect.map(
+    Effect.flatMap(
+      rootListing(directory, () => true),
+      resolvedEntries,
+    ),
+    (entries) => entries.map(({ kind, name }) => ({ kind, name })),
+  );
 
 export const childDirectoryNamesIn = (
   parentPath: string,
 ): Effect.Effect<readonly string[] | null, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* childDirectoryNamesIn() {
-    const listed = yield* unlessMissing(directoryEntries(parentPath));
-    if (listed === null) return null;
-    const entries = yield* settledEntries(parentPath, listed);
-    return entries.filter((entry) => entry.kind === "directory").map((entry) => entry.name);
+    const listing = yield* unlessMissing(
+      rootListing(parentPath, (entry) => entry.kind === "directory"),
+    );
+    if (listing === null) return null;
+    const entries = yield* resolvedEntries(listing);
+    return entries.map((entry) => entry.name);
   });
 
 type TreeWalk = {
@@ -76,28 +184,26 @@ type TreeWalk = {
   readonly keepsFileName: (fileName: string) => boolean;
 };
 
-const filesBelow = ({
-  directory,
-  listed,
-  walk,
-}: {
-  readonly directory: string;
-  readonly listed: readonly DirectoryEntry[];
-  readonly walk: TreeWalk;
-}): Effect.Effect<readonly string[], TreeFailure, FileSystem.FileSystem> =>
+const filesBelow = (
+  listing: Listing,
+): Effect.Effect<readonly string[], TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* walkedFiles() {
-    const entries = yield* settledEntries(directory, listed);
+    const filesystem = yield* FileSystem.FileSystem;
+    const entries = yield* resolvedEntries(listing);
     const found = yield* Effect.forEach(entries, (entry) => {
-      const entryPath = path.join(directory, entry.name);
-      if (entry.kind === "directory") {
-        return walk.prunedDirectoryNames.includes(entry.name)
-          ? Effect.succeed([])
-          : Effect.flatMap(directoryEntries(entryPath), (nested) =>
-              filesBelow({ directory: entryPath, listed: nested, walk }),
-            );
-      }
-      return Effect.succeed(
-        entry.kind === "file" && walk.keepsFileName(entry.name) ? [entryPath] : [],
+      const entryPath = path.join(listing.directory, entry.name);
+      if (entry.kind !== "directory") return Effect.succeed([entryPath]);
+      return Effect.flatMap(filesystem.readDirectory(entryPath), (names) =>
+        filesBelow({
+          ...listing,
+          directory: entryPath,
+          realDirectory: entry.realPath,
+          names,
+          descent: {
+            ...listing.descent,
+            enclosing: [...listing.descent.enclosing, entry.realPath],
+          },
+        }),
       );
     });
     return found.flat();
@@ -105,13 +211,20 @@ const filesBelow = ({
 
 export const filesUnder = ({
   directory,
-  ...walk
+  prunedDirectoryNames,
+  keepsFileName,
 }: TreeWalk & {
   readonly directory: string;
 }): Effect.Effect<readonly string[] | null, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* filesUnder() {
-    const listed = yield* unlessMissing(directoryEntries(directory));
-    if (listed === null) return null;
-    const found = yield* filesBelow({ directory, listed, walk });
+    const listing = yield* unlessMissing(
+      rootListing(directory, (entry) =>
+        entry.kind === "directory"
+          ? !prunedDirectoryNames.includes(entry.name)
+          : entry.kind === "file" && keepsFileName(entry.name),
+      ),
+    );
+    if (listing === null) return null;
+    const found = yield* filesBelow(listing);
     return found.toSorted();
   });

@@ -8,6 +8,8 @@ const MISSING_PARENT_CODE = "ENOTDIR";
 
 const NOT_A_LINK_CODE = "EINVAL";
 
+const LINK_LOOP_CODE = "ELOOP";
+
 export const failureCodeOf = (failure: unknown): string | null => {
   if (typeof failure !== "object" || failure === null) return null;
   if (!("code" in failure)) return null;
@@ -30,3 +32,6 @@ export const isMissingPath = (failure: PlatformError.PlatformError): boolean =>
 
 export const isNotALink = (failure: PlatformError.PlatformError): boolean =>
   failureCodeOf(failure.reason.cause) === NOT_A_LINK_CODE;
+
+export const isLinkLoop = (failure: PlatformError.PlatformError): boolean =>
+  failureCodeOf(failure.reason.cause) === LINK_LOOP_CODE;
