@@ -1,5 +1,7 @@
 import { Config, Effect, FileSystem, Schema, type PlatformError } from "effect";
 
+import { pathExists } from "../platform/file-system.ts";
+
 const sharedTaskCacheEnv = "SHARED_TASK_CACHE";
 
 class SharedTaskCacheUnset extends Schema.TaggedError<SharedTaskCacheUnset>()(
@@ -30,7 +32,7 @@ const cleanSharedTaskCache = (
   Effect.gen(function* cleanSharedTaskCache() {
     const filesystem = yield* FileSystem.FileSystem;
     const retired = `${sharedTaskCache}.retired.${runId}`;
-    const present = yield* filesystem.exists(sharedTaskCache);
+    const present = yield* pathExists(sharedTaskCache);
     if (present) {
       yield* filesystem.rename(sharedTaskCache, retired);
     }

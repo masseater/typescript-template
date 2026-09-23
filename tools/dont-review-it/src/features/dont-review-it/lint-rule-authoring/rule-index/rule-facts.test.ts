@@ -1,22 +1,23 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { lintRuleFactsIn } from "./rule-facts.ts";
 
-describe("lintRuleFactsIn", () => {
+layer(NodeServices.layer)("lintRuleFactsIn", (it) => {
   describe("a factory call carrying name, description, options, and notices", () => {
-    const it = test.extend("facts", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const factsFixture = Effect.gen(function* facts() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/full.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `import { createRule } from "./create-rule.ts";
 export const full = createRule({
   name: "no-full--stop-doing-it",
@@ -31,39 +32,43 @@ export const full = createRule({
   create: () => ({}),
 });
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath });
+      return yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath });
     });
 
-    it("is read in full", ({ facts }) => {
-      expect(facts).toStrictEqual([
-        {
-          name: "no-full--stop-doing-it",
-          relatedGuidelines: [],
-          unreadableGuidelines: 0,
-          description: "Disallow the thing",
-          sourcePath: "src/rules/full.ts",
-          fixable: true,
-          hasSuggestions: true,
-          configurable: true,
-          shipped: true,
-          messages: [{ messageId: "report", template: "The thing must not be done. Stop." }],
-        },
-      ]);
-    });
+    it.effect("is read in full", () =>
+      Effect.gen(function* program() {
+        const facts = yield* factsFixture;
+        expect(facts).toStrictEqual([
+          {
+            name: "no-full--stop-doing-it",
+            relatedGuidelines: [],
+            unreadableGuidelines: 0,
+            description: "Disallow the thing",
+            sourcePath: "src/rules/full.ts",
+            fixable: true,
+            hasSuggestions: true,
+            configurable: true,
+            shipped: true,
+            messages: [{ messageId: "report", template: "The thing must not be done. Stop." }],
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a rule spelled as a bare object", () => {
-    const it = test.extend("facts", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const factsFixture = Effect.gen(function* facts() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/bare.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const bare = {
   name: "no-bare--wrap-it",
   meta: {
@@ -75,39 +80,43 @@ export const full = createRule({
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath });
+      return yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath });
     });
 
-    it("is read the same way as a factory call", ({ facts }) => {
-      expect(facts).toStrictEqual([
-        {
-          name: "no-bare--wrap-it",
-          relatedGuidelines: [],
-          unreadableGuidelines: 0,
-          description: "Disallow bare spelling",
-          sourcePath: "src/rules/bare.ts",
-          fixable: false,
-          hasSuggestions: false,
-          configurable: false,
-          shipped: true,
-          messages: [{ messageId: "report", template: "It is forbidden." }],
-        },
-      ]);
-    });
+    it.effect("is read the same way as a factory call", () =>
+      Effect.gen(function* program() {
+        const facts = yield* factsFixture;
+        expect(facts).toStrictEqual([
+          {
+            name: "no-bare--wrap-it",
+            relatedGuidelines: [],
+            unreadableGuidelines: 0,
+            description: "Disallow bare spelling",
+            sourcePath: "src/rules/bare.ts",
+            fixable: false,
+            hasSuggestions: false,
+            configurable: false,
+            shipped: true,
+            messages: [{ messageId: "report", template: "It is forbidden." }],
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a rule handed out by an arrow creator", () => {
-    const it = test.extend("ruleNamesFromArrowCreator", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const ruleNamesFromArrowCreatorFixture = Effect.gen(function* ruleNamesFromArrowCreator() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/created.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `import { createRule } from "./create-rule.ts";
 export const createRuleWithDeps = ({ load }: { load: () => void }) =>
   createRule({
@@ -119,26 +128,30 @@ export const makeNothing = () => {
   return {};
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.name);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map((rule) => rule.name);
     });
 
-    it("is still found", ({ ruleNamesFromArrowCreator }) => {
-      expect(ruleNamesFromArrowCreator).toStrictEqual(["no-created--inline-it"]);
-    });
+    it.effect("is still found", () =>
+      Effect.gen(function* program() {
+        const ruleNamesFromArrowCreator = yield* ruleNamesFromArrowCreatorFixture;
+        expect(ruleNamesFromArrowCreator).toStrictEqual(["no-created--inline-it"]);
+      }),
+    );
   });
 
   describe("a description assembled from pieces", () => {
-    const it = test.extend("descriptions", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const descriptionsFixture = Effect.gen(function* descriptions() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/assembled.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `const TAIL = " and never let it back" + ".";
 export const assembled = {
   name: "no-assembled--flatten-it",
@@ -149,52 +162,64 @@ export const assembled = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.description);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map(
+        (rule) => rule.description,
+      );
     });
 
-    it("is resolved before it is read", ({ descriptions }) => {
-      expect(descriptions).toStrictEqual(["Disallow the part and never let it back."]);
-    });
+    it.effect("is resolved before it is read", () =>
+      Effect.gen(function* program() {
+        const descriptions = yield* descriptionsFixture;
+        expect(descriptions).toStrictEqual(["Disallow the part and never let it back."]);
+      }),
+    );
   });
 
   describe("a description written as a plain template", () => {
-    const it = test.extend("descriptions", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const descriptionsFixture = Effect.gen(function* descriptions() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/templated.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const templated = {
   name: "no-templated--spell-it-out",
   meta: { docs: { description: \`Disallow templates\` }, messages: { report: "No." } },
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.description);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map(
+        (rule) => rule.description,
+      );
     });
 
-    it("keeps its text", ({ descriptions }) => {
-      expect(descriptions).toStrictEqual(["Disallow templates"]);
-    });
+    it.effect("keeps its text", () =>
+      Effect.gen(function* program() {
+        const descriptions = yield* descriptionsFixture;
+        expect(descriptions).toStrictEqual(["Disallow templates"]);
+      }),
+    );
   });
 
   describe("descriptions the source does not spell statically", () => {
-    const it = test.extend("descriptions", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const descriptionsFixture = Effect.gen(function* descriptions() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/opaque.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `import { described } from "./elsewhere.ts";
 const spun = "a" + described;
 const loops = other;
@@ -235,102 +260,120 @@ export const tailless = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.description);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map(
+        (rule) => rule.description,
+      );
     });
 
-    it("fall back to silence", ({ descriptions }) => {
-      expect(descriptions).toStrictEqual(["", "", "", "", "", "", ""]);
-    });
+    it.effect("fall back to silence", () =>
+      Effect.gen(function* program() {
+        const descriptions = yield* descriptionsFixture;
+        expect(descriptions).toStrictEqual(["", "", "", "", "", "", ""]);
+      }),
+    );
   });
 
   describe("a rule without a name", () => {
-    const it = test.extend("ruleNamesFromUnnamedRule", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const ruleNamesFromUnnamedRuleFixture = Effect.gen(function* ruleNamesFromUnnamedRule() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/named-after-file.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const anonymous = {
   meta: { docs: { description: "Disallow anonymity" }, messages: { report: "No." } },
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.name);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map((rule) => rule.name);
     });
 
-    it("is called after its file", ({ ruleNamesFromUnnamedRule }) => {
-      expect(ruleNamesFromUnnamedRule).toStrictEqual(["named-after-file"]);
-    });
+    it.effect("is called after its file", () =>
+      Effect.gen(function* program() {
+        const ruleNamesFromUnnamedRule = yield* ruleNamesFromUnnamedRuleFixture;
+        expect(ruleNamesFromUnnamedRule).toStrictEqual(["named-after-file"]);
+      }),
+    );
   });
 
   describe("a rule in a file with a generic stem", () => {
-    const it = test.extend("ruleNamesFromIndexFile", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const ruleNamesFromIndexFileFixture = Effect.gen(function* ruleNamesFromIndexFile() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/no-generic--house-it/index.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const generic = {
   meta: { docs: { description: "Disallow generic stems" }, messages: { report: "No." } },
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.name);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map((rule) => rule.name);
     });
 
-    it("is called after its directory", ({ ruleNamesFromIndexFile }) => {
-      expect(ruleNamesFromIndexFile).toStrictEqual(["no-generic--house-it"]);
-    });
+    it.effect("is called after its directory", () =>
+      Effect.gen(function* program() {
+        const ruleNamesFromIndexFile = yield* ruleNamesFromIndexFileFixture;
+        expect(ruleNamesFromIndexFile).toStrictEqual(["no-generic--house-it"]);
+      }),
+    );
   });
 
   describe("a name the source does not spell statically", () => {
-    const it = test.extend("ruleNamesFromDynamicName", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const ruleNamesFromDynamicNameFixture = Effect.gen(function* ruleNamesFromDynamicName() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/fallback.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const dynamic = {
   name: pickName(),
   meta: { docs: { description: "Disallow dynamic names" }, messages: { report: "No." } },
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.name);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map((rule) => rule.name);
     });
 
-    it("falls back to the file", ({ ruleNamesFromDynamicName }) => {
-      expect(ruleNamesFromDynamicName).toStrictEqual(["fallback"]);
-    });
+    it.effect("falls back to the file", () =>
+      Effect.gen(function* program() {
+        const ruleNamesFromDynamicName = yield* ruleNamesFromDynamicNameFixture;
+        expect(ruleNamesFromDynamicName).toStrictEqual(["fallback"]);
+      }),
+    );
   });
 
   describe("a name spelled with a quoted key", () => {
-    const it = test.extend("ruleNamesFromQuotedKey", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const ruleNamesFromQuotedKeyFixture = Effect.gen(function* ruleNamesFromQuotedKey() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/quoted.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const quoted = {
   "name": "no-quoted--unquote-it",
   meta: {
@@ -341,26 +384,30 @@ export const tailless = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.name);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map((rule) => rule.name);
     });
 
-    it("is still a name", ({ ruleNamesFromQuotedKey }) => {
-      expect(ruleNamesFromQuotedKey).toStrictEqual(["no-quoted--unquote-it"]);
-    });
+    it.effect("is still a name", () =>
+      Effect.gen(function* program() {
+        const ruleNamesFromQuotedKey = yield* ruleNamesFromQuotedKeyFixture;
+        expect(ruleNamesFromQuotedKey).toStrictEqual(["no-quoted--unquote-it"]);
+      }),
+    );
   });
 
   describe("a file whose exports mostly define no rule", () => {
-    const it = test.extend("ruleNamesFromMixedExports", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const ruleNamesFromMixedExportsFixture = Effect.gen(function* ruleNamesFromMixedExports() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/mixed.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `import { base, otherMeta, sharedMessages } from "./shared.ts";
 export type Shape = { readonly name: string };
 export const budget = 42;
@@ -375,26 +422,30 @@ export { budget as sharedBudget };
 let uninitialised;
 const [first] = [1];
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.name);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map((rule) => rule.name);
     });
 
-    it("passes over the exports that define no rule", ({ ruleNamesFromMixedExports }) => {
-      expect(ruleNamesFromMixedExports).toStrictEqual(["mixed", "mixed"]);
-    });
+    it.effect("passes over the exports that define no rule", () =>
+      Effect.gen(function* program() {
+        const ruleNamesFromMixedExports = yield* ruleNamesFromMixedExportsFixture;
+        expect(ruleNamesFromMixedExports).toStrictEqual(["mixed", "mixed"]);
+      }),
+    );
   });
 
   describe("a docs field that is not an object literal", () => {
-    const it = test.extend("facts", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const factsFixture = Effect.gen(function* facts() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/borrowed-docs.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `import { docsElsewhere, schemaElsewhere } from "./shared.ts";
 export const borrowedDocs = {
   name: "no-borrowed-docs--inline-them",
@@ -402,41 +453,43 @@ export const borrowedDocs = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath });
+      return yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath });
     });
 
-    it("reads as no description, and a schema it cannot open still declares options", ({
-      facts,
-    }) => {
-      expect(facts).toStrictEqual([
-        {
-          name: "no-borrowed-docs--inline-them",
-          relatedGuidelines: [],
-          unreadableGuidelines: 0,
-          description: "",
-          sourcePath: "src/rules/borrowed-docs.ts",
-          fixable: false,
-          hasSuggestions: false,
-          configurable: true,
-          shipped: true,
-          messages: [{ messageId: "report", template: "No." }],
-        },
-      ]);
-    });
+    it.effect("reads as no description, and a schema it cannot open still declares options", () =>
+      Effect.gen(function* program() {
+        const facts = yield* factsFixture;
+        expect(facts).toStrictEqual([
+          {
+            name: "no-borrowed-docs--inline-them",
+            relatedGuidelines: [],
+            unreadableGuidelines: 0,
+            description: "",
+            sourcePath: "src/rules/borrowed-docs.ts",
+            fixable: false,
+            hasSuggestions: false,
+            configurable: true,
+            shipped: true,
+            messages: [{ messageId: "report", template: "No." }],
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a schema named by a constant of the same file", () => {
-    const it = test.extend("facts", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const factsFixture = Effect.gen(function* facts() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/named-schema.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `const EMPTY_SCHEMA = [];
 export const namedSchema = {
   name: "no-named-schema--read-it",
@@ -444,39 +497,43 @@ export const namedSchema = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath });
+      return yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath });
     });
 
-    it("takes the constant it names as the schema it declares", ({ facts }) => {
-      expect(facts).toStrictEqual([
-        {
-          name: "no-named-schema--read-it",
-          relatedGuidelines: [],
-          unreadableGuidelines: 0,
-          description: "",
-          sourcePath: "src/rules/named-schema.ts",
-          fixable: false,
-          hasSuggestions: false,
-          configurable: false,
-          shipped: true,
-          messages: [{ messageId: "report", template: "No." }],
-        },
-      ]);
-    });
+    it.effect("takes the constant it names as the schema it declares", () =>
+      Effect.gen(function* program() {
+        const facts = yield* factsFixture;
+        expect(facts).toStrictEqual([
+          {
+            name: "no-named-schema--read-it",
+            relatedGuidelines: [],
+            unreadableGuidelines: 0,
+            description: "",
+            sourcePath: "src/rules/named-schema.ts",
+            fixable: false,
+            hasSuggestions: false,
+            configurable: false,
+            shipped: true,
+            messages: [{ messageId: "report", template: "No." }],
+          },
+        ]);
+      }),
+    );
   });
 
   describe("rules that say whether the shipped preset carries them", () => {
-    const it = test.extend("shippedFlags", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const shippedFlagsFixture = Effect.gen(function* shippedFlags() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/delivery.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const withheld = {
   name: "no-withheld--name-it-yourself",
   meta: {
@@ -507,26 +564,32 @@ export const opaque = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.shipped);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map(
+        (rule) => rule.shipped,
+      );
     });
 
-    it("counts as withheld only the one that spells the refusal out", ({ shippedFlags }) => {
-      expect(shippedFlags).toStrictEqual([false, true, true, true]);
-    });
+    it.effect("counts as withheld only the one that spells the refusal out", () =>
+      Effect.gen(function* program() {
+        const shippedFlags = yield* shippedFlagsFixture;
+        expect(shippedFlags).toStrictEqual([false, true, true, true]);
+      }),
+    );
   });
 
   describe("a file exporting more than one rule", () => {
-    const it = test.extend("ruleNamesFromPairedExports", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const ruleNamesFromPairedExportsFixture = Effect.gen(function* ruleNamesFromPairedExports() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/pair.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const first = {
   name: "no-first--merge-them",
   meta: { docs: { description: "Disallow firsts" }, messages: { report: "No." } },
@@ -538,29 +601,33 @@ export const second = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).map((rule) => rule.name);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).map((rule) => rule.name);
     });
 
-    it("makes every rule it exports appear once", ({ ruleNamesFromPairedExports }) => {
-      expect(ruleNamesFromPairedExports).toStrictEqual([
-        "no-first--merge-them",
-        "no-second--merge-them",
-      ]);
-    });
+    it.effect("makes every rule it exports appear once", () =>
+      Effect.gen(function* program() {
+        const ruleNamesFromPairedExports = yield* ruleNamesFromPairedExportsFixture;
+        expect(ruleNamesFromPairedExports).toStrictEqual([
+          "no-first--merge-them",
+          "no-second--merge-them",
+        ]);
+      }),
+    );
   });
 
   describe("messages whose name or whose text is settled while the program runs", () => {
-    const it = test.extend("readMessages", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const readMessagesFixture = Effect.gen(function* readMessages() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/settled.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const settled = {
   name: "no-settled--write-it-out",
   meta: {
@@ -570,28 +637,34 @@ export const second = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).flatMap((rule) => rule.messages);
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).flatMap(
+        (rule) => rule.messages,
+      );
     });
 
-    it("keeps the one written out and passes over the two it cannot read", ({ readMessages }) => {
-      expect(readMessages).toStrictEqual([
-        { messageId: "spelled", template: "It is forbidden. Write it out." },
-      ]);
-    });
+    it.effect("keeps the one written out and passes over the two it cannot read", () =>
+      Effect.gen(function* program() {
+        const readMessages = yield* readMessagesFixture;
+        expect(readMessages).toStrictEqual([
+          { messageId: "spelled", template: "It is forbidden. Write it out." },
+        ]);
+      }),
+    );
   });
 
   describe("grounds that are not written out as a list of paths", () => {
-    const it = test.extend("readGrounds", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const readGroundsFixture = Effect.gen(function* readGrounds() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/named-grounds.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const named = {
   name: "no-named-grounds--write-them-out",
   meta: {
@@ -601,28 +674,32 @@ export const second = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).flatMap(
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).flatMap(
         (rule) => rule.relatedGuidelines,
       );
     });
 
-    it("reads none of them", ({ readGrounds }) => {
-      expect(readGrounds).toStrictEqual([]);
-    });
+    it.effect("reads none of them", () =>
+      Effect.gen(function* program() {
+        const readGrounds = yield* readGroundsFixture;
+        expect(readGrounds).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("grounds holding a path settled while the program runs", () => {
-    const it = test.extend("readGrounds", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const readGroundsFixture = Effect.gen(function* readGrounds() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/settled-grounds.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const settled = {
   name: "no-settled-grounds--write-them-out",
   meta: {
@@ -635,28 +712,32 @@ export const second = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).flatMap(
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).flatMap(
         (rule) => rule.relatedGuidelines,
       );
     });
 
-    it("keeps the one written out and passes over the one it cannot read", ({ readGrounds }) => {
-      expect(readGrounds).toStrictEqual(["docs/guidelines/tests.md"]);
-    });
+    it.effect("keeps the one written out and passes over the one it cannot read", () =>
+      Effect.gen(function* program() {
+        const readGrounds = yield* readGroundsFixture;
+        expect(readGrounds).toStrictEqual(["docs/guidelines/tests.md"]);
+      }),
+    );
   });
 
   describe("a rule declaring no grounds at all", () => {
-    const it = test.extend("readGrounds", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const readGroundsFixture = Effect.gen(function* readGrounds() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/no-grounds.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `export const bare = {
   name: "no-grounds--declare-them",
   meta: {
@@ -666,28 +747,32 @@ export const second = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).flatMap(
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).flatMap(
         (rule) => rule.relatedGuidelines,
       );
     });
 
-    it("reads an empty list", ({ readGrounds }) => {
-      expect(readGrounds).toStrictEqual([]);
-    });
+    it.effect("reads an empty list", () =>
+      Effect.gen(function* program() {
+        const readGrounds = yield* readGroundsFixture;
+        expect(readGrounds).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("grounds held by a constant of the same file", () => {
-    const it = test.extend("readGrounds", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "rule-facts-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const readGroundsFixture = Effect.gen(function* readGrounds() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "rule-facts-" });
+
       const sourcePath = "src/rules/held-grounds.ts";
-      mkdirSync(dirname(join(root, sourcePath)), { recursive: true });
-      writeFileSync(
-        join(root, sourcePath),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, sourcePath)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, sourcePath),
         `const GROUNDS = ["docs/guidelines/tests.md", "AGENTS.md"];
 
 export const held = {
@@ -699,15 +784,17 @@ export const held = {
   create: () => ({}),
 };
 `,
-        "utf8",
       );
-      return lintRuleFactsIn({ workspaceRoot: root, sourcePath }).flatMap(
+      return (yield* lintRuleFactsIn({ workspaceRoot: root, sourcePath })).flatMap(
         (rule) => rule.relatedGuidelines,
       );
     });
 
-    it("follows the constant and reads both paths", ({ readGrounds }) => {
-      expect(readGrounds).toStrictEqual(["docs/guidelines/tests.md", "AGENTS.md"]);
-    });
+    it.effect("follows the constant and reads both paths", () =>
+      Effect.gen(function* program() {
+        const readGrounds = yield* readGroundsFixture;
+        expect(readGrounds).toStrictEqual(["docs/guidelines/tests.md", "AGENTS.md"]);
+      }),
+    );
   });
 });

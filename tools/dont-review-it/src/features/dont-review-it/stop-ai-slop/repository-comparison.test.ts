@@ -1,725 +1,819 @@
-import { execFileSync } from "node:child_process";
-import {
-  chmodSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Config, Effect, FileSystem, Layer, Path, Schema, Stream } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import { describe, expect, vi } from "vite-plus/test";
 
-import { attempt } from "es-toolkit";
-import { describe, expect, test, vi } from "vite-plus/test";
+import { gitExecutablePath } from "../repository-checks/index.ts";
+import { GitCommandFailed, gitEnvironmentLayer } from "./git-text.ts";
+import { BlobUnreadable, compareRevisions, UndecodableSource } from "./repository-comparison.ts";
 
-import { compareRevisions, decodedPreviousSource, decodedSource } from "./repository-comparison.ts";
+class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
+  command: Schema.String,
+  exitCode: Schema.Finite,
+  stderr: Schema.String,
+}) {}
 
-const GIT_ENVIRONMENT = {
-  GIT_AUTHOR_EMAIL: "stop-ai-slop@example.test",
-  GIT_AUTHOR_NAME: "Stop AI Slop",
-  GIT_COMMITTER_EMAIL: "stop-ai-slop@example.test",
-  GIT_COMMITTER_NAME: "Stop AI Slop",
-  GIT_CONFIG_GLOBAL: "/dev/null",
-  GIT_CONFIG_SYSTEM: "/dev/null",
-  PATH: process.env.PATH,
-};
+const git = Effect.fn("git")(function* git(
+  repositoryRoot: string,
+  gitArguments: readonly string[],
+) {
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const handle = yield* spawner.spawn(
+    ChildProcess.make("git", [...gitArguments], {
+      cwd: repositoryRoot,
+      env: {
+        GIT_AUTHOR_EMAIL: "stop-ai-slop@example.test",
+        GIT_AUTHOR_NAME: "Stop AI Slop",
+        GIT_COMMITTER_EMAIL: "stop-ai-slop@example.test",
+        GIT_COMMITTER_NAME: "Stop AI Slop",
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_CONFIG_SYSTEM: "/dev/null",
+        HOME: repositoryRoot,
+        PATH: yield* Config.String("PATH"),
+      },
+      stdin: "ignore",
+    }),
+  );
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
+    { concurrency: "unbounded" },
+  );
+  return exitCode === 0
+    ? answered
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
+}, Effect.scoped);
 
-describe("compareRevisions", () => {
+const writeSource = Effect.fn("writeSource")(function* writeSource(
+  repositoryRoot: string,
+  relativePath: string,
+  sourceText: string,
+) {
+  const filesystem = yield* FileSystem.FileSystem;
+  const paths = yield* Path.Path;
+  const absolutePath = paths.join(repositoryRoot, relativePath);
+  yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+  yield* filesystem.writeFileString(absolutePath, sourceText);
+});
+
+const newRepository = Effect.gen(function* newRepository() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+    prefix: "repository-comparison-",
+  });
+  yield* git(repositoryRoot, ["init", "--quiet", "--initial-branch=main"]);
+  return repositoryRoot;
+});
+
+layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("compareRevisions", (it) => {
   describe("a base and a head naming the same revision", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD",
           headRevision: "HEAD",
-        });
-      });
-
-    it("carries no file between the two", ({ comparison, repositoryRoot }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD",
-        headRevision: "HEAD",
-        files: [],
-      });
+        }),
+      };
     });
+
+    it.effect("carries no file between the two", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD",
+          headRevision: "HEAD",
+          files: [],
+        });
+      }),
+    );
   });
 
   describe("a head that adds, deletes, changes, and renames a file at once", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/changed.tsx", "export const Changed = () => <div />;\n");
-        writeSource("src/deleted.js", "export const deleted = true;\n");
-        writeSource("assets/renamed.bin", "\0renamed\0");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/added.ts", "export const added = true;\n");
-        writeSource(
-          "src/changed.tsx",
-          "export const Changed = () => <div />;\nexport const next = true;\n",
-        );
-        writeSource("assets/current.bin", "\0renamed\0");
-        unlinkSync(join(repositoryRoot, "src/deleted.js"));
-        unlinkSync(join(repositoryRoot, "assets/renamed.bin"));
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(
+        repositoryRoot,
+        "src/changed.tsx",
+        "export const Changed = () => <div />;\n",
+      );
+      yield* writeSource(repositoryRoot, "src/deleted.js", "export const deleted = true;\n");
+      yield* writeSource(repositoryRoot, "assets/renamed.bin", "\0renamed\0");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/added.ts", "export const added = true;\n");
+      yield* writeSource(
+        repositoryRoot,
+        "src/changed.tsx",
+        "export const Changed = () => <div />;\nexport const next = true;\n",
+      );
+      yield* writeSource(repositoryRoot, "assets/current.bin", "\0renamed\0");
+      yield* filesystem.remove(paths.join(repositoryRoot, "src/deleted.js"));
+      yield* filesystem.remove(paths.join(repositoryRoot, "assets/renamed.bin"));
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("names every file with the change it carries", ({ comparison, repositoryRoot }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "renamed",
-            beforePath: "assets/renamed.bin",
-            afterPath: "assets/current.bin",
-            beforeSource: null,
-            afterSource: null,
-            addedLines: [],
-            firstAddedLine: null,
-          },
-          {
-            kind: "added",
-            beforePath: null,
-            afterPath: "src/added.ts",
-            beforeSource: null,
-            afterSource: "export const added = true;\n",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-          {
-            kind: "changed",
-            beforePath: "src/changed.tsx",
-            afterPath: "src/changed.tsx",
-            beforeSource: "export const Changed = () => <div />;\n",
-            afterSource: "export const Changed = () => <div />;\nexport const next = true;\n",
-            addedLines: [2],
-            firstAddedLine: 2,
-          },
-          {
-            kind: "deleted",
-            beforePath: "src/deleted.js",
-            afterPath: null,
-            beforeSource: "export const deleted = true;\n",
-            afterSource: null,
-            addedLines: [],
-            firstAddedLine: null,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("names every file with the change it carries", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "renamed",
+              beforePath: "assets/renamed.bin",
+              afterPath: "assets/current.bin",
+              beforeSource: null,
+              afterSource: null,
+              addedLines: [],
+              firstAddedLine: null,
+            },
+            {
+              kind: "added",
+              beforePath: null,
+              afterPath: "src/added.ts",
+              beforeSource: null,
+              afterSource: "export const added = true;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+            {
+              kind: "changed",
+              beforePath: "src/changed.tsx",
+              afterPath: "src/changed.tsx",
+              beforeSource: "export const Changed = () => <div />;\n",
+              afterSource: "export const Changed = () => <div />;\nexport const next = true;\n",
+              addedLines: [2],
+              firstAddedLine: 2,
+            },
+            {
+              kind: "deleted",
+              beforePath: "src/deleted.js",
+              afterPath: null,
+              beforeSource: "export const deleted = true;\n",
+              afterSource: null,
+              addedLines: [],
+              firstAddedLine: null,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a changed file whose path carries a space", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/with space.mjs", "export const value = 1;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/with space.mjs", "export const value = 2;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/with space.mjs", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/with space.mjs", "export const value = 2;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("keeps the space in the path and reads both blobs whole", ({
-      comparison,
-      repositoryRoot,
-    }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "changed",
-            beforePath: "src/with space.mjs",
-            afterPath: "src/with space.mjs",
-            beforeSource: "export const value = 1;\n",
-            afterSource: "export const value = 2;\n",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("keeps the space in the path and reads both blobs whole", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/with space.mjs",
+              afterPath: "src/with space.mjs",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 2;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a file whose path carries a space and whose mode alone changes", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/with space.ts", "export const value = 1;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        chmodSync(join(repositoryRoot, "src/with space.ts"), 0o755);
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/with space.ts", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* filesystem.chmod(paths.join(repositoryRoot, "src/with space.ts"), 0o755);
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("keeps the space in the path and reports no added line", ({
-      comparison,
-      repositoryRoot,
-    }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "changed",
-            beforePath: "src/with space.ts",
-            afterPath: "src/with space.ts",
-            beforeSource: "export const value = 1;\n",
-            afterSource: "export const value = 1;\n",
-            addedLines: [],
-            firstAddedLine: null,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("keeps the space in the path and reports no added line", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/with space.ts",
+              afterPath: "src/with space.ts",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 1;\n",
+              addedLines: [],
+              firstAddedLine: null,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a changed file whose path carries a tab", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/with\ttab.ts", "export const value = 1;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/with\ttab.ts", "export const value = 2;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/with\ttab.ts", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/with\ttab.ts", "export const value = 2;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("keeps the tab in the path and reads both blobs whole", ({ comparison, repositoryRoot }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "changed",
-            beforePath: "src/with\ttab.ts",
-            afterPath: "src/with\ttab.ts",
-            beforeSource: "export const value = 1;\n",
-            afterSource: "export const value = 2;\n",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("keeps the tab in the path and reads both blobs whole", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/with\ttab.ts",
+              afterPath: "src/with\ttab.ts",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 2;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
+  });
+
+  describe("a changed file whose path carries a newline", () => {
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/with\nnewline.ts", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/with\nnewline.ts", "export const value = 2;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+        }),
+      };
+    });
+
+    it.effect("keeps the newline in the path and reads both blobs whole", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/with\nnewline.ts",
+              afterPath: "src/with\nnewline.ts",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 2;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
+  });
+
+  describe("a binary base source that spells a blob header, read before another source", () => {
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"));
+      yield* filesystem.writeFile(
+        paths.join(repositoryRoot, "src/a.ts"),
+        Uint8Array.from([
+          0xff,
+          0x0a,
+          ...new TextEncoder().encode(`${"0".repeat(40)} blob 2\nno\n`),
+          0x00,
+        ]),
+      );
+      yield* writeSource(repositoryRoot, "src/b.ts", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/a.ts", "export const binary = false;\n");
+      yield* writeSource(repositoryRoot, "src/b.ts", "export const value = 2;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+        }),
+      };
+    });
+
+    it.effect("reads the binary base as absent and every later blob whole", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/a.ts",
+              afterPath: "src/a.ts",
+              beforeSource: null,
+              afterSource: "export const binary = false;\n",
+              addedLines: [],
+              firstAddedLine: null,
+            },
+            {
+              kind: "changed",
+              beforePath: "src/b.ts",
+              afterPath: "src/b.ts",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 2;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a head whose source carries a NUL", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/current.ts", 'export const separator = "\0";\n');
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/current.ts", 'export const separator = "\0";\n');
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("reads the NUL as a character of the source", ({ comparison, repositoryRoot }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "changed",
-            beforePath: "src/current.ts",
-            afterPath: "src/current.ts",
-            beforeSource: "export const current = true;\n",
-            afterSource: 'export const separator = "\0";\n',
-            addedLines: [],
-            firstAddedLine: null,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("reads the NUL as a character of the source", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/current.ts",
+              afterPath: "src/current.ts",
+              beforeSource: "export const current = true;\n",
+              afterSource: 'export const separator = "\0";\n',
+              addedLines: [],
+              firstAddedLine: null,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a regular file the head replaced with a symbolic link", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        unlinkSync(join(repositoryRoot, "src/current.ts"));
-        symlinkSync("target.ts", join(repositoryRoot, "src/current.ts"));
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* filesystem.remove(paths.join(repositoryRoot, "src/current.ts"));
+      yield* filesystem.symlink("target.ts", paths.join(repositoryRoot, "src/current.ts"));
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("calls the file changed and reads the link target as its source", ({
-      comparison,
-      repositoryRoot,
-    }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "changed",
-            beforePath: "src/current.ts",
-            afterPath: "src/current.ts",
-            beforeSource: "export const current = true;\n",
-            afterSource: "target.ts",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("calls the file changed and reads the link target as its source", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/current.ts",
+              afterPath: "src/current.ts",
+              beforeSource: "export const current = true;\n",
+              afterSource: "target.ts",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a repository configured to write diffs without the standard prefixes", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("b/legacy.ts", "export const value = 1;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        runGit(["config", "diff.noprefix", "true"]);
-        writeSource("b/legacy.ts", "export const value = 2;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "b/legacy.ts", "export const value = 1;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* git(repositoryRoot, ["config", "diff.noprefix", "true"]);
+      yield* writeSource(repositoryRoot, "b/legacy.ts", "export const value = 2;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("asks for the standard prefixes and reads the path whole", ({
-      comparison,
-      repositoryRoot,
-    }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "changed",
-            beforePath: "b/legacy.ts",
-            afterPath: "b/legacy.ts",
-            beforeSource: "export const value = 1;\n",
-            afterSource: "export const value = 2;\n",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("asks for the standard prefixes and reads the path whole", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "b/legacy.ts",
+              afterPath: "b/legacy.ts",
+              beforeSource: "export const value = 1;\n",
+              afterSource: "export const value = 2;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a repository whose rename limit is lower than the number of renamed pairs", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource(
-          "src/a.ts",
-          "export const alpha = 1;\nexport const beta = 2;\nexport const gamma = 3;\n",
-        );
-        writeSource(
-          "src/b.ts",
-          "export const delta = 4;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
-        );
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        runGit(["config", "diff.renameLimit", "1"]);
-        writeSource(
-          "src/current-a.ts",
-          "export const alpha = 9;\nexport const beta = 2;\nexport const gamma = 3;\n",
-        );
-        writeSource(
-          "src/current-b.ts",
-          "export const delta = 9;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
-        );
-        unlinkSync(join(repositoryRoot, "src/a.ts"));
-        unlinkSync(join(repositoryRoot, "src/b.ts"));
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(
+        repositoryRoot,
+        "src/a.ts",
+        "export const alpha = 1;\nexport const beta = 2;\nexport const gamma = 3;\n",
+      );
+      yield* writeSource(
+        repositoryRoot,
+        "src/b.ts",
+        "export const delta = 4;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
+      );
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* git(repositoryRoot, ["config", "diff.renameLimit", "1"]);
+      yield* writeSource(
+        repositoryRoot,
+        "src/current-a.ts",
+        "export const alpha = 9;\nexport const beta = 2;\nexport const gamma = 3;\n",
+      );
+      yield* writeSource(
+        repositoryRoot,
+        "src/current-b.ts",
+        "export const delta = 9;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
+      );
+      yield* filesystem.remove(paths.join(repositoryRoot, "src/a.ts"));
+      yield* filesystem.remove(paths.join(repositoryRoot, "src/b.ts"));
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("lifts the limit and pairs both renames", ({ comparison, repositoryRoot }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "renamed",
-            beforePath: "src/a.ts",
-            afterPath: "src/current-a.ts",
-            beforeSource:
-              "export const alpha = 1;\nexport const beta = 2;\nexport const gamma = 3;\n",
-            afterSource:
-              "export const alpha = 9;\nexport const beta = 2;\nexport const gamma = 3;\n",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-          {
-            kind: "renamed",
-            beforePath: "src/b.ts",
-            afterPath: "src/current-b.ts",
-            beforeSource:
-              "export const delta = 4;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
-            afterSource:
-              "export const delta = 9;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("lifts the limit and pairs both renames", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "renamed",
+              beforePath: "src/a.ts",
+              afterPath: "src/current-a.ts",
+              beforeSource:
+                "export const alpha = 1;\nexport const beta = 2;\nexport const gamma = 3;\n",
+              afterSource:
+                "export const alpha = 9;\nexport const beta = 2;\nexport const gamma = 3;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+            {
+              kind: "renamed",
+              beforePath: "src/b.ts",
+              afterPath: "src/current-b.ts",
+              beforeSource:
+                "export const delta = 4;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
+              afterSource:
+                "export const delta = 9;\nexport const epsilon = 5;\nexport const zeta = 6;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a caller whose environment names a different repository", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        return createdRoot;
-      })
-      .extend("comparison", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/current.ts", "export const current = false;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        vi.stubEnv("GIT_DIR", join(repositoryRoot, "absent.git"));
-        vi.stubEnv("GIT_WORK_TREE", join(repositoryRoot, "absent"));
-        return compareRevisions({
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = false;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* Effect.acquireRelease(
+        Effect.sync(() => {
+          vi.stubEnv("GIT_DIR", paths.join(repositoryRoot, "absent.git"));
+          vi.stubEnv("GIT_WORK_TREE", paths.join(repositoryRoot, "absent"));
+        }),
+        () =>
+          Effect.sync(() => {
+            vi.unstubAllEnvs();
+          }),
+      );
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        });
-      });
-
-    it("reads the repository it was named rather than the one the environment names", ({
-      comparison,
-      repositoryRoot,
-    }) => {
-      expect(comparison).toStrictEqual({
-        repositoryRoot,
-        baseRevision: "HEAD~1",
-        headRevision: "HEAD",
-        files: [
-          {
-            kind: "changed",
-            beforePath: "src/current.ts",
-            afterPath: "src/current.ts",
-            beforeSource: "export const current = true;\n",
-            afterSource: "export const current = false;\n",
-            addedLines: [1],
-            firstAddedLine: 1,
-          },
-        ],
-      });
+        }),
+      };
     });
+
+    it.effect("reads the repository it was named rather than the one the environment names", () =>
+      Effect.gen(function* program() {
+        const { comparison, repositoryRoot } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/current.ts",
+              afterPath: "src/current.ts",
+              beforeSource: "export const current = true;\n",
+              afterSource: "export const current = false;\n",
+              addedLines: [1],
+              firstAddedLine: 1,
+            },
+          ],
+        });
+      }),
+    );
   });
 
   describe("a base revision the repository does not carry", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "repository-comparison-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
+    const missingRevisionRefusal = Effect.gen(function* missingRevisionRefusal() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return yield* Effect.flip(
+        compareRevisions({
+          repositoryRoot,
+          baseRevision: "missing-revision",
+          headRevision: "HEAD",
+        }),
+      );
+    });
+
+    it.effect("refuses the comparison with the failed command", () =>
+      Effect.gen(function* program() {
+        const executable = gitExecutablePath(yield* Config.String("PATH"));
+        expect(yield* missingRevisionRefusal).toStrictEqual(
+          new GitCommandFailed({
+            message: `Command failed: ${executable} rev-parse --verify --end-of-options missing-revision^{tree}\nfatal: Needed a single revision\n`,
+          }),
+        );
+      }),
+    );
+  });
+
+  describe("a head whose source does not decode as UTF-8", () => {
+    const undecodableRefusal = Effect.gen(function* undecodableRefusal() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/binary.ts", "export const binary = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* filesystem.writeFile(
+        paths.join(repositoryRoot, "src/binary.ts"),
+        Uint8Array.from([0x00, 0xff, 0xfe]),
+      );
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return yield* Effect.flip(
+        compareRevisions({ repositoryRoot, baseRevision: "HEAD~1", headRevision: "HEAD" }),
+      );
+    });
+
+    it.effect("refuses the head source and names its path", () =>
+      Effect.gen(function* program() {
+        expect(yield* undecodableRefusal).toStrictEqual(
+          new UndecodableSource({
+            message: "Source blob does not decode as UTF-8: src/binary.ts",
+            cause: expect.any(TypeError),
+          }),
+        );
+      }),
+    );
+  });
+
+  describe("a base whose source does not decode as UTF-8", () => {
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"));
+      yield* filesystem.writeFile(
+        paths.join(repositoryRoot, "src/binary.ts"),
+        Uint8Array.from([0x00, 0xff, 0xfe]),
+      );
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/binary.ts", "export const binary = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+        }),
+      };
+    });
+
+    it.effect("reads the previous source as absent", () =>
+      Effect.gen(function* program() {
+        const { repositoryRoot, comparison } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/binary.ts",
+              afterPath: "src/binary.ts",
+              beforeSource: null,
+              afterSource: "export const binary = true;\n",
+              addedLines: [],
+              firstAddedLine: null,
+            },
+          ],
         });
-        return createdRoot;
-      })
-      .extend("missingRevisionRefusal", async ({ repositoryRoot }) => {
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: repositoryRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(repositoryRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        try {
-          await compareRevisions({
-            repositoryRoot,
-            baseRevision: "missing-revision",
-            headRevision: "HEAD",
-          });
-        } catch (refusal) {
-          return refusal instanceof Error
-            ? refusal.message.includes(
-                "rev-parse --verify --end-of-options missing-revision^{tree}\nfatal: Needed a single revision\n",
-              )
-            : null;
-        }
-        throw new Error("compareRevisions accepted a revision the repository does not carry");
-      });
-
-    it("refuses the comparison with the failed command", ({ missingRevisionRefusal }) => {
-      expect(missingRevisionRefusal).toBe(true);
-    });
+      }),
+    );
   });
-});
 
-describe("decodedSource", () => {
-  describe("a blob with a source extension that does not decode as UTF-8", () => {
-    const it = test.extend("undecodableRefusal", () => {
-      const [refusal] = attempt<string, Error>(() =>
-        decodedSource("src/binary.ts", Uint8Array.from([0xff, 0xfe, 0xff])),
-      );
-      return refusal;
+  describe("a head recording a source path as a submodule commit", () => {
+    const gitlinkRefusal = Effect.gen(function* gitlinkRefusal() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* git(repositoryRoot, [
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        "160000,1111111111111111111111111111111111111111,vendor/linked.ts",
+      ]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      const headTree = (yield* git(repositoryRoot, ["rev-parse", "HEAD^{tree}"])).trim();
+      return {
+        headTree,
+        refusal: yield* Effect.flip(
+          compareRevisions({ repositoryRoot, baseRevision: "HEAD~1", headRevision: "HEAD" }),
+        ),
+      };
     });
 
-    it("refuses the blob and names its path", ({ undecodableRefusal }) => {
-      expect(undecodableRefusal).toStrictEqual(
-        new Error("Source blob does not decode as UTF-8: src/binary.ts"),
-      );
-    });
-  });
-});
-
-describe("decodedPreviousSource", () => {
-  describe("a blob that does not decode as UTF-8", () => {
-    const it = test.extend("undecodablePreviousSource", () =>
-      decodedPreviousSource(Uint8Array.from([0xff, 0xfe, 0xff])));
-
-    it("reads the blob as an absent source", ({ undecodablePreviousSource }) => {
-      expect(undecodablePreviousSource).toBe(null);
-    });
+    it.effect("refuses the path Git holds no blob for", () =>
+      Effect.gen(function* program() {
+        const { headTree, refusal } = yield* gitlinkRefusal;
+        expect(refusal).toStrictEqual(
+          new BlobUnreadable({ message: `Git holds no blob at ${headTree}:vendor/linked.ts` }),
+        );
+      }),
+    );
   });
 });

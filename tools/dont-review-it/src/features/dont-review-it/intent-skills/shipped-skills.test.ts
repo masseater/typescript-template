@@ -1,23 +1,24 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { defaultIntentSkillsConfig } from "./config.ts";
 import { shippedSkillsProblems } from "./shipped-skills.ts";
 
-describe("shippedSkillsProblems", () => {
+layer(NodeServices.layer)("shippedSkillsProblems", (it) => {
   describe("a published package that carries a skill, packs it, and keywords it", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/shipped/package.json");
-      const skill = join(repositoryRoot, "packages/shipped/skills/core/SKILL.md");
-      mkdirSync(dirname(skill), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/shipped/package.json");
+      const skill = paths.join(repositoryRoot, "packages/shipped/skills/core/SKILL.md");
+      yield* filesystem.makeDirectory(paths.dirname(skill), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/shipped",
@@ -25,27 +26,31 @@ describe("shippedSkillsProblems", () => {
   "keywords": ["tanstack-intent"]
 }
 `,
-        "utf8",
       );
-      writeFileSync(skill, "---\nname: core\n---\n", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      yield* filesystem.writeFileString(skill, "---\nname: core\n---\n");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is left alone", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a published package whose skill file sits below the first level", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/shipped/package.json");
-      const skill = join(repositoryRoot, "packages/shipped/skills/group/topic/SKILL.md");
-      mkdirSync(dirname(skill), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/shipped/package.json");
+      const skill = paths.join(repositoryRoot, "packages/shipped/skills/group/topic/SKILL.md");
+      yield* filesystem.makeDirectory(paths.dirname(skill), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/shipped",
@@ -53,66 +58,75 @@ describe("shippedSkillsProblems", () => {
   "keywords": ["tanstack-intent"]
 }
 `,
-        "utf8",
       );
-      writeFileSync(skill, "---\nname: topic\n---\n", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      yield* filesystem.writeFileString(skill, "---\nname: topic\n---\n");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is left alone, because the nested file still counts as a shipped skill", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone, because the nested file still counts as a shipped skill", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a private package without any skill wiring", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "apps/site/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "apps/site/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/site",
   "private": true
 }
 `,
-        "utf8",
       );
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is left alone", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a private package carrying a skill file", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/internal/package.json");
-      const skill = join(repositoryRoot, "packages/internal/skills/core/SKILL.md");
-      mkdirSync(dirname(skill), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/internal/package.json");
+      const skill = paths.join(repositoryRoot, "packages/internal/skills/core/SKILL.md");
+      yield* filesystem.makeDirectory(paths.dirname(skill), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/internal",
   "private": true
 }
 `,
-        "utf8",
       );
-      writeFileSync(skill, "---\nname: core\n---\n", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      yield* filesystem.writeFileString(skill, "---\nname: core\n---\n");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is told at the private flag to delete the skills it can never ship", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at the private flag to delete the skills it can never ship", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -124,18 +138,21 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a private package naming skills in its files allowlist", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/internal/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/internal/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/internal",
@@ -143,13 +160,14 @@ describe("shippedSkillsProblems", () => {
   "files": ["dist", "skills"]
 }
 `,
-        "utf8",
       );
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is told at the files allowlist to remove the entry", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at the files allowlist to remove the entry", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -161,18 +179,21 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a private package carrying the discovery keyword", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/internal/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/internal/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/internal",
@@ -180,13 +201,14 @@ describe("shippedSkillsProblems", () => {
   "keywords": ["tanstack-intent"]
 }
 `,
-        "utf8",
       );
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is told to remove the keyword that announces skills it never ships", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told to remove the keyword that announces skills it never ships", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -198,19 +220,22 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a private package carrying the skill file, the files entry, and the keyword", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/internal/package.json");
-      const skill = join(repositoryRoot, "packages/internal/skills/core/SKILL.md");
-      mkdirSync(dirname(skill), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/internal/package.json");
+      const skill = paths.join(repositoryRoot, "packages/internal/skills/core/SKILL.md");
+      yield* filesystem.makeDirectory(paths.dirname(skill), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/internal",
@@ -219,14 +244,15 @@ describe("shippedSkillsProblems", () => {
   "keywords": ["tanstack-intent"]
 }
 `,
-        "utf8",
       );
-      writeFileSync(skill, "---\nname: core\n---\n", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      yield* filesystem.writeFileString(skill, "---\nname: core\n---\n");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("has every unnecessary piece reported separately", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("has every unnecessary piece reported separately", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -248,57 +274,69 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("an empty manifest", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "fixtures/empty/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(manifest, "", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+
+      const manifest = paths.join(repositoryRoot, "fixtures/empty/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(manifest, "");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is left alone", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a manifest without a name", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "fixtures/fragment/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "fixtures/fragment/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{ "sideEffects": false }
 `,
-        "utf8",
       );
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is left alone", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a published package without any skill file", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/bare/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/bare/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/bare",
@@ -306,13 +344,14 @@ describe("shippedSkillsProblems", () => {
   "keywords": ["tanstack-intent"]
 }
 `,
-        "utf8",
       );
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is told at its name to scaffold the skill it publishes nothing to load", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at its name to scaffold the skill it publishes nothing to load", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -324,19 +363,22 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a files allowlist that drops the skills directory", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/dropped/package.json");
-      const skill = join(repositoryRoot, "packages/dropped/skills/core/SKILL.md");
-      mkdirSync(dirname(skill), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/dropped/package.json");
+      const skill = paths.join(repositoryRoot, "packages/dropped/skills/core/SKILL.md");
+      yield* filesystem.makeDirectory(paths.dirname(skill), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/dropped",
@@ -344,14 +386,15 @@ describe("shippedSkillsProblems", () => {
   "keywords": ["tanstack-intent"]
 }
 `,
-        "utf8",
       );
-      writeFileSync(skill, "---\nname: core\n---\n", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      yield* filesystem.writeFileString(skill, "---\nname: core\n---\n");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is told at the files allowlist to add the entry back", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at the files allowlist to add the entry back", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -363,60 +406,68 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a published package without a files allowlist", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/open/package.json");
-      const skill = join(repositoryRoot, "packages/open/skills/core/SKILL.md");
-      mkdirSync(dirname(skill), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/open/package.json");
+      const skill = paths.join(repositoryRoot, "packages/open/skills/core/SKILL.md");
+      yield* filesystem.makeDirectory(paths.dirname(skill), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/open",
   "keywords": ["tanstack-intent"]
 }
 `,
-        "utf8",
       );
-      writeFileSync(skill, "---\nname: core\n---\n", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      yield* filesystem.writeFileString(skill, "---\nname: core\n---\n");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is left alone, because a manifest without the allowlist ships everything", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone, because a manifest without the allowlist ships everything", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a published package without the discovery keyword", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/unlisted/package.json");
-      const skill = join(repositoryRoot, "packages/unlisted/skills/core/SKILL.md");
-      mkdirSync(dirname(skill), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/unlisted/package.json");
+      const skill = paths.join(repositoryRoot, "packages/unlisted/skills/core/SKILL.md");
+      yield* filesystem.makeDirectory(paths.dirname(skill), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/unlisted",
   "files": ["dist", "skills"]
 }
 `,
-        "utf8",
       );
-      writeFileSync(skill, "---\nname: core\n---\n", "utf8");
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      yield* filesystem.writeFileString(skill, "---\nname: core\n---\n");
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("is told to add the keyword discovery detects it by", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told to add the keyword discovery detects it by", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -428,31 +479,35 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a published package missing the skill file, the files entry, and the keyword", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-intent-skills-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-intent-skills-",
       });
-      const manifest = join(repositoryRoot, "packages/missing/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/missing/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/missing",
   "files": ["dist"]
 }
 `,
-        "utf8",
       );
-      return shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
+      return yield* shippedSkillsProblems({ repositoryRoot, config: defaultIntentSkillsConfig });
     });
 
-    it("has every missing piece reported separately", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("has every missing piece reported separately", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -474,6 +529,7 @@ describe("shippedSkillsProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 });

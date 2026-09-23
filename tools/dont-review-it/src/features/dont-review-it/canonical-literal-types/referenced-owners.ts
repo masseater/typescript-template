@@ -1,9 +1,8 @@
-import { relative } from "node:path";
-
 import * as ts from "typescript-6";
 
 import { resolveTypeScriptSymbol } from "../lint/oxlint/lib/canonical-values/typescript-symbol.ts";
 import { toPosixPath } from "../lint/oxlint/lib/posix-path.ts";
+import { path } from "../platform/path.ts";
 import { isDependencySource } from "./contextual-origin.ts";
 
 import type { CanonicalValuesEntry } from "../lint/oxlint/lib/canonical-values/catalog.ts";
@@ -27,7 +26,7 @@ const ownersDeclaredBy = (
 ): readonly CanonicalValuesEntry[] => {
   if (!ts.isVariableDeclaration(declaration) || !ts.isIdentifier(declaration.name)) return [];
   const declarationPath = toPosixPath(
-    relative(lookup.repositoryRoot, declaration.getSourceFile().fileName),
+    path.relative(lookup.repositoryRoot, declaration.getSourceFile().fileName),
   );
   const binding = declaration.name.text;
   return lookup.owners.filter(

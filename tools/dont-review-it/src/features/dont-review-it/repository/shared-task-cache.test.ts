@@ -3,6 +3,7 @@ import { layer } from "@effect/vitest";
 import { ConfigProvider, Effect, FileSystem, Path } from "effect";
 import { describe, expect } from "vite-plus/test";
 
+import { pathExists } from "../platform/file-system.ts";
 import {
   SharedTaskCacheUnset,
   cleanSharedTaskCache,
@@ -64,7 +65,7 @@ layer(NodeServices.layer)("shared task cache", (it) => {
           ok: true,
           path: cache,
         });
-        expect(yield* filesystem.exists(paths.join(cache, "stale"))).toBe(false);
+        expect(yield* pathExists(paths.join(cache, "stale"))).toBe(false);
       }),
     );
   });

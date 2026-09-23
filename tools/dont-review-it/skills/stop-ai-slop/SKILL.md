@@ -1,7 +1,7 @@
 ---
 name: stop-ai-slop
 description: >
-  Stop absence checks that only fossilize a removal, with @repo/dont-review-it: `stop-ai-slop check` compares the change on its way into the integration branch — the staged merge result during a merge, the history since `origin/main` otherwise — and reports every assertion added by the same change that deleted its subject. `--base` and `--head` name the ends explicitly and `--repository-root` picks the repository. Load when a report names a removal verification, when adding a check to `src/check-registry.ts`, when deciding which two revisions the comparison should use, or when the command reports nothing because no comparison could be resolved.
+  Stop absence checks that only fossilize a removal, with @repo/dont-review-it: `dont-review-it check-repository` runs stop-ai-slop beside the other repository gates, compares the change on its way into the integration branch — the staged merge result during a merge, the history since `origin/main` otherwise — and reports every assertion added by the same change that deleted its subject. `--repository-root` picks the repository. Load when a report names a removal verification, when adding a check to `src/check-registry.ts`, when deciding which two revisions the comparison should use, or when the command refuses because no comparison could be resolved.
 
 metadata:
   type: core
@@ -21,31 +21,21 @@ Only facts that are decidable from the two revisions are in scope. The commit me
 
 ## requires
 
-- **A resolvable comparison.** Without `--base` and `--head`, the range comes from `MERGE_HEAD` while a merge is in progress, and otherwise from the merge base of `origin/main` and `HEAD`. In a repository with no `origin/main` and no merge underway there is nothing to compare, so run it where the integration branch is fetched or name both ends yourself.
+- **A resolvable comparison.** The range comes from `MERGE_HEAD` while a merge is in progress, and otherwise from the merge base of `origin/main` and `HEAD`. A checkout holding only the merge of a pull request is read through the GitHub API when `GITHUB_REPOSITORY` and `GITHUB_TOKEN` are set. With none of these there is nothing to compare, so run it where the integration branch is fetched.
 - **Git readable from the process.** A failure to read the parser, git, a revision, or a source is reported as a usage error and stops the run; an unreadable change is never counted as a clean one.
 
 ## Setup
 
 ```sh
-pnpm exec stop-ai-slop check
+vp run check:repository
 ```
 
-Without revisions the command compares the change on its way into the integration branch: during a merge, the merge base of `HEAD` and `MERGE_HEAD` against the staged result; otherwise the merge base of `origin/main` and `HEAD` against `HEAD`.
+The task runs `dont-review-it check-repository`, which runs stop-ai-slop after the other repository gates. It compares the change on its way into the integration branch: during a merge, the merge base of `HEAD` and `MERGE_HEAD` against the staged result; otherwise the merge base of `origin/main` and `HEAD` against `HEAD`.
 
-Name both ends when the comparison is something else:
+Point it at another checkout with `--repository-root`:
 
 ```sh
-pnpm exec stop-ai-slop check --base <revision> --head <revision>
-```
-
-Wire it into the one script CI and the hooks already call, beside the other gates:
-
-```json
-{
-  "scripts": {
-    "guard": "vp check && vp run -r test --coverage && vp exec stop-ai-slop check"
-  }
-}
+dont-review-it check-repository --repository-root <path>
 ```
 
 ## Core Patterns
@@ -118,13 +108,15 @@ Source: masseater/mst:tools/dont-review-it/AGENTS.md
 Wrong:
 
 ```sh
-pnpm exec stop-ai-slop check --base HEAD~1 --head HEAD
+git update-ref refs/remotes/origin/main HEAD~1
+dont-review-it check-repository
 ```
 
 Correct:
 
 ```sh
-pnpm exec stop-ai-slop check
+git fetch origin main
+dont-review-it check-repository
 ```
 
 `HEAD~1` is the previous commit, not the point the change left the integration branch, so a branch with more than one commit is examined over its last step only — the run succeeds, reports nothing, and every earlier commit's additions go unread.
@@ -145,17 +137,15 @@ Correct:
 export const CHECKS: readonly SlopCheck[] = [noRemovalVerification, checkRemovals];
 ```
 
-`check` is the only entry, and it runs the registry in definition order; a check reachable only through a second subcommand exists without running until every caller has been updated to name it — and nobody is told that they should.
+`check-repository` is the only entry, and it runs the registry in definition order; a check reachable only through a second subcommand exists without running until every caller has been updated to name it — and nobody is told that they should.
 
 Source: masseater/mst:tools/dont-review-it/AGENTS.md
 
 ## Reference
 
 ```
-stop-ai-slop check           the only command; runs every registered check in definition order
---base <revision>            revision before the change; requires --head
---head <revision>            revision after the change; requires --base
---repository-root <path>     defaults to the current working directory
+dont-review-it check-repository   the only entry; runs every registered check in definition order
+--repository-root <path>          defaults to the current working directory
 
 default range, merge in progress    merge-base(HEAD, MERGE_HEAD) .. the staged tree
 default range, otherwise            merge-base(origin/main, HEAD) .. HEAD
@@ -166,4 +156,4 @@ There is no allowlist, no severity, and no ignore option. A construct that misfi
 
 ## See also
 
-- `tools/dont-review-it/skills/repository-checks` — the same single-entry, non-zero-exit gate discipline; a guard run calls both CLIs.
+- `tools/dont-review-it/skills/repository-checks` — the same single-entry, non-zero-exit gate discipline; `check-repository` runs both.

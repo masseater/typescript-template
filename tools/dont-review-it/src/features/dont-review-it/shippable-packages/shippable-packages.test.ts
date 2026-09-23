@@ -1,33 +1,33 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { defaultShippablePackagesConfig } from "./config.ts";
 import { shippablePackagesProblems } from "./shippable-packages.ts";
 
-describe("shippablePackagesProblems", () => {
+layer(NodeServices.layer)("shippablePackagesProblems", (it) => {
   describe("a published package depending on a workspace nobody can install", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const withheld = join(repositoryRoot, "packages/internal/package.json");
-      const shipped = join(repositoryRoot, "packages/shipped/package.json");
-      mkdirSync(dirname(withheld), { recursive: true });
-      mkdirSync(dirname(shipped), { recursive: true });
-      writeFileSync(
+
+      const withheld = paths.join(repositoryRoot, "packages/internal/package.json");
+      const shipped = paths.join(repositoryRoot, "packages/shipped/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(withheld), { recursive: true });
+      yield* filesystem.makeDirectory(paths.dirname(shipped), { recursive: true });
+      yield* filesystem.writeFileString(
         withheld,
         `{
   "name": "@example/internal",
   "private": true
 }
 `,
-        "utf8",
       );
-      writeFileSync(
+      yield* filesystem.writeFileString(
         shipped,
         `{
   "name": "@example/shipped",
@@ -36,16 +36,17 @@ describe("shippablePackagesProblems", () => {
   }
 }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is told at the dependencies field to let the build absorb it", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at the dependencies field to let the build absorb it", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -57,29 +58,31 @@ describe("shippablePackagesProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a published package keeping that workspace in devDependencies", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const withheld = join(repositoryRoot, "packages/internal/package.json");
-      const shipped = join(repositoryRoot, "packages/shipped/package.json");
-      mkdirSync(dirname(withheld), { recursive: true });
-      mkdirSync(dirname(shipped), { recursive: true });
-      writeFileSync(
+
+      const withheld = paths.join(repositoryRoot, "packages/internal/package.json");
+      const shipped = paths.join(repositoryRoot, "packages/shipped/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(withheld), { recursive: true });
+      yield* filesystem.makeDirectory(paths.dirname(shipped), { recursive: true });
+      yield* filesystem.writeFileString(
         withheld,
         `{
   "name": "@example/internal",
   "private": true
 }
 `,
-        "utf8",
       );
-      writeFileSync(
+      yield* filesystem.writeFileString(
         shipped,
         `{
   "name": "@example/shipped",
@@ -88,28 +91,32 @@ describe("shippablePackagesProblems", () => {
   }
 }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is left alone, because nothing an installer resolves names it", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone, because nothing an installer resolves names it", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a published package whose bin points at TypeScript source", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const manifest = join(repositoryRoot, "packages/shipped/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/shipped/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/shipped",
@@ -118,16 +125,17 @@ describe("shippablePackagesProblems", () => {
   }
 }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is told at the bin field to name the built output", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at the bin field to name the built output", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -139,18 +147,21 @@ describe("shippablePackagesProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a published package replacing its source entries at publish time", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const manifest = join(repositoryRoot, "packages/shipped/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/shipped/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/shipped",
@@ -174,28 +185,32 @@ describe("shippablePackagesProblems", () => {
   }
 }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is left alone, because what publishes resolves without stripping", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone, because what publishes resolves without stripping", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a published package whose replacement still names source", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const manifest = join(repositoryRoot, "packages/shipped/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/shipped/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/shipped",
@@ -207,16 +222,17 @@ describe("shippablePackagesProblems", () => {
   }
 }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is told at the publishConfig block that carries the replacement", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at the publishConfig block that carries the replacement", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -228,18 +244,21 @@ describe("shippablePackagesProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a published package whose files allowlist drops the built output", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const manifest = join(repositoryRoot, "packages/shipped/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/shipped/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/shipped",
@@ -250,16 +269,17 @@ describe("shippablePackagesProblems", () => {
   }
 }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is told at the files allowlist to carry what the entry names", ({ scan }) => {
-      expect(scan).toMatchInlineSnapshot(`
+    it.effect("is told at the files allowlist to carry what the entry names", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toMatchInlineSnapshot(`
         {
           "problems": [
             {
@@ -271,18 +291,21 @@ describe("shippablePackagesProblems", () => {
           "scanned": 1,
         }
       `);
-    });
+      }),
+    );
   });
 
   describe("a published package without a files allowlist", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const manifest = join(repositoryRoot, "packages/shipped/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "packages/shipped/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{
   "name": "@example/shipped",
@@ -291,61 +314,72 @@ describe("shippablePackagesProblems", () => {
   }
 }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is left alone, because a manifest without the allowlist packs all", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone, because a manifest without the allowlist packs all", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a manifest that holds nothing", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const manifest = join(repositoryRoot, "fixtures/empty/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(manifest, "", "utf8");
-      return shippablePackagesProblems({
+
+      const manifest = paths.join(repositoryRoot, "fixtures/empty/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(manifest, "");
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is counted by nothing, because it names no package", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 0 });
-    });
+    it.effect("is counted by nothing, because it names no package", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 0 });
+      }),
+    );
   });
 
   describe("a manifest without a name", () => {
-    const it = test.extend("scan", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-shippable-packages-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const scanFixture = Effect.gen(function* scan() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-shippable-packages-",
       });
-      const manifest = join(repositoryRoot, "fixtures/fragment/package.json");
-      mkdirSync(dirname(manifest), { recursive: true });
-      writeFileSync(
+
+      const manifest = paths.join(repositoryRoot, "fixtures/fragment/package.json");
+      yield* filesystem.makeDirectory(paths.dirname(manifest), { recursive: true });
+      yield* filesystem.writeFileString(
         manifest,
         `{ "sideEffects": false }
 `,
-        "utf8",
       );
-      return shippablePackagesProblems({
+      return yield* shippablePackagesProblems({
         repositoryRoot,
         config: defaultShippablePackagesConfig,
       });
     });
 
-    it("is counted by nothing, because it names no package", ({ scan }) => {
-      expect(scan).toStrictEqual({ problems: [], scanned: 0 });
-    });
+    it.effect("is counted by nothing, because it names no package", () =>
+      Effect.gen(function* program() {
+        const scan = yield* scanFixture;
+        expect(scan).toStrictEqual({ problems: [], scanned: 0 });
+      }),
+    );
   });
 });

@@ -1,6 +1,7 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { Effect, FileSystem, type PlatformError } from "effect";
 
+import { textOrNull } from "../platform/file-system.ts";
+import { path } from "../platform/path.ts";
 import {
   blockOf,
   normalizedContent,
@@ -9,7 +10,6 @@ import {
   type GeneratedRegion,
 } from "./generated-region.ts";
 import { REGENERATE_COMMAND } from "./regenerate-command.ts";
-import { textOrNull } from "./rule-index/read-text.ts";
 
 import type { LintRuleProblem } from "./lint-rule-problem.ts";
 
@@ -21,6 +21,12 @@ export const staleGeneratedFile = ({
   readonly behind: string;
 }): string =>
   `\`${file}\` must not fall behind ${behind}. Regenerate it with \`${REGENERATE_COMMAND}\`.`;
+
+type ReconciledProblems = Effect.Effect<
+  readonly LintRuleProblem[],
+  PlatformError.PlatformError,
+  FileSystem.FileSystem
+>;
 
 export type GeneratedFile = {
   readonly repositoryRoot: string;
@@ -43,14 +49,19 @@ const absentProblems = ({
 }: {
   readonly reconciled: GeneratedFile;
   readonly absolutePath: string;
-}): readonly LintRuleProblem[] => {
-  if (!reconciled.write) {
-    return [{ file: reconciled.file, message: reconciled.absent(reconciled.file) }];
-  }
-  mkdirSync(dirname(absolutePath), { recursive: true });
-  writeFileSync(absolutePath, reconciled.scaffold(wrappedBlockOf(reconciled)), "utf8");
-  return [];
-};
+}): ReconciledProblems =>
+  Effect.gen(function* absentProblems() {
+    if (!reconciled.write) {
+      return [{ file: reconciled.file, message: reconciled.absent(reconciled.file) }];
+    }
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem.makeDirectory(path.dirname(absolutePath), { recursive: true });
+    yield* filesystem.writeFileString(
+      absolutePath,
+      reconciled.scaffold(wrappedBlockOf(reconciled)),
+    );
+    return [];
+  });
 
 const FRONTMATTER_FENCE = "---\n";
 
@@ -81,15 +92,16 @@ const unmarkedProblems = ({
   readonly reconciled: GeneratedFile;
   readonly absolutePath: string;
   readonly source: string;
-}): readonly LintRuleProblem[] => {
-  if (!reconciled.write) return [{ file: reconciled.file, message: lostRegion(reconciled) }];
-  writeFileSync(
-    absolutePath,
-    withInsertedRegion({ source, block: wrappedBlockOf(reconciled) }),
-    "utf8",
-  );
-  return [];
-};
+}): ReconciledProblems =>
+  Effect.gen(function* unmarkedProblems() {
+    if (!reconciled.write) return [{ file: reconciled.file, message: lostRegion(reconciled) }];
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem.writeFileString(
+      absolutePath,
+      withInsertedRegion({ source, block: wrappedBlockOf(reconciled) }),
+    );
+    return [];
+  });
 
 const staleProblems = ({
   reconciled,
@@ -99,25 +111,27 @@ const staleProblems = ({
   readonly reconciled: GeneratedFile;
   readonly absolutePath: string;
   readonly region: GeneratedRegion;
-}): readonly LintRuleProblem[] => {
-  if (normalizedContent(region.body) === normalizedContent(reconciled.expected)) return [];
-  if (!reconciled.write) {
-    return [{ file: reconciled.file, message: reconciled.stale(reconciled.file) }];
-  }
-  writeFileSync(
-    absolutePath,
-    withRefreshedRegion({ region, content: reconciled.expected }),
-    "utf8",
-  );
-  return [];
-};
+}): ReconciledProblems =>
+  Effect.gen(function* staleProblems() {
+    if (normalizedContent(region.body) === normalizedContent(reconciled.expected)) return [];
+    if (!reconciled.write) {
+      return [{ file: reconciled.file, message: reconciled.stale(reconciled.file) }];
+    }
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem.writeFileString(
+      absolutePath,
+      withRefreshedRegion({ region, content: reconciled.expected }),
+    );
+    return [];
+  });
 
-export const generatedFileProblems = (reconciled: GeneratedFile): readonly LintRuleProblem[] => {
-  const absolutePath = join(reconciled.repositoryRoot, reconciled.file);
-  const source = textOrNull(absolutePath);
-  if (source === null) return absentProblems({ reconciled, absolutePath });
+export const generatedFileProblems = (reconciled: GeneratedFile): ReconciledProblems =>
+  Effect.gen(function* generatedFileProblems() {
+    const absolutePath = path.join(reconciled.repositoryRoot, reconciled.file);
+    const source = yield* textOrNull(absolutePath);
+    if (source === null) return yield* absentProblems({ reconciled, absolutePath });
 
-  const region = regionIn({ source, begin: reconciled.begin, end: reconciled.end });
-  if (region === null) return unmarkedProblems({ reconciled, absolutePath, source });
-  return staleProblems({ reconciled, absolutePath, region });
-};
+    const region = regionIn({ source, begin: reconciled.begin, end: reconciled.end });
+    if (region === null) return yield* unmarkedProblems({ reconciled, absolutePath, source });
+    return yield* staleProblems({ reconciled, absolutePath, region });
+  });

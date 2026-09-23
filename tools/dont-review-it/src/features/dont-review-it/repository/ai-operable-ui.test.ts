@@ -2,6 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { pathExists } from "../platform/file-system.ts";
 import {
   aiOperableUiViolations,
   browserConfirmViolations,
@@ -218,7 +219,7 @@ describe("AI-operable UI source rules", () => {
         const violations = yield* Effect.forEach(files, (file) =>
           Effect.gen(function* fileViolations() {
             const absolute = paths.join(repositoryRoot, file);
-            if (!(yield* filesystem.exists(absolute))) {
+            if (!(yield* pathExists(absolute))) {
               return [];
             }
             return shippedUiRuleViolations(yield* filesystem.readFileString(absolute)).map(

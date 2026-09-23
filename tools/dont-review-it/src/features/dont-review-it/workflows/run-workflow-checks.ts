@@ -1,4 +1,5 @@
-import { failureCodeOf } from "../repository-checks/index.ts";
+import { Effect, type FileSystem, type PlatformError } from "effect";
+
 import { crossWorkflowChains } from "./checks/cross-workflow-chain.ts";
 import { undeclaredPermissions } from "./checks/declared-permissions.ts";
 import { gatingTriggerFilters } from "./checks/gating-trigger-filter.ts";
@@ -48,32 +49,31 @@ const byLocation = (left: RepositoryProblem, right: RepositoryProblem): number =
     ? Number(left.line) - Number(right.line)
     : left.file.localeCompare(right.file);
 
+const omittedWorkflowsTree = (config: WorkflowChecksConfig): ScannedProblems => ({
+  problems: [
+    {
+      file: config.workflowDirectory,
+      line: null,
+      message: `A repository that keeps ${config.workflowDirectory.replace(/\/workflows$/, "")} must not omit the workflows tree, because a missing directory is read as an empty scan and every workflow check then reports success with nothing examined. Create ${config.workflowDirectory} or remove the parent if this repository has no CI workflows.`,
+    },
+  ],
+  scanned: 0,
+});
+
 export const runWorkflowChecks = ({
   repositoryRoot,
   config,
 }: {
   readonly repositoryRoot: string;
   readonly config: WorkflowChecksConfig;
-}): ScannedProblems => {
-  try {
-    const documents = readWorkflowDocuments({ repositoryRoot, config });
+}): Effect.Effect<ScannedProblems, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.map(readWorkflowDocuments({ repositoryRoot, config }), (tree): ScannedProblems => {
+    if (tree.kind === "workflows-omitted") return omittedWorkflowsTree(config);
+    const documents = tree.kind === "read" ? tree.documents : [];
     return {
       problems: documents
         .flatMap((document) => problemsIn({ document, config }))
         .toSorted(byLocation),
       scanned: documents.length,
     };
-  } catch (failure) {
-    if (failureCodeOf(failure) !== "ENOENT") throw failure;
-    return {
-      problems: [
-        {
-          file: config.workflowDirectory,
-          line: null,
-          message: `A repository that keeps ${config.workflowDirectory.replace(/\/workflows$/, "")} must not omit the workflows tree, because a missing directory is read as an empty scan and every workflow check then reports success with nothing examined. Create ${config.workflowDirectory} or remove the parent if this repository has no CI workflows.`,
-        },
-      ],
-      scanned: 0,
-    };
-  }
-};
+  });

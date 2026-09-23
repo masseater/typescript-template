@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import {
-  awaitingEffectDiagnostics,
+  effectDiagnostics,
   intentValidation,
   lifecycle,
   testRun,
@@ -20,7 +20,7 @@ import {
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics,
+      ...effectDiagnostics,
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,
@@ -80,6 +80,6 @@ export default defineConfig({
       "src/features/dont-review-it/index.ts",
     ],
     external: [/^vite-plus/],
-    dts: { generator: "tsgo", tsconfig: "tsconfig.pack.json" },
+    dts: { generator: "tsgo" },
   },
 });

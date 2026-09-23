@@ -1,5 +1,3 @@
-import { sep } from "node:path";
-
 import type { LintRuleFacts } from "./rule-facts.ts";
 
 const segmentsUnder = ({
@@ -9,8 +7,8 @@ const segmentsUnder = ({
   readonly sourcePath: string;
   readonly ruleDirectory: string;
 }): readonly string[] => {
-  const prefix = `${ruleDirectory.split("/").join(sep)}${sep}`;
-  return sourcePath.startsWith(prefix) ? sourcePath.slice(prefix.length).split(sep) : [];
+  const prefix = `${ruleDirectory}/`;
+  return sourcePath.startsWith(prefix) ? sourcePath.slice(prefix.length).split("/") : [];
 };
 
 export const bundleNameOf = ({
