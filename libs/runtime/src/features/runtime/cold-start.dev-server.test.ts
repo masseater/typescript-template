@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 import { unstable_dev } from "wrangler";
 
-import { coldStartFixturePath } from "./cold-start-fixture.ts";
+import { coldStartFixturePath } from "./cold-start-test-fixture.ts";
 
 const concurrentRequests = 4;
 const okStatus = 200;

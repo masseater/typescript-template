@@ -96,3 +96,4 @@ function runDeploymentCommand<Input, InputFailure, CommandFailure>(
 }
 
 export { runDeploymentCommand, stateStore };
+export type { DeploymentAccess };

@@ -3,9 +3,9 @@ import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { probeAlert, probeFailure } from "./monitor-fixture.ts";
+import { probeAlert, probeFailure } from "./monitor-test-fixture.ts";
 
-import type { Outcome } from "./monitor-fixture.ts";
+import type { Outcome } from "./monitor-test-fixture.ts";
 
 const checkedWith = (outcome: Outcome) =>
   Effect.runPromise(

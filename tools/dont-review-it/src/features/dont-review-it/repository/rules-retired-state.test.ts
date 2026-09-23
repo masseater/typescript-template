@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported } from "./lint-harness.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
 
 const retiredImports = [
   ["package", 'import { create } from "zustand"; export const store = create;'],

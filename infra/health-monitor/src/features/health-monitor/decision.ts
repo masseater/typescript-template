@@ -28,4 +28,4 @@ function formatHealthMessage(notifications: readonly ProbeResult[]): string {
 }
 
 export { decideHealthAlerts, formatHealthMessage };
-export type { HealthState };
+export type { HealthDecision, HealthState };

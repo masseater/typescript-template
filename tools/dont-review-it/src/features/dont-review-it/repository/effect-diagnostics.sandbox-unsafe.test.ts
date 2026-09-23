@@ -6,9 +6,9 @@ import { recommended } from "@effect/tsgo/oxlint-presets";
 import { appRun, effectDiagnostics, effectTsgoNoEmit } from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
-import { field } from "./dependencies.ts";
+import { field } from "./dependencies-test-fixture.ts";
 import { repositoryRoot } from "./repository-root.ts";
-import { commands, configuredDirectories, reachable } from "./tasks.ts";
+import { commands, configuredDirectories, reachable } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 
 const camelRule = (name: string): string =>

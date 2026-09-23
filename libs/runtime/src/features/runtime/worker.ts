@@ -137,5 +137,5 @@ function startRoute(handler: StartHandler): (request: Request) => Effect.Effect<
 
 export { appServerEntry, serveApp, serveWorker, startRoute, withQueue };
 export { workerRuntime } from "./worker-runtime.ts";
-export type { AppRoute, FetchWorker };
+export type { AppRoute, FetchWorker, StartHandler, WorkerRoute };
 export type { WorkerRuntime } from "./worker-runtime.ts";

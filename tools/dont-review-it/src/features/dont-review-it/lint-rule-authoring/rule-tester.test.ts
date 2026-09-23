@@ -1,7 +1,7 @@
 import { describe } from "vite-plus/test";
 
 import { createWorkspaceLintRule } from "./create-workspace-lint-rule.ts";
-import { testLintRule } from "./rule-tester.ts";
+import { testLintRule } from "./rule-tester-test-fixture.ts";
 
 const createRule = createWorkspaceLintRule({ workspaceDir: "packages/lint-rule-authoring" });
 

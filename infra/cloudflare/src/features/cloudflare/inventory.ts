@@ -10,7 +10,7 @@ import { Effect, Predicate, References, Result, Schema } from "effect";
 import { repositoryRoot } from "./artifacts.ts";
 import { stackEntrypoint } from "./stack-entrypoints.ts";
 import { stackName } from "./stacks.ts";
-import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
+import { verificationEnvironment, verificationSettings } from "./verification-settings.ts";
 
 import type { StackName } from "./stacks.ts";
 
@@ -292,4 +292,4 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
 });
 
 export { applyVerificationEnvironment, bindsSendEmail, compileStack, describeInventoryCause };
-export type { StackInventory };
+export type { ResourceInventory, StackInventory };

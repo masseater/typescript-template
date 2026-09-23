@@ -48,4 +48,4 @@ function healthTargets(config: HealthMonitorConfig): readonly {
 }
 
 export { healthMonitorWorker, healthTargets, parseHealthMonitorConfig };
-export type { HealthMonitorEnv };
+export type { HealthMonitorConfig, HealthMonitorEnv };

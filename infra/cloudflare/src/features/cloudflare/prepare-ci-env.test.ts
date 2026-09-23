@@ -6,7 +6,7 @@ import { Effect, FileSystem } from "effect";
 
 import { writeCiSecretsFile, writeConfiguredOutput } from "./ci-env.ts";
 import { layer, path } from "./platform.ts";
-import { verificationEnvironment } from "./verification-fixture.ts";
+import { verificationEnvironment } from "./verification-settings.ts";
 
 import type { Scope } from "effect";
 

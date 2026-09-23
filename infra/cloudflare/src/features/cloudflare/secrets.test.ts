@@ -4,7 +4,7 @@ import { Cause, Effect } from "effect";
 import { CloudflareFailure } from "./config.ts";
 import { encodeJson } from "./platform.ts";
 import { describeCause, redact } from "./secrets.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 const confidential = [
   { key: "TEMPLATE_APP_DOMAIN", value: verificationSettings.origins["service-member"] },

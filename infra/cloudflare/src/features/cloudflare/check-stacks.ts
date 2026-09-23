@@ -46,7 +46,7 @@ import {
   stackReferences,
 } from "./stacks.ts";
 import { cacheNamespaceTitle, fileBucketName } from "./storage.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 import type { Application, Capability } from "@repo/config";
 import type { StackInventory } from "./inventory.ts";

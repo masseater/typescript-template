@@ -88,4 +88,4 @@ function verifiedSecrets(): Effect.Effect<
 type DeploymentSecrets = Readonly<Effect.Success<ReturnType<typeof verifiedSecrets>>>;
 
 export { verifiedSecrets };
-export type { DeploymentSecrets };
+export type { DeploymentSecrets, SecretsFileFailure };

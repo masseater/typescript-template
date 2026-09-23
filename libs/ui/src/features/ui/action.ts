@@ -41,4 +41,4 @@ const useAction = (): ActionState => {
 };
 
 export { useAction };
-export type { ActionState };
+export type { ActionState, Task };

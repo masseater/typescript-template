@@ -56,4 +56,4 @@ function formatMessage(notifications: readonly Notification[]): string {
 }
 
 export { decideNotifications, formatMessage };
-export type { SeenFingerprints };
+export type { Notification, NotificationDecision, SeenFingerprints };

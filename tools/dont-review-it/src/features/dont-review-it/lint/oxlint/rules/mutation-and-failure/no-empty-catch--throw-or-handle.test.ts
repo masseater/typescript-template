@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noEmptyCatch } from "./no-empty-catch--throw-or-handle.ts";
 
 describe("dont-review-it/no-empty-catch--throw-or-handle", () => {

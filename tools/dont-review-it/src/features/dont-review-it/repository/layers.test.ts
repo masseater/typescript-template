@@ -4,8 +4,9 @@ import { join } from "node:path";
 import { applications, architectureKindOf } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported } from "./lint-harness.ts";
-import { commands, workspaceDirectories } from "./tasks.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
+import { isPublicApiIndex } from "./modular-budgets.ts";
+import { commands, workspaceDirectories } from "./tasks-test-fixture.ts";
 
 const source = "export const value = 1;\n";
 
@@ -77,7 +78,7 @@ describe("modular coverage", () => {
           continue;
         }
         const names = readdirSync(join(featuresRoot, slice.name));
-        if (!names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name))) {
+        if (!names.some(isPublicApiIndex)) {
           missing.push(`${directory}/src/features/${slice.name}/index.ts`);
         }
       }

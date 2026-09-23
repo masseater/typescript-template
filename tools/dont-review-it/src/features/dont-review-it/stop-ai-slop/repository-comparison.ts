@@ -265,3 +265,9 @@ export const compareRevisions = async ({
     }),
   };
 };
+export type {
+  AddedComparisonFile,
+  ChangedComparisonFile,
+  DeletedComparisonFile,
+  RenamedComparisonFile,
+};

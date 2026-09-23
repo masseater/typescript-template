@@ -63,4 +63,4 @@ class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runt
 }
 
 export { FileStore };
-export type { StoredFile };
+export type { Bucket, StoredFile };

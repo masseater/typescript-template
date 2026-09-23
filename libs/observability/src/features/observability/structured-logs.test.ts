@@ -2,9 +2,9 @@ import { assert, it } from "@effect/vitest";
 import { Cause, Effect, Schema } from "effect";
 
 import { annotateLogs } from "./annotations.ts";
+import { recordingSink } from "./recording-sink-test-fixture.ts";
 import { logAt, logCause } from "./severity.ts";
 import { Telemetry } from "./telemetry.ts";
-import { recordingSink } from "./testing.ts";
 
 const leaked = "structured-log-test-value-at-least-32-characters";
 

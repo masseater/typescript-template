@@ -8,7 +8,7 @@ import { Effect, FileSystem } from "effect";
 import { verifiedSecrets } from "./credentials.ts";
 import { ENVIRONMENT_FILE_VARIABLE, secretsFile } from "./deployment.ts";
 import { layer, path } from "./platform.ts";
-import { verificationEnvironment } from "./verification-fixture.ts";
+import { verificationEnvironment } from "./verification-settings.ts";
 
 import type { Scope } from "effect";
 

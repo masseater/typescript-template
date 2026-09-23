@@ -245,3 +245,4 @@ const journey = (session: Session): void => {
 };
 
 export { journey, loadOptions as options, setup };
+export type { Session };

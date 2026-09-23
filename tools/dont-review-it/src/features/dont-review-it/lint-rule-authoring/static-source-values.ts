@@ -131,3 +131,4 @@ export const moduleConstantsIn = (statements: readonly UnknownFields[]): Constan
         : [];
     }),
   );
+export type { ResolveInput };

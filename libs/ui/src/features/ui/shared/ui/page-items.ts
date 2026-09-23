@@ -30,3 +30,4 @@ const pageItems = ({ current, last }: Readonly<{ current: number; last: number }
 };
 
 export { pageItems };
+export type { PageItem };

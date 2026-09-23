@@ -38,4 +38,4 @@ const resultError = (asyncState: object): string | undefined => {
 };
 
 export { requestEffect as request, requestAtom, resultError };
-export type { RequestResult };
+export type { RequestFailed, RequestResult };

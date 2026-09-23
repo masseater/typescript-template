@@ -2,7 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
 import { forbidTestHook } from "./forbid-test-hook--move-setup-into-fixture.ts";
 

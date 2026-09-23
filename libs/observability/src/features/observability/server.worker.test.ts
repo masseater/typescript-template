@@ -3,7 +3,7 @@ import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
 import { RequestEntropy } from "./request-span.ts";
-import { fixedSpans, recordedLogs } from "./server-testing.ts";
+import { fixedSpans, recordedLogs } from "./server-test-fixture.ts";
 import { CurrentRequest, Telemetry, ingestBrowser, observeRequest } from "./server.ts";
 
 const fixedNow = 1_800_000_000_000;

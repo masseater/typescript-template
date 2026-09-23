@@ -6,7 +6,12 @@ import { join } from "node:path";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect } from "effect";
 
-import { featureFindings, isModularWorkspace, layerBudgetFindings } from "./modular-budgets.ts";
+import {
+  featureFindings,
+  isModularWorkspace,
+  isPublicApiIndex,
+  layerBudgetFindings,
+} from "./modular-budgets.ts";
 import { collectSourceFiles } from "./source-files.ts";
 
 const lineCount = (file: string): Effect.Effect<number> =>
@@ -43,7 +48,7 @@ const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[]> =>
         return {
           directory: entry.isDirectory(),
           name: entry.name,
-          publicApi: names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name)),
+          publicApi: names.some(isPublicApiIndex),
         };
       }),
     );

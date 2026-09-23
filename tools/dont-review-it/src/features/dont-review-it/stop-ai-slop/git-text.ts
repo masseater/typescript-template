@@ -48,3 +48,4 @@ export const runGitBuffer = async ({
 
 export const runGitText = async (ruleOptions: GitCommandOptions): Promise<string> =>
   new TextDecoder("utf-8", { fatal: true }).decode(await runGitBuffer(ruleOptions));
+export type { GitCommandExecutor, GitCommandOptions };

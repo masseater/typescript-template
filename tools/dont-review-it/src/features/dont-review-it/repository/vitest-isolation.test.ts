@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vite-plus/test";
 
 import { repositoryRoot } from "./repository-root.ts";
-import { commands } from "./tasks.ts";
+import { commands } from "./tasks-test-fixture.ts";
 import {
   isolatedNodeTestSuffix,
   isolatedNodeTests,

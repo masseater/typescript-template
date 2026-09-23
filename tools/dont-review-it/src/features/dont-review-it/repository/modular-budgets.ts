@@ -17,6 +17,9 @@ const isModularWorkspace = (cwd: string): boolean => {
   return workspacePath !== undefined && architectureKindOf(workspacePath) === "modular";
 };
 
+const isPublicApiIndex = (fileName: string): boolean =>
+  /^index(?:-test-fixture)?\.[cm]?[jt]sx?$/u.test(fileName);
+
 const layerBudgetFindings = (lines: {
   readonly app: number;
   readonly shared: number;
@@ -52,4 +55,4 @@ const featureFindings = (
     return [];
   });
 
-export { featureFindings, isModularWorkspace, layerBudgetFindings };
+export { featureFindings, isModularWorkspace, isPublicApiIndex, layerBudgetFindings };

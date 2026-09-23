@@ -1,4 +1,4 @@
-import workersHandler from "./libs/monitor/src/features/monitor/monitor-fixture.ts";
+import workersHandler from "./libs/monitor/src/features/monitor/monitor-test-fixture.ts";
 
 export {
   MailRecorder,
@@ -7,8 +7,11 @@ export {
   probeAlert,
   probeEvent,
   probeFailure,
-} from "./libs/monitor/src/features/monitor/monitor-fixture.ts";
-export type { Outcome, SentMail } from "./libs/monitor/src/features/monitor/monitor-fixture.ts";
+} from "./libs/monitor/src/features/monitor/monitor-test-fixture.ts";
+export type {
+  Outcome,
+  SentMail,
+} from "./libs/monitor/src/features/monitor/monitor-test-fixture.ts";
 export { UserInbox } from "./apps/service-member/src/shared/inbox/inbox.ts";
 
 export default workersHandler;

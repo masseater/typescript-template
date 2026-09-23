@@ -81,3 +81,4 @@ export const parseBrowserEvents = (received: {
     ),
   );
 };
+export type { BrowserEventsInvalid };

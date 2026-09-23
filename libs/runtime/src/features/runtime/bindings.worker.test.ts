@@ -2,7 +2,7 @@ import { assert, it } from "@effect/vitest";
 import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 
-import { appEnvironment, fixtureAuthSecret } from "./app-fixture.ts";
+import { appEnvironment, fixtureAuthSecret } from "./app-test-fixture.ts";
 import { readWorkerConfig } from "./bindings.ts";
 
 const model = {

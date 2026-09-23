@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { stringEntriesOf } from "../dependency-catalog/record-fields.ts";
-import { field } from "./dependencies.ts";
-import { commands, configuredDirectories, reachable } from "./tasks.ts";
+import { field } from "./dependencies-test-fixture.ts";
+import { commands, configuredDirectories, reachable } from "./tasks-test-fixture.ts";
 import { linkWrapperFiles } from "./ui-lint-settings.ts";
 
 import type { ReactDoctorConfig } from "react-doctor/api";

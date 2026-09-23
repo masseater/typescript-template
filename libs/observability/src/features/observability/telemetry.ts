@@ -40,3 +40,4 @@ class Telemetry extends Context.Service<Telemetry, TelemetryShape>()(
 }
 
 export { Telemetry };
+export type { TelemetryOptions };

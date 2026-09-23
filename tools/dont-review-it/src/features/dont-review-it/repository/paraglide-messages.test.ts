@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { describe, expect, it } from "vite-plus/test";
 
-import { field, workspaceManifests } from "./dependencies.ts";
+import { field, workspaceManifests } from "./dependencies-test-fixture.ts";
 
 const localizedApps = ["service-member", "service-admin"] as const;
 const locales = ["ja", "en"] as const;

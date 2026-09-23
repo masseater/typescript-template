@@ -22,3 +22,4 @@ const localState = <Value>(initial: Value): LocalState<Value> => {
 const useOptionalString = localState(Option.none<string>());
 
 export { localState, useOptionalString };
+export type { LocalState };

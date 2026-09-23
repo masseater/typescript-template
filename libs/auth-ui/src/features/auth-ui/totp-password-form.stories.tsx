@@ -1,5 +1,5 @@
 import preview from "../../../storybook/preview";
-import { settingsContext } from "./settings-context-fixture";
+import { settingsContext } from "./settings-context-test-fixture";
 import { TotpPasswordForm } from "./totp-password-form";
 
 const meta = preview.meta({

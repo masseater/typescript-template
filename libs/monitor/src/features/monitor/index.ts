@@ -209,4 +209,4 @@ function monitorHandler(event: string): MonitorHandler {
 }
 
 export { AlertEnvironment, maximumAlertRecipients, monitorBinding, monitorWorker };
-export type { MonitorBindings };
+export type { Alert, Monitor, MonitorBindings, MonitorHandler, MonitorSchedule, Notify };

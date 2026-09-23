@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reportCount, reported, reportedRules } from "./lint-harness.ts";
+import { reportCount, reported, reportedRules } from "./lint-harness-test-fixture.ts";
 
 const unmanagedState = [
   [

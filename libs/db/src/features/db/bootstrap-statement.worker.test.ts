@@ -3,10 +3,10 @@ import { Effect, type Layer } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { query } from "./database.ts";
-import { addUser } from "./records-fixture.ts";
+import { addUser } from "./records-test-fixture.ts";
 import { user } from "./schema.ts";
-import { TestDatabase } from "./testing.ts";
 
 const runTest = <Value>(
   program: Effect.Effect<Value, unknown, Layer.Success<typeof TestDatabase>>,

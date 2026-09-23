@@ -55,3 +55,4 @@ function accountTokenRef(resource: TokenResource): Effect.Effect<ApiToken.Accoun
 
 export default stack;
 export { accountTokenRef };
+export type { TokenResource };

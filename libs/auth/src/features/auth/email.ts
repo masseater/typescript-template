@@ -167,4 +167,4 @@ export {
   sendExistingAccountNotice,
   sendVerificationEmail,
 };
-export type { MailSettings };
+export type { LinkedMail, MailBinding, MailSettings };

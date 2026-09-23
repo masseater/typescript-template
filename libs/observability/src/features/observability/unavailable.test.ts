@@ -1,7 +1,7 @@
 import { Cause, Effect, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { recordingSink } from "./testing.ts";
+import { recordingSink } from "./recording-sink-test-fixture.ts";
 import { reportUnavailable } from "./unavailable.ts";
 
 class LayerFailed extends Schema.TaggedError<LayerFailed>()("LayerFailed", {

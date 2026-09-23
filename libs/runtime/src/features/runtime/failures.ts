@@ -111,4 +111,12 @@ function runtimeUnavailable(
 }
 
 export { failureResponse, reportedFailure, runtimeUnavailable };
-export type { CommonFailure, Failure, FailureStatus, FailureTable, Tagged };
+export type {
+  CommonFailure,
+  Failure,
+  FailureStatus,
+  FailureTable,
+  HttpStatus,
+  SettledStatus,
+  Tagged,
+};

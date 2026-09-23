@@ -333,3 +333,4 @@ const createRequestHooks = function createRequestHooks({
 };
 
 export { createRequestHooks };
+export type { RequestHooks };

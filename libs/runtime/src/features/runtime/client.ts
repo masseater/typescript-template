@@ -85,3 +85,4 @@ function apiClient<App extends AnyElysia>(): ReturnType<typeof treaty<App>> {
 }
 
 export { absent, apiClient, apiData, apiDataOrNone, apiServerClient, decodeJson, failureMessage };
+export type { ApiFailure, ApiReply, Decodable };

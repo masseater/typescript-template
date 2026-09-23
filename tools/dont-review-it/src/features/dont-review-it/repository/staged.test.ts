@@ -8,7 +8,7 @@ import {
   stage,
   withEmptyDirectory,
   withRepository,
-} from "./staged-fixture.ts";
+} from "./staged-test-fixture.ts";
 import { indexSecretHits } from "./staged.ts";
 
 const GIT_USAGE_EXIT_CODE = 128;

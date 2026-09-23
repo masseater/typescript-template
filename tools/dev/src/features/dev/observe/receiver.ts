@@ -253,3 +253,4 @@ const receiverFailureReason = (cause: Cause.Cause<ReceiverCheckFailure>): string
 };
 
 export { exportedArrived, receiverFailureReason };
+export type { ReceiverCheckFailure };

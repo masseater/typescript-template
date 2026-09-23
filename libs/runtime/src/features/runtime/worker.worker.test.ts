@@ -5,7 +5,7 @@ import { cspNonceHeader } from "@repo/runtime/security";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { Effect, Schema } from "effect";
 
-import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
+import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fixture.ts";
 import { appLayer } from "./bindings.ts";
 import { appServerEntry, serveApp, workerRuntime } from "./worker.ts";
 

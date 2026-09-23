@@ -91,12 +91,7 @@
       "exports": ["default"]
     }
   ],
-  "overrides": [
-    {
-      "files": ["**/*-fixture.ts", "**/*-testing.ts"],
-      "rules": {
-        "unused-class-members": "off"
-      }
-    }
-  ]
+  "typeAware": {
+    "enabled": true
+  }
 }

@@ -6,7 +6,7 @@ import { Effect } from "effect";
 import { TestClock } from "effect/testing";
 
 import { sessionApi } from "./account.ts";
-import { fixtureOrigin, testClockRuntime } from "./app-fixture.ts";
+import { fixtureOrigin, testClockRuntime } from "./app-test-fixture.ts";
 import { apiRoot, apiRoutes, createApi } from "./http.ts";
 
 const routes = { "/api/health": "health" };

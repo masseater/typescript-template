@@ -82,4 +82,4 @@ const discardSummary = (file: string): Effect.Effect<void, SummaryNotDiscarded> 
   }).pipe(Effect.provide(NodeServices.layer));
 
 export { discardSummary, readSummary };
-export type { Report };
+export type { Report, SummaryNotDiscarded };

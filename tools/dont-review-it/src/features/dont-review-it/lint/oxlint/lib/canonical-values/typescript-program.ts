@@ -109,3 +109,4 @@ export const createCanonicalValuesTypeScriptProgram = (input: ProgramInput): ts.
   });
   return program;
 };
+export type { ProgramInput };

@@ -74,3 +74,4 @@ export const repeatedBodyVisitor = ({
     },
   };
 };
+export type { RepeatedSites };

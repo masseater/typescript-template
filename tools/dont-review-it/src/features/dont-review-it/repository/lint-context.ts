@@ -19,7 +19,7 @@ const filename = (inspection: LintContext): string => {
   return inspection.filename.replaceAll("\\", "/");
 };
 
-const fixtureOrTestFile = /(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$/u;
+const fixtureOrTestFile = /(?:\.(?:test|spec)|-test-fixture)\.[cm]?[jt]sx?$/u;
 
 const scopeOf = (inspection: LintContext, node: Node): Scope => {
   return inspection.sourceCode.getScope(node as ESTree.Node);

@@ -39,3 +39,4 @@ function decideAccess(
 }
 
 export { decideAccess, denied, sessionPresence };
+export type { SessionDenial };

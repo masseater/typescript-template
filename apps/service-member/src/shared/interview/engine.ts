@@ -190,3 +190,4 @@ function save(state: Settled): Settled {
 }
 
 export { accepts, advance, begin, needsModel, save, spoken };
+export type { Asking, Settled };

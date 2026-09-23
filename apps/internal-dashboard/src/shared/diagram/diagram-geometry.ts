@@ -268,4 +268,4 @@ const inflate = (box: Box, by: number): Box => ({
 });
 
 export { center, formatPoints, inflate, readGeometry, segmentsOf, svgOf };
-export type { Box, DiagramGeometry, Label, Point, Route };
+export type { Box, DiagramGeometry, Label, Point, Route, Shape };

@@ -85,4 +85,4 @@ const shardDirectories = (
 };
 
 export { affectedTests, shardDirectories };
-export type { WorkspacePackage };
+export type { AffectedTests, WorkspacePackage };

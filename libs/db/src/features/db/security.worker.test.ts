@@ -3,9 +3,9 @@ import { Effect, type Layer } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { deleteUser, setUserRole } from "./admin.ts";
-import { addOAuthGrant, addSession, addUser, oauthGrantCounts } from "./records-fixture.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
+import { addOAuthGrant, addSession, addUser, oauthGrantCounts } from "./records-test-fixture.ts";
 import { findWikiReader, getSessionSecurity, revokeUserSessions } from "./security.ts";
-import { TestDatabase } from "./testing.ts";
 
 const runTest = <Value>(
   program: Effect.Effect<Value, unknown, Layer.Success<typeof TestDatabase>>,

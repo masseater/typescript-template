@@ -260,4 +260,4 @@ const routeAround = (request: RouteRequest): readonly Point[] => {
 };
 
 export { routeAround };
-export type { Direction };
+export type { Direction, RouteRequest };

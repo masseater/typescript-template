@@ -496,5 +496,5 @@ export {
 export { paths } from "./host.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
-export type { Tasks };
+export type { Lifecycle, LifecycleTask, RunConfig, Tasks };
 export { devBoundary };

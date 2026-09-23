@@ -77,7 +77,7 @@ export default defineProject({
     setupFiles: [
       fileURLToPath(
         new URL(
-          "./tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields.ts",
+          "./tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields-test-fixture.ts",
           import.meta.url,
         ),
       ),

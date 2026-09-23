@@ -7,8 +7,8 @@ import {
   contentRules,
   leaks,
   PREFIX_KEY,
+  prefixScan,
   privateFile,
-  wordPattern,
   type DeploymentValue,
   type PrefixScan,
 } from "./secrets.ts";
@@ -155,9 +155,7 @@ const prefixScanForIndex = Effect.fn("prefixScanForIndex")(function* prefixScanF
     return "word" as const satisfies PrefixScan;
   }
   const contents = yield* Effect.forEach(files, (filename) => showCached(root, filename));
-  return contents.some((content) => wordPattern(prefix).test(content))
-    ? ("separated" as const satisfies PrefixScan)
-    : ("word" as const satisfies PrefixScan);
+  return prefixScan(environmentValues, contents);
 });
 
 type Hit = readonly [filename: string, rule: string];

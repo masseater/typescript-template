@@ -39,3 +39,4 @@ export const nestedObjectAt = ({
     const nested = objectValueOf({ object: reached, key: named });
     return nested?.type === "ObjectExpression" ? nested : null;
   }, object);
+export type { ObjectLookup };

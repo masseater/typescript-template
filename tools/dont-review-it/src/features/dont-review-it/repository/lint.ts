@@ -297,8 +297,8 @@ const lintOptions = {
     },
     {
       files: [
-        "libs/db/src/features/db/testing.ts",
-        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+        "libs/db/src/features/db/database-test-fixture.ts",
+        "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
       ],
       rules: {
         "typescript/no-namespace": LINT_SEVERITY.OFF,
@@ -328,7 +328,7 @@ const lintOptions = {
           "doctor.config.ts",
           "drizzle.config.ts",
           "main.ts",
-          "monitor-fixture.ts",
+          "monitor-test-fixture.ts",
           "plugin.ts",
           "preview.tsx",
           "server.ts",
@@ -393,54 +393,4 @@ const lintOptions = {
   },
 } satisfies Parameters<typeof dontReviewItPreset.lint>[0];
 
-const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
-  {},
-  lintOptions.rules,
-  ...lintOptions.overrides
-    .filter((override) => override.files?.includes("libs/**") === true)
-    .map((override) => override.rules ?? {}),
-);
-
-const builtInPlugins: ReadonlySet<string> = new Set([
-  "eslint",
-  "import",
-  "jest",
-  "jsdoc",
-  "jsx-a11y",
-  "nextjs",
-  "node",
-  "oxc",
-  "promise",
-  "react",
-  "react-perf",
-  "typescript",
-  "unicorn",
-  "vitest",
-  "vue",
-]);
-
-const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] => {
-  return overrides.flatMap((override, index) => {
-    const plugins = override.plugins;
-    if (plugins === undefined) {
-      return [];
-    }
-    const enabled = new Set<string>(plugins);
-    return Object.keys(override.rules ?? {}).flatMap((rule) => {
-      const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
-      if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {
-        return [];
-      }
-      return [`overrides[${String(index)}] ${rule} needs plugins to include ${plugin}`];
-    });
-  });
-};
-
-export {
-  awaitingPresetPackages,
-  configuredLintRules,
-  generatedFiles,
-  lintOptions,
-  overridePluginMismatches,
-  templateWorkspaces,
-};
+export { awaitingPresetPackages, generatedFiles, lintOptions, templateWorkspaces };

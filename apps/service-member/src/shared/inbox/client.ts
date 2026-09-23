@@ -26,3 +26,4 @@ function openRealtime(env: InboxEnv, userId: string, request: Request): Promise<
 }
 
 export { openRealtime };
+export type { InboxEnv, InboxNamespace };

@@ -4,7 +4,7 @@ import { expect } from "storybook/test";
 
 import preview, { playTask } from "../../../storybook/preview";
 import { PasskeySettings } from "./passkey-settings";
-import { settingsContext } from "./settings-context-fixture";
+import { settingsContext } from "./settings-context-test-fixture";
 
 const listPath = "/api/auth/passkey/list-user-passkeys";
 

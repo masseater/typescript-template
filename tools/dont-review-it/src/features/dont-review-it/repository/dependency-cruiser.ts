@@ -14,12 +14,12 @@ const anyOf = (values: readonly string[]): string => {
   return values.map((value) => value.replaceAll(".", String.raw`\.`)).join("|");
 };
 
-const testModule = String.raw`(?:\.(?:test|spec)|-fixture)\.[cm]?[jt]sx?$`;
+const testModule = String.raw`(?:\.(?:test|spec)|-test-fixture)\.[cm]?[jt]sx?$`;
 const developmentModule = String.raw`${testModule}|\.stories\.tsx$`;
 const databaseAdmin = String.raw`^libs/db/src/features/db/admin\.ts$`;
 const databaseOperations = String.raw`^libs/(db(?:-local)?)/src/features/\1/(?:remote|bootstrap|migrat)[^/]*\.ts$`;
 const databaseInternal = String.raw`^libs/(db(?:-local)?)/src/features/\1/(?:(?:remote|bootstrap|migrat|testing)[^/]*\.ts$|.*${testModule})`;
-const testingEntry = String.raw`^libs/([^/]+)/src/features/\1/testing[^/]*\.ts$`;
+const testingEntry = String.raw`-test-fixture\.[cm]?[jt]sx?$`;
 const rawDatabaseDriver = String.raw`(?:^|/)node_modules/(?:drizzle-orm|drizzle-kit|better-sqlite3|sqlite3|pg|postgres)/|^(?:node:)?sqlite$`;
 const deploymentConfig = String.raw`^infra/cloudflare/src/features/cloudflare/deployment\.ts$`;
 const objectStorage = String.raw`^libs/config/src/features/config/storage\.ts$`;
@@ -29,18 +29,8 @@ const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`
 const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
 const workerRuntimeModule = String.raw`^(?:${anyOf(workerRuntimeModules)})$`;
 
-const generatedRouteTree = String.raw`routeTree\.gen\.ts$`;
-
 const configuration: IConfiguration = {
   forbidden: [
-    {
-      comment:
-        "循環依存です。依存の向きを一方通行にし、共有が必要なら下位のモジュールへ型や関数を移してください。",
-      from: { pathNot: generatedRouteTree },
-      name: "no-circular",
-      severity: "error",
-      to: { circular: true, pathNot: generatedRouteTree },
-    },
     {
       comment:
         "依存先を解決できません。アプリはデプロイ単位で、取り込まれる面を持ちません。相手のパッケージが exports で公開している入口を指定し、その依存を package.json に宣言してください。",
@@ -81,7 +71,7 @@ const configuration: IConfiguration = {
       severity: "error",
       to: {
         dependencyTypes: ["local"],
-        pathNot: String.raw`^$1/$2/|^libs/auth/src/features/auth/testing\.ts$|^libs/db/src/features/db/migrate-d1\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings\.ts$`,
+        pathNot: String.raw`^$1/$2/|^libs/auth/src/features/auth/index-test-fixture\.ts$|^libs/db/src/features/db/migrate-d1\.ts$|^libs/ui/storybook/preview\.tsx$|^tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings\.ts$`,
       },
     },
     {
@@ -114,7 +104,7 @@ const configuration: IConfiguration = {
     {
       comment:
         "テスト専用の入口です。テストとフィクスチャからだけ使い、アプリの実装へ持ち込まないでください。",
-      from: { path: "^(?:apps|libs|infra|tools)/", pathNot: testModule },
+      from: { path: "^(?:apps|libs|infra|tools)/", pathNot: developmentModule },
       name: "no-testing-entry-outside-tests",
       severity: "error",
       to: { path: testingEntry },

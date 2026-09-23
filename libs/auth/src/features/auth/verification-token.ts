@@ -24,3 +24,4 @@ const emailChangeTarget = (
 };
 
 export { emailChangeTarget };
+export type { VerificationTokenInvalid };

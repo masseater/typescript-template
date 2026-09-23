@@ -44,4 +44,4 @@ const logCause = (logged: {
   );
 
 export { logAt, logCause, statusSeverity };
-export type { Severity };
+export type { Logged, Severity };

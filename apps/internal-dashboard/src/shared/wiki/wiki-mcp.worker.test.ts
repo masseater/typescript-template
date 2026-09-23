@@ -13,7 +13,7 @@ import {
   registerVerified,
   signIn,
   signInAs,
-} from "../../../../../libs/auth/src/features/auth/testing.ts";
+} from "../../../../../libs/auth/src/features/auth/index-test-fixture.ts";
 import {
   exchangeCode,
   grantAuthorization,
@@ -22,7 +22,7 @@ import {
   startAuthorization,
   wikiAdministrator,
   wikiOrigin,
-} from "./wiki-oauth-fixture.ts";
+} from "./wiki-oauth-test-fixture.ts";
 
 const tamperedSuffix = "xx";
 

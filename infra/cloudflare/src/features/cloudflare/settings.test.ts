@@ -18,7 +18,7 @@ import {
   verificationAuthSecret,
   verificationEnvironment,
   verificationSettings,
-} from "./verification-fixture.ts";
+} from "./verification-settings.ts";
 
 const settings = verificationSettings;
 

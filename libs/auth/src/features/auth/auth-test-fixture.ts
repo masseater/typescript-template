@@ -13,9 +13,9 @@ import { test } from "vite-plus/test";
 
 import { AuthIdentifiers, type GenerateId } from "./auth-identifiers.ts";
 import { Auth } from "./auth.ts";
-import { BrowserClient, origins } from "./browser-client-fixture.ts";
-import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
-import { UnexpectedStatus } from "./unexpected-status.ts";
+import { BrowserClient, origins } from "./browser-client-test-fixture.ts";
+import { mailConfig, mailServer, verificationLink } from "./mail-test-fixture.ts";
+import { UnexpectedStatus } from "./unexpected-status-test-fixture.ts";
 
 import type { Database } from "@repo/db";
 import type { AuthFailure } from "./auth-failure.ts";
@@ -311,3 +311,4 @@ export {
   spendSignInWindow,
   verifyEmail,
 };
+export type { AuthTestServices };

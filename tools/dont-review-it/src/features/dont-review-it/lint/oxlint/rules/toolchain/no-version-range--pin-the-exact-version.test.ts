@@ -2,7 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path } from "effect";
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { path } from "../../../../platform/path.ts";
 import { loadCatalogEntries } from "../../lib/dependency-catalog/catalog-entries.ts";
 import { loadWorkspaceDependencies } from "../../lib/dependency-catalog/workspace-manifests.ts";

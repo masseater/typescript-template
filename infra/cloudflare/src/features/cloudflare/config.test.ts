@@ -11,7 +11,7 @@ import {
   workerObservability,
 } from "./config.ts";
 import { stackNames } from "./stacks.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 import type {
   Ai,

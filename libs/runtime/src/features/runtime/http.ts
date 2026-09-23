@@ -304,5 +304,16 @@ export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
 export { apiRoot, apiRoutes, createApi, elysiaServer, readJsonBody, readSearchParams };
-export type { ApiRoutes };
+export type {
+  ApiRoutes,
+  Decodable,
+  ElysiaContext,
+  ElysiaHandler,
+  ElysiaStreamContext,
+  EventStream,
+  Failed,
+  FailedEvent,
+  Handler,
+  ServerSentEvent,
+};
 export type { Failure, FailureTable } from "./failures.ts";

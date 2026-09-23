@@ -15,7 +15,7 @@ describe("privatePath", () => {
         "apps/service-admin/src/entry.ts",
         "libs/db/src/features/db/admin.ts",
         "libs/db/src/features/db/remote-cli.ts",
-        "libs/db/src/features/db/testing.ts",
+        "libs/db/src/features/db/database-test-fixture.ts",
         ".env.local",
         "certs/app.pem",
       ].map((candidatePath) =>

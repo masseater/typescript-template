@@ -40,22 +40,11 @@ const stateKinds = {
   },
 } as const satisfies Record<StateKindId, StateKind>;
 
-const serverStateKind = stateKinds.server;
-
-const serverStateRetiredPackages: Readonly<Record<string, string>> =
-  serverStateKind.retiredPackages;
-
-const handRolledServerReadMessage =
-  "A module must not combine `useState` with `fetch` for server data. Read server data through TanStack Query option factories and `useQuery`.";
-
 const atomHeldServerDataMessage =
   "An Atom must not hold server data reached through `fetch`, WebSocket, EventSource, XMLHttpRequest, an `api` segment, or a `client` module. Move that read to a TanStack Query option factory in an `api` segment.";
 
 const serverCacheApiMessage =
   "Server-oriented Atom cache APIs must not be used. Read server data through TanStack Query option factories and invalidate with the Query client.";
-
-const queryOptionsPlacementMessage =
-  "`queryOptions`, `infiniteQueryOptions`, and `mutationOptions` must not be declared outside an FSD `api` segment. Move the factory into a module under an `api` directory.";
 
 const retiredPackagesFromStateKinds = (): Readonly<Record<string, string>> =>
   Object.fromEntries(
@@ -64,10 +53,7 @@ const retiredPackagesFromStateKinds = (): Readonly<Record<string, string>> =>
 
 export {
   atomHeldServerDataMessage,
-  handRolledServerReadMessage,
-  queryOptionsPlacementMessage,
   retiredPackagesFromStateKinds,
   serverCacheApiMessage,
-  serverStateRetiredPackages,
   stateKinds,
 };

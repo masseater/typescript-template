@@ -74,3 +74,4 @@ class ReadCache extends Context.Service<ReadCache, ReadCacheShape>()("@repo/runt
 }
 
 export { ReadCache };
+export type { Namespace };

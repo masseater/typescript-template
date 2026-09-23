@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import {
-  awaitingPresetPackages,
-  lintOptions,
-  overridePluginMismatches,
-  templateWorkspaces,
-} from "./lint.ts";
+import { overridePluginMismatches } from "./lint-test-fixture.ts";
+import { awaitingPresetPackages, lintOptions, templateWorkspaces } from "./lint.ts";
 import { repositoryRoot } from "./repository-root.ts";
-import { commands, reachable, taskNames } from "./tasks.ts";
+import { commands, reachable, taskNames } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
 
 const manifests: Readonly<Record<string, unknown>> = import.meta.glob(

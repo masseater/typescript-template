@@ -1,7 +1,12 @@
 import { modularBudgets } from "@repo/config";
 import { describe, expect, it } from "vite-plus/test";
 
-import { featureFindings, isModularWorkspace, layerBudgetFindings } from "./modular-budgets.ts";
+import {
+  featureFindings,
+  isModularWorkspace,
+  isPublicApiIndex,
+  layerBudgetFindings,
+} from "./modular-budgets.ts";
 
 describe("modular budgets", () => {
   it.for([
@@ -41,5 +46,16 @@ describe("modular budgets", () => {
       "features/loose.ts: place slice code in a directory, not a loose file.",
       "features/search: missing public API index (features/search/index.ts).",
     ]);
+  });
+
+  it.for([
+    ["index.ts", true],
+    ["index.tsx", true],
+    ["index-test-fixture.ts", true],
+    ["index.test.ts", false],
+    ["public.ts", false],
+  ] as const)("treats %s as a public API index: %s", ([fileName, publicApi]) => {
+    expect.hasAssertions();
+    expect(isPublicApiIndex(fileName)).toBe(publicApi);
   });
 });

@@ -7,7 +7,7 @@ import { Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
-import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";
+import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks-test-fixture.ts";
 import {
   commands,
   configuredDirectories,
@@ -20,7 +20,7 @@ import {
   uncachedGateTasks,
   workspaceDirectories,
   workspaceNames,
-} from "./tasks.ts";
+} from "./tasks-test-fixture.ts";
 import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
 
 const hooks: Readonly<Record<string, string>> = import.meta.glob(

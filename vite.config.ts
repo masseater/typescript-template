@@ -100,7 +100,7 @@ export default defineConfig({
       mutation: {
         cache: false,
         command:
-          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker.ts",
+          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker-test-fixture.ts",
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,

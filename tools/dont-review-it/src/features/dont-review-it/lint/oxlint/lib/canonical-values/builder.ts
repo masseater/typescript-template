@@ -205,3 +205,4 @@ const buildCanonicalValuesCatalog = ({
 export const loadCanonicalValuesCatalogSnapshot = memoize(buildCanonicalValuesCatalog, {
   getCacheKey: (catalogRequest) => path.resolve(catalogRequest.repositoryRoot),
 });
+export type { CanonicalValuesDuplicateProblem };

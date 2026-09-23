@@ -17,7 +17,7 @@ import {
   signInAgainAfterTotp,
   signInAs,
   startAuthorization,
-} from "./testing.ts";
+} from "./index-test-fixture.ts";
 
 describe("request hooks", () => {
   describe.for([APPLICATION.user, APPLICATION.admin] as const)(

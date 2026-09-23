@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noExpectProjectedSubject } from "./no-expect-projected-subject--use-tostrictequal-on-subject.ts";
 
 const SPEC_FILE = "report.test.ts";

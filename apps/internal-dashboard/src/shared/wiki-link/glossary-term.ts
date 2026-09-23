@@ -44,4 +44,4 @@ function glossaryTermsOf(pages: readonly GlossaryPage[]): readonly GlossaryTerm[
 }
 
 export { findGlossaryTerm, glossaryTermsOf };
-export type { GlossaryTerm };
+export type { GlossaryPage, GlossaryTerm };

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { approvedRegistries, componentsConfigs, registryViolations } from "./shadcn-registries.ts";
+import {
+  approvedRegistries,
+  componentsConfigs,
+  registryViolations,
+} from "./shadcn-registries-test-fixture.ts";
 
 describe("shadcn registries", () => {
   it("rejects a registry that has not been adopted", () => {

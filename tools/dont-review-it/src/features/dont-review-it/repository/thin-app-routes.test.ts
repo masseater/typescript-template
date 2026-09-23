@@ -1,7 +1,7 @@
 import { parseSync } from "oxc-parser";
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported } from "./lint-harness.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
 import { containsJsx, isAppRouteModule } from "./thin-app-routes.ts";
 
 const jsx = "export const Page = () => <div />;\n";

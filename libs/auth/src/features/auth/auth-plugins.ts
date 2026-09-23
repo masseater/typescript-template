@@ -92,3 +92,4 @@ const authPlugins = ({
 };
 
 export { authPlugins };
+export type { AuthPlugin };

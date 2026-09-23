@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises";
 import { cruise, type ICruiseResult } from "dependency-cruiser";
 import { describe, expect, it } from "vite-plus/test";
 
-import { createFixture, type Fixture } from "./dependency-cruiser-fixture.ts";
+import { createFixture, type Fixture } from "./dependency-cruiser-test-fixture.ts";
 import configuration from "./dependency-cruiser.ts";
 
 type Case = readonly [string, Fixture];
@@ -122,7 +122,7 @@ const detected: readonly Case[] = [
   ],
   [
     "no-testing-entry-outside-tests",
-    { "libs/db/src/features/db/index.ts": 'export * from "./testing.ts";\n' },
+    { "libs/db/src/features/db/index.ts": 'export * from "./database-test-fixture.ts";\n' },
   ],
   [
     "no-testing-entry-outside-tests",
@@ -270,7 +270,10 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-testing-entry-outside-tests",
-    { "libs/db/src/features/db/records-fixture.ts": 'export * from "./testing.ts";\n' },
+    {
+      "libs/db/src/features/db/records-test-fixture.ts":
+        'export * from "./database-test-fixture.ts";\n',
+    },
   ],
   [
     "no-testing-entry-outside-tests",

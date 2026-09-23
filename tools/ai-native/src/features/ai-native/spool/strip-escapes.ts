@@ -167,3 +167,4 @@ export const createEscapeStripper = (): DuplexStream =>
       };
     },
   }));
+export type { DuplexStream };

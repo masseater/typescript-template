@@ -100,3 +100,4 @@ const clustersIn = (
 
 export const duplicatedClustersIn = (index: BodyIndex): readonly (readonly BodySite[])[] =>
   clustersIn(index.sitesByFingerprint);
+export type { IndexedBody };

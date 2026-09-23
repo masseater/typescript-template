@@ -1,6 +1,6 @@
 import preview from "../../../storybook/preview";
 import { PasskeyRegisterForm } from "./passkey-register-form";
-import { settingsContext } from "./settings-context-fixture";
+import { settingsContext } from "./settings-context-test-fixture";
 
 const meta = preview.meta({
   args: {

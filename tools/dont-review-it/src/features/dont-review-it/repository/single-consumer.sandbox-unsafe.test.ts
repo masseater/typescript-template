@@ -6,7 +6,7 @@ import {
   singleConsumerFindings,
   type SourceText,
   type WorkspaceManifest,
-} from "./single-consumer.ts";
+} from "./single-consumer-test-fixture.ts";
 
 const workspace = (
   file: string,

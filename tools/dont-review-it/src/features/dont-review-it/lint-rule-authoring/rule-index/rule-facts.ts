@@ -198,3 +198,4 @@ export const lintRuleFactsIn = ({
     .filter((candidate): candidate is UnknownFields => candidate !== null)
     .flatMap((definition) => factsOf({ definition, constants, sourcePath }));
 };
+export type { LintRuleMessage };

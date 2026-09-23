@@ -20,7 +20,7 @@ import {
   signIn,
   spendSignInWindow,
   verifyEmail,
-} from "./testing.ts";
+} from "./index-test-fixture.ts";
 
 describe("createAuth", () => {
   describe("a registered user whose email is not verified yet", () => {

@@ -76,3 +76,4 @@ function shouldNotify(
 }
 
 export { evaluateBudget, shouldNotify };
+export type { BudgetDecision };

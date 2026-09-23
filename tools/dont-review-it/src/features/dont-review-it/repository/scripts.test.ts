@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { field, workspaceManifests } from "./dependencies.ts";
-import { scriptViolations, taskViolations } from "./scripts.ts";
-import { configuredDirectories, workspaceTasks } from "./tasks.ts";
+import { field, workspaceManifests } from "./dependencies-test-fixture.ts";
+import { scriptViolations, taskViolations } from "./scripts-test-fixture.ts";
+import { configuredDirectories, workspaceTasks } from "./tasks-test-fixture.ts";
 
-import type { WorkspaceManifest } from "./dependencies.ts";
+import type { WorkspaceManifest } from "./dependencies-test-fixture.ts";
 
 function packageNames(manifests: readonly WorkspaceManifest[]): string[] {
   return manifests.flatMap(({ manifest }) => {

@@ -54,3 +54,4 @@ export const standardIoTest: StandardIoTest = new Proxy(unbound, {
     return forward(property);
   },
 });
+export type { StandardIoTest };

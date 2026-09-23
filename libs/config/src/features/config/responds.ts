@@ -54,3 +54,4 @@ function waitUntilRespondsWith<Rejected, Unreachable>(
 }
 
 export { respondedSuccessfully, waitUntilResponds };
+export type { RespondsRequest };

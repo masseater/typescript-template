@@ -81,3 +81,4 @@ const CredentialsForm = (props: CredentialsFormProps): ReactElement => {
 };
 
 export { CredentialsForm };
+export type { CredentialsFormProps };

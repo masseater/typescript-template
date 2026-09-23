@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported, reportedRules } from "./lint-harness.ts";
+import { reported, reportedRules } from "./lint-harness-test-fixture.ts";
 
 const testFile = "libs/shared/src/shared/probe.test.ts";
 

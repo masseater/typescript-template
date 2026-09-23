@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noModuleScopeMutableState } from "./no-module-scope-mutable-state--lift-into-fixture.ts";
 
 const SPEC_FILENAME = "ledger.test.ts";
