@@ -52,6 +52,7 @@ function fail(
 const MIN_AUTH_SECRET_VARIETY = 16;
 const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
+const Confirmation = Schema.String.check(Schema.isPattern(CONFIRMATION_PATTERN));
 
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
 const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
@@ -179,7 +180,7 @@ const DeployCommand = Schema.Tuple([
   Schema.Literal("deploy"),
   Schema.Literals(stackNames),
   Schema.Literal("--confirm-plan"),
-  Schema.String.check(Schema.isPattern(CONFIRMATION_PATTERN)),
+  Confirmation,
 ]);
 const DeploymentCommand = Schema.Union([PlanCommand, DeployAllCommand, DeployCommand]);
 
@@ -228,6 +229,7 @@ export {
   AuthSecret,
   CONFIRMATION_LENGTH,
   CloudflareFailure,
+  Confirmation,
   Domain,
   Email,
   HttpsUrl,
