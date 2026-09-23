@@ -18,10 +18,6 @@ export default defineConfig({
         cache: false,
         command: "./src/features/cloudflare/database-command.ts bootstrap",
       },
-      "db:migrate:remote": {
-        cache: false,
-        command: "./src/features/cloudflare/database-command.ts migrate",
-      },
       deploy: {
         cache: false,
         command: "./src/features/cloudflare/cli.ts deploy",
