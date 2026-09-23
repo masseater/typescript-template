@@ -1921,21 +1921,6 @@ importers:
       '@repo/ai-native-telemetry':
         specifier: workspace:*
         version: link:../ai-native-telemetry
-      '@repo/cli':
-        specifier: workspace:*
-        version: link:../../libs/cli
-      '@repo/config':
-        specifier: workspace:*
-        version: link:../../libs/config
-      '@repo/infra-cloudflare':
-        specifier: workspace:*
-        version: link:../../infra/cloudflare
-      '@repo/observability':
-        specifier: workspace:*
-        version: link:../../libs/observability
-      '@repo/vite-config':
-        specifier: workspace:*
-        version: link:../../libs/vite-config
       '@shadcn/lint':
         specifier: 'catalog:'
         version: 0.1.1(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@7.0.2)
@@ -2003,6 +1988,21 @@ importers:
       '@oxlint/plugins':
         specifier: 1.82.0
         version: 1.82.0
+      '@repo/cli':
+        specifier: workspace:*
+        version: link:../../libs/cli
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../../libs/config
+      '@repo/infra-cloudflare':
+        specifier: workspace:*
+        version: link:../../infra/cloudflare
+      '@repo/observability':
+        specifier: workspace:*
+        version: link:../../libs/observability
+      '@repo/vite-config':
+        specifier: workspace:*
+        version: link:../../libs/vite-config
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.3.6
