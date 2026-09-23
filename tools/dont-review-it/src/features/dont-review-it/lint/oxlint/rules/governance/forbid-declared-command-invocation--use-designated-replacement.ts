@@ -1,8 +1,7 @@
-import { resolve, sep } from "node:path";
-
 import { memoize, uniq } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import {
   carriesUndecidedTarget,
   invokedNamesIn,
@@ -195,8 +194,8 @@ const registeredPositionsIn = (
   const covering = exceptionsCovering({
     exceptions: specifierExceptionsIn(inspection.options),
     pathSegments: segmentsOf({
-      path: resolve(inspection.cwd, inspection.filename),
-      separator: sep,
+      path: path.resolve(inspection.cwd, inspection.filename),
+      separator: path.sep,
     }),
     cwd: inspection.cwd,
   });

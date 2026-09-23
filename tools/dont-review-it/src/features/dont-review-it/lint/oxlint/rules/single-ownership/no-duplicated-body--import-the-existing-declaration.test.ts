@@ -1,8 +1,7 @@
-import { join } from "node:path";
-
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { buildBodyIndex, type BodyIndex } from "../../lib/duplicated-bodies/body-index.ts";
 import { createNoDuplicatedBody } from "./no-duplicated-body--import-the-existing-declaration.ts";
@@ -13,7 +12,7 @@ const SUBJECT_PATH = "packages/dont-review-it/src/subject.ts";
 
 const OTHER_PATH = "packages/repository-checks/src/other.ts";
 
-const subjectFilename = join(repositoryRoot, SUBJECT_PATH);
+const subjectFilename = path.join(repositoryRoot, SUBJECT_PATH);
 
 const NODES_IN_A_REPORTED_BODY = 8;
 
@@ -153,12 +152,12 @@ describe("dont-review-it/no-duplicated-body--import-the-existing-declaration", (
       {
         name: "a test file is never indexed, so it is never reported",
         code: "const twice = (value: number): number => value * 2;",
-        filename: join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
       },
       {
         name: "a file the index does not know is left alone",
         code: "const twice = (value: number): number => value * 2;",
-        filename: join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
       },
     ],
     invalid: [

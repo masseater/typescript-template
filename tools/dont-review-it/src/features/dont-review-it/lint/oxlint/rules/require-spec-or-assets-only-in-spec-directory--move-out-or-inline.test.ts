@@ -1,15 +1,17 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../lint-rule-authoring/index.ts";
+import { path } from "../../../platform/path.ts";
 import { requireSpecOrAssetsOnlyInSpecDirectory } from "./require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts";
 
-const fixtureDir = mkdtempSync(
-  join(tmpdir(), "dont-review-it-require-spec-or-assets-only-in-spec-directory-"),
-);
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({
+    prefix: "dont-review-it-require-spec-or-assets-only-in-spec-directory-",
+  });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 const MODULE_SOURCE = "export const held = true;\n";
 
@@ -20,76 +22,13 @@ const ASSETS_NAMES = "`*.assets.*`";
 const WORKSPACE_MANIFEST = "packages:\n  - packages/*\n";
 
 const ROOT_PACKAGE_MANIFEST = '{ "name": "fixture" }\n';
-
-mkdirSync(join(fixtureDir, "held/packages/alpha/test"), { recursive: true });
-mkdirSync(join(fixtureDir, "held/packages/alpha/src"), { recursive: true });
-writeFileSync(join(fixtureDir, "held/pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "held/package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(
-  join(fixtureDir, "held/packages/alpha/package.json"),
-  '{ "name": "alpha" }\n',
-  "utf8",
-);
-writeFileSync(join(fixtureDir, "held/packages/alpha/test/order.test.ts"), MODULE_SOURCE, "utf8");
-writeFileSync(join(fixtureDir, "held/packages/alpha/test/order.assets.ts"), MODULE_SOURCE, "utf8");
-const heldSource = join(fixtureDir, "held/packages/alpha/src/order.ts");
-writeFileSync(heldSource, MODULE_SOURCE, "utf8");
-
-mkdirSync(join(fixtureDir, "carved/packages/alpha/test"), { recursive: true });
-mkdirSync(join(fixtureDir, "carved/packages/alpha/src"), { recursive: true });
-mkdirSync(join(fixtureDir, "carved/packages/beta/src"), { recursive: true });
-writeFileSync(join(fixtureDir, "carved/pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "carved/package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(
-  join(fixtureDir, "carved/packages/alpha/package.json"),
-  '{ "name": "alpha" }\n',
-  "utf8",
-);
-writeFileSync(join(fixtureDir, "carved/packages/alpha/test/order.test.ts"), MODULE_SOURCE, "utf8");
-writeFileSync(join(fixtureDir, "carved/packages/alpha/test/helpers.ts"), MODULE_SOURCE, "utf8");
-const carvedSource = join(fixtureDir, "carved/packages/alpha/src/order.ts");
-writeFileSync(carvedSource, MODULE_SOURCE, "utf8");
-writeFileSync(
-  join(fixtureDir, "carved/packages/beta/package.json"),
-  '{ "name": "beta" }\n',
-  "utf8",
-);
-const untouchedSource = join(fixtureDir, "carved/packages/beta/src/price.ts");
-writeFileSync(untouchedSource, MODULE_SOURCE, "utf8");
-
-mkdirSync(join(fixtureDir, "nested/test/orders"), { recursive: true });
-mkdirSync(join(fixtureDir, "nested/src"), { recursive: true });
-writeFileSync(join(fixtureDir, "nested/pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "nested/package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "nested/test/orders/held.ts"), MODULE_SOURCE, "utf8");
-const nestedSource = join(fixtureDir, "nested/src/entry.ts");
-writeFileSync(nestedSource, MODULE_SOURCE, "utf8");
-
-mkdirSync(join(fixtureDir, "stemless/test"), { recursive: true });
-mkdirSync(join(fixtureDir, "stemless/src"), { recursive: true });
-writeFileSync(join(fixtureDir, "stemless/pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "stemless/package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "stemless/test/assets.ts"), MODULE_SOURCE, "utf8");
-const stemlessSource = join(fixtureDir, "stemless/src/entry.ts");
-writeFileSync(stemlessSource, MODULE_SOURCE, "utf8");
-
-mkdirSync(join(fixtureDir, "renamed/cases"), { recursive: true });
-mkdirSync(join(fixtureDir, "renamed/src"), { recursive: true });
-writeFileSync(join(fixtureDir, "renamed/pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "renamed/package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "renamed/cases/order.spec.ts"), MODULE_SOURCE, "utf8");
-writeFileSync(join(fixtureDir, "renamed/cases/order.data.ts"), MODULE_SOURCE, "utf8");
-writeFileSync(join(fixtureDir, "renamed/cases/helpers.ts"), MODULE_SOURCE, "utf8");
-const renamedSource = join(fixtureDir, "renamed/src/entry.ts");
-writeFileSync(renamedSource, MODULE_SOURCE, "utf8");
-
-mkdirSync(join(fixtureDir, "generated/build/test"), { recursive: true });
-mkdirSync(join(fixtureDir, "generated/src"), { recursive: true });
-writeFileSync(join(fixtureDir, "generated/pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "generated/package.json"), ROOT_PACKAGE_MANIFEST, "utf8");
-writeFileSync(join(fixtureDir, "generated/build/test/helpers.ts"), MODULE_SOURCE, "utf8");
-const generatedSource = join(fixtureDir, "generated/src/entry.ts");
-writeFileSync(generatedSource, MODULE_SOURCE, "utf8");
+const heldSource = path.join(fixtureDir, "held/packages/alpha/src/order.ts");
+const carvedSource = path.join(fixtureDir, "carved/packages/alpha/src/order.ts");
+const untouchedSource = path.join(fixtureDir, "carved/packages/beta/src/price.ts");
+const nestedSource = path.join(fixtureDir, "nested/src/entry.ts");
+const stemlessSource = path.join(fixtureDir, "stemless/src/entry.ts");
+const renamedSource = path.join(fixtureDir, "renamed/src/entry.ts");
+const generatedSource = path.join(fixtureDir, "generated/src/entry.ts");
 
 const RENAMED_CONVENTION = [
   {
@@ -98,6 +37,67 @@ const RENAMED_CONVENTION = [
     assetsNameMarkers: ["data"],
   },
 ];
+
+const FIXTURE_DIRECTORIES: readonly string[] = [
+  path.join(fixtureDir, "held/packages/alpha/test"),
+  path.join(fixtureDir, "held/packages/alpha/src"),
+  path.join(fixtureDir, "carved/packages/alpha/test"),
+  path.join(fixtureDir, "carved/packages/alpha/src"),
+  path.join(fixtureDir, "carved/packages/beta/src"),
+  path.join(fixtureDir, "nested/test/orders"),
+  path.join(fixtureDir, "nested/src"),
+  path.join(fixtureDir, "stemless/test"),
+  path.join(fixtureDir, "stemless/src"),
+  path.join(fixtureDir, "renamed/cases"),
+  path.join(fixtureDir, "renamed/src"),
+  path.join(fixtureDir, "generated/build/test"),
+  path.join(fixtureDir, "generated/src"),
+];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(fixtureDir, "held/pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(fixtureDir, "held/package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(fixtureDir, "held/packages/alpha/package.json"), '{ "name": "alpha" }\n'],
+  [path.join(fixtureDir, "held/packages/alpha/test/order.test.ts"), MODULE_SOURCE],
+  [path.join(fixtureDir, "held/packages/alpha/test/order.assets.ts"), MODULE_SOURCE],
+  [heldSource, MODULE_SOURCE],
+  [path.join(fixtureDir, "carved/pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(fixtureDir, "carved/package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(fixtureDir, "carved/packages/alpha/package.json"), '{ "name": "alpha" }\n'],
+  [path.join(fixtureDir, "carved/packages/alpha/test/order.test.ts"), MODULE_SOURCE],
+  [path.join(fixtureDir, "carved/packages/alpha/test/helpers.ts"), MODULE_SOURCE],
+  [carvedSource, MODULE_SOURCE],
+  [path.join(fixtureDir, "carved/packages/beta/package.json"), '{ "name": "beta" }\n'],
+  [untouchedSource, MODULE_SOURCE],
+  [path.join(fixtureDir, "nested/pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(fixtureDir, "nested/package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(fixtureDir, "nested/test/orders/held.ts"), MODULE_SOURCE],
+  [nestedSource, MODULE_SOURCE],
+  [path.join(fixtureDir, "stemless/pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(fixtureDir, "stemless/package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(fixtureDir, "stemless/test/assets.ts"), MODULE_SOURCE],
+  [stemlessSource, MODULE_SOURCE],
+  [path.join(fixtureDir, "renamed/pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(fixtureDir, "renamed/package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(fixtureDir, "renamed/cases/order.spec.ts"), MODULE_SOURCE],
+  [path.join(fixtureDir, "renamed/cases/order.data.ts"), MODULE_SOURCE],
+  [path.join(fixtureDir, "renamed/cases/helpers.ts"), MODULE_SOURCE],
+  [renamedSource, MODULE_SOURCE],
+  [path.join(fixtureDir, "generated/pnpm-workspace.yaml"), WORKSPACE_MANIFEST],
+  [path.join(fixtureDir, "generated/package.json"), ROOT_PACKAGE_MANIFEST],
+  [path.join(fixtureDir, "generated/build/test/helpers.ts"), MODULE_SOURCE],
+  [generatedSource, MODULE_SOURCE],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/require-spec-or-assets-only-in-spec-directory--move-out-or-inline", () => {
   testLintRule(requireSpecOrAssetsOnlyInSpecDirectory, {

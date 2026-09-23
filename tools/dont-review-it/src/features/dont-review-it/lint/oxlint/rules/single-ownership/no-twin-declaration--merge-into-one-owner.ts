@@ -1,8 +1,7 @@
-import { relative, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import {
   namedFingerprintOf,
@@ -57,7 +56,9 @@ export const createNoTwinDeclaration = ({
       return {
         Program(node: ESTree.Program) {
           const repositoryRoot = repositoryRootOf();
-          const relativePath = toPosixPath(relative(repositoryRoot, resolve(inspection.filename)));
+          const relativePath = toPosixPath(
+            path.relative(repositoryRoot, path.resolve(inspection.filename)),
+          );
           const reports = twinReports({
             index: loadIndex({ repositoryRoot }),
             relativePath,
