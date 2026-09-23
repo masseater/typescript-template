@@ -35,3 +35,4 @@ export {
   memberPageSize,
 } from "./member.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
+export type { OnboardingTarget } from "./social.ts";
