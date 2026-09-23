@@ -35,7 +35,6 @@ export {
   strongAuthenticationMethods,
 } from "./identity.ts";
 export type { AuthenticationMethod, Role, StrongAuthenticationMethod } from "./identity.ts";
-export { usageAllowanceRemains } from "./budget.ts";
 export {
   CloudflareApiToken,
   CloudflareId,

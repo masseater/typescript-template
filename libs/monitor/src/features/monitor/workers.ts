@@ -12,9 +12,6 @@ const budgetMonitorEnv = {
   accountId: deploymentKey.cloudflareAccountId,
   billingReadToken: "BILLING_READ_TOKEN",
   budgetJpy: deploymentKey.budgetJpy,
-  fixedCostUsd: "FIXED_COST_USD",
-  jpyPerUsd: "JPY_PER_USD",
-  reserveUsd: "RESERVE_USD",
 } as const;
 
 const errorMonitorWorker = {
