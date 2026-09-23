@@ -9,8 +9,6 @@
 
 ## サーバー状態と UI 状態
 
-サーバー状態は TanStack Query、UI 状態は Effect Atom に置く。
-
 - サーバーにある事実（一覧、詳細、権限、集計）は TanStack Query の `useQuery` が取得とキャッシュを担う。`fetch` の結果や応答を Effect Atom や `useState` に写さない。
 - `queryOptions`・`infiniteQueryOptions`・`mutationOptions` は FSD の `api` セグメントで宣言する。コンポーネントやページのモジュールの中で宣言しない。
 - 画面の一時状態（選択、開閉、フィルタの入力、タブ、下書き）は Effect Atom が持つ。Atom にサーバーの応答やその複製を載せない。
