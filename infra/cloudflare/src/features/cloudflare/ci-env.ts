@@ -51,6 +51,7 @@ function unwritable(): PrepareCiEnvFailure {
 
 const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecretsFile(
   environment: Readonly<Record<string, string | undefined>>,
+  destination: string | undefined,
 ) {
   const required = deploymentKeys.map((key) => {
     const value = envValue(key, environment);
@@ -78,9 +79,10 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
       return value === undefined ? [] : [dotenvLine(key, value)];
     }),
   ];
-  const root = environment["RUNNER_TEMP"] ?? tmpdir();
-  const directory = path.join(root, "template-cloudflare");
-  const filename = path.join(directory, "cloudflare.env");
+  const filename =
+    destination ??
+    path.join(environment["RUNNER_TEMP"] ?? tmpdir(), "template-cloudflare", "cloudflare.env");
+  const directory = path.dirname(filename);
   const filesystem = yield* FileSystem.FileSystem;
   yield* filesystem
     .makeDirectory(directory, { mode: 0o700, recursive: true })
@@ -100,8 +102,9 @@ const writeCiSecretsFile = Effect.fn("writeCiSecretsFile")(function* writeCiSecr
 
 function writeCiSecretsFileProvided(
   environment: Readonly<Record<string, string | undefined>>,
+  destination?: string,
 ): Effect.Effect<CiEnvPreparation, PrepareCiEnvFailure> {
-  return writeCiSecretsFile(environment).pipe(Effect.provide(layer));
+  return writeCiSecretsFile(environment, destination).pipe(Effect.provide(layer));
 }
 
 function writeConfiguredOutput(

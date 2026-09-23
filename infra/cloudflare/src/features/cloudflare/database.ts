@@ -1,3 +1,4 @@
+import { migrationsFolder } from "@repo/db/migrations";
 import { RemovalPolicy, Stack } from "alchemy";
 import { D1 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
@@ -13,9 +14,10 @@ const stack = Stack(
   stackOptions,
   Effect.gen(function* database() {
     const config = yield* Effect.orDie(settings);
-    const d1 = yield* D1.Database(databaseResource, { name: databaseName(config.prefix) }).pipe(
-      RemovalPolicy.retain(),
-    );
+    const d1 = yield* D1.Database(databaseResource, {
+      migrations: migrationsFolder,
+      name: databaseName(config.prefix),
+    }).pipe(RemovalPolicy.retain());
     return { databaseId: d1.databaseId, databaseName: d1.databaseName };
   }),
 );
