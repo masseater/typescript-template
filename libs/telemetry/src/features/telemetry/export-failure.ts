@@ -1,4 +1,4 @@
-import { markFailed } from "@repo/cli";
+import { markFailed } from "@repo/cli/exit-code";
 import { Console, Effect } from "effect";
 
 import { ENABLE_VARIABLE } from "./optional-setting.ts";
