@@ -1,20 +1,32 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { noNormalizeSutOutput } from "./no-normalize-sut-output--assert-natural-shape.ts";
 
 const SPEC_FILE = "report.test.ts";
 
-const importingDir = mkdtempSync(join(tmpdir(), "dont-review-it-no-normalize-sut-output-"));
-writeFileSync(join(importingDir, "shape.ts"), "export const ordered = (rows) => rows.sort();\n");
-writeFileSync(join(importingDir, "widen.ts"), "export const widen = (rows) => rows.map(toRow);\n");
-writeFileSync(join(importingDir, "held.ts"), "export const held = summarise(input).sort();\n");
+const importingDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-no-normalize-sut-output-" });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
-const IMPORTING_SPEC_FILE = join(importingDir, "report.test.ts");
+const IMPORTING_SPEC_FILE = path.join(importingDir, "report.test.ts");
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(importingDir, "shape.ts"), "export const ordered = (rows) => rows.sort();\n"],
+  [path.join(importingDir, "widen.ts"), "export const widen = (rows) => rows.map(toRow);\n"],
+  [path.join(importingDir, "held.ts"), "export const held = summarise(input).sort();\n"],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-normalize-sut-output--assert-natural-shape", () => {
   testLintRule(noNormalizeSutOutput, {

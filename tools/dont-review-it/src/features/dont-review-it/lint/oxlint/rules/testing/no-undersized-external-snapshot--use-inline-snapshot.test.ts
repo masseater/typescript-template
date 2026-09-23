@@ -1,15 +1,18 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { range } from "es-toolkit";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { noUndersizedExternalSnapshot } from "./no-undersized-external-snapshot--use-inline-snapshot.ts";
 
-const fixtureDir = mkdtempSync(join(tmpdir(), "dont-review-it-no-undersized-external-snapshot-"));
-rmSync(fixtureDir, { recursive: true, force: true });
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.makeTempDirectory({
+    prefix: "dont-review-it-no-undersized-external-snapshot-",
+  });
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 const SPEC_FILE_NAME = "subject.test.ts";
 
@@ -29,106 +32,122 @@ const RECORD_PAST_THE_BUDGET = `\n${range(13)
   .map((at) => `line ${String(at)}`)
   .join("\n")}\n`;
 
-const smallRecord = join(fixtureDir, "small-record", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "small-record", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "small-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_OF_THREE_LINES}\`;\n`,
-);
+const smallRecord = path.join(fixtureDir, "small-record", SPEC_FILE_NAME);
 
-const atTheBudget = join(fixtureDir, "at-the-budget", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "at-the-budget", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "at-the-budget", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_AT_THE_BUDGET}\`;\n`,
-);
+const atTheBudget = path.join(fixtureDir, "at-the-budget", SPEC_FILE_NAME);
 
-const overTheBudget = join(fixtureDir, "over-the-budget", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "over-the-budget", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "over-the-budget", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n`,
-);
+const overTheBudget = path.join(fixtureDir, "over-the-budget", SPEC_FILE_NAME);
 
-const shiftedByInline = join(fixtureDir, "shifted-by-inline", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "shifted-by-inline", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "shifted-by-inline", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n\nexports[\`outer > names a behaviour 2\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const shiftedByInline = path.join(fixtureDir, "shifted-by-inline", SPEC_FILE_NAME);
 
-const shiftedByFileRecord = join(fixtureDir, "shifted-by-file-record", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "shifted-by-file-record", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "shifted-by-file-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n\nexports[\`outer > names a behaviour 2\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const shiftedByFileRecord = path.join(fixtureDir, "shifted-by-file-record", SPEC_FILE_NAME);
 
-const hintedRecord = join(fixtureDir, "hinted-record", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "hinted-record", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "hinted-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n\nexports[\`outer > names a behaviour > the hint 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const hintedRecord = path.join(fixtureDir, "hinted-record", SPEC_FILE_NAME);
 
-const thrownRecord = join(fixtureDir, "thrown-record", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "thrown-record", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "thrown-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const thrownRecord = path.join(fixtureDir, "thrown-record", SPEC_FILE_NAME);
 
-const tableRecords = join(fixtureDir, "table-records", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "table-records", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "table-records", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > scalar 1 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 2 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const tableRecords = path.join(fixtureDir, "table-records", SPEC_FILE_NAME);
 
-const partialTableRecords = join(fixtureDir, "partial-table-records", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "partial-table-records", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "partial-table-records", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > scalar 1 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const partialTableRecords = path.join(fixtureDir, "partial-table-records", SPEC_FILE_NAME);
 
-const unrecordedKey = join(fixtureDir, "unrecorded-key", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "unrecorded-key", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "unrecorded-key", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > some other behaviour 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const unrecordedKey = path.join(fixtureDir, "unrecorded-key", SPEC_FILE_NAME);
 
-const splitTitles = join(fixtureDir, "split-titles", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "split-titles", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "split-titles", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer names > a behaviour 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const splitTitles = path.join(fixtureDir, "split-titles", SPEC_FILE_NAME);
 
-const hintAgainstPlainTitle = join(fixtureDir, "hint-against-plain-title", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "hint-against-plain-title", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "hint-against-plain-title", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour > the hint 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > names a behaviour the hint 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const hintAgainstPlainTitle = path.join(fixtureDir, "hint-against-plain-title", SPEC_FILE_NAME);
 
-const manyCases = join(fixtureDir, "many-cases", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "many-cases", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "many-cases", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
-  `${RECORD_HEADER}exports[\`outer > scalar 1 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 2 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 3 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 4 1\`] = \`${SCALAR_RECORD}\`;\n`,
-);
+const manyCases = path.join(fixtureDir, "many-cases", SPEC_FILE_NAME);
 
-const namedSuffixSpec = join(fixtureDir, "named-suffix", "subject.spec.ts");
-mkdirSync(join(fixtureDir, "named-suffix", "__snapshots__"), { recursive: true });
-writeFileSync(
-  join(fixtureDir, "named-suffix", "__snapshots__", "subject.spec.ts.snap"),
-  `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_OF_THREE_LINES}\`;\n`,
-);
+const namedSuffixSpec = path.join(fixtureDir, "named-suffix", "subject.spec.ts");
 
-const withoutRecordFile = join(fixtureDir, "no-record-file", SPEC_FILE_NAME);
-mkdirSync(join(fixtureDir, "no-record-file"), { recursive: true });
+const withoutRecordFile = path.join(fixtureDir, "no-record-file", SPEC_FILE_NAME);
+
+const FIXTURE_DIRECTORIES: readonly string[] = [
+  path.join(fixtureDir, "small-record", "__snapshots__"),
+  path.join(fixtureDir, "at-the-budget", "__snapshots__"),
+  path.join(fixtureDir, "over-the-budget", "__snapshots__"),
+  path.join(fixtureDir, "shifted-by-inline", "__snapshots__"),
+  path.join(fixtureDir, "shifted-by-file-record", "__snapshots__"),
+  path.join(fixtureDir, "hinted-record", "__snapshots__"),
+  path.join(fixtureDir, "thrown-record", "__snapshots__"),
+  path.join(fixtureDir, "table-records", "__snapshots__"),
+  path.join(fixtureDir, "partial-table-records", "__snapshots__"),
+  path.join(fixtureDir, "unrecorded-key", "__snapshots__"),
+  path.join(fixtureDir, "split-titles", "__snapshots__"),
+  path.join(fixtureDir, "hint-against-plain-title", "__snapshots__"),
+  path.join(fixtureDir, "many-cases", "__snapshots__"),
+  path.join(fixtureDir, "named-suffix", "__snapshots__"),
+  path.join(fixtureDir, "no-record-file"),
+];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [
+    path.join(fixtureDir, "small-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_OF_THREE_LINES}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "at-the-budget", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_AT_THE_BUDGET}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "over-the-budget", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "shifted-by-inline", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n\nexports[\`outer > names a behaviour 2\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "shifted-by-file-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n\nexports[\`outer > names a behaviour 2\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "hinted-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_PAST_THE_BUDGET}\`;\n\nexports[\`outer > names a behaviour > the hint 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "thrown-record", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "table-records", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > scalar 1 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 2 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "partial-table-records", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > scalar 1 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "unrecorded-key", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > some other behaviour 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "split-titles", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer names > a behaviour 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "hint-against-plain-title", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour > the hint 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > names a behaviour the hint 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "many-cases", "__snapshots__", `${SPEC_FILE_NAME}.snap`),
+    `${RECORD_HEADER}exports[\`outer > scalar 1 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 2 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 3 1\`] = \`${SCALAR_RECORD}\`;\n\nexports[\`outer > scalar 4 1\`] = \`${SCALAR_RECORD}\`;\n`,
+  ],
+  [
+    path.join(fixtureDir, "named-suffix", "__snapshots__", "subject.spec.ts.snap"),
+    `${RECORD_HEADER}exports[\`outer > names a behaviour 1\`] = \`${RECORD_OF_THREE_LINES}\`;\n`,
+  ],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-undersized-external-snapshot--use-inline-snapshot", () => {
   testLintRule(noUndersizedExternalSnapshot, {
@@ -136,7 +155,7 @@ describe("dont-review-it/no-undersized-external-snapshot--use-inline-snapshot", 
       {
         name: "a file that is not a spec is left alone",
         code: 'describe("outer", () => {\n  it("names a behaviour", () => {\nexpect(subject).toMatchSnapshot();\n  });\n});',
-        filename: join(fixtureDir, "small-record", "subject.ts"),
+        filename: path.join(fixtureDir, "small-record", "subject.ts"),
       },
       {
         name: "a spec with no record file has nothing to measure",

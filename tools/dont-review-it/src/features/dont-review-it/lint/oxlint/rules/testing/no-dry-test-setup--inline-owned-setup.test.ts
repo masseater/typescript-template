@@ -1,98 +1,115 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { noDryTestSetup } from "./no-dry-test-setup--inline-owned-setup.ts";
 
-const workspaceDir = mkdtempSync(join(realpathSync(tmpdir()), "dont-review-it-no-dry-test-setup-"));
+const workspaceDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.realPath(
+    yield* filesystem.makeTempDirectory({ prefix: "dont-review-it-no-dry-test-setup-" }),
+  );
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
-rmSync(workspaceDir, { recursive: true, force: true });
+const widgetDir = path.join(workspaceDir, "packages/widget");
+const entrylessDir = path.join(workspaceDir, "packages/entryless");
+const sharedFixturesDir = path.join(workspaceDir, "packages/shared-fixtures");
+const toolkitDir = path.join(workspaceDir, "packages/toolkit");
+const appDir = path.join(workspaceDir, "packages/app");
 
-const widgetDir = join(workspaceDir, "packages/widget");
-const entrylessDir = join(workspaceDir, "packages/entryless");
-const sharedFixturesDir = join(workspaceDir, "packages/shared-fixtures");
-const toolkitDir = join(workspaceDir, "packages/toolkit");
-const appDir = join(workspaceDir, "packages/app");
+const fixtureModules = path.join(workspaceDir, "node_modules/@fixture");
 
-mkdirSync(join(widgetDir, "src"), { recursive: true });
-mkdirSync(join(entrylessDir, "src"), { recursive: true });
-mkdirSync(join(sharedFixturesDir, "src"), { recursive: true });
-mkdirSync(join(toolkitDir, "src"), { recursive: true });
-mkdirSync(join(appDir, "src"), { recursive: true });
-mkdirSync(join(workspaceDir, "node_modules/@fixture"), { recursive: true });
+const widgetSpec = path.join(widgetDir, "src/widget.test.ts");
 
-writeFileSync(join(workspaceDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-
-writeFileSync(
-  join(widgetDir, "package.json"),
-  JSON.stringify({ name: "@fixture/widget", exports: { ".": "./src/index.ts" } }),
-);
-writeFileSync(
-  join(widgetDir, "src/index.ts"),
-  'export * from "./widget.ts";\nexport * from "./widget-helper.ts";\n',
-);
-writeFileSync(join(widgetDir, "src/widget.ts"), "export const widget = 1;\n");
-writeFileSync(join(widgetDir, "src/widget-helper.ts"), "export const shaped = 2;\n");
-writeFileSync(join(widgetDir, "src/helpers.ts"), "export const build = () => 3;\n");
-writeFileSync(join(widgetDir, "src/prepared.ts"), "export const prepared = () => 4;\n");
-writeFileSync(join(widgetDir, "src/relay.ts"), 'export * from "./prepared.ts";\n');
-writeFileSync(join(widgetDir, "src/shapes.ts"), "export type Shape = { readonly size: number };\n");
-writeFileSync(join(widgetDir, "src/widget.assets.ts"), "export const rows = [1, 2];\n");
-writeFileSync(join(widgetDir, "src/widget.rows.ts"), "export const counted = [3, 4];\n");
-writeFileSync(join(widgetDir, "src/other.test.ts"), "export const other = 5;\n");
-writeFileSync(join(widgetDir, "src/declared.ts"), "declare const configured: number;\n");
-writeFileSync(
-  join(widgetDir, "src/typed-view.ts"),
-  'import type { Shape } from "./shapes.ts";\n\nexport type Sized = Shape;\n',
-);
-
-writeFileSync(join(entrylessDir, "package.json"), JSON.stringify({ name: "@fixture/entryless" }));
-writeFileSync(join(entrylessDir, "src/helpers.ts"), "export const build = () => 6;\n");
-writeFileSync(join(entrylessDir, "src/neutral.ts"), "export const neutral = () => 7;\n");
-writeFileSync(join(entrylessDir, "src/relay.ts"), 'export * from "./helpers.ts";\n');
-writeFileSync(join(entrylessDir, "src/ring-one.ts"), 'export * from "./ring-two.ts";\n');
-writeFileSync(join(entrylessDir, "src/ring-two.ts"), 'export * from "./ring-one.ts";\n');
-writeFileSync(join(entrylessDir, "src/chain-one.ts"), 'export * from "./chain-two.ts";\n');
-writeFileSync(join(entrylessDir, "src/chain-two.ts"), 'export * from "./chain-three.ts";\n');
-writeFileSync(join(entrylessDir, "src/chain-three.ts"), 'export * from "./chain-four.ts";\n');
-writeFileSync(join(entrylessDir, "src/chain-four.ts"), 'export * from "./chain-five.ts";\n');
-writeFileSync(join(entrylessDir, "src/chain-five.ts"), 'export * from "./helpers.ts";\n');
-
-writeFileSync(
-  join(sharedFixturesDir, "package.json"),
-  JSON.stringify({ name: "@fixture/shared-fixtures", exports: { ".": "./src/index.ts" } }),
-);
-writeFileSync(join(sharedFixturesDir, "src/index.ts"), "export const shared = 8;\n");
-
-writeFileSync(
-  join(toolkitDir, "package.json"),
-  JSON.stringify({ name: "@fixture/toolkit", exports: { ".": "./src/index.ts" } }),
-);
-writeFileSync(join(toolkitDir, "src/index.ts"), "export const tool = 9;\n");
-
-writeFileSync(
-  join(appDir, "package.json"),
-  JSON.stringify({ name: "@fixture/app", main: "./src/main.ts" }),
-);
-writeFileSync(
-  join(appDir, "src/main.ts"),
-  'import { tool } from "@fixture/toolkit";\n\nexport const started = tool;\n',
-);
-
-const fixtureModules = join(workspaceDir, "node_modules/@fixture");
-symlinkSync(sharedFixturesDir, join(fixtureModules, "shared-fixtures"), "dir");
-symlinkSync(toolkitDir, join(fixtureModules, "toolkit"), "dir");
-
-const widgetSpec = join(widgetDir, "src/widget.test.ts");
-
-const entrylessSpec = join(entrylessDir, "src/thing.test.ts");
+const entrylessSpec = path.join(entrylessDir, "src/thing.test.ts");
 
 const COUPLED_TO_WIDGET_HELPERS = [
   { messageId: "setupModuleCoupling", data: { path: "packages/widget/src/helpers.ts" } },
 ];
+
+const FIXTURE_DIRECTORIES: readonly string[] = [
+  path.join(widgetDir, "src"),
+  path.join(entrylessDir, "src"),
+  path.join(sharedFixturesDir, "src"),
+  path.join(toolkitDir, "src"),
+  path.join(appDir, "src"),
+  path.join(workspaceDir, "node_modules/@fixture"),
+];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(workspaceDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n"],
+  [
+    path.join(widgetDir, "package.json"),
+    JSON.stringify({ name: "@fixture/widget", exports: { ".": "./src/index.ts" } }),
+  ],
+  [
+    path.join(widgetDir, "src/index.ts"),
+    'export * from "./widget.ts";\nexport * from "./widget-helper.ts";\n',
+  ],
+  [path.join(widgetDir, "src/widget.ts"), "export const widget = 1;\n"],
+  [path.join(widgetDir, "src/widget-helper.ts"), "export const shaped = 2;\n"],
+  [path.join(widgetDir, "src/helpers.ts"), "export const build = () => 3;\n"],
+  [path.join(widgetDir, "src/prepared.ts"), "export const prepared = () => 4;\n"],
+  [path.join(widgetDir, "src/relay.ts"), 'export * from "./prepared.ts";\n'],
+  [path.join(widgetDir, "src/shapes.ts"), "export type Shape = { readonly size: number };\n"],
+  [path.join(widgetDir, "src/widget.assets.ts"), "export const rows = [1, 2];\n"],
+  [path.join(widgetDir, "src/widget.rows.ts"), "export const counted = [3, 4];\n"],
+  [path.join(widgetDir, "src/other.test.ts"), "export const other = 5;\n"],
+  [path.join(widgetDir, "src/declared.ts"), "declare const configured: number;\n"],
+  [
+    path.join(widgetDir, "src/typed-view.ts"),
+    'import type { Shape } from "./shapes.ts";\n\nexport type Sized = Shape;\n',
+  ],
+  [path.join(entrylessDir, "package.json"), JSON.stringify({ name: "@fixture/entryless" })],
+  [path.join(entrylessDir, "src/helpers.ts"), "export const build = () => 6;\n"],
+  [path.join(entrylessDir, "src/neutral.ts"), "export const neutral = () => 7;\n"],
+  [path.join(entrylessDir, "src/relay.ts"), 'export * from "./helpers.ts";\n'],
+  [path.join(entrylessDir, "src/ring-one.ts"), 'export * from "./ring-two.ts";\n'],
+  [path.join(entrylessDir, "src/ring-two.ts"), 'export * from "./ring-one.ts";\n'],
+  [path.join(entrylessDir, "src/chain-one.ts"), 'export * from "./chain-two.ts";\n'],
+  [path.join(entrylessDir, "src/chain-two.ts"), 'export * from "./chain-three.ts";\n'],
+  [path.join(entrylessDir, "src/chain-three.ts"), 'export * from "./chain-four.ts";\n'],
+  [path.join(entrylessDir, "src/chain-four.ts"), 'export * from "./chain-five.ts";\n'],
+  [path.join(entrylessDir, "src/chain-five.ts"), 'export * from "./helpers.ts";\n'],
+  [
+    path.join(sharedFixturesDir, "package.json"),
+    JSON.stringify({ name: "@fixture/shared-fixtures", exports: { ".": "./src/index.ts" } }),
+  ],
+  [path.join(sharedFixturesDir, "src/index.ts"), "export const shared = 8;\n"],
+  [
+    path.join(toolkitDir, "package.json"),
+    JSON.stringify({ name: "@fixture/toolkit", exports: { ".": "./src/index.ts" } }),
+  ],
+  [path.join(toolkitDir, "src/index.ts"), "export const tool = 9;\n"],
+  [
+    path.join(appDir, "package.json"),
+    JSON.stringify({ name: "@fixture/app", main: "./src/main.ts" }),
+  ],
+  [
+    path.join(appDir, "src/main.ts"),
+    'import { tool } from "@fixture/toolkit";\n\nexport const started = tool;\n',
+  ],
+];
+
+const FIXTURE_LINKS: ReadonlyArray<readonly [string, string]> = [
+  [sharedFixturesDir, path.join(fixtureModules, "shared-fixtures")],
+  [toolkitDir, path.join(fixtureModules, "toolkit")],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+  for (const [target, link] of FIXTURE_LINKS) {
+    yield* filesystem.symlink(target, link);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 describe("dont-review-it/no-dry-test-setup--inline-owned-setup", () => {
   testLintRule(noDryTestSetup, {
@@ -100,7 +117,7 @@ describe("dont-review-it/no-dry-test-setup--inline-owned-setup", () => {
       {
         name: "a file that is not a spec is never inspected",
         code: 'import { build } from "./helpers.ts";\n\nexport const used = build;\n',
-        filename: join(widgetDir, "src/plain.ts"),
+        filename: path.join(widgetDir, "src/plain.ts"),
       },
       {
         name: "the module a spec tests is reachable from the public entry, so it is the subject",

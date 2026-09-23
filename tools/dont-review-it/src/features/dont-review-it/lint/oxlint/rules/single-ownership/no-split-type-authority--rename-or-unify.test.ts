@@ -1,8 +1,7 @@
-import { join } from "node:path";
-
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import {
   buildTypeAuthorityIndex,
@@ -33,7 +32,7 @@ const FAR: Placement = {
   workspacePath: "packages/repository-checks",
 };
 
-const subjectFilename = join(repositoryRoot, SUBJECT.relativePath);
+const subjectFilename = path.join(repositoryRoot, SUBJECT.relativePath);
 
 const THREE_NAMED_MEMBERS = "{ readonly a: string; readonly b: number; readonly c: Named }";
 
@@ -89,12 +88,12 @@ describe("dont-review-it/no-split-type-authority--rename-or-unify", () => {
       {
         name: "a test file is never linted, so it is never reported",
         code: SUBJECT_CODE,
-        filename: join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/subject.test.ts"),
       },
       {
         name: "a file the index does not know is left alone",
         code: SUBJECT_CODE,
-        filename: join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
+        filename: path.join(repositoryRoot, "packages/dont-review-it/src/unindexed.ts"),
       },
     ],
     invalid: [
