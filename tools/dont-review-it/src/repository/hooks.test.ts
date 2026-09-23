@@ -436,7 +436,10 @@ describe("mergify ci insights", () => {
         string,
         {
           readonly env?: Readonly<Record<string, string>>;
-          readonly steps?: readonly { readonly env?: Readonly<Record<string, string>>; readonly run?: string }[];
+          readonly steps?: readonly {
+            readonly env?: Readonly<Record<string, string>>;
+            readonly run?: string;
+          }[];
         }
       >
     >;
@@ -445,13 +448,21 @@ describe("mergify ci insights", () => {
 
   it("hands MERGIFY_TOKEN to every job that runs vp, at the job level", () => {
     expect.hasAssertions();
-    const vpJobs = jobs.filter(([, job]) => (job.steps ?? []).some((step) => step.run?.includes("vp ")));
+    const vpJobs = jobs.filter(([, job]) =>
+      (job.steps ?? []).some((step) => step.run?.includes("vp ")),
+    );
     expect(vpJobs.length).toBeGreaterThan(0);
     expect(
-      vpJobs.filter(([, job]) => job.env?.["MERGIFY_TOKEN"] !== "${{ secrets.MERGIFY_TOKEN }}").map(([name]) => name),
+      vpJobs
+        .filter(([, job]) => job.env?.["MERGIFY_TOKEN"] !== "${{ secrets.MERGIFY_TOKEN }}")
+        .map(([name]) => name),
     ).toStrictEqual([]);
     expect(
-      jobs.filter(([, job]) => (job.steps ?? []).some((step) => step.env?.["MERGIFY_TOKEN"] !== undefined)).map(([name]) => name),
+      jobs
+        .filter(([, job]) =>
+          (job.steps ?? []).some((step) => step.env?.["MERGIFY_TOKEN"] !== undefined),
+        )
+        .map(([name]) => name),
     ).toStrictEqual([]);
   });
 
