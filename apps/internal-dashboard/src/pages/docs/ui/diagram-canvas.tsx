@@ -16,6 +16,7 @@ import { Fullscreen } from "lucide-react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
 
 type DiagramCanvasProps<NodeType extends Node, EdgeType extends Edge> = Readonly<{
+  aspect: string;
   children?: ReactNode;
   defaultEdges: EdgeType[];
   defaultNodes: NodeType[];
@@ -62,6 +63,7 @@ function FullscreenButton(): ReactElement {
 }
 
 function DiagramCanvas<NodeType extends Node, EdgeType extends Edge>({
+  aspect,
   children,
   defaultEdges,
   defaultNodes,
@@ -71,7 +73,10 @@ function DiagramCanvas<NodeType extends Node, EdgeType extends Edge>({
 }: DiagramCanvasProps<NodeType, EdgeType>): ReactElement {
   const { resolvedTheme } = useTheme();
   return (
-    <div className="border-fd-border bg-fd-background aspect-video w-full overflow-hidden rounded-md border in-[:fullscreen]:aspect-auto in-[:fullscreen]:h-full in-[:fullscreen]:rounded-none in-[:fullscreen]:border-0">
+    <div
+      style={{ aspectRatio: aspect }}
+      className="border-fd-border bg-fd-background max-h-[80vh] min-h-60 w-full overflow-hidden rounded-md border in-[:fullscreen]:aspect-auto in-[:fullscreen]:h-full in-[:fullscreen]:rounded-none in-[:fullscreen]:border-0"
+    >
       <ReactFlow
         colorMode={resolvedTheme === "dark" ? "dark" : "light"}
         defaultEdges={defaultEdges}
