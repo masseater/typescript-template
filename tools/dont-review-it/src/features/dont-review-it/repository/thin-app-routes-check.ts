@@ -1,32 +1,36 @@
 #!/usr/bin/env node
-import { readdir, readFile } from "node:fs/promises";
-import { join, relative } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { Console, Effect } from "effect";
+import { Console, Effect, FileSystem, Path, type PlatformError } from "effect";
 import { parseSync } from "oxc-parser";
 
+import { directoryEntries } from "./directory-entries.ts";
 import { isAppRouteModule } from "./thin-app-routes.ts";
 
 const violation =
   "TanStack Start のルートファイルに JSX を書けません。画面とレイアウトは pages か widgets に移し、createFileRoute には import した component だけを渡してください。";
 
-const collectFiles = (directory: string): Effect.Effect<readonly string[]> =>
+type RouteScan<Scanned> = Effect.Effect<
+  Scanned,
+  PlatformError.PlatformError,
+  FileSystem.FileSystem | Path.Path
+>;
+
+const collectFiles = (directory: string): RouteScan<readonly string[]> =>
   Effect.gen(function* listRouteFiles() {
-    const entries = yield* Effect.orDie(
-      Effect.tryPromise(() => readdir(directory, { withFileTypes: true })),
-    );
+    const paths = yield* Path.Path;
+    const entries = yield* directoryEntries(directory);
     const nested = yield* Effect.forEach(
       entries,
-      (entry) => {
-        const path = join(directory, entry.name);
-        if (entry.isDirectory()) {
-          return collectFiles(path);
+      (entry): RouteScan<readonly string[]> => {
+        const entryPath = paths.join(directory, entry.name);
+        if (entry.kind === "directory") {
+          return collectFiles(entryPath);
         }
-        if (entry.isFile() && /\.[cm]?[jt]sx?$/u.test(entry.name)) {
-          return Effect.succeed([path] as const);
+        if (entry.kind === "file" && /\.[cm]?[jt]sx?$/u.test(entry.name)) {
+          return Effect.succeed([entryPath]);
         }
-        return Effect.succeed([] as const);
+        return Effect.succeed([]);
       },
       { concurrency: "unbounded" },
     );
@@ -55,8 +59,10 @@ const hasJsx = (source: string, file: string): boolean => {
   return false;
 };
 
-const checkRoutes = (routesRoot: string): Effect.Effect<readonly string[]> =>
+const checkRoutes = (routesRoot: string): RouteScan<readonly string[]> =>
   Effect.gen(function* scan() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
     const files = yield* collectFiles(routesRoot);
     const findings = yield* Effect.forEach(
       files,
@@ -65,11 +71,11 @@ const checkRoutes = (routesRoot: string): Effect.Effect<readonly string[]> =>
           if (!isAppRouteModule(file.replaceAll("\\", "/"))) {
             return undefined;
           }
-          const source = yield* Effect.orDie(Effect.tryPromise(() => readFile(file, "utf8")));
+          const source = yield* filesystem.readFileString(file);
           if (!hasJsx(source, file)) {
             return undefined;
           }
-          return `${relative(process.cwd(), file).replaceAll("\\", "/")}: ${violation}`;
+          return `${paths.relative(process.cwd(), file).replaceAll("\\", "/")}: ${violation}`;
         }),
       { concurrency: "unbounded" },
     );
@@ -77,15 +83,16 @@ const checkRoutes = (routesRoot: string): Effect.Effect<readonly string[]> =>
   });
 
 const program = Effect.gen(function* main() {
-  const routesRoot = join(process.cwd(), process.argv[2] ?? "src/app/routes");
+  const paths = yield* Path.Path;
+  const routesRoot = paths.join(process.cwd(), process.argv[2] ?? "src/app/routes");
   const findings = yield* checkRoutes(routesRoot);
   if (findings.length > 0) {
     yield* Console.error(findings.join("\n"));
     return yield* markFailed;
   }
-  yield* Console.log(`thin-app-routes: ok (${relative(process.cwd(), routesRoot) || "."})`);
+  yield* Console.log(`thin-app-routes: ok (${paths.relative(process.cwd(), routesRoot) || "."})`);
 });
 
-runCli(program.pipe(Effect.asVoid), (cause) =>
+runCli(program.pipe(Effect.provide(NodeServices.layer)), (cause) =>
   causeRecord("quality.thin_app_routes_failed", { cause }),
 );

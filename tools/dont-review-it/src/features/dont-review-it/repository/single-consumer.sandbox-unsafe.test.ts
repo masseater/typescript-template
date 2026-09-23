@@ -1,3 +1,5 @@
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { type WorkspaceManifest } from "./dependencies.ts";
@@ -250,9 +252,12 @@ describe("single consumer findings", () => {
 });
 
 describe("repository single consumers", () => {
-  it("reports no single-consumer packages or subpaths", () => {
-    expect.hasAssertions();
-    const ids = repositorySingleConsumerFindings().map((finding) => finding.id);
-    expect(ids).toStrictEqual([]);
-  });
+  it("reports no single-consumer packages or subpaths", () =>
+    Effect.runPromise(
+      Effect.gen(function* noSingleConsumers() {
+        expect.hasAssertions();
+        const findings = yield* repositorySingleConsumerFindings;
+        expect(findings.map((finding) => finding.id)).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 });

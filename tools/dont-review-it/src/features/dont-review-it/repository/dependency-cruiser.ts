@@ -31,7 +31,7 @@ const workerRuntimeModule = String.raw`^(?:${anyOf(workerRuntimeModules)})$`;
 
 const generatedRouteTree = String.raw`routeTree\.gen\.ts$`;
 
-const configuration: IConfiguration = {
+const configuration = {
   forbidden: [
     {
       comment:
@@ -201,6 +201,6 @@ const configuration: IConfiguration = {
     exclude: { path: [String.raw`^(?:apps|libs|infra|tools)/[^/]+/(?:\.(?!storybook)|dist/)`] },
     parser: "swc",
   },
-};
+} satisfies IConfiguration;
 
 export default configuration;

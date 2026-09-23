@@ -7,10 +7,11 @@ interface PermissionGroup {
 
 interface RequiredPermission {
   readonly dashboard: string;
-  readonly satisfiedBy: readonly { readonly id: string; readonly name: string }[];
+  readonly satisfiedBy: readonly { readonly id?: string; readonly name: string }[];
   readonly scope: "account" | "zone";
 }
 
+const workersAdmin = { name: "Workers Admin" } as const;
 const workersScriptsWrite = {
   id: "e086da7e2179491d91ee5f35b3ca210a",
   name: "Workers Scripts Write",
@@ -59,8 +60,8 @@ const zoneSettingsWrite = {
 
 const deployTokenPermissions = [
   {
-    dashboard: "Account / Workers Scripts / Edit",
-    satisfiedBy: [workersScriptsWrite],
+    dashboard: "Account / Workers / Admin",
+    satisfiedBy: [workersAdmin, workersScriptsWrite],
     scope: "account",
   },
   { dashboard: "Account / D1 / Edit", satisfiedBy: [d1Write], scope: "account" },
@@ -117,7 +118,9 @@ function missingPermissions(granted: readonly PermissionGroup[]): readonly strin
   return deployTokenPermissions
     .filter(
       (required) =>
-        !required.satisfiedBy.some((group) => held.has(group.id) || held.has(group.name)),
+        !required.satisfiedBy.some(
+          (group) => held.has(group.name) || ("id" in group && held.has(group.id)),
+        ),
     )
     .map((required) => required.dashboard);
 }
