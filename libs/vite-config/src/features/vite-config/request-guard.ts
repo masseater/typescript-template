@@ -1,4 +1,4 @@
-import { httpStatus, type Application } from "@repo/config";
+import { httpStatus, type BuildTarget } from "@repo/config";
 import { Effect, Result, Schema } from "effect";
 
 import { filesystem, isNotFound, paths } from "./host.ts";
@@ -7,7 +7,7 @@ import { privatePath } from "./private-path.ts";
 import type { Connect } from "vite-plus";
 
 type BoundaryRoots = Readonly<{
-  application: Application;
+  application: BuildTarget;
   applicationRoot: string;
   canonicalRepositoryRoot: string;
   repositoryRoot: string;

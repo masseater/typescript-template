@@ -4,6 +4,7 @@ import { Effect, FileSystem, Path, Schema } from "effect";
 import { isEqual } from "es-toolkit";
 import { describe, expect } from "vite-plus/test";
 
+import { pathExists } from "../../../../platform/file-system.ts";
 import { analyzeCanonicalValuesRepository, loadCanonicalValuesCatalogSnapshot } from "./builder.ts";
 
 const TAG = "@canonical-values";
@@ -760,7 +761,7 @@ layer(NodeServices.layer)("loadCanonicalValuesCatalogSnapshot", (it) => {
           const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "canonical-values-" });
 
           loadCanonicalValuesCatalogSnapshot({ repositoryRoot: paths.join(root, "missing") });
-          return yield* filesystem.exists(paths.join(root, "missing"));
+          return yield* pathExists(paths.join(root, "missing"));
         },
       );
       return {

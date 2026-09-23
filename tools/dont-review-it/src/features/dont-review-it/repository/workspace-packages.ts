@@ -1,6 +1,6 @@
 import { Effect, FileSystem, Path, Schema } from "effect";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 import type { WorkspacePackage } from "./pr-affected-scope.ts";

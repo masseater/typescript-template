@@ -1,5 +1,12 @@
+import { Schema } from "effect";
 import { zip } from "es-toolkit";
 import parseGitDiff, { type AnyFileChange } from "parse-git-diff";
+
+export class DiffUnreadable extends Schema.TaggedError<DiffUnreadable>()("DiffUnreadable", {
+  message: Schema.String,
+}) {}
+
+const unreadable = (message: string): DiffUnreadable => new DiffUnreadable({ message });
 
 type InventoryFile =
   | Readonly<{ kind: "added"; beforePath: null; afterPath: string }>
@@ -11,7 +18,7 @@ type InventoryFile =
 const captureAt = (match: RegExpMatchArray, index: number): string => {
   const capture = match[index];
   if (capture === undefined || capture.length === 0) {
-    throw new Error("Invalid NUL-delimited Git diff metadata");
+    throw unreadable("Invalid NUL-delimited Git diff metadata");
   }
   return capture;
 };
@@ -36,7 +43,7 @@ const inventoryFileFor = (match: RegExpMatchArray): InventoryFile => {
     case "T":
       return { kind: "typeChanged", beforePath: path, afterPath: path };
     default:
-      throw new Error("Unsupported Git diff status");
+      throw unreadable("Unsupported Git diff status");
   }
 };
 
@@ -50,7 +57,7 @@ const parseDiffInventory = (produced: string): readonly InventoryFile[] => {
   const matches = Array.from(produced.matchAll(inventoryRecordPattern));
   const parsedLength = matches.reduce((counted, matched) => counted + matched[0].length, 0);
   if (parsedLength !== produced.length) {
-    throw new Error("Invalid NUL-delimited Git diff metadata");
+    throw unreadable("Invalid NUL-delimited Git diff metadata");
   }
   return matches.map(inventoryFileFor);
 };
@@ -162,19 +169,19 @@ export const parseRepositoryChanges = ({
   const inventory = parseDiffInventory(inventoryOutput);
   const parsedNode = parseGitDiff(diff);
   if (diff.trim().length > 0 && parsedNode.files.length === 0) {
-    throw new Error("Unable to parse non-empty Git diff");
+    throw unreadable("Unable to parse non-empty Git diff");
   }
 
   const patchExpectations = inventory.flatMap(patchExpectationsFor);
   if (patchExpectations.length !== parsedNode.files.length) {
-    throw new Error(
+    throw unreadable(
       `Git diff metadata and patch file counts disagree: ${patchExpectations.length} != ${parsedNode.files.length}`,
     );
   }
 
   return zip(patchExpectations, parsedNode.files).flatMap(([expectation, parsedFile]) => {
     if (parsedFile.type !== expectation.expectedType) {
-      throw new Error(
+      throw unreadable(
         `Git diff metadata and patch disagree: ${expectation.expectedType} != ${parsedFile.type}`,
       );
     }

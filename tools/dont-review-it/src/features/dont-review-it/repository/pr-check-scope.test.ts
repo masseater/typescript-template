@@ -63,7 +63,10 @@ describe("pull request check scope", () => {
         );
         expect(check).toMatch(/cache\/save@.+\n {8}if: .*steps\.affected\.outputs\./u);
         expect(check).toMatch(
-          /cache\/save@.+\n {8}if: \$\{\{ !cancelled\(\) && steps\.vite-task-cache\.outputs\.cache-hit != 'true' \}\}\n/u,
+          /^ {2}cache:\n {4}if: .+\n {4}runs-on: .+\n {4}timeout-minutes: 30$/mu,
+        );
+        expect(check).toMatch(
+          /cache\/save@.+\n {8}if: \$\{\{ always\(\) && steps\.vite-task-cache\.outputs\.cache-hit != 'true' \}\}\n/u,
         );
       }),
     ));

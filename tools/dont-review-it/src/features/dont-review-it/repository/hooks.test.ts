@@ -2,11 +2,11 @@ import { fileURLToPath } from "node:url";
 
 import { NodeServices } from "@effect/platform-node";
 import { lifecycleInherits, lifecycles } from "@repo/vite-config";
-import { Effect, FileSystem, Path, Schema, type PlatformError } from "effect";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries, filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";
 import {
   commands,
@@ -192,24 +192,17 @@ function unmatchedProjectNames(): string[] {
 
 const toolsRoot = fileURLToPath(new URL("../../../../../../tools", import.meta.url));
 
-type TreeScan<Scanned> = Effect.Effect<
-  Scanned,
-  PlatformError.PlatformError,
-  FileSystem.FileSystem | Path.Path
->;
+type TreeScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
 const collectTestPackages = (directory: string, packageName: string): TreeScan<string[]> =>
-  Effect.gen(function* scanTestPackages() {
-    const paths = yield* Path.Path;
-    const entries = yield* directoryEntries(directory);
-    const found = yield* Effect.forEach(entries, (entry): TreeScan<string[]> => {
-      if (entry.kind === "directory") {
-        return collectTestPackages(paths.join(directory, entry.name), packageName);
-      }
-      return Effect.succeed(/\.test\.tsx?$/u.test(entry.name) ? [packageName] : []);
-    });
-    return found.flat();
-  });
+  Effect.map(
+    filesUnder({
+      directory,
+      prunedDirectoryNames: ["node_modules"],
+      keepsFileName: (fileName) => /\.test\.tsx?$/u.test(fileName),
+    }),
+    (testFiles) => ((testFiles ?? []).length > 0 ? [packageName] : []),
+  );
 
 const toolsPackagesWithTests: TreeScan<string[]> = Effect.gen(function* toolsPackagesWithTests() {
   const paths = yield* Path.Path;
@@ -385,7 +378,12 @@ describe("lifecycle contents", () => {
           reachable(directory, ["prepush"]).includes(name),
         ),
       ),
-    ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
+    ).toStrictEqual([
+      "apps/internal-dashboard",
+      "apps/internal-wiki",
+      "apps/service-admin",
+      "apps/service-member",
+    ]);
     expect(
       configuredDirectories.flatMap((directory) =>
         taskNames(directory).includes("check:effect")
@@ -399,6 +397,7 @@ describe("lifecycle contents", () => {
       ),
     ).toStrictEqual([
       "apps/internal-dashboard",
+      "apps/internal-wiki",
       "apps/service-admin",
       "apps/service-member",
       "libs/db",

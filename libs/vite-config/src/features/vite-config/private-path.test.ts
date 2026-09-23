@@ -1,4 +1,4 @@
-import { APPLICATION } from "@repo/config";
+import { APPLICATION, wikiWorker } from "@repo/config";
 import { describe, expect, test } from "vite-plus/test";
 
 import { applicationsExcept, isSecretFileName, privatePath } from "./private-path.ts";
@@ -40,17 +40,32 @@ describe("privatePath", () => {
         repositoryRoot,
       }),
     )
+    .extend("wikiReadsOfItsHost", () =>
+      ["content/docs/index.md", "src/shared/server-api/mcp.ts"].map((candidatePath) =>
+        privatePath({
+          application: wikiWorker,
+          candidatePath: `${repositoryRoot}/apps/${APPLICATION.wiki}/${candidatePath}`,
+          repositoryRoot,
+        }),
+      ),
+    )
     .extend("devVarsFile", () => isSecretFileName(".dev.vars"))
     .extend("readmeFile", () => isSecretFileName("readme.md"));
 
   it("keeps the other applications off the member surface", ({ foreignApplications }) => {
-    expect(foreignApplications).toStrictEqual([APPLICATION.admin, APPLICATION.wiki]);
+    expect(foreignApplications).toStrictEqual([APPLICATION.admin, APPLICATION.wiki, wikiWorker]);
   });
 
   it("keeps infra, tools, secrets, and other apps off the member surface", ({
     privateCandidates,
   }) => {
     expect(privateCandidates).toStrictEqual([true, true, true, true, true, true, true, true]);
+  });
+
+  it("lets the wiki read the documents of its host and nothing else there", ({
+    wikiReadsOfItsHost,
+  }) => {
+    expect(wikiReadsOfItsHost).toStrictEqual([false, true]);
   });
 
   it("lets an app read its own sources", ({ ownApplicationEntry }) => {

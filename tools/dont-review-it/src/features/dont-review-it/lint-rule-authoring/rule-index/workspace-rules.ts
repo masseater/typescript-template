@@ -1,10 +1,17 @@
-import { join } from "node:path";
+import { Effect, type FileSystem, type PlatformError } from "effect";
 
+import { path } from "../../platform/path.ts";
 import { bundleNameOf, type BundledLintRule } from "./rule-bundle.ts";
 import { lintRuleFactsIn } from "./rule-facts.ts";
 import { ruleSourceFilesIn } from "./rule-source-files.ts";
 
+import type { TreeFailure } from "../../platform/directory-entries.ts";
 import type { LintRuleWorkspace } from "./lint-rule-workspaces.ts";
+
+type WorkspaceRules = {
+  readonly rules: readonly BundledLintRule[];
+  readonly absentDirectories: readonly string[];
+};
 
 export const workspaceRulesOf = ({
   repositoryRoot,
@@ -12,13 +19,28 @@ export const workspaceRulesOf = ({
 }: {
   readonly repositoryRoot: string;
   readonly workspace: LintRuleWorkspace;
-}): readonly BundledLintRule[] =>
-  ruleSourceFilesIn({ repositoryRoot, workspace }).flatMap((sourcePath) =>
-    lintRuleFactsIn({
-      workspaceRoot: join(repositoryRoot, workspace.workspaceDir),
-      sourcePath,
-    }).map((rule) => ({
-      ...rule,
-      bundle: bundleNameOf({ sourcePath, ruleDirectories: workspace.ruleDirectories }),
-    })),
-  );
+}): Effect.Effect<
+  WorkspaceRules,
+  TreeFailure | PlatformError.PlatformError,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* workspaceRulesOf() {
+    const { sourcePaths, absentDirectories } = yield* ruleSourceFilesIn({
+      repositoryRoot,
+      workspace,
+    });
+    const rules = yield* Effect.forEach(sourcePaths, (sourcePath) =>
+      lintRuleFactsIn({
+        workspaceRoot: path.join(repositoryRoot, workspace.workspaceDir),
+        sourcePath,
+      }).pipe(
+        Effect.map((facts) =>
+          facts.map((rule) => ({
+            ...rule,
+            bundle: bundleNameOf({ sourcePath, ruleDirectories: workspace.ruleDirectories }),
+          })),
+        ),
+      ),
+    );
+    return { rules: rules.flat(), absentDirectories };
+  });

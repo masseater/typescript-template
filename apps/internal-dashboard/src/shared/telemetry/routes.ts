@@ -3,7 +3,6 @@ export const routes = {
   "/.well-known/*": "oauth-discovery",
   "/api/auth/*": "auth",
   "/api/health": "health",
-  "/api/search": "search",
   "/api/session": "session",
   "/api/telemetry": "telemetry",
   "/audit": "audit",

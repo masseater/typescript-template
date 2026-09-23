@@ -1,10 +1,9 @@
 import { ignoreFilePatterns } from "../../../../configs/git-excludes/ignore-file-patterns.ts";
 import { path } from "../../../../platform/path.ts";
+import { NEGATION_PREFIX } from "../../../../platform/workspace-patterns.ts";
 import { readTextFile } from "../canonical-values/source-files.ts";
 
 export const IGNORE_SETTINGS_FILE_NAME = ".gitignore";
-
-export const NEGATION_PREFIX = "!";
 
 const LEADING_REACH = /^(?:\/|\*\*\/)+/u;
 

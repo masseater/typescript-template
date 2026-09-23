@@ -1,14 +1,11 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { Effect, type FileSystem } from "effect";
 
-import {
-  normativeDocumentPlacesIn,
-  normativeDocumentsIn,
-  readUnlessMissing,
-} from "../../repository-checks/index.ts";
+import { textOrNull } from "../../platform/file-system.ts";
+import { path } from "../../platform/path.ts";
+import { normativeDocumentPlacesIn, normativeDocumentsIn } from "../../repository-checks/index.ts";
 import { generatedFileProblems, staleGeneratedFile } from "../reconcile-generated-file.ts";
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
-import { lintRuleWorkspacesIn } from "./lint-rule-workspaces.ts";
+import { lintRuleWorkspacesIn, type LintRuleWorkspaceFailure } from "./lint-rule-workspaces.ts";
 import { renderGuidelineIndex, type GroundedLintRule } from "./render-guideline-index.ts";
 import { workspaceRulesOf } from "./workspace-rules.ts";
 
@@ -38,45 +35,45 @@ export const guidelineIndexProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly write: boolean;
-}): LintRuleCheckReport => {
-  const grounded: readonly GroundedLintRule[] = lintRuleWorkspacesIn(repositoryRoot).flatMap(
-    (workspace) =>
-      workspaceRulesOf({ repositoryRoot, workspace }).map((rule) => ({
-        rule,
-        workspaceDir: workspace.workspaceDir,
-      })),
-  );
-  const normativeDocuments = normativeDocumentsIn({
-    repositoryRoot,
-    places: normativeDocumentPlacesIn(repositoryRoot),
-    workspaceDirectories: lintRuleWorkspacesIn(repositoryRoot).map(
-      (workspace) => workspace.workspaceDir,
-    ),
-  });
-  if (normativeDocuments.length === 0) {
-    return {
-      problems:
-        readUnlessMissing(() =>
-          readFileSync(join(repositoryRoot, GUIDELINE_INDEX_PATH), "utf8"),
-        ) === null
-          ? []
-          : [{ file: GUIDELINE_INDEX_PATH, message: strandedIndex(GUIDELINE_INDEX_PATH) }],
-      scanned: 0,
-    };
-  }
-
-  return {
-    problems: generatedFileProblems({
+}): Effect.Effect<LintRuleCheckReport, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* guidelineIndexProblems() {
+    const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
+    const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
+      workspaceRulesOf({ repositoryRoot, workspace }).pipe(
+        Effect.map(({ rules }) =>
+          rules.map((rule) => ({ rule, workspaceDir: workspace.workspaceDir })),
+        ),
+      ),
+    );
+    const grounded: readonly GroundedLintRule[] = workspaceRules.flat();
+    const normativeDocuments = normativeDocumentsIn({
       repositoryRoot,
-      file: GUIDELINE_INDEX_PATH,
-      begin: BEGIN_MARKER,
-      end: END_MARKER,
-      expected: renderGuidelineIndex({ normativeDocuments, grounded }),
-      scaffold: scaffoldOf,
-      absent: missingIndex,
-      stale: staleIndex,
-      write,
-    }),
-    scanned: normativeDocuments.length,
-  };
-};
+      places: normativeDocumentPlacesIn(repositoryRoot),
+      workspaceDirectories: workspaces.map((workspace) => workspace.workspaceDir),
+    });
+    if (normativeDocuments.length === 0) {
+      const strandedText = yield* textOrNull(path.join(repositoryRoot, GUIDELINE_INDEX_PATH));
+      return {
+        problems:
+          strandedText === null
+            ? []
+            : [{ file: GUIDELINE_INDEX_PATH, message: strandedIndex(GUIDELINE_INDEX_PATH) }],
+        scanned: 0,
+      };
+    }
+
+    return {
+      problems: yield* generatedFileProblems({
+        repositoryRoot,
+        file: GUIDELINE_INDEX_PATH,
+        begin: BEGIN_MARKER,
+        end: END_MARKER,
+        expected: renderGuidelineIndex({ normativeDocuments, grounded }),
+        scaffold: scaffoldOf,
+        absent: missingIndex,
+        stale: staleIndex,
+        write,
+      }),
+      scanned: normativeDocuments.length,
+    };
+  });
