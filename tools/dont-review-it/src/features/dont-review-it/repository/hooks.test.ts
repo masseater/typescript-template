@@ -239,6 +239,7 @@ describe("cloud agent environment", () => {
     expect(install).toContain("seed-mergify-auth.sh");
     expect(install).toContain("vp install");
     expect(start).toContain("seed-mergify-auth.sh");
+    expect(start).toContain("materialize:env");
     expect(start).toContain("pre-push");
     expect(start).toContain(".cursor-original-hooks-path");
   });
