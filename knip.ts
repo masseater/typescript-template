@@ -137,6 +137,7 @@ const scripts = {
     "src/features/cloudflare/prepare-ci-env.ts!",
     "src/features/cloudflare/verify-origins.ts!",
   ],
+  "infra/github": ["src/features/github/cli.ts!"],
   "infra/local": ["src/features/local/compose.ts!"],
   "libs/db-local": [
     "src/features/db-local/bootstrap-local.ts!",
@@ -245,6 +246,10 @@ const config = ({
           ...modularFeaturePublicApi,
         ],
         ignoreExportsUsedInFile: true,
+        project: ["src/**/*.ts!"],
+      },
+      "infra/github": {
+        entry: ["alchemy.run.ts!", ...productionOnly(...scripts["infra/github"])],
         project: ["src/**/*.ts!"],
       },
       "infra/local": {

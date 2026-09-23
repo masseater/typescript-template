@@ -855,6 +855,15 @@ const lintOptions = {
       },
     },
     {
+      files: ["infra/github/**"],
+      rules: {
+        "new-cap": [
+          LINT_SEVERITY.ERROR,
+          { capIsNewExceptionPattern: "^(?:Schema|GitHub)\\.", capIsNewExceptions: ["Stack"] },
+        ],
+      },
+    },
+    {
       files: ["libs/vite-config/src/features/vite-config/elysia-aot.ts"],
       rules: {
         "max-lines": LINT_SEVERITY.OFF,
