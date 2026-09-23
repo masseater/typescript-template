@@ -1,4 +1,5 @@
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { isDataImportReference } from "../../lib/spec-syntax/data-imports.ts";
 import {
   fixtureContextParameterName,
   fixtureDeclarationsOf,
@@ -16,6 +17,7 @@ import {
 } from "../../lib/spec-syntax/subject-expressions.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
+import type { ScopeLookup } from "../../lib/resolved-bindings.ts";
 
 const HANDLER_SCOPING_WRAPPERS_OPTION = "handlerScopingWrappers";
 
@@ -128,6 +130,7 @@ type SubjectReading = {
   readonly at: ESTree.Expression;
   readonly written: ESTree.Expression;
   readonly handed: ReadonlySet<string>;
+  readonly scopeAt: ScopeLookup;
 };
 
 type ForwardedSubject = {
@@ -149,12 +152,14 @@ const carriedForwardingOf = ({ at, written, handed }: SubjectReading): Forwarded
 };
 
 const forwardingOf = (reading: SubjectReading): ForwardedSubject | null => {
-  const { at, written, handed } = reading;
+  const { at, written, handed, scopeAt } = reading;
   if (written.type === "Identifier") {
     return handed.has(written.name) ? { at, messageId: "forwardedSubject", root: written } : null;
   }
   if (written.type === "MemberExpression") {
-    return { at, messageId: "projectedSubject", root: rootOf(written) };
+    const root = rootOf(written);
+    if (root.type === "Identifier" && isDataImportReference(root, scopeAt)) return null;
+    return { at, messageId: "projectedSubject", root };
   }
   return carriedForwardingOf(reading);
 };
@@ -162,10 +167,11 @@ const forwardingOf = (reading: SubjectReading): ForwardedSubject | null => {
 const forwardingsFor = (given: {
   readonly handedBack: HandedBack;
   readonly handed: ReadonlySet<string>;
+  readonly scopeAt: ScopeLookup;
 }): readonly ForwardedSubject[] => {
-  const { handedBack, handed } = given;
+  const { handedBack, handed, scopeAt } = given;
   const written = resolvedThrough(handedBack, new Set());
-  const forwarding = forwardingOf({ at: handedBack.at, written, handed });
+  const forwarding = forwardingOf({ at: handedBack.at, written, handed, scopeAt });
   return forwarding === null ? [] : [forwarding];
 };
 
@@ -173,15 +179,16 @@ const declaredForwardings = (given: {
   readonly factory: SpecFunction;
   readonly subjects: readonly ESTree.Expression[];
   readonly wrappers: ReadonlySet<string>;
+  readonly scopeAt: ScopeLookup;
 }): readonly ForwardedSubject[] => {
-  const { factory, subjects, wrappers: wrappings } = given;
+  const { factory, subjects, wrappers: wrappings, scopeAt } = given;
   const handed = handedNamesOf(factory);
   const writtenBody = blockBodyOf(factory);
   const writtenBodies = writtenBody === null ? [] : [writtenBody];
 
   return subjects.flatMap((subject) =>
     handedBackValues({ at: subject, bodies: writtenBodies, wrappers: wrappings }).flatMap(
-      (handedBack) => forwardingsFor({ handedBack, handed }),
+      (handedBack) => forwardingsFor({ handedBack, handed, scopeAt }),
     ),
   );
 };
@@ -189,9 +196,17 @@ const declaredForwardings = (given: {
 const forwardedSubjectsIn = (given: {
   readonly call: ESTree.CallExpression;
   readonly wrappers: ReadonlySet<string>;
+  readonly scopeAt: ScopeLookup;
 }): readonly ForwardedSubject[] =>
   fixtureDeclarationsOf(given.call).flatMap(({ factory, subjects }) =>
-    factory === null ? [] : declaredForwardings({ factory, subjects, wrappers: given.wrappers }),
+    factory === null
+      ? []
+      : declaredForwardings({
+          factory,
+          subjects,
+          wrappers: given.wrappers,
+          scopeAt: given.scopeAt,
+        }),
   );
 
 export const noFixtureForwardSubject = createDontReviewItRule({
@@ -234,6 +249,7 @@ export const noFixtureForwardSubject = createDontReviewItRule({
         for (const { at, messageId, root } of forwardedSubjectsIn({
           call: node,
           wrappers: wrappings,
+          scopeAt: (reached: ESTree.Node) => inspection.sourceCode.getScope(reached),
         })) {
           inspection.report({
             node: at,
