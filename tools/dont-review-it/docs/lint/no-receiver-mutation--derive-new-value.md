@@ -13,7 +13,7 @@ Disallow calling a method that writes to a receiver which is not an array - a co
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-receiver-mutation--derive-new-value.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-receiver-mutation--derive-new-value.ts)
+- Source: [`no-receiver-mutation--derive-new-value.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-receiver-mutation--derive-new-value.ts)
 
 <!-- END GENERATED rule-header -->
 

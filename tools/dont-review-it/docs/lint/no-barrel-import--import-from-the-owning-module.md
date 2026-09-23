@@ -13,7 +13,7 @@ Disallow a module specifier that names a re-export module while the statement ta
 - Suggestions: no
 - Options: no
 - Shipped in the preset: no
-- Source: [`no-barrel-import--import-from-the-owning-module.ts`](../../src/lint/oxlint/rules/no-barrel-import--import-from-the-owning-module.ts)
+- Source: [`no-barrel-import--import-from-the-owning-module.ts`](../../src/features/dont-review-it/lint/oxlint/rules/no-barrel-import--import-from-the-owning-module.ts)
 
 <!-- END GENERATED rule-header -->
 

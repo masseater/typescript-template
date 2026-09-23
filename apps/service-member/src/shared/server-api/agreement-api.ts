@@ -124,7 +124,6 @@ const consentExempt = (request: Request): boolean => {
     relative === "/telemetry" ||
     relative.startsWith("/invite") ||
     relative === "/contact" ||
-    relative === "/flags" ||
     relative === "/leave" ||
     relative.startsWith("/recovery") ||
     relative.startsWith("/billing") ||

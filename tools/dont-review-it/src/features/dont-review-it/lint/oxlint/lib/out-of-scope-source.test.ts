@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { isOutOfScopeLintSource, isOutOfScopeSource } from "./out-of-scope-source.ts";
@@ -338,35 +337,44 @@ describe("isOutOfScopeSource", () => {
   });
 });
 
-describe("isOutOfScopeLintSource", () => {
+layer(NodeServices.layer)("isOutOfScopeLintSource", (it) => {
   describe("a source that exists below the repository root", () => {
-    const it = test.extend("outOfScopeForLint", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "out-of-scope-source-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* outOfScopeForLint() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "out-of-scope-source-",
       });
-      mkdirSync(join(repositoryRoot, "src"));
-      const writtenSource = join(repositoryRoot, "src/status.ts");
-      writeFileSync(writtenSource, "export {};\n");
+
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"));
+      const writtenSource = paths.join(repositoryRoot, "src/status.ts");
+      yield* filesystem.writeFileString(writtenSource, "export {};\n");
       return isOutOfScopeLintSource(writtenSource, repositoryRoot);
     });
 
-    it("reads it against the root and keeps it in scope", ({ outOfScopeForLint }) => {
-      expect(outOfScopeForLint).toBe(false);
-    });
+    it.effect("reads it against the root and keeps it in scope", () =>
+      Effect.gen(function* program() {
+        const outOfScopeForLint = yield* fixture;
+        expect(outOfScopeForLint).toBe(false);
+      }),
+    );
   });
 
   describe("a source that does not exist", () => {
-    const it = test.extend("outOfScopeForLint", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "out-of-scope-source-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* outOfScopeForLint() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "out-of-scope-source-",
       });
+
       return isOutOfScopeLintSource("tests/missing.ts", repositoryRoot);
     });
 
-    it("reads it on its written path alone and falls out of scope", ({ outOfScopeForLint }) => {
-      expect(outOfScopeForLint).toBe(true);
-    });
+    it.effect("reads it on its written path alone and falls out of scope", () =>
+      Effect.gen(function* program() {
+        const outOfScopeForLint = yield* fixture;
+        expect(outOfScopeForLint).toBe(true);
+      }),
+    );
   });
 });

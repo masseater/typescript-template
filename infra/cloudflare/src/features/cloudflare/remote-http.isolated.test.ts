@@ -1,10 +1,10 @@
+import { RemoteFailure } from "@repo/db/migrations";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
-import { runRemoteDatabaseCommand } from "../../../../../infra/cloudflare/src/features/cloudflare/remote-command.ts";
-import { RemoteFailure } from "./remote-input.ts";
+import { runRemoteDatabaseCommand } from "./remote-command.ts";
 
 const d1Target = {
   accountId: "a".repeat(32),

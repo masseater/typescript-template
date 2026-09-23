@@ -1,7 +1,6 @@
-import { join } from "node:path";
-
 import { sortBy } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import {
   EXPORTS_CONDITION_DEPTH_LIMIT,
   MANIFEST_FILE_NAME,
@@ -79,7 +78,7 @@ const entryPathsOf = (manifest: Record<string, unknown>): readonly string[] => {
     stringFieldOf(manifest, TYPES_CONDITION),
     stringFieldOf(manifest, "typings"),
     stringFieldOf(manifest, "main"),
-  ].filter((path): path is string => path !== null);
+  ].filter((filePath): filePath is string => filePath !== null);
 };
 
 const DECLARATIONS_SUFFIX_PATTERN = /\.[cm]?tsx?$/u;
@@ -93,19 +92,19 @@ const declarationsCandidateFor = (entryPath: string): string | null => {
 };
 
 const declarationsOf = (dependencyDirectory: string): string | null => {
-  const manifest = readJsonFile(join(dependencyDirectory, MANIFEST_FILE_NAME));
+  const manifest = readJsonFile(path.join(dependencyDirectory, MANIFEST_FILE_NAME));
   if (!isRecord(manifest)) return null;
   for (const entryPath of entryPathsOf(manifest)) {
     const candidate = declarationsCandidateFor(entryPath);
     if (candidate === null) continue;
-    const resolved = join(dependencyDirectory, candidate);
+    const resolved = path.join(dependencyDirectory, candidate);
     if (isFile(resolved)) return resolved;
   }
   return null;
 };
 
 export const dependencyTypeEntries = (packageDirectory: string): readonly DependencyTypeEntry[] => {
-  const manifest = readJsonFile(join(packageDirectory, MANIFEST_FILE_NAME));
+  const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
   if (!isRecord(manifest)) return [];
 
   const specifiers = {
@@ -117,7 +116,7 @@ export const dependencyTypeEntries = (packageDirectory: string): readonly Depend
   const listedEntries = Object.entries(specifiers).flatMap(([packageName, range]) => {
     if (typeof range === "string" && range.startsWith(WORKSPACE_PROTOCOL)) return [];
     const declarationsPath = declarationsOf(
-      join(packageDirectory, NODE_MODULES_DIRECTORY_NAME, packageName),
+      path.join(packageDirectory, NODE_MODULES_DIRECTORY_NAME, packageName),
     );
     return declarationsPath === null ? [] : [{ packageName, declarationsPath }];
   });

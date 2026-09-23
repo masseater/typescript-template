@@ -7,10 +7,10 @@ import type { ReactElement } from "react";
 const route = getRouteApi("/_member");
 
 function MemberLayout(): ReactElement {
-  const { memberBoard, session } = route.useRouteContext();
+  const { session } = route.useRouteContext();
   const navBadges = route.useLoaderData();
   return (
-    <MemberFrame memberBoard={memberBoard} navBadges={navBadges} user={session.user}>
+    <MemberFrame navBadges={navBadges} user={session.user}>
       <Outlet />
     </MemberFrame>
   );

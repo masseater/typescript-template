@@ -139,10 +139,7 @@ const scripts = {
     "src/features/db-local/bootstrap-local.ts!",
     "src/features/db-local/migrate-local.ts!",
   ],
-  "libs/vite-config": [
-    "src/features/vite-config/compile-paraglide.ts!",
-    "src/features/vite-config/compile-workspace-paraglide.ts!",
-  ],
+  "libs/vite-config": ["src/features/vite-config/compile-workspace-paraglide.ts!"],
   "tools/dev": [
     "src/features/dev/cli.ts!",
     "src/features/dev/prepare-browser.ts!",

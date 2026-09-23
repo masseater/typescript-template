@@ -13,7 +13,7 @@ Require every lint message to carry a prohibition and an imperative repair direc
 - Suggestions: no
 - Options: no
 - Bundle: `authoring`
-- Source: [`no-explained-lint-message--state-prohibition-then-fix.ts`](../../src/lint-rule-authoring/lint/oxlint/rules/authoring/no-explained-lint-message--state-prohibition-then-fix.ts)
+- Source: [`no-explained-lint-message--state-prohibition-then-fix.ts`](../../src/features/dont-review-it/lint-rule-authoring/lint/oxlint/rules/authoring/no-explained-lint-message--state-prohibition-then-fix.ts)
 
 <!-- END GENERATED rule-header -->
 

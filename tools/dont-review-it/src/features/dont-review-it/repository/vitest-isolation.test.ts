@@ -4,12 +4,19 @@ import path from "node:path";
 import { describe, expect, it } from "vite-plus/test";
 
 import { repositoryRoot } from "./repository-root.ts";
-import { isolatedNodeTestSuffix, isolatedNodeTests, unitTestShardCount } from "./test-runtime.ts";
+import { commands } from "./tasks.ts";
+import {
+  isolatedNodeTestSuffix,
+  isolatedNodeTests,
+  prCheckShardCount,
+  unitTestShardCount,
+} from "./test-runtime.ts";
 
 const workflow = readFileSync(path.join(repositoryRoot, ".github/workflows/check.yml"), "utf8");
 const vite = readFileSync(path.join(repositoryRoot, "vite.config.ts"), "utf8");
 
 const fakeTimerCall = /\b(?:vi|jest)\.useFakeTimers\b|\bsetSystemTime\b/u;
+const moduleMockCall = /^(?:await\s+)?vi\.(?:mock|doMock)\(/mu;
 
 function collectTestFiles(directory: string): string[] {
   const found: string[] = [];
@@ -37,6 +44,18 @@ describe("vitest isolation and sharding", () => {
     expect(isolatedNodeTests).toContain(isolatedNodeTestSuffix);
   });
 
+  it("runs one pull request check shard per matrix entry", () => {
+    expect.hasAssertions();
+    const shards = Array.from({ length: prCheckShardCount }, (_unused, index) => index + 1);
+    expect(workflow).toMatch(
+      new RegExp(
+        String.raw`^ {2}check-shard:\n(?: {4}.+\n)* {8}shard: \[${shards.join(", ")}\]\n`,
+        "mu",
+      ),
+    );
+    expect(workflow).toContain("CHECK_SHARD: ${{ matrix.shard }}");
+  });
+
   it("shards the merge-queue unit suite without repeating package premerge", () => {
     expect.hasAssertions();
     expect(unitTestShardCount).toBe(4);
@@ -56,6 +75,26 @@ describe("vitest isolation and sharding", () => {
       .filter((file) => !file.endsWith(isolatedNodeTestSuffix))
       .filter((file) => !file.includes(`${path.sep}specs${path.sep}`))
       .filter((file) => fakeTimerCall.test(readFileSync(file, "utf8")))
+      .map((file) => path.relative(repositoryRoot, file))
+      .toSorted();
+    expect(offenders).toStrictEqual([]);
+  });
+
+  it("runs dont-review-it on a shared module graph and its isolated opt-outs apart", () => {
+    expect.hasAssertions();
+    expect(commands("tools/dont-review-it", "test")).toStrictEqual([
+      `vp test run --isolate=false --exclude '${isolatedNodeTests}'`,
+      `vp test run ${isolatedNodeTestSuffix}`,
+    ]);
+  });
+
+  it("keeps module mocks out of the shared module graph", () => {
+    expect.hasAssertions();
+    const offenders = ["apps", "libs", "infra", "tools/dont-review-it"]
+      .flatMap((root) => collectTestFiles(path.join(repositoryRoot, root)))
+      .filter((file) => !file.endsWith(isolatedNodeTestSuffix))
+      .filter((file) => !file.includes(".dev-server.test."))
+      .filter((file) => moduleMockCall.test(readFileSync(file, "utf8")))
       .map((file) => path.relative(repositoryRoot, file))
       .toSorted();
     expect(offenders).toStrictEqual([]);

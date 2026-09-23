@@ -1,9 +1,8 @@
-import { dirname } from "node:path";
-
 import { attempt, groupBy, uniqBy } from "es-toolkit";
 import * as ts from "typescript-6";
 
 import { measureStage } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import {
   publicImportRoutes,
   publicPackageEntries,
@@ -31,7 +30,7 @@ const publicSourceFilesFor = (
   uniqBy(
     declarations.flatMap((declaration) => {
       const packageDirectory = nearestPackageDirectory(
-        dirname(declaration.absolutePath),
+        path.dirname(declaration.absolutePath),
         repositoryRoot,
       );
       if (packageDirectory === null) return [];
@@ -49,7 +48,7 @@ const configurationKey = (
 ): string =>
   canonicalValuesTypeScriptConfigPath({
     repositoryRoot,
-    searchDirectory: dirname(declaration.absolutePath),
+    searchDirectory: path.dirname(declaration.absolutePath),
   }) ?? "<default>";
 
 const variableDeclarationAt = (
@@ -198,7 +197,7 @@ const packageSurface = (input: {
   readonly repositoryRoot: string;
 }): Pick<CanonicalValuesEntry, "importRoutes" | "packageName"> => {
   const packageDirectory = nearestPackageDirectory(
-    dirname(input.declaration.absolutePath),
+    path.dirname(input.declaration.absolutePath),
     input.repositoryRoot,
   );
   if (packageDirectory === null) return { importRoutes: [], packageName: null };
@@ -268,7 +267,7 @@ const resolveGroup = (input: {
       ...input.declarations.map((declaration) => declaration.absolutePath),
       ...input.publicSourceFiles,
     ],
-    searchDirectory: dirname(first.absolutePath),
+    searchDirectory: path.dirname(first.absolutePath),
   });
   const checker = measureStage("canonical.checker", () => program.getTypeChecker());
   const measuredEntry = (declaration: CanonicalValuesDeclarationSite): CanonicalValuesEntry =>

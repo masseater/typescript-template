@@ -1,5 +1,4 @@
-import { resolve, sep } from "node:path";
-
+import { path } from "../../../../platform/path.ts";
 import { matchesGlobPath } from "../glob-path-match.ts";
 import { listedTexts } from "../listed-texts.ts";
 import { isNamedFields } from "../named-fields.ts";
@@ -135,7 +134,7 @@ export const entriesInForceAt = ({
   readonly file: string;
   readonly cwd: string;
 }): readonly RestrictedTargetEntry[] => {
-  const pathSegments = segmentsOf({ path: file, separator: sep });
+  const pathSegments = segmentsOf({ path: file, separator: path.sep });
   return entries.filter(
     (restrictedTarget) =>
       !restrictedTarget.allowedPositions.some((pattern) =>
@@ -157,5 +156,5 @@ export const aliasedSpecifierIn = ({
   if (matched === undefined) return null;
 
   const remainder = specifier.slice(matched.prefix.length);
-  return resolve(workspaceRoot, matched.directory, remainder);
+  return path.resolve(workspaceRoot, matched.directory, remainder);
 };

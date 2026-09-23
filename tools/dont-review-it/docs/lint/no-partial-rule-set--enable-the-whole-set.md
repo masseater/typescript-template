@@ -13,7 +13,7 @@ Require a configuration naming any rule of a declared set to name the whole set 
 - Suggestions: no
 - Options: no
 - Bundle: `governance`
-- Source: [`no-partial-rule-set--enable-the-whole-set.ts`](../../src/lint/oxlint/rules/governance/no-partial-rule-set--enable-the-whole-set.ts)
+- Source: [`no-partial-rule-set--enable-the-whole-set.ts`](../../src/features/dont-review-it/lint/oxlint/rules/governance/no-partial-rule-set--enable-the-whole-set.ts)
 
 <!-- END GENERATED rule-header -->
 

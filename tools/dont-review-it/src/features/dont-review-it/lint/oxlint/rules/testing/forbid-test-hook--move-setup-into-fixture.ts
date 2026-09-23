@@ -223,7 +223,7 @@ export const forbidTestHook = createDontReviewItRule({
     docs: {
       description:
         "Disallow a spec file naming a test hook, so every subject an assertion reads is born in the fixture the test block asked for",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
     },
     messages: {
       testHook:

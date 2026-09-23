@@ -1,7 +1,6 @@
-import { join, relative } from "node:path";
-
 import { uniqBy } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { toPosixPath } from "../posix-path.ts";
 import { couplingTargetsOf } from "../setup-modules/entry-reachability.ts";
 import { pathsMatching } from "./uncovered-paths.ts";
@@ -36,7 +35,7 @@ const stepsFrom = (traversal: {
 const withinRepository = (asked: {
   readonly repositoryRoot: string;
   readonly file: string;
-}): string => toPosixPath(relative(asked.repositoryRoot, asked.file));
+}): string => toPosixPath(path.relative(asked.repositoryRoot, asked.file));
 
 const scopeFindings = (asked: {
   readonly scope: ScopeRegistration;
@@ -50,7 +49,7 @@ const scopeFindings = (asked: {
 
   const reached = stepsFrom({
     repositoryRoot,
-    frontier: registered.map((relativePath) => join(repositoryRoot, relativePath)),
+    frontier: registered.map((relativePath) => path.join(repositoryRoot, relativePath)),
     walked: new Set(),
   }).map((step) => ({
     reachingPath: withinRepository({ repositoryRoot, file: step.fromFile }),

@@ -13,7 +13,7 @@ Disallow naming the subject of an assertion by one of the configured forbidden-n
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-expect-forbidden-subject-name--rename-to-concrete-subject.ts`](../../src/lint/oxlint/rules/testing/no-expect-forbidden-subject-name--rename-to-concrete-subject.ts)
+- Source: [`no-expect-forbidden-subject-name--rename-to-concrete-subject.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-expect-forbidden-subject-name--rename-to-concrete-subject.ts)
 
 <!-- END GENERATED rule-header -->
 

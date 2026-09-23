@@ -5,7 +5,6 @@ import { Effect } from "effect";
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
 import { loadSession } from "#entities/session/index.ts";
 import { loadOnboardingStep } from "#pages/account/welcome/index.ts";
-import { loadMemberFlags } from "#pages/flags/index.ts";
 import { loadRecoveryOffer } from "#pages/recovery/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
@@ -42,7 +41,7 @@ function enterPublicFrame(pathname: string): Promise<void> {
 function enterMemberFrame(
   href: string,
   pathname: string,
-): Promise<{ agreements: Agreements; memberBoard: boolean; session: Session }> {
+): Promise<{ agreements: Agreements; session: Session }> {
   return Effect.runPromise(
     Effect.gen(function* enterMember() {
       const session = yield* Effect.promise(() => loadSession());
@@ -64,8 +63,7 @@ function enterMemberFrame(
       if (blocksMember(agreements.pending) && pathname !== agreementPath) {
         throw redirect({ search: { redirect: href }, to: agreementPath });
       }
-      const memberBoard = yield* Effect.promise(() => loadMemberFlags());
-      return { agreements, memberBoard, session };
+      return { agreements, session };
     }),
   );
 }

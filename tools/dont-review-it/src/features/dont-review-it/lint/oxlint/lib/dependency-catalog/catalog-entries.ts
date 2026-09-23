@@ -1,9 +1,8 @@
-import { join, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { defaultDependencyCatalogChecksConfig } from "../../../../dependency-catalog/config.ts";
 import { parsedWorkspaceDefinitionOrNull } from "../../../../dependency-catalog/workspace-definition.ts";
+import { path } from "../../../../platform/path.ts";
 import { readTextFile } from "../canonical-values/source-files.ts";
 
 export type CatalogEntryVersion = {
@@ -18,7 +17,7 @@ export type CatalogEntriesLoader = (options: {
 const registeredEntries: (repositoryRoot: string) => readonly CatalogEntryVersion[] = memoize(
   (repositoryRoot: string): readonly CatalogEntryVersion[] => {
     const config = defaultDependencyCatalogChecksConfig;
-    const source = readTextFile(join(repositoryRoot, config.workspaceDefinitionFileName));
+    const source = readTextFile(path.join(repositoryRoot, config.workspaceDefinitionFileName));
     if (source === null) return [];
 
     const definition = parsedWorkspaceDefinitionOrNull({ source, config });
@@ -32,4 +31,4 @@ const registeredEntries: (repositoryRoot: string) => readonly CatalogEntryVersio
 );
 
 export const loadCatalogEntries: CatalogEntriesLoader = ({ repositoryRoot }) =>
-  registeredEntries(resolve(repositoryRoot));
+  registeredEntries(path.resolve(repositoryRoot));

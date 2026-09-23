@@ -13,7 +13,7 @@ Disallow a declaration statement that introduces more than one binding, so every
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-multi-binding-declaration--declare-one-binding-per-statement.ts`](../../src/lint/oxlint/rules/writing/no-multi-binding-declaration--declare-one-binding-per-statement.ts)
+- Source: [`no-multi-binding-declaration--declare-one-binding-per-statement.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-multi-binding-declaration--declare-one-binding-per-statement.ts)
 
 <!-- END GENERATED rule-header -->
 

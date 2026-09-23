@@ -13,7 +13,7 @@ Disallow a binding named by one of the ambiguous-name patterns, so the name says
 - Suggestions: no
 - Options: yes
 - Bundle: `writing`
-- Source: [`no-ambiguous-variable-name--rename-to-concrete-noun.ts`](../../src/lint/oxlint/rules/writing/no-ambiguous-variable-name--rename-to-concrete-noun.ts)
+- Source: [`no-ambiguous-variable-name--rename-to-concrete-noun.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-ambiguous-variable-name--rename-to-concrete-noun.ts)
 
 <!-- END GENERATED rule-header -->
 

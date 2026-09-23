@@ -13,7 +13,7 @@ Disallow replacing a module that does not own an external I/O boundary itself, s
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-non-boundary-double--replace-at-the-external-boundary.ts`](../../src/lint/oxlint/rules/testing/no-non-boundary-double--replace-at-the-external-boundary.ts)
+- Source: [`no-non-boundary-double--replace-at-the-external-boundary.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-non-boundary-double--replace-at-the-external-boundary.ts)
 
 <!-- END GENERATED rule-header -->
 

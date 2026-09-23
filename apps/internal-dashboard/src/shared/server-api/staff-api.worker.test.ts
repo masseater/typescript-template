@@ -3,7 +3,6 @@ import { signedSessionCookie } from "@repo/auth/testing";
 import { APPLICATION, ROLE, STAFF_PERMISSION, httpStatus } from "@repo/config";
 import { AUDIT_CHANNEL, Database } from "@repo/db";
 import { TestDatabase, addSession, addUser, auditActionsOf } from "@repo/db/testing";
-import { FLAG_KEY } from "@repo/feature-flags";
 import { recordingSink } from "@repo/observability/testing";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
@@ -105,11 +104,6 @@ function wikiApp() {
 const removal: Call = { body: { id: "target" }, method: "DELETE", path: "/staff" };
 
 const operations: Readonly<Record<string, Call>> = {
-  "change a flag": {
-    body: { enabled: false, key: FLAG_KEY.memberBoard },
-    method: "PATCH",
-    path: "/flags",
-  },
   "invite a member": {
     body: { email: invitee, permission: STAFF_PERMISSION.viewer },
     method: "POST",

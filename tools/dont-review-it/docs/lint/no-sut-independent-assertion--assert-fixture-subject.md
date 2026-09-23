@@ -13,7 +13,7 @@ Disallow an assertion whose operands never went through the code under test, so 
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-sut-independent-assertion--assert-fixture-subject.ts`](../../src/lint/oxlint/rules/testing/no-sut-independent-assertion--assert-fixture-subject.ts)
+- Source: [`no-sut-independent-assertion--assert-fixture-subject.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-sut-independent-assertion--assert-fixture-subject.ts)
 
 <!-- END GENERATED rule-header -->
 

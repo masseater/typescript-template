@@ -1,5 +1,4 @@
-import { dirname, resolve } from "node:path";
-
+import { path } from "../../../../platform/path.ts";
 import { nearestPackageDirectory } from "../canonical-values/source-files.ts";
 import { findWorkspaceRoot } from "../canonical-values/workspace-root.ts";
 import { workspaceDirectoryOf } from "./shared-dependency-index.ts";
@@ -13,7 +12,7 @@ export const declaringWorkspaceOf = (carried: {
   readonly cwd: string;
   readonly filename: string;
 }): DeclaringWorkspace | null => {
-  const fileDirectory = dirname(resolve(carried.cwd, carried.filename));
+  const fileDirectory = path.dirname(path.resolve(carried.cwd, carried.filename));
   const repositoryRoot = findWorkspaceRoot(fileDirectory);
   const packageDirectory = nearestPackageDirectory(fileDirectory, repositoryRoot);
   if (packageDirectory === null) return null;

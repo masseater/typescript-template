@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import {
@@ -10,95 +9,120 @@ import {
   worktreeFilePathsUnder,
 } from "./worktree-files.ts";
 
-describe("worktreeFilePathsUnder", () => {
+layer(NodeServices.layer)("worktreeFilePathsUnder", (it) => {
   describe("a worktree holding files at the root and under nested directories", () => {
-    const it = test.extend("paths", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "worktree-files-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixture = Effect.gen(function* paths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "worktree-files-" });
+
+      yield* filesystem.makeDirectory(pathService.join(root, "packages", "alpha"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages", "alpha"), { recursive: true });
-      writeFileSync(join(root, "packages", "alpha", "package.json"), "held\n", "utf8");
-      writeFileSync(join(root, "README.md"), "held\n", "utf8");
+      yield* filesystem.writeFileString(
+        pathService.join(root, "packages", "alpha", "package.json"),
+        "held\n",
+      );
+      yield* filesystem.writeFileString(pathService.join(root, "README.md"), "held\n");
       return worktreeFilePathsUnder({ root, unscannedDirectoryNames: UNSCANNED_DIRECTORY_NAMES });
     });
 
-    it("lists every file as a repository relative path", ({ paths }) => {
-      expect(paths).toStrictEqual(["README.md", "packages/alpha/package.json"]);
-    });
+    it.effect("lists every file as a repository relative path", () =>
+      Effect.gen(function* program() {
+        const paths = yield* fixture;
+        expect(paths).toStrictEqual(["README.md", "packages/alpha/package.json"]);
+      }),
+    );
   });
 
   describe("a worktree holding directories named as unscanned", () => {
-    const it = test.extend("paths", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "worktree-files-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixture = Effect.gen(function* paths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "worktree-files-" });
+
+      yield* filesystem.makeDirectory(pathService.join(root, "node_modules", "left-pad"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "node_modules", "left-pad"), { recursive: true });
-      writeFileSync(join(root, "node_modules", "left-pad", "index.js"), "held\n", "utf8");
-      mkdirSync(join(root, "dist"), { recursive: true });
-      writeFileSync(join(root, "dist", "bundle.js"), "held\n", "utf8");
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "entry.ts"), "held\n", "utf8");
+      yield* filesystem.writeFileString(
+        pathService.join(root, "node_modules", "left-pad", "index.js"),
+        "held\n",
+      );
+      yield* filesystem.makeDirectory(pathService.join(root, "dist"), { recursive: true });
+      yield* filesystem.writeFileString(pathService.join(root, "dist", "bundle.js"), "held\n");
+      yield* filesystem.makeDirectory(pathService.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(pathService.join(root, "src", "entry.ts"), "held\n");
       return worktreeFilePathsUnder({ root, unscannedDirectoryNames: UNSCANNED_DIRECTORY_NAMES });
     });
 
-    it("walks past each of them and keeps what stands beside them", ({ paths }) => {
-      expect(paths).toStrictEqual(["src/entry.ts"]);
-    });
+    it.effect("walks past each of them and keeps what stands beside them", () =>
+      Effect.gen(function* program() {
+        const paths = yield* fixture;
+        expect(paths).toStrictEqual(["src/entry.ts"]);
+      }),
+    );
   });
 
   describe("a worktree holding a symbolic link beside a file", () => {
-    const it = test.extend("paths", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "worktree-files-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      const linkedFilePath = join(root, "src", "entry.ts");
-      mkdirSync(dirname(linkedFilePath), { recursive: true });
-      writeFileSync(linkedFilePath, "held\n", "utf8");
-      symlinkSync(linkedFilePath, join(root, "link.ts"));
+    const fixture = Effect.gen(function* paths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "worktree-files-" });
+
+      const linkedFilePath = pathService.join(root, "src", "entry.ts");
+      yield* filesystem.makeDirectory(pathService.dirname(linkedFilePath), { recursive: true });
+      yield* filesystem.writeFileString(linkedFilePath, "held\n");
+      yield* filesystem.symlink(linkedFilePath, pathService.join(root, "link.ts"));
       return worktreeFilePathsUnder({ root, unscannedDirectoryNames: UNSCANNED_DIRECTORY_NAMES });
     });
 
-    it("leaves out the entry that is neither a file nor a directory", ({ paths }) => {
-      expect(paths).toStrictEqual(["src/entry.ts"]);
-    });
+    it.effect("leaves out the entry that is neither a file nor a directory", () =>
+      Effect.gen(function* program() {
+        const paths = yield* fixture;
+        expect(paths).toStrictEqual(["src/entry.ts"]);
+      }),
+    );
   });
 
   describe("a root that does not exist", () => {
-    const it = test.extend("paths", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "worktree-files-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
+    const fixture = Effect.gen(function* paths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "worktree-files-" });
+
       return worktreeFilePathsUnder({
-        root: join(root, "absent"),
+        root: pathService.join(root, "absent"),
         unscannedDirectoryNames: UNSCANNED_DIRECTORY_NAMES,
       });
     });
 
-    it("holds no files", ({ paths }) => {
-      expect(paths).toStrictEqual([]);
-    });
+    it.effect("holds no files", () =>
+      Effect.gen(function* program() {
+        const paths = yield* fixture;
+        expect(paths).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a worktree asked again after a later file appeared", () => {
-    const it = test.extend("paths", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "worktree-files-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      mkdirSync(join(root, "src"), { recursive: true });
-      writeFileSync(join(root, "src", "entry.ts"), "held\n", "utf8");
+    const fixture = Effect.gen(function* paths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "worktree-files-" });
+
+      yield* filesystem.makeDirectory(pathService.join(root, "src"), { recursive: true });
+      yield* filesystem.writeFileString(pathService.join(root, "src", "entry.ts"), "held\n");
       worktreeFilePathsUnder({ root, unscannedDirectoryNames: UNSCANNED_DIRECTORY_NAMES });
-      writeFileSync(join(root, "src", "later.ts"), "held\n", "utf8");
+      yield* filesystem.writeFileString(pathService.join(root, "src", "later.ts"), "held\n");
       return worktreeFilePathsUnder({ root, unscannedDirectoryNames: UNSCANNED_DIRECTORY_NAMES });
     });
 
-    it("is walked once and answered from what was walked", ({ paths }) => {
-      expect(paths).toStrictEqual(["src/entry.ts"]);
-    });
+    it.effect("is walked once and answered from what was walked", () =>
+      Effect.gen(function* program() {
+        const paths = yield* fixture;
+        expect(paths).toStrictEqual(["src/entry.ts"]);
+      }),
+    );
   });
 });
 

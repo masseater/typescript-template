@@ -13,7 +13,7 @@ Disallow reshaping the value a fixture hands back, so an assertion is written ag
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-normalize-sut-output--assert-natural-shape.ts`](../../src/lint/oxlint/rules/testing/no-normalize-sut-output--assert-natural-shape.ts)
+- Source: [`no-normalize-sut-output--assert-natural-shape.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-normalize-sut-output--assert-natural-shape.ts)
 
 <!-- END GENERATED rule-header -->
 

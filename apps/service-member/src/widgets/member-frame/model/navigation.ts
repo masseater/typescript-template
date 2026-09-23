@@ -68,7 +68,6 @@ const emptyNavBadges: NavBadges = { notifications: 0 };
 
 function memberNavItems(
   paid: boolean,
-  memberBoard: boolean,
   profileId: string,
   badges: NavBadges = emptyNavBadges,
 ): readonly MemberNavItem[] {
@@ -88,16 +87,7 @@ function memberNavItems(
       paid: true,
       to: paid ? "/search" : "/upgrade",
     },
-    ...(memberBoard
-      ? [
-          {
-            icon: SquareStackIcon,
-            id: "board",
-            label: m.nav_board(),
-            to: "/board",
-          } satisfies MemberNavItem,
-        ]
-      : []),
+    { icon: SquareStackIcon, id: "board", label: m.nav_board(), to: "/board" },
     {
       badge: 0,
       icon: MessageCircleIcon,

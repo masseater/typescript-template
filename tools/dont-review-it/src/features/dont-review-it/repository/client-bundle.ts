@@ -14,7 +14,7 @@ import { repositoryRoot } from "./repository-root.ts";
 const probeModules: Readonly<Record<Application, string>> = {
   "internal-dashboard": "src/pages/login/ui/wiki-login.tsx",
   "service-admin": "src/pages/login/ui/admin-login.tsx",
-  "service-member": "src/pages/landing/ui/hero.tsx",
+  "service-member": "src/pages/public/landing/ui/hero.tsx",
 };
 
 const clientReachable: readonly string[] = [

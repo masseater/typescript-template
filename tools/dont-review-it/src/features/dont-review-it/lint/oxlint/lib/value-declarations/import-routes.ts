@@ -1,5 +1,4 @@
-import { dirname, join } from "node:path";
-
+import { path } from "../../../../platform/path.ts";
 import { isAstFields, NODE_TYPE_FIELD, type AstFields } from "../ast-node.ts";
 import { toPosixPath } from "../posix-path.ts";
 
@@ -15,7 +14,10 @@ const importedModuleOf = (input: {
 }): string => {
   const { specifier, fromRelativePath } = input;
   if (!RELATIVE_SPECIFIER.test(specifier)) return specifier;
-  return toPosixPath(join(dirname(fromRelativePath), specifier)).replace(SCRIPT_EXTENSION, "");
+  return toPosixPath(path.join(path.dirname(fromRelativePath), specifier)).replace(
+    SCRIPT_EXTENSION,
+    "",
+  );
 };
 
 const DEFAULT_IMPORT = "default";

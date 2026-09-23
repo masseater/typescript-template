@@ -1,5 +1,5 @@
 import { RegistryProvider } from "@effect/atom-react";
-import { FieldValidationMessageProvider } from "@repo/ui";
+import { AppProviders } from "@repo/ui/shell";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -33,7 +33,7 @@ function renderScreen(
   extra?: Readonly<{ failure?: string; heard?: string; turnFailed?: boolean; typing?: boolean }>,
 ): string {
   const screen: ReactElement = (
-    <FieldValidationMessageProvider messages={fieldValidationMessages("ja")}>
+    <AppProviders fieldValidationMessages={fieldValidationMessages("ja")}>
       <RegistryProvider>
         <InterviewScreen
           busy={false}
@@ -50,7 +50,7 @@ function renderScreen(
           view={view}
         />
       </RegistryProvider>
-    </FieldValidationMessageProvider>
+    </AppProviders>
   );
   return renderToStaticMarkup(screen);
 }
