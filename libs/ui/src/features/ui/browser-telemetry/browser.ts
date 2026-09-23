@@ -1,22 +1,34 @@
-import { DateTime, Effect, Fiber, Schedule, Schema } from "effect";
-import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
-
-import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
-import { errorAttributes, wireErrorType } from "./errors.ts";
-import { maximumMeasurement, type BrowserEvent } from "./events.ts";
 import {
+  errorAttributes,
   httpMethod,
   isRequestId,
   isRoutes,
+  maximumMeasurement,
   randomHex,
   routeLabel,
   routeMessage,
   spanIdBytes,
   traceIdBytes,
   traceparentOf,
+  wireErrorType,
+  type BrowserEvent,
   type Correlation,
-} from "./protocol.ts";
+} from "@repo/observability";
+import { Crypto, DateTime, Effect, Fiber, Schedule, Schema } from "effect";
+import { onCLS, onFCP, onINP, onLCP, onTTFB } from "web-vitals";
+
+import { makeEventQueue, type EventQueue } from "./browser-queue.ts";
 import { stoppableVitals, type VitalMetric } from "./vital-reporting.ts";
+
+const browserCrypto = Crypto.make({
+  digest: (algorithm, digestInput) =>
+    Effect.promise(() => crypto.subtle.digest(algorithm, Uint8Array.from(digestInput))).pipe(
+      Effect.map((digested) => new Uint8Array(digested)),
+    ),
+  randomBytes: (byteCount) => crypto.getRandomValues(new Uint8Array(byteCount)),
+});
+
+const requestId = browserCrypto.randomUUIDv4.pipe(Effect.orDie);
 
 const flushIntervalMilliseconds = 3000;
 const exportTimeoutMilliseconds = 5000;
@@ -53,37 +65,32 @@ const tracedFetch = (instrumentation: FetchInstrumentation, outgoing: Request): 
     Effect.gen(function* tracedFetchProgram() {
       const startedAt = performance.now();
       const { span, traced } = outgoingSpan(outgoing);
-      const fallbackRequestId = crypto.randomUUID();
+      const fallbackRequestId = yield* requestId;
       const recordAnswer = (answered: {
         readonly requestId: string;
         readonly status: number;
-      }): void => {
-        instrumentation.queue.enqueue({
-          ...span,
-          ...answered,
-          duration: elapsedSince(startedAt),
-          kind: "http",
-          method: httpMethod(outgoing.method),
-          name: "http.client.request",
-          route: routeLabel(new URL(outgoing.url).pathname, instrumentation.routes),
-          value: 0,
+      }): Effect.Effect<void> =>
+        Effect.sync(() => {
+          instrumentation.queue.enqueue({
+            ...span,
+            ...answered,
+            duration: elapsedSince(startedAt),
+            kind: "http",
+            method: httpMethod(outgoing.method),
+            name: "http.client.request",
+            route: routeLabel(new URL(outgoing.url).pathname, instrumentation.routes),
+            value: 0,
+          });
         });
-      };
       return yield* Effect.tryPromise(() => instrumentation.send(traced)).pipe(
         Effect.tap((received) =>
-          Effect.sync(() => {
-            recordAnswer({
-              requestId:
-                [received.headers.get("x-request-id")].find(isRequestId) ?? fallbackRequestId,
-              status: received.status,
-            });
+          recordAnswer({
+            requestId:
+              [received.headers.get("x-request-id")].find(isRequestId) ?? fallbackRequestId,
+            status: received.status,
           }),
         ),
-        Effect.tapError(() =>
-          Effect.sync(() => {
-            recordAnswer({ requestId: fallbackRequestId, status: 0 });
-          }),
-        ),
+        Effect.tapError(() => recordAnswer({ requestId: fallbackRequestId, status: 0 })),
       );
     }),
   );
@@ -198,10 +205,12 @@ const batchSender =
   (batch: readonly BrowserEvent[]): Promise<void> =>
     Effect.runPromise(
       Effect.gen(function* sendBatch() {
-        const body = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(batch);
+        const encodedBatch = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+          batch,
+        );
         const delivery = yield* Effect.tryPromise(() =>
           exporter.send(exporter.endpoint, {
-            body,
+            body: encodedBatch,
             credentials: "same-origin",
             headers: { "content-type": "application/json" },
             keepalive: true,
@@ -231,7 +240,7 @@ export const initBrowserTelemetry = ({
   const queue = makeEventQueue(batchSender({ endpoint, send }));
   const recorder: Recorder = {
     documentContext: {
-      requestId: crypto.randomUUID(),
+      requestId: Effect.runSync(requestId),
       spanId: randomHex(spanIdBytes),
       traceId: randomHex(traceIdBytes),
     },
