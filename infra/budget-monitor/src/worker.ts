@@ -1,9 +1,9 @@
 import { monitorWorker } from "@repo/monitor";
-import { Clock, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
-import { fetchUsage } from "./billing.ts";
 import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
-import { evaluateBudget, shouldNotify } from "./decision.ts";
+import { shouldNotify } from "./decision.ts";
+import { measureBudget } from "./measure.ts";
 
 import type { MonitorBindings } from "@repo/monitor";
 
@@ -13,12 +13,7 @@ const budget = monitorWorker<Bindings>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
-      const snapshot = yield* fetchUsage(
-        config.CLOUDFLARE_ACCOUNT_ID,
-        config.BILLING_READ_TOKEN,
-        yield* Clock.currentTimeMillis,
-      );
-      const decision = yield* evaluateBudget(snapshot, config);
+      const decision = yield* measureBudget(config);
       const previous = yield* Effect.promise(() =>
         ctx.storage.get<{ period: string; keys: string[] }>("notifications"),
       );
@@ -44,7 +39,7 @@ const budget = monitorWorker<Bindings>({
   event: budgetMonitorWorker.event,
   failure: {
     subject: "Cloudflare budget monitoring failed",
-    text: "Billing data or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",
+    text: "Billing data, the exchange rate, or notification delivery could not be verified. Inspect budget.check_failed logs. Costs must not be treated as zero.",
   },
 });
 

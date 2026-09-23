@@ -5,7 +5,6 @@ import {
   ROLE,
   distinctOrigins,
   minimumAuthSecretLength,
-  usageAllowanceRemains,
 } from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
 import { maximumAlertRecipients } from "@repo/monitor";
@@ -23,7 +22,6 @@ class CloudflareFailure extends Schema.TaggedError<CloudflareFailure>()("Cloudfl
   code: Schema.Literals([
     "deployment_command_invalid",
     "account_read_unavailable",
-    "budget_has_no_usage_allowance",
     "database_input_invalid",
     "database_migration_history_missing",
     "database_migration_status_unreadable",
@@ -59,7 +57,6 @@ const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
 
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
-const Nonnegative = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
 const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
 const Origin = HttpsOrigin.check(
   Schema.makeFilter((value: string) => {
@@ -79,10 +76,7 @@ const HttpsUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
 );
 const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
-const SamplingRate = Schema.Number.check(
-  Schema.isFinite(),
-  Schema.isBetween({ maximum: 1, minimum: 0 }),
-);
+const observabilitySampling = 1;
 const AuthSecret = Schema.String.check(
   Schema.isMinLength(minimumAuthSecretLength),
   Schema.makeFilter((value: string) => value.trim() === value),
@@ -93,13 +87,9 @@ const SharedSettings = Schema.Struct({
   accountId: CloudflareId,
   budget: Schema.Struct({
     budgetJpy: Positive,
-    fixedCostUsd: Nonnegative,
-    jpyPerUsd: Positive,
     recipients: Recipients,
-    reserveUsd: Nonnegative,
   }),
   mailFrom: Email,
-  observabilitySampling: SamplingRate,
   origins: Schema.Struct({
     "internal-dashboard": Origin,
     "service-admin": Origin,
@@ -173,7 +163,7 @@ function traceDestination(config: SharedConfig): TraceDestination | undefined {
 }
 
 function workerObservability(config: SharedConfig): WorkerObservability {
-  const headSamplingRate = config.observabilitySampling;
+  const headSamplingRate = observabilitySampling;
   const destination = traceDestination(config);
   return {
     enabled: true,
@@ -223,13 +213,6 @@ function sendingDomain(mailFrom: string): string {
 const checkSharedConfig = Effect.fn("checkSharedConfig")(function* checkSharedConfig(
   config: SharedConfig,
 ) {
-  if (!usageAllowanceRemains(config.budget)) {
-    return yield* fail("budget_has_no_usage_allowance", [
-      deploymentKey.budgetJpy,
-      deploymentKey.fixedCostUsd,
-      deploymentKey.reserveUsd,
-    ]);
-  }
   if (!distinctOrigins(Object.values(config.origins))) {
     return yield* fail("origins_must_differ", [deploymentKey.appDomain, deploymentKey.prefix]);
   }
@@ -248,13 +231,11 @@ type DeploymentTarget = Pick<SharedConfig, "accountId" | "prefix">;
 export {
   AuthSecret,
   CONFIRMATION_LENGTH,
-  SamplingRate,
   CloudflareFailure,
   Domain,
   Email,
   HttpsUrl,
   CloudflareId,
-  Nonnegative,
   Origin,
   Positive,
   Prefix,
@@ -264,6 +245,7 @@ export {
   checkSharedConfig,
   deriveOrigins,
   hstsSetting,
+  observabilitySampling,
   parseDeploymentCommand,
   sendingDomain,
   traceDestination,
