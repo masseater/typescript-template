@@ -135,6 +135,7 @@ const scripts = {
     "src/features/cloudflare/check-account.ts!",
     "src/features/cloudflare/bootstrap-state.ts!",
     "src/features/cloudflare/database-command.ts!",
+    "src/features/cloudflare/materialize-env.ts!",
     "src/features/cloudflare/prepare-ci-env.ts!",
     "src/features/cloudflare/verify-origins.ts!",
   ],

@@ -1,9 +1,9 @@
+import { ConfigurationInvalid } from "@repo/config";
 import { env } from "cloudflare:workers";
-import { Effect, Ref } from "effect";
+import { Effect, Layer, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { ReadCache } from "./read-cache.ts";
-import { StorageFailed } from "./storage-failed.ts";
 
 describe("ReadCache", () => {
   describe("a value loaded twice through KV", () => {
@@ -56,17 +56,22 @@ describe("ReadCache", () => {
     });
   });
 
-  describe("a cache without its binding", () => {
-    const it = test.extend("storageFailure", () =>
+  describe("an environment without the cache binding", () => {
+    const it = test.extend("startupFailure", () =>
       Effect.runPromise(
-        Effect.gen(function* storageFailureProgram() {
-          const cache = yield* ReadCache;
-          return yield* Effect.flip(cache.get("missing"));
-        }).pipe(Effect.provide(ReadCache.layer(undefined))),
+        Layer.build(
+          ReadCache.fromEnvironment(
+            Object.fromEntries(
+              Object.entries(env).filter(([bindingName]) => bindingName !== "CACHE"),
+            ),
+          ),
+        ).pipe(Effect.scoped, Effect.flip),
       ));
 
-    it("reports unavailable", ({ storageFailure }) => {
-      expect(storageFailure).toStrictEqual(new StorageFailed({ reason: "unavailable" }));
+    it("refuses to start", ({ startupFailure }) => {
+      expect(startupFailure).toStrictEqual(
+        new ConfigurationInvalid({ reason: 'Missing key\n  at ["CACHE"]' }),
+      );
     });
   });
 });

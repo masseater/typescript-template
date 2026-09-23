@@ -1,30 +1,11 @@
 import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
-import { migrate } from "drizzle-orm/sqlite-proxy/migrator";
 import { Effect, Schema } from "effect";
 
 import { RemoteFailure } from "./remote-input.ts";
 
-import type { MigrationConfig } from "drizzle-orm/migrator";
 import type { SQLiteExecuteMethod } from "drizzle-orm/sqlite-core";
 
-type DatabaseExecutor = {
-  readonly batch: (
-    queries: readonly {
-      readonly params: readonly (string | number | null)[];
-      readonly sql: string;
-    }[],
-  ) => Effect.Effect<readonly (readonly unknown[])[], RemoteFailure>;
-};
-
 const D1_API_TIMEOUT_MS = 30_000;
-const StatementRows = Schema.Struct({
-  results: Schema.Array(Schema.Unknown),
-  success: Schema.Literal(true),
-});
-const QueryResponse = Schema.Struct({
-  result: Schema.Array(StatementRows),
-  success: Schema.Literal(true),
-});
 const D1RawQueryResponse = Schema.Struct({
   result: Schema.Array(
     Schema.Struct({
@@ -67,35 +48,6 @@ const readJson = (d1Request: {
   });
 };
 
-const remoteExecutor = ({
-  accountId,
-  apiToken,
-  databaseId,
-}: {
-  readonly accountId: string;
-  readonly apiToken: string;
-  readonly databaseId: string;
-}): DatabaseExecutor => {
-  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/query`;
-  return {
-    batch: (queries) =>
-      Effect.gen(function* batch() {
-        const responseJson = yield* readJson({
-          apiToken,
-          endpoint,
-          payload: { batch: queries },
-        });
-        const decoded = yield* Schema.decodeUnknownEffect(QueryResponse)(responseJson).pipe(
-          Effect.mapError(queryFailed),
-        );
-        if (decoded.result.length !== queries.length) {
-          return yield* queryFailed();
-        }
-        return decoded.result.map((statementRows) => statementRows.results);
-      }),
-  };
-};
-
 const postRaw = (d1RawBatch: {
   readonly endpoint: string;
   readonly apiToken: string;
@@ -130,10 +82,7 @@ const remoteDatabase = ({
   readonly accountId: string;
   readonly apiToken: string;
   readonly databaseId: string;
-}): {
-  readonly apply: (config: Readonly<MigrationConfig>) => Promise<unknown>;
-  readonly database: SqliteRemoteDatabase;
-} => {
+}): SqliteRemoteDatabase => {
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}/raw`;
   const run = async (query: {
     readonly sql: string;
@@ -148,28 +97,9 @@ const remoteDatabase = ({
     const [firstRow] = resultRows;
     return { rows: query.method === "get" ? [...(firstRow ?? [])] : [...resultRows] };
   };
-  const database = drizzle((...query: readonly [string, readonly unknown[], SQLiteExecuteMethod]) =>
+  return drizzle((...query: readonly [string, readonly unknown[], SQLiteExecuteMethod]) =>
     run({ method: query[2], params: query[1], sql: query[0] }),
   );
-  return {
-    apply: async (config) =>
-      migrate(
-        database,
-        async (queries) => {
-          if (queries.length === 0) {
-            return;
-          }
-          await postRaw({
-            apiToken,
-            batch: queries.map((sql) => ({ sql })),
-            endpoint,
-          });
-        },
-        config,
-      ),
-    database,
-  };
 };
 
-export { remoteDatabase, remoteExecutor };
-export type { DatabaseExecutor };
+export { remoteDatabase };

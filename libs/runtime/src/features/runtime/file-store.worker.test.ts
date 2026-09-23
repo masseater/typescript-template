@@ -1,5 +1,6 @@
+import { ConfigurationInvalid } from "@repo/config";
 import { env } from "cloudflare:workers";
-import { Effect } from "effect";
+import { Effect, Layer } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { FileStore } from "./file-store.ts";
@@ -50,7 +51,26 @@ describe("FileStore", () => {
     });
   });
 
-  describe("a store without its binding", () => {
+  describe("an environment without the file binding", () => {
+    const it = test.extend("startupFailure", () =>
+      Effect.runPromise(
+        Layer.build(
+          FileStore.fromEnvironment(
+            Object.fromEntries(
+              Object.entries(env).filter(([bindingName]) => bindingName !== "FILES"),
+            ),
+          ),
+        ).pipe(Effect.scoped, Effect.flip),
+      ));
+
+    it("refuses to start", ({ startupFailure }) => {
+      expect(startupFailure).toStrictEqual(
+        new ConfigurationInvalid({ reason: 'Missing key\n  at ["FILES"]' }),
+      );
+    });
+  });
+
+  describe("a store intentionally omitted", () => {
     const it = test.extend("storageFailure", () =>
       Effect.runPromise(
         Effect.gen(function* storageFailureProgram() {
@@ -59,7 +79,7 @@ describe("FileStore", () => {
         }).pipe(Effect.provide(FileStore.layer(undefined))),
       ));
 
-    it("reports unavailable", ({ storageFailure }) => {
+    it("reports unavailable only then", ({ storageFailure }) => {
       expect(storageFailure).toStrictEqual(new StorageFailed({ reason: "unavailable" }));
     });
   });

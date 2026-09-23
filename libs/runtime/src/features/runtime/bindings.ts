@@ -1,11 +1,12 @@
 import {
   ConfigurationInvalid,
+  grants,
   readEnvironment,
   type AppConfig,
   type Application,
   type AssetFetcher,
 } from "@repo/config";
-import { readStorage } from "@repo/config/storage";
+import { readOptionalStorage, readStorage } from "@repo/config/storage";
 import { Config, Effect, Layer, Option, Redacted } from "effect";
 import {
   Binding,
@@ -156,14 +157,17 @@ const appLayer = (asked: {
   return Layer.unwrap(
     readWorkerConfig(asked.env).pipe(
       Effect.flatMap((config) =>
-        Effect.map(readStorage(asked.env), (storage) =>
-          configuredAppLayer({
+        Effect.gen(function* withStorage() {
+          const storage = grants(asked.audience, "storage")
+            ? yield* readStorage(asked.env)
+            : yield* readOptionalStorage(asked.env);
+          return configuredAppLayer({
             appConfig: config,
             audience: asked.audience,
             routes: asked.routes,
             storage,
-          }),
-        ),
+          });
+        }),
       ),
     ),
   );

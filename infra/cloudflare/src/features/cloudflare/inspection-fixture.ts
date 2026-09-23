@@ -1,11 +1,6 @@
 import { APPLICATION, httpStatus } from "@repo/config";
-import {
-  APPLICATION_TABLES,
-  MIGRATIONS_TABLE_PRESENT,
-  loadRemoteMigrations,
-} from "@repo/db/migrations";
 import { InMemoryService } from "alchemy/State";
-import { Effect, Schema } from "effect";
+import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { pagedCollection, unpagedCollection } from "./account-fixture.ts";
@@ -172,45 +167,6 @@ function addressPage(addresses: readonly Address[], url: string): Response {
   });
 }
 
-function migrationRows(applied: number): Effect.Effect<readonly unknown[]> {
-  return loadRemoteMigrations().pipe(
-    Effect.orDie,
-    Effect.map((migrations) =>
-      migrations
-        .slice(0, applied)
-        .map((migration) => ({ hash: migration.hash, name: migration.name })),
-    ),
-  );
-}
-
-function batchResult(results: readonly unknown[]): Response {
-  return HttpResponse.json({ result: [{ results, success: true }], success: true });
-}
-
-const Batch = Schema.Struct({ batch: Schema.Array(Schema.Struct({ sql: Schema.String })) });
-
-function migrationQuery(
-  applied: number,
-  tables: readonly string[] = [],
-): ReturnType<typeof http.post> {
-  return http.post(`${account}/d1/database/${databaseId}/query`, ({ request }) =>
-    Effect.runPromise(
-      Effect.gen(function* program() {
-        const sent = yield* Schema.decodeUnknownEffect(Batch)(
-          yield* Effect.promise(() => request.json()),
-        ).pipe(Effect.orDie);
-        if (sent.batch.some((query) => query.sql === MIGRATIONS_TABLE_PRESENT)) {
-          return batchResult(applied === 0 ? [] : [{ name: "__drizzle_migrations" }]);
-        }
-        if (sent.batch.some((query) => query.sql === APPLICATION_TABLES)) {
-          return batchResult(tables.map((name) => ({ name })));
-        }
-        return batchResult(yield* migrationRows(applied));
-      }),
-    ),
-  );
-}
-
 const deployedDatabases = [{ name: databaseName(config.prefix), uuid: databaseId }];
 
 interface AccountState {
@@ -252,7 +208,11 @@ function accountHandlers(options: AccountState): Parameters<typeof mockServer> {
       dnsPage(options.records ?? [], request.url),
     ),
     pagedCollection(`${account}/email/routing/addresses`, ADDRESS_PAGE_LIMIT, ({ request }) =>
-      addressPage(options.addresses ?? [], request.url),
+      addressPage(
+        options.addresses ??
+          config.budget.recipients.map((email) => ({ email, verified: "2026-01-01" })),
+        request.url,
+      ),
     ),
     unpagedCollection(`${zone}/email/sending/subdomains`, () =>
       HttpResponse.json({
@@ -277,7 +237,6 @@ export {
   deployedState,
   emptyState,
   hosts,
-  migrationQuery,
   sending,
   sendingRecords,
   unverifiableToken,
