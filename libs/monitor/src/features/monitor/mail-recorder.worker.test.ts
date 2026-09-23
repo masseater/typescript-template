@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-const message = {
+const sentMail = {
   from: "monitor@example.test",
   subject: "recorded delivery",
   text: "the body that was sent",
@@ -15,9 +15,7 @@ describe("MailRecorder", () => {
       Effect.runPromise(
         Effect.gen(function* mailbox() {
           yield* Effect.promise(() => env.EMAIL.taken());
-          yield* Effect.sync(() => {
-            env.EMAIL.send(message);
-          });
+          yield* Effect.promise(() => env.EMAIL.send(sentMail));
           const first = yield* Effect.promise(() => env.EMAIL.taken());
           const second = yield* Effect.promise(() => env.EMAIL.taken());
           return { first, second };
@@ -25,7 +23,7 @@ describe("MailRecorder", () => {
       ));
 
     it("returns that message from taken and then nothing", ({ mailbox }) => {
-      expect(mailbox).toStrictEqual({ first: [message], second: [] });
+      expect(mailbox).toStrictEqual({ first: [sentMail], second: [] });
     });
   });
 });

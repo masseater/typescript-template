@@ -30,7 +30,7 @@ function wikiLayer(
           const flags = yield* configuredFeatureFlagsLayer(config);
           return Layer.mergeAll(
             Layer.succeed(Embedder, embedder),
-            configuredAppLayer(config, wikiService, routes),
+            configuredAppLayer({ appConfig: config, audience: wikiService, routes }),
             flags,
             allowAllEditors,
           );

@@ -14,6 +14,7 @@ const exampleHostGuidance =
 
 const externalServiceHosts: ReadonlySet<string> = new Set([
   "api.cloudflare.com",
+  "api.frankfurter.dev",
   "opentelemetry.io",
   "registry.npmjs.org",
   "registry.npmjs.com",

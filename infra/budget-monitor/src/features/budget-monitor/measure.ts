@@ -9,12 +9,19 @@ import type { BudgetConfig } from "./config.ts";
 const measureBudget = Effect.fn("measureBudget")(function* measureBudget(
   config: Readonly<BudgetConfig>,
 ) {
-  const now = yield* Clock.currentTimeMillis;
+  const observedAt = yield* Clock.currentTimeMillis;
   const [snapshot, jpyPerUsd] = yield* Effect.all(
-    [fetchUsage(config.CLOUDFLARE_ACCOUNT_ID, config.BILLING_READ_TOKEN, now), fetchJpyPerUsd(now)],
+    [
+      fetchUsage({
+        accountId: config.CLOUDFLARE_ACCOUNT_ID,
+        observedAt,
+        token: config.BILLING_READ_TOKEN,
+      }),
+      fetchJpyPerUsd(observedAt),
+    ],
     { concurrency: "unbounded" },
   );
-  return yield* evaluateBudget(snapshot, config, jpyPerUsd);
+  return yield* evaluateBudget({ config, jpyPerUsd, snapshot });
 });
 
 export { measureBudget };

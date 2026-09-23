@@ -39,6 +39,7 @@ const workspaces = {
     entry: [
       "src/features/auth/auth-test-fixture.ts",
       "src/features/auth/browser-client.ts",
+      "src/features/auth/email-change.ts",
       "src/features/auth/mail-fixture.ts",
       "src/features/auth/testing.ts",
       "src/features/auth/unexpected-status.ts",
@@ -190,11 +191,12 @@ const config = ({
       "libs/monitor/src/features/monitor/mail-recorder.worker.test.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/app-fixture.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/bindings.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/features/runtime/file-store.worker.test.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/jobs.ts": ["unlisted"],
-      "libs/runtime/src/features/runtime/storage.worker.test.ts": ["unlisted"],
-      "libs/runtime/src/features/runtime/worker-telemetry.worker.test.ts": ["unlisted"],
+      "libs/runtime/src/features/runtime/read-cache.worker.test.ts": ["unlisted"],
       "libs/runtime/src/features/runtime/worker.worker.test.ts": ["unlisted"],
       "libs/ui/storybook/preview.tsx": ["unlisted"],
+      "libs/vite-config/src/features/vite-config/effect-typecheck.ts": ["exports"],
     },
     treatConfigHintsAsErrors: true,
     workspaces: {

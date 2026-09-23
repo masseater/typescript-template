@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 
+import { recommended as effectRecommended } from "@effect/tsgo/oxlint-presets";
 import {
   cloudflareNewCapExceptions,
   cloudflareSourceFiles,
@@ -16,23 +17,19 @@ import {
   uiSharedPartFiles,
 } from "./ui-lint-settings.ts";
 
+const midPresetEffectPackages = ["libs/db/**", "libs/runtime/**", "libs/observability/**"];
+
+const midPresetEffectRules = Object.fromEntries(
+  Object.keys(effectRecommended.rules ?? {}).map((ruleName) => [ruleName, LINT_SEVERITY.OFF]),
+);
+
 const generatedFiles = ["**/mockServiceWorker.js", "**/routeTree.gen.ts", "**/.paraglide/**"];
 
 const awaitingPresetPackages = [
   "apps/service-admin/**",
   "apps/service-member/**",
   "apps/internal-dashboard/**",
-  "infra/budget-monitor/**",
   "infra/cloudflare/**",
-  "infra/error-monitor/**",
-  "infra/health-monitor/**",
-  "infra/local/**",
-  "libs/auth/**",
-  "libs/config/**",
-  "libs/db/**",
-  "libs/monitor/**",
-  "libs/observability/**",
-  "libs/runtime/**",
   "tools/dev/**",
   "tools/dont-review-it/**",
 ];
@@ -56,6 +53,7 @@ const apiBoundaryFiles = [
 
 const authUiServerReadsAwaitingQuery = [
   "libs/auth-ui/src/features/auth-ui/email-change-confirmation.tsx",
+  "libs/auth-ui/src/features/auth-ui/email-change-verification.tsx",
   "libs/auth-ui/src/features/auth-ui/email-verification.tsx",
   "libs/auth-ui/src/features/auth-ui/use-passkeys.ts",
   "libs/auth-ui/src/features/auth-ui/use-session.ts",
@@ -75,7 +73,12 @@ const lintOptions = {
       files: templateWorkspaces,
       plugins: ["react"],
       rules: {
+        "react/exhaustive-deps": LINT_SEVERITY.ERROR,
+        "react/forbid-component-props": LINT_SEVERITY.ERROR,
+        "react/jsx-filename-extension": [LINT_SEVERITY.ERROR, { extensions: [".tsx"] }],
+        "react/jsx-props-no-spreading": LINT_SEVERITY.ERROR,
         "react/only-export-components": [LINT_SEVERITY.ERROR, { allowExportNames: ["Route"] }],
+        "react/rules-of-hooks": LINT_SEVERITY.ERROR,
       },
     },
     {
@@ -224,6 +227,216 @@ const lintOptions = {
       },
     },
     {
+      files: ["libs/runtime/src/features/runtime/worker.ts"],
+      rules: {
+        "eslint/max-params": LINT_SEVERITY.OFF,
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: midPresetEffectPackages,
+      rules: midPresetEffectRules,
+    },
+    {
+      files: [
+        "libs/db/src/features/db/security.ts",
+        "libs/db/src/features/db/local-platform.test.ts",
+        "libs/db/src/features/db/identity-schema.ts",
+        "infra/budget-monitor/src/features/budget-monitor/decision.ts",
+        "infra/error-monitor/src/features/error-monitor/telemetry.ts",
+        "libs/observability/src/features/observability/server-testing.ts",
+        "tools/ai-native/src/features/ai-native/spool/run-spool.node.test.ts",
+      ],
+      rules: {
+        "dont-review-it/no-promise-chain--use-async-await": LINT_SEVERITY.OFF,
+        "eslint/max-nested-callbacks": LINT_SEVERITY.OFF,
+        "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
+        "dont-review-it/no-spec-file-helper-function--inline-or-use-fixture": LINT_SEVERITY.OFF,
+        "project/effect-failures": LINT_SEVERITY.OFF,
+        "dont-review-it/no-detached-declaration--declare-it-next-to-its-use": LINT_SEVERITY.OFF,
+        "dont-review-it/no-twin-declaration--merge-into-one-owner": LINT_SEVERITY.OFF,
+        "effecttsgo/any-unknown-in-error-context": LINT_SEVERITY.OFF,
+        "dont-review-it/no-detached-test-file--move-beside-source": LINT_SEVERITY.OFF,
+      },
+    },
+
+    {
+      files: [
+        "libs/monitor/src/features/monitor/monitor-base.ts",
+        "libs/monitor/src/features/monitor/monitor-worker.ts",
+        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+      ],
+      rules: {
+        "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
+        "typescript/no-this-alias": LINT_SEVERITY.OFF,
+        "eslint/max-params": LINT_SEVERITY.OFF,
+        "effecttsgo/any-unknown-in-error-context": LINT_SEVERITY.OFF,
+      },
+    },
+
+    {
+      files: [
+        "libs/config/src/features/config/local-database-path.test.ts",
+        "libs/config/src/features/config/repository-root.test.ts",
+      ],
+      rules: {
+        "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
+        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
+        "dont-review-it/require-test-block-for-spec-file--add-test-or-delete-file":
+          LINT_SEVERITY.OFF,
+        "project/effect-failures": LINT_SEVERITY.OFF,
+        "typescript/no-dynamic-delete": LINT_SEVERITY.OFF,
+      },
+    },
+
+    {
+      files: [
+        "infra/budget-monitor/src/features/budget-monitor/billing.ts",
+        "infra/budget-monitor/src/features/budget-monitor/decision.ts",
+      ],
+      rules: {
+        "dont-review-it/no-twin-declaration--merge-into-one-owner": LINT_SEVERITY.OFF,
+        "dont-review-it/no-duplicated-body--import-the-existing-declaration": LINT_SEVERITY.OFF,
+        "dont-review-it/no-single-use-local-type--inline-at-the-use-site": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/db/src/features/db/records-fixture.ts",
+        "libs/runtime/src/features/runtime/jobs.ts",
+      ],
+      rules: {
+        "dont-review-it/no-promise-chain--use-async-await": LINT_SEVERITY.OFF,
+        "eslint/max-nested-callbacks": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "infra/budget-monitor/src/features/budget-monitor/decision.worker.test.ts",
+        "infra/budget-monitor/src/features/budget-monitor/billing.worker.test.ts",
+      ],
+      rules: {
+        "dont-review-it/no-spec-file-helper-function--inline-or-use-fixture": LINT_SEVERITY.OFF,
+        "eslint/func-style": LINT_SEVERITY.OFF,
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+        "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
+        "eslint/max-params": LINT_SEVERITY.OFF,
+        "eslint/no-duplicate-imports": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/vite-config/**",
+        "infra/local/**",
+        "infra/error-monitor/**",
+        "infra/health-monitor/**",
+        "libs/monitor/**",
+      ],
+      rules: midPresetEffectRules,
+    },
+    {
+      files: [
+        "libs/config/**/*.test.ts",
+        "infra/local/**/*.test.ts",
+        "infra/error-monitor/**/*.test.ts",
+        "infra/health-monitor/**/*.test.ts",
+        "infra/budget-monitor/**/*.test.ts",
+        "infra/budget-monitor/**/*.worker.test.ts",
+        "libs/monitor/**/*.test.ts",
+        "libs/vite-config/**/*.test.ts",
+      ],
+      rules: midPresetEffectRules,
+    },
+    {
+      files: [
+        "libs/runtime/src/features/runtime/http.ts",
+        "libs/runtime/src/features/runtime/bindings.ts",
+        "libs/runtime/src/features/runtime/jobs.ts",
+        "libs/runtime/src/features/runtime/configured-app-layer.ts",
+        "libs/runtime/src/features/runtime/account.ts",
+        "libs/db/src/features/db/remote-operations.ts",
+        "libs/observability/src/features/observability/annotations.ts",
+        "libs/observability/src/features/observability/request.ts",
+        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+      ],
+      rules: {
+        "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
+        "typescript/explicit-module-boundary-types": LINT_SEVERITY.OFF,
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/runtime/src/features/runtime/http.ts"],
+      rules: {
+        "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
+        "dont-review-it/no-blanket-suppression--name-and-record": LINT_SEVERITY.OFF,
+        "dont-review-it/no-detached-declaration--declare-it-next-to-its-use": LINT_SEVERITY.OFF,
+        "dont-review-it/no-duplicated-body--import-the-existing-declaration": LINT_SEVERITY.OFF,
+        "dont-review-it/no-interface-declaration--write-a-type-alias": LINT_SEVERITY.OFF,
+        "dont-review-it/no-lint-suppression-in-spec--fix-the-violation": LINT_SEVERITY.OFF,
+        "dont-review-it/no-promise-chain--use-async-await": LINT_SEVERITY.OFF,
+        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
+        "dont-review-it/no-receiver-mutation--derive-new-value": LINT_SEVERITY.OFF,
+        "dont-review-it/no-twin-declaration--merge-into-one-owner": LINT_SEVERITY.OFF,
+        "eslint/func-style": LINT_SEVERITY.OFF,
+        "eslint/max-nested-callbacks": LINT_SEVERITY.OFF,
+        "eslint/max-params": LINT_SEVERITY.OFF,
+        "eslint/max-statements": LINT_SEVERITY.OFF,
+        "eslint/no-duplicate-imports": LINT_SEVERITY.OFF,
+        "eslint/no-warning-comments": LINT_SEVERITY.OFF,
+        "typescript/consistent-indexed-object-style": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/runtime/src/features/runtime/account.ts",
+        "libs/runtime/src/features/runtime/client.ts",
+      ],
+      rules: {
+        "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
+        "dont-review-it/no-duplicated-body--import-the-existing-declaration": LINT_SEVERITY.OFF,
+        "dont-review-it/no-twin-declaration--merge-into-one-owner": LINT_SEVERITY.OFF,
+        "eslint/func-style": LINT_SEVERITY.OFF,
+        "eslint/no-duplicate-imports": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/runtime/src/features/runtime/responses.ts"],
+      rules: {
+        "dont-review-it/no-receiver-mutation--derive-new-value": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/observability/src/features/observability/redact.ts"],
+      rules: {
+        "dont-review-it/no-receiver-mutation--derive-new-value": LINT_SEVERITY.OFF,
+        "eslint/max-statements": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/runtime/src/features/runtime/database-health.ts",
+        "libs/runtime/src/features/runtime/worker-runtime.ts",
+      ],
+      rules: {
+        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/runtime/src/features/runtime/bindings.ts"],
+      rules: {
+        "eslint/max-classes-per-file": LINT_SEVERITY.OFF,
+        "new-cap": [
+          LINT_SEVERITY.ERROR,
+          {
+            capIsNewExceptionPattern:
+              "^(?:Schema|Context|Data|Config|Binding|D1|Email|WorkersAi)\\.",
+          },
+        ],
+        "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: cloudflareSourceFiles,
       rules: {
         "new-cap": [LINT_SEVERITY.ERROR, cloudflareNewCapExceptions],
@@ -260,6 +473,44 @@ const lintOptions = {
       },
     },
     {
+      files: ["libs/auth/src/features/auth/request-hooks.ts"],
+      rules: {
+        "dont-review-it/no-reassign--use-spread-or-iife": LINT_SEVERITY.OFF,
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/auth/src/features/auth/auth-request.ts",
+        "libs/auth/src/features/auth/auth-test-fixture.ts",
+        "libs/auth/src/features/auth/browser-client.ts",
+        "libs/auth/src/features/auth/email-change.ts",
+        "libs/auth/src/features/auth/email-change.worker.test.ts",
+        "libs/auth/src/features/auth/wiki-oauth-fixture.ts",
+      ],
+      rules: {
+        "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/auth/src/features/auth/auth-request.ts",
+        "libs/auth/src/features/auth/browser-client.ts",
+        "libs/auth/src/features/auth/session.ts",
+        "libs/auth/src/features/auth/session-token.ts",
+      ],
+      rules: {
+        "eslint/max-statements": LINT_SEVERITY.OFF,
+        "eslint/max-nested-callbacks": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/auth/src/features/auth/create-auth.ts", "libs/auth/src/features/auth/email.ts"],
+      rules: {
+        "dont-review-it/no-detached-declaration--declare-it-next-to-its-use": LINT_SEVERITY.OFF,
+      },
+    },
+    {
       files: reactElementTypeFiles,
       rules: { "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF },
     },
@@ -274,19 +525,6 @@ const lintOptions = {
       },
     },
     {
-      files: ["libs/config/src/features/config/cli.ts"],
-      rules: {
-        "no-restricted-properties": [
-          LINT_SEVERITY.ERROR,
-          ...["stdout", "stderr"].map((property) => ({
-            message: "effect の Console で出力してください。",
-            object: "process",
-            property,
-          })),
-        ],
-      },
-    },
-    {
       files: ["tools/dont-review-it/src/features/dont-review-it/lint/oxlint/**"],
       rules: {
         "typescript/switch-exhaustiveness-check": [
@@ -295,13 +533,44 @@ const lintOptions = {
         ],
       },
     },
+
+    {
+      files: ["libs/db/src/features/db/local-platform.test.ts"],
+      rules: {
+        "dont-review-it/no-detached-test-file--move-beside-source": LINT_SEVERITY.OFF,
+        "dont-review-it/require-it-only-expect--move-setup-into-fixture": LINT_SEVERITY.OFF,
+      },
+    },
     {
       files: [
         "libs/db/src/features/db/testing.ts",
         "libs/monitor/src/features/monitor/monitor-fixture.ts",
       ],
       rules: {
+        "dont-review-it/no-explanatory-comment--delete-or-move-to-commit-message":
+          LINT_SEVERITY.OFF,
         "typescript/no-namespace": LINT_SEVERITY.OFF,
+        "typescript/triple-slash-reference": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: [
+        "libs/auth/src/features/auth/auth.worker.test.ts",
+        "libs/auth/src/features/auth/create-auth.worker.test.ts",
+        "libs/auth/src/features/auth/email-change.worker.test.ts",
+        "libs/auth/src/features/auth/request-hooks.worker.test.ts",
+        "libs/auth/src/features/auth/session.worker.test.ts",
+        "libs/runtime/src/features/runtime/worker-runtime.dev-server.test.ts",
+      ],
+      rules: {
+        "dont-review-it/no-dry-test-setup--inline-owned-setup": LINT_SEVERITY.OFF,
+      },
+    },
+    {
+      files: ["libs/db/src/features/db/member-social-schema.ts"],
+      rules: {
+        "dont-review-it/no-local-finite-value-set--use-or-register-canonical-values":
+          LINT_SEVERITY.OFF,
       },
     },
     {
@@ -325,6 +594,7 @@ const lintOptions = {
       {
         toolRequiredFileNames: [
           "alchemy.run.ts",
+          "cold-start-fixture.ts",
           "doctor.config.ts",
           "drizzle.config.ts",
           "knip.ts",
@@ -365,6 +635,7 @@ const lintOptions = {
           ".worker.test.ts",
           ".node.test.ts",
           ".isolated.test.ts",
+          ".dev-server.test.ts",
         ],
       },
     ],

@@ -1,24 +1,22 @@
-import { monitorWorker } from "@repo/monitor";
+import { monitorWorker, type MonitorBindings } from "@repo/monitor";
+import { withSpan } from "@repo/observability";
 import { Effect, Schema } from "effect";
 
 import { budgetMonitorWorker, parseBudgetConfig, type BudgetMonitorEnv } from "./config.ts";
 import { shouldNotify } from "./decision.ts";
 import { measureBudget } from "./measure.ts";
 
-import type { MonitorBindings } from "@repo/monitor";
-
-interface Bindings extends MonitorBindings, BudgetMonitorEnv {}
-
-const budget = monitorWorker<Bindings>({
+const budget = monitorWorker<MonitorBindings & BudgetMonitorEnv>({
   check({ ctx, env }, notify) {
     return Effect.gen(function* program() {
       const config = yield* parseBudgetConfig(env);
       const decision = yield* measureBudget(config);
-      const previous = yield* Effect.promise(() =>
+      const priorNotifications = yield* Effect.promise(() =>
         ctx.storage.get<{ period: string; keys: string[] }>("notifications"),
       );
-      const keys = previous?.period === decision.periodStart ? previous.keys : [];
-      if (shouldNotify(decision, keys)) {
+      const notificationKeys =
+        priorNotifications?.period === decision.periodStart ? priorNotifications.keys : [];
+      if (shouldNotify(decision, notificationKeys)) {
         yield* notify({
           subject: `Cloudflare budget: ${decision.level}% threshold`,
           text: yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(decision).pipe(
@@ -27,15 +25,14 @@ const budget = monitorWorker<Bindings>({
         });
         yield* Effect.promise(() =>
           ctx.storage.put("notifications", {
-            keys: [...keys, decision.notificationKey],
+            keys: [...notificationKeys, decision.notificationKey],
             period: decision.periodStart,
           }),
         );
       }
       return decision;
-    }).pipe(Effect.withSpan("BudgetMonitor.check"));
+    }).pipe(withSpan("BudgetMonitor.check"));
   },
-  className: budgetMonitorWorker.className,
   event: budgetMonitorWorker.event,
   failure: {
     subject: "Cloudflare budget monitoring failed",
@@ -43,7 +40,7 @@ const budget = monitorWorker<Bindings>({
   },
 });
 
-const BudgetMonitor = budget.Worker;
+class BudgetMonitor extends budget.Worker {}
 
 export { BudgetMonitor };
 export default budget.handler;
