@@ -93,11 +93,10 @@ const repositoryMergingRepairedFeature = Effect.gen(function* repositoryMergingR
   return repositoryRoot;
 });
 
-const repositoryHoldingOnlyThePullRequestMerge = Effect.gen(
-  function* repositoryHoldingOnlyThePullRequestMerge() {
+const repositoryHoldingThePullRequestMerge = Effect.gen(
+  function* repositoryHoldingThePullRequestMerge() {
     const repositoryRoot = yield* repositoryHoldingCurrent;
     const baseCommit = (yield* git(repositoryRoot, ["rev-parse", "HEAD"])).trim();
-    yield* git(repositoryRoot, ["branch", "feature", baseCommit]);
     yield* writeSource(repositoryRoot, "src/current.ts", "export const current = false;\n");
     yield* commitSnapshot(repositoryRoot);
     const headCommit = (yield* git(repositoryRoot, ["rev-parse", "HEAD"])).trim();
@@ -113,6 +112,33 @@ const repositoryHoldingOnlyThePullRequestMerge = Effect.gen(
       "pull request merge",
     ])).trim();
     yield* git(repositoryRoot, ["reset", "--hard", "--quiet", mergeCommit]);
+    return { repositoryRoot, baseCommit, mergeCommit };
+  },
+);
+
+const mergeCheckoutOf = Effect.fn("mergeCheckoutOf")(function* mergeCheckoutOf(
+  originRoot: string,
+  mergeCommit: string,
+) {
+  const filesystem = yield* FileSystem.FileSystem;
+  const checkoutRoot = yield* filesystem.makeTempDirectoryScoped({
+    prefix: "stop-ai-slop-checkout-",
+  });
+  yield* git(checkoutRoot, ["init", "--quiet"]);
+  yield* git(checkoutRoot, ["remote", "add", "origin", `file://${originRoot}`]);
+  yield* git(checkoutRoot, ["fetch", "--quiet", "--no-tags", "--depth=1", "origin", mergeCommit]);
+  yield* git(checkoutRoot, ["checkout", "--quiet", "--detach", mergeCommit]);
+  return checkoutRoot;
+});
+
+const checkoutHoldingOnlyThePullRequestMerge = Effect.gen(
+  function* checkoutHoldingOnlyThePullRequestMerge() {
+    const {
+      repositoryRoot: originRoot,
+      baseCommit,
+      mergeCommit,
+    } = yield* repositoryHoldingThePullRequestMerge;
+    const repositoryRoot = yield* mergeCheckoutOf(originRoot, mergeCommit);
     const compare = vi.fn<GitHubApi["compare"]>(() =>
       Effect.succeed({ merge_base_commit: { sha: baseCommit }, files: [] }),
     );
@@ -217,9 +243,76 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
     );
   });
 
+  describe("a checkout that holds a pull request merge with its parents", () => {
+    const expectedMergeComparison = (repositoryRoot: string) => ({
+      repositoryRoot,
+      baseRevision: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
+      headRevision: "HEAD",
+      files: [
+        {
+          kind: "changed",
+          beforePath: "src/current.ts",
+          afterPath: "src/current.ts",
+          beforeSource: "export const current = true;\n",
+          afterSource: "export const current = false;\n",
+          addedLines: [1],
+          firstAddedLine: 1,
+        },
+      ],
+    });
+
+    const localMergeComparison = Effect.gen(function* localMergeComparison() {
+      const { repositoryRoot } = yield* repositoryHoldingThePullRequestMerge;
+      return {
+        repositoryRoot,
+        comparison: yield* resolvedComparison(repositoryRoot, {
+          repository: undefined,
+          api: null,
+        }),
+      };
+    });
+
+    const deepenedCloneComparison = Effect.gen(function* deepenedCloneComparison() {
+      const { repositoryRoot: originRoot, mergeCommit } =
+        yield* repositoryHoldingThePullRequestMerge;
+      const repositoryRoot = yield* mergeCheckoutOf(originRoot, mergeCommit);
+      yield* git(repositoryRoot, [
+        "fetch",
+        "--quiet",
+        "--no-tags",
+        "--depth=2",
+        "origin",
+        mergeCommit,
+      ]);
+      return {
+        repositoryRoot,
+        comparison: yield* resolvedComparison(repositoryRoot, {
+          repository: undefined,
+          api: null,
+        }),
+      };
+    });
+
+    it.effect("reads the merge against its first parent without the GitHub API", () =>
+      Effect.gen(function* program() {
+        const { repositoryRoot, comparison } = yield* localMergeComparison;
+        expect(comparison).toStrictEqual(expectedMergeComparison(repositoryRoot));
+      }),
+    );
+
+    it.effect(
+      "reads a depth-one merge checkout locally once the merge is fetched again at depth two",
+      () =>
+        Effect.gen(function* program() {
+          const { repositoryRoot, comparison } = yield* deepenedCloneComparison;
+          expect(comparison).toStrictEqual(expectedMergeComparison(repositoryRoot));
+        }),
+    );
+  });
+
   describe("a checkout that holds only the merge of a pull request", () => {
     const pullRequestComparison = Effect.gen(function* pullRequestComparison() {
-      const { repositoryRoot, api } = yield* repositoryHoldingOnlyThePullRequestMerge;
+      const { repositoryRoot, api } = yield* checkoutHoldingOnlyThePullRequestMerge;
       return {
         repositoryRoot,
         comparison: yield* resolvedComparison(repositoryRoot, { repository: "owner/name", api }),
@@ -227,9 +320,16 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
     });
 
     const pullRequestCompareCall = Effect.gen(function* pullRequestCompareCall() {
-      const { repositoryRoot, compare, api } = yield* repositoryHoldingOnlyThePullRequestMerge;
+      const { repositoryRoot, compare, api } = yield* checkoutHoldingOnlyThePullRequestMerge;
       yield* resolvedComparison(repositoryRoot, { repository: "owner/name", api });
       return compare;
+    });
+
+    const refusalWithoutApi = Effect.gen(function* refusalWithoutApi() {
+      const { repositoryRoot } = yield* checkoutHoldingOnlyThePullRequestMerge;
+      return yield* Effect.flip(
+        resolvedComparison(repositoryRoot, { repository: "owner/name", api: null }),
+      );
     });
 
     it.effect("reads the pull request through the API when the checkout holds only its merge", () =>
@@ -252,6 +352,12 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
         });
       }),
     );
+
+    it.effect("refuses the merge when neither its parents nor the API can be read", () =>
+      Effect.gen(function* program() {
+        expect(yield* refusalWithoutApi).toBeInstanceOf(ComparisonUnresolved);
+      }),
+    );
   });
 
   describe("a checkout that holds neither the integration branch nor a merge", () => {
@@ -264,7 +370,7 @@ layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComp
         expect(yield* guessworkRefusal).toStrictEqual(
           new ComparisonUnresolved({
             message:
-              "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch before checking.",
+              "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor the parents of a pull request merge, and no GitHub API to read the merge through. Fetch the integration branch or the merge with its parents before checking.",
           }),
         );
       }),

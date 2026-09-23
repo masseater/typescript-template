@@ -36,7 +36,13 @@ describe("declarationsIn", () => {
 
     it("is read under the name it was declared with", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "twice", line: 1, structure: ARROW_DOUBLING_STRUCTURE, nodeCount: 7 },
+        {
+          name: "twice",
+          line: 1,
+          structure: ARROW_DOUBLING_STRUCTURE,
+          nodeCount: 7,
+          references: [],
+        },
       ]);
     });
   });
@@ -47,7 +53,13 @@ describe("declarationsIn", () => {
 
     it("is read with the structure the other one is read with", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "doubled", line: 1, structure: ARROW_DOUBLING_STRUCTURE, nodeCount: 7 },
+        {
+          name: "doubled",
+          line: 1,
+          structure: ARROW_DOUBLING_STRUCTURE,
+          nodeCount: 7,
+          references: [],
+        },
       ]);
     });
   });
@@ -152,7 +164,13 @@ describe("declarationsIn", () => {
 
     it("is read under the name it was declared with", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "twice", line: 1, structure: FUNCTION_DOUBLING_STRUCTURE, nodeCount: 8 },
+        {
+          name: "twice",
+          line: 1,
+          structure: FUNCTION_DOUBLING_STRUCTURE,
+          nodeCount: 8,
+          references: [],
+        },
       ]);
     });
   });
@@ -177,7 +195,7 @@ describe("declarationsIn", () => {
 
     it("is read alone, leaving the nested binding out", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "outer", line: 1, structure: OUTER_ARROW_STRUCTURE, nodeCount: 8 },
+        { name: "outer", line: 1, structure: OUTER_ARROW_STRUCTURE, nodeCount: 8, references: [] },
       ]);
     });
   });
@@ -206,8 +224,8 @@ describe("declarationsIn", () => {
 
     it("are each recorded at the line they start on", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "first", line: 1, structure: LITERAL_ONE_STRUCTURE, nodeCount: 1 },
-        { name: "second", line: 3, structure: LITERAL_TWO_STRUCTURE, nodeCount: 1 },
+        { name: "first", line: 1, structure: LITERAL_ONE_STRUCTURE, nodeCount: 1, references: [] },
+        { name: "second", line: 3, structure: LITERAL_TWO_STRUCTURE, nodeCount: 1, references: [] },
       ]);
     });
   });
@@ -217,7 +235,7 @@ describe("declarationsIn", () => {
 
     it("is read under the name it was declared with", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "Draft", line: 1, structure: TITLE_ALIAS_STRUCTURE, nodeCount: 5 },
+        { name: "Draft", line: 1, structure: TITLE_ALIAS_STRUCTURE, nodeCount: 5, references: [] },
       ]);
     });
   });
@@ -227,7 +245,13 @@ describe("declarationsIn", () => {
 
     it("is read under the name it was declared with", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "Draft", line: 1, structure: TITLE_INTERFACE_STRUCTURE, nodeCount: 5 },
+        {
+          name: "Draft",
+          line: 1,
+          structure: TITLE_INTERFACE_STRUCTURE,
+          nodeCount: 5,
+          references: [],
+        },
       ]);
     });
   });
@@ -252,7 +276,13 @@ describe("declarationsIn", () => {
 
     it("is read with the structure the other one is read with", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "Published", line: 1, structure: TITLE_ALIAS_STRUCTURE, nodeCount: 5 },
+        {
+          name: "Published",
+          line: 1,
+          structure: TITLE_ALIAS_STRUCTURE,
+          nodeCount: 5,
+          references: [],
+        },
       ]);
     });
   });
@@ -299,7 +329,7 @@ describe("declarationsIn", () => {
 
     it("is counted as one node", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "one", line: 1, structure: LITERAL_ONE_STRUCTURE, nodeCount: 1 },
+        { name: "one", line: 1, structure: LITERAL_ONE_STRUCTURE, nodeCount: 1, references: [] },
       ]);
     });
   });
@@ -310,7 +340,13 @@ describe("declarationsIn", () => {
 
     it("is counted as more nodes", ({ declarations }) => {
       expect(declarations).toStrictEqual([
-        { name: "twice", line: 1, structure: ANNOTATED_ARROW_DOUBLING_STRUCTURE, nodeCount: 9 },
+        {
+          name: "twice",
+          line: 1,
+          structure: ANNOTATED_ARROW_DOUBLING_STRUCTURE,
+          nodeCount: 9,
+          references: [],
+        },
       ]);
     });
   });

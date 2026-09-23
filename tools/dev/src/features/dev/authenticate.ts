@@ -1,19 +1,12 @@
 import { env as processEnvironment } from "node:process";
 
-import { APPLICATION, applicationOrigins } from "@repo/config";
+import { APPLICATION } from "@repo/config";
 import { Effect } from "effect";
 import { URI } from "otpauth";
 
+import { configuredOrigin, sessionArguments, sessionName } from "./browser-session.ts";
 import { failure } from "./failure.ts";
-import { browserLaunchArguments } from "./lan-gateway.ts";
-import {
-  browserConfig,
-  lanOrigin,
-  readCredentials,
-  refreshBrowserConfig,
-  root,
-  run,
-} from "./local-environment.ts";
+import { readCredentials, refreshBrowserConfig, root, run } from "./local-environment.ts";
 import { ensureOperator, operatorFile } from "./operator-account.ts";
 import { urlPath } from "./platform.ts";
 
@@ -38,27 +31,9 @@ const submitLoginForm = [
   "(() => { const form = document.querySelector('form'); if (form === null) { throw new Error('login_form_missing'); } form.requestSubmit(); return true; })()",
 ] as const;
 
-function sessionName(app: App): string {
-  return `template-local-${app}`;
-}
-
 function postLoginPath(app: App): string {
   return app === APPLICATION.admin ? "/members" : "/home";
 }
-
-function configuredOrigin(app: App, credentials: Credentials): string {
-  return credentials.origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
-}
-
-const sessionArguments = Effect.fn("sessionArguments")(function* sessionArguments(
-  app: App,
-  credentials: Credentials,
-) {
-  const launch =
-    credentials.origins === "loopback" ? ([] as const) : yield* browserLaunchArguments();
-  const config = yield* urlPath(browserConfig);
-  return ["--config", config, ...launch, "--session", sessionName(app)];
-});
 
 const agent = Effect.fn("agent")(function* agent(
   app: App,

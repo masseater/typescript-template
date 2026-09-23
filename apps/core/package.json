@@ -12,6 +12,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@repo/config": "workspace:*",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "typescript": "catalog:",
     "vite": "catalog:",

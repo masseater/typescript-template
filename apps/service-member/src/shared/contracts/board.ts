@@ -1,6 +1,5 @@
+import { CreatedResource, Identifier, pageNumber } from "@repo/runtime/contracts";
 import { Schema } from "effect";
-
-import { Identifier, pageNumber } from "./member.ts";
 
 const maximumBoardTitleLength = 100;
 const maximumBoardBodyLength = 5000;
@@ -26,7 +25,9 @@ const BoardPostView = Schema.Struct({
   id: Schema.String,
 });
 
-const BoardThreadListQuery = Schema.Struct({ page: pageNumber(1, 1, maximumBoardPage) });
+const BoardThreadListQuery = Schema.Struct({
+  page: pageNumber({ fallback: 1, maximum: maximumBoardPage, minimum: 1 }),
+});
 
 const BoardThreadList = Schema.Struct({
   pageSize: Schema.Literal(boardThreadPageSize),
@@ -36,7 +37,7 @@ const BoardThreadList = Schema.Struct({
 
 const BoardThreadQuery = Schema.Struct({
   id: Identifier,
-  page: pageNumber(1, 1, maximumBoardPage),
+  page: pageNumber({ fallback: 1, maximum: maximumBoardPage, minimum: 1 }),
 });
 
 const BoardThreadView = Schema.Struct({
@@ -53,11 +54,11 @@ const BoardThreadCreate = Schema.Struct({
   title: Schema.Trim.check(Schema.isLengthBetween(1, maximumBoardTitleLength)),
 });
 
-const BoardThreadCreated = Schema.Struct({ id: Schema.String });
+const BoardThreadCreated = CreatedResource;
 
 const BoardPostCreate = Schema.Struct({ body: BoardBody, threadId: Identifier });
 
-const BoardPostCreated = Schema.Struct({ id: Schema.String });
+const BoardPostCreated = CreatedResource;
 
 export {
   BoardPostCreate,

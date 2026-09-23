@@ -7,9 +7,9 @@
     "./definitions": "./src/features/feature-flags/definitions.ts"
   },
   "dependencies": {
-    "@cloudflare/flagship": "catalog:",
+    "@cloudflare/flagship": "0.5.0",
     "@cloudflare/workers-types": "catalog:",
-    "@openfeature/server-sdk": "catalog:",
+    "@openfeature/server-sdk": "1.23.0",
     "@repo/auth": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "typescript": "catalog:",
     "vite-plus": "catalog:"

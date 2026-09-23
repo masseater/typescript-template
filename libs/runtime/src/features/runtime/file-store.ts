@@ -2,7 +2,7 @@ import { readStorage } from "@repo/config/storage";
 import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
-import { StorageFailed } from "./storage-failed.ts";
+import { StorageFailed, storageUnavailable } from "./storage-failed.ts";
 
 import type { R2Bucket } from "@cloudflare/workers-types";
 import type { ConfigurationInvalid } from "@repo/config";
@@ -16,7 +16,6 @@ type FileStoreShape = {
   readonly remove: (fieldNames: readonly string[]) => Effect.Effect<void, StorageFailed>;
 };
 type Bucket = Pick<R2Bucket, "delete" | "get" | "put">;
-const unavailable = Effect.fail(new StorageFailed({ reason: "unavailable" }));
 const attempt = <Value>(
   operation: string,
   run: () => Promise<Value>,
@@ -57,9 +56,9 @@ const storeOf = (bucket: Bucket): FileStoreShape => {
   };
 };
 const unavailableStore: FileStoreShape = {
-  get: () => unavailable,
-  put: () => unavailable,
-  remove: () => unavailable,
+  get: () => storageUnavailable,
+  put: () => storageUnavailable,
+  remove: () => storageUnavailable,
 };
 class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runtime/FileStore") {
   public static layer(bucket: Bucket | undefined): Layer.Layer<FileStore> {

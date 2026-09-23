@@ -6,15 +6,12 @@ import {
   fail,
   fileInfo,
   files,
+  ioFailed,
   isSymlink,
   linkCount,
   sameContent,
 } from "./artifact-io.ts";
 import { layer, path } from "./platform.ts";
-
-function ioFailed(): ArtifactFailure {
-  return new ArtifactFailure({ code: "artifact_io_failed" });
-}
 
 const assertExistingStagedCopy = Effect.fn("assertExistingStagedCopy")(
   function* assertExistingStagedCopy(source: string, destination: string) {

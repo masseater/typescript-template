@@ -351,7 +351,6 @@ layer(NodeServices.layer)("readCachedEntries", (it) => {
       return yield* Effect.forEach(
         [
           { ...ORDER_STATUS_CATALOG_ENTRY, values: null },
-          { ...ORDER_STATUS_CATALOG_ENTRY, values: [] },
           { ...ORDER_STATUS_CATALOG_ENTRY, values: [{}] },
           { ...ORDER_STATUS_CATALOG_ENTRY, values: ["draft", "draft"] },
           {
@@ -378,13 +377,39 @@ layer(NodeServices.layer)("readCachedEntries", (it) => {
     it.effect("are each rejected", () =>
       Effect.gen(function* program() {
         const catalogsReadBackFromBrokenCanonicalDomains = yield* fixture;
-        expect(catalogsReadBackFromBrokenCanonicalDomains).toStrictEqual([
-          null,
-          null,
-          null,
-          null,
-          null,
-        ]);
+        expect(catalogsReadBackFromBrokenCanonicalDomains).toStrictEqual([null, null, null, null]);
+      }),
+    );
+  });
+
+  describe("an entry whose vocabulary holds no values yet", () => {
+    const emptyVocabularyEntry = {
+      ...ORDER_STATUS_CATALOG_ENTRY,
+      fingerprint: fingerprintValues([]),
+      values: [],
+    };
+
+    const fixture = Effect.gen(function* catalogReadBackWithAnEmptyVocabulary() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "catalog-cache-" });
+
+      const cachePath = paths.join(root, ...CACHE_SEGMENTS);
+      yield* filesystem.makeDirectory(paths.dirname(cachePath), { recursive: true });
+      yield* filesystem.writeFileString(
+        cachePath,
+        yield* sealedCacheText({
+          version: 5,
+          fingerprint: "repository-fingerprint",
+          entries: [emptyVocabularyEntry],
+        }),
+      );
+      return readCachedEntries(root, "repository-fingerprint");
+    });
+
+    it.effect("is read back", () =>
+      Effect.gen(function* program() {
+        expect(yield* fixture).toStrictEqual([emptyVocabularyEntry]);
       }),
     );
   });

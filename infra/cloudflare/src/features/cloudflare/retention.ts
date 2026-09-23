@@ -1,6 +1,6 @@
 import { Effect, FileSystem, Option, Path } from "effect";
 
-import { ArtifactFailure, isMissing } from "./artifact-io.ts";
+import { ArtifactFailure, ioFailed, isMissing } from "./artifact-io.ts";
 import { layer } from "./platform.ts";
 
 interface Generation {
@@ -10,10 +10,6 @@ interface Generation {
 
 function newestFirst(left: Generation, right: Generation): number {
   return right.modified - left.modified;
-}
-
-function ioFailed(): ArtifactFailure {
-  return new ArtifactFailure({ code: "artifact_io_failed" });
 }
 
 const generations = Effect.fn("generations")(function* generations(parent: string) {
