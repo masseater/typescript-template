@@ -12,6 +12,7 @@ import {
 } from "./effect-rules.ts";
 import { exampleHostGuidance, exampleValuesVisitor } from "./example-values.ts";
 import { layersVisitor } from "./layers.ts";
+import { lazyMotionVisitor } from "./lazy-motion.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
@@ -327,6 +328,12 @@ const projectPlugin = definePlugin({
       create: logVisitor,
       meta: metadata(
         "Effect.log / logError / logWarning / logInfo などを直接呼べません。水準の判定を迂回すると、同じ事象が宛先によって違う厳しさで出ます。libs/observability の logAt / logCause を通してください。",
+      ),
+    },
+    "lazy-motion": {
+      create: lazyMotionVisitor,
+      meta: metadata(
+        "motion/react の motion 部品は import できません。@repo/ui の ToastProvider は子を LazyMotion strict で包むため、その下で motion.div などを描画すると実行時に例外になります。React Bits から追加した部品も含め、motion/react の m を使ってください。",
       ),
     },
     "no-internal-mocks": {

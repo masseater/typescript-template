@@ -39,15 +39,30 @@ const atomUiRetiredPackages: Readonly<Record<string, string>> = {
   zustand: atomState,
 };
 
+const microInteraction = "@react-bits registry から shadcn で libs/ui に追加した部品";
+
+const motionUiRetiredPackages: Readonly<Record<string, string>> = {
+  "@formkit/auto-animate": microInteraction,
+  "@hugeicons/": "lucide-react",
+  "@react-spring/": microInteraction,
+  "animate.css": microInteraction,
+  "framer-motion": "motion",
+  "react-awesome-reveal": microInteraction,
+  "react-spring": microInteraction,
+  "react-transition-group": microInteraction,
+};
+
 const retiredPackages: Readonly<Record<string, string>> = {
   ...infrastructureRetiredPackages,
   ...atomUiRetiredPackages,
+  ...motionUiRetiredPackages,
   ...retiredPackagesFromStateKinds(),
 };
 
 const retiredEntries: Readonly<Record<string, string>> = {
   "@effect/atom-react/": "@effect/atom-react の root",
   "better-auth/react": "better-auth/client と Effect Atom",
+  "motion/react-client": "motion/react の m",
   "effect/unstable/reactivity/": "effect/unstable/reactivity の root",
 };
 
