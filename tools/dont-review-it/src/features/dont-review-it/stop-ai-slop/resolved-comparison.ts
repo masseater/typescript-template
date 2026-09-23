@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { comparisonRangeIn } from "./comparison-range.ts";
+import { commitOrNull, comparisonRangeIn } from "./comparison-range.ts";
 import { runGitText } from "./git-text.ts";
 import { compareGitHubPullRequest } from "./github-comparison.ts";
 import { compareRevisions } from "./repository-comparison.ts";
@@ -35,11 +35,19 @@ export const resolvedComparison = Effect.fn("resolvedComparison")(function* reso
   if (range !== null) return yield* compareRevisions({ repositoryRoot, ...range });
 
   const [base, head] = yield* parentsOf(repositoryRoot);
+  if (
+    base !== undefined &&
+    head !== undefined &&
+    (yield* commitOrNull(repositoryRoot, base)) !== null
+  ) {
+    return yield* compareRevisions({ repositoryRoot, baseRevision: base, headRevision: "HEAD" });
+  }
+
   const { repository, api } = environment;
   if (repository === undefined || api === null || base === undefined || head === undefined) {
     return yield* new ComparisonUnresolved({
       message:
-        "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch before checking.",
+        "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor the parents of a pull request merge, and no GitHub API to read the merge through. Fetch the integration branch or the merge with its parents before checking.",
     });
   }
 
