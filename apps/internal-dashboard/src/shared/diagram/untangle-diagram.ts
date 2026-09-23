@@ -1,5 +1,5 @@
 import { DiagramCrowded } from "./diagram-crowded.ts";
-import { center, formatPoints, segmentsOf } from "./diagram-geometry.ts";
+import { center, formatPoints, inflate, segmentsOf } from "./diagram-geometry.ts";
 import {
   boxesOverlap,
   collinearOverlap,
@@ -68,13 +68,6 @@ const rerouteThroughShapes = (geometry: DiagramGeometry): readonly Route[] =>
     route.element.properties["points"] = formatPoints(route.points);
     return true;
   });
-
-const inflate = (box: Box, by: number): Box => ({
-  height: box.height + by * 2,
-  width: box.width + by * 2,
-  x: box.x - by,
-  y: box.y - by,
-});
 
 const boxAt = (middle: Point, width: number, height: number): Box => ({
   height,
