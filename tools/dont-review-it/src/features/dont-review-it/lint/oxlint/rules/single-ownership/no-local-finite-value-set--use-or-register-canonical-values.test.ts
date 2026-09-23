@@ -275,6 +275,57 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
     });
   });
 
+  describe("against a catalog whose owner shares only some of the values", () => {
+    const lifecycleValues = ["draft", "published", "archived"] as const;
+    const withLifecycleOwner = createNoLocalFiniteValueSet({
+      loadCatalog: () =>
+        buildCatalog([
+          {
+            ...orderStatusEntry,
+            binding: "LIFECYCLES",
+            conceptId: "order.lifecycle",
+            fingerprint: fingerprintValues(lifecycleValues),
+            values: lifecycleValues,
+          },
+        ]),
+      loadLibraryVocabulary: () => EMPTY_LIBRARY_VOCABULARY_INDEX,
+    });
+    testLintRule(withLifecycleOwner, {
+      valid: [],
+      invalid: [
+        {
+          code: 'export type Visible = "draft" | "published";',
+          errors: [
+            {
+              messageId: "localFiniteValueSetSubsetOfOwner",
+              data: {
+                owners: "order.lifecycle declared in packages/vocabulary/src/status.ts",
+                ownershipPolicy: "not configured (set the ownershipPolicy option of this rule)",
+              },
+            },
+          ],
+        },
+        {
+          code: 'export type Review = "draft" | "rejected";',
+          errors: [
+            {
+              messageId: "localFiniteValueSetOverlapsOwner",
+              data: {
+                owners: "order.lifecycle declared in packages/vocabulary/src/status.ts",
+                ownershipPolicy: "not configured (set the ownershipPolicy option of this rule)",
+                sharedValues: '"draft"',
+              },
+            },
+          ],
+        },
+        {
+          code: 'export type Unrelated = "north" | "south";',
+          errors: [{ messageId: "localFiniteValueSetWithoutOwner" }],
+        },
+      ],
+    });
+  });
+
   describe("against the annotated declaration that owns the concept", () => {
     const declarationSource =
       '/** @canonical-values order.status */\nexport const VALUES = z.enum(["draft", "published"]);';
