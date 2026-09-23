@@ -28,6 +28,10 @@ const failures = {
     status: httpStatus.tooManyRequests,
   },
   TurnRejected: { message: "いまはその操作を受け付けられません。", status: httpStatus.conflict },
+  UnderstandingFailed: {
+    message: "いまはうまく聞き取れませんでした。もう一度送るか、スキップ・終了を使ってください。",
+    status: httpStatus.serviceUnavailable,
+  },
 };
 
 const open = Effect.fn("interview.api.open")(function* open(request: Request) {
