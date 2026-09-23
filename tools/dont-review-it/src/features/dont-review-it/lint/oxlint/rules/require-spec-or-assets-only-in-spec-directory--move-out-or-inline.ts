@@ -1,6 +1,5 @@
-import { dirname, relative, resolve } from "node:path";
-
 import { createDontReviewItRule } from "../../../create-rule.ts";
+import { path } from "../../../platform/path.ts";
 import { findWorkspaceRoot } from "../lib/canonical-values/workspace-root.ts";
 import { toPosixPath } from "../lib/posix-path.ts";
 import { unscannedDirectoryNamesFrom } from "../lib/repository-scan/worktree-files.ts";
@@ -51,8 +50,8 @@ export const requireSpecOrAssetsOnlyInSpecDirectory = createDontReviewItRule({
 
     return {
       Program(node: ESTree.Program) {
-        const visitedPath = resolve(inspection.cwd, inspection.filename);
-        const repositoryRoot = findWorkspaceRoot(dirname(visitedPath));
+        const visitedPath = path.resolve(inspection.cwd, inspection.filename);
+        const repositoryRoot = findWorkspaceRoot(path.dirname(visitedPath));
         const held = foreignFilesIn({
           repositoryRoot,
           convention,
@@ -60,7 +59,7 @@ export const requireSpecOrAssetsOnlyInSpecDirectory = createDontReviewItRule({
         });
         const workspace = holdingWorkspaceOf({
           repositoryRoot,
-          relativePath: toPosixPath(relative(repositoryRoot, visitedPath)),
+          relativePath: toPosixPath(path.relative(repositoryRoot, visitedPath)),
         });
 
         for (const foreign of held.get(workspace) ?? []) {

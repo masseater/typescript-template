@@ -1,78 +1,26 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem } from "effect";
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { forbidRestrictedTargetRelay } from "./forbid-restricted-target-relay--delete-the-relay.ts";
 
-const fixtureDir = mkdtempSync(
-  join(realpathSync(tmpdir()), "dont-review-it-forbid-restricted-target-relay-"),
-);
-rmSync(fixtureDir, { recursive: true, force: true });
+const fixtureDir = await Effect.gen(function* fixtureDirectory() {
+  const filesystem = yield* FileSystem.FileSystem;
+  return yield* filesystem.realPath(
+    yield* filesystem.makeTempDirectory({
+      prefix: "dont-review-it-forbid-restricted-target-relay-",
+    }),
+  );
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 
 const STAR_FORWARD_TO_RETIRED_LIB = 'export * from "retired-lib";\n';
 
-const relayDir = join(fixtureDir, "relay");
-const relaykitDir = join(fixtureDir, "packages/relaykit");
-const outsideRelayDir = join(fixtureDir, "node_modules/outside-relay");
-const aliasedDir = join(fixtureDir, "aliased");
-
-mkdirSync(relayDir, { recursive: true });
-mkdirSync(join(fixtureDir, "owner"), { recursive: true });
-mkdirSync(join(fixtureDir, "shared"), { recursive: true });
-mkdirSync(join(relaykitDir, "src"), { recursive: true });
-mkdirSync(join(fixtureDir, "node_modules/@fixture"), { recursive: true });
-mkdirSync(outsideRelayDir, { recursive: true });
-mkdirSync(join(aliasedDir, "modules"), { recursive: true });
-
-writeFileSync(join(fixtureDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
-
-writeFileSync(join(relayDir, "named-forward.ts"), 'export { readFile } from "retired-lib";\n');
-writeFileSync(join(relayDir, "star-forward.ts"), STAR_FORWARD_TO_RETIRED_LIB);
-writeFileSync(join(relayDir, "namespace-forward.ts"), 'export * as retired from "retired-lib";\n');
-writeFileSync(
-  join(relayDir, "binding-forward.ts"),
-  'import { readFile } from "retired-lib";\nexport { readFile as read };\n',
-);
-writeFileSync(join(relayDir, "deep-forward.ts"), 'export * from "./star-forward.ts";\n');
-writeFileSync(join(relayDir, "deeper-forward.ts"), 'export * from "./deep-forward.ts";\n');
-writeFileSync(
-  join(relayDir, "boundary.ts"),
-  'import { readFile } from "retired-lib";\nexport const read = (path: string) => readFile(path);\n',
-);
-writeFileSync(
-  join(relayDir, "inner-only.ts"),
-  'import { readFile } from "retired-lib";\nvoid readFile;\n',
-);
-writeFileSync(join(relayDir, "cycle-a.ts"), 'export * from "./cycle-b.ts";\n');
-writeFileSync(join(relayDir, "cycle-b.ts"), 'export * from "./cycle-a.ts";\n');
-writeFileSync(join(relayDir, "derived-forward.ts"), 'export * from "retired-lib-extra";\n');
-writeFileSync(join(relayDir, "whole-surface.ts"), 'export * from "node:fs";\n');
-writeFileSync(join(relayDir, "one-export.ts"), 'export { writeFileSync } from "node:fs";\n');
-
-writeFileSync(join(fixtureDir, "owner/forward.ts"), STAR_FORWARD_TO_RETIRED_LIB);
-writeFileSync(join(fixtureDir, "shared/forward.ts"), STAR_FORWARD_TO_RETIRED_LIB);
-
-writeFileSync(
-  join(relaykitDir, "package.json"),
-  JSON.stringify({ name: "@fixture/relaykit", exports: { ".": "./src/index.ts" } }),
-);
-writeFileSync(join(relaykitDir, "src/index.ts"), STAR_FORWARD_TO_RETIRED_LIB);
-symlinkSync(relaykitDir, join(fixtureDir, "node_modules/@fixture/relaykit"), "dir");
-
-writeFileSync(
-  join(outsideRelayDir, "package.json"),
-  JSON.stringify({ name: "outside-relay", exports: { ".": "./index.ts" } }),
-);
-writeFileSync(join(outsideRelayDir, "index.ts"), STAR_FORWARD_TO_RETIRED_LIB);
-
-writeFileSync(
-  join(aliasedDir, "tsconfig.json"),
-  JSON.stringify({ compilerOptions: { baseUrl: ".", paths: { "@relay/*": ["./modules/*"] } } }),
-);
-writeFileSync(join(fixtureDir, "aliased/modules/forward.ts"), STAR_FORWARD_TO_RETIRED_LIB);
+const relayDir = path.join(fixtureDir, "relay");
+const relaykitDir = path.join(fixtureDir, "packages/relaykit");
+const outsideRelayDir = path.join(fixtureDir, "node_modules/outside-relay");
+const aliasedDir = path.join(fixtureDir, "aliased");
 
 const substitute = "Take the same values from the shared reader.";
 
@@ -86,86 +34,156 @@ const restrictedOneExport = [
   { restricted: [{ module: "node:fs", exports: ["readFileSync"], substitute }] },
 ];
 
+const FIXTURE_DIRECTORIES: readonly string[] = [
+  relayDir,
+  path.join(fixtureDir, "owner"),
+  path.join(fixtureDir, "shared"),
+  path.join(relaykitDir, "src"),
+  path.join(fixtureDir, "node_modules/@fixture"),
+  outsideRelayDir,
+  path.join(aliasedDir, "modules"),
+];
+
+const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
+  [path.join(fixtureDir, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n"],
+  [path.join(relayDir, "named-forward.ts"), 'export { readFile } from "retired-lib";\n'],
+  [path.join(relayDir, "star-forward.ts"), STAR_FORWARD_TO_RETIRED_LIB],
+  [path.join(relayDir, "namespace-forward.ts"), 'export * as retired from "retired-lib";\n'],
+  [
+    path.join(relayDir, "binding-forward.ts"),
+    'import { readFile } from "retired-lib";\nexport { readFile as read };\n',
+  ],
+  [path.join(relayDir, "deep-forward.ts"), 'export * from "./star-forward.ts";\n'],
+  [path.join(relayDir, "deeper-forward.ts"), 'export * from "./deep-forward.ts";\n'],
+  [
+    path.join(relayDir, "boundary.ts"),
+    'import { readFile } from "retired-lib";\nexport const read = (path: string) => readFile(path);\n',
+  ],
+  [
+    path.join(relayDir, "inner-only.ts"),
+    'import { readFile } from "retired-lib";\nvoid readFile;\n',
+  ],
+  [path.join(relayDir, "cycle-a.ts"), 'export * from "./cycle-b.ts";\n'],
+  [path.join(relayDir, "cycle-b.ts"), 'export * from "./cycle-a.ts";\n'],
+  [path.join(relayDir, "derived-forward.ts"), 'export * from "retired-lib-extra";\n'],
+  [path.join(relayDir, "whole-surface.ts"), 'export * from "node:fs";\n'],
+  [path.join(relayDir, "one-export.ts"), 'export { writeFileSync } from "node:fs";\n'],
+  [path.join(fixtureDir, "owner/forward.ts"), STAR_FORWARD_TO_RETIRED_LIB],
+  [path.join(fixtureDir, "shared/forward.ts"), STAR_FORWARD_TO_RETIRED_LIB],
+  [
+    path.join(relaykitDir, "package.json"),
+    JSON.stringify({ name: "@fixture/relaykit", exports: { ".": "./src/index.ts" } }),
+  ],
+  [path.join(relaykitDir, "src/index.ts"), STAR_FORWARD_TO_RETIRED_LIB],
+  [
+    path.join(outsideRelayDir, "package.json"),
+    JSON.stringify({ name: "outside-relay", exports: { ".": "./index.ts" } }),
+  ],
+  [path.join(outsideRelayDir, "index.ts"), STAR_FORWARD_TO_RETIRED_LIB],
+  [
+    path.join(aliasedDir, "tsconfig.json"),
+    JSON.stringify({ compilerOptions: { baseUrl: ".", paths: { "@relay/*": ["./modules/*"] } } }),
+  ],
+  [path.join(fixtureDir, "aliased/modules/forward.ts"), STAR_FORWARD_TO_RETIRED_LIB],
+];
+
+const FIXTURE_LINKS: ReadonlyArray<readonly [string, string]> = [
+  [relaykitDir, path.join(fixtureDir, "node_modules/@fixture/relaykit")],
+];
+
+await Effect.gen(function* writeFixture() {
+  const filesystem = yield* FileSystem.FileSystem;
+  for (const directory of FIXTURE_DIRECTORIES) {
+    yield* filesystem.makeDirectory(directory, { recursive: true });
+  }
+  for (const [filePath, content] of FIXTURE_FILES) {
+    yield* filesystem.writeFileString(filePath, content);
+  }
+  for (const [target, link] of FIXTURE_LINKS) {
+    yield* filesystem.symlink(target, link);
+  }
+}).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
+
 describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () => {
   testLintRule(forbidRestrictedTargetRelay, {
     valid: [
       {
         name: "a repository with no restricted target declared reports nothing",
         code: 'export * from "retired-lib";',
-        filename: join(fixtureDir, "relay/anything.ts"),
+        filename: path.join(fixtureDir, "relay/anything.ts"),
       },
       {
         name: "a boundary that publishes its own vocabulary keeps the target off its surface",
         documented: true,
         code: 'import { readFile } from "retired-lib";\nexport const read = (path: string) => readFile(path);',
-        filename: join(fixtureDir, "relay/own-boundary.ts"),
+        filename: path.join(fixtureDir, "relay/own-boundary.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "forwarding the vocabulary a boundary publishes keeps the target off this surface",
         code: 'export { read } from "./boundary.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "reading a module that holds the target inside itself reaches nothing",
         code: 'import { anything } from "./inner-only.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "reading a boundary that transforms the binding reaches nothing",
         documented: true,
         code: 'import { read } from "./boundary.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "naming the target directly is left to the rule that matches specifiers in one file",
         code: 'import { readFile } from "retired-lib";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "a forward inside an installed package is out of reach of this invariant",
         code: 'import { readFile } from "outside-relay";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "reading a module that forwards a separate name reaches nothing",
         code: 'import { anything } from "./derived-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "forwarding a separate name puts no restricted target on this surface",
         code: 'export * from "retired-lib-extra";',
-        filename: join(fixtureDir, "relay/derived-forward.ts"),
+        filename: path.join(fixtureDir, "relay/derived-forward.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "a forward chain that closes on itself ends the walk",
         code: 'import { anything } from "./cycle-a.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "a specifier decided at run time cannot be followed to a file",
         code: "export const load = (name: string) => import(name);",
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
       },
       {
         name: "a position the entry allows may read the forwarded target",
         code: 'import { readFile } from "../relay/star-forward.ts";',
-        filename: join(fixtureDir, "owner/reader.ts"),
+        filename: path.join(fixtureDir, "owner/reader.ts"),
         options: restrictedInsideOwner,
       },
       {
         name: "reading a module that forwards only an export outside the named ones reaches nothing",
         code: 'import { writeFileSync } from "./one-export.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedOneExport,
       },
     ],
@@ -174,7 +192,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
         name: "a named re-export puts the target on this module's surface",
         documented: true,
         code: 'export { readFile } from "retired-lib";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -186,7 +204,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "a star re-export puts the whole surface through",
         code: 'export * from "retired-lib";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -198,7 +216,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "exporting an imported binding is the same forward written in two statements",
         code: 'import { readFile } from "retired-lib";\nexport { readFile };',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -210,7 +228,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "forwarding a module that forwards the target is a forward of the target",
         code: 'export * from "./star-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -228,7 +246,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
         name: "reading a module that forwards the target reaches the target",
         documented: true,
         code: 'import { readFile } from "./star-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -245,7 +263,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "the walk prints every module it went through",
         code: 'import { readFile } from "./deeper-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -262,77 +280,77 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "a named forward is followed as well as a star forward",
         code: 'import { readFile } from "./named-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a forward written as an exported import binding is followed too",
         code: 'import { read } from "./binding-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a namespace forward is followed too",
         code: 'import { readFile } from "./namespace-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a type-only import reaches the target all the same",
         code: 'import type { readFile } from "./star-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "an import that binds nothing still reaches the target",
         code: 'import "./star-forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a synchronous module request reaches the target as much as an import does",
         code: 'export const held = require("./star-forward.ts");',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "an import-equals request reaches the target as much as an import does",
         code: 'import held = require("./star-forward.ts");\nvoid held;',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a type position that names a module reaches the target as much as an import does",
         code: 'export type Read = import("./star-forward.ts").Read;',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a specifier bound to a constant in this file is decided before the run",
         code: 'const held = "./star-forward.ts";\nexport const loaded = import(held);',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a specifier assembled from static parts is decided before the run",
         code: 'const stem = "star";\nexport const loaded = import(`./${stem}-forward.ts`);',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [{ messageId: "relayedTargetReach" }],
       },
       {
         name: "a forward carved out into a workspace package is followed through its entry",
         code: 'import { readFile } from "@fixture/relaykit";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -349,7 +367,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "a path alias declared for the project is followed to what it stands for",
         code: 'import { readFile } from "@relay/forward.ts";',
-        filename: join(fixtureDir, "aliased/reader.ts"),
+        filename: path.join(fixtureDir, "aliased/reader.ts"),
         options: restrictedRetiredLib,
         errors: [
           {
@@ -366,7 +384,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "a prefix the repository declares as its own is followed to what it stands for",
         code: 'import { readFile } from "~/forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: [
           {
             restricted: [{ module: "retired-lib", substitute }],
@@ -388,14 +406,14 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "a position the entry allows may not forward the target out of that position",
         code: 'export * from "retired-lib";',
-        filename: join(fixtureDir, "owner/reader.ts"),
+        filename: path.join(fixtureDir, "owner/reader.ts"),
         options: restrictedInsideOwner,
         errors: [{ messageId: "restrictedTargetForward" }],
       },
       {
         name: "a position outside the allowed one reaches the forwarded target",
         code: 'import { readFile } from "../owner/forward.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedInsideOwner,
         errors: [
           {
@@ -412,7 +430,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "a named export the entry names is forwarded no further",
         code: 'export { readFileSync } from "node:fs";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedOneExport,
         errors: [
           {
@@ -424,7 +442,7 @@ describe("dont-review-it/forbid-restricted-target-relay--delete-the-relay", () =
       {
         name: "a whole surface forward carries the named export with it",
         code: 'import { readFileSync } from "./whole-surface.ts";',
-        filename: join(fixtureDir, "relay/reader.ts"),
+        filename: path.join(fixtureDir, "relay/reader.ts"),
         options: restrictedOneExport,
         errors: [{ messageId: "relayedTargetReach" }],
       },

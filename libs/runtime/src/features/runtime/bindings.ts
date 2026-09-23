@@ -90,6 +90,7 @@ const loadedScalarsMatch = (
     readonly AUTH_SECRET: string;
     readonly OTLP_AUTHORIZATION: string | undefined;
     readonly EMAIL: SendEmail | undefined;
+    readonly FLAGS: unknown;
   }>,
 ): ConfigurationInvalid | undefined => {
   if (loaded.AUTH_SECRET !== scalars.AUTH_SECRET) {
@@ -100,6 +101,9 @@ const loadedScalarsMatch = (
   }
   if (scalars.MAILPIT_URL === undefined && loaded.EMAIL === undefined) {
     return new ConfigurationInvalid({ reason: "An email delivery binding is required" });
+  }
+  if (loaded.FLAGS !== undefined && !isFlagship(loaded.FLAGS)) {
+    return new ConfigurationInvalid({ reason: "FLAGS" });
   }
   return undefined;
 };
@@ -143,7 +147,7 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
     Effect.provide(bindingsFor(env)),
     Effect.mapError((cause) => new ConfigurationInvalid({ reason: bindingReason(cause) })),
   );
-  const mismatch = loadedScalarsMatch(scalars, loaded);
+  const mismatch = loadedScalarsMatch(scalars, { ...loaded, FLAGS: Reflect.get(env, "FLAGS") });
   if (mismatch !== undefined) {
     return yield* mismatch;
   }

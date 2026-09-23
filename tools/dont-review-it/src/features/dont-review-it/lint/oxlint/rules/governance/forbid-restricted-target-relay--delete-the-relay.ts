@@ -1,8 +1,7 @@
-import { dirname, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { passThroughExportsIn } from "../../lib/restricted-targets/pass-through-exports.ts";
 import { reachRouteOf } from "../../lib/restricted-targets/reach-routes.ts";
@@ -46,11 +45,11 @@ export const forbidRestrictedTargetRelay = createDontReviewItRule({
     const listedEntries = restrictedTargetsFrom(inspection.options);
     if (listedEntries.length === 0) return {};
 
-    const fromFile = resolve(inspection.cwd, inspection.filename);
+    const fromFile = path.resolve(inspection.cwd, inspection.filename);
     const aliases = internalAliasesFrom(inspection.options);
 
     const readingPolicyOf = memoize((): ReachPolicy => ({
-      workspaceRoot: findWorkspaceRoot(dirname(fromFile)),
+      workspaceRoot: findWorkspaceRoot(path.dirname(fromFile)),
       entries: entriesInForceAt({ entries: listedEntries, file: fromFile, cwd: inspection.cwd }),
       aliases,
     }));

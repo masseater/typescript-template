@@ -1,8 +1,7 @@
-import { relative, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { isOutOfScopeSource } from "../../lib/out-of-scope-source.ts";
 import { toPosixPath } from "../../lib/posix-path.ts";
@@ -43,7 +42,9 @@ export const createNoClassAsMutableCell = ({
 
       const findingsOf = memoize((): readonly CellClassFinding[] => {
         const repositoryRoot = findWorkspaceRoot(inspection.cwd);
-        const relativePath = toPosixPath(relative(repositoryRoot, resolve(inspection.filename)));
+        const relativePath = toPosixPath(
+          path.relative(repositoryRoot, path.resolve(inspection.filename)),
+        );
         return loadIndex({ repositoryRoot }).findingsByPath.get(relativePath) ?? [];
       });
 

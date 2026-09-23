@@ -1,6 +1,5 @@
-import { resolve, sep } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { matchesGlobPath } from "../../lib/glob-path-match.ts";
 import { segmentsOf } from "../../lib/path-segments.ts";
 
@@ -57,8 +56,8 @@ export const requireReExportOnlyFiles = createDontReviewItRule({
     return {
       Program(node: ESTree.Program) {
         const pathSegments = segmentsOf({
-          path: resolve(inspection.cwd, inspection.filename),
-          separator: sep,
+          path: path.resolve(inspection.cwd, inspection.filename),
+          separator: path.sep,
         });
         const { cwd } = inspection;
         if (!checkedTargets.some((pattern) => matchesGlobPath({ pathSegments, pattern, cwd })))

@@ -1,8 +1,7 @@
-import { relative, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { statementCovering } from "../../lib/duplicated-bodies/site-report.ts";
 import { isOutOfScopeSource } from "../../lib/out-of-scope-source.ts";
@@ -49,7 +48,9 @@ export const createNoSplitTypeAuthority = ({
           const repositoryRoot = repositoryRootOf();
           const reports = splitTypeReportsIn({
             index: loadIndex({ repositoryRoot }),
-            relativePath: toPosixPath(relative(repositoryRoot, resolve(inspection.filename))),
+            relativePath: toPosixPath(
+              path.relative(repositoryRoot, path.resolve(inspection.filename)),
+            ),
           });
 
           for (const report of reports) {
