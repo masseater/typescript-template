@@ -85,6 +85,7 @@ import { noVacuousHostObjectEquality } from "./lint/oxlint/rules/testing/no-vacu
 import { noVacuousTestRun } from "./lint/oxlint/rules/testing/no-vacuous-test-run--let-the-empty-run-fail.ts";
 import { noViMockFactoryBehavior } from "./lint/oxlint/rules/testing/no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts";
 import { noVitestContextExpect } from "./lint/oxlint/rules/testing/no-vitest-context-expect--import-expect-from-vitest.ts";
+import { noWholeDataImportSubject } from "./lint/oxlint/rules/testing/no-whole-data-import-subject--assert-the-contract-member.ts";
 import { requireItOnlyExpect } from "./lint/oxlint/rules/testing/require-it-only-expect--move-setup-into-fixture.ts";
 import { requireMockTypeParameter } from "./lint/oxlint/rules/testing/require-mock-type-parameter--annotate-vi-fn.ts";
 import { requireSpecDirectoryOutsideCoverage } from "./lint/oxlint/rules/testing/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts";
@@ -258,6 +259,7 @@ const plugin: Plugin = {
     [noViMockFactoryBehavior.name]: noViMockFactoryBehavior,
     [noVersionRange.name]: noVersionRange,
     [noVitestContextExpect.name]: noVitestContextExpect,
+    [noWholeDataImportSubject.name]: noWholeDataImportSubject,
     [requireCatalogEntry.name]: requireCatalogEntry,
     [requireItOnlyExpect.name]: requireItOnlyExpect,
     [requireMockTypeParameter.name]: requireMockTypeParameter,
