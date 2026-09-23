@@ -71,6 +71,7 @@ function writeUserBuild(root: string): Effect.Effect<UserBuild> {
       "chunks/handler.js": "export default {};",
       "face.woff2": "font",
       "index.js": 'export { default } from "./chunks/handler.js";',
+      "index.js.map": "{}",
       "styles.css": "body{color:red}",
     });
     return { client, root, server };
