@@ -4,8 +4,8 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { defaultTelemetryWiringConfig } from "../src/telemetry-wiring/config.ts";
-import { runTelemetryWiringChecks } from "../src/telemetry-wiring/run-telemetry-wiring-checks.ts";
+import { defaultTelemetryWiringConfig } from "../src/features/dont-review-it/telemetry-wiring/config.ts";
+import { runTelemetryWiringChecks } from "../src/features/dont-review-it/telemetry-wiring/run-telemetry-wiring-checks.ts";
 
 const config = defaultTelemetryWiringConfig;
 

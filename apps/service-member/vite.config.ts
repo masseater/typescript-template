@@ -8,6 +8,6 @@ export default defineConfig((env) => {
   return {
     ...config,
     plugins: [devtools(), ...(config.plugins ?? [])],
-    run: paraglideAppRun,
+    run: paraglideAppRun(APPLICATION.user),
   };
 });

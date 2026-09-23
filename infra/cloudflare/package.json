@@ -2,22 +2,22 @@
   "name": "@repo/infra-cloudflare",
   "private": true,
   "bin": {
-    "repo-cloudflare": "./src/cli.ts",
-    "repo-cloudflare-bootstrap-state": "./src/bootstrap-state.ts",
-    "repo-cloudflare-check-account": "./src/check-account.ts",
-    "repo-cloudflare-check-stacks": "./src/check-stacks.ts",
-    "repo-cloudflare-database": "./src/database-command.ts",
-    "repo-cloudflare-prepare-ci-env": "./src/prepare-ci-env.ts",
-    "repo-cloudflare-probe-origins": "./src/verify-origins.ts"
+    "repo-cloudflare": "./src/features/cloudflare/cli.ts",
+    "repo-cloudflare-bootstrap-state": "./src/features/cloudflare/bootstrap-state.ts",
+    "repo-cloudflare-check-account": "./src/features/cloudflare/check-account.ts",
+    "repo-cloudflare-check-stacks": "./src/features/cloudflare/check-stacks.ts",
+    "repo-cloudflare-database": "./src/features/cloudflare/database-command.ts",
+    "repo-cloudflare-prepare-ci-env": "./src/features/cloudflare/prepare-ci-env.ts",
+    "repo-cloudflare-probe-origins": "./src/features/cloudflare/verify-origins.ts"
   },
   "type": "module",
   "exports": {
-    "./application": "./src/app.ts",
-    "./core-program": "./src/core-program.ts",
-    "./deployment": "./src/deployment.ts",
-    "./lint-overrides": "./src/lint-overrides.ts",
-    "./monitor": "./src/monitor.ts",
-    "./stacks": "./src/stacks.ts"
+    "./application": "./src/features/cloudflare/app.ts",
+    "./core-program": "./src/features/cloudflare/core-program.ts",
+    "./deployment": "./src/features/cloudflare/deployment.ts",
+    "./lint-overrides": "./src/features/cloudflare/lint-overrides.ts",
+    "./monitor": "./src/features/cloudflare/monitor.ts",
+    "./stacks": "./src/features/cloudflare/stacks.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

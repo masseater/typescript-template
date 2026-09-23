@@ -1,18 +1,28 @@
 import { fileURLToPath } from "node:url";
 
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
-import { effectDiagnostics, intentValidation, lifecycle, testRun } from "@repo/vite-config";
+import {
+  checkCode,
+  effectDiagnostics,
+  intentValidation,
+  lifecycle,
+  testCoverageRun,
+  modularBoundaries,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...modularBoundaries,
       ...intentValidation,
-      ...testRun,
+      ...checkCode,
+      ...testCoverageRun,
       ...lifecycle({
-        prepush: ["check:effect", "check"],
-        prepr: ["test"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check", "check:modular"],
+        premerge: ["test"],
       }),
     },
   },
@@ -36,9 +46,9 @@ export default defineConfig({
   },
   pack: {
     entry: [
-      "src/telemetry/optional-setting.ts",
-      "src/telemetry/telemetry.ts",
-      "src/telemetry/vitest-sdk.ts",
+      "src/features/ai-native-telemetry/telemetry/optional-setting.ts",
+      "src/features/ai-native-telemetry/telemetry/telemetry.ts",
+      "src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
     ],
     dts: { generator: "tsgo" },
   },

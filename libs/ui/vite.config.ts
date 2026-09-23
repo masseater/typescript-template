@@ -1,11 +1,11 @@
-import { effectRun } from "@repo/vite-config";
+import { testableLibraryRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  run: effectRun,
+  run: testableLibraryRun,
   test: {
     coverage: {
-      exclude: ["specs/**"],
+      exclude: ["specs/**", "storybook/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
     },
     mockReset: true,

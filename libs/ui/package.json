@@ -4,12 +4,12 @@
   "type": "module",
   "sideEffects": [
     "**/*.css",
-    "./src/temporal.ts"
+    "./src/features/ui/temporal.ts"
   ],
   "exports": {
-    ".": "./src/index.ts",
-    "./shell": "./src/shell.ts",
-    "./styles.css": "./src/styles.css"
+    ".": "./src/features/ui/index.ts",
+    "./shell": "./src/features/ui/shell.ts",
+    "./styles.css": "./src/features/ui/styles.css"
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
