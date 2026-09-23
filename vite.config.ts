@@ -27,6 +27,7 @@ const textModule = (code: string, moduleId: string): string | undefined =>
 const rootOwnedPaths = [
   ".claude",
   ".cursor",
+  ".gitattributes",
   ".github",
   ".gitignore",
   ".mcp.json",
