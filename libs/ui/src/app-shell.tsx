@@ -5,15 +5,18 @@ import { useEffect, type ReactElement } from "react";
 
 import { AppBody } from "./app-body";
 
+import type { FieldValidationMessages } from "./shared/ui/field-validation-messages";
 import type { Children } from "./shared/ui/types";
 
 const AppShell = ({
   children,
+  fieldValidationMessages,
   lang = "ja",
   routes,
   themedDocument = false,
 }: Children &
   Readonly<{
+    fieldValidationMessages: FieldValidationMessages;
     lang?: string;
     routes: Readonly<Record<string, string>>;
     themedDocument?: boolean;
@@ -29,7 +32,7 @@ const AppShell = ({
       <head>
         <HeadContent />
       </head>
-      <AppBody>{children}</AppBody>
+      <AppBody fieldValidationMessages={fieldValidationMessages}>{children}</AppBody>
     </html>
   );
 };

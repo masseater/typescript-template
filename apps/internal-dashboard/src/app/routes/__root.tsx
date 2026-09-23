@@ -1,4 +1,3 @@
-import { FieldValidationMessageProvider, ToastProvider } from "@repo/ui";
 import { AppShell, appHead } from "@repo/ui/shell";
 import { createRootRoute } from "@tanstack/react-router";
 
@@ -12,12 +11,8 @@ import type { ReactElement } from "react";
 
 const Route = createRootRoute({
   component: (): ReactElement => (
-    <AppShell routes={routes} themedDocument>
-      <FieldValidationMessageProvider messages={fieldValidationMessages}>
-        <ToastProvider>
-          <WikiProvider />
-        </ToastProvider>
-      </FieldValidationMessageProvider>
+    <AppShell fieldValidationMessages={fieldValidationMessages} routes={routes} themedDocument>
+      <WikiProvider />
     </AppShell>
   ),
   head: () => appHead(serviceName, styles),
