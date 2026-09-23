@@ -1,188 +1,353 @@
-import { assert, describe, it } from "@effect/vitest";
+import { setupNetwork } from "@msw/cloudflare";
 import { httpStatus } from "@repo/config";
+import { Telemetry } from "@repo/observability";
 import { recordingSink } from "@repo/observability/testing";
 import { cspNonceHeader } from "@repo/runtime/security";
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Ref, Schema } from "effect";
+import { HttpResponse, http } from "msw";
+import { describe, expect, test } from "vite-plus/test";
 
 import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
 import { appLayer } from "./bindings.ts";
-import { appServerEntry, serveApp, workerRuntime } from "./worker.ts";
+import { appServerEntry, serveApp, serveWorker, workerRuntime } from "./worker.ts";
 
-import type { Reporting } from "@repo/observability";
-import type { Layer } from "effect";
-import type { AppServices } from "./index.ts";
-
-const validRoutes = { "/": "home" };
-const ReportedLog = Schema.Record(Schema.String, Schema.String);
-const UnavailableBody = Schema.Struct({ error: Schema.NonEmptyString });
-
-function servedUnavailable(
-  layer: () => Layer.Layer<AppServices, unknown>,
-  reporting: Reporting,
-): Promise<{
-  readonly body: unknown;
-  readonly policy: string | null;
-  readonly robots: string | null;
-  readonly status: number;
-}> {
-  return Effect.runPromise(
-    Effect.gen(function* servedUnavailableProgram() {
-      const worker = serveApp(
-        workerRuntime(layer),
-        () => Effect.succeed(new Response("reached the route")),
-        reporting,
-      );
-      const context = createExecutionContext();
-      const response = yield* Effect.promise(() =>
-        worker.fetch(new Request(`${fixtureOrigin}/`), {}, context),
-      );
-      yield* Effect.promise(() => waitOnExecutionContext(context));
-      return {
-        body: yield* Effect.promise(() => response.json()),
-        policy: response.headers.get("content-security-policy"),
-        robots: response.headers.get("x-robots-tag"),
-        status: response.status,
-      };
-    }),
-  );
-}
-
-const brokenLayers = [
-  {
-    fields: '{"_tag":"ConfigurationInvalid","reason":"HTTPS is required outside localhost"}',
-    layer: (): Layer.Layer<AppServices, unknown> =>
-      appLayer(
-        appEnvironment({ APP_ORIGIN: "http://wiki.example.test" }),
-        "service-member",
-        validRoutes,
+describe.for([
+  [
+    "ConfigurationInvalid",
+    '{"_tag":"ConfigurationInvalid","reason":"HTTPS is required outside localhost"}',
+    { APP_ORIGIN: "http://wiki.example.test" },
+    { "/": "home" },
+  ],
+  ["TelemetryInvalid", '{"_tag":"TelemetryInvalid","reason":"routes"}', {}, { "bad path": "home" }],
+] as const)("a worker whose layer fails with %s", ([tag, fields, overrides, routes]) => {
+  const it = test
+    .extend("unavailableAnswer", () =>
+      Effect.runPromise(
+        Effect.gen(function* unavailableAnswerProgram() {
+          const worker = serveApp({
+            reporting: { log: recordingSink().sink, service: "service-member" },
+            route: () => Effect.succeed(new Response("reached the route")),
+            runtime: workerRuntime(() =>
+              appLayer({ audience: "service-member", env: appEnvironment(overrides), routes }),
+            ),
+          });
+          const invocation = createExecutionContext();
+          const answered = yield* Effect.promise(() =>
+            worker.fetch(new Request(fixtureOrigin), {}, invocation),
+          );
+          yield* Effect.promise(() => waitOnExecutionContext(invocation));
+          const answerBody: unknown = yield* Effect.promise(() => answered.json());
+          return { body: answerBody, status: answered.status };
+        }),
+      ))
+    .extend("unavailableReport", () =>
+      Effect.runPromise(
+        Effect.gen(function* unavailableReportProgram() {
+          const logs = recordingSink();
+          const worker = serveApp({
+            reporting: { log: logs.sink, service: "service-member" },
+            route: () => Effect.succeed(new Response("reached the route")),
+            runtime: workerRuntime(() =>
+              appLayer({ audience: "service-member", env: appEnvironment(overrides), routes }),
+            ),
+          });
+          const invocation = createExecutionContext();
+          yield* Effect.promise(() => worker.fetch(new Request(fixtureOrigin), {}, invocation));
+          yield* Effect.promise(() => waitOnExecutionContext(invocation));
+          const reportedLines = yield* Schema.decodeUnknownEffect(
+            Schema.Array(Schema.Record(Schema.String, Schema.String)),
+          )(logs.stderr).pipe(Effect.orDie);
+          const {
+            "error.cause": causeSummary = "",
+            "error.fingerprint": fingerprint = "",
+            "error.locations": locations = "",
+            ...reported
+          } = reportedLines[0] ?? {};
+          return {
+            causeNamesTag: causeSummary.includes(tag),
+            fingerprintIsShortHex: /^[0-9a-f]{8}$/u.test(fingerprint),
+            reported,
+            reportedLineCount: reportedLines.length,
+            secretLeaked: `${causeSummary}${locations}`.includes(fixtureAuthSecret),
+          };
+        }),
       ),
-    tag: "ConfigurationInvalid",
-  },
-  {
-    fields: '{"_tag":"TelemetryInvalid","reason":"routes"}',
-    layer: (): Layer.Layer<AppServices, unknown> =>
-      appLayer(appEnvironment(), "service-member", { "bad path": "home" }),
-    tag: "TelemetryInvalid",
-  },
-] as const;
+    );
 
-describe("a worker whose layer cannot be built", () => {
-  for (const { fields, layer, tag } of brokenLayers) {
-    it.effect(`answers 503 without exposing ${tag} to the client`, () =>
-      Effect.gen(function* program() {
-        const response = yield* Effect.promise(() =>
-          servedUnavailable(layer, { log: recordingSink().sink, service: "service-member" }),
-        );
-        assert.strictEqual(response.status, httpStatus.serviceUnavailable);
-        const { error } = yield* Schema.decodeUnknownEffect(UnavailableBody)(response.body);
-        assert.notInclude(error, tag);
-      }),
-    );
-    it.effect(`names ${tag} as the cause of the unavailable response`, () =>
-      Effect.gen(function* program() {
-        const logs = recordingSink();
-        yield* Effect.promise(() =>
-          servedUnavailable(layer, { log: logs.sink, service: "service-member" }),
-        );
-        assert.lengthOf(logs.stderr, 1);
-        const {
-          "error.cause": causeSummary,
-          "error.chain": chain,
-          "error.fingerprint": fingerprint,
-          "error.locations": locations,
-          ...reported
-        } = yield* Schema.decodeUnknownEffect(ReportedLog)(logs.stderr[0]).pipe(Effect.orDie);
-        assert.deepStrictEqual(reported, {
-          "error.fields": fields,
-          "error.tag": tag,
-          "error.type": tag,
-          event: "application.runtime_unavailable",
-          service: "service-member-server",
-        });
-        assert.match(fingerprint ?? "", /^[0-9a-f]{8}$/u);
-        assert.include(causeSummary ?? "", tag);
-        assert.strictEqual(chain, "");
-        assert.notInclude(`${causeSummary}${locations}`, fixtureAuthSecret);
-      }),
-    );
-  }
+  it(`answers 503 without exposing ${tag} to the client`, ({ unavailableAnswer }) => {
+    expect(unavailableAnswer).toStrictEqual({
+      body: { error: "処理に失敗しました。リクエスト ID でログを確認してください。" },
+      status: httpStatus.serviceUnavailable,
+    });
+  });
+
+  it(`names ${tag} as the cause of the unavailable response`, ({ unavailableReport }) => {
+    expect(unavailableReport).toStrictEqual({
+      causeNamesTag: true,
+      fingerprintIsShortHex: true,
+      reported: {
+        "error.chain": "",
+        "error.fields": fields,
+        "error.tag": tag,
+        "error.type": tag,
+        event: "application.runtime_unavailable",
+        service: "service-member-server",
+      },
+      reportedLineCount: 1,
+      secretLeaked: false,
+    });
+  });
 });
-
-function servedDocument(url: string): Promise<Response> {
-  return Effect.runPromise(
-    Effect.gen(function* servedDocumentProgram() {
-      const worker = appServerEntry(
-        workerRuntime(() => appLayer(appEnvironment({}), "service-member", validRoutes)),
-        {
-          fetch: (rendered: Request): Response =>
-            new Response("<!DOCTYPE html>", {
-              headers: {
-                "content-type": "text/html; charset=utf-8",
-                "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
-              },
-            }),
-        },
-        { service: "service-member" },
-      );
-      const context = createExecutionContext();
-      const response = yield* Effect.promise(() => worker.fetch(new Request(url), {}, context));
-      yield* Effect.promise(() => waitOnExecutionContext(context));
-      return response;
-    }),
-  );
-}
 
 describe("a worker serving a rendered document", () => {
-  it.effect("names the nonce it handed the renderer and forbids everything else", () =>
-    Effect.gen(function* program() {
-      const response = yield* Effect.promise(() => servedDocument(`${fixtureOrigin}/`));
-      const directives = (response.headers.get("content-security-policy") ?? "").split("; ");
-      const nonce = response.headers.get("x-rendered-nonce") ?? "";
-      assert.match(nonce, /^[\w+/]{22}==$/u);
-      assert.include(directives, "default-src 'none'");
-      assert.include(directives, `script-src 'nonce-${nonce}' 'strict-dynamic'`);
-      assert.notInclude(directives.join("; "), "unsafe-eval");
-    }),
-  );
-
-  it.effect("demands https for a year once the document arrived over https", () =>
-    Effect.gen(function* program() {
-      const secure = yield* Effect.promise(() => servedDocument("https://user.example.test/"));
-      const plain = yield* Effect.promise(() => servedDocument(`${fixtureOrigin}/`));
-      assert.strictEqual(
-        secure.headers.get("strict-transport-security"),
-        "max-age=31536000; includeSubDomains",
-      );
-      assert.isNull(plain.headers.get("strict-transport-security"));
-    }),
-  );
-
-  it.effect("forbids every resource and indexing when the runtime cannot answer", () =>
-    Effect.gen(function* program() {
-      const response = yield* Effect.promise(() =>
-        servedUnavailable(brokenLayers[0].layer, {
-          log: recordingSink().sink,
-          service: "service-member",
+  const it = test
+    .extend("documentPolicy", ({}, { onCleanup }) =>
+      Effect.runPromise(
+        Effect.gen(function* documentPolicyProgram() {
+          const runtime = workerRuntime(() =>
+            appLayer({
+              audience: "service-member",
+              env: appEnvironment(),
+              routes: { "/": "home" },
+            }),
+          );
+          onCleanup(() => runtime.dispose());
+          const worker = appServerEntry({
+            reporting: { service: "service-member" },
+            routeHandler: {
+              fetch: (rendered: Request): Response =>
+                new Response("<!DOCTYPE html>", {
+                  headers: {
+                    "content-type": "text/html; charset=utf-8",
+                    "x-rendered-nonce": rendered.headers.get(cspNonceHeader) ?? "",
+                  },
+                }),
+            },
+            runtime,
+          });
+          const invocation = createExecutionContext();
+          const answered = yield* Effect.promise(() =>
+            worker.fetch(new Request(fixtureOrigin), {}, invocation),
+          );
+          yield* Effect.promise(() => waitOnExecutionContext(invocation));
+          const renderedNonce = answered.headers.get("x-rendered-nonce") ?? "";
+          return {
+            nonceIsSixteenBytes: /^[\w+/]{22}==$/u.test(renderedNonce),
+            policy: (answered.headers.get("content-security-policy") ?? "").replace(
+              `'nonce-${renderedNonce}'`,
+              "'nonce-(rendered)'",
+            ),
+          };
         }),
-      );
-      assert.include(response.policy ?? "", "default-src 'none'");
-      assert.notInclude(response.policy ?? "", "nonce-");
-      assert.strictEqual(response.robots, "noindex, nofollow");
-    }),
-  );
+      ))
+    .extend("transportSecurity", ({}, { onCleanup }) =>
+      Effect.runPromise(
+        Effect.gen(function* transportSecurityProgram() {
+          const runtime = workerRuntime(() =>
+            appLayer({
+              audience: "service-member",
+              env: appEnvironment(),
+              routes: { "/": "home" },
+            }),
+          );
+          onCleanup(() => runtime.dispose());
+          const worker = appServerEntry({
+            reporting: { service: "service-member" },
+            routeHandler: {
+              fetch: (): Response =>
+                new Response("<!DOCTYPE html>", {
+                  headers: { "content-type": "text/html; charset=utf-8" },
+                }),
+            },
+            runtime,
+          });
+          const invocation = createExecutionContext();
+          const secure = yield* Effect.promise(() =>
+            worker.fetch(new Request(new URL("https://user.example.test/")), {}, invocation),
+          );
+          const plain = yield* Effect.promise(() =>
+            worker.fetch(new Request(fixtureOrigin), {}, invocation),
+          );
+          yield* Effect.promise(() => waitOnExecutionContext(invocation));
+          return {
+            overHttp: plain.headers.get("strict-transport-security"),
+            overHttps: secure.headers.get("strict-transport-security"),
+          };
+        }),
+      ),
+    )
+    .extend("unavailableHeaders", () =>
+      Effect.runPromise(
+        Effect.gen(function* unavailableHeadersProgram() {
+          const worker = serveApp({
+            reporting: { log: recordingSink().sink, service: "service-member" },
+            route: () => Effect.succeed(new Response("reached the route")),
+            runtime: workerRuntime(() =>
+              appLayer({
+                audience: "service-member",
+                env: appEnvironment({ APP_ORIGIN: "http://wiki.example.test" }),
+                routes: { "/": "home" },
+              }),
+            ),
+          });
+          const invocation = createExecutionContext();
+          const answered = yield* Effect.promise(() =>
+            worker.fetch(new Request(fixtureOrigin), {}, invocation),
+          );
+          yield* Effect.promise(() => waitOnExecutionContext(invocation));
+          return {
+            policy: answered.headers.get("content-security-policy"),
+            robots: answered.headers.get("x-robots-tag"),
+          };
+        }),
+      ),
+    );
+
+  it("names the nonce it handed the renderer and forbids everything else", ({ documentPolicy }) => {
+    expect(documentPolicy).toStrictEqual({
+      nonceIsSixteenBytes: true,
+      policy: [
+        "default-src 'none'",
+        "script-src 'nonce-(rendered)' 'strict-dynamic'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "manifest-src 'self'",
+        "form-action 'self'",
+        "base-uri 'none'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+      ].join("; "),
+    });
+  });
+
+  it("demands https for a year once the document arrived over https", ({ transportSecurity }) => {
+    expect(transportSecurity).toStrictEqual({
+      overHttp: null,
+      overHttps: "max-age=31536000; includeSubDomains",
+    });
+  });
+
+  it("forbids every resource and indexing when the runtime cannot answer", ({
+    unavailableHeaders,
+  }) => {
+    expect(unavailableHeaders).toStrictEqual({
+      policy:
+        "default-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'",
+      robots: "noindex, nofollow",
+    });
+  });
 });
 
-describe("a worker answering any request", () => {
-  const paths = ["/", "/assets/app.js"] as const;
-  for (const path of paths) {
-    it.effect(`keeps ${path} out of search indexes`, () =>
-      Effect.gen(function* program() {
-        const response = yield* Effect.promise(() =>
-          servedDocument(`https://user.example.test${path}`),
+describe.for(["/", "/assets/app.js"])("a worker answering %s", (path) => {
+  const it = test.extend("robotsDirective", ({}, { onCleanup }) =>
+    Effect.runPromise(
+      Effect.gen(function* robotsDirectiveProgram() {
+        const runtime = workerRuntime(() =>
+          appLayer({ audience: "service-member", env: appEnvironment(), routes: { "/": "home" } }),
         );
-        assert.strictEqual(response.headers.get("x-robots-tag"), "noindex, nofollow");
+        onCleanup(() => runtime.dispose());
+        const worker = appServerEntry({
+          reporting: { service: "service-member" },
+          routeHandler: {
+            fetch: (): Response =>
+              new Response("<!DOCTYPE html>", {
+                headers: { "content-type": "text/html; charset=utf-8" },
+              }),
+          },
+          runtime,
+        });
+        const invocation = createExecutionContext();
+        const answered = yield* Effect.promise(() =>
+          worker.fetch(new Request(new URL(path, "https://user.example.test")), {}, invocation),
+        );
+        yield* Effect.promise(() => waitOnExecutionContext(invocation));
+        return answered.headers.get("x-robots-tag");
       }),
-    );
-  }
+    ));
+
+  it("keeps the path out of search indexes", ({ robotsDirective }) => {
+    expect(robotsDirective).toBe("noindex, nofollow");
+  });
+});
+
+describe("a worker exporting telemetry", () => {
+  const it = test.extend("exportedSignals", ({}, { onCleanup }) =>
+    Effect.runPromise(
+      Effect.gen(function* exportedSignalsProgram() {
+        const otlpEndpoint = "https://otlp.example.test";
+        const traceExports = yield* Ref.make<readonly unknown[]>([]);
+        const logExports = yield* Ref.make<readonly unknown[]>([]);
+        const network = setupNetwork();
+        network.configure({ onUnhandledFrame: "error" });
+        network.use(
+          http.post(`${otlpEndpoint}/v1/traces`, ({ request }) =>
+            Effect.runPromise(
+              Effect.gen(function* collectTraces() {
+                const exported: unknown = yield* Effect.promise(() => request.json());
+                yield* Ref.update(traceExports, (earlier) => [...earlier, exported]);
+                return HttpResponse.json({});
+              }),
+            ),
+          ),
+          http.post(`${otlpEndpoint}/v1/logs`, ({ request }) =>
+            Effect.runPromise(
+              Effect.gen(function* collectLogs() {
+                const exported: unknown = yield* Effect.promise(() => request.json());
+                yield* Ref.update(logExports, (earlier) => [...earlier, exported]);
+                return HttpResponse.json({});
+              }),
+            ),
+          ),
+        );
+        network.enable();
+        const runtime = workerRuntime(() =>
+          Layer.orDie(
+            Telemetry.layer({
+              log: recordingSink().sink,
+              otlp: { endpoint: otlpEndpoint },
+              release: "abc123",
+              routes: { "/": "home" },
+              serviceName: "service-member",
+            }),
+          ),
+        );
+        onCleanup(() =>
+          Effect.runPromise(
+            Effect.promise(() => runtime.dispose()).pipe(
+              Effect.ensuring(
+                Effect.sync(() => {
+                  network.disable();
+                }),
+              ),
+            ),
+          ),
+        );
+        const worker = serveWorker({
+          reporting: { log: recordingSink().sink, service: "service-member" },
+          route: () => Effect.succeed(new Response(undefined, { status: httpStatus.noContent })),
+          runtime,
+        });
+        const invocation = createExecutionContext();
+        const answered = yield* Effect.promise(() =>
+          worker.fetch(new Request(fixtureOrigin), {}, invocation),
+        );
+        yield* Effect.promise(() => waitOnExecutionContext(invocation));
+        return {
+          exportedLogBatches: (yield* Ref.get(logExports)).length,
+          exportedTraceBatches: (yield* Ref.get(traceExports)).length,
+          status: answered.status,
+        };
+      }),
+    ));
+
+  it("exports its spans and logs before the invocation ends", ({ exportedSignals }) => {
+    expect(exportedSignals).toStrictEqual({
+      exportedLogBatches: 1,
+      exportedTraceBatches: 1,
+      status: httpStatus.noContent,
+    });
+  });
 });

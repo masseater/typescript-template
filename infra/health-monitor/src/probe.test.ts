@@ -38,7 +38,7 @@ describe("a healthy application", () => {
 
 describe.for([
   [
-    "healthResponseing for another application",
+    "answering for another application",
     "payload_invalid",
     (): Response => HttpResponse.json({ ok: true, release, service: "service-admin" }),
   ],

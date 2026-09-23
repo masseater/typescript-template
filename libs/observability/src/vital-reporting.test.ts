@@ -1,7 +1,10 @@
+import { Effect, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { recordedDeliveries } from "./browser-testing.ts";
+import { makeEventQueue } from "./browser-queue.ts";
 import { stoppableVitals } from "./vital-reporting.ts";
+
+import type { BrowserEvent } from "./events.ts";
 
 const vitalEvent = {
   duration: 0,
@@ -18,18 +21,21 @@ const vitalEvent = {
 } as const;
 
 describe("vitals reported around the stop", () => {
-  const it = test.extend("deliveredBatches", () =>
-    recordedDeliveries({
-      exercise: ({ flush, queue }) => {
-        const vitals = stoppableVitals((metric) => {
-          queue.enqueue({ ...vitalEvent, name: metric.name, value: metric.value });
-        });
-        vitals.report({ name: "INP", value: 1 });
-        vitals.stop();
-        vitals.report({ name: "LCP", value: 2 });
-        return flush();
-      },
-    }));
+  const it = test.extend("deliveredBatches", async () => {
+    const deliveredBatches = Ref.makeUnsafe<readonly (readonly BrowserEvent[])[]>([]);
+    const eventQueue = makeEventQueue(async (batch) => {
+      Effect.runSync(Ref.update(deliveredBatches, (earlier) => [...earlier, batch]));
+      return Promise.resolve();
+    });
+    const vitals = stoppableVitals((metric) => {
+      eventQueue.enqueue({ ...vitalEvent, name: metric.name, value: metric.value });
+    });
+    vitals.report({ name: "INP", value: 1 });
+    vitals.stop();
+    vitals.report({ name: "LCP", value: 2 });
+    await Effect.runPromise(Effect.ignore(Effect.tryPromise(eventQueue.flush)));
+    return Ref.getUnsafe(deliveredBatches);
+  });
 
   it("carries the vital reported before the stop and nothing after it", ({ deliveredBatches }) => {
     expect(deliveredBatches).toStrictEqual([[vitalEvent]]);

@@ -1,94 +1,107 @@
-import { assert, describe, it } from "@effect/vitest";
 import { httpStatus } from "@repo/config";
 import { RequestRejected } from "@repo/observability";
 import { Cause, Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
 import { failureResponse } from "./failures.ts";
 import { InputInvalid } from "./input-invalid.ts";
 
 const invalidInput = "入力内容を確認してください。";
 const forbidden = "この操作は許可されていません。";
+const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
 
-const answers = [
-  { error: new InputInvalid(), message: invalidInput, status: httpStatus.badRequest },
-  {
-    error: { _tag: "SessionRequired" },
-    message: "ログインしてください。",
-    status: httpStatus.unauthorized,
-  },
-  { error: { _tag: "SessionInvalid" }, message: forbidden, status: httpStatus.forbidden },
-  { error: { _tag: "AdminRequired" }, message: forbidden, status: httpStatus.forbidden },
-  { error: { _tag: "AdminMfaRequired" }, message: forbidden, status: httpStatus.forbidden },
-  {
-    error: new RequestRejected({ reason: "invalid_json" }),
-    message: invalidInput,
-    status: httpStatus.badRequest,
-  },
-  {
-    error: new RequestRejected({ reason: "body_required" }),
-    message: forbidden,
-    status: httpStatus.badRequest,
-  },
-  {
-    error: new RequestRejected({ reason: "origin_denied" }),
-    message: forbidden,
-    status: httpStatus.forbidden,
-  },
-  {
-    error: new RequestRejected({ reason: "json_required" }),
-    message: forbidden,
-    status: httpStatus.unsupportedMediaType,
-  },
-  {
-    error: new RequestRejected({ reason: "body_too_large" }),
-    message: forbidden,
-    status: httpStatus.payloadTooLarge,
-  },
-] as const;
-
-function answer(error: unknown): Effect.Effect<readonly [number, unknown]> {
-  return Effect.gen(function* program() {
-    const response = yield* failureResponse({}, Cause.fail(error));
-    const body: unknown = yield* Effect.promise(() => response.json());
-    return [response.status, body] as const;
-  });
-}
-
-describe("failure responses", () => {
-  for (const { error, message, status } of answers) {
-    it.effect(`answers ${error._tag} with ${status}`, () =>
-      Effect.gen(function* program() {
-        assert.deepStrictEqual(yield* answer(error), [status, { error: message }]);
+describe.for([
+  ["InputInvalid", new InputInvalid(), invalidInput, httpStatus.badRequest],
+  [
+    "SessionRequired",
+    { _tag: "SessionRequired" },
+    "ログインしてください。",
+    httpStatus.unauthorized,
+  ],
+  ["SessionInvalid", { _tag: "SessionInvalid" }, forbidden, httpStatus.forbidden],
+  ["AdminRequired", { _tag: "AdminRequired" }, forbidden, httpStatus.forbidden],
+  ["AdminMfaRequired", { _tag: "AdminMfaRequired" }, forbidden, httpStatus.forbidden],
+  [
+    "invalid_json",
+    new RequestRejected({ reason: "invalid_json" }),
+    invalidInput,
+    httpStatus.badRequest,
+  ],
+  [
+    "body_required",
+    new RequestRejected({ reason: "body_required" }),
+    forbidden,
+    httpStatus.badRequest,
+  ],
+  [
+    "origin_denied",
+    new RequestRejected({ reason: "origin_denied" }),
+    forbidden,
+    httpStatus.forbidden,
+  ],
+  [
+    "json_required",
+    new RequestRejected({ reason: "json_required" }),
+    forbidden,
+    httpStatus.unsupportedMediaType,
+  ],
+  [
+    "body_too_large",
+    new RequestRejected({ reason: "body_too_large" }),
+    forbidden,
+    httpStatus.payloadTooLarge,
+  ],
+  ["an unknown tag", { _tag: "Unmapped" }, unexpectedMessage, httpStatus.internalServerError],
+] as const)("a failure for %s", ([, caughtError, answerText, answerStatus]) => {
+  const it = test.extend("failureAnswer", () =>
+    Effect.runPromise(
+      Effect.gen(function* failureAnswerProgram() {
+        const answered = yield* failureResponse({}, Cause.fail(caughtError));
+        const answerBody: unknown = yield* Effect.promise(() => answered.json());
+        return { body: answerBody, status: answered.status };
       }),
-    );
-  }
+    ));
 
-  it.effect("answers an unknown failure with a generic server error", () =>
-    Effect.gen(function* program() {
-      assert.deepStrictEqual(yield* answer({ _tag: "Unmapped" }), [
-        httpStatus.internalServerError,
-        { error: "処理に失敗しました。リクエスト ID でログを確認してください。" },
-      ]);
-    }),
-  );
+  it(`is answered with ${String(answerStatus)}`, ({ failureAnswer }) => {
+    expect(failureAnswer).toStrictEqual({ body: { error: answerText }, status: answerStatus });
+  });
+});
 
-  it.effect("answers a cause that carries no error with a generic server error", () =>
-    Effect.gen(function* program() {
-      const response = yield* failureResponse({}, Cause.die("boom"));
-      assert.strictEqual(response.status, httpStatus.internalServerError);
-    }),
-  );
+describe("a cause that carries no error", () => {
+  const it = test.extend("failureAnswer", () =>
+    Effect.runPromise(
+      Effect.gen(function* failureAnswerProgram() {
+        const answered = yield* failureResponse({}, Cause.die("boom"));
+        const answerBody: unknown = yield* Effect.promise(() => answered.json());
+        return { body: answerBody, status: answered.status };
+      }),
+    ));
 
-  it.effect("lets a route table answer a failure the common table does not name", () =>
-    Effect.gen(function* program() {
-      const table = {
-        Conflicted: { message: "既に登録されています。", status: httpStatus.conflict },
-      };
-      const response = yield* failureResponse(table, Cause.fail({ _tag: "Conflicted" }));
-      assert.strictEqual(response.status, httpStatus.conflict);
-      assert.deepStrictEqual(yield* Effect.promise(() => response.json()), {
-        error: "既に登録されています。",
-      });
-    }),
-  );
+  it("is answered with a generic server error", ({ failureAnswer }) => {
+    expect(failureAnswer).toStrictEqual({
+      body: { error: unexpectedMessage },
+      status: httpStatus.internalServerError,
+    });
+  });
+});
+
+describe("a failure only a route table names", () => {
+  const it = test.extend("failureAnswer", () =>
+    Effect.runPromise(
+      Effect.gen(function* failureAnswerProgram() {
+        const table = {
+          Conflicted: { message: "既に登録されています。", status: httpStatus.conflict },
+        };
+        const answered = yield* failureResponse(table, Cause.fail({ _tag: "Conflicted" }));
+        const answerBody: unknown = yield* Effect.promise(() => answered.json());
+        return { body: answerBody, status: answered.status };
+      }),
+    ));
+
+  it("is answered by the route table", ({ failureAnswer }) => {
+    expect(failureAnswer).toStrictEqual({
+      body: { error: "既に登録されています。" },
+      status: httpStatus.conflict,
+    });
+  });
 });

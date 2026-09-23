@@ -8,7 +8,7 @@ const fixedNow = 1_800_000_000_000;
 
 describe("RequestEntropy", () => {
   describe("a clock moved to a fixed instant", () => {
-    const it = test.extend("time", () =>
+    const it = test.extend("clockReading", () =>
       Effect.runPromise(
         Effect.gen(function* readClock() {
           yield* TestClock.setTime(fixedNow);
@@ -20,8 +20,8 @@ describe("RequestEntropy", () => {
         }).pipe(Effect.provide(TestClock.layer())),
       ));
 
-    it("reads that instant from the Effect clock", ({ time }) => {
-      expect(time).toStrictEqual({
+    it("reads that instant from the Effect clock", ({ clockReading }) => {
+      expect(clockReading).toStrictEqual({
         epochMilliseconds: fixedNow,
         monotonicMilliseconds: fixedNow,
       });
@@ -29,11 +29,26 @@ describe("RequestEntropy", () => {
   });
 
   describe("a read outside a fiber", () => {
-    const it = test.extend("time", () => RequestEntropy.defaultValue());
+    const it = test
+      .extend("epochWithinHostClock", () => {
+        const epochBefore = Date.now();
+        const epochMilliseconds = RequestEntropy.defaultValue().epochMilliseconds();
+        return epochBefore <= epochMilliseconds && epochMilliseconds <= Date.now();
+      })
+      .extend("monotonicWithinHostClock", () => {
+        const monotonicBefore = performance.now();
+        const monotonicMilliseconds = RequestEntropy.defaultValue().monotonicMilliseconds();
+        return (
+          monotonicBefore <= monotonicMilliseconds && monotonicMilliseconds <= performance.now()
+        );
+      });
 
-    it("refuses to invent a timestamp", ({ time }) => {
-      expect(() => time.epochMilliseconds()).toThrow(/fiber/u);
-      expect(() => time.monotonicMilliseconds()).toThrow(/fiber/u);
+    it("falls back to the host wall clock", ({ epochWithinHostClock }) => {
+      expect(epochWithinHostClock).toBe(true);
+    });
+
+    it("falls back to the host monotonic clock", ({ monotonicWithinHostClock }) => {
+      expect(monotonicWithinHostClock).toBe(true);
     });
   });
 });

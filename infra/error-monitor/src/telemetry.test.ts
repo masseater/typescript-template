@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Ref } from "effect";
 import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
@@ -180,6 +180,146 @@ describe("a group with only a fingerprint", () => {
           tag: undefined,
           type: undefined,
         },
+      ],
+    });
+  });
+});
+
+describe("the query sent for one window", () => {
+  const it = test.extend("askedQueries", async ({}, { onCleanup }) => {
+    const askedBodies = Effect.runSync(Ref.make<readonly unknown[]>([]));
+    const telemetryApi = setupServer(
+      http.post(queryEndpoint, async ({ request }) => {
+        const askedBody: unknown = await request.json();
+        await Effect.runPromise(Ref.update(askedBodies, (earlier) => [...earlier, askedBody]));
+        return HttpResponse.json(telemetryEnvelope);
+      }),
+    );
+    telemetryApi.listen({ onUnhandledRequest: "error" });
+    onCleanup(() => {
+      telemetryApi.close();
+    });
+    return Effect.runPromise(
+      fetchErrorGroups(queryWindow).pipe(Effect.andThen(Ref.get(askedBodies))),
+    );
+  });
+
+  it("asks for fingerprinted error counts grouped by every reported field", ({ askedQueries }) => {
+    expect(askedQueries).toStrictEqual([
+      {
+        chartType: "aggregate",
+        ignoreSeries: true,
+        limit: 2000,
+        offsetBy: 0,
+        parameters: {
+          calculations: [{ alias: "events", operator: "count" }],
+          datasets: [],
+          filters: [{ key: "error.fingerprint", operation: "exists", type: "string" }],
+          groupBys: [
+            { type: "string", value: "error.fingerprint" },
+            { type: "string", value: "service" },
+            { type: "string", value: "event" },
+            { type: "string", value: "error.tag" },
+            { type: "string", value: "error.type" },
+          ],
+          limit: 2000,
+        },
+        queryId: "error-monitor",
+        timeframe: { from: queryWindow.from, to: queryWindow.to },
+        view: "calculations",
+      },
+    ]);
+  });
+});
+
+describe("grouped results past the query limit", () => {
+  const it = test.extend("pagedQuery", async ({}, { onCleanup }) => {
+    const askedPages = Effect.runSync(
+      Ref.make<
+        readonly {
+          readonly limit: number;
+          readonly offsetBy: number;
+          readonly parameters: { readonly limit: number };
+        }[]
+      >([]),
+    );
+    const telemetryApi = setupServer(
+      http.post<
+        Record<string, string>,
+        {
+          readonly limit: number;
+          readonly offsetBy: number;
+          readonly parameters: { readonly limit: number };
+        }
+      >(queryEndpoint, async ({ request }) => {
+        const askedPage = await request.json();
+        await Effect.runPromise(
+          Ref.update(askedPages, (earlier) => [
+            ...earlier,
+            {
+              limit: askedPage.limit,
+              offsetBy: askedPage.offsetBy,
+              parameters: { limit: askedPage.parameters.limit },
+            },
+          ]),
+        );
+        return HttpResponse.json({
+          ...telemetryEnvelope,
+          result: {
+            ...telemetryEnvelope.result,
+            calculations: [
+              {
+                aggregates: Array.from(
+                  { length: askedPage.offsetBy === 0 ? askedPage.limit : 1 },
+                  (_unused, pageIndex) => ({
+                    ...fingerprintedAggregate,
+                    groups: [
+                      {
+                        key: "error.fingerprint",
+                        value: (askedPage.offsetBy + pageIndex).toString(16).padStart(8, "0"),
+                      },
+                      { key: "error.tag", value: "Overflow" },
+                    ],
+                  }),
+                ),
+                calculation: "count",
+                series: [],
+              },
+            ],
+          },
+        });
+      }),
+    );
+    telemetryApi.listen({ onUnhandledRequest: "error" });
+    onCleanup(() => {
+      telemetryApi.close();
+    });
+    return Effect.runPromise(
+      Effect.all({
+        observedGroups: fetchErrorGroups(queryWindow),
+        sentPages: Ref.get(askedPages),
+      }),
+    );
+  });
+
+  it("keeps every group and asks for the next page at the same size instead of truncating", ({
+    pagedQuery,
+  }) => {
+    expect(pagedQuery).toStrictEqual({
+      observedGroups: {
+        dropped: 0,
+        groups: Array.from({ length: 2001 }, (_unused, groupIndex) => ({
+          count: GROUPED_EVENTS,
+          event: undefined,
+          fingerprint: groupIndex.toString(16).padStart(8, "0"),
+          service: undefined,
+          tag: "Overflow",
+          type: undefined,
+        })),
+      },
+      sentPages: [
+        { limit: 2000, offsetBy: 0, parameters: { limit: 2000 } },
+        { limit: 2000, offsetBy: 2000, parameters: { limit: 2000 } },
       ],
     });
   });
