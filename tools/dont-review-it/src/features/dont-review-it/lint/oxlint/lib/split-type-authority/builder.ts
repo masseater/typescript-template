@@ -1,7 +1,6 @@
-import { dirname, relative, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import {
   listRepositoryFiles,
   nearestPackageDirectory,
@@ -25,8 +24,10 @@ const workspacePathOf = ({
   readonly repositoryRoot: string;
   readonly absolutePath: string;
 }): string => {
-  const packageDirectory = nearestPackageDirectory(dirname(absolutePath), repositoryRoot);
-  return packageDirectory === null ? "" : toPosixPath(relative(repositoryRoot, packageDirectory));
+  const packageDirectory = nearestPackageDirectory(path.dirname(absolutePath), repositoryRoot);
+  return packageDirectory === null
+    ? ""
+    : toPosixPath(path.relative(repositoryRoot, packageDirectory));
 };
 
 const scannedTypeFileAt = (repositoryRoot: string, file: ScannedFile): ScannedTypeFile | null => {
@@ -48,7 +49,7 @@ const buildRepositoryTypeAuthorityIndex = ({
 }: {
   readonly repositoryRoot: string;
 }): TypeAuthorityIndex => {
-  const root = resolve(repositoryRoot);
+  const root = path.resolve(repositoryRoot);
   const { declarationSources } = listRepositoryFiles(root);
   const scanned = declarationSources.filter((file) => !isOutOfScopeSource(file.relativePath));
   if (scanned.length === 0) return EMPTY_TYPE_AUTHORITY_INDEX;
@@ -66,4 +67,4 @@ export const loadRepositoryTypeAuthorityIndex = ({
   repositoryRoot,
 }: {
   readonly repositoryRoot: string;
-}): TypeAuthorityIndex => typeAuthorityIndexAt(resolve(repositoryRoot));
+}): TypeAuthorityIndex => typeAuthorityIndexAt(path.resolve(repositoryRoot));

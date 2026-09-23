@@ -1,21 +1,21 @@
+import { query, schema } from "@repo/db";
 import {
   EmptyTestDatabase,
   TestBinding,
   deployMigrations,
   executeD1RawBatch,
 } from "@repo/db-local";
+import { RemoteFailure, loadRemoteMigrations, migrateD1 } from "@repo/db/migrations";
 import { DateTime, Effect } from "effect";
 import { HttpResponse, http, type HttpResponseResolver } from "msw";
 import { setupServer } from "msw/node";
 import { describe, expect, test } from "vite-plus/test";
 
-import { runRemoteDatabaseCommand } from "../../../../../infra/cloudflare/src/features/cloudflare/remote-command.ts";
-import { query } from "./database.ts";
-import { RemoteFailure } from "./remote-input.ts";
-import { loadRemoteMigrations, migrateD1 } from "./remote-operations.ts";
-import { user } from "./schema.ts";
+import { runRemoteDatabaseCommand } from "./remote-command.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
+
+const { user } = schema;
 
 const respondRaw =
   (database: D1Database): HttpResponseResolver =>

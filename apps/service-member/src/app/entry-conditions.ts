@@ -3,7 +3,6 @@ import { redirect } from "@tanstack/react-router";
 import { Effect } from "effect";
 
 import { loadSession } from "#entities/session/index.ts";
-import { loadMemberFlags } from "#pages/flags/index.ts";
 import { loadOnboardingStep } from "#pages/welcome/index.ts";
 
 import type { Session } from "#entities/session/index.ts";
@@ -32,10 +31,7 @@ function enterPublicFrame(pathname: string): Promise<void> {
   );
 }
 
-function enterMemberFrame(
-  href: string,
-  pathname: string,
-): Promise<{ memberBoard: boolean; session: Session }> {
+function enterMemberFrame(href: string, pathname: string): Promise<{ session: Session }> {
   return Effect.runPromise(
     Effect.gen(function* enterMember() {
       const session = yield* Effect.promise(() => loadSession());
@@ -49,8 +45,7 @@ function enterMemberFrame(
       if (pathname.startsWith("/welcome")) {
         throw redirect({ to: "/home" });
       }
-      const memberBoard = yield* Effect.promise(() => loadMemberFlags());
-      return { memberBoard, session };
+      return { session };
     }),
   );
 }

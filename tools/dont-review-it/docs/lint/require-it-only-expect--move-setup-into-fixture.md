@@ -13,7 +13,7 @@ Disallow a statement other than an assertion in the body of a test block, so the
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`require-it-only-expect--move-setup-into-fixture.ts`](../../src/lint/oxlint/rules/testing/require-it-only-expect--move-setup-into-fixture.ts)
+- Source: [`require-it-only-expect--move-setup-into-fixture.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/require-it-only-expect--move-setup-into-fixture.ts)
 
 <!-- END GENERATED rule-header -->
 

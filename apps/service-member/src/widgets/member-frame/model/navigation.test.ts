@@ -4,25 +4,17 @@ import { overwriteGetLocale } from "#paraglide/runtime.js";
 import { memberNavItems, titleForPath } from "./navigation.ts";
 
 describe("memberNavItems", () => {
-  it("lists home, profile, and the board when the board flag is on", () => {
+  it("lists home, profile, and the board", () => {
     expect.hasAssertions();
-    expect(memberNavItems(true, "member-1").map((item) => item.id)).toStrictEqual([
+    expect(memberNavItems("member-1").map((item) => item.id)).toStrictEqual([
       "home",
       "profile",
       "board",
     ]);
-    expect(memberNavItems(true, "member-1").find((item) => item.id === "profile")).toMatchObject({
+    expect(memberNavItems("member-1").find((item) => item.id === "profile")).toMatchObject({
       params: { id: "member-1" },
       to: "/users/$id",
     });
-  });
-
-  it("hides the board tab when the board flag is off", () => {
-    expect.hasAssertions();
-    expect(memberNavItems(false, "member-1").map((item) => item.id)).toStrictEqual([
-      "home",
-      "profile",
-    ]);
   });
 });
 

@@ -13,7 +13,7 @@ Require every authored path to sit inside a check this repository declares, and 
 - Suggestions: no
 - Options: yes
 - Bundle: `toolchain`
-- Source: [`no-unchecked-authored-path--include-it-in-every-declared-check.ts`](../../src/lint/oxlint/rules/toolchain/no-unchecked-authored-path--include-it-in-every-declared-check.ts)
+- Source: [`no-unchecked-authored-path--include-it-in-every-declared-check.ts`](../../src/features/dont-review-it/lint/oxlint/rules/toolchain/no-unchecked-authored-path--include-it-in-every-declared-check.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -42,6 +42,7 @@ Code this rule rejects.
 ```ts
 // an authored path no declared check opens
 export const shipped = true;
+
 ```
 
 <!-- END GENERATED examples -->

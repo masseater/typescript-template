@@ -97,7 +97,7 @@ export const requireTestBlockSpelling = createDontReviewItRule({
     docs: {
       description:
         "Require every test block declaration to be rooted at one configured spelling, so a scan of the test surface settles what an identifier means without reading the block behind it",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
     },
     messages: {
       foreignBlockSpelling:

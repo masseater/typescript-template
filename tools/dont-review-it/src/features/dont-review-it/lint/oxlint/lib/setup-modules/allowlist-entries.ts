@@ -1,5 +1,4 @@
-import { isAbsolute } from "node:path";
-
+import { path } from "../../../../platform/path.ts";
 import { declaresPublicSubpath } from "./package-entries.ts";
 import { packageDirectoryInWorkspace, packageReferenceOf } from "./specifier-resolution.ts";
 
@@ -9,7 +8,7 @@ const REPOSITORY_PATH_PREFIXES: readonly string[] = [".", "/", "#"];
 
 const isPackageSpecifier = (listed: string): boolean =>
   !REPOSITORY_PATH_PREFIXES.some((prefix) => listed.startsWith(prefix)) &&
-  !isAbsolute(listed) &&
+  !path.isAbsolute(listed) &&
   !MODULE_FILE_SPECIFIER.test(listed) &&
   packageReferenceOf(listed) !== null;
 

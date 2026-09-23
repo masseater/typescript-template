@@ -842,9 +842,6 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@repo/feature-flags':
-        specifier: workspace:*
-        version: link:../../libs/feature-flags
       '@repo/infra-cloudflare':
         specifier: workspace:*
         version: link:../../infra/cloudflare
@@ -1000,6 +997,9 @@ importers:
       alchemy:
         specifier: 'catalog:'
         version: 2.0.0-beta.79(@effect/platform-node@4.0.0-rc.117(effect@4.0.0-rc.117))(@types/node@26.6.1)(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.0.0-rc.0(@types/node@26.6.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))(drizzle-kit@1.0.0-rc.5-ab785fc)(drizzle-orm@1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20260916.1)(@opentelemetry/api@1.9.1)(effect@4.0.0-rc.117))(effect@4.0.0-rc.117)(typescript@7.0.2)(vitest@5.0.1)(ws@8.21.3)
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 1.0.0-rc.5-ab785fc(@cloudflare/workers-types@5.20260916.1)(@effect/sql-d1@4.0.0-rc.117(effect@4.0.0-rc.117))(@effect/sql-sqlite-do@4.0.0-rc.117(effect@4.0.0-rc.117))(@electric-sql/pglite@0.3.15)(@libsql/client@0.17.4)(@opentelemetry/api@1.9.1)(@sinclair/typebox@0.34.52)(effect@4.0.0-rc.117)(typebox@1.3.34)(valibot@1.5.0(typescript@7.0.2))(zod@4.6.5)
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.117
@@ -1010,6 +1010,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.0-rc.117(effect@4.0.0-rc.117)(vitest@5.0.1)
+      '@repo/db-local':
+        specifier: workspace:*
+        version: link:../../libs/db-local
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
@@ -1355,9 +1358,6 @@ importers:
       drizzle-kit:
         specifier: 'catalog:'
         version: 1.0.0-rc.5-ab785fc
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1429,9 +1429,6 @@ importers:
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../vite-config
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

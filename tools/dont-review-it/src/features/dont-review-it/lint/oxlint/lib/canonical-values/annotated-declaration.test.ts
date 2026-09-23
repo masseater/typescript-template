@@ -1,60 +1,69 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { registeredDeclarationRanges } from "./annotated-declaration.ts";
 import { analyzeCanonicalValuesRepository } from "./builder.ts";
 
-describe("registeredDeclarationRanges", () => {
+layer(NodeServices.layer)("registeredDeclarationRanges", (it) => {
   describe("a source holding the declaration exactly where the catalog recorded it", () => {
-    const it = test.extend("conceptIdsExemptedInTheRecordedSource", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* conceptIdsExemptedInTheRecordedSource() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-",
       });
+
       const sourceText = `/** @canonical-values order.status */
 export const ORDER_STATUSES = ["draft", "published"] as const;
 `;
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(join(repositoryRoot, "src/status.ts"), sourceText, "utf8");
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(paths.join(repositoryRoot, "src/status.ts"), sourceText);
       const catalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return registeredDeclarationRanges({
         catalog,
-        filename: join(repositoryRoot, "src/status.ts"),
+        filename: paths.join(repositoryRoot, "src/status.ts"),
         repositoryRoot,
         sourceText,
       }).map((exemptedRange) => exemptedRange.conceptId);
     });
 
-    it("exempts that one declaration", ({ conceptIdsExemptedInTheRecordedSource }) => {
-      expect(conceptIdsExemptedInTheRecordedSource).toStrictEqual(["order.status"]);
-    });
+    it.effect("exempts that one declaration", () =>
+      Effect.gen(function* program() {
+        const conceptIdsExemptedInTheRecordedSource = yield* fixture;
+        expect(conceptIdsExemptedInTheRecordedSource).toStrictEqual(["order.status"]);
+      }),
+    );
   });
 
   describe("a source whose declaration has moved since the catalog recorded it", () => {
-    const it = test.extend("rangesExemptedInTheMovedSource", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* rangesExemptedInTheMovedSource() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-",
       });
+
       const sourceText = `/** @canonical-values order.status */
 export const ORDER_STATUSES = ["draft", "published"] as const;
 `;
-      mkdirSync(join(repositoryRoot, "src"), { recursive: true });
-      writeFileSync(join(repositoryRoot, "src/status.ts"), sourceText, "utf8");
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"), { recursive: true });
+      yield* filesystem.writeFileString(paths.join(repositoryRoot, "src/status.ts"), sourceText);
       const catalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return registeredDeclarationRanges({
         catalog,
-        filename: join(repositoryRoot, "src/status.ts"),
+        filename: paths.join(repositoryRoot, "src/status.ts"),
         repositoryRoot,
         sourceText: `\n${sourceText}`,
       });
     });
 
-    it("exempts nothing", ({ rangesExemptedInTheMovedSource }) => {
-      expect(rangesExemptedInTheMovedSource).toStrictEqual([]);
-    });
+    it.effect("exempts nothing", () =>
+      Effect.gen(function* program() {
+        const rangesExemptedInTheMovedSource = yield* fixture;
+        expect(rangesExemptedInTheMovedSource).toStrictEqual([]);
+      }),
+    );
   });
 });

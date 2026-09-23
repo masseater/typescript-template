@@ -1,20 +1,11 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { classModulesFor } from "./class-modules.ts";
 
-describe("classModulesFor", () => {
-  const testInARepository = test.extend("root", ({}, { onCleanup }) => {
-    const repositoryDirectory = realpathSync(mkdtempSync(join(tmpdir(), "class-modules-")));
-    onCleanup(() => {
-      rmSync(repositoryDirectory, { recursive: true, force: true });
-    });
-    return repositoryDirectory;
-  });
-
+layer(NodeServices.layer)("classModulesFor", (it) => {
   describe("a class this file declares itself", () => {
     const it = test.extend("modulesOfOwnClass", () =>
       classModulesFor({
@@ -32,92 +23,162 @@ describe("classModulesFor", () => {
   });
 
   describe("a class taken from a neighbouring file", () => {
-    const it = testInARepository.extend("modulesOfNeighbourClass", ({ root }) => {
-      writeFileSync(join(root, "bag.ts"), "export class Bag {}", "utf8");
-      return classModulesFor({
-        file: join(root, "use.ts"),
-        source: "import { Bag } from './bag.ts';",
-        workspaceRoot: root,
-        imported: { specifier: "./bag.ts", exported: "Bag" },
+    const fixtures = Effect.gen(function* fixtures() {
+      const root = yield* Effect.gen(function* root() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const repositoryDirectory = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "class-modules-" }),
+        );
+
+        return repositoryDirectory;
       });
+      const modulesOfNeighbourClass = yield* Effect.gen(function* modulesOfNeighbourClass() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        yield* filesystem.writeFileString(paths.join(root, "bag.ts"), "export class Bag {}");
+        return classModulesFor({
+          file: paths.join(root, "use.ts"),
+          source: "import { Bag } from './bag.ts';",
+          workspaceRoot: root,
+          imported: { specifier: "./bag.ts", exported: "Bag" },
+        });
+      });
+      return { root, modulesOfNeighbourClass };
     });
 
-    it("is read out of that file", ({ modulesOfNeighbourClass, root }) => {
-      expect(modulesOfNeighbourClass).toStrictEqual([
-        { path: join(root, "bag.ts"), source: "export class Bag {}" },
-      ]);
-    });
+    it.effect("is read out of that file", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { modulesOfNeighbourClass, root } = yield* fixtures;
+        expect(modulesOfNeighbourClass).toStrictEqual([
+          { path: paths.join(root, "bag.ts"), source: "export class Bag {}" },
+        ]);
+      }),
+    );
   });
 
   describe("a class taken from a package this repository does not carry", () => {
-    const it = testInARepository.extend("modulesOfAbsentPackageClass", ({ root }) =>
-      classModulesFor({
-        file: join(root, "use.ts"),
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const root = yield* Effect.gen(function* root() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const repositoryDirectory = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "class-modules-" }),
+        );
+
+        return repositoryDirectory;
+      });
+      const modulesOfAbsentPackageClass = classModulesFor({
+        file: paths.join(root, "use.ts"),
         source: "import { Headers } from 'undici';",
         workspaceRoot: root,
         imported: { specifier: "undici", exported: "Headers" },
+      });
+      return { root, modulesOfAbsentPackageClass };
+    });
+
+    it.effect("is nowhere to read", () =>
+      Effect.gen(function* program() {
+        const { modulesOfAbsentPackageClass } = yield* fixtures;
+        expect(modulesOfAbsentPackageClass).toStrictEqual([]);
       }),
     );
-
-    it("is nowhere to read", ({ modulesOfAbsentPackageClass }) => {
-      expect(modulesOfAbsentPackageClass).toStrictEqual([]);
-    });
   });
 
   describe("a path that leads to no file", () => {
-    const it = testInARepository.extend("modulesOfPackageEntryThatIsNotThere", ({ root }) => {
-      mkdirSync(join(root, "packages", "bag"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "bag", "package.json"),
-        '{ "name": "@fixture/bag", "exports": { ".": "./missing.ts" } }\n',
-        "utf8",
-      );
-      mkdirSync(join(root, "node_modules", "@fixture"), { recursive: true });
-      symlinkSync(
-        join(root, "packages", "bag"),
-        join(root, "node_modules", "@fixture", "bag"),
-        "dir",
-      );
-      return classModulesFor({
-        file: join(root, "use.ts"),
-        source: "import { Bag } from '@fixture/bag';",
-        workspaceRoot: root,
-        imported: { specifier: "@fixture/bag", exported: "Bag" },
+    const fixtures = Effect.gen(function* fixtures() {
+      const root = yield* Effect.gen(function* root() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const repositoryDirectory = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "class-modules-" }),
+        );
+
+        return repositoryDirectory;
       });
+      const modulesOfPackageEntryThatIsNotThere = yield* Effect.gen(
+        function* modulesOfPackageEntryThatIsNotThere() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          yield* filesystem.makeDirectory(paths.join(root, "packages", "bag"), { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(root, "packages", "bag", "package.json"),
+            '{ "name": "@fixture/bag", "exports": { ".": "./missing.ts" } }\n',
+          );
+          yield* filesystem.makeDirectory(paths.join(root, "node_modules", "@fixture"), {
+            recursive: true,
+          });
+          yield* filesystem.symlink(
+            paths.join(root, "packages", "bag"),
+            paths.join(root, "node_modules", "@fixture", "bag"),
+          );
+          return classModulesFor({
+            file: paths.join(root, "use.ts"),
+            source: "import { Bag } from '@fixture/bag';",
+            workspaceRoot: root,
+            imported: { specifier: "@fixture/bag", exported: "Bag" },
+          });
+        },
+      );
+      return { root, modulesOfPackageEntryThatIsNotThere };
     });
 
-    it("drops out of the modules to read", ({ modulesOfPackageEntryThatIsNotThere }) => {
-      expect(modulesOfPackageEntryThatIsNotThere).toStrictEqual([]);
-    });
+    it.effect("drops out of the modules to read", () =>
+      Effect.gen(function* program() {
+        const { modulesOfPackageEntryThatIsNotThere } = yield* fixtures;
+        expect(modulesOfPackageEntryThatIsNotThere).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a public entry a package declares but does not carry", () => {
-    const it = testInARepository.extend("modulesOfPackageEntryPartlyCarried", ({ root }) => {
-      mkdirSync(join(root, "packages", "bag"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "bag", "package.json"),
-        '{"name":"@fixture/bag","exports":{".":{"import":"./built.ts","default":"./bag.ts"}}}',
-        "utf8",
-      );
-      writeFileSync(join(root, "packages", "bag", "bag.ts"), "export class Bag {}", "utf8");
-      mkdirSync(join(root, "node_modules", "@fixture"), { recursive: true });
-      symlinkSync(
-        join(root, "packages", "bag"),
-        join(root, "node_modules", "@fixture", "bag"),
-        "dir",
-      );
-      return classModulesFor({
-        file: join(root, "src", "use.ts"),
-        source: "import { Bag } from '@fixture/bag';",
-        workspaceRoot: root,
-        imported: { specifier: "@fixture/bag", exported: "Bag" },
+    const fixtures = Effect.gen(function* fixtures() {
+      const root = yield* Effect.gen(function* root() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const repositoryDirectory = yield* filesystem.realPath(
+          yield* filesystem.makeTempDirectoryScoped({ prefix: "class-modules-" }),
+        );
+
+        return repositoryDirectory;
       });
+      const modulesOfPackageEntryPartlyCarried = yield* Effect.gen(
+        function* modulesOfPackageEntryPartlyCarried() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          yield* filesystem.makeDirectory(paths.join(root, "packages", "bag"), { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(root, "packages", "bag", "package.json"),
+            '{"name":"@fixture/bag","exports":{".":{"import":"./built.ts","default":"./bag.ts"}}}',
+          );
+          yield* filesystem.writeFileString(
+            paths.join(root, "packages", "bag", "bag.ts"),
+            "export class Bag {}",
+          );
+          yield* filesystem.makeDirectory(paths.join(root, "node_modules", "@fixture"), {
+            recursive: true,
+          });
+          yield* filesystem.symlink(
+            paths.join(root, "packages", "bag"),
+            paths.join(root, "node_modules", "@fixture", "bag"),
+          );
+          return classModulesFor({
+            file: paths.join(root, "src", "use.ts"),
+            source: "import { Bag } from '@fixture/bag';",
+            workspaceRoot: root,
+            imported: { specifier: "@fixture/bag", exported: "Bag" },
+          });
+        },
+      );
+      return { root, modulesOfPackageEntryPartlyCarried };
     });
 
-    it("drops out of the modules to read", ({ modulesOfPackageEntryPartlyCarried, root }) => {
-      expect(modulesOfPackageEntryPartlyCarried).toStrictEqual([
-        { path: join(root, "packages", "bag", "bag.ts"), source: "export class Bag {}" },
-      ]);
-    });
+    it.effect("drops out of the modules to read", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { modulesOfPackageEntryPartlyCarried, root } = yield* fixtures;
+        expect(modulesOfPackageEntryPartlyCarried).toStrictEqual([
+          { path: paths.join(root, "packages", "bag", "bag.ts"), source: "export class Bag {}" },
+        ]);
+      }),
+    );
   });
 });

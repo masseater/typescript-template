@@ -13,7 +13,7 @@ Disallow handing an assertion a member reached off the value a fixture handed ov
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-expect-member-subject--yield-subject-from-fixture.ts`](../../src/lint/oxlint/rules/testing/no-expect-member-subject--yield-subject-from-fixture.ts)
+- Source: [`no-expect-member-subject--yield-subject-from-fixture.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-expect-member-subject--yield-subject-from-fixture.ts)
 
 <!-- END GENERATED rule-header -->
 

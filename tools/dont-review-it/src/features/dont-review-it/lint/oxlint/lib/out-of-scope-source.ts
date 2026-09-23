@@ -1,6 +1,7 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { existsSync } from "node:fs";
-import { relative, resolve } from "node:path";
 
+import { path } from "../../../platform/path.ts";
 import { pathIsInside } from "./path-is-inside.ts";
 
 export const OUT_OF_SCOPE_FILE_NAME =
@@ -22,11 +23,11 @@ const OUT_OF_SCOPE_DIRECTORIES: ReadonlySet<string> = new Set([
 ]);
 
 export const isOutOfScopeSource = (filename: string, repositoryRoot?: string): boolean => {
-  const absoluteFilename = resolve(filename);
-  const absoluteRepositoryRoot = repositoryRoot === undefined ? null : resolve(repositoryRoot);
+  const absoluteFilename = path.resolve(filename);
+  const absoluteRepositoryRoot = repositoryRoot === undefined ? null : path.resolve(repositoryRoot);
   const sourcePath =
     absoluteRepositoryRoot !== null && pathIsInside(absoluteRepositoryRoot, absoluteFilename)
-      ? relative(absoluteRepositoryRoot, absoluteFilename)
+      ? path.relative(absoluteRepositoryRoot, absoluteFilename)
       : filename;
   const segments = sourcePath.split(/[/\\]/u);
   if (segments.includes("node_modules")) return false;

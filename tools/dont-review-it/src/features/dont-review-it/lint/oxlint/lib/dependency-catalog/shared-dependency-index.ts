@@ -1,7 +1,6 @@
-import { relative } from "node:path";
-
 import { groupBy, sortBy, uniqBy } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { toPosixPath } from "../posix-path.ts";
 
 import type { DeclaredDependency } from "./declared-dependencies.ts";
@@ -21,7 +20,7 @@ export const workspaceDirectoryOf = (location: {
   readonly repositoryRoot: string;
   readonly packageDirectory: string;
 }): string => {
-  const within = toPosixPath(relative(location.repositoryRoot, location.packageDirectory));
+  const within = toPosixPath(path.relative(location.repositoryRoot, location.packageDirectory));
   return within === "" ? REPOSITORY_ROOT_WORKSPACE : within;
 };
 

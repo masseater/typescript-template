@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join, relative } from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import { describe, expect } from "vite-plus/test";
 
-import { describe, expect, test } from "vite-plus/test";
-
+import { path } from "../../../../platform/path.ts";
 import { analyzeCanonicalValuesRepository } from "./builder.ts";
 import { publicPackageEntries, publicPackageName } from "./export-specifier-index.ts";
 import { importRouteStatus } from "./import-route.ts";
@@ -23,72 +23,105 @@ const ORDER_STATUS_MODULE_VALUE =
 const ORDER_STATUS_SHADOW_MODULE_VALUE =
   'const ORDER_STATUSES = ["draft", "published"] as const;\nexport = ORDER_STATUSES;\n';
 
-describe("export specifier index", () => {
+const writtenVocabularyPackage = ({
+  repositoryRoot,
+  malformedManifest,
+  manifestPosition,
+}: {
+  readonly repositoryRoot: string;
+  readonly malformedManifest: unknown;
+  readonly manifestPosition: number;
+}) =>
+  Effect.gen(function* writtenVocabularyPackage() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const packageRoot = paths.join(
+      repositoryRoot,
+      `packages/vocabulary-${String(manifestPosition)}`,
+    );
+    for (const [relativePath, fileText] of Object.entries({
+      "package.json": yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(
+        malformedManifest,
+      ),
+      "src/order-status.ts": ORDER_STATUS_OWNER,
+      "src/index.ts": ORDER_STATUS_RE_EXPORT,
+    })) {
+      const absolutePath = paths.join(packageRoot, relativePath);
+      yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+      yield* filesystem.writeFileString(absolutePath, fileText);
+    }
+    return packageRoot;
+  });
+
+layer(NodeServices.layer)("export specifier index", (it) => {
   describe("a package manifest that carries no package name", () => {
-    const it = test.extend("publicEntriesOfManifestsWithoutAName", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfManifestsWithoutAName() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
-      return [null, [], {}].map((malformedManifest, manifestPosition) => {
-        const packageRoot = join(repositoryRoot, `packages/vocabulary-${String(manifestPosition)}`);
-        for (const [relativePath, fileText] of Object.entries({
-          "package.json": JSON.stringify(malformedManifest),
-          "src/order-status.ts": ORDER_STATUS_OWNER,
-          "src/index.ts": ORDER_STATUS_RE_EXPORT,
-        })) {
-          const absolutePath = join(packageRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, fileText, "utf8");
-        }
-        return publicPackageEntries(packageRoot);
-      });
+
+      return yield* Effect.forEach([null, [], {}], (malformedManifest, manifestPosition) =>
+        Effect.gen(function* publicEntriesOfManifest() {
+          const packageRoot = yield* writtenVocabularyPackage({
+            repositoryRoot,
+            malformedManifest,
+            manifestPosition,
+          });
+          return publicPackageEntries(packageRoot);
+        }),
+      );
     });
 
-    it("publishes no entries", ({ publicEntriesOfManifestsWithoutAName }) => {
-      expect(publicEntriesOfManifestsWithoutAName).toStrictEqual([[], [], []]);
-    });
+    it.effect("publishes no entries", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfManifestsWithoutAName = yield* fixture;
+        expect(publicEntriesOfManifestsWithoutAName).toStrictEqual([[], [], []]);
+      }),
+    );
   });
 
   describe("reading the package name out of a malformed manifest", () => {
-    const it = test.extend("publicNamesOfMalformedManifests", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicNamesOfMalformedManifests() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
-      return [null, [], {}, { name: "" }, { name: 1 }].map(
-        (malformedManifest, manifestPosition) => {
-          const packageRoot = join(
-            repositoryRoot,
-            `packages/vocabulary-${String(manifestPosition)}`,
-          );
-          for (const [relativePath, fileText] of Object.entries({
-            "package.json": JSON.stringify(malformedManifest),
-            "src/order-status.ts": ORDER_STATUS_OWNER,
-            "src/index.ts": ORDER_STATUS_RE_EXPORT,
-          })) {
-            const absolutePath = join(packageRoot, relativePath);
-            mkdirSync(dirname(absolutePath), { recursive: true });
-            writeFileSync(absolutePath, fileText, "utf8");
-          }
-          return publicPackageName(packageRoot);
-        },
+
+      return yield* Effect.forEach(
+        [null, [], {}, { name: "" }, { name: 1 }],
+        (malformedManifest, manifestPosition) =>
+          Effect.gen(function* publicNameOfManifest() {
+            const packageRoot = yield* writtenVocabularyPackage({
+              repositoryRoot,
+              malformedManifest,
+              manifestPosition,
+            });
+            return publicPackageName(packageRoot);
+          }),
       );
     });
 
-    it("is rejected on its own", ({ publicNamesOfMalformedManifests }) => {
-      expect(publicNamesOfMalformedManifests).toStrictEqual([null, null, null, null, null]);
-    });
+    it.effect("is rejected on its own", () =>
+      Effect.gen(function* program() {
+        const publicNamesOfMalformedManifests = yield* fixture;
+        expect(publicNamesOfMalformedManifests).toStrictEqual([null, null, null, null, null]);
+      }),
+    );
   });
 
   describe("an exports field naming package.json beside an invalid subpath", () => {
-    const it = test.extend("publicEntriesOfInvalidSubpaths", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfInvalidSubpaths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: {
             ".": "./src/index.ts",
@@ -106,28 +139,35 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/vocabulary")).map((publicEntry) =>
-        relative(repositoryRoot, publicEntry.sourceFile),
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/vocabulary")).map(
+        (publicEntry) => path.relative(repositoryRoot, publicEntry.sourceFile),
       );
     });
 
-    it("publishes the file behind the root export alone", ({ publicEntriesOfInvalidSubpaths }) => {
-      expect(publicEntriesOfInvalidSubpaths).toStrictEqual(["packages/vocabulary/src/index.ts"]);
-    });
+    it.effect("publishes the file behind the root export alone", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfInvalidSubpaths = yield* fixture;
+        expect(publicEntriesOfInvalidSubpaths).toStrictEqual(["packages/vocabulary/src/index.ts"]);
+      }),
+    );
   });
 
   describe("the specifiers of an exports field naming package.json and an invalid subpath", () => {
-    const it = test.extend("publicSpecifiersOfInvalidSubpaths", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicSpecifiersOfInvalidSubpaths() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: {
             ".": "./src/index.ts",
@@ -145,28 +185,35 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/vocabulary")).map(
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/vocabulary")).map(
         (publicEntry) => publicEntry.specifier,
       );
     });
 
-    it("name the package alone", ({ publicSpecifiersOfInvalidSubpaths }) => {
-      expect(publicSpecifiersOfInvalidSubpaths).toStrictEqual(["@fixture/vocabulary"]);
-    });
+    it.effect("name the package alone", () =>
+      Effect.gen(function* program() {
+        const publicSpecifiersOfInvalidSubpaths = yield* fixture;
+        expect(publicSpecifiersOfInvalidSubpaths).toStrictEqual(["@fixture/vocabulary"]);
+      }),
+    );
   });
 
   describe("a non-module JSON export beside a script owner route", () => {
-    const it = test.extend("importRoutesOfAJsonExport", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAJsonExport() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": "./src/index.ts", "./config": "./config.json" },
         }),
@@ -180,33 +227,40 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("leaves the script owner route standing", ({ importRoutesOfAJsonExport }) => {
-      expect(importRoutesOfAJsonExport).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: ["packages/vocabulary/src/index.ts"],
-          specifier: "@fixture/vocabulary",
-        },
-      ]);
-    });
+    it.effect("leaves the script owner route standing", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAJsonExport = yield* fixture;
+        expect(importRoutesOfAJsonExport).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: ["packages/vocabulary/src/index.ts"],
+            specifier: "@fixture/vocabulary",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a fallback of non-runtime and exhausted targets", () => {
-    const it = test.extend("publicEntriesOfAnExhaustedFallback", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfAnExhaustedFallback() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: ["types-only", null, "../outside.ts"],
         }),
@@ -219,26 +273,33 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/vocabulary"));
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/vocabulary"));
     });
 
-    it("publishes no source entry", ({ publicEntriesOfAnExhaustedFallback }) => {
-      expect(publicEntriesOfAnExhaustedFallback).toStrictEqual([]);
-    });
+    it.effect("publishes no source entry", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfAnExhaustedFallback = yield* fixture;
+        expect(publicEntriesOfAnExhaustedFallback).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("an exports field holding an empty fallback", () => {
-    const it = test.extend("publicEntriesOfAnEmptyFallback", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfAnEmptyFallback() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: [],
         }),
@@ -251,26 +312,33 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/vocabulary"));
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/vocabulary"));
     });
 
-    it("publishes no source entry", ({ publicEntriesOfAnEmptyFallback }) => {
-      expect(publicEntriesOfAnEmptyFallback).toStrictEqual([]);
-    });
+    it.effect("publishes no source entry", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfAnEmptyFallback = yield* fixture;
+        expect(publicEntriesOfAnEmptyFallback).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("an exports field whose conditions name no runtime target", () => {
-    const it = test.extend("publicEntriesOfATypesOnlyCondition", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfATypesOnlyCondition() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { types: "./src/index.d.ts" },
         }),
@@ -283,26 +351,33 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/vocabulary"));
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/vocabulary"));
     });
 
-    it("publishes no source entry", ({ publicEntriesOfATypesOnlyCondition }) => {
-      expect(publicEntriesOfATypesOnlyCondition).toStrictEqual([]);
-    });
+    it.effect("publishes no source entry", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfATypesOnlyCondition = yield* fixture;
+        expect(publicEntriesOfATypesOnlyCondition).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a malformed wildcard key beside a wildcard escaping the package", () => {
-    const it = test.extend("publicEntriesOfAMalformedWildcard", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfAMalformedWildcard() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "invalid/*": "./src/public/*.ts", "./escape/*": "../public/*.ts" },
         }),
@@ -315,128 +390,159 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/vocabulary"));
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/vocabulary"));
     });
 
-    it("publishes no source entry", ({ publicEntriesOfAMalformedWildcard }) => {
-      expect(publicEntriesOfAMalformedWildcard).toStrictEqual([]);
-    });
+    it.effect("publishes no source entry", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfAMalformedWildcard = yield* fixture;
+        expect(publicEntriesOfAMalformedWildcard).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a package directory that is not in the checkout", () => {
-    const it = test.extend("publicEntriesOfAMissingPackageDirectory", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfAMissingPackageDirectory() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: "./src/index.ts",
         }),
         "packages/vocabulary/src/order-status.ts": ORDER_STATUS_OWNER,
         "packages/vocabulary/src/index.ts": ORDER_STATUS_RE_EXPORT,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/missing"));
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/missing"));
     });
 
-    it("publishes no entries", ({ publicEntriesOfAMissingPackageDirectory }) => {
-      expect(publicEntriesOfAMissingPackageDirectory).toStrictEqual([]);
-    });
+    it.effect("publishes no entries", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfAMissingPackageDirectory = yield* fixture;
+        expect(publicEntriesOfAMissingPackageDirectory).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("reading the package name of a directory that is not in the checkout", () => {
-    const it = test.extend("publicNameOfAMissingPackageDirectory", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicNameOfAMissingPackageDirectory() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: "./src/index.ts",
         }),
         "packages/vocabulary/src/order-status.ts": ORDER_STATUS_OWNER,
         "packages/vocabulary/src/index.ts": ORDER_STATUS_RE_EXPORT,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageName(join(repositoryRoot, "packages/missing"));
+      return publicPackageName(paths.join(repositoryRoot, "packages/missing"));
     });
 
-    it("finds no package name", ({ publicNameOfAMissingPackageDirectory }) => {
-      expect(publicNameOfAMissingPackageDirectory).toBe(null);
-    });
+    it.effect("finds no package name", () =>
+      Effect.gen(function* program() {
+        const publicNameOfAMissingPackageDirectory = yield* fixture;
+        expect(publicNameOfAMissingPackageDirectory).toBe(null);
+      }),
+    );
   });
 
   describe("a package manifest that is not an object", () => {
-    const it = test.extend("importRoutesOfAnInvalidManifest", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAnInvalidManifest() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
         "packages/vocabulary/package.json": "null",
         "packages/vocabulary/src/order-status.ts": ORDER_STATUS_OWNER,
         "packages/vocabulary/src/index.ts": ORDER_STATUS_RE_EXPORT,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       return analyzeCanonicalValuesRepository({ repositoryRoot }).catalog.entries.map(
         (catalogedConcept) => catalogedConcept.importRoutes,
       );
     });
 
-    it("grants the owner no import route", ({ importRoutesOfAnInvalidManifest }) => {
-      expect(importRoutesOfAnInvalidManifest).toStrictEqual([[]]);
-    });
+    it.effect("grants the owner no import route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAnInvalidManifest = yield* fixture;
+        expect(importRoutesOfAnInvalidManifest).toStrictEqual([[]]);
+      }),
+    );
   });
 
   describe("cataloguing an owner behind a manifest that is not an object", () => {
-    const it = test.extend("packageNamesOfAnInvalidManifest", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* packageNamesOfAnInvalidManifest() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
         "packages/vocabulary/package.json": "null",
         "packages/vocabulary/src/order-status.ts": ORDER_STATUS_OWNER,
         "packages/vocabulary/src/index.ts": ORDER_STATUS_RE_EXPORT,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       return analyzeCanonicalValuesRepository({ repositoryRoot }).catalog.entries.map(
         (catalogedConcept) => catalogedConcept.packageName,
       );
     });
 
-    it("leaves the entry without a package name", ({ packageNamesOfAnInvalidManifest }) => {
-      expect(packageNamesOfAnInvalidManifest).toStrictEqual([null]);
-    });
+    it.effect("leaves the entry without a package name", () =>
+      Effect.gen(function* program() {
+        const packageNamesOfAnInvalidManifest = yield* fixture;
+        expect(packageNamesOfAnInvalidManifest).toStrictEqual([null]);
+      }),
+    );
   });
 
   describe("a package manifest without an exports field", () => {
-    const it = test.extend("publicEntriesOfAPackageWithoutExports", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* publicEntriesOfAPackageWithoutExports() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({ name: "@fixture/vocabulary" }),
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({ name: "@fixture/vocabulary" }),
         "packages/vocabulary/src/order-status.ts": ORDER_STATUS_OWNER,
         "packages/vocabulary/src/index.ts": ORDER_STATUS_RE_EXPORT,
         "packages/vocabulary/src/require.ts": ORDER_STATUS_RE_EXPORT,
@@ -446,26 +552,33 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      return publicPackageEntries(join(repositoryRoot, "packages/vocabulary"));
+      return publicPackageEntries(paths.join(repositoryRoot, "packages/vocabulary"));
     });
 
-    it("exposes no public source entry", ({ publicEntriesOfAPackageWithoutExports }) => {
-      expect(publicEntriesOfAPackageWithoutExports).toStrictEqual([]);
-    });
+    it.effect("exposes no public source entry", () =>
+      Effect.gen(function* program() {
+        const publicEntriesOfAPackageWithoutExports = yield* fixture;
+        expect(publicEntriesOfAPackageWithoutExports).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("an owner standing behind an export-equals module value", () => {
-    const it = test.extend("importRoutesOfAnExportEqualsOwner", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAnExportEqualsOwner() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": "./src/module.ts", "./shadow": "./src/module-shadow.ts" },
         }),
@@ -478,33 +591,40 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes the package module value", ({ importRoutesOfAnExportEqualsOwner }) => {
-      expect(importRoutesOfAnExportEqualsOwner).toStrictEqual([
-        {
-          exportName: "<module>",
-          resolvedSourcePaths: ["packages/vocabulary/src/module.ts"],
-          specifier: "@fixture/vocabulary",
-        },
-      ]);
-    });
+    it.effect("publishes the package module value", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAnExportEqualsOwner = yield* fixture;
+        expect(importRoutesOfAnExportEqualsOwner).toStrictEqual([
+          {
+            exportName: "<module>",
+            resolvedSourcePaths: ["packages/vocabulary/src/module.ts"],
+            specifier: "@fixture/vocabulary",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a single-star export pattern", () => {
-    const it = test.extend("importRoutesOfASingleStarPattern", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfASingleStarPattern() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "./src/public/*.ts" },
         }),
@@ -517,33 +637,40 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("expands only the owner source identities", ({ importRoutesOfASingleStarPattern }) => {
-      expect(importRoutesOfASingleStarPattern).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
-          specifier: "@fixture/vocabulary/owner",
-        },
-      ]);
-    });
+    it.effect("expands only the owner source identities", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfASingleStarPattern = yield* fixture;
+        expect(importRoutesOfASingleStarPattern).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
+            specifier: "@fixture/vocabulary/owner",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("an exact null export beside a wildcard that matches it", () => {
-    const it = test.extend("importRoutesOfAnExactNullExport", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAnExactNullExport() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./owner": null, "./*": "./src/public/*.ts" },
         }),
@@ -556,27 +683,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("overrides the wildcard route", ({ importRoutesOfAnExactNullExport }) => {
-      expect(importRoutesOfAnExactNullExport).toStrictEqual([]);
-    });
+    it.effect("overrides the wildcard route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAnExactNullExport = yield* fixture;
+        expect(importRoutesOfAnExactNullExport).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("an exact shadow export beside a wildcard that matches it", () => {
-    const it = test.extend("importRoutesOfAnExactShadowExport", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAnExactShadowExport() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./owner": "./src/shadow.ts", "./*": "./src/public/*.ts" },
         }),
@@ -589,27 +723,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("overrides the wildcard owner route", ({ importRoutesOfAnExactShadowExport }) => {
-      expect(importRoutesOfAnExactShadowExport).toStrictEqual([]);
-    });
+    it.effect("overrides the wildcard owner route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAnExactShadowExport = yield* fixture;
+        expect(importRoutesOfAnExactShadowExport).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a null pattern written before the broad wildcard it narrows", () => {
-    const it = test.extend("importRoutesOfANullPatternWrittenFirst", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfANullPatternWrittenFirst() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./private/*": null, "./*": "./src/public/*.ts" },
         }),
@@ -624,33 +765,40 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/private/status.ts":
           'export { ORDER_STATUSES } from "../../order-status.ts";\n',
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("overrides the broad wildcard route", ({ importRoutesOfANullPatternWrittenFirst }) => {
-      expect(importRoutesOfANullPatternWrittenFirst).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
-          specifier: "@fixture/vocabulary/owner",
-        },
-      ]);
-    });
+    it.effect("overrides the broad wildcard route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfANullPatternWrittenFirst = yield* fixture;
+        expect(importRoutesOfANullPatternWrittenFirst).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
+            specifier: "@fixture/vocabulary/owner",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a null pattern written after the broad wildcard it narrows", () => {
-    const it = test.extend("importRoutesOfANullPatternWrittenLast", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfANullPatternWrittenLast() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "./src/public/*.ts", "./private/*": null },
         }),
@@ -665,33 +813,40 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/private/status.ts":
           'export { ORDER_STATUSES } from "../../order-status.ts";\n',
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("overrides the broad wildcard route", ({ importRoutesOfANullPatternWrittenLast }) => {
-      expect(importRoutesOfANullPatternWrittenLast).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
-          specifier: "@fixture/vocabulary/owner",
-        },
-      ]);
-    });
+    it.effect("overrides the broad wildcard route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfANullPatternWrittenLast = yield* fixture;
+        expect(importRoutesOfANullPatternWrittenLast).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
+            specifier: "@fixture/vocabulary/owner",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a pattern target written without a file extension", () => {
-    const it = test.extend("importRoutesOfAnExtensionlessPattern", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAnExtensionlessPattern() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "./src/public/*" },
         }),
@@ -704,35 +859,40 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("captures what the existing target path holds", ({
-      importRoutesOfAnExtensionlessPattern,
-    }) => {
-      expect(importRoutesOfAnExtensionlessPattern).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
-          specifier: "@fixture/vocabulary/owner.ts",
-        },
-      ]);
-    });
+    it.effect("captures what the existing target path holds", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAnExtensionlessPattern = yield* fixture;
+        expect(importRoutesOfAnExtensionlessPattern).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
+            specifier: "@fixture/vocabulary/owner.ts",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a pattern whose target has no file in the repository", () => {
-    const it = test.extend("importRoutesOfAPatternWithoutAFile", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAPatternWithoutAFile() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "./src/missing/*.ts" },
         }),
@@ -745,27 +905,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes no route", ({ importRoutesOfAPatternWithoutAFile }) => {
-      expect(importRoutesOfAPatternWithoutAFile).toStrictEqual([]);
-    });
+    it.effect("publishes no route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAPatternWithoutAFile = yield* fixture;
+        expect(importRoutesOfAPatternWithoutAFile).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a pattern holding a runtime condition that resolves to nothing", () => {
-    const it = test.extend("importRoutesOfAnUnresolvedPatternCondition", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAnUnresolvedPatternCondition() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: {
             "./*": { browser: "./src/missing/*.ts", default: "./src/public/*.ts" },
@@ -780,27 +947,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes no route", ({ importRoutesOfAnUnresolvedPatternCondition }) => {
-      expect(importRoutesOfAnUnresolvedPatternCondition).toStrictEqual([]);
-    });
+    it.effect("publishes no route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAnUnresolvedPatternCondition = yield* fixture;
+        expect(importRoutesOfAnUnresolvedPatternCondition).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a pattern whose target names a JavaScript file", () => {
-    const it = test.extend("importRoutesOfAJavaScriptTargetPattern", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAJavaScriptTargetPattern() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "./src/public/*.js" },
         }),
@@ -813,33 +987,40 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("resolves the TypeScript source behind it", ({ importRoutesOfAJavaScriptTargetPattern }) => {
-      expect(importRoutesOfAJavaScriptTargetPattern).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
-          specifier: "@fixture/vocabulary/owner",
-        },
-      ]);
-    });
+    it.effect("resolves the TypeScript source behind it", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAJavaScriptTargetPattern = yield* fixture;
+        expect(importRoutesOfAJavaScriptTargetPattern).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: ["packages/vocabulary/src/public/owner.ts"],
+            specifier: "@fixture/vocabulary/owner",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a subpath carrying more than one star", () => {
-    const it = test.extend("importRoutesOfAMultiStarSubpath", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAMultiStarSubpath() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./**": "./src/public/*.ts" },
         }),
@@ -852,27 +1033,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes no route", ({ importRoutesOfAMultiStarSubpath }) => {
-      expect(importRoutesOfAMultiStarSubpath).toStrictEqual([]);
-    });
+    it.effect("publishes no route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAMultiStarSubpath = yield* fixture;
+        expect(importRoutesOfAMultiStarSubpath).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a target carrying more than one star", () => {
-    const it = test.extend("importRoutesOfAMultiStarTarget", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAMultiStarTarget() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "./src/**/index.*" },
         }),
@@ -885,27 +1073,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes no route", ({ importRoutesOfAMultiStarTarget }) => {
-      expect(importRoutesOfAMultiStarTarget).toStrictEqual([]);
-    });
+    it.effect("publishes no route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAMultiStarTarget = yield* fixture;
+        expect(importRoutesOfAMultiStarTarget).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a pattern target standing outside the package", () => {
-    const it = test.extend("importRoutesOfAPatternTargetOutsideThePackage", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAPatternTargetOutsideThePackage() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "../public/*.ts" },
         }),
@@ -918,27 +1113,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes no route", ({ importRoutesOfAPatternTargetOutsideThePackage }) => {
-      expect(importRoutesOfAPatternTargetOutsideThePackage).toStrictEqual([]);
-    });
+    it.effect("publishes no route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAPatternTargetOutsideThePackage = yield* fixture;
+        expect(importRoutesOfAPatternTargetOutsideThePackage).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a package target symlinked outside the package", () => {
-    const it = test.extend("importRoutesOfASymlinkedTarget", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfASymlinkedTarget() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": "./src/public-link.ts" },
         }),
@@ -953,31 +1155,38 @@ describe("export specifier index", () => {
         "shared/index.ts":
           'export { ORDER_STATUSES } from "../packages/vocabulary/src/order-status.ts";\n',
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      symlinkSync(
+      yield* filesystem.symlink(
         "../../../shared/index.ts",
-        join(repositoryRoot, "packages/vocabulary/src/public-link.ts"),
+        paths.join(repositoryRoot, "packages/vocabulary/src/public-link.ts"),
       );
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes no route", ({ importRoutesOfASymlinkedTarget }) => {
-      expect(importRoutesOfASymlinkedTarget).toStrictEqual([]);
-    });
+    it.effect("publishes no route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfASymlinkedTarget = yield* fixture;
+        expect(importRoutesOfASymlinkedTarget).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a pattern target that captures nothing", () => {
-    const it = test.extend("importRoutesOfAPatternTargetWithoutACapture", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAPatternTargetWithoutACapture() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { "./*": "./src/public/owner.ts" },
         }),
@@ -990,27 +1199,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("publishes no route", ({ importRoutesOfAPatternTargetWithoutACapture }) => {
-      expect(importRoutesOfAPatternTargetWithoutACapture).toStrictEqual([]);
-    });
+    it.effect("publishes no route", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAPatternTargetWithoutACapture = yield* fixture;
+        expect(importRoutesOfAPatternTargetWithoutACapture).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a conditional route whose runtime target exports a shadow", () => {
-    const it = test.extend("importRoutesOfAShadowedCondition", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAShadowedCondition() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": { import: "./src/shadow.ts", require: "./src/index.ts" } },
         }),
@@ -1023,27 +1239,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("is rejected", ({ importRoutesOfAShadowedCondition }) => {
-      expect(importRoutesOfAShadowedCondition).toStrictEqual([]);
-    });
+    it.effect("is rejected", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAShadowedCondition = yield* fixture;
+        expect(importRoutesOfAShadowedCondition).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a conditional route whose runtime targets share the owner export", () => {
-    const it = test.extend("importRoutesOfASharedCondition", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfASharedCondition() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": { import: "./src/index.ts", require: "./src/require.ts" } },
         }),
@@ -1056,36 +1279,43 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("keeps the export every runtime target carries", ({ importRoutesOfASharedCondition }) => {
-      expect(importRoutesOfASharedCondition).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: [
-            "packages/vocabulary/src/index.ts",
-            "packages/vocabulary/src/require.ts",
-          ],
-          specifier: "@fixture/vocabulary",
-        },
-      ]);
-    });
+    it.effect("keeps the export every runtime target carries", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfASharedCondition = yield* fixture;
+        expect(importRoutesOfASharedCondition).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: [
+              "packages/vocabulary/src/index.ts",
+              "packages/vocabulary/src/require.ts",
+            ],
+            specifier: "@fixture/vocabulary",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a runtime condition that resolves to nothing beside a default reaching the owner", () => {
-    const it = test.extend("importRoutesOfAnUnresolvedRuntimeCondition", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAnUnresolvedRuntimeCondition() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": { browser: "./src/missing.ts", default: "./src/index.ts" } },
         }),
@@ -1098,27 +1328,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("fails closed", ({ importRoutesOfAnUnresolvedRuntimeCondition }) => {
-      expect(importRoutesOfAnUnresolvedRuntimeCondition).toStrictEqual([]);
-    });
+    it.effect("fails closed", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAnUnresolvedRuntimeCondition = yield* fixture;
+        expect(importRoutesOfAnUnresolvedRuntimeCondition).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("an export fallback whose first resolvable target is a shadow", () => {
-    const it = test.extend("importRoutesOfAFallbackReachingAShadow", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAFallbackReachingAShadow() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": ["./src/shadow.ts", "./src/index.ts"] },
         }),
@@ -1131,27 +1368,34 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("stops there", ({ importRoutesOfAFallbackReachingAShadow }) => {
-      expect(importRoutesOfAFallbackReachingAShadow).toStrictEqual([]);
-    });
+    it.effect("stops there", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAFallbackReachingAShadow = yield* fixture;
+        expect(importRoutesOfAFallbackReachingAShadow).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("an export fallback whose first target resolves to nothing", () => {
-    const it = test.extend("importRoutesOfAFallbackReachingTheOwner", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-values-exports-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* importRoutesOfAFallbackReachingTheOwner() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-values-exports-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           exports: { ".": ["./src/missing.ts", "./src/index.ts"] },
         }),
@@ -1164,41 +1408,48 @@ describe("export specifier index", () => {
         "packages/vocabulary/src/public/owner.ts": ORDER_STATUS_RE_EXPORT_FROM_PARENT,
         "packages/vocabulary/src/public/shadow.ts": ORDER_STATUS_SHADOW,
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
       const publicCatalog = analyzeCanonicalValuesRepository({ repositoryRoot }).catalog;
       return publicCatalog.entries[0]?.importRoutes ?? [];
     });
 
-    it("reaches the owner behind it", ({ importRoutesOfAFallbackReachingTheOwner }) => {
-      expect(importRoutesOfAFallbackReachingTheOwner).toStrictEqual([
-        {
-          exportName: "ORDER_STATUSES",
-          resolvedSourcePaths: ["packages/vocabulary/src/index.ts"],
-          specifier: "@fixture/vocabulary",
-        },
-      ]);
-    });
+    it.effect("reaches the owner behind it", () =>
+      Effect.gen(function* program() {
+        const importRoutesOfAFallbackReachingTheOwner = yield* fixture;
+        expect(importRoutesOfAFallbackReachingTheOwner).toStrictEqual([
+          {
+            exportName: "ORDER_STATUSES",
+            resolvedSourcePaths: ["packages/vocabulary/src/index.ts"],
+            specifier: "@fixture/vocabulary",
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a workspace package whose exports name a types condition", () => {
-    const it = test.extend("routeStatusBehindATypesCondition", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "canonical-public-route-types-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const fixture = Effect.gen(function* routeStatusBehindATypesCondition() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "canonical-public-route-types-",
       });
+
       for (const [relativePath, fileText] of Object.entries({
-        "package.json": JSON.stringify({
+        "package.json": yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "fixture-repository",
           private: true,
           workspaces: ["packages/*"],
         }),
-        "tsconfig.json": JSON.stringify({
+        "tsconfig.json": yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           compilerOptions: { module: "nodenext", moduleResolution: "nodenext" },
         }),
-        "packages/vocabulary/package.json": JSON.stringify({
+        "packages/vocabulary/package.json": yield* Schema.encodeEffect(
+          Schema.fromJsonString(Schema.Unknown),
+        )({
           name: "@fixture/vocabulary",
           type: "module",
           exports: {
@@ -1215,26 +1466,29 @@ describe("export specifier index", () => {
           'export declare const ORDER_STATUSES: readonly ["draft", "published"];\n',
         "src/consumer.ts": "export {};\n",
       })) {
-        const absolutePath = join(repositoryRoot, relativePath);
-        mkdirSync(dirname(absolutePath), { recursive: true });
-        writeFileSync(absolutePath, fileText, "utf8");
+        const absolutePath = paths.join(repositoryRoot, relativePath);
+        yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+        yield* filesystem.writeFileString(absolutePath, fileText);
       }
-      const packageLink = join(repositoryRoot, "node_modules/@fixture/vocabulary");
-      mkdirSync(dirname(packageLink), { recursive: true });
-      symlinkSync("../../packages/vocabulary", packageLink, "dir");
+      const packageLink = paths.join(repositoryRoot, "node_modules/@fixture/vocabulary");
+      yield* filesystem.makeDirectory(paths.dirname(packageLink), { recursive: true });
+      yield* filesystem.symlink("../../packages/vocabulary", packageLink);
       return importRouteStatus(
         {
           importedName: "ORDER_STATUSES",
           specifier: "@fixture/vocabulary",
-          filename: join(repositoryRoot, "src/consumer.ts"),
+          filename: paths.join(repositoryRoot, "src/consumer.ts"),
           repositoryRoot,
         },
         analyzeCanonicalValuesRepository({ repositoryRoot }).catalog,
       );
     });
 
-    it("resolves to the registered runtime route", ({ routeStatusBehindATypesCondition }) => {
-      expect(routeStatusBehindATypesCondition).toBe("registered");
-    });
+    it.effect("resolves to the registered runtime route", () =>
+      Effect.gen(function* program() {
+        const routeStatusBehindATypesCondition = yield* fixture;
+        expect(routeStatusBehindATypesCondition).toBe("registered");
+      }),
+    );
   });
 });
