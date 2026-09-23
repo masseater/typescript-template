@@ -1,4 +1,7 @@
+import { fileURLToPath } from "node:url";
+
 import { MergifyReporter } from "@mergifyio/vitest";
+import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
 import {
   effectDiagnostics,
   lifecycle,
@@ -27,6 +30,12 @@ export default defineConfig({
     },
   },
   test: {
+    experimental: {
+      openTelemetry: {
+        enabled: telemetryAsked,
+        sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
+      },
+    },
     coverage: {
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
