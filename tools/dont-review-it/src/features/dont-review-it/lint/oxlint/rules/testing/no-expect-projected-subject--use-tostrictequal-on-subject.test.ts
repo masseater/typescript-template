@@ -11,6 +11,12 @@ describe("dont-review-it/no-expect-projected-subject--use-tostrictequal-on-subje
   testLintRule(noExpectProjectedSubject, {
     valid: [
       {
+        name: "a member of an imported data file is the part of that file a spec keeps",
+        documented: true,
+        filename: SPEC_FILE,
+        code: 'import manifest from "../package.json" with { type: "json" };\ntest("is run and not imported", () => {\n  expect(manifest.exports).toStrictEqual({ "./package.json": "./package.json" });\n});',
+      },
+      {
         name: "the bare binding a fixture handed back is the subject the rule asks for",
         documented: true,
         filename: SPEC_FILE,
@@ -127,6 +133,18 @@ describe("dont-review-it/no-expect-projected-subject--use-tostrictequal-on-subje
       },
     ],
     invalid: [
+      {
+        name: "a member read off an imported module of code is still a projection",
+        filename: SPEC_FILE,
+        code: 'import settings from "./settings.ts";\ntest("retries three times", () => {\n  expect(settings.retries).toBe(3);\n});',
+        errors: [{ messageId: "projectedSubject" }],
+      },
+      {
+        name: "a member read off a local binding that shadows a data import is still a projection",
+        filename: SPEC_FILE,
+        code: 'import report from "./report.json" with { type: "json" };\ntest("marks the total", () => {\n  const report = summarise();\n  expect(report.total).toBe(2);\n});',
+        errors: [{ messageId: "projectedSubject" }],
+      },
       {
         name: "a field read off the binding leaves every other field of it unpinned",
         documented: true,
