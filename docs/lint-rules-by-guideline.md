@@ -24,6 +24,10 @@ No rule of this repository declares this document as its grounds. What the off-t
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
+## [.claude/skills/reviews/references/domain-authority.md](../.claude/skills/reviews/references/domain-authority.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
 ## [.claude/skills/reviews/references/enforcement.md](../.claude/skills/reviews/references/enforcement.md)
 
 | Rule | Description |
