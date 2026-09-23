@@ -8,7 +8,8 @@
     "./bootstrap": "./src/features/db/bootstrap-statement.ts",
     "./testing": "./src/features/db/testing.ts",
     "./migrations": "./src/features/db/remote-operations.ts",
-    "./local": "./src/features/db/local.ts"
+    "./local": "./src/features/db/local.ts",
+    "./wiki": "./src/features/db/wiki.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

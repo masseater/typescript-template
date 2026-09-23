@@ -172,12 +172,16 @@ const detected: readonly Case[] = [
     },
   ],
   [
-    "no-wiki-to-database",
+    "no-dashboard-to-database",
     { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db";\n' },
   ],
   [
-    "no-wiki-to-database",
+    "no-dashboard-to-database",
     { "apps/internal-dashboard/src/index.ts": 'export type { Db } from "@repo/db";\n' },
+  ],
+  [
+    "no-wiki-to-database",
+    { "apps/internal-wiki/src/index.ts": 'export * from "@repo/db/wiki";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -322,8 +326,16 @@ const accepted: readonly Case[] = [
     },
   ],
   [
-    "no-wiki-to-database",
+    "no-dashboard-to-database",
     { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/local";\n' },
+  ],
+  [
+    "no-dashboard-to-database",
+    { "apps/internal-dashboard/src/index.ts": 'export * from "@repo/db/wiki";\n' },
+  ],
+  [
+    "no-wiki-to-database",
+    { "apps/internal-wiki/src/index.ts": 'export * from "@repo/db/local";\n' },
   ],
   [
     "no-browser-to-server",

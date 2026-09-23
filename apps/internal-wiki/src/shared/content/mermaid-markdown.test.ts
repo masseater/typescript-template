@@ -1,3 +1,4 @@
+import { remarkWikiTerm } from "@repo/wiki-markdown";
 import { Effect } from "effect";
 import { remarkMdxMermaid } from "fumadocs-core/mdx-plugins";
 import { remarkLLMs } from "fumadocs-core/mdx-plugins/remark-llms";
@@ -6,7 +7,6 @@ import remarkMdx from "remark-mdx";
 import { describe, expect, it } from "vite-plus/test";
 
 import { processedMarkdown } from "./mermaid-markdown.ts";
-import { remarkWikiTerm } from "./remark-wiki-term.ts";
 
 function process(source: string): Effect.Effect<unknown> {
   return Effect.gen(function* processMarkdown() {
