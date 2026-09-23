@@ -16,6 +16,20 @@
           "surface_form": "ず"
         }
       ]
+    },
+    {
+      "message": "\"唯一の出所\" は定訳ではありません。\"SSOT\" を使ってください。",
+      "tokens": [
+        {
+          "surface_form": "唯一"
+        },
+        {
+          "surface_form": "の"
+        },
+        {
+          "surface_form": "出所"
+        }
+      ]
     }
   ]
 }
