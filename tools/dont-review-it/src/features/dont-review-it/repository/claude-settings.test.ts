@@ -1,4 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { Schema } from "effect";
@@ -43,6 +45,20 @@ const unreachableScripts = registeredCommands.flatMap((command) => {
     : [command];
 });
 
+const exitCodesWithoutVitePlus = registeredCommands
+  .filter((command) => command.includes("sync-base"))
+  .map(
+    (command) =>
+      spawnSync("/bin/sh", ["-c", command], {
+        env: {
+          CLAUDE_PROJECT_DIR: repositoryRoot,
+          HOME: mkdtempSync(join(tmpdir(), "sync-base-home-")),
+          PATH: "/usr/bin:/bin",
+        },
+        input: "{}",
+      }).status,
+  );
+
 describe(".claude/settings.json", () => {
   it("runs every workspace hook through a script that exists", () => {
     expect(unreachableScripts).toStrictEqual([]);
@@ -52,5 +68,9 @@ describe(".claude/settings.json", () => {
     expect(
       registeredCommands.filter((command) => !command.startsWith('cd "$CLAUDE_PROJECT_DIR" && ')),
     ).toStrictEqual([]);
+  });
+
+  it("lets every sync-base hook end quietly on a host where vp is not installed", () => {
+    expect(exitCodesWithoutVitePlus).toStrictEqual([0, 0, 0]);
   });
 });
