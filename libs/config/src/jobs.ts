@@ -10,6 +10,7 @@ const jobsWorkflowName = "Process";
 
 const JobPayload = Schema.Struct({
   jobId: Schema.String.check(Schema.isMinLength(1)),
+  ownerId: Schema.String.check(Schema.isMinLength(1)),
 });
 
 type JobPayload = typeof JobPayload.Type;
