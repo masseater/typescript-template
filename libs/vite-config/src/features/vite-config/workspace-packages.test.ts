@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { filesystem, paths } from "./host.ts";
-import { UnlistableWorkspace, workspaceDependencyRanges } from "./workspace-packages.ts";
+import { workspaceDependencyRanges } from "./workspace-packages.ts";
 
 const workspaceAt = Effect.fn("workspaceAt")(function* workspaceAt(
   files: Readonly<Record<string, string>>,
@@ -49,7 +49,8 @@ describe("workspaceDependencyRanges", () => {
             }),
             (root) =>
               Effect.map(Effect.flip(workspaceDependencyRanges(root)), (failure) => ({
-                failure,
+                failureMessage: failure.message,
+                failureTag: failure._tag,
                 root,
               })),
           ),
@@ -66,7 +67,8 @@ describe("workspaceDependencyRanges", () => {
             }),
             (root) =>
               Effect.map(Effect.flip(workspaceDependencyRanges(root)), (failure) => ({
-                failure,
+                failureMessage: failure.message,
+                failureTag: failure._tag,
                 root,
               })),
           ),
@@ -84,7 +86,8 @@ describe("workspaceDependencyRanges", () => {
             }),
             (root) =>
               Effect.map(Effect.flip(workspaceDependencyRanges(root)), (failure) => ({
-                failure,
+                failureMessage: failure.message,
+                failureTag: failure._tag,
                 root,
               })),
           ),
@@ -110,30 +113,24 @@ describe("workspaceDependencyRanges", () => {
 
   it("refuses package patterns other than <directory>/*", ({ unsupportedPattern }) => {
     expect(unsupportedPattern).toStrictEqual({
-      failure: new UnlistableWorkspace({
-        definition: paths.join(unsupportedPattern.root, "pnpm-workspace.yaml"),
-        reason: "packages/** is not a <directory>/* package pattern",
-      }),
+      failureMessage: `${paths.join(unsupportedPattern.root, "pnpm-workspace.yaml")} does not list the workspace packages: packages/** is not a <directory>/* package pattern`,
+      failureTag: "UnlistableWorkspace",
       root: unsupportedPattern.root,
     });
   });
 
   it("refuses a workspace definition that is not YAML", ({ unreadableDefinition }) => {
     expect(unreadableDefinition).toStrictEqual({
-      failure: new UnlistableWorkspace({
-        definition: paths.join(unreadableDefinition.root, "pnpm-workspace.yaml"),
-        reason: "it is not YAML",
-      }),
+      failureMessage: `${paths.join(unreadableDefinition.root, "pnpm-workspace.yaml")} does not list the workspace packages: it is not YAML`,
+      failureTag: "UnlistableWorkspace",
       root: unreadableDefinition.root,
     });
   });
 
   it("refuses a workspace dependency that no package provides", ({ unprovidedDependency }) => {
     expect(unprovidedDependency).toStrictEqual({
-      failure: new UnlistableWorkspace({
-        definition: paths.join(unprovidedDependency.root, "pnpm-workspace.yaml"),
-        reason: "@x/broken depends on @x/gone, which no workspace package provides",
-      }),
+      failureMessage: `${paths.join(unprovidedDependency.root, "pnpm-workspace.yaml")} does not list the workspace packages: @x/broken depends on @x/gone, which no workspace package provides`,
+      failureTag: "UnlistableWorkspace",
       root: unprovidedDependency.root,
     });
   });

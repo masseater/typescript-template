@@ -158,4 +158,4 @@ const workspaceDependencyRanges = Effect.fn("workspaceDependencyRanges")(
   },
 );
 
-export { UnlistableWorkspace, workspaceDependencyRanges };
+export { workspaceDependencyRanges };
