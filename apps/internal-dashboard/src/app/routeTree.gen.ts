@@ -22,6 +22,8 @@ import { Route as DashboardInquiriesRouteImport } from './routes/_dashboard/inqu
 import { Route as DashboardSecurityRouteImport } from './routes/_dashboard/security'
 import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as DashboardRecordingsIndexRouteImport } from './routes/_dashboard/recordings/index'
+import { Route as DashboardRecordingsIdRouteImport } from './routes/_dashboard/recordings/$id'
 
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
@@ -87,6 +89,17 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRecordingsIndexRoute =
+  DashboardRecordingsIndexRouteImport.update({
+    id: '/recordings/',
+    path: '/recordings/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const DashboardRecordingsIdRoute = DashboardRecordingsIdRouteImport.update({
+  id: '/recordings/$id',
+  path: '/recordings/$id',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
@@ -101,6 +114,8 @@ export interface FileRoutesByFullPath {
   '/security': typeof DashboardSecurityRoute
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
+  '/recordings/$id': typeof DashboardRecordingsIdRoute
+  '/recordings/': typeof DashboardRecordingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/$': typeof SplatRoute
@@ -115,6 +130,8 @@ export interface FileRoutesByTo {
   '/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/': typeof DashboardIndexRoute
+  '/recordings/$id': typeof DashboardRecordingsIdRoute
+  '/recordings': typeof DashboardRecordingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,6 +148,8 @@ export interface FileRoutesById {
   '/_dashboard/staff': typeof DashboardStaffRoute
   '/api/$': typeof ApiSplatRoute
   '/_dashboard/': typeof DashboardIndexRoute
+  '/_dashboard/recordings/$id': typeof DashboardRecordingsIdRoute
+  '/_dashboard/recordings/': typeof DashboardRecordingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,6 +166,8 @@ export interface FileRouteTypes {
     | '/security'
     | '/staff'
     | '/api/$'
+    | '/recordings/$id'
+    | '/recordings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/$'
@@ -161,6 +182,8 @@ export interface FileRouteTypes {
     | '/staff'
     | '/api/$'
     | '/'
+    | '/recordings/$id'
+    | '/recordings'
   id:
     | '__root__'
     | '/$'
@@ -176,6 +199,8 @@ export interface FileRouteTypes {
     | '/_dashboard/staff'
     | '/api/$'
     | '/_dashboard/'
+    | '/_dashboard/recordings/$id'
+    | '/_dashboard/recordings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -281,6 +306,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/recordings/': {
+      id: '/_dashboard/recordings/'
+      path: '/recordings'
+      fullPath: '/recordings/'
+      preLoaderRoute: typeof DashboardRecordingsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/_dashboard/recordings/$id': {
+      id: '/_dashboard/recordings/$id'
+      path: '/recordings/$id'
+      fullPath: '/recordings/$id'
+      preLoaderRoute: typeof DashboardRecordingsIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -291,6 +330,8 @@ interface DashboardRouteChildren {
   DashboardSecurityRoute: typeof DashboardSecurityRoute
   DashboardStaffRoute: typeof DashboardStaffRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardRecordingsIdRoute: typeof DashboardRecordingsIdRoute
+  DashboardRecordingsIndexRoute: typeof DashboardRecordingsIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -300,6 +341,8 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSecurityRoute: DashboardSecurityRoute,
   DashboardStaffRoute: DashboardStaffRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardRecordingsIdRoute: DashboardRecordingsIdRoute,
+  DashboardRecordingsIndexRoute: DashboardRecordingsIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

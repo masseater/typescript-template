@@ -30,3 +30,20 @@ export {
   storeInterview,
 } from "./interview.ts";
 export { clockDate } from "./clock-date.ts";
+export {
+  RecordingNotFound,
+  RecordingNotRetryable,
+  SpeakerPersonNotFound,
+  assignSpeaker,
+  beginTranscription,
+  createRecording,
+  deleteRecording,
+  failRecording,
+  findRecording,
+  listPeople,
+  listRecordings,
+  registerPerson,
+  removePerson,
+  retryRecording,
+  storeTranscript,
+} from "./recordings.ts";
