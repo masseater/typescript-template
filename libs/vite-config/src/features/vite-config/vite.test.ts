@@ -111,6 +111,7 @@ describe("appRun", () => {
           dependsOn: ["@repo/dev#setup", "check:effect"],
           input: [
             ...taskInput,
+            "!.",
             "!.wrangler",
             "!.wrangler/**",
             "!dist",
