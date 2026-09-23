@@ -1,9 +1,8 @@
-import { resolve } from "node:path";
-
 import { defineCommand } from "citty";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
 import { isDirectory } from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import { path } from "./platform/path.ts";
 import { measureCheck } from "./repository-checks/index.ts";
 
 const REPOSITORY_ROOT_FLAG = "--repository-root";
@@ -33,15 +32,15 @@ export const checkCommand = defineCommand({
         "Rewrite the parts this repository decides on its own, entry scripts and shipped skill versions, then re-run the checks",
     },
   },
-  async run({ args, rawArgs }) {
-    await measureCheck(() => {
+  run({ args, rawArgs }) {
+    return measureCheck(() => {
       const unknownFlags = flagsIn(rawArgs).filter((raised) => !KNOWN_FLAGS.includes(raised));
       if (unknownFlags.length > 0) {
         refuseMisuse(`Unknown option ${unknownFlags.join(", ")}. Run --help for usage.\n`);
         return;
       }
 
-      const repositoryRoot = resolve(args["repository-root"] ?? process.cwd());
+      const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
       if (!isDirectory(repositoryRoot)) {
         refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
         return;

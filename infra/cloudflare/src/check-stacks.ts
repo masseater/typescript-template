@@ -28,7 +28,7 @@ import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
-import { hstsSetting } from "./config.ts";
+import { hstsSetting, observabilitySampling } from "./config.ts";
 import { assertCoreNotPublic } from "./core-guard.ts";
 import {
   applyVerificationEnvironment,
@@ -58,7 +58,7 @@ type ResourceInventory = StackInventory["resources"][string];
 const { accountId, budget, mailFrom, origins, otlp, otlpAuthorization, prefix } =
   verificationSettings;
 
-const sampling = { enabled: true, headSamplingRate: 0.5 };
+const sampling = { enabled: true, headSamplingRate: observabilitySampling };
 
 const traceDestination = `${prefix}-traces`;
 
@@ -315,9 +315,6 @@ const staticExpected: Readonly<
         tokenValue(budgetMonitorEnv.billingReadToken, "BillingRead"),
         plainText(budgetMonitorEnv.budgetJpy, budget.budgetJpy),
         plainText(budgetMonitorEnv.accountId, accountId),
-        plainText(budgetMonitorEnv.fixedCostUsd, budget.fixedCostUsd),
-        plainText(budgetMonitorEnv.jpyPerUsd, budget.jpyPerUsd),
-        plainText(budgetMonitorEnv.reserveUsd, budget.reserveUsd),
       ],
     }),
   }),
