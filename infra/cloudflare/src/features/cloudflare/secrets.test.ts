@@ -6,7 +6,9 @@ import { encodeJson } from "./platform.ts";
 import { describeCause, redact } from "./secrets.ts";
 import { verificationSettings } from "./verification-fixture.ts";
 
-const confidential = [
+import type { Confidential } from "./secrets.ts";
+
+const confidential: readonly Confidential[] = [
   { key: "TEMPLATE_APP_DOMAIN", value: verificationSettings.origins["service-member"] },
   {
     key: "TEMPLATE_APP_DOMAIN",

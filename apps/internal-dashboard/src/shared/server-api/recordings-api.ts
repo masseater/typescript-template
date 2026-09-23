@@ -2,6 +2,7 @@ import { verifySession } from "@repo/auth";
 import { RECORDING_FAILURE, httpStatus, jobsQueueBinding, readJobs } from "@repo/config";
 import { RequestRejected } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
+import { CreatedResource, IdentifierQuery } from "@repo/runtime/contracts";
 import {
   AppOrigin,
   createApi,
@@ -15,10 +16,7 @@ import { Effect, Layer } from "effect";
 import {
   PeopleList,
   PersonRegistration,
-  RecordingAccepted,
   RecordingList,
-  RecordingQuery,
-  RecordingTarget,
   RecordingUpload,
   RecordingView,
   SpeakerAssignment,
@@ -125,7 +123,7 @@ const uploadRecording = Effect.fn("uploadRecording")(function* uploadRecording(r
 
 const retry = Effect.fn("retryRecording")(function* retry(request: Request) {
   const { user } = yield* verifySession(request.headers);
-  const { id } = yield* readJsonBody(RecordingTarget, request);
+  const { id } = yield* readJsonBody(IdentifierQuery, request);
   const jobId = crypto.randomUUID();
   yield* (yield* CoreRecords).retryRecording({ jobId, recordingId: id });
   yield* enqueue(id, { jobId, ownerId: user.id });
@@ -134,7 +132,7 @@ const retry = Effect.fn("retryRecording")(function* retry(request: Request) {
 
 const remove = Effect.fn("deleteRecording")(function* remove(request: Request) {
   yield* verifySession(request.headers);
-  const { id } = yield* readJsonBody(RecordingTarget, request);
+  const { id } = yield* readJsonBody(IdentifierQuery, request);
   const objectKey = yield* (yield* CoreRecords).deleteRecording({ recordingId: id });
   yield* (yield* FileStore).remove([objectKey]);
   return { id };
@@ -155,7 +153,7 @@ const register = Effect.fn("registerPerson")(function* register(request: Request
 
 const forget = Effect.fn("removePerson")(function* forget(request: Request) {
   yield* verifySession(request.headers);
-  const { id } = yield* readJsonBody(RecordingTarget, request);
+  const { id } = yield* readJsonBody(IdentifierQuery, request);
   yield* (yield* CoreRecords).removePerson({ personId: id });
   return { id };
 });
@@ -186,7 +184,7 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
         failures,
       ),
     )
-    .post("/recordings", api.route(RecordingAccepted, withRecordings(uploadRecording), failures))
+    .post("/recordings", api.route(CreatedResource, withRecordings(uploadRecording), failures))
     .get(
       "/recording",
       api.route(
@@ -194,16 +192,16 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
         withRecordings((request) =>
           Effect.gen(function* view() {
             yield* verifySession(request.headers);
-            const { id } = yield* readSearchParams(RecordingQuery, request);
+            const { id } = yield* readSearchParams(IdentifierQuery, request);
             return yield* (yield* CoreRecords).findRecording({ recordingId: id });
           }),
         ),
         failures,
       ),
     )
-    .delete("/recording", api.route(RecordingAccepted, withRecordings(remove), failures))
-    .post("/recording/retry", api.route(RecordingAccepted, withRecordings(retry), failures))
-    .patch("/recording/speaker", api.route(RecordingAccepted, withRecordings(assign), failures))
+    .delete("/recording", api.route(CreatedResource, withRecordings(remove), failures))
+    .post("/recording/retry", api.route(CreatedResource, withRecordings(retry), failures))
+    .patch("/recording/speaker", api.route(CreatedResource, withRecordings(assign), failures))
     .get(
       "/people",
       api.route(
@@ -217,8 +215,8 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
         failures,
       ),
     )
-    .post("/people", api.route(RecordingAccepted, withRecordings(register), failures))
-    .delete("/people", api.route(RecordingAccepted, withRecordings(forget), failures));
+    .post("/people", api.route(CreatedResource, withRecordings(register), failures))
+    .delete("/people", api.route(CreatedResource, withRecordings(forget), failures));
 }
 
 export { recordingsApi };

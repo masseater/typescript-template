@@ -7,8 +7,11 @@ const OnboardingView = Schema.Struct({
   step: OnboardingStep,
 });
 
+const OnboardingTarget = OnboardingStep.pick(["choose", "profile", "interview", "done"]);
+type OnboardingTarget = typeof OnboardingTarget.Type;
+
 const OnboardingAdvance = Schema.Struct({
-  step: OnboardingStep,
+  step: OnboardingTarget,
 });
 
 const FeedItem = Schema.Struct({
@@ -25,3 +28,4 @@ const HomeFeed = Schema.Struct({
 });
 
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView };
+export type { OnboardingTarget };

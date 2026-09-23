@@ -69,8 +69,6 @@ const scan = (
     Effect.map(({ exitCode, stderr, stdout }) => ({ failed: exitCode !== 0, stderr, stdout })),
   );
 
-const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
-
 const findingsOf = (entry: typeof Project.Type): string[] => {
   const name = entry.project.projectName;
   return entry.diagnostics.map((diagnostic) => {
@@ -119,7 +117,7 @@ const scanProjects = Effect.fn("scanProjects")(function* scanProjects(applicatio
   while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
     attempt += 1;
     yield* Console.error(
-      yield* encodeJson({
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
         attempt,
         event: "quality.react_doctor_retry",
         reason: "transient-analysis-failure",
@@ -173,7 +171,12 @@ runCli(
       path.basename(process.cwd()),
     );
     const result = yield* inspect(application);
-    yield* Console.log(yield* encodeJson({ event: "quality.react_doctor", ...result }));
+    yield* Console.log(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        event: "quality.react_doctor",
+        ...result,
+      }),
+    );
     if (!result.ok) {
       yield* markFailed;
     }

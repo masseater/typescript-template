@@ -1,0 +1,37 @@
+{
+  "name": "@repo/telemetry",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/features/telemetry/index.ts",
+    "./optional-setting": "./src/features/telemetry/optional-setting.ts",
+    "./vitest-sdk": "./src/features/telemetry/vitest-sdk.ts"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "catalog:",
+    "@opentelemetry/api-logs": "catalog:",
+    "@opentelemetry/context-async-hooks": "catalog:",
+    "@opentelemetry/core": "catalog:",
+    "@opentelemetry/exporter-logs-otlp-http": "catalog:",
+    "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
+    "@opentelemetry/exporter-trace-otlp-http": "catalog:",
+    "@opentelemetry/propagator-env-carrier": "catalog:",
+    "@opentelemetry/resources": "catalog:",
+    "@opentelemetry/sdk-logs": "catalog:",
+    "@opentelemetry/sdk-metrics": "catalog:",
+    "@opentelemetry/sdk-trace": "catalog:",
+    "@opentelemetry/semantic-conventions": "catalog:",
+    "@repo/cli": "workspace:*",
+    "@repo/config": "workspace:*",
+    "effect": "catalog:",
+    "es-toolkit": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/vite-config": "workspace:*",
+    "@types/node": "catalog:",
+    "msw": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

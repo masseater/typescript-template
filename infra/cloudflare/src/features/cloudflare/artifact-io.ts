@@ -166,6 +166,7 @@ export {
   fileSha256,
   fileSize,
   files,
+  ioFailed,
   isMissing,
   isSymlink,
   jsonSha256,

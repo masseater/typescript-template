@@ -1,3 +1,3 @@
-import { startTelemetry } from "./telemetry.ts";
+import sdk from "@repo/telemetry/vitest-sdk";
 
-export default { shutdown: startTelemetry("mst-test").shutdown };
+export default sdk;

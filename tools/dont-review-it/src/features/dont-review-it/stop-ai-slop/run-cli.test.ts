@@ -92,7 +92,7 @@ const REMOVAL_VERIFYING_SPEC =
   'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nexpect(legacy).not.toHaveProperty("legacyMode");\n';
 
 const GUESSWORK_REFUSAL =
-  "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch before checking.\n";
+  "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor the parents of a pull request merge, and no GitHub API to read the merge through. Fetch the integration branch or the merge with its parents before checking.\n";
 
 const repositoryChangingCurrent = Effect.gen(function* repositoryChangingCurrent() {
   const repositoryRoot = yield* newRepository;
@@ -163,7 +163,19 @@ layer(NodeServices.layer)("stopAiSlop", (it) => {
       yield* commitSnapshot(repositoryRoot);
       yield* git(repositoryRoot, ["checkout", "--quiet", "main"]);
       yield* git(repositoryRoot, ["merge", "--quiet", "--no-ff", "--no-edit", "feature"]);
-      return yield* answerWithout(repositoryRoot, {
+      const mergeCommit = (yield* git(repositoryRoot, ["rev-parse", "HEAD"])).trim();
+      const checkoutRoot = yield* newRepository;
+      yield* git(checkoutRoot, ["remote", "add", "origin", `file://${repositoryRoot}`]);
+      yield* git(checkoutRoot, [
+        "fetch",
+        "--quiet",
+        "--no-tags",
+        "--depth=1",
+        "origin",
+        mergeCommit,
+      ]);
+      yield* git(checkoutRoot, ["checkout", "--quiet", "--detach", mergeCommit]);
+      return yield* answerWithout(checkoutRoot, {
         GITHUB_REPOSITORY: "owner/name",
         GITHUB_TOKEN: "",
       });

@@ -1,4 +1,4 @@
-import { RemoteFailure } from "@repo/db/migrations";
+import { RowCells, RemoteFailure } from "@repo/db/migrations";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { Effect, Layer, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
@@ -7,11 +7,10 @@ import type { SQLiteExecuteMethod } from "drizzle-orm/sqlite-core";
 import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 
 const D1_API_TIMEOUT_MS = 30_000;
-const RawRows = Schema.Array(Schema.Array(Schema.Unknown));
 const RawResponse = Schema.Struct({
   result: Schema.Array(
     Schema.Struct({
-      results: Schema.Struct({ rows: RawRows }),
+      results: Schema.Struct({ rows: RowCells }),
       success: Schema.Literal(true),
     }),
   ),
@@ -55,7 +54,7 @@ const postRaw = (
   endpoint: string,
   apiToken: string,
   batch: readonly { readonly params?: readonly unknown[]; readonly sql: string }[],
-): Effect.Effect<readonly (typeof RawRows.Type)[], RemoteFailure> =>
+): Effect.Effect<readonly (typeof RowCells.Type)[], RemoteFailure> =>
   Effect.gen(function* request() {
     const responseJson = yield* readJson(endpoint, apiToken, { batch });
     const { result } = yield* Schema.decodeUnknownEffect(RawResponse)(responseJson).pipe(

@@ -1,10 +1,2 @@
-import { env as processEnvironment } from "node:process";
-
-const optionalSetting = (variable: string): string | undefined => {
-  const setting = processEnvironment[variable];
-  return typeof setting === "string" ? setting : undefined;
-};
-
-const telemetryAsked = optionalSetting("MST_TELEMETRY") !== undefined;
-
-export { optionalSetting, telemetryAsked };
+export { optionalSetting } from "@repo/config/process-environment";
+export { telemetryAsked } from "@repo/telemetry/optional-setting";

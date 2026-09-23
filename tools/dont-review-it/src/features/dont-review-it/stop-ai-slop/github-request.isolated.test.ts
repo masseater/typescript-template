@@ -78,7 +78,12 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
           return HttpResponse.json({
             merge_base_commit: { sha: "basesha", url: "ignored" },
             files: [
-              { filename: "src/moved.ts", status: "renamed", previous_filename: "src/was.ts" },
+              {
+                filename: "src/moved.ts",
+                status: "renamed",
+                previous_filename: "src/was.ts",
+                changes: 0,
+              },
             ],
           });
         }),
@@ -93,7 +98,14 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
       Effect.gen(function* program() {
         expect((yield* answeredCompare).compared).toStrictEqual({
           merge_base_commit: { sha: "basesha" },
-          files: [{ filename: "src/moved.ts", status: "renamed", previous_filename: "src/was.ts" }],
+          files: [
+            {
+              filename: "src/moved.ts",
+              status: "renamed",
+              previous_filename: "src/was.ts",
+              changes: 0,
+            },
+          ],
         });
       }),
     );
@@ -178,7 +190,7 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
             comparedWith(() =>
               HttpResponse.json({
                 merge_base_commit: { sha: "basesha" },
-                files: [{ filename: "src/legacy.ts", status: "unchanged" }],
+                files: [{ filename: "src/legacy.ts", status: "unchanged", changes: 0 }],
               }),
             ),
           ),
@@ -199,7 +211,14 @@ layer(Layer.merge(listeningGitHubApi, FetchHttpClient.layer))("gitHubApiFor", (i
             comparedWith(() =>
               HttpResponse.json({
                 merge_base_commit: { sha: "basesha" },
-                files: [{ filename: "docs/moved.md", status: "renamed", previous_filename: "" }],
+                files: [
+                  {
+                    filename: "docs/moved.md",
+                    status: "renamed",
+                    previous_filename: "",
+                    changes: 0,
+                  },
+                ],
               }),
             ),
           ),

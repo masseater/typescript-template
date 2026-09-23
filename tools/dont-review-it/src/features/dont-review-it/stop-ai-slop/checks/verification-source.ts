@@ -8,7 +8,7 @@ import {
   type ParseResult,
 } from "oxc-parser";
 
-import { gitPath } from "../git-path.ts";
+import { posixPath } from "../../platform/path.ts";
 import { scopedCallExpressionsIn } from "./scoped-call-expressions.ts";
 
 type FileAbsenceVerification = {
@@ -92,7 +92,7 @@ const staticMember = (
 
 const repositoryPath = (held: string): string | null => {
   if (held.startsWith("/") || /^[A-Za-z]:[\\/]/u.test(held)) return null;
-  const normalizedText = gitPath.normalize(held);
+  const normalizedText = posixPath.normalize(held);
   if (normalizedText === "." || normalizedText === ".." || normalizedText.startsWith("../"))
     return null;
   return normalizedText;
@@ -190,7 +190,7 @@ const fileVerificationFrom = ({
 const importedModulePath = (testFile: string, moduleRequest: string): string | null => {
   if (!moduleRequest.startsWith("./") && !moduleRequest.startsWith("../")) return null;
   if (!/\.[cm]?[jt]sx?$/u.test(moduleRequest)) return null;
-  return repositoryPath(gitPath.join(gitPath.dirname(testFile), moduleRequest));
+  return repositoryPath(posixPath.join(posixPath.dirname(testFile), moduleRequest));
 };
 
 const negatedExpectationFrom = (

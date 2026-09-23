@@ -16,8 +16,10 @@ export const inspectCanonicalValues = (inspectionRequest: {
 export const findEquivalentConcepts = (
   declarations: readonly CanonicalValuesEntry[],
 ): readonly (readonly CanonicalValuesEntry[])[] =>
-  [...buildCatalog(declarations).entriesByFingerprint.values()].filter(
-    (grouped) => new Set(grouped.map((declaration) => declaration.conceptId)).size > 1,
-  );
+  [
+    ...buildCatalog(
+      declarations.filter((declaration) => declaration.values.length > 0),
+    ).entriesByFingerprint.values(),
+  ].filter((grouped) => new Set(grouped.map((declaration) => declaration.conceptId)).size > 1);
 
 export { formatCanonicalValuesProblem, formatEquivalentConceptGroup } from "./verify-format.ts";

@@ -3,6 +3,7 @@ import {
   ButtonAnchor,
   ConfirmDialog,
   Field,
+  Page,
   STATUS_VARIANT,
   StatusMessage,
   localState,
@@ -14,7 +15,6 @@ import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 
 import { discardDraft, saveDraft } from "#pages/wiki-edit/api/wiki-draft.ts";
 import { wikiPageHref, writeWikiDocument } from "#shared/wiki-document/index.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { EditorToolbar } from "./editor-toolbar.tsx";
 import { wikiEditorComponents, wikiEditorPlugins } from "./wiki-editor-plugins.ts";
 
@@ -53,8 +53,8 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
     discardDraft(source.path, version).then(() => router.invalidate());
 
   return (
-    <OpsPage title={`${document.title} を編集`}>
-      <div className="flex w-full max-w-page flex-col gap-4">
+    <Page title={`${document.title} を編集`}>
+      <div className="flex flex-col gap-4">
         <Field
           label="タイトル"
           name="title"
@@ -132,7 +132,7 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
         title="下書きを捨てますか"
         variant="danger"
       />
-    </OpsPage>
+    </Page>
   );
 }
 

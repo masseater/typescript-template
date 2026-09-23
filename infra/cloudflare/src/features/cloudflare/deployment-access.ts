@@ -39,11 +39,11 @@ function confidentialValues(
   secrets: DeploymentSecrets,
   authorization: Redacted.Redacted | undefined,
 ): readonly Confidential[] {
-  const origins = Object.values(config.origins).flatMap((origin) => [
+  const origins = Object.values(config.origins).flatMap((origin): readonly Confidential[] => [
     { key: deploymentKey.appDomain, value: origin },
     { key: deploymentKey.appDomain, value: new URL(origin).hostname },
   ]);
-  return [
+  const values: readonly Confidential[] = [
     { key: deploymentKey.cloudflareAccountId, value: config.accountId },
     { key: deploymentKey.cloudflareZoneId, value: config.zoneId },
     { key: ENVIRONMENT_FILE_VARIABLE, value: secrets.filename },
@@ -51,11 +51,12 @@ function confidentialValues(
     { key: deploymentKey.prefix, value: config.prefix },
     ...origins,
     ...otlpValues(config, authorization),
-    ...config.budget.recipients.map((recipient) => ({
+    ...config.budget.recipients.map((recipient): Confidential => ({
       key: deploymentKey.alertEmail,
       value: recipient,
     })),
-  ].toSorted(byLongest);
+  ];
+  return values.toSorted(byLongest);
 }
 
 const deploymentAccess = Effect.fn("deploymentAccess")(function* deploymentAccess() {

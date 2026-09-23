@@ -6,6 +6,8 @@ import type { Origin } from "./references.ts";
 
 const cliImplementation = "libs/cli/src/features/cli/cli.ts";
 
+const exitCodeImplementation = "libs/cli/src/features/cli/exit-code.ts";
+
 const processMember = (origin: Origin): string | undefined => {
   const [source, ...members] = origin;
   if (source === "node:process" || source === "process" || source === "import.meta") {
@@ -31,11 +33,18 @@ const isProcessBoundary = (origin: Origin): boolean => {
   return isProcessOutput(origin) || processMember(origin) === "exitCode" || isRuntimeEntry(origin);
 };
 
+const isProcessBoundaryBesideExitCode = (origin: Origin): boolean =>
+  isProcessOutput(origin) || isRuntimeEntry(origin);
+
 const processBoundaryVisitor = (inspection: LintContext): Visitor => {
-  if (filename(inspection).endsWith(`/${cliImplementation}`)) {
+  const inspected = filename(inspection);
+  if (inspected.endsWith(`/${cliImplementation}`)) {
     return {};
+  }
+  if (inspected.endsWith(`/${exitCodeImplementation}`)) {
+    return originVisitor(inspection, isProcessBoundaryBesideExitCode);
   }
   return originVisitor(inspection, isProcessBoundary);
 };
 
-export { cliImplementation, processBoundaryVisitor, processMember };
+export { cliImplementation, exitCodeImplementation, processBoundaryVisitor, processMember };
