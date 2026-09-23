@@ -1,10 +1,9 @@
-import { Clock, Effect } from "effect";
+import { Clock, Effect, Encoding } from "effect";
 
 import { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
 const signatureToleranceSeconds = 300;
 const millisecondsPerSecond = 1000;
-const hexRadix = 16;
 const byteWidth = 2;
 
 interface SignatureHeader {
@@ -23,12 +22,6 @@ function parseSignatureHeader(header: string): SignatureHeader | undefined {
     return undefined;
   }
   return { signatures, timestamp };
-}
-
-function hex(bytes: ArrayBuffer): string {
-  return [...new Uint8Array(bytes)]
-    .map((byte) => byte.toString(hexRadix).padStart(byteWidth, "0"))
-    .join("");
 }
 
 function sameDigest(expected: string, candidate: string): boolean {
@@ -60,7 +53,7 @@ const signPayload = Effect.fn("signStripePayload")(function* signStripePayload(
   const digest = yield* Effect.promise(() =>
     crypto.subtle.sign("HMAC", key, encoder.encode(signedPayload)),
   );
-  return hex(digest);
+  return Encoding.encodeHex(new Uint8Array(digest));
 });
 
 const verifyStripeSignature = Effect.fn("verifyStripeSignature")(function* verifyStripeSignature(

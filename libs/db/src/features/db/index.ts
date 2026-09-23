@@ -1,13 +1,5 @@
-import { Effect } from "effect";
-
-import { query } from "./database.ts";
-import { user } from "./schema.ts";
-
-const checkDatabase = Effect.fn("checkDatabase")(function* checkDatabase() {
-  yield* query((database) => database.select({ id: user.id }).from(user).limit(1));
-});
-
 export { containsKeyword } from "./contains-keyword.ts";
+export { checkDatabase } from "./check-database.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
 export { erDiagram } from "./er-diagram.ts";
@@ -33,7 +25,6 @@ export type { NotificationKind } from "./schema.ts";
 export { UserNotFound } from "./user-not-found.ts";
 export type { UserRecord } from "./identity-schema.ts";
 export { RateLimitExceeded, consumeRateLimit } from "./rate-limit.ts";
-export { checkDatabase };
 export { InviteRejected } from "./invite-rejected.ts";
 export { acceptInvite, previewInvite } from "./invite.ts";
 export {
@@ -156,3 +147,4 @@ export {
   warnTarget,
 } from "./trust-admin.ts";
 export { countRows } from "./count-rows.ts";
+export { clockDate } from "./clock-date.ts";

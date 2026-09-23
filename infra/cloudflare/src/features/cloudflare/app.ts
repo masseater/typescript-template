@@ -35,14 +35,13 @@ import type { SharedConfig } from "./config.ts";
 
 function appEnv(
   target: Application,
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   shared: SharedEnv,
   billing: BillingEnv | undefined,
 ): Effect.Effect<DeclaredEnv> {
   const withAi: DeclaredEnv = grants(target, "workers-ai")
     ? { ...shared, AI: Workers.AI("AI") }
     : shared;
-  const withBilling: DeclaredEnv = { ...withAi, ...(billing ?? {}) };
+  const withBilling: DeclaredEnv = { ...withAi, ...billing };
   const withRealtime: DeclaredEnv = grants(target, "realtime")
     ? {
         ...withBilling,

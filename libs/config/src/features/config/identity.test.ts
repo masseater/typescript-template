@@ -1,9 +1,17 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { grantsAdminLevel, grantsStaffLevel } from "./identity.ts";
+import { grantsAdminLevel, grantsStaffLevel, roles } from "./identity.ts";
+
+describe("roles", () => {
+  const it = test.extend("roleNames", () => roles);
+
+  it("uses the member, administrator and staff vocabulary", ({ roleNames }) => {
+    expect(roleNames).toStrictEqual(["member", "admin", "staff"]);
+  });
+});
 
 describe("grantsAdminLevel", () => {
-  it.for([
+  test.for([
     ["owner", "operator", true],
     ["operator", "operator", true],
     ["viewer", "operator", false],
@@ -16,7 +24,7 @@ describe("grantsAdminLevel", () => {
 });
 
 describe("grantsStaffLevel", () => {
-  it.for([
+  test.for([
     ["editor", "viewer", true],
     ["viewer", "viewer", true],
     ["viewer", "editor", false],

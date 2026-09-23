@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { overridePluginMismatches } from "./lint-test-fixture.ts";
-import { awaitingPresetPackages, lintOptions, templateWorkspaces } from "./lint.ts";
+import {
+  awaitingPresetPackages,
+  softPresetPackages,
+  lintOptions,
+  templateWorkspaces,
+} from "./lint.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { commands, reachable, taskNames } from "./tasks-test-fixture.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
@@ -48,7 +53,6 @@ const workspaceDirectories = Object.keys(manifests)
   .toSorted();
 
 const globPrefix = (pattern: string): string => {
-  const slash = pattern.indexOf("/");
   const cut = pattern.indexOf("/**");
   if (cut === -1) {
     return pattern;
@@ -142,21 +146,12 @@ const qualityIncludesDoctor = (): boolean => {
 describe("inspection coverage", () => {
   it("keeps awaiting preset packages from growing silently", () => {
     expect.hasAssertions();
-    expect(awaitingPresetPackages).toStrictEqual([
+    expect(awaitingPresetPackages).toStrictEqual([]);
+    expect(softPresetPackages).toStrictEqual([
       "apps/service-admin/**",
       "apps/service-member/**",
       "apps/internal-dashboard/**",
-      "infra/budget-monitor/**",
       "infra/cloudflare/**",
-      "infra/error-monitor/**",
-      "infra/health-monitor/**",
-      "infra/local/**",
-      "libs/auth/**",
-      "libs/config/**",
-      "libs/db/**",
-      "libs/monitor/**",
-      "libs/observability/**",
-      "libs/runtime/**",
       "tools/dev/**",
       "tools/dont-review-it/**",
     ]);

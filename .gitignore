@@ -20,3 +20,4 @@ coverage/
 .spool/
 .vitest/
 .fallow/
+.claude/worktrees/

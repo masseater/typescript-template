@@ -8,7 +8,7 @@ import {
   minimumAuthSecretLength,
 } from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
-import { maximumAlertRecipients } from "@repo/monitor";
+import { Recipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/runtime/security";
@@ -73,7 +73,6 @@ const Domain = Schema.String.check(
 const HttpsUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
 );
-const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
 const observabilitySampling = 1;
 const AuthSecret = Schema.String.check(
   Schema.isMinLength(minimumAuthSecretLength),

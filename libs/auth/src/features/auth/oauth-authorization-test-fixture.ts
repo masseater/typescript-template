@@ -20,6 +20,11 @@ type AuthorizationFlow = Readonly<{
 }>;
 
 const VERIFIER_BYTES = 32;
+const encodeBase64Url = (bytes: Uint8Array): string =>
+  btoa(Array.from(bytes, (codePoint) => String.fromCodePoint(codePoint)).join(""))
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replaceAll("=", "");
 const Registration = Schema.Struct({ client_id: Schema.String });
 const Redirect = Schema.Struct({ url: Schema.String });
 const Tokens = Schema.fromJsonString(Schema.Struct({ access_token: Schema.String }));
@@ -28,7 +33,7 @@ const pkceChallenge = Effect.fn("pkceChallenge")(function* pkceChallenge(verifie
   const digest = yield* Effect.promise(() =>
     crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier)),
   );
-  return Buffer.from(digest).toString("base64url");
+  return encodeBase64Url(new Uint8Array(digest));
 });
 
 const authorizeUrl = (oauth: OAuthClient, clientId: string, challenge: string): URL => {
@@ -70,9 +75,7 @@ const startOAuthAuthorization = Effect.fn("startOAuthAuthorization")(
   function* startOAuthAuthorization(oauth: OAuthClient) {
     const anonymous = yield* clientOf(oauth.application);
     const clientId = yield* registerClient(oauth, anonymous);
-    const verifier = Buffer.from(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES))).toString(
-      "base64url",
-    );
+    const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(VERIFIER_BYTES)));
     const redirect = yield* anonymous.navigate(
       authorizeUrl(oauth, clientId, yield* pkceChallenge(verifier)).href,
     );

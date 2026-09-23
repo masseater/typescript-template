@@ -4,11 +4,6 @@ import { Effect } from "effect";
 import { Auth } from "./auth.ts";
 import { verifySession } from "./session.ts";
 
-type JsonReply = {
-  readonly body: unknown;
-  readonly status: number;
-};
-
 const origins = applicationOrigins;
 
 class BrowserClient {
@@ -72,25 +67,29 @@ class BrowserClient {
   }
 
   public send(outgoing: Request): Effect.Effect<Response> {
-    return Effect.promise(() =>
-      this.#auth.instance.handler(outgoing).then((handled) => {
-        for (const cookie of handled.headers.getSetCookie()) {
-          this.#storeCookie(cookie);
-        }
-        return handled;
-      }),
-    );
+    const authService = this.#auth;
+    const storeCookie = (header: string): void => {
+      this.#storeCookie(header);
+    };
+    return Effect.gen(function* sendProgram() {
+      const handled = yield* Effect.promise(() => authService.instance.handler(outgoing));
+      for (const cookie of handled.headers.getSetCookie()) {
+        storeCookie(cookie);
+      }
+      return handled;
+    });
   }
 
   public json(
     endpoint: string,
     jsonFields?: Readonly<Record<string, unknown>>,
-  ): Effect.Effect<JsonReply> {
+  ): Effect.Effect<{ readonly body: unknown; readonly status: number }> {
     return this.request(endpoint, jsonFields).pipe(
       Effect.flatMap((handled) =>
-        Effect.promise(() =>
-          handled.json().then((body): JsonReply => ({ body, status: handled.status })),
-        ),
+        Effect.gen(function* readJson() {
+          const responseBody: unknown = yield* Effect.promise(() => handled.json());
+          return { body: responseBody, status: handled.status };
+        }),
       ),
     );
   }

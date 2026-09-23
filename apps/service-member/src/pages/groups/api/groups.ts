@@ -1,4 +1,4 @@
-import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
+import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -11,7 +11,7 @@ function loadGroup(id: string, invite?: string): Promise<GroupDetail> {
     api.groups.view
       .get({ query: invite === undefined ? { id } : { id, invite } })
       .then((response) => {
-        const group = apiDataOrNone(GroupView, response, absent.notFound);
+        const group = apiDataOrNoneFor(absent.notFound)(GroupView, response);
         if (group === undefined) {
           throw notFound();
         }

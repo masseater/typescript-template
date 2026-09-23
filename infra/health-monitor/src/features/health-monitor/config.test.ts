@@ -1,54 +1,69 @@
-import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
-import { healthTargets, parseHealthMonitorConfig } from "./config.ts";
+import { HealthMonitorFailure, healthTargets, parseHealthMonitorConfig } from "./config.ts";
 
 const valid = {
+  INTERNAL_DASHBOARD_ORIGIN: "https://wiki.example.com",
   SERVICE_ADMIN_ORIGIN: "https://admin.example.com",
   SERVICE_MEMBER_ORIGIN: "https://app.example.com",
-  INTERNAL_DASHBOARD_ORIGIN: "https://wiki.example.com",
-};
+} as const;
 
-function code(input: unknown): Effect.Effect<
-  "health_monitor_config_invalid" | "health_monitor_origins_must_differ",
-  {
-    readonly SERVICE_ADMIN_ORIGIN: string;
-    readonly SERVICE_MEMBER_ORIGIN: string;
-    readonly INTERNAL_DASHBOARD_ORIGIN: string;
-  }
-> {
-  return parseHealthMonitorConfig(input).pipe(
-    Effect.flip,
-    Effect.map((failure) => failure.code),
-  );
-}
+describe("parseHealthMonitorConfig", () => {
+  const it = test.extend("healthProbeTargets", () =>
+    Effect.runPromise(Effect.map(parseHealthMonitorConfig(valid), healthTargets)));
 
-it.effect("accepts distinct https origins", () =>
-  Effect.gen(function* program() {
-    assert.deepStrictEqual(healthTargets(yield* parseHealthMonitorConfig(valid)), [
-      { origin: "https://app.example.com", service: "service-member" },
-      { origin: "https://admin.example.com", service: "service-admin" },
-      { origin: "https://wiki.example.com", service: "internal-dashboard" },
+  it("accepts distinct https origins", ({ healthProbeTargets }) => {
+    expect(healthProbeTargets).toStrictEqual([
+      {
+        healthEndpoint: "https://app.example.com/api/health",
+        origin: "https://app.example.com",
+        service: "service-member",
+      },
+      {
+        healthEndpoint: "https://admin.example.com/api/health",
+        origin: "https://admin.example.com",
+        service: "service-admin",
+      },
+      {
+        healthEndpoint: "https://wiki.example.com/api/health",
+        origin: "https://wiki.example.com",
+        service: "internal-dashboard",
+      },
     ]);
-  }),
-);
+  });
+});
 
-for (const override of [
-  { SERVICE_MEMBER_ORIGIN: "http://app.example.com" },
-  { INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com/docs" },
-]) {
-  it.effect(`refuses invalid settings without echoing them: ${JSON.stringify(override)}`, () =>
-    Effect.gen(function* program() {
-      assert.strictEqual(yield* code({ ...valid, ...override }), "health_monitor_config_invalid");
-    }),
-  );
-}
+describe.for([
+  [{ SERVICE_MEMBER_ORIGIN: "http://app.example.com" }],
+  [{ INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com/docs" }],
+] as const)("invalid settings %s", ([override]) => {
+  const it = test.extend("configFailure", () =>
+    Effect.runPromise(Effect.flip(parseHealthMonitorConfig({ ...valid, ...override }))));
 
-it.effect("refuses a configuration that points two applications at the same origin", () =>
-  Effect.gen(function* program() {
-    assert.strictEqual(
-      yield* code({ ...valid, INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com" }),
-      "health_monitor_origins_must_differ",
+  it("refuses the configuration", ({ configFailure }) => {
+    expect(configFailure).toStrictEqual(
+      new HealthMonitorFailure({ code: "health_monitor_config_invalid" }),
     );
-  }),
-);
+  });
+});
+
+describe("shared origins", () => {
+  const it = test.extend("configFailure", () =>
+    Effect.runPromise(
+      Effect.flip(
+        parseHealthMonitorConfig({
+          ...valid,
+          INTERNAL_DASHBOARD_ORIGIN: "https://app.example.com",
+        }),
+      ),
+    ));
+
+  it("refuses a configuration that points two applications at the same origin", ({
+    configFailure,
+  }) => {
+    expect(configFailure).toStrictEqual(
+      new HealthMonitorFailure({ code: "health_monitor_origins_must_differ" }),
+    );
+  });
+});

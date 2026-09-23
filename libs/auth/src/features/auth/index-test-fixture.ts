@@ -26,6 +26,7 @@ export {
   verifyEmail,
 } from "./auth-test-fixture.ts";
 export { BrowserClient, origins } from "./browser-client-test-fixture.ts";
+export { requestEmailChange } from "./email-change-test-fixture.ts";
 export { mailSubjects } from "./email.ts";
 export {
   MockNetwork,

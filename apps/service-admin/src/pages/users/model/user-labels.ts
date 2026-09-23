@@ -63,7 +63,11 @@ function rowConfirmation(
     };
   }
   const stateChange = stateChangeLabels[user.accountState];
-  return { confirmLabel: stateChange, title: `${stateChange}か？`, ...stateChangeConfirmation(user) };
+  return {
+    confirmLabel: stateChange,
+    title: `${stateChange}か？`,
+    ...stateChangeConfirmation(user),
+  };
 }
 
 export {

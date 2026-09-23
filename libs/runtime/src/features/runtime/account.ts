@@ -5,6 +5,7 @@ import {
   previewInvitation,
   verifyEmailToken,
   verifySession,
+  type EmailVerificationFailed,
 } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { Telemetry, ingestBrowser } from "@repo/observability";
@@ -21,11 +22,9 @@ import {
   SessionView,
 } from "./contracts.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import { createApi, failureBy } from "./http.ts";
+import { createApi, failureBy, type ApiRoutes } from "./http.ts";
 
-import type { EmailVerificationFailed } from "@repo/auth";
 import type { Failure, FailureTable } from "./failures.ts";
-import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
 
 const forbidden = {

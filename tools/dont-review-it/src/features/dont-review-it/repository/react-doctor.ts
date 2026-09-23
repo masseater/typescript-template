@@ -8,11 +8,7 @@ import { type Application, ApplicationName } from "@repo/config";
 import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
-import {
-  ANALYSIS_TIMEOUT,
-  REACT_DOCTOR_SKIP_DETAIL,
-  skippedOnlyByTimeout,
-} from "./react-doctor-timeout.ts";
+import { REACT_DOCTOR_SKIP_DETAIL, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
 import { reactDoctorPassed } from "./react-doctor-verdict.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
@@ -122,7 +118,11 @@ const scanProjects = (application: Application) =>
     while (attempt < SCAN_ATTEMPTS - 1 && skippedOnlyByTimeout(skippedIn(report))) {
       attempt += 1;
       yield* Console.error(
-        JSON.stringify({ attempt, event: "quality.react_doctor_retry", reason: ANALYSIS_TIMEOUT }),
+        JSON.stringify({
+          attempt,
+          event: "quality.react_doctor_retry",
+          reason: "transient-analysis-failure",
+        }),
       );
       scanned = yield* scan([target, "--json"]);
       report = yield* Schema.decodeUnknownEffect(Report)(scanned.stdout).pipe(

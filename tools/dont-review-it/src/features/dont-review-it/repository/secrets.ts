@@ -15,7 +15,9 @@ const byKey = (left: DeploymentValue, right: DeploymentValue): number => {
 const deploymentValues = (content: string): DeploymentValue[] => {
   return Object.entries(parseEnv(content))
     .flatMap(([key, value]) =>
-      privateDeploymentKeys.includes(key) && value !== "" ? [{ key, value }] : [],
+      typeof value === "string" && value !== "" && privateDeploymentKeys.includes(key)
+        ? [{ key, value }]
+        : [],
     )
     .toSorted(byKey);
 };

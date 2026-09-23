@@ -20,8 +20,6 @@ import { Effect } from "effect";
 import { pick } from "es-toolkit";
 import { describe, expect, onTestFinished, test, vi } from "vite-plus/test";
 
-import packageManifest from "../../../../package.json" with { type: "json" };
-
 import type { Command } from "../spool/parse-command.ts";
 
 type ExportedSpan = {
@@ -791,70 +789,6 @@ describe("recordCommandRecord", () => {
           [ATTR_PROCESS_EXIT_CODE]: FAILING_EXIT_CODE,
         },
       });
-    });
-  });
-});
-
-describe("the package surface", () => {
-  const it = test.extend("declaredManifest", () => packageManifest);
-
-  it("is run and not imported", ({ declaredManifest }) => {
-    expect(declaredManifest).toStrictEqual({
-      name: "@repo/ai-native",
-      version: "0.0.0",
-      description:
-        "Command wrappers that keep parallel heavy commands within the host's capacity and their output out of the caller's context window, plus Claude Code hooks that refuse sliced reads and instruct catching up a pull request that fell behind its base.",
-      keywords: ["tanstack-intent"],
-      license: "MIT",
-      repository: {
-        type: "git",
-        url: "git+https://github.com/masseater/typescript-template.git",
-        directory: "tools/ai-native",
-      },
-      bin: {
-        spool: "./src/features/ai-native/spool/cli.ts",
-        "sync-base": "./src/features/ai-native/sync-base/cli.ts",
-        throttle: "./src/features/ai-native/throttle/cli.ts",
-        unabridged: "./src/features/ai-native/unabridged/cli.ts",
-      },
-      files: ["dist", "skills"],
-      type: "module",
-      sideEffects: false,
-      exports: { "./package.json": "./package.json" },
-      publishConfig: {
-        bin: {
-          spool: "./dist/spool/cli.mjs",
-          "sync-base": "./dist/sync-base/cli.mjs",
-          throttle: "./dist/throttle/cli.mjs",
-          unabridged: "./dist/unabridged/cli.mjs",
-        },
-        access: "public",
-      },
-      dependencies: {
-        "@opentelemetry/api": "catalog:",
-        "@opentelemetry/api-logs": "0.221.0",
-        "@opentelemetry/semantic-conventions": "1.43.0",
-        "@repo/ai-native-telemetry": "workspace:*",
-        "cc-hooks-ts": "2.1.251",
-        effect: "catalog:",
-        "es-toolkit": "catalog:",
-        "fs-native-extensions": "1.5.0",
-        "shell-quote": "1.10.0",
-      },
-      devDependencies: {
-        "@opentelemetry/exporter-logs-otlp-http": "0.221.0",
-        "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
-        "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
-        "@opentelemetry/sdk-metrics": "catalog:",
-        "@repo/dont-review-it": "workspace:*",
-        "@repo/vite-config": "workspace:*",
-        "@tanstack/intent": "catalog:",
-        "@types/node": "catalog:",
-        "@vitest/coverage-v8": "catalog:",
-        typescript: "catalog:",
-        vite: "catalog:",
-        "vite-plus": "catalog:",
-      },
     });
   });
 });

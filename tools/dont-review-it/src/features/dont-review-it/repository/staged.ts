@@ -13,11 +13,6 @@ import {
   type PrefixScan,
 } from "./secrets.ts";
 
-interface IndexHit {
-  readonly filename: string;
-  readonly rules: readonly string[];
-}
-
 const MAX_OUTPUT_BYTES = 33_554_432;
 const run = promisify(execFile);
 
@@ -159,6 +154,11 @@ const prefixScanForIndex = Effect.fn("prefixScanForIndex")(function* prefixScanF
 });
 
 type Hit = readonly [filename: string, rule: string];
+
+type IndexHit = {
+  readonly filename: string;
+  readonly rules: readonly string[];
+};
 
 const deploymentValueHits = (
   introduced: ReadonlyMap<string, string>,

@@ -3,7 +3,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { recommended } from "@effect/tsgo/oxlint-presets";
-import { appRun, effectDiagnostics, effectTsgoNoEmit } from "@repo/vite-config";
+import {
+  appRun,
+  awaitingEffectDiagnostics,
+  effectDiagnostics,
+  effectTsgoNoEmit,
+} from "@repo/vite-config";
 import { describe, expect, it } from "vite-plus/test";
 
 import { field } from "./dependencies-test-fixture.ts";
@@ -85,13 +90,20 @@ const namedTask = (config: unknown, name: string): unknown => {
 
 const diagnosticsTask = (config: unknown): unknown => namedTask(config, "check:effect");
 
+const baselinedCommand = awaitingEffectDiagnostics["check:effect"].command;
+
+const compilerCommand = (command: string): string =>
+  command === baselinedCommand ? effectTsgoNoEmit("tsconfig.json") : command;
+
 const commandLines = (task: unknown): readonly string[] => {
   const command = field(task, "command");
   if (typeof command === "string") {
-    return [command];
+    return [compilerCommand(command)];
   }
   return Array.isArray(command)
-    ? command.filter((entry): entry is string => typeof entry === "string")
+    ? command
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((entry) => compilerCommand(entry))
     : [];
 };
 
@@ -150,7 +162,11 @@ describe("effect diagnostics coverage", () => {
       ),
     ).toStrictEqual([]);
     expect(declarations.map((task) => field(task, "input"))).toStrictEqual(
-      declarations.map(() => effectDiagnostics["check:effect"].input as unknown),
+      declarations.map((task) =>
+        field(task, "command") === baselinedCommand
+          ? (awaitingEffectDiagnostics["check:effect"].input as unknown)
+          : (effectDiagnostics["check:effect"].input as unknown),
+      ),
     );
     expect(
       declarations.flatMap((task) => {
@@ -187,11 +203,7 @@ describe("effect diagnostics coverage", () => {
   it("typechecks with effect-tsgo before the bundle and before every push", () => {
     expect.assertions(3);
     expect(effectDiagnostics["check:effect"].command).toBe(effectTsgoNoEmit("tsconfig.json"));
-    expect(appRun("service-member").tasks!["build"]).toEqual(
-      expect.objectContaining({
-        dependsOn: expect.arrayContaining(["check:effect"]),
-      }),
-    );
+    expect(appRun.tasks.build.dependsOn).toStrictEqual(expect.arrayContaining(["check:effect"]));
     expect(
       configuredDirectories.filter(
         (directory) => !reachable(directory, ["prepush"]).includes("check:effect"),

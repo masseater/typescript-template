@@ -13,7 +13,6 @@
     "effect": "catalog:"
   },
   "devDependencies": {
-    "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
     "@repo/vite-config": "workspace:*",
     "msw": "catalog:",

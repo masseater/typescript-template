@@ -84,13 +84,13 @@ const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   kind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   const updatedAt = yield* Clock.currentTimeMillis;
-  const [updated] = yield* query((database) =>
+  const [adminRow] = yield* query((database) =>
     database.all(ensureRoleStatement(email, kind, updatedAt)),
   );
-  if (updated === undefined) {
+  if (adminRow === undefined) {
     return yield* new BootstrapUnavailable();
   }
-  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(adminRow).pipe(
     Effect.mapError((cause) => new DatabaseFailure({ cause })),
   );
 });
@@ -99,6 +99,7 @@ export {
   BOOTSTRAP_KIND,
   BootstrapKind,
   BootstrappedAdmin,
+  BootstrapUnavailable,
   Email,
   bootstrapAdmin,
   bootstrapStatement,

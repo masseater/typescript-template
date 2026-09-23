@@ -1,8 +1,9 @@
 import { PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, paidStatuses } from "@repo/config";
 import { and, eq, lte } from "drizzle-orm";
-import { DateTime, Effect } from "effect";
+import { Effect } from "effect";
 
 import { planSubscription, stripeEvent } from "./billing-schema.ts";
+import { clockDate } from "./clock-date.ts";
 import { query } from "./database.ts";
 import { PaidPlanRequired } from "./paid-plan-required.ts";
 
@@ -16,14 +17,6 @@ interface StripeEventRecord {
   readonly type: string;
 }
 
-interface SubscriptionRecord {
-  readonly cancelAtPeriodEnd: boolean;
-  readonly currentPeriodEnd: Date | undefined;
-  readonly memberId: string;
-  readonly status: SubscriptionStatus;
-  readonly stripeCustomerId: string;
-  readonly stripeSubscriptionId: string;
-}
 
 interface PlanView {
   readonly cancelAtPeriodEnd: boolean;
@@ -31,8 +24,6 @@ interface PlanView {
   readonly plan: Plan;
   readonly status: SubscriptionStatus | undefined;
 }
-
-const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 const subscriptionColumns = {
   cancelAtPeriodEnd: planSubscription.cancelAtPeriodEnd,
@@ -42,6 +33,15 @@ const subscriptionColumns = {
   stripeCustomerId: planSubscription.stripeCustomerId,
   stripeSubscriptionId: planSubscription.stripeSubscriptionId,
 };
+
+interface SubscriptionRecord {
+  readonly cancelAtPeriodEnd: boolean;
+  readonly currentPeriodEnd: Date | undefined;
+  readonly memberId: string;
+  readonly status: SubscriptionStatus;
+  readonly stripeCustomerId: string;
+  readonly stripeSubscriptionId: string;
+}
 
 const findSubscription = Effect.fn("findSubscription")(function* findSubscription(
   memberId: string,

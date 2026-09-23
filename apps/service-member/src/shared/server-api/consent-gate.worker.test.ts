@@ -30,7 +30,7 @@ const ConsentRequiredBody = Schema.Struct({
 function memberApp() {
   const environment = appEnvironment();
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
+    const base = Layer.orDie(appLayer({ env: environment, audience: APPLICATION.user, routes }));
     return Layer.mergeAll(
       base,
       Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),

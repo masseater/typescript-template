@@ -9,9 +9,10 @@ import {
 } from "@repo/config";
 import { desc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { DateTime, Effect } from "effect";
+import { Effect } from "effect";
 
 import { auditWhenTargeted } from "./audit.ts";
+import { clockDate } from "./clock-date.ts";
 import { countRows } from "./count-rows.ts";
 import { query } from "./database.ts";
 import { user } from "./identity-schema.ts";
@@ -22,11 +23,7 @@ import { TrustSubjectNotFound, TrustTargetUnavailable } from "./trust.ts";
 
 const targetUser = alias(user, "report_target");
 const reporterUser = alias(user, "report_reporter");
-const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
-function matchesStatus(status: ReportStatus | undefined) {
-  return status === undefined ? undefined : eq(memberReport.status, status);
-}
 
 const reportTarget = (reportId: string) =>
   query((database) =>
@@ -36,6 +33,10 @@ const reportTarget = (reportId: string) =>
       .where(eq(memberReport.id, reportId))
       .limit(1),
   ).pipe(Effect.map(([report]) => report));
+
+function matchesStatus(status: ReportStatus | undefined) {
+  return status === undefined ? undefined : eq(memberReport.status, status);
+}
 
 const listReports = Effect.fn("listReports")(function* listReports(
   sessionId: string,

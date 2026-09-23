@@ -13,6 +13,7 @@
     "directory": "tools/dont-review-it"
   },
   "bin": {
+    "check-effect-typecheck": "./src/features/dont-review-it/repository/check-effect-typecheck.ts",
     "dont-review-it": "./src/features/dont-review-it/cli.ts",
     "dont-review-it-can-not-now": "./src/features/dont-review-it/repository/can-not-now.ts",
     "dont-review-it-canonical-literal-types": "./src/features/dont-review-it/canonical-literal-types/run-as-task.ts",

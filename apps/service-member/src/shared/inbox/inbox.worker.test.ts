@@ -11,7 +11,6 @@ import {
 } from "./messages.ts";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly USER_INBOX: DurableObjectNamespace;

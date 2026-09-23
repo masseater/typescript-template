@@ -4,7 +4,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { Console, Effect } from "effect";
+import { type Cause, Console, Effect } from "effect";
 
 import {
   featureFindings,
@@ -14,7 +14,7 @@ import {
 } from "./modular-budgets.ts";
 import { collectSourceFiles } from "./source-files.ts";
 
-const lineCount = (file: string): Effect.Effect<number> =>
+const lineCount = (file: string): Effect.Effect<number, Cause.UnknownError> =>
   Effect.gen(function* countLines() {
     const source = yield* Effect.tryPromise(() => readFile(file, "utf8"));
     if (source.length === 0) {
@@ -23,17 +23,17 @@ const lineCount = (file: string): Effect.Effect<number> =>
     return source.split(/\r?\n/u).length - (source.endsWith("\n") ? 1 : 0);
   });
 
-const directoryLines = (directory: string): Effect.Effect<number> =>
+const directoryLines = (directory: string): Effect.Effect<number, Cause.UnknownError> =>
   Effect.gen(function* sum() {
     const files = yield* collectSourceFiles(directory);
     const counts = yield* Effect.forEach(files, lineCount, { concurrency: "unbounded" });
     return counts.reduce((total, count) => total + count, 0);
   });
 
-const layerLines = (directory: string): Effect.Effect<number> =>
+const layerLines = (directory: string): Effect.Effect<number, Cause.UnknownError> =>
   existsSync(directory) ? directoryLines(directory) : Effect.succeed(0);
 
-const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[]> =>
+const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[], Cause.UnknownError> =>
   Effect.gen(function* scan() {
     const [app, shared] = yield* Effect.forEach(["app", "shared"], (layer) =>
       layerLines(join(srcRoot, layer)),
@@ -73,4 +73,4 @@ const program = Effect.gen(function* main() {
   yield* Console.log(`modular-budgets: ok (${target})`);
 });
 
-void runCli(program, (cause) => causeRecord("quality.modular_budgets_failed", { cause }));
+runCli(program, (cause) => causeRecord("quality.modular_budgets_failed", { cause }));

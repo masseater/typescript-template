@@ -7,34 +7,50 @@ import {
   taskInput,
 } from "@repo/vite-config";
 
-function monitorWorkerVite(feature: string) {
-  return {
-    pack: {
-      deps: {
-        alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
-        onlyBundle: ["effect", "@repo/monitor"],
-      },
-      entry: { index: `src/features/${feature}/worker.ts` },
-      format: "esm" as const,
-      outExtensions: () => ({ js: ".js" as const }),
-      platform: "browser" as const,
-      target: "es2023" as const,
+import type { UserConfig } from "vite-plus";
+import type { PackUserConfig } from "vite-plus/pack";
+
+const monitorWorkerVite = (
+  feature: string,
+): {
+  readonly pack: PackUserConfig;
+  readonly run: NonNullable<UserConfig["run"]>;
+  readonly test: NonNullable<UserConfig["test"]>;
+} => ({
+  pack: {
+    deps: {
+      alwaysBundle: [/^@repo\//, /^effect(?:\/|$)/],
+      onlyBundle: ["effect", "@repo/monitor"],
     },
-    run: {
-      tasks: {
-        ...effectDiagnostics,
-        ...checkCode,
-        ...workspaceCheckImports,
-        ...modularBoundaries,
-        build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
-        ...lifecycle({
-          precommit: ["check:code"],
-          prepush: ["check:effect", "check:imports", "check:modular"],
-          prepr: ["build"],
-        }),
-      },
+    dts: false,
+    entry: { index: `src/features/${feature}/worker.ts` },
+    format: "esm",
+    outExtensions: (): { readonly js: ".js" } => ({ js: ".js" }),
+    platform: "browser",
+    target: "es2023",
+  },
+  run: {
+    tasks: {
+      ...effectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
+      ...modularBoundaries,
+      build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
+      ...lifecycle({
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check:modular"],
+        prepr: ["build"],
+      }),
     },
-  };
-}
+  },
+  test: {
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
+    mockReset: true,
+    restoreMocks: true,
+  },
+});
 
 export { monitorWorkerVite };

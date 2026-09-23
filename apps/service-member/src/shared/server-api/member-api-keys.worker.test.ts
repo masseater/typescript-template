@@ -95,7 +95,7 @@ function request(
 
 it.effect("lets API keys read allowed resources and rejects writes", () => {
   const environment = appEnvironment();
-  const base = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
+  const base = Layer.orDie(appLayer({ env: environment, audience: APPLICATION.user, routes }));
   const services = Layer.mergeAll(
     base,
     Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),

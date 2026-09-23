@@ -58,11 +58,11 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
     Layer.orDie(
       Layer.merge(
         Layer.succeed(Auth, adminAuth),
-        appLayer(
-          appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret }),
-          APPLICATION.admin,
+        appLayer({
+          env: appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret }),
+          audience: APPLICATION.admin,
           routes,
-        ),
+        }),
       ),
     ),
   );
@@ -94,9 +94,7 @@ const parseGrantedBody = (granted: Response): Effect.Effect<unknown> =>
   }).pipe(Effect.orDie);
 
 describe("admin MCP authorization", () => {
-  const it = authTest();
-
-  it("admin publishes OAuth discovery for its MCP resource", ({ auth }) =>
+  authTest("admin publishes OAuth discovery for its MCP resource", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
         const app = adminMcpApp(auth);
@@ -128,9 +126,10 @@ describe("admin MCP authorization", () => {
       expect(result.header).toContain(
         `resource_metadata="${adminOrigin}/.well-known/oauth-protected-resource/mcp"`,
       );
-    }));
+    }),
+  );
 
-  it("rejects mutating MCP tools for a read-only administrator", ({ auth }) =>
+  authTest("rejects mutating MCP tools for a read-only administrator", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
         yield* addUser({ userId: "member" });
@@ -148,9 +147,10 @@ describe("admin MCP authorization", () => {
       expect(result.suspend).toMatchObject({
         result: { content: [{ text: "permission_required" }], isError: true },
       });
-    }));
+    }),
+  );
 
-  it("lets an operate-tier administrator search members through OAuth", ({ auth }) =>
+  authTest("lets an operate-tier administrator search members through OAuth", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
         yield* addUser({ userId: "member" });
@@ -165,9 +165,10 @@ describe("admin MCP authorization", () => {
     ).then((result) => {
       const listed = result as { users: readonly { id: string }[] };
       expect(listed.users.map((user) => user.id)).toContain("member");
-    }));
+    }),
+  );
 
-  it("marks MCP-originated suspensions in the audit log", ({ auth }) =>
+  authTest("marks MCP-originated suspensions in the audit log", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* program() {
         yield* addUser({ userId: "member" });
@@ -189,25 +190,29 @@ describe("admin MCP authorization", () => {
           channel: "mcp",
         },
       ]);
-    }));
+    }),
+  );
 
-  it("strong administrator authorizes an MCP client that can then call the server", ({ auth }) =>
-    runWith(auth, () =>
-      Effect.gen(function* program() {
-        const app = adminMcpApp(auth);
-        const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.operator);
-        const granted = yield* app.mcp.post(tokens.access_token, {
-          id: 0,
-          jsonrpc: "2.0",
-          method: "tools/list",
-        });
-        yield* app.stop;
-        const body = granted instanceof Response ? yield* parseGrantedBody(granted) : granted;
-        return {
-          grantedStatus: body !== undefined ? httpStatus.ok : httpStatus.internalServerError,
-        };
+  authTest(
+    "strong administrator authorizes an MCP client that can then call the server",
+    ({ auth }) =>
+      runWith(auth, () =>
+        Effect.gen(function* program() {
+          const app = adminMcpApp(auth);
+          const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.operator);
+          const granted = yield* app.mcp.post(tokens.access_token, {
+            id: 0,
+            jsonrpc: "2.0",
+            method: "tools/list",
+          });
+          yield* app.stop;
+          const body = granted instanceof Response ? yield* parseGrantedBody(granted) : granted;
+          return {
+            grantedStatus: body !== undefined ? httpStatus.ok : httpStatus.internalServerError,
+          };
+        }),
+      ).then((result) => {
+        expect(result.grantedStatus).toBe(httpStatus.ok);
       }),
-    ).then((result) => {
-      expect(result.grantedStatus).toBe(httpStatus.ok);
-    }));
+  );
 });

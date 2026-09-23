@@ -90,7 +90,9 @@ describe("atom-server-data", () => {
     ],
   ])("allows non-server Atom usage: %s", ([_label, code]) => {
     expect.hasAssertions();
-    expect(reportedRules({ code, filename: "libs/ui/src/features/ui/probe.ts" })).toStrictEqual([]);
+    expect(
+      reportedRules({ code: code ?? "", filename: "libs/ui/src/features/ui/probe.ts" }),
+    ).toStrictEqual([]);
   });
 });
 
@@ -108,7 +110,10 @@ describe("retired server-state imports", () => {
   ])("rejects %s imports", ([_label, code]) => {
     expect.hasAssertions();
     expect(
-      reported("retired-imports", { code, filename: "libs/ui/src/features/ui/probe.ts" }),
+      reported("retired-imports", {
+        code: code ?? "",
+        filename: "libs/ui/src/features/ui/probe.ts",
+      }),
     ).toBe(true);
   });
 });

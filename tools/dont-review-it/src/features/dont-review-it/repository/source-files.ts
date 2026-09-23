@@ -1,9 +1,11 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { Effect } from "effect";
+import { type Cause, Effect } from "effect";
 
-const collectSourceFiles = (directory: string): Effect.Effect<readonly string[]> =>
+const collectSourceFiles = (
+  directory: string,
+): Effect.Effect<readonly string[], Cause.UnknownError> =>
   Effect.gen(function* listSourceFiles() {
     const entries = yield* Effect.tryPromise(() => readdir(directory, { withFileTypes: true }));
     const nested = yield* Effect.forEach(

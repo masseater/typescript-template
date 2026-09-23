@@ -56,7 +56,7 @@ function mcpEndpoint<Actor, Failure, Requirements>(
     ): Promise<Value> => Effect.runPromiseWith(context)(program);
     const handler = handlerFor(authorized, run);
     const response = yield* Effect.promise(() => Promise.resolve(handler.fetch(request)));
-    return secureResponse(request, response);
+    return secureResponse({ httpRequest: request, httpResponse: response });
   });
 }
 

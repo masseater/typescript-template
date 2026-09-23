@@ -69,7 +69,6 @@ interface ApiRoutes<Requirements> {
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
     failures: ExactFailureTable<Failures, Table>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ) => readonly [
     RouteDetail,
     (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>,
@@ -402,7 +401,6 @@ function apiRoutes<Requirements>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Services>, Failures, Services>,
     failures: ExactFailureTable<Failures, Table>,
-    // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   ): readonly [
     RouteDetail,
     (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>,

@@ -1,22 +1,18 @@
 import { APPLICATION } from "@repo/config";
-import { readStorage } from "@repo/config/storage";
 import { env } from "cloudflare:workers";
-import { Effect, Layer } from "effect";
+import { Layer } from "effect";
 import { TestClock } from "effect/testing";
 
 import { appLayer } from "./bindings.ts";
 import { FileStore } from "./file-store.ts";
-import { workerRuntime } from "./worker-runtime.ts";
+import { workerRuntime, type WorkerRuntime } from "./worker-runtime.ts";
 
 import type { AppServices } from "./index.ts";
-import type { WorkerRuntime } from "./worker-runtime.ts";
-
 const fixtureOrigin = "http://localhost:3001";
 const fixtureAuthSecret = "worker-test-secret-at-least-32-characters";
-
-function appEnvironment(
+const appEnvironment = (
   overrides: Readonly<Record<string, unknown>> = {},
-): Record<string, unknown> {
+): Record<string, unknown> => {
   return {
     ...env,
     APP_ORIGIN: fixtureOrigin,
@@ -30,17 +26,14 @@ function appEnvironment(
     STRIPE_WEBHOOK_SECRET: "whsec_testsecret",
     ...overrides,
   };
-}
-
-function testClockRuntime(
+};
+const testClockRuntime = (
   routes: Readonly<Record<string, string>>,
-): WorkerRuntime<AppServices | TestClock.TestClock, never> {
-  const services = Layer.orDie(appLayer(appEnvironment(), APPLICATION.user, routes));
+): WorkerRuntime<AppServices | TestClock.TestClock, never> => {
+  const services = Layer.orDie(
+    appLayer({ env: appEnvironment(), audience: APPLICATION.user, routes }),
+  );
   return workerRuntime(() => Layer.merge(services, TestClock.layer()));
-}
-
-const testFileStore = Layer.orDie(
-  Layer.unwrap(Effect.map(readStorage(env), (storage) => FileStore.layer(storage.files))),
-);
-
+};
+const testFileStore = Layer.orDie(FileStore.fromEnvironment(env));
 export { appEnvironment, fixtureAuthSecret, fixtureOrigin, testClockRuntime, testFileStore };
