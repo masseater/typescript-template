@@ -18,9 +18,6 @@ export default Stack(
         [budgetMonitorEnv.billingReadToken]: token.value,
         [budgetMonitorEnv.budgetJpy]: String(config.budget.budgetJpy),
         [budgetMonitorEnv.accountId]: config.accountId,
-        [budgetMonitorEnv.fixedCostUsd]: String(config.budget.fixedCostUsd),
-        [budgetMonitorEnv.jpyPerUsd]: String(config.budget.jpyPerUsd),
-        [budgetMonitorEnv.reserveUsd]: String(config.budget.reserveUsd),
       };
     }),
   }),

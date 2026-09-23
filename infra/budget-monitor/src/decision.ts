@@ -9,6 +9,8 @@ const NO_ALERT_LEVEL = 0;
 const WARNING_LEVEL = 80;
 const EXHAUSTED_LEVEL = 100;
 const WARNING_RATIO = 0.8;
+const FIXED_COST_USD = 5;
+const RESERVE_USD = 5;
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
 interface BudgetDecision {
@@ -16,6 +18,7 @@ interface BudgetDecision {
   usageUsd: number;
   allowanceUsd: number;
   estimatedTotalJpy: number;
+  jpyPerUsd: number;
   level: typeof NO_ALERT_LEVEL | typeof WARNING_LEVEL | typeof EXHAUSTED_LEVEL;
   notificationKey: string;
 }
@@ -33,28 +36,30 @@ function alertLevel(ratio: number): BudgetDecision["level"] {
 const evaluateBudget = Effect.fn("evaluateBudget")(function* evaluateBudget(
   snapshot: Readonly<UsageSnapshot>,
   config: Readonly<BudgetConfig>,
+  jpyPerUsd: number,
 ) {
-  const allowanceUsd =
-    config.BUDGET_JPY / config.JPY_PER_USD - config.FIXED_COST_USD - config.RESERVE_USD;
+  const allowanceUsd = config.BUDGET_JPY / jpyPerUsd - FIXED_COST_USD - RESERVE_USD;
   if (
     !Number.isFinite(allowanceUsd) ||
-    allowanceUsd <= 0 ||
     !Number.isFinite(snapshot.usageUsd) ||
     snapshot.usageUsd < 0
   ) {
     return yield* fail("budget_input_invalid");
   }
+  if (allowanceUsd <= 0) {
+    return yield* fail("budget_has_no_usage_allowance");
+  }
   const level = alertLevel(snapshot.usageUsd / allowanceUsd);
   const decision: BudgetDecision = {
     allowanceUsd,
-    estimatedTotalJpy: (snapshot.usageUsd + config.FIXED_COST_USD) * config.JPY_PER_USD,
+    estimatedTotalJpy: (snapshot.usageUsd + FIXED_COST_USD) * jpyPerUsd,
+    jpyPerUsd,
     level,
     notificationKey: yield* encodeJson([
       snapshot.periodStart,
       config.BUDGET_JPY,
-      config.JPY_PER_USD,
-      config.FIXED_COST_USD,
-      config.RESERVE_USD,
+      FIXED_COST_USD,
+      RESERVE_USD,
       level,
     ]).pipe(Effect.orDie),
     periodStart: snapshot.periodStart,
