@@ -20,17 +20,15 @@ function memberDestinationTo(item: ReturnType<typeof memberNavItems>[number]): s
 
 function MemberFrame({
   children,
-  memberBoard,
   navBadges,
   user,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-  memberBoard: boolean;
   navBadges: NavBadges;
   user: SessionView["user"];
 }>): ReactElement {
   const { pathname } = useLocation();
-  const destinations = memberNavItems(memberHasPaidPlan, memberBoard, user.id, navBadges).map(
+  const destinations = memberNavItems(memberHasPaidPlan, user.id, navBadges).map(
     (item) => ({
       ...(item.badge === undefined ? {} : { badge: item.badge }),
       exact: item.id === "home",
