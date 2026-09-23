@@ -12,3 +12,13 @@
 
 - 画面の構成と遷移の判断を文書にする場合は、`apps/internal-dashboard/content/docs/pages/` に置きます。
 - ページ仕様を `.claude/skills/reviews/references/` に混ぜることは禁止です。ここは判断基準だけを持ち、個別画面の手順は持ちません。
+
+## サーバーデータの読み取り
+
+この節の規範は、TanStack Query を画面に持ち込んだ時点で機能し始める。いまはどのワークスペースも TanStack Query に依存していない。
+
+- 画面がサーバーのデータを読む場合は、TanStack Query の `useQuery` を通します。
+- 部品の状態に `fetch` の結果を入れて、サーバーのデータを手で持つことは禁止です。
+  - 手で持った値は、取得中・失敗・再取得・破棄の扱いを部品ごとに書き直すことになり、同じデータを読む部品どうしで食い違う
+- `queryOptions`・`infiniteQueryOptions`・`mutationOptions` を宣言する場合は、FSD の `api` セグメントに置きます。
+- それらを部品やページのモジュールの中で宣言することは禁止です。
