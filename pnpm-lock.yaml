@@ -1331,6 +1331,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../auth
+      '@repo/config':
+        specifier: workspace:*
+        version: link:../config
       '@repo/db':
         specifier: workspace:*
         version: link:../db
