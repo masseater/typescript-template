@@ -2,12 +2,7 @@
   "$schema": "./node_modules/fallow/schema.json",
   "extends": ["./.fallowrc.json"],
   "production": true,
-  "ignoreFindings": [
-    "**/*-fixture.ts",
-    "libs/ui/*.{ts,tsx}",
-    "libs/*/storybook/**",
-    "tools/dont-review-it/src/features/dont-review-it/repository/**",
-    "tools/e2e/**"
-  ],
+  "entry": ["**/*-fixture.ts", "**/testing.ts", "**/*-testing.ts"],
+  "ignoreFindings": ["**", "!{apps,libs,infra}/*/src/**"],
   "ignoreExportsUsedInFile": true
 }

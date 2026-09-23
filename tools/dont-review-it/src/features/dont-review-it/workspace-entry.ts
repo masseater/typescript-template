@@ -1,4 +1,4 @@
-export { dontReviewItPreset } from "./configs/preset.ts";
+export { dontReviewItPreset } from "./index.ts";
 export { generatedFiles, lintOptions } from "./repository/lint.ts";
 export {
   devServerTests,

@@ -9,7 +9,7 @@ import {
   requireStatus,
   signInAs,
 } from "./auth-test-fixture.ts";
-import { origins, type BrowserClient } from "./browser-client.ts";
+import { origins, type BrowserClient } from "./browser-client-fixture.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
 type AuthorizationFlow = {

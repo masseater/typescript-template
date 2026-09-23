@@ -14,7 +14,11 @@
   },
   "bin": {
     "dont-review-it": "./src/features/dont-review-it/cli.ts",
+    "dont-review-it-can-not-now": "./src/features/dont-review-it/repository/can-not-now.ts",
     "dont-review-it-canonical-literal-types": "./src/features/dont-review-it/canonical-literal-types/run-as-task.ts",
+    "dont-review-it-check-staged": "./src/features/dont-review-it/repository/check-staged.ts",
+    "dont-review-it-clean-shared-task-cache": "./src/features/dont-review-it/repository/clean-shared-task-cache.ts",
+    "dont-review-it-pr-affected": "./src/features/dont-review-it/repository/pr-affected.ts",
     "dont-review-it-typecheck": "./src/features/dont-review-it/repository/typecheck-workspaces.ts",
     "quality-check-client": "./src/features/dont-review-it/repository/client-bundle.ts",
     "quality-check-imports": "./src/features/dont-review-it/repository/workspace-imports.ts",

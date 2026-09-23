@@ -5,7 +5,6 @@ import { DateTime, Effect } from "effect";
 
 import { query, type Database } from "./database.ts";
 import {
-  account,
   oauthAccessToken,
   oauthClient,
   oauthConsent,
@@ -16,7 +15,7 @@ import {
 
 import type { DatabaseFailure } from "./database-failure.ts";
 
-export const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 export const addUser = (added: {
   readonly userId: string;
@@ -37,26 +36,6 @@ export const addUser = (added: {
       })
       .then(() => undefined),
   );
-};
-
-export const addCredential = (userId: string): Effect.Effect<void, DatabaseFailure, Database> => {
-  return Effect.gen(function* addCredentialProgram() {
-    const createdAt = DateTime.toDate(yield* DateTime.now);
-    yield* query((database) =>
-      database
-        .insert(account)
-        .values({
-          accountId: userId,
-          createdAt,
-          id: `credential-${userId}`,
-          password: "not-used-for-authentication-in-db-test",
-          providerId: "credential",
-          updatedAt: createdAt,
-          userId,
-        })
-        .then(() => undefined),
-    );
-  });
 };
 
 const SESSION_LIFETIME_MS = 60_000;

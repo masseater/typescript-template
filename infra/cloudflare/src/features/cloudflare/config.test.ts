@@ -23,8 +23,17 @@ import type {
   SendEmail,
   Service,
 } from "@cloudflare/workers-types";
-import type { Flagship } from "alchemy/Cloudflare";
-import type { AppBindings } from "./bindings.ts";
+import type { Application, CapabilityOf } from "@repo/config";
+import type { Assets, Flagship, InferEnv } from "alchemy/Cloudflare";
+import type { CapabilityEnv, SharedEnv, UnionToIntersection } from "./bindings.ts";
+
+type AppBindings<App extends Application> = InferEnv<
+  SharedEnv &
+    ([CapabilityOf<App>] extends [never]
+      ? unknown
+      : UnionToIntersection<CapabilityEnv[CapabilityOf<App>]>) &
+    Readonly<{ ASSETS: Assets }>
+>;
 
 const release = "0".repeat(16);
 const settings = verificationSettings;

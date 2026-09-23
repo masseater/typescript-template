@@ -18,7 +18,7 @@ import {
   signInAs,
 } from "./testing.ts";
 
-import type { BrowserClient } from "./browser-client.ts";
+import type { BrowserClient } from "./browser-client-fixture.ts";
 
 const OLD_EMAIL = "old@example.com";
 const NEW_EMAIL = "new@example.com";

@@ -13,7 +13,7 @@ import { test } from "vite-plus/test";
 
 import { AuthIdentifiers, type GenerateId } from "./auth-identifiers.ts";
 import { Auth } from "./auth.ts";
-import { BrowserClient, origins } from "./browser-client.ts";
+import { BrowserClient, origins } from "./browser-client-fixture.ts";
 import { mailConfig, mailServer, verificationLink } from "./mail-fixture.ts";
 import { UnexpectedStatus } from "./unexpected-status.ts";
 
@@ -91,11 +91,6 @@ const runWith = <Value, Failure>(
 ): Promise<Value> => {
   return Effect.runPromise(Effect.provideContext(program(), auth));
 };
-
-const withAuth = <Value, Failure>(
-  effect: Effect.Effect<Value, Failure, AuthTestServices>,
-): Effect.Effect<Value, Failure | AuthFailure> =>
-  Effect.scoped(Effect.provide(effect, authTestLayer));
 
 const audienceOnEmptyDatabase = (
   audience: Application,
@@ -315,5 +310,4 @@ export {
   signInAs,
   spendSignInWindow,
   verifyEmail,
-  withAuth,
 };

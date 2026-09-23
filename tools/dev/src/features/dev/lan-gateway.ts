@@ -39,7 +39,7 @@ const browserLaunchArguments = Effect.fn("browserLaunchArguments")(
 function launchGateway() {
   return Effect.gen(function* launch() {
     const logPath = yield* urlPath(new URL("logs/gateway.log", local));
-    const gatewayPath = yield* urlPath(new URL("gateway.ts", import.meta.url));
+    const gatewayPath = yield* urlPath(new URL("./gateway.ts", import.meta.url));
     const log = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.String))(logPath).pipe(
       Effect.orDie,
     );

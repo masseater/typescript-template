@@ -34,19 +34,19 @@ export default defineConfig({
       },
       "check:staged": {
         cache: false,
-        command: "./src/features/dont-review-it/repository/check-staged.ts",
+        command: "dont-review-it-check-staged",
       },
       "pr-affected": {
         cache: false,
-        command: "./src/features/dont-review-it/repository/pr-affected.ts",
+        command: "dont-review-it-pr-affected",
       },
       "can-not-now": {
         cache: false,
-        command: "./src/features/dont-review-it/repository/can-not-now.ts",
+        command: "dont-review-it-can-not-now",
       },
       "clean:shared-task-cache": {
         cache: false,
-        command: "./src/features/dont-review-it/repository/clean-shared-task-cache.ts",
+        command: "dont-review-it-clean-shared-task-cache",
       },
       ...lifecycle({
         precommit: ["check:staged", "check:code"],
