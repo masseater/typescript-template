@@ -1,7 +1,7 @@
 ---
 name: modern-react-guidance
 description: >
-  React 19.3 の部品を書く・直す・レビューするときに読む。Compiler、ref を props として渡す、Context の value、ViewTransition、Activity、useEffectEvent、browser()、Effect の置き場所を決める。フォームとクライアント状態とサーバー読み取りは Effect Atom、@repo/ui の useAction（キュー）、TanStack Form、TanStack Query に合わせ、useActionState・useFormStatus・useState・手書きの useEffect fetch・タイマーデバウンスには戻さない。瀑布は react-best-practices を読む。
+  React 19.3 のコンポーネントを書く・直す・レビューするときに読む。Compiler、ref を props として渡す、Context の value、ViewTransition、Activity、useEffectEvent、browser()、Effect の置き場所を決める。フォームとクライアント状態とサーバー読み取りは Effect Atom、@repo/ui の useAction（キュー）、TanStack Form、TanStack Query に合わせ、useActionState・useFormStatus・useState・手書きの useEffect fetch・タイマーデバウンスには戻さない。瀑布は react-best-practices を読む。
 license: MIT
 metadata:
   version: "1.0.0"
@@ -16,9 +16,9 @@ metadata:
 
 # Modern React Guidance
 
-大本は https://github.com/adhhamdev/modern-react-guidance （MIT、`LICENSE`）。元になった async-react の議論は https://github.com/reactwg/async-react/discussions/12 。宣言的 UI とトランジションの設計論は https://speakerdeck.com/uhyo/react-no-sekkeiron 。操作を止めないミューテーションの UX は https://zenn.dev/uhyo/articles/async-react-action-queue 。重い派生の一貫性は https://zenn.dev/uhyo/articles/async-react-debounce 。名前とファイルは https://gist.github.com/rafaelrozon/9fd6bc9efbce3e70311b364f87b89241 をこのリポジトリ向けに置き換えたもの。部品 API は https://imply.io/blog/an-opinionated-guide-to-component-apis を密封・クラスタに合わせたもの。React 19.3 と React Compiler が有効なこのリポジトリ向けに、既にある lint と衝突する手順は下の拘束に置き換えてある。拘束と出典が食い違うときは拘束を採る。
+大本は https://github.com/adhhamdev/modern-react-guidance （MIT、`LICENSE`）。元になった async-react の議論は https://github.com/reactwg/async-react/discussions/12 。宣言的 UI とトランジションの設計論は https://speakerdeck.com/uhyo/react-no-sekkeiron 。操作を止めないミューテーションの UX は https://zenn.dev/uhyo/articles/async-react-action-queue 。重い派生の一貫性は https://zenn.dev/uhyo/articles/async-react-debounce 。名前とファイルは https://gist.github.com/rafaelrozon/9fd6bc9efbce3e70311b364f87b89241 をこのリポジトリ向けに置き換えたもの。コンポーネント API は https://imply.io/blog/an-opinionated-guide-to-component-apis を密封・クラスタに合わせたもの。React 19.3 と React Compiler が有効なこのリポジトリ向けに、既にある lint と衝突する手順は下の拘束に置き換えてある。拘束と出典が食い違うときは拘束を採る。
 
-非同期の待ち方（独立した処理を直列に待たない、安い条件を先に見る、Suspense で殻だけ先に出す）は `.claude/skills/react-best-practices/SKILL.md` が正本である。
+非同期の待ち方（独立した処理を直列に待たない、安い条件を先に見る、Suspense で殻だけ先に出す）は `.claude/skills/react-best-practices/SKILL.md` が唯一の出所である。
 
 ## 拘束
 
@@ -38,9 +38,9 @@ metadata:
 | 遷移のアニメーション | `<ViewTransition>` |  |
 | Effect から最新の props を読む | `useEffectEvent`。依存配列には入れない | その関数を依存配列に足して購読をやり直す |
 
-`project/atom-state`、`project/no-manual-memoization`、`project/react-legacy`、`project/effect-event-deps` がこの表の機械的な部分を検査する。抑制コメントで通さない。
+`project/atom-state`、`project/no-manual-memoization`、`project/react-legacy`、`project/effect-event-deps` がこの表の機械的な部分を検出する。抑制コメントで通さない。
 
-## 部品を書くとき
+## コンポーネントを書くとき
 
 1. ref は props で受け取る。`forwardRef` で包まない。
 2. Context は `<ThemeContext value={theme}>`。子は `use(ThemeContext)`。
@@ -57,7 +57,7 @@ metadata:
 13. 操作列を止めないミューテーションは `useOptimistic` と組み合わせ、追加操作を pending で無効にしない（`references/action-queue.md`）。
 14. 重い一覧は入力と `useDeferredValue` を分け、タイマーデバウンスを書かない（`references/deferred-consistency.md`）。
 15. イベント更新はトランジションが既定。保証の緩め方は `references/design-theory.md`。
-16. 部品の props は `references/component-apis.md`（`on*Change`、密封、クラスタ。公開 `className` / render prop は禁止）。
+16. コンポーネントの props は `references/component-apis.md`（`on*Change`、密封、クラスタ。公開 `className` / render prop は禁止）。
 
 ## 参照
 

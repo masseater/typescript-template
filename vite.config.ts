@@ -124,9 +124,10 @@ export default defineConfig({
         dependsOn: ["compile:paraglide"],
       },
       "check:text": {
-        command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
+        command: 'textlint ".claude/**/*.md" "apps/internal-dashboard/content/docs/**/*.md"',
         input: [
           ...taskInput,
+          { base: "workspace", pattern: ".claude/**/*.md" },
           { base: "workspace", pattern: "apps/internal-dashboard/content/docs/**/*.md" },
           { base: "workspace", pattern: ".textlintrc.json" },
         ],
