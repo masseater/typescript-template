@@ -31,6 +31,27 @@ describe("pull request check scope", () => {
     expect(workflow).toContain("merge-queue-packages:");
   });
 
+  it("restores the task cache from main instead of whichever cache was saved last", () => {
+    expect.hasAssertions();
+    const workflows = [".github/workflows/check.yml", ".github/workflows/load.yml"].map((file) =>
+      readFileSync(path.join(repositoryRoot, file), "utf8"),
+    );
+    const restoreKeys = workflows.flatMap((workflow) =>
+      [...workflow.matchAll(/restore-keys: \|\n((?: {12}.+\n)+)/gu)].flatMap(([, keys = ""]) =>
+        keys.trim().split(/\n\s*/u),
+      ),
+    );
+    expect(restoreKeys.length).toBeGreaterThan(0);
+    for (const key of restoreKeys) {
+      expect(key).toMatch(/-main-|github\.event\.pull_request\.base\.sha/u);
+    }
+    const [check = ""] = workflows;
+    expect(check).toContain(
+      "key: vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.sha }}",
+    );
+    expect(check).toMatch(/cache\/save@.+\n {8}if: .*steps\.affected\.outputs\./u);
+  });
+
   it("records a stuck pull-request check as a failure before the runner sits pending", () => {
     expect.hasAssertions();
     const workflow = readFileSync(path.join(repositoryRoot, ".github/workflows/check.yml"), "utf8");
