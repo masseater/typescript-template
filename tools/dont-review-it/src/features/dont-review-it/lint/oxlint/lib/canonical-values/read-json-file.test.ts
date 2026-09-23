@@ -1,83 +1,113 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
 import { attempt } from "es-toolkit";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
+import { path } from "../../../../platform/path.ts";
 import { readJsonFile } from "./read-json-file.ts";
 
-const TRUNCATED_JSON_DIRECTORY = mkdtempSync(join(tmpdir(), "read-json-file-truncated-"));
-
-const FOREIGN_TEXT_DIRECTORY = mkdtempSync(join(tmpdir(), "read-json-file-foreign-text-"));
-
-describe("readJsonFile", () => {
+layer(NodeServices.layer)("readJsonFile", (it) => {
   describe("a manifest that parses", () => {
-    const it = test.extend("manifest", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "read-json-file-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "package.json"), '{ "name": "order" }', "utf8");
-      return readJsonFile(join(root, "package.json"));
+    const fixture = Effect.gen(function* manifest() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "read-json-file-" });
+
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), '{ "name": "order" }');
+      return readJsonFile(paths.join(root, "package.json"));
     });
 
-    it("hands back what it declares", ({ manifest }) => {
-      expect(manifest).toStrictEqual({ name: "order" });
-    });
+    it.effect("hands back what it declares", () =>
+      Effect.gen(function* program() {
+        const manifest = yield* fixture;
+        expect(manifest).toStrictEqual({ name: "order" });
+      }),
+    );
   });
 
   describe("a manifest that is not there", () => {
-    const it = test.extend("manifest", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "read-json-file-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      return readJsonFile(join(root, "package.json"));
+    const fixture = Effect.gen(function* manifest() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "read-json-file-" });
+
+      return readJsonFile(paths.join(root, "package.json"));
     });
 
-    it("is an absence", ({ manifest }) => {
-      expect(manifest).toBe(null);
-    });
+    it.effect("is an absence", () =>
+      Effect.gen(function* program() {
+        const manifest = yield* fixture;
+        expect(manifest).toBe(null);
+      }),
+    );
   });
 
   describe("a manifest cut short", () => {
-    const it = test.extend("failureMessage", ({}, { onCleanup }) => {
-      mkdirSync(TRUNCATED_JSON_DIRECTORY, { recursive: true });
-      onCleanup(() => {
-        rmSync(TRUNCATED_JSON_DIRECTORY, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const truncatedJsonDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "read-json-file-truncated-",
       });
-      writeFileSync(join(TRUNCATED_JSON_DIRECTORY, "package.json"), '{ "name": ', "utf8");
-      const [failure] = attempt<unknown, Error>(() =>
-        readJsonFile(join(TRUNCATED_JSON_DIRECTORY, "package.json")),
-      );
-      return failure === null ? null : failure.message;
+      const failureMessage = yield* Effect.gen(function* failureMessage() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        yield* filesystem.makeDirectory(truncatedJsonDirectory, { recursive: true });
+
+        yield* filesystem.writeFileString(
+          paths.join(truncatedJsonDirectory, "package.json"),
+          '{ "name": ',
+        );
+        const [failure] = attempt<unknown, Error>(() =>
+          readJsonFile(path.join(truncatedJsonDirectory, "package.json")),
+        );
+        return failure === null ? null : failure.message;
+      });
+      return { truncatedJsonDirectory, failureMessage };
     });
 
-    it("is raised rather than reported as absent", ({ failureMessage }) => {
-      expect(failureMessage).toBe(
-        `${join(TRUNCATED_JSON_DIRECTORY, "package.json")} exists but does not parse as JSON`,
-      );
-    });
+    it.effect("is raised rather than reported as absent", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { failureMessage, truncatedJsonDirectory } = yield* fixtures;
+        expect(failureMessage).toBe(
+          `${paths.join(truncatedJsonDirectory, "package.json")} exists but does not parse as JSON`,
+        );
+      }),
+    );
   });
 
   describe("a manifest holding text that is no JSON at all", () => {
-    const it = test.extend("failureMessage", ({}, { onCleanup }) => {
-      mkdirSync(FOREIGN_TEXT_DIRECTORY, { recursive: true });
-      onCleanup(() => {
-        rmSync(FOREIGN_TEXT_DIRECTORY, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const foreignTextDirectory = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "read-json-file-foreign-text-",
       });
-      writeFileSync(join(FOREIGN_TEXT_DIRECTORY, "package.json"), "not json at all", "utf8");
-      const [failure] = attempt<unknown, Error>(() =>
-        readJsonFile(join(FOREIGN_TEXT_DIRECTORY, "package.json")),
-      );
-      return failure === null ? null : failure.message;
+      const failureMessage = yield* Effect.gen(function* failureMessage() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        yield* filesystem.makeDirectory(foreignTextDirectory, { recursive: true });
+
+        yield* filesystem.writeFileString(
+          paths.join(foreignTextDirectory, "package.json"),
+          "not json at all",
+        );
+        const [failure] = attempt<unknown, Error>(() =>
+          readJsonFile(path.join(foreignTextDirectory, "package.json")),
+        );
+        return failure === null ? null : failure.message;
+      });
+      return { foreignTextDirectory, failureMessage };
     });
 
-    it("is raised the same way", ({ failureMessage }) => {
-      expect(failureMessage).toBe(
-        `${join(FOREIGN_TEXT_DIRECTORY, "package.json")} exists but does not parse as JSON`,
-      );
-    });
+    it.effect("is raised the same way", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { failureMessage, foreignTextDirectory } = yield* fixtures;
+        expect(failureMessage).toBe(
+          `${paths.join(foreignTextDirectory, "package.json")} exists but does not parse as JSON`,
+        );
+      }),
+    );
   });
 });

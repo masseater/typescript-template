@@ -1,7 +1,6 @@
-import { basename, dirname, join } from "node:path";
-
 import { groupBy, memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { MANIFEST_FILE_NAME } from "../canonical-values/package-manifest.ts";
 import { readTextFile } from "../canonical-values/source-files.ts";
 import { REPOSITORY_ROOT_WORKSPACE } from "../dependency-catalog/shared-dependency-index.ts";
@@ -12,7 +11,9 @@ import type { RuleMessage } from "../rule-message.ts";
 import type { RequiredFileEntry } from "./required-file-entries.ts";
 
 const workspaceDirectoriesIn = (filePaths: readonly string[]): readonly string[] =>
-  filePaths.filter((path) => basename(path) === MANIFEST_FILE_NAME).map((path) => dirname(path));
+  filePaths
+    .filter((filePath) => path.basename(filePath) === MANIFEST_FILE_NAME)
+    .map((filePath) => path.dirname(filePath));
 
 const holdingWorkspacesOf = (asked: {
   readonly entry: RequiredFileEntry;
@@ -83,17 +84,19 @@ const unmetInWorkspace = (
     pattern: asked.entry.pattern,
   });
   const held = { ...asked, holder: holderOf(asked.workspace) };
-  const matched = scanned.filePaths.filter((path) =>
-    matchesAnchoredGlobPath({ relativePath: path, pattern: registeredPath }),
+  const matched = scanned.filePaths.filter((filePath) =>
+    matchesAnchoredGlobPath({ relativePath: filePath, pattern: registeredPath }),
   );
   if (matched.length === 0) {
     return [reportOf({ ...held, messageId: MISSING_REGISTERED_FILE_MESSAGE_ID, registeredPath })];
   }
 
-  const emptied = matched.filter((path) => !holdsContent(join(scanned.repositoryRoot, path)));
+  const emptied = matched.filter(
+    (filePath) => !holdsContent(path.join(scanned.repositoryRoot, filePath)),
+  );
   if (emptied.length < matched.length) return [];
-  return emptied.map((path) =>
-    reportOf({ ...held, messageId: EMPTY_REGISTERED_FILE_MESSAGE_ID, registeredPath: path }),
+  return emptied.map((filePath) =>
+    reportOf({ ...held, messageId: EMPTY_REGISTERED_FILE_MESSAGE_ID, registeredPath: filePath }),
   );
 };
 

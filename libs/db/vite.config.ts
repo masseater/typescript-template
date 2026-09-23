@@ -1,10 +1,18 @@
-import { awaitingEffectDiagnostics, lifecycle, modularBoundaries } from "@repo/vite-config";
+import {
+  awaitingEffectDiagnostics,
+  lifecycle,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...awaitingEffectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       check: {
         command: "drizzle-kit check",
@@ -17,7 +25,8 @@ export default defineConfig({
         dependsOn: ["@repo/db-local#db:schema-document"],
       },
       ...lifecycle({
-        prepush: ["check:effect", "check", "check:modular"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check", "check:modular"],
       }),
     },
   },

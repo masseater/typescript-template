@@ -1,8 +1,9 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { realpathSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 
 import { memoize } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { readUnlessMissing } from "../../../../repository-checks/index.ts";
 import { isDirectory, isFile } from "../canonical-values/source-files.ts";
 import { segmentsOf } from "../path-segments.ts";
@@ -19,7 +20,7 @@ const entryFilesUnder = (packageDirectory: string, specifier: string): readonly 
     .map(([file]) => file);
 
 export const relativeSpecifierTo = (fromFile: string, checked: string): string => {
-  const spelled = toPosixPath(relative(dirname(fromFile), checked));
+  const spelled = toPosixPath(path.relative(path.dirname(fromFile), checked));
   return spelled.startsWith(".") ? spelled : `./${spelled}`;
 };
 
@@ -49,7 +50,7 @@ const candidatePathsFor = (base: string): readonly string[] => [
   base,
   ...REWRITTEN_SUFFIXES.map(([written, source]) => base.replace(written, source)),
   ...MODULE_SUFFIXES.map((suffix) => `${base}${suffix}`),
-  ...MODULE_SUFFIXES.map((suffix) => join(base, `index${suffix}`)),
+  ...MODULE_SUFFIXES.map((suffix) => path.join(base, `index${suffix}`)),
 ];
 
 const existingModuleAt = (base: string): ResolvedModule | null => {
@@ -73,18 +74,19 @@ export const packageReferenceOf = (
   };
 };
 
-const realPathOf = (path: string): string | null => readUnlessMissing(() => realpathSync(path));
+const realPathOf = (filePath: string): string | null =>
+  readUnlessMissing(() => realpathSync(filePath));
 
 const installedPackageDirectory = (fromDirectory: string, packageName: string): string | null => {
-  const candidate = join(fromDirectory, "node_modules", packageName);
+  const candidate = path.join(fromDirectory, "node_modules", packageName);
   if (isDirectory(candidate)) return realPathOf(candidate);
 
-  const parent = dirname(fromDirectory);
+  const parent = path.dirname(fromDirectory);
   return parent === fromDirectory ? null : installedPackageDirectory(parent, packageName);
 };
 
-const isInstalledCopy = (path: string): boolean =>
-  segmentsOf({ path: toPosixPath(path), separator: "/" }).includes("node_modules");
+const isInstalledCopy = (filePath: string): boolean =>
+  segmentsOf({ path: toPosixPath(filePath), separator: "/" }).includes("node_modules");
 
 export const packageDirectoryInWorkspace = ({
   specifier,
@@ -98,7 +100,7 @@ export const packageDirectoryInWorkspace = ({
   const reference = packageReferenceOf(specifier);
   if (reference === null) return null;
 
-  const directory = installedPackageDirectory(dirname(fromFile), reference.name);
+  const directory = installedPackageDirectory(path.dirname(fromFile), reference.name);
   if (directory === null || isInstalledCopy(directory)) return null;
   if (!isInsideDirectory({ path: directory, directory: workspaceRoot })) return null;
   return { directory, subpath: reference.subpath };
@@ -113,9 +115,9 @@ export const resolveCoupling = ({
   readonly fromFile: string;
   readonly workspaceRoot: string;
 }): ResolvedModule | null => {
-  if (specifier.startsWith("#") || isAbsolute(specifier)) return null;
+  if (specifier.startsWith("#") || path.isAbsolute(specifier)) return null;
   if (/^\.\.?\//u.test(specifier)) {
-    return existingModuleAt(resolve(dirname(fromFile), specifier));
+    return existingModuleAt(path.resolve(path.dirname(fromFile), specifier));
   }
 
   const found = packageDirectoryInWorkspace({ specifier, fromFile, workspaceRoot });
@@ -123,7 +125,7 @@ export const resolveCoupling = ({
   if (declaresPublicSubpath({ packageDirectory: found.directory, subpath: found.subpath })) {
     return { kind: "publicEntry", packageDirectory: found.directory };
   }
-  return existingModuleAt(join(found.directory, found.subpath));
+  return existingModuleAt(path.join(found.directory, found.subpath));
 };
 
 export type CouplingRequest = {
@@ -133,9 +135,9 @@ export type CouplingRequest = {
 };
 
 const aliasedFilesFor = (asked: CouplingRequest): readonly string[] =>
-  aliasedPathsFor({ specifier: asked.specifier, fromFile: asked.fromFile }).flatMap((path) => {
+  aliasedPathsFor({ specifier: asked.specifier, fromFile: asked.fromFile }).flatMap((filePath) => {
     const resolved = resolveCoupling({
-      specifier: relativeSpecifierTo(asked.fromFile, path),
+      specifier: relativeSpecifierTo(asked.fromFile, filePath),
       fromFile: asked.fromFile,
       workspaceRoot: asked.workspaceRoot,
     });

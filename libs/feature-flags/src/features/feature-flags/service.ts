@@ -6,7 +6,7 @@ import { Context, Effect, Layer, Ref } from "effect";
 import {
   booleanForVariation,
   flagDefinitions,
-  flagDefinitionByKey,
+  flagDefinitionFor,
   variationForBoolean,
   type FlagKey,
 } from "./definitions.ts";
@@ -58,7 +58,7 @@ const flagStateForKey = (
 ): Effect.Effect<FlagState> =>
   Effect.gen(function* flagStateForKeyProgram() {
     const evaluation = yield* evaluateFromClient(client, flagKey);
-    const definition = flagDefinitionByKey[flagKey];
+    const definition = flagDefinitionFor(flagKey);
     return { description: definition.description, enabled: evaluation.enabled, key: flagKey };
   });
 
@@ -81,7 +81,7 @@ const memoryFeatureFlags = Effect.fn("memoryFeatureFlags")(function* memoryFeatu
         definition.key,
         booleanForVariation(definition.defaultVariation),
       ]),
-    ) as Record<FlagKey, boolean>,
+    ),
   );
   yield* Effect.promise(() => OpenFeature.setProviderAndWait(provider));
   const client = OpenFeature.getClient();
@@ -91,7 +91,7 @@ const memoryFeatureFlags = Effect.fn("memoryFeatureFlags")(function* memoryFeatu
   ) {
     const storedVariations = yield* Ref.get(variations);
     yield* Ref.set(variations, { ...storedVariations, [flagKey]: enabled });
-    const definition = flagDefinitionByKey[flagKey];
+    const definition = flagDefinitionFor(flagKey);
     provider.putConfiguration({
       ...memoryConfiguration,
       [flagKey]: {
@@ -114,7 +114,7 @@ const flagshipFeatureFlags = Effect.fn("flagshipFeatureFlags")(function* flagshi
   return featureFlagsFromClient(client, (flagKey, _enabled) =>
     Effect.fail(
       new FlagshipWriteFailed({
-        detail: `remote write required for ${flagKey}`,
+        detail: `remote write required for ${String(flagKey)}`,
       }),
     ),
   );

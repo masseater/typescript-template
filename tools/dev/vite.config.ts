@@ -1,10 +1,18 @@
-import { awaitingEffectDiagnostics, lifecycle, modularBoundaries } from "@repo/vite-config";
+import {
+  awaitingEffectDiagnostics,
+  lifecycle,
+  checkCode,
+  modularBoundaries,
+  workspaceCheckImports,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...awaitingEffectDiagnostics,
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       authenticate: { cache: false, command: "./src/features/dev/cli.ts authenticate" },
       browser: { cache: false, command: "./src/features/dev/cli.ts browser" },
@@ -25,7 +33,8 @@ export default defineConfig({
       storybook: { cache: false, command: "./src/features/dev/cli.ts storybook" },
       ...lifecycle({
         premerge: ["check:exported"],
-        prepush: ["check:effect", "check:modular"],
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check:modular"],
       }),
     },
   },

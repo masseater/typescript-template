@@ -1,4 +1,4 @@
-import { AppFrame, Icon, ToastProvider } from "@repo/ui";
+import { AppFrame, Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { serviceName } from "#shared/config/index.ts";
@@ -19,37 +19,33 @@ function memberDestinationTo(item: ReturnType<typeof memberNavItems>[number]): s
 
 function MemberFrame({
   children,
-  memberBoard,
   user,
 }: Readonly<{
   children: Readonly<Exclude<ReactNode, ReactPortal>>;
-  memberBoard: boolean;
   user: SessionView["user"];
 }>): ReactElement {
   const { pathname } = useLocation();
-  const destinations = memberNavItems(memberBoard, user.id).map((item) => ({
+  const destinations = memberNavItems(user.id).map((item) => ({
     exact: item.id === "home",
     icon: <Icon icon={item.icon} />,
     label: item.label,
     to: memberDestinationTo(item),
   }));
   return (
-    <ToastProvider>
-      <AppFrame
-        bottomTabs
-        collapsedMark={collapsedMemberMark}
-        density="compact"
-        footer={() => <AccountMenu compact name={user.name} userId={user.id} />}
-        headerLeading={<AccountMenu compact name={user.name} userId={user.id} />}
-        homeTo="/home"
-        navigationId="member-navigation"
-        productName={serviceName}
-        sections={[{ destinations, label: "" }]}
-        title={titleForPath(pathname)}
-      >
-        {children}
-      </AppFrame>
-    </ToastProvider>
+    <AppFrame
+      bottomTabs
+      collapsedMark={collapsedMemberMark}
+      density="compact"
+      footer={() => <AccountMenu compact name={user.name} userId={user.id} />}
+      headerLeading={<AccountMenu compact name={user.name} userId={user.id} />}
+      homeTo="/home"
+      navigationId="member-navigation"
+      productName={serviceName}
+      sections={[{ destinations, label: "" }]}
+      title={titleForPath(pathname)}
+    >
+      {children}
+    </AppFrame>
   );
 }
 

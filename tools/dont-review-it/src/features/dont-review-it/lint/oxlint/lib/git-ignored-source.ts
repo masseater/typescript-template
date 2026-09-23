@@ -1,15 +1,16 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { existsSync, lstatSync, realpathSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
 
 import { attempt } from "es-toolkit";
 
 import { measureStage } from "../../../lint-rule-authoring/index.ts";
+import { path } from "../../../platform/path.ts";
 import { gitOutput } from "./git-output.ts";
 import { pathIsInside } from "./path-is-inside.ts";
 
-const realPathOf = (path: string): string => {
-  const [failure, realPath] = attempt(() => realpathSync.native(path));
-  return failure === null && realPath !== null ? realPath : path;
+const realPathOf = (filePath: string): string => {
+  const [failure, realPath] = attempt(() => realpathSync.native(filePath));
+  return failure === null && realPath !== null ? realPath : filePath;
 };
 
 const repositoryPathOf = (input: {
@@ -18,28 +19,28 @@ const repositoryPathOf = (input: {
   readonly source: string;
 }): string | null => {
   if (pathIsInside(input.repositoryRoot, input.source)) {
-    return relative(input.repositoryRoot, input.source);
+    return path.relative(input.repositoryRoot, input.source);
   }
   const realSource = realPathOf(input.source);
   return pathIsInside(input.realRepositoryRoot, realSource)
-    ? relative(input.realRepositoryRoot, realSource)
+    ? path.relative(input.realRepositoryRoot, realSource)
     : null;
 };
 
 const firstSymbolicPath = (repositoryRoot: string, repositoryPath: string): string | null => {
-  const segments = repositoryPath.split(sep);
+  const segments = repositoryPath.split(path.sep);
   for (const index of segments.keys()) {
-    const candidate = join(repositoryRoot, ...segments.slice(0, index + 1));
+    const candidate = path.join(repositoryRoot, ...segments.slice(0, index + 1));
     const [failure, stats] = attempt(() => lstatSync(candidate));
     if (failure === null && stats?.isSymbolicLink() === true)
-      return relative(repositoryRoot, candidate);
+      return path.relative(repositoryRoot, candidate);
   }
   return null;
 };
 
 const carriesRepositoryLink = (directory: string): boolean => {
-  if (existsSync(join(directory, ".git"))) return true;
-  const parent = dirname(directory);
+  if (existsSync(path.join(directory, ".git"))) return true;
+  const parent = path.dirname(directory);
   return parent !== directory && carriesRepositoryLink(parent);
 };
 
@@ -53,7 +54,7 @@ const ignoredRepositoryPaths = (repositoryRoot: string): ReadonlySet<string> => 
     }),
   );
   return ignoredPathOutput !== null
-    ? new Set(ignoredPathOutput.split("\0").filter((path) => path !== ""))
+    ? new Set(ignoredPathOutput.split("\0").filter((filePath) => filePath !== ""))
     : new Set();
 };
 
@@ -68,12 +69,12 @@ export type GitSourceScope = {
 };
 
 export const readGitSourceScope = (repositoryRoot: string): GitSourceScope => {
-  const root = resolve(repositoryRoot);
+  const root = path.resolve(repositoryRoot);
   const realRoot = realPathOf(root);
   const ignoredPaths = ignoredRepositoryPaths(root);
   return {
     isIgnored(sourcePath) {
-      const source = resolve(root, sourcePath);
+      const source = path.resolve(root, sourcePath);
       const repositoryPath = repositoryPathOf({
         repositoryRoot: root,
         realRepositoryRoot: realRoot,

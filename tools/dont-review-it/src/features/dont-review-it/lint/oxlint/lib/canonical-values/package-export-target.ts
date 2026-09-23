@@ -1,7 +1,6 @@
-import { join, resolve } from "node:path";
-
 import { uniq } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import { toPosixPath } from "../posix-path.ts";
 import { EXPORTS_CONDITION_DEPTH_LIMIT } from "./package-manifest.ts";
@@ -17,17 +16,17 @@ const javaScriptSourceCandidates = (exportTarget: string): readonly string[] =>
   ]);
 
 const targetCandidates = (packageDirectory: string, exportTarget: string): readonly string[] => {
-  const base = resolve(packageDirectory, exportTarget);
+  const base = path.resolve(packageDirectory, exportTarget);
   return [
     ...javaScriptSourceCandidates(base),
     `${base}.ts`,
     `${base}.tsx`,
     `${base}.mts`,
     `${base}.cts`,
-    join(base, "index.ts"),
-    join(base, "index.tsx"),
-    join(base, "index.mts"),
-    join(base, "index.cts"),
+    path.join(base, "index.ts"),
+    path.join(base, "index.tsx"),
+    path.join(base, "index.mts"),
+    path.join(base, "index.cts"),
   ];
 };
 
@@ -116,7 +115,7 @@ export const validPackageExportTargetPattern = (
   exportTarget: string,
 ): boolean => {
   if (!exportTarget.startsWith("./") || singleWildcardPattern(exportTarget) === null) return false;
-  return pathIsInside(packageDirectory, resolve(packageDirectory, exportTarget));
+  return pathIsInside(packageDirectory, path.resolve(packageDirectory, exportTarget));
 };
 
 const captureFromPattern = (pattern: string, candidate: string): string | null => {
@@ -140,7 +139,7 @@ export const packageExportPatternCaptures = ({
 }): readonly string[] => {
   const candidatePatterns = uniq(
     targets.flatMap((exportTarget) =>
-      javaScriptSourceCandidates(resolve(packageDirectory, exportTarget)),
+      javaScriptSourceCandidates(path.resolve(packageDirectory, exportTarget)),
     ),
   );
   return uniq(

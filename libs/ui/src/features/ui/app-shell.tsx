@@ -1,18 +1,26 @@
 import "./temporal.ts";
-import { initBrowserTelemetry } from "@repo/observability/browser";
 import { HeadContent } from "@tanstack/react-router";
 import { useEffect, type ReactElement } from "react";
 
 import { AppBody } from "./app-body";
+import { initBrowserTelemetry } from "./browser-telemetry/browser.ts";
 
+import type { FieldValidationMessages } from "./shared/ui/field-validation-messages";
 import type { Children } from "./shared/ui/types";
 
 const AppShell = ({
   children,
+  fieldValidationMessages,
   lang = "ja",
   routes,
+  themedDocument = false,
 }: Children &
-  Readonly<{ lang?: string; routes: Readonly<Record<string, string>> }>): ReactElement => {
+  Readonly<{
+    fieldValidationMessages: FieldValidationMessages;
+    lang?: string;
+    routes: Readonly<Record<string, string>>;
+    themedDocument?: boolean;
+  }>): ReactElement => {
   useEffect(() => {
     const telemetry = initBrowserTelemetry({ endpoint: "/api/telemetry", routes });
     return (): void => {
@@ -20,11 +28,11 @@ const AppShell = ({
     };
   }, [routes]);
   return (
-    <html lang={lang}>
+    <html lang={lang} suppressHydrationWarning={themedDocument}>
       <head>
         <HeadContent />
       </head>
-      <AppBody>{children}</AppBody>
+      <AppBody fieldValidationMessages={fieldValidationMessages}>{children}</AppBody>
     </html>
   );
 };

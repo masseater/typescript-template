@@ -89,24 +89,6 @@
         "count": 1
       },
       {
-        "file": "src/features/db/remote-http.ts",
-        "code": "TS377026",
-        "message": "This code uses `JSON.parse` or `JSON.stringify`. Use `Schema.UnknownFromJsonString` for unknown shapes, `Schema.fromJsonString(schema)` for known ones, or `Schema.toCodecJson(schema)` when working with JSON values instead of strings. effect(preferSchemaOverJson)",
-        "count": 1
-      },
-      {
-        "file": "src/features/db/remote-http.ts",
-        "code": "TS377063",
-        "message": "This Effect code calls the global `fetch` function, HTTP requests in Effect code are represented through `HttpClient` from `effect/unstable/http`. effect(globalFetchInEffect)",
-        "count": 1
-      },
-      {
-        "file": "src/features/db/remote-http.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 3
-      },
-      {
         "file": "src/features/db/remote-operations.test.ts",
         "code": "TS377057",
         "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
@@ -168,42 +150,6 @@
       }
     ],
     "libs/observability": [
-      {
-        "file": "src/features/observability/browser-queue.ts",
-        "code": "TS377067",
-        "message": "This Effect code uses `Date.now()`, time access in Effect code is represented through `Clock` from Effect. effect(globalDateInEffect)",
-        "count": 2
-      },
-      {
-        "file": "src/features/observability/browser-queue.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 2
-      },
-      {
-        "file": "src/features/observability/browser-testing.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 3
-      },
-      {
-        "file": "src/features/observability/browser.ts",
-        "code": "TS377066",
-        "message": "This code uses `Date.now()`, time access is represented through `Clock` from Effect. effect(globalDate)",
-        "count": 2
-      },
-      {
-        "file": "src/features/observability/browser.ts",
-        "code": "TS377072",
-        "message": "This code uses `setInterval`, the corresponding Effect timer API is `Schedule or Effect.repeat` from Effect. effect(globalTimers)",
-        "count": 1
-      },
-      {
-        "file": "src/features/observability/browser.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 3
-      },
       {
         "file": "src/features/observability/errors.test.ts",
         "code": "TS377081",

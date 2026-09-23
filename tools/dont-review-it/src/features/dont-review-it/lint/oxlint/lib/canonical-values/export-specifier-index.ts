@@ -1,9 +1,10 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { realpathSync } from "node:fs";
-import { join, relative } from "node:path";
 
 import { attempt, sortBy, uniq } from "es-toolkit";
 import * as ts from "typescript-6";
 
+import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import { toPosixPath } from "../posix-path.ts";
 import {
@@ -233,7 +234,7 @@ const packageSurfaces = ({
 type PackageManifest = Readonly<Record<string, unknown>> & { readonly name: string };
 
 const packageManifest = (packageDirectory: string): PackageManifest | null => {
-  const manifest = readJsonFile(join(packageDirectory, MANIFEST_FILE_NAME));
+  const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
   if (
     manifest === null ||
     typeof manifest !== "object" ||
@@ -336,7 +337,7 @@ export const publicImportRoutes = ({
         ownerExportNames({ checker, fileName, owner, program }),
       );
       const resolvedSourcePaths = surface.sourceFiles
-        .map((fileName) => toPosixPath(relative(repositoryRoot, fileName)))
+        .map((fileName) => toPosixPath(path.relative(repositoryRoot, fileName)))
         .toSorted();
       const [firstExportNames, ...remainingExportNames] = exportNamesBySource;
       return sharedExportNames([

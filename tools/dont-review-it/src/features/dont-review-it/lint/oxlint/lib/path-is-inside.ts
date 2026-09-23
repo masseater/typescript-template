@@ -1,11 +1,11 @@
-import { isAbsolute, relative, sep } from "node:path";
+import { path } from "../../../platform/path.ts";
 
 export const pathIsInside = (parent: string, candidate: string): boolean => {
-  const pathFromParent = relative(parent, candidate);
+  const pathFromParent = path.relative(parent, candidate);
   return (
     pathFromParent === "" ||
     (pathFromParent !== ".." &&
-      !pathFromParent.startsWith(`..${sep}`) &&
-      !isAbsolute(pathFromParent))
+      !pathFromParent.startsWith(`..${path.sep}`) &&
+      !path.isAbsolute(pathFromParent))
   );
 };

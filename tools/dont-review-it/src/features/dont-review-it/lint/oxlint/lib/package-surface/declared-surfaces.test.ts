@@ -1,9 +1,8 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { range } from "es-toolkit";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { governingSurfacesOf } from "./declared-surfaces.ts";
 
@@ -11,500 +10,650 @@ const MODULE_SOURCE = "export const shipped = true;\n";
 
 const WORKSPACE_MANIFEST = "packages:\n  - packages/*\n";
 
-describe("governingSurfacesOf", () => {
+layer(NodeServices.layer)("governingSurfacesOf", (it) => {
   describe("a package declaring a runnable and an importable surface in one manifest", () => {
-    const it = test.extend("surfacesOfAPackageDeclaringBoth", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "both"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "both", "package.json"),
-        JSON.stringify({
+    const fixture = Effect.gen(function* surfacesOfAPackageDeclaringBoth() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "both"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "both", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/both",
           bin: { "fixture-both": "./cli.ts" },
           exports: { ".": "./src/index.ts" },
         }),
-        "utf8",
       );
-      writeFileSync(join(root, "packages", "both", "entry.ts"), MODULE_SOURCE, "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "both", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "both", "entry.ts"),
+        filename: paths.join(root, "packages", "both", "entry.ts"),
       });
     });
 
-    it("names both surfaces the manifest declares", ({ surfacesOfAPackageDeclaringBoth }) => {
-      expect(surfacesOfAPackageDeclaringBoth).toStrictEqual({
-        packageName: "@fixture/both",
-        manifestPath: "packages/both/package.json",
-        runnableFields: ["bin"],
-        importableFields: ["exports"],
-      });
-    });
+    it.effect("names both surfaces the manifest declares", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageDeclaringBoth = yield* fixture;
+        expect(surfacesOfAPackageDeclaringBoth).toStrictEqual({
+          packageName: "@fixture/both",
+          manifestPath: "packages/both/package.json",
+          runnableFields: ["bin"],
+          importableFields: ["exports"],
+        });
+      }),
+    );
   });
 
   describe("a file nested several directories inside a package", () => {
-    const it = test.extend("surfacesOfAFileNestedInsideAPackage", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixture = Effect.gen(function* surfacesOfAFileNestedInsideAPackage() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "both", "src", "deep"), {
+        recursive: true,
       });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "both", "src", "deep"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "both", "package.json"),
-        JSON.stringify({
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "both", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/both",
           bin: { "fixture-both": "./cli.ts" },
           exports: { ".": "./src/index.ts" },
         }),
-        "utf8",
       );
-      writeFileSync(
-        join(root, "packages", "both", "src", "deep", "inner.ts"),
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "both", "src", "deep", "inner.ts"),
         MODULE_SOURCE,
-        "utf8",
       );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "both", "src", "deep", "inner.ts"),
+        filename: paths.join(root, "packages", "both", "src", "deep", "inner.ts"),
       });
     });
 
-    it("is read from the manifest of the package that file belongs to", ({
-      surfacesOfAFileNestedInsideAPackage,
-    }) => {
-      expect(surfacesOfAFileNestedInsideAPackage).toStrictEqual({
-        packageName: "@fixture/both",
-        manifestPath: "packages/both/package.json",
-        runnableFields: ["bin"],
-        importableFields: ["exports"],
-      });
-    });
+    it.effect("is read from the manifest of the package that file belongs to", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAFileNestedInsideAPackage = yield* fixture;
+        expect(surfacesOfAFileNestedInsideAPackage).toStrictEqual({
+          packageName: "@fixture/both",
+          manifestPath: "packages/both/package.json",
+          runnableFields: ["bin"],
+          importableFields: ["exports"],
+        });
+      }),
+    );
   });
 
   describe("a package whose exports map only reaches the manifest itself", () => {
-    const it = test.extend("surfacesOfAPackageExportingOnlyItsManifest", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixture = Effect.gen(function* surfacesOfAPackageExportingOnlyItsManifest() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "runnable"), {
+        recursive: true,
       });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "runnable"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "runnable", "package.json"),
-        JSON.stringify({
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "runnable", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/runnable",
           bin: { "fixture-runnable": "./cli.ts" },
           exports: { "./package.json": "./package.json" },
           scripts: { build: "vp pack" },
         }),
-        "utf8",
       );
-      writeFileSync(join(root, "packages", "runnable", "entry.ts"), MODULE_SOURCE, "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "runnable", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "runnable", "entry.ts"),
+        filename: paths.join(root, "packages", "runnable", "entry.ts"),
       });
     });
 
-    it("counts that map as no import surface", ({ surfacesOfAPackageExportingOnlyItsManifest }) => {
-      expect(surfacesOfAPackageExportingOnlyItsManifest).toStrictEqual({
-        packageName: "@fixture/runnable",
-        manifestPath: "packages/runnable/package.json",
-        runnableFields: ["bin"],
-        importableFields: [],
-      });
-    });
+    it.effect("counts that map as no import surface", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageExportingOnlyItsManifest = yield* fixture;
+        expect(surfacesOfAPackageExportingOnlyItsManifest).toStrictEqual({
+          packageName: "@fixture/runnable",
+          manifestPath: "packages/runnable/package.json",
+          runnableFields: ["bin"],
+          importableFields: [],
+        });
+      }),
+    );
   });
 
   describe("a package declaring blank and empty targets", () => {
-    const it = test.extend("surfacesOfAPackageDeclaringBlankTargets", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "blank"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "blank", "package.json"),
-        JSON.stringify({
+    const fixture = Effect.gen(function* surfacesOfAPackageDeclaringBlankTargets() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "blank"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "blank", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/blank",
           bin: "",
           exports: {},
           main: "   ",
           types: null,
         }),
-        "utf8",
       );
-      writeFileSync(join(root, "packages", "blank", "entry.ts"), MODULE_SOURCE, "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "blank", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "blank", "entry.ts"),
+        filename: paths.join(root, "packages", "blank", "entry.ts"),
       });
     });
 
-    it("counts them as no surface at all", ({ surfacesOfAPackageDeclaringBlankTargets }) => {
-      expect(surfacesOfAPackageDeclaringBlankTargets).toStrictEqual({
-        packageName: "@fixture/blank",
-        manifestPath: "packages/blank/package.json",
-        runnableFields: [],
-        importableFields: [],
-      });
-    });
+    it.effect("counts them as no surface at all", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageDeclaringBlankTargets = yield* fixture;
+        expect(surfacesOfAPackageDeclaringBlankTargets).toStrictEqual({
+          packageName: "@fixture/blank",
+          manifestPath: "packages/blank/package.json",
+          runnableFields: [],
+          importableFields: [],
+        });
+      }),
+    );
   });
 
   describe("a package declaring a bundler entry beside a type entry", () => {
-    const it = test.extend("surfacesOfAPackageDeclaringBundlerAndTypeEntries", ({}, {
-      onCleanup,
-    }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "legacy"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "legacy", "package.json"),
-        JSON.stringify({
+    const fixture = Effect.gen(function* surfacesOfAPackageDeclaringBundlerAndTypeEntries() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "legacy"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "legacy", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/legacy",
           module: "./dist/index.js",
           typings: "./dist/index.d.ts",
         }),
-        "utf8",
       );
-      writeFileSync(join(root, "packages", "legacy", "entry.ts"), MODULE_SOURCE, "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "legacy", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "legacy", "entry.ts"),
+        filename: paths.join(root, "packages", "legacy", "entry.ts"),
       });
     });
 
-    it("counts both as the import surface", ({
-      surfacesOfAPackageDeclaringBundlerAndTypeEntries,
-    }) => {
-      expect(surfacesOfAPackageDeclaringBundlerAndTypeEntries).toStrictEqual({
-        packageName: "@fixture/legacy",
-        manifestPath: "packages/legacy/package.json",
-        runnableFields: [],
-        importableFields: ["module", "typings"],
-      });
-    });
+    it.effect("counts both as the import surface", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageDeclaringBundlerAndTypeEntries = yield* fixture;
+        expect(surfacesOfAPackageDeclaringBundlerAndTypeEntries).toStrictEqual({
+          packageName: "@fixture/legacy",
+          manifestPath: "packages/legacy/package.json",
+          runnableFields: [],
+          importableFields: ["module", "typings"],
+        });
+      }),
+    );
   });
 
   describe("a package declaring a type entry beside a runnable entry", () => {
-    const it = test.extend("surfacesOfAPackageDeclaringATypeEntryBesideARunnableOne", ({}, {
-      onCleanup,
-    }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "typed"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "typed", "package.json"),
-        JSON.stringify({
+    const fixture = Effect.gen(function* surfacesOfAPackageDeclaringATypeEntryBesideARunnableOne() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "typed"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "typed", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/typed",
           bin: "./cli.ts",
           types: "./dist/index.d.ts",
         }),
-        "utf8",
       );
-      writeFileSync(join(root, "packages", "typed", "entry.ts"), MODULE_SOURCE, "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "typed", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "typed", "entry.ts"),
+        filename: paths.join(root, "packages", "typed", "entry.ts"),
       });
     });
 
-    it("counts the type entry as the second surface", ({
-      surfacesOfAPackageDeclaringATypeEntryBesideARunnableOne,
-    }) => {
-      expect(surfacesOfAPackageDeclaringATypeEntryBesideARunnableOne).toStrictEqual({
-        packageName: "@fixture/typed",
-        manifestPath: "packages/typed/package.json",
-        runnableFields: ["bin"],
-        importableFields: ["types"],
-      });
-    });
+    it.effect("counts the type entry as the second surface", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageDeclaringATypeEntryBesideARunnableOne = yield* fixture;
+        expect(surfacesOfAPackageDeclaringATypeEntryBesideARunnableOne).toStrictEqual({
+          packageName: "@fixture/typed",
+          manifestPath: "packages/typed/package.json",
+          runnableFields: ["bin"],
+          importableFields: ["types"],
+        });
+      }),
+    );
   });
 
   describe("a package writing its target inside an array of alternatives", () => {
-    const it = test.extend("surfacesOfAPackageDeclaringAnArrayOfAlternatives", ({}, {
-      onCleanup,
-    }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "arrayed"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "arrayed", "package.json"),
-        JSON.stringify({
+    const fixture = Effect.gen(function* surfacesOfAPackageDeclaringAnArrayOfAlternatives() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "arrayed"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "arrayed", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/arrayed",
           exports: { ".": [null, "./dist/index.js"] },
         }),
-        "utf8",
       );
-      writeFileSync(join(root, "packages", "arrayed", "entry.ts"), MODULE_SOURCE, "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "arrayed", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "arrayed", "entry.ts"),
+        filename: paths.join(root, "packages", "arrayed", "entry.ts"),
       });
     });
 
-    it("reads the target out of that array", ({
-      surfacesOfAPackageDeclaringAnArrayOfAlternatives,
-    }) => {
-      expect(surfacesOfAPackageDeclaringAnArrayOfAlternatives).toStrictEqual({
-        packageName: "@fixture/arrayed",
-        manifestPath: "packages/arrayed/package.json",
-        runnableFields: [],
-        importableFields: ["exports"],
-      });
-    });
+    it.effect("reads the target out of that array", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageDeclaringAnArrayOfAlternatives = yield* fixture;
+        expect(surfacesOfAPackageDeclaringAnArrayOfAlternatives).toStrictEqual({
+          packageName: "@fixture/arrayed",
+          manifestPath: "packages/arrayed/package.json",
+          runnableFields: [],
+          importableFields: ["exports"],
+        });
+      }),
+    );
   });
 
   describe("a package nesting conditions past the limit", () => {
-    const it = test.extend("surfacesOfAPackageNestingConditionsPastTheLimit", ({}, {
-      onCleanup,
-    }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "deep"), { recursive: true });
+    const fixture = Effect.gen(function* surfacesOfAPackageNestingConditionsPastTheLimit() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "deep"), { recursive: true });
       const nested = range(0, 12).reduce<unknown>(
         (condition) => ({ default: condition }),
         "./dist/index.js",
       );
-      writeFileSync(
-        join(root, "packages", "deep", "package.json"),
-        JSON.stringify({ name: "@fixture/deep", exports: nested }),
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "deep", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          name: "@fixture/deep",
+          exports: nested,
+        }),
       );
-      writeFileSync(join(root, "packages", "deep", "entry.ts"), MODULE_SOURCE, "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "deep", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "deep", "entry.ts"),
+        filename: paths.join(root, "packages", "deep", "entry.ts"),
       });
     });
 
-    it("stops descending and reads no surface", ({
-      surfacesOfAPackageNestingConditionsPastTheLimit,
-    }) => {
-      expect(surfacesOfAPackageNestingConditionsPastTheLimit).toStrictEqual({
-        packageName: "@fixture/deep",
-        manifestPath: "packages/deep/package.json",
-        runnableFields: [],
-        importableFields: [],
-      });
-    });
+    it.effect("stops descending and reads no surface", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageNestingConditionsPastTheLimit = yield* fixture;
+        expect(surfacesOfAPackageNestingConditionsPastTheLimit).toStrictEqual({
+          packageName: "@fixture/deep",
+          manifestPath: "packages/deep/package.json",
+          runnableFields: [],
+          importableFields: [],
+        });
+      }),
+    );
   });
 
   describe("a package whose manifest declares no name", () => {
-    const it = test.extend("surfacesOfAPackageDeclaringNoName", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "nameless"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "nameless", "package.json"),
-        JSON.stringify({ bin: "./cli.ts", main: "./index.js" }),
-        "utf8",
+    const fixture = Effect.gen(function* surfacesOfAPackageDeclaringNoName() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
       );
-      writeFileSync(join(root, "packages", "nameless", "entry.ts"), MODULE_SOURCE, "utf8");
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "nameless"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "nameless", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          bin: "./cli.ts",
+          main: "./index.js",
+        }),
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "nameless", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "nameless", "entry.ts"),
+        filename: paths.join(root, "packages", "nameless", "entry.ts"),
       });
     });
 
-    it("falls back to the directory it stands in", ({ surfacesOfAPackageDeclaringNoName }) => {
-      expect(surfacesOfAPackageDeclaringNoName).toStrictEqual({
-        packageName: "packages/nameless",
-        manifestPath: "packages/nameless/package.json",
-        runnableFields: ["bin"],
-        importableFields: ["main"],
-      });
-    });
+    it.effect("falls back to the directory it stands in", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageDeclaringNoName = yield* fixture;
+        expect(surfacesOfAPackageDeclaringNoName).toStrictEqual({
+          packageName: "packages/nameless",
+          manifestPath: "packages/nameless/package.json",
+          runnableFields: ["bin"],
+          importableFields: ["main"],
+        });
+      }),
+    );
   });
 
   describe("a package whose declared name is blank", () => {
-    const it = test.extend("surfacesOfAPackageDeclaringABlankName", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "blank-name"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "blank-name", "package.json"),
-        JSON.stringify({ name: "   ", bin: "./cli.ts", exports: "./index.js" }),
-        "utf8",
+    const fixture = Effect.gen(function* surfacesOfAPackageDeclaringABlankName() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
       );
-      writeFileSync(join(root, "packages", "blank-name", "entry.ts"), MODULE_SOURCE, "utf8");
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "blank-name"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "blank-name", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          name: "   ",
+          bin: "./cli.ts",
+          exports: "./index.js",
+        }),
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "blank-name", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "blank-name", "entry.ts"),
+        filename: paths.join(root, "packages", "blank-name", "entry.ts"),
       });
     });
 
-    it("falls back to the directory it stands in", ({ surfacesOfAPackageDeclaringABlankName }) => {
-      expect(surfacesOfAPackageDeclaringABlankName).toStrictEqual({
-        packageName: "packages/blank-name",
-        manifestPath: "packages/blank-name/package.json",
-        runnableFields: ["bin"],
-        importableFields: ["exports"],
-      });
-    });
+    it.effect("falls back to the directory it stands in", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAPackageDeclaringABlankName = yield* fixture;
+        expect(surfacesOfAPackageDeclaringABlankName).toStrictEqual({
+          packageName: "packages/blank-name",
+          manifestPath: "packages/blank-name/package.json",
+          runnableFields: ["bin"],
+          importableFields: ["exports"],
+        });
+      }),
+    );
   });
 
   describe("the manifest standing at the repository root", () => {
-    const it = test.extend("surfacesOfTheRepositoryRootPackage", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "package.json"),
-        JSON.stringify({ bin: "./cli.ts", main: "./index.js" }),
-        "utf8",
+    const fixture = Effect.gen(function* surfacesOfTheRepositoryRootPackage() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
       );
-      writeFileSync(join(root, "entry.ts"), MODULE_SOURCE, "utf8");
-      return governingSurfacesOf({ cwd: root, filename: join(root, "entry.ts") });
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          bin: "./cli.ts",
+          main: "./index.js",
+        }),
+      );
+      yield* filesystem.writeFileString(paths.join(root, "entry.ts"), MODULE_SOURCE);
+      return governingSurfacesOf({ cwd: root, filename: paths.join(root, "entry.ts") });
     });
 
-    it("is named by the root itself", ({ surfacesOfTheRepositoryRootPackage }) => {
-      expect(surfacesOfTheRepositoryRootPackage).toStrictEqual({
-        packageName: ".",
-        manifestPath: "package.json",
-        runnableFields: ["bin"],
-        importableFields: ["main"],
-      });
-    });
+    it.effect("is named by the root itself", () =>
+      Effect.gen(function* program() {
+        const surfacesOfTheRepositoryRootPackage = yield* fixture;
+        expect(surfacesOfTheRepositoryRootPackage).toStrictEqual({
+          packageName: ".",
+          manifestPath: "package.json",
+          runnableFields: ["bin"],
+          importableFields: ["main"],
+        });
+      }),
+    );
   });
 
   describe("a manifest that is not an object", () => {
-    const it = test.extend("surfacesOfAManifestThatIsNotAnObject", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "broken"), { recursive: true });
-      writeFileSync(join(root, "packages", "broken", "package.json"), "[]\n", "utf8");
-      writeFileSync(join(root, "packages", "broken", "entry.ts"), MODULE_SOURCE, "utf8");
+    const fixture = Effect.gen(function* surfacesOfAManifestThatIsNotAnObject() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "broken"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "broken", "package.json"),
+        "[]\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "broken", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "broken", "entry.ts"),
+        filename: paths.join(root, "packages", "broken", "entry.ts"),
       });
     });
 
-    it("governs no surface", ({ surfacesOfAManifestThatIsNotAnObject }) => {
-      expect(surfacesOfAManifestThatIsNotAnObject).toBe(null);
-    });
+    it.effect("governs no surface", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAManifestThatIsNotAnObject = yield* fixture;
+        expect(surfacesOfAManifestThatIsNotAnObject).toBe(null);
+      }),
+    );
   });
 
   describe("a file no manifest governs", () => {
-    const it = test.extend("surfacesOfAFileNoManifestGoverns", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), "packages: []\n", "utf8");
-      writeFileSync(join(root, "loose.ts"), MODULE_SOURCE, "utf8");
-      return governingSurfacesOf({ cwd: root, filename: join(root, "loose.ts") });
+    const fixture = Effect.gen(function* surfacesOfAFileNoManifestGoverns() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
+      );
+
+      yield* filesystem.writeFileString(paths.join(root, "pnpm-workspace.yaml"), "packages: []\n");
+      yield* filesystem.writeFileString(paths.join(root, "loose.ts"), MODULE_SOURCE);
+      return governingSurfacesOf({ cwd: root, filename: paths.join(root, "loose.ts") });
     });
 
-    it("reads no surface for it", ({ surfacesOfAFileNoManifestGoverns }) => {
-      expect(surfacesOfAFileNoManifestGoverns).toBe(null);
-    });
+    it.effect("reads no surface for it", () =>
+      Effect.gen(function* program() {
+        const surfacesOfAFileNoManifestGoverns = yield* fixture;
+        expect(surfacesOfAFileNoManifestGoverns).toBe(null);
+      }),
+    );
   });
 
   describe("a manifest read before any rewrite", () => {
-    const it = test.extend("surfacesReadBeforeTheManifestWasRewritten", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "remembered"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "remembered", "package.json"),
-        JSON.stringify({ name: "@fixture/remembered", bin: "./cli.ts" }),
-        "utf8",
+    const fixture = Effect.gen(function* surfacesReadBeforeTheManifestWasRewritten() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
       );
-      writeFileSync(join(root, "packages", "remembered", "entry.ts"), MODULE_SOURCE, "utf8");
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "remembered"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "remembered", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          name: "@fixture/remembered",
+          bin: "./cli.ts",
+        }),
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "remembered", "entry.ts"),
+        MODULE_SOURCE,
+      );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "remembered", "entry.ts"),
+        filename: paths.join(root, "packages", "remembered", "entry.ts"),
       });
     });
 
-    it("carries the import surface that manifest declared", ({
-      surfacesReadBeforeTheManifestWasRewritten,
-    }) => {
-      expect(surfacesReadBeforeTheManifestWasRewritten).toStrictEqual({
-        packageName: "@fixture/remembered",
-        manifestPath: "packages/remembered/package.json",
-        runnableFields: ["bin"],
-        importableFields: [],
-      });
-    });
+    it.effect("carries the import surface that manifest declared", () =>
+      Effect.gen(function* program() {
+        const surfacesReadBeforeTheManifestWasRewritten = yield* fixture;
+        expect(surfacesReadBeforeTheManifestWasRewritten).toStrictEqual({
+          packageName: "@fixture/remembered",
+          manifestPath: "packages/remembered/package.json",
+          runnableFields: ["bin"],
+          importableFields: [],
+        });
+      }),
+    );
   });
 
   describe("a manifest read again after it was rewritten", () => {
-    const it = test.extend("surfacesReadAfterTheManifestWasRewritten", ({}, { onCleanup }) => {
-      const root = realpathSync(mkdtempSync(join(tmpdir(), "declared-surfaces-")));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_MANIFEST, "utf8");
-      mkdirSync(join(root, "packages", "remembered"), { recursive: true });
-      writeFileSync(
-        join(root, "packages", "remembered", "package.json"),
-        JSON.stringify({ name: "@fixture/remembered", bin: "./cli.ts" }),
-        "utf8",
+    const fixture = Effect.gen(function* surfacesReadAfterTheManifestWasRewritten() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.realPath(
+        yield* filesystem.makeTempDirectoryScoped({ prefix: "declared-surfaces-" }),
       );
-      writeFileSync(join(root, "packages", "remembered", "entry.ts"), MODULE_SOURCE, "utf8");
+
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_MANIFEST,
+      );
+      yield* filesystem.makeDirectory(paths.join(root, "packages", "remembered"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "remembered", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+          name: "@fixture/remembered",
+          bin: "./cli.ts",
+        }),
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "remembered", "entry.ts"),
+        MODULE_SOURCE,
+      );
       governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "remembered", "entry.ts"),
+        filename: paths.join(root, "packages", "remembered", "entry.ts"),
       });
-      writeFileSync(
-        join(root, "packages", "remembered", "package.json"),
-        JSON.stringify({
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages", "remembered", "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
           name: "@fixture/remembered",
           bin: "./cli.ts",
           exports: { ".": "./src/index.ts" },
         }),
-        "utf8",
       );
       return governingSurfacesOf({
         cwd: root,
-        filename: join(root, "packages", "remembered", "entry.ts"),
+        filename: paths.join(root, "packages", "remembered", "entry.ts"),
       });
     });
 
-    it("still carries what the first read remembered", ({
-      surfacesReadAfterTheManifestWasRewritten,
-    }) => {
-      expect(surfacesReadAfterTheManifestWasRewritten).toStrictEqual({
-        packageName: "@fixture/remembered",
-        manifestPath: "packages/remembered/package.json",
-        runnableFields: ["bin"],
-        importableFields: [],
-      });
-    });
+    it.effect("still carries what the first read remembered", () =>
+      Effect.gen(function* program() {
+        const surfacesReadAfterTheManifestWasRewritten = yield* fixture;
+        expect(surfacesReadAfterTheManifestWasRewritten).toStrictEqual({
+          packageName: "@fixture/remembered",
+          manifestPath: "packages/remembered/package.json",
+          runnableFields: ["bin"],
+          importableFields: [],
+        });
+      }),
+    );
   });
 });
