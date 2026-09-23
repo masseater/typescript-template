@@ -1387,9 +1387,6 @@ importers:
       effect:
         specifier: 'catalog:'
         version: 4.0.0-rc.117
-      web-vitals:
-        specifier: 6.2.2
-        version: 6.2.2
     devDependencies:
       '@effect/vitest':
         specifier: 'catalog:'
@@ -1527,6 +1524,9 @@ importers:
       temporal-polyfill:
         specifier: 'catalog:'
         version: 1.0.5
+      web-vitals:
+        specifier: 6.2.2
+        version: 6.2.2
     devDependencies:
       '@repo/config':
         specifier: workspace:*

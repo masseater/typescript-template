@@ -1,9 +1,9 @@
 import "./temporal.ts";
-import { initBrowserTelemetry } from "@repo/observability";
 import { HeadContent } from "@tanstack/react-router";
 import { useEffect, type ReactElement } from "react";
 
 import { AppBody } from "./app-body";
+import { initBrowserTelemetry } from "./browser-telemetry/browser.ts";
 
 import type { FieldValidationMessages } from "./shared/ui/field-validation-messages";
 import type { Children } from "./shared/ui/types";

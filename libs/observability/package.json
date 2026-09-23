@@ -10,8 +10,7 @@
   },
   "dependencies": {
     "@repo/config": "workspace:*",
-    "effect": "catalog:",
-    "web-vitals": "6.2.2"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",

@@ -31,7 +31,8 @@
     "styletron-engine-monolithic": "catalog:",
     "styletron-react": "catalog:",
     "tailwindcss": "catalog:",
-    "temporal-polyfill": "catalog:"
+    "temporal-polyfill": "catalog:",
+    "web-vitals": "6.2.2"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",
