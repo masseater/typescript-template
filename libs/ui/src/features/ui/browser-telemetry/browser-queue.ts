@@ -1,3 +1,4 @@
+import { maximumBatchSize, type BrowserEvent } from "@repo/observability";
 import {
   Array as Arr,
   Clock,
@@ -9,8 +10,6 @@ import {
   Semaphore,
   type Cause,
 } from "effect";
-
-import { maximumBatchSize, type BrowserEvent } from "./events.ts";
 
 class DeliveryRefused extends Schema.TaggedError<DeliveryRefused>()("DeliveryRefused", {
   cause: Schema.Defect(),
@@ -36,14 +35,14 @@ export type EventQueue = {
   readonly close: () => void;
 };
 
-const encodeJson = (value: unknown): string =>
-  Effect.runSync(
-    Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(Effect.orDie),
-  );
+const NoticeJson = Schema.fromJsonString(Schema.Struct({ event: Schema.String }));
 
-const reportExportFailure = Console.error(encodeJson({ event: "browser.telemetry_export_failed" }));
+const encodedNotice = (noticeName: string): string =>
+  Effect.runSync(Schema.encodeEffect(NoticeJson)({ event: noticeName }).pipe(Effect.orDie));
 
-const reportBatchDropped = Console.error(encodeJson({ event: "browser.telemetry_batch_dropped" }));
+const reportExportFailure = Console.error(encodedNotice("browser.telemetry_export_failed"));
+
+const reportBatchDropped = Console.error(encodedNotice("browser.telemetry_batch_dropped"));
 
 const settled = (
   delivery: Effect.Effect<void, DeliveryRefused | Cause.Done>,
@@ -100,7 +99,7 @@ export const makeEventQueue = (
     },
     enqueue: (browserEvent) => {
       if (!Queue.offerUnsafe(pending, browserEvent) && Queue.isFullUnsafe(pending)) {
-        Effect.runSync(Console.error(encodeJson({ event: "browser.telemetry_queue_full" })));
+        Effect.runSync(Console.error(encodedNotice("browser.telemetry_queue_full")));
       }
     },
     flush: () => Effect.runPromise(drainOnce),
