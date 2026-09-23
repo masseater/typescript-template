@@ -2,11 +2,11 @@
   "name": "@repo/local",
   "private": true,
   "bin": {
-    "repo-local": "./src/compose.ts"
+    "repo-local": "./src/features/local/compose.ts"
   },
   "type": "module",
   "exports": {
-    ".": "./src/receiver.ts"
+    ".": "./src/features/local/index.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { LINT_SEVERITY } from "../src/lint-rule-authoring/index.ts";
+import { LINT_SEVERITY } from "../src/features/dont-review-it/lint-rule-authoring/index.ts";
 
 describe("lint ルールの重大度の語彙", () => {
   it("error と warn と off の 3 値だけを公開する", () => {

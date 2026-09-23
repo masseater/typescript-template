@@ -4,8 +4,8 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { defaultPresetAdoptionConfig } from "../src/preset-adoption/config.ts";
-import { runPresetAdoptionChecks } from "../src/preset-adoption/run-preset-adoption-checks.ts";
+import { defaultPresetAdoptionConfig } from "../src/features/dont-review-it/preset-adoption/config.ts";
+import { runPresetAdoptionChecks } from "../src/features/dont-review-it/preset-adoption/run-preset-adoption-checks.ts";
 
 const config = defaultPresetAdoptionConfig;
 

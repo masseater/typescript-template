@@ -10,6 +10,6 @@
   "include": [
     "src/**/*.ts",
     "vite.config.ts",
-    "../../tools/dont-review-it/src/vitest/parsed-fields.ts"
+    "../../tools/dont-review-it/src/features/dont-review-it/vitest/parsed-fields.ts"
   ]
 }
