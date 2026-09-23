@@ -126,7 +126,6 @@ describe("error monitor telemetry", () => {
       );
       const result = yield* fetchErrorGroups(window);
       assert.deepStrictEqual(result, {
-        dropped: 0,
         groups: [
           {
             count: GROUPED_EVENTS,
@@ -228,7 +227,6 @@ describe("error monitor telemetry", () => {
         const pageSize = requests[0]?.limit;
         assert.isTrue(pageSize !== undefined && pageSize > 0);
         assert.strictEqual(result.groups.length, (pageSize ?? 0) + 1);
-        assert.strictEqual(result.dropped, 0);
         assert.deepStrictEqual(
           requests.map((request) => request.offsetBy),
           [0, pageSize],
@@ -263,7 +261,6 @@ describe("error monitor telemetry", () => {
         ),
       );
       assert.deepStrictEqual(yield* fetchErrorGroups(window), {
-        dropped: 0,
         groups: [
           {
             count: GROUPED_EVENTS,

@@ -16,7 +16,6 @@ interface ErrorGroup {
 
 interface ErrorGroups {
   readonly groups: readonly ErrorGroup[];
-  readonly dropped: number;
 }
 
 interface QueryWindow {
@@ -181,7 +180,6 @@ const fetchErrorGroups = Effect.fn("fetchErrorGroups")(function* fetchErrorGroup
     });
   }
   return {
-    dropped: 0,
     groups: collected.flatMap((item) => (item.group === undefined ? [] : [item.group])),
   } satisfies ErrorGroups;
 });
