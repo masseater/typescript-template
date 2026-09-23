@@ -11,10 +11,11 @@ const eagerMotion = [
     'import { motion as animated } from "motion/react"; export const Box = animated.div;',
   ],
   ["relayed", 'export { motion } from "motion/react";'],
+  ["named-m", 'import { m } from "motion/react"; export const Box = m.div;'],
 ] as const;
 
 const lazyMotion = [
-  ["m", 'import { m } from "motion/react"; export const Box = m.div;'],
+  ["m", 'import * as m from "motion/react-m"; export const Box = m.div;'],
   ["hooks", 'export { AnimatePresence, useSpring } from "motion/react";'],
   ["other-entry", 'import { motion } from "./motion.ts"; export const Box = motion;'],
 ] as const;
@@ -51,7 +52,7 @@ describe("retired motion-package imports", () => {
     expect.hasAssertions();
     expect(
       reported("retired-imports", {
-        code: 'export { LazyMotion, m } from "motion/react";',
+        code: 'export { LazyMotion, MotionConfig } from "motion/react";',
         filename: probeFile,
       }),
     ).toBe(false);

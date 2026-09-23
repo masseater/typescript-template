@@ -333,7 +333,7 @@ const projectPlugin = definePlugin({
     "lazy-motion": {
       create: lazyMotionVisitor,
       meta: metadata(
-        "motion/react の motion 部品は import できません。@repo/ui の ToastProvider は子を LazyMotion strict で包むため、その下で motion.div などを描画すると実行時に例外になります。React Bits から追加した部品も含め、motion/react の m を使ってください。",
+        'motion/react から motion と m は import できません。@repo/ui の MotionProvider は画面全体を LazyMotion strict で包みます。motion.div などは開発時のブラウザでだけ例外になり、本番では黙って全機能を同梱します。React Bits から追加した部品も含め、import * as m from "motion/react-m" の m.div などを使ってください。',
       ),
     },
     "no-internal-mocks": {

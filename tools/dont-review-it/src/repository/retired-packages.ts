@@ -62,7 +62,7 @@ const retiredPackages: Readonly<Record<string, string>> = {
 const retiredEntries: Readonly<Record<string, string>> = {
   "@effect/atom-react/": "@effect/atom-react の root",
   "better-auth/react": "better-auth/client と Effect Atom",
-  "motion/react-client": "motion/react の m",
+  "motion/react-client": "motion/react-m",
   "effect/unstable/reactivity/": "effect/unstable/reactivity の root",
 };
 

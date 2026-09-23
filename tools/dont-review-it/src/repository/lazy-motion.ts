@@ -4,7 +4,7 @@ import type { Visitor } from "vite-plus/lint/plugins";
 
 const motionEntry = "motion/react";
 
-const eagerComponent = "motion";
+const componentNames: ReadonlySet<string> = new Set(["m", "motion"]);
 
 const importedName = (node: Node): string | undefined => {
   if (node.type === "ImportSpecifier") {
@@ -16,9 +16,9 @@ const importedName = (node: Node): string | undefined => {
   return undefined;
 };
 
-const reportEagerComponents = (inspection: LintContext, specifiers: readonly Node[]): void => {
+const reportComponents = (inspection: LintContext, specifiers: readonly Node[]): void => {
   for (const specifier of specifiers) {
-    if (importedName(specifier) === eagerComponent) {
+    if (componentNames.has(importedName(specifier) ?? "")) {
       reportViolation(inspection, specifier);
     }
   }
@@ -28,12 +28,12 @@ const lazyMotionVisitor = (inspection: LintContext): Visitor => {
   return {
     ExportNamedDeclaration(node: Node): void {
       if (node.type === "ExportNamedDeclaration" && node.source?.value === motionEntry) {
-        reportEagerComponents(inspection, node.specifiers);
+        reportComponents(inspection, node.specifiers);
       }
     },
     ImportDeclaration(node: Node): void {
       if (node.type === "ImportDeclaration" && node.source.value === motionEntry) {
-        reportEagerComponents(inspection, node.specifiers);
+        reportComponents(inspection, node.specifiers);
       }
     },
   };
