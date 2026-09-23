@@ -52,7 +52,6 @@ export {
   memberApiKeyRateLimitWindowMilliseconds,
   memberApiKeyReadPermissions,
 } from "./member-api-key.ts";
-export { usageAllowanceRemains } from "./budget.ts";
 export {
   PLAN,
   SUBSCRIPTION_STATUS,

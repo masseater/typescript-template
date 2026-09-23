@@ -10,6 +10,7 @@ const checkDatabase = Effect.fn("checkDatabase")(function* checkDatabase() {
 export { containsKeyword } from "./contains-keyword.ts";
 export { Database, query } from "./database.ts";
 export { DatabaseFailure } from "./database-failure.ts";
+export { erDiagram } from "./er-diagram.ts";
 export type { DrizzleDatabase } from "./database.ts";
 export { and, count, desc, eq, gt, inArray, isNull, ne, not, or, sql } from "drizzle-orm";
 export { AUDIT_ACTION, auditActions } from "@repo/config";

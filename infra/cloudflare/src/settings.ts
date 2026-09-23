@@ -8,11 +8,9 @@ import {
   Domain,
   Email,
   HttpsUrl,
-  Nonnegative,
   Positive,
   Prefix,
   Recipients,
-  SamplingRate,
   checkOtlpSettings,
   checkSharedConfig,
   deriveOrigins,
@@ -24,8 +22,6 @@ function optional<Value>(config: Config.Config<Value>): Config.Config<Value | un
 
 const budget = Config.all({
   budgetJpy: Config.schema(Positive, deploymentKey.budgetJpy),
-  fixedCostUsd: Config.schema(Nonnegative, deploymentKey.fixedCostUsd),
-  jpyPerUsd: Config.schema(Positive, deploymentKey.jpyPerUsd),
   recipients: Config.Array(Email, deploymentKey.alertEmail).pipe(
     Config.mapEffect((recipients) =>
       Schema.decodeEffect(Recipients)(recipients).pipe(
@@ -33,7 +29,6 @@ const budget = Config.all({
       ),
     ),
   ),
-  reserveUsd: Config.schema(Nonnegative, deploymentKey.reserveUsd),
 });
 
 const otlpDestination = Config.all({
@@ -51,7 +46,6 @@ const settings = Config.all({
   budget,
   googleAnalyticsMeasurementId,
   mailFrom: Config.schema(Email, deploymentKey.mailFrom),
-  observabilitySampling: Config.schema(SamplingRate, deploymentKey.observabilitySampling),
   otlp: otlpDestination,
   prefix: Config.schema(Prefix, deploymentKey.prefix),
   zoneId: Config.schema(CloudflareId, deploymentKey.cloudflareZoneId),

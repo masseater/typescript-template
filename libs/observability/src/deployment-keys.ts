@@ -6,27 +6,16 @@ const deploymentKey = {
   cloudflareAccountId: "CLOUDFLARE_ACCOUNT_ID",
   cloudflareApiToken: "CLOUDFLARE_API_TOKEN",
   cloudflareZoneId: "CLOUDFLARE_ZONE_ID",
-  fixedCostUsd: "TEMPLATE_FIXED_COST_USD",
-  jpyPerUsd: "TEMPLATE_JPY_PER_USD",
   mailFrom: "TEMPLATE_MAIL_FROM",
-  observabilitySampling: "TEMPLATE_OBSERVABILITY_SAMPLING",
   otlpAuthorization: "TEMPLATE_OTLP_AUTHORIZATION",
   otlpEnabled: "TEMPLATE_OTLP_ENABLED",
   otlpEndpoint: "TEMPLATE_OTLP_ENDPOINT",
   googleAnalyticsMeasurementId: "TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
   prefix: "TEMPLATE_PREFIX",
-  reserveUsd: "TEMPLATE_RESERVE_USD",
   stripePriceId: "TEMPLATE_STRIPE_PRICE_ID",
   stripeSecretKey: "TEMPLATE_STRIPE_SECRET_KEY",
   stripeWebhookSecret: "TEMPLATE_STRIPE_WEBHOOK_SECRET",
 } as const;
-
-const budgetKeys = [
-  deploymentKey.budgetJpy,
-  deploymentKey.fixedCostUsd,
-  deploymentKey.jpyPerUsd,
-  deploymentKey.reserveUsd,
-] as const;
 
 const deploymentKeys = [
   deploymentKey.alertEmail,
@@ -36,12 +25,8 @@ const deploymentKeys = [
   deploymentKey.cloudflareZoneId,
   deploymentKey.appDomain,
   deploymentKey.authSecret,
-  deploymentKey.fixedCostUsd,
-  deploymentKey.jpyPerUsd,
   deploymentKey.mailFrom,
-  deploymentKey.observabilitySampling,
   deploymentKey.prefix,
-  deploymentKey.reserveUsd,
   deploymentKey.stripePriceId,
   deploymentKey.stripeSecretKey,
   deploymentKey.stripeWebhookSecret,
@@ -55,7 +40,7 @@ const optionalDeploymentKeys = [
 ] as const;
 
 const privateDeploymentKeys: readonly string[] = [
-  ...deploymentKeys.filter((key) => !budgetKeys.some((budget) => budget === key)),
+  ...deploymentKeys.filter((key) => key !== deploymentKey.budgetJpy),
   ...optionalDeploymentKeys,
 ];
 

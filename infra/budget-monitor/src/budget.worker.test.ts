@@ -6,6 +6,7 @@ import { HttpResponse, http } from "msw";
 import { fetchUsage } from "./billing.ts";
 import { parseBudgetConfig } from "./config.ts";
 import { evaluateBudget, shouldNotify } from "./decision.ts";
+import { fetchJpyPerUsd } from "./exchange-rate.ts";
 
 import type { UsageSnapshot } from "./billing.ts";
 import type { BudgetFailure } from "./config.ts";
@@ -18,6 +19,8 @@ const WARNING_USD = 32;
 const OVERSPENT_USD = 50;
 const CENT = 0.01;
 const ESTIMATED_TOTAL_JPY = 3700;
+const JPY_PER_USD = 100;
+const MOVED_JPY_PER_USD = 99;
 const NO_ALERT_LEVEL = 0;
 const WARNING_LEVEL = 80;
 const EXHAUSTED_LEVEL = 100;
@@ -29,9 +32,6 @@ const rawConfig = {
   BILLING_READ_TOKEN: "test-read-only-token-not-a-secret",
   BUDGET_JPY: "5000",
   CLOUDFLARE_ACCOUNT_ID: account,
-  FIXED_COST_USD: "5",
-  JPY_PER_USD: "100",
-  RESERVE_USD: "5",
 };
 const record = {
   BilledCost: WORKERS_COST_USD,
@@ -91,7 +91,7 @@ it.effect("aggregates daily actual costs instead of summing cumulative costs", (
       now,
     );
     assert.strictEqual(usage.usageUsd, WARNING_USD);
-    const decision = yield* evaluateBudget(usage, yield* parseBudgetConfig(rawConfig));
+    const decision = yield* evaluateBudget(usage, yield* parseBudgetConfig(rawConfig), JPY_PER_USD);
     assert.strictEqual(decision.allowanceUsd, ALLOWANCE_USD);
     assert.strictEqual(decision.level, WARNING_LEVEL);
     assert.strictEqual(decision.estimatedTotalJpy, ESTIMATED_TOTAL_JPY);
@@ -115,7 +115,11 @@ for (const [usageUsd, expected] of [
         account,
         now,
       );
-      const decision = yield* evaluateBudget(usage, yield* parseBudgetConfig(rawConfig));
+      const decision = yield* evaluateBudget(
+        usage,
+        yield* parseBudgetConfig(rawConfig),
+        JPY_PER_USD,
+      );
       assert.strictEqual(decision.level, expected);
       assert.strictEqual(shouldNotify(decision, []), expected !== NO_ALERT_LEVEL);
     }),
@@ -172,12 +176,19 @@ it.effect("stale data and a budget consumed by fixed fees fail closed", () =>
       yield* code(usageFrom({ result: [record], success: true }, account, staleNow)),
       "billing_data_stale",
     );
+    const usage = yield* usageFrom({ result: [record], success: true }, account, now);
     assert.strictEqual(
-      yield* code(parseBudgetConfig({ ...rawConfig, FIXED_COST_USD: "50" })),
+      yield* code(
+        evaluateBudget(
+          usage,
+          yield* parseBudgetConfig({ ...rawConfig, BUDGET_JPY: "1000" }),
+          JPY_PER_USD,
+        ),
+      ),
       "budget_has_no_usage_allowance",
     );
     assert.strictEqual(
-      yield* code(parseBudgetConfig({ ...rawConfig, JPY_PER_USD: "0" })),
+      yield* code(parseBudgetConfig({ ...rawConfig, BUDGET_JPY: "0" })),
       "budget_config_invalid",
     );
   }),
@@ -187,11 +198,81 @@ it.effect("a new billing cycle permits notification again", () =>
   Effect.gen(function* program() {
     const config = yield* parseBudgetConfig(rawConfig);
     const usage = yield* usageFrom({ result: [record], success: true }, account, now);
-    const current = yield* evaluateBudget({ ...usage, usageUsd: ALLOWANCE_USD }, config);
+    const current = yield* evaluateBudget(
+      { ...usage, usageUsd: ALLOWANCE_USD },
+      config,
+      JPY_PER_USD,
+    );
     const next = yield* evaluateBudget(
       { ...usage, periodStart: "2026-10-01T00:00:00Z", usageUsd: ALLOWANCE_USD },
       config,
+      JPY_PER_USD,
     );
     assert.isTrue(shouldNotify(next, [current.notificationKey]));
+  }),
+);
+
+it.effect("does not notify the same threshold again when only the exchange rate moves", () =>
+  Effect.gen(function* program() {
+    const config = yield* parseBudgetConfig(rawConfig);
+    const usage = yield* usageFrom({ result: [record], success: true }, account, now);
+    const current = yield* evaluateBudget(
+      { ...usage, usageUsd: OVERSPENT_USD },
+      config,
+      JPY_PER_USD,
+    );
+    const moved = yield* evaluateBudget(
+      { ...usage, usageUsd: OVERSPENT_USD },
+      config,
+      MOVED_JPY_PER_USD,
+    );
+    assert.strictEqual(moved.jpyPerUsd, MOVED_JPY_PER_USD);
+    assert.isFalse(shouldNotify(moved, [current.notificationKey]));
+  }),
+);
+
+function rateFrom(respond: () => Response, date: number): Effect.Effect<number, BudgetFailure> {
+  return Effect.acquireUseRelease(
+    Effect.sync(() => {
+      const network = setupNetwork();
+      network.configure({ onUnhandledFrame: "error" });
+      network.use(http.get("https://api.frankfurter.dev/v1/latest", respond));
+      network.enable();
+      return network;
+    }),
+    () => fetchJpyPerUsd(date),
+    (network) =>
+      Effect.sync(() => {
+        network.disable();
+      }),
+  );
+}
+
+const quote = { amount: 1, base: "USD", date: "2026-09-15", rates: { JPY: JPY_PER_USD } };
+
+it.effect("reads the current yen rate for one US dollar", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(yield* rateFrom(() => HttpResponse.json(quote), now), JPY_PER_USD);
+  }),
+);
+
+it.effect("an unavailable, malformed or stale exchange rate fails closed", () =>
+  Effect.gen(function* program() {
+    assert.strictEqual(
+      yield* code(rateFrom(() => new HttpResponse(null, { status: 503 }), now)),
+      "exchange_rate_http_failed",
+    );
+    assert.strictEqual(
+      yield* code(rateFrom(() => HttpResponse.json({ ...quote, rates: {} }), now)),
+      "exchange_rate_response_invalid",
+    );
+    assert.strictEqual(
+      yield* code(rateFrom(() => HttpResponse.json({ ...quote, base: "EUR" }), now)),
+      "exchange_rate_response_invalid",
+    );
+    assert.strictEqual(
+      yield* code(rateFrom(() => HttpResponse.json({ ...quote, date: "2026-09-01" }), now)),
+      "exchange_rate_stale",
+    );
   }),
 );
