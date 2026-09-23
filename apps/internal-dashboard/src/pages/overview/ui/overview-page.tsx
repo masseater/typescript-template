@@ -1,6 +1,4 @@
-import { Heading, STATUS_VARIANT, StatusMessage } from "@repo/ui";
-
-import { OpsPage } from "#widgets/ops-page/index.ts";
+import { Heading, Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
@@ -17,7 +15,7 @@ const overviewCards: readonly OverviewCard[] = [
 
 function OverviewPage(): ReactElement {
   return (
-    <OpsPage title="概要">
+    <Page title="概要">
       <section aria-label="集計" className="grid gap-3 sm:grid-cols-3">
         {overviewCards.map((card) => (
           <article key={card.label} className="rounded-lg border border-border p-3">
@@ -42,7 +40,7 @@ function OverviewPage(): ReactElement {
       >
         Google Analytics を開く
       </a>
-    </OpsPage>
+    </Page>
   );
 }
 

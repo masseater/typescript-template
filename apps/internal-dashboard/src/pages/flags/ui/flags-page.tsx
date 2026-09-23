@@ -1,7 +1,6 @@
-import { STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
+import { Page, resultError, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import { useFlagList } from "#pages/flags/model/flag-list.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { FlagRow } from "./flag-row.tsx";
 
 import type { ReactElement } from "react";
@@ -11,7 +10,7 @@ function FlagsPage(): ReactElement {
   const failure = resultError(listing);
 
   return (
-    <OpsPage title="機能フラグ">
+    <Page title="機能フラグ">
       {failure !== undefined ? (
         <StatusMessage variant={STATUS_VARIANT.failure}>
           {failure}
@@ -33,7 +32,7 @@ function FlagsPage(): ReactElement {
           ))}
         </div>
       )}
-    </OpsPage>
+    </Page>
   );
 }
 
