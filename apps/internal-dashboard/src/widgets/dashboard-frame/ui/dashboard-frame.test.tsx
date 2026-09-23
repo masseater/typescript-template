@@ -1,5 +1,4 @@
-import { RegistryProvider } from "@effect/atom-react";
-import { ToastProvider } from "@repo/ui";
+import { AppProviders } from "@repo/ui/shell";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -12,6 +11,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vite-plus/test";
 
+import { fieldValidationMessages } from "#shared/i18n/index.ts";
 import { DashboardFrame } from "./dashboard-frame.tsx";
 
 const SPACING_PX = 4;
@@ -23,20 +23,15 @@ function renderDashboardFrame(defaultCollapsed: boolean): Promise<string> {
     Effect.gen(function* loadFrame() {
       const rootRoute = createRootRoute({
         component: () =>
-          createElement(
-            RegistryProvider,
-            null,
-            createElement(
-              ToastProvider,
-              null,
-              createElement(DashboardFrame, {
-                children: createElement("p", null, "本文"),
-                defaultCollapsed,
-                email: "ada@example.com",
-                name: "Ada",
-              }),
-            ),
-          ),
+          createElement(AppProviders, {
+            children: createElement(DashboardFrame, {
+              children: createElement("p", null, "本文"),
+              defaultCollapsed,
+              email: "ada@example.com",
+              name: "Ada",
+            }),
+            fieldValidationMessages: fieldValidationMessages,
+          }),
       });
       const router = createRouter({
         history: createMemoryHistory({ initialEntries: ["/inquiries"] }),

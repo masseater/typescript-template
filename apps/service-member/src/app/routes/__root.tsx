@@ -1,4 +1,3 @@
-import { FieldValidationMessageProvider } from "@repo/ui";
 import { AppShell, appHead } from "@repo/ui/shell";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 
@@ -13,10 +12,12 @@ const Route = createRootRoute({
   component: (): ReactElement => {
     const locale = getLocale();
     return (
-      <AppShell lang={locale} routes={routes}>
-        <FieldValidationMessageProvider messages={fieldValidationMessages(locale)}>
-          <Outlet />
-        </FieldValidationMessageProvider>
+      <AppShell
+        fieldValidationMessages={fieldValidationMessages(locale)}
+        lang={locale}
+        routes={routes}
+      >
+        <Outlet />
       </AppShell>
     );
   },
