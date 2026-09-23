@@ -1,7 +1,9 @@
-@import "tailwindcss";
+@import "@repo/ui/styles.css";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 @import "@xyflow/react/dist/style.css";
+
+@source "..";
 
 @layer base {
   body {
