@@ -19,6 +19,16 @@ import type { ConfigEnv, PluginOption } from "vite-plus";
 
 const serve = { command: "serve", isPreview: false, mode: "test" } as const satisfies ConfigEnv;
 
+const inlangState = [
+  "!project.inlang/.gitignore",
+  "!project.inlang/.meta.json",
+  "!project.inlang/README.md",
+  "!project.inlang/cache",
+  "!project.inlang/cache/**",
+  "!project.inlang/.lix",
+  "!project.inlang/.lix/**",
+];
+
 describe("lifecycle", () => {
   const it = test
     .extend("inheritedLifecycle", () => lifecycle({ prepush: ["check:effect"] }))
@@ -85,12 +95,13 @@ describe("appRun", () => {
             "!**/node_modules/.cache/**",
             { base: "workspace", pattern: "!.local" },
             { base: "workspace", pattern: "!.local/**" },
+            ...inlangState,
           ],
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },
         "check:react": {
           command: "quality-check-react",
-          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+          input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...inlangState],
           output: [{ auto: true }, "!**/node_modules/.cache/**"],
         },
         check: sliceBoundaries.check,
@@ -105,6 +116,7 @@ describe("appRun", () => {
             "!dist/**",
             { base: "workspace", pattern: "!.local" },
             { base: "workspace", pattern: "!.local/**" },
+            ...inlangState,
           ],
           output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
         },

@@ -35,7 +35,10 @@ describe("pull request check scope", () => {
     expect.hasAssertions();
     const workflow = readFileSync(path.join(repositoryRoot, ".github/workflows/check.yml"), "utf8");
     expect(workflow).toMatch(
-      /^ {2}check:\n {4}if: .+\n {4}runs-on: .+\n {4}timeout-minutes: 15$/mu,
+      /^ {2}check-shard:\n {4}if: .+\n {4}runs-on: .+\n {4}timeout-minutes: 15$/mu,
+    );
+    expect(workflow).toMatch(
+      /^ {2}check:\n {4}if: \$\{\{ always\(\) .+\n {4}needs: \[check-shard\]\n/mu,
     );
   });
 });

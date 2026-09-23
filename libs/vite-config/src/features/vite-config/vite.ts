@@ -38,8 +38,10 @@ import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { withoutEnvFileLoader } from "./env-file-loader.ts";
 import { paths } from "./host.ts";
 import { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
+import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { previewDevVars } from "./preview-dev-vars.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
+import { taskInput } from "./task-input.ts";
 import {
   wikiCompanion,
   wikiDevServices,
@@ -104,15 +106,8 @@ const withoutLocalState = [
   { base: "workspace", pattern: "!.local" },
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
-
 type RunConfig = NonNullable<UserConfig["run"]>;
 type Tasks = NonNullable<RunConfig["tasks"]>;
-
-const taskInput = [
-  { auto: true },
-  { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-  { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-] as const;
 
 const testRun = {
   test: {
@@ -167,12 +162,18 @@ const effectRun = {
 const appChecks = {
   "check:client": {
     command: "quality-check-client",
-    input: [...taskInput, "!**/dist/**", "!**/node_modules/.cache/**", ...withoutLocalState],
+    input: [
+      ...taskInput,
+      "!**/dist/**",
+      "!**/node_modules/.cache/**",
+      ...withoutLocalState,
+      ...withoutInlangState,
+    ],
     output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
   },
   "check:react": {
     command: "quality-check-react",
-    input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
+    input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...withoutInlangState],
     output: [{ auto: true }, "!**/node_modules/.cache/**"],
   },
 } satisfies Tasks;
@@ -187,7 +188,12 @@ const appRun = {
     build: {
       command: "vp build",
       dependsOn: ["@repo/dev#setup", "check:effect"],
-      input: [...taskInput, ...withoutGenerated(".wrangler", "dist"), ...withoutLocalState],
+      input: [
+        ...taskInput,
+        ...withoutGenerated(".wrangler", "dist"),
+        ...withoutLocalState,
+        ...withoutInlangState,
+      ],
       output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
     },
     "check:dev": {
@@ -205,21 +211,6 @@ const appRun = {
     }),
   },
 } satisfies RunConfig;
-
-const workspaceParaglideCompile = {
-  command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
-  input: [
-    ...taskInput,
-    { base: "workspace", pattern: "apps/*/messages/**" },
-    { base: "workspace", pattern: "apps/*/project.inlang/**" },
-    { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-    {
-      base: "workspace",
-      pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
-    },
-  ],
-  output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
-} satisfies NonNullable<Tasks[string]>;
 
 const paraglideAppRun = {
   tasks: {
