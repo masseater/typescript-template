@@ -5,7 +5,7 @@ import { runHook } from "cc-hooks-ts";
 import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
-import { joinPath, writeFileString } from "../host.ts";
+import { joinPath, readFileString, resolvePath, writeFileString } from "../host.ts";
 import { spawnChildSync } from "../node-spawn.ts";
 import { hook } from "./hook.ts";
 import { instructionFor } from "./message.ts";
@@ -13,6 +13,8 @@ import { instructionFor } from "./message.ts";
 vi.mock(import("cc-hooks-ts"), { spy: true });
 
 const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
+const PACKAGE_ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
+const REPOSITORY_ROOT = resolvePath(PACKAGE_ROOT, "../..");
 const nodeFs = process.getBuiltinModule("fs") as {
   readonly chmodSync: (location: string, mode: number) => void;
   readonly mkdtempSync: (prefix: string) => string;
@@ -20,6 +22,13 @@ const nodeFs = process.getBuiltinModule("fs") as {
 const nodeOs = process.getBuiltinModule("os") as {
   readonly tmpdir: () => string;
 };
+
+const ClaudeSettings = Schema.Struct({
+  hooks: Schema.Record(
+    Schema.String,
+    Schema.Array(Schema.Struct({ hooks: Schema.Array(Schema.Struct({ command: Schema.String })) })),
+  ),
+});
 
 const BEHIND_GH_SCRIPT = `#!/bin/sh
 echo '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":11,"url":"https://example.com/11"}'
@@ -164,5 +173,54 @@ describe("sync-base cli", () => {
         });
       },
     );
+  });
+
+  describe("the commands .claude/settings.json hands the hook events to", () => {
+    const it = test
+      .extend("theWiredCommands", () =>
+        Effect.runPromise(
+          Schema.decodeEffect(Schema.fromJsonString(ClaudeSettings))(
+            readFileString(joinPath(REPOSITORY_ROOT, ".claude", "settings.json")),
+          ).pipe(
+            Effect.map((settings) =>
+              Object.values(settings.hooks)
+                .flat()
+                .flatMap((matcher) => matcher.hooks)
+                .map((hookEntry) => hookEntry.command)
+                .filter((command) => command.includes("@repo/ai-native")),
+            ),
+          ),
+        ))
+      .extend("theWiredEntries", ({ theWiredCommands }) =>
+        theWiredCommands.map((command) =>
+          resolvePath(PACKAGE_ROOT, command.split(" ").at(-1) ?? ""),
+        ),
+      )
+      .extend("theExitCodesWithoutVitePlus", ({ theWiredCommands }) =>
+        theWiredCommands.map((command) => {
+          const { status } = spawnChildSync({
+            executable: "/bin/sh",
+            handed: ["-c", command],
+            spawnOptions: {
+              cwd: REPOSITORY_ROOT,
+              encoding: "utf8",
+              env: {
+                HOME: nodeFs.mkdtempSync(joinPath(nodeOs.tmpdir(), "sync-base-home-")),
+                PATH: "/usr/bin:/bin",
+              },
+              input: "{}",
+            },
+          });
+          return status;
+        }),
+      );
+
+    it("reach this entry on every event the hook listens to", ({ theWiredEntries }) => {
+      expect(theWiredEntries).toStrictEqual([CLI_PATH, CLI_PATH, CLI_PATH]);
+    });
+
+    it("end quietly on a host where vp is not installed", ({ theExitCodesWithoutVitePlus }) => {
+      expect(theExitCodesWithoutVitePlus).toStrictEqual([0, 0, 0]);
+    });
   });
 });
