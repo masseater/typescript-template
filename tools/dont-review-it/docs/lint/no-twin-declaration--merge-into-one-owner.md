@@ -13,7 +13,7 @@ Disallow a declaration that another declaration in the repository spells with th
 - Suggestions: no
 - Options: no
 - Bundle: `single-ownership`
-- Source: [`no-twin-declaration--merge-into-one-owner.ts`](../../src/lint/oxlint/rules/single-ownership/no-twin-declaration--merge-into-one-owner.ts)
+- Source: [`no-twin-declaration--merge-into-one-owner.ts`](../../src/features/dont-review-it/lint/oxlint/rules/single-ownership/no-twin-declaration--merge-into-one-owner.ts)
 
 <!-- END GENERATED rule-header -->
 

@@ -13,7 +13,7 @@ Disallow a spec standing up its own file system double or naming the in-memory i
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-local-file-system-mock--use-shared-fs.ts`](../../src/lint/oxlint/rules/testing/no-local-file-system-mock--use-shared-fs.ts)
+- Source: [`no-local-file-system-mock--use-shared-fs.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-local-file-system-mock--use-shared-fs.ts)
 
 <!-- END GENERATED rule-header -->
 

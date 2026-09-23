@@ -13,7 +13,7 @@ Disallow a test config that lets a run finding no test file report success, so a
 - Suggestions: no
 - Options: no
 - Bundle: `testing`
-- Source: [`no-vacuous-test-run--let-the-empty-run-fail.ts`](../../src/lint/oxlint/rules/testing/no-vacuous-test-run--let-the-empty-run-fail.ts)
+- Source: [`no-vacuous-test-run--let-the-empty-run-fail.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-vacuous-test-run--let-the-empty-run-fail.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -34,6 +34,7 @@ Code this rule rejects.
 // in vite.config.ts
 import { defineConfig } from "vite-plus";
 export default defineConfig({ test: { passWithNoTests: true } });
+
 ```
 
 ```ts
@@ -41,6 +42,7 @@ export default defineConfig({ test: { passWithNoTests: true } });
 // in vite.config.ts
 import { passWithNoTests } from "./shared.ts";
 export default { test: { passWithNoTests } };
+
 ```
 
 Code this rule accepts.
@@ -50,12 +52,14 @@ Code this rule accepts.
 // in vite.config.ts
 import { defineConfig } from "vite-plus";
 export default defineConfig({ test: { passWithNoTests: false } });
+
 ```
 
 ```ts
 // the same key outside the test block is not the option the run reads
 // in vite.config.ts
 export default { passWithNoTests: true, test: {} };
+
 ```
 
 <!-- END GENERATED examples -->

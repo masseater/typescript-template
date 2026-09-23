@@ -13,7 +13,7 @@ Disallow every export whose outward name is `default`, so a symbol keeps the nam
 - Suggestions: no
 - Options: yes
 - Bundle: `writing`
-- Source: [`no-default-export--use-named-export.ts`](../../src/lint/oxlint/rules/writing/no-default-export--use-named-export.ts)
+- Source: [`no-default-export--use-named-export.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-default-export--use-named-export.ts)
 
 <!-- END GENERATED rule-header -->
 

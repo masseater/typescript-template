@@ -13,7 +13,7 @@ Disallow reading the call record of a mock as a value, in the subject of an asse
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-expect-mock-call-inspection--use-to-have-been-called-family.ts`](../../src/lint/oxlint/rules/testing/no-expect-mock-call-inspection--use-to-have-been-called-family.ts)
+- Source: [`no-expect-mock-call-inspection--use-to-have-been-called-family.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-expect-mock-call-inspection--use-to-have-been-called-family.ts)
 
 <!-- END GENERATED rule-header -->
 

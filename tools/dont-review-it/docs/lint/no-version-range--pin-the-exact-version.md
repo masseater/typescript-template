@@ -13,7 +13,7 @@ Disallow every dependency version that matches more than one release, in workspa
 - Suggestions: no
 - Options: yes
 - Bundle: `toolchain`
-- Source: [`no-version-range--pin-the-exact-version.ts`](../../src/lint/oxlint/rules/toolchain/no-version-range--pin-the-exact-version.ts)
+- Source: [`no-version-range--pin-the-exact-version.ts`](../../src/features/dont-review-it/lint/oxlint/rules/toolchain/no-version-range--pin-the-exact-version.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -34,6 +34,7 @@ Code this rule rejects.
 ```ts
 // the root workspace carries both its own ranges and the ones the catalog registers
 export const shipped = true;
+
 ```
 
 <!-- END GENERATED examples -->

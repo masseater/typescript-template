@@ -13,7 +13,7 @@ Disallow every assignment-shaped mutation - a re-bindable declaration, a write t
 - Suggestions: no
 - Options: yes
 - Bundle: `mutation-and-failure`
-- Source: [`no-reassign--use-spread-or-iife.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-reassign--use-spread-or-iife.ts)
+- Source: [`no-reassign--use-spread-or-iife.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-reassign--use-spread-or-iife.ts)
 
 <!-- END GENERATED rule-header -->
 
