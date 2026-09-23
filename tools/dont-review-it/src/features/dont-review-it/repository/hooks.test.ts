@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { lifecycleInherits, lifecycles } from "@repo/vite-config";
+import { Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
@@ -21,8 +22,6 @@ import {
 } from "./tasks.ts";
 import { dedicatedToolVitestProjects, rootNodeToolTestIncludes } from "./tool-test-projects.ts";
 
-const repositoryRoot = fileURLToPath(new URL("../../../../../../", import.meta.url));
-
 const hooks: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../../../.vite-hooks/pre-*",
   {
@@ -36,7 +35,10 @@ const workflows: Readonly<Record<string, string>> = import.meta.glob(
   { eager: true, import: "default" },
 );
 
-const mergifyConfig = readFileSync(join(repositoryRoot, ".mergify.yml"), "utf8");
+const mergifyConfigs: Readonly<Record<string, string>> = import.meta.glob(
+  "../../../../../../.mergify.yml",
+  { eager: true, import: "default" },
+);
 
 const pnpmWorkspaces: Readonly<Record<string, string>> = import.meta.glob(
   "../../../../../../pnpm-workspace.yaml",
@@ -432,21 +434,47 @@ describe("on-demand gate escapes", () => {
   });
 });
 
+const Env = Schema.Record(Schema.String, Schema.Unknown);
+const CheckWorkflow = Schema.Struct({
+  jobs: Schema.Record(
+    Schema.String,
+    Schema.Struct({
+      env: Schema.optionalKey(Env),
+      steps: Schema.optionalKey(
+        Schema.Array(
+          Schema.Struct({ env: Schema.optionalKey(Env), run: Schema.optionalKey(Schema.String) }),
+        ),
+      ),
+    }),
+  ),
+});
+const MergifyConfig = Schema.Struct({
+  queue_rules: Schema.Array(
+    Schema.Struct({
+      merge_conditions: Schema.Array(Schema.Unknown),
+      queue_conditions: Schema.Array(Schema.Unknown),
+    }),
+  ),
+});
+
+function parsedSource<S extends Schema.Top>(
+  sources: Readonly<Record<string, string>>,
+  file: string,
+  schema: S,
+): S["Type"] {
+  const source = sources[file];
+  if (source === undefined) {
+    throw new Error(`${file} is missing`);
+  }
+  return Schema.decodeUnknownSync(schema)(parse(source));
+}
+
 describe("mergify ci insights", () => {
-  const checkWorkflow = parse(workflows["../../../../../../.github/workflows/check.yml"] ?? "") as {
-    readonly jobs: Readonly<
-      Record<
-        string,
-        {
-          readonly env?: Readonly<Record<string, string>>;
-          readonly steps?: readonly {
-            readonly env?: Readonly<Record<string, string>>;
-            readonly run?: string;
-          }[];
-        }
-      >
-    >;
-  };
+  const checkWorkflow = parsedSource(
+    workflows,
+    "../../../../../../.github/workflows/check.yml",
+    CheckWorkflow,
+  );
   const jobs = Object.entries(checkWorkflow.jobs);
 
   it("hands MERGIFY_TOKEN to every job that runs vp, at the job level", () => {
@@ -471,12 +499,7 @@ describe("mergify ci insights", () => {
 
   it("gates the merge queue only on checks the workflow defines", () => {
     expect.hasAssertions();
-    const config = parse(mergifyConfig) as {
-      readonly queue_rules: readonly {
-        readonly merge_conditions: readonly string[];
-        readonly queue_conditions: readonly unknown[];
-      }[];
-    };
+    const config = parsedSource(mergifyConfigs, "../../../../../../.mergify.yml", MergifyConfig);
     const gates = config.queue_rules
       .flatMap((rule) => [...rule.merge_conditions, ...rule.queue_conditions])
       .flatMap((condition) =>
