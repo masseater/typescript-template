@@ -24,6 +24,9 @@ describe("pull request check scope", () => {
         expect(workflow).toContain("--fail-if-no-match");
         expect(workflow).not.toContain("--changed");
         expect(workflow).not.toContain("fetch-depth:");
+        expect(workflow).toContain(
+          "      - if: steps.affected.outputs.root == 'true'\n        run: git fetch --no-tags --depth=2 origin ${{ github.sha }}\n      - if: steps.affected.outputs.root == 'true'\n        run: vp run -w prepr\n",
+        );
         expect(workflow).not.toContain("paths-ignore");
         expect(workflow).not.toContain("paths:");
         expect(workflow).not.toMatch(/^ {6}run: vp check$/mu);
