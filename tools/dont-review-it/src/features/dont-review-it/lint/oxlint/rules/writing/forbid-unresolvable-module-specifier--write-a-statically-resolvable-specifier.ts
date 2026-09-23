@@ -1,8 +1,7 @@
-import { resolve, sep } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { spellingsFrom } from "../../lib/configured-spellings.ts";
 import { segmentsOf } from "../../lib/path-segments.ts";
 import {
@@ -55,8 +54,8 @@ export const forbidUnresolvableModuleSpecifier = createDontReviewItRule({
     const covering = exceptionsCovering({
       exceptions: specifierExceptionsIn(inspection.options),
       pathSegments: segmentsOf({
-        path: resolve(inspection.cwd, inspection.filename),
-        separator: sep,
+        path: path.resolve(inspection.cwd, inspection.filename),
+        separator: path.sep,
       }),
       cwd: inspection.cwd,
     });

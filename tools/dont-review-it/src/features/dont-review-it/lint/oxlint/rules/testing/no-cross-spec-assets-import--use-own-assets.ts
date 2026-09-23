@@ -1,6 +1,5 @@
-import { dirname, relative, resolve } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { toPosixPath } from "../../lib/posix-path.ts";
@@ -38,17 +37,17 @@ export const noCrossSpecAssetsImport = createDontReviewItRule({
     ],
   },
   create(inspection) {
-    const readerPath = resolve(inspection.cwd, inspection.filename);
+    const readerPath = path.resolve(inspection.cwd, inspection.filename);
     const markers = assetsNameMarkersFrom(inspection.options);
     if (assetsStemOf(readerPath, markers) !== null) return {};
 
     const readerStem = specStemOf(readerPath, specFileSuffixesFrom(inspection.options));
-    const workspaceRoot = findWorkspaceRoot(dirname(readerPath));
+    const workspaceRoot = findWorkspaceRoot(path.dirname(readerPath));
 
     const isOwnedByReader = (assetsPath: string): boolean =>
       readerStem !== null &&
       readerStem === assetsStemOf(assetsPath, markers) &&
-      dirname(assetsPath) === dirname(readerPath);
+      path.dirname(assetsPath) === path.dirname(readerPath);
 
     const reportEdge = (node: ESTree.Node, specifier: string): void => {
       const assetsPath = assetsReachedBy({
@@ -61,7 +60,7 @@ export const noCrossSpecAssetsImport = createDontReviewItRule({
 
       const reached = {
         specifier,
-        assetsPath: toPosixPath(relative(workspaceRoot, assetsPath)),
+        assetsPath: toPosixPath(path.relative(workspaceRoot, assetsPath)),
       };
       if (readerStem === null) {
         inspection.report({ node, messageId: "foreignAssetsImport", data: reached });
