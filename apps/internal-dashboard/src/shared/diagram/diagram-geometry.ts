@@ -182,6 +182,8 @@ const distanceToSegment = (point: Point, [start, end]: readonly [Point, Point]):
 const distanceToRoute = (point: Point, route: Route): number =>
   Math.min(...segmentsOf(route.points).map((segment) => distanceToSegment(point, segment)));
 
+const withoutSpaces = (text: string): string => text.replaceAll(/\s/gu, "");
+
 const labelFor = (
   routes: readonly Route[],
   frame: Element,
@@ -194,7 +196,10 @@ const labelFor = (
     throw new Error(`the label "${words}" is not centred on its frame`);
   }
   const route = routes
-    .filter((candidate) => candidate.label === words && carries(candidate))
+    .filter(
+      (candidate) =>
+        withoutSpaces(candidate.label ?? "") === withoutSpaces(words) && carries(candidate),
+    )
     .toSorted(
       (left, right) => distanceToRoute(center(box), left) - distanceToRoute(center(box), right),
     )[0];
