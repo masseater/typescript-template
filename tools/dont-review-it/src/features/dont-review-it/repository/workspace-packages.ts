@@ -2,17 +2,9 @@ import { Effect, FileSystem, Path, Schema } from "effect";
 
 import { directoryEntries } from "../platform/directory-entries.ts";
 import { repositoryRoot } from "./repository-root.ts";
+import { dependencyFields, workspaceRoots } from "./workspace-layout.ts";
 
 import type { WorkspacePackage } from "./pr-affected-scope.ts";
-
-const workspaceRoots = ["apps", "libs", "infra", "tools"] as const;
-
-const dependencyFields = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-] as const;
 
 const DeclaredDependencies = Schema.optionalKey(Schema.Record(Schema.String, Schema.String));
 
