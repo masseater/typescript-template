@@ -19,8 +19,8 @@ declare global {
       readonly ALERT_FROM: string;
       readonly ALERT_TO: string;
       readonly EMAIL: {
-        readonly send: (sentMail: SentMail) => void;
-        readonly taken: () => readonly SentMail[];
+        readonly send: (sentMail: SentMail) => Promise<void>;
+        readonly taken: () => Promise<readonly SentMail[]>;
       };
       readonly MONITOR: DurableObjectNamespace;
     }
