@@ -17,26 +17,16 @@ import {
   deriveOrigins,
 } from "./config.ts";
 
-const DEFAULT_JPY_PER_USD = 150;
-const FULL_SAMPLING = 1;
-const DEFAULT_USD = 0;
-
 function optional<Value>(config: Config.Config<Value>): Config.Config<Value | undefined> {
   return Config.option(config).pipe(Config.map(Option.getOrUndefined));
 }
 
 const budget = Config.all({
   budgetJpy: Config.schema(Positive, deploymentKey.budgetJpy),
-  fixedCostUsd: Config.schema(Nonnegative, deploymentKey.fixedCostUsd).pipe(
-    Config.withDefault(DEFAULT_USD),
-  ),
-  jpyPerUsd: Config.schema(Positive, deploymentKey.jpyPerUsd).pipe(
-    Config.withDefault(DEFAULT_JPY_PER_USD),
-  ),
+  fixedCostUsd: Config.schema(Nonnegative, deploymentKey.fixedCostUsd),
+  jpyPerUsd: Config.schema(Positive, deploymentKey.jpyPerUsd),
   recipients: Config.schema(Recipients, deploymentKey.alertEmail),
-  reserveUsd: Config.schema(Nonnegative, deploymentKey.reserveUsd).pipe(
-    Config.withDefault(DEFAULT_USD),
-  ),
+  reserveUsd: Config.schema(Nonnegative, deploymentKey.reserveUsd),
 });
 
 const otlpDestination = Config.all({
@@ -49,9 +39,7 @@ const settings = Config.all({
   appDomain: Config.schema(Domain, deploymentKey.appDomain),
   budget,
   mailFrom: Config.schema(Email, deploymentKey.mailFrom),
-  observabilitySampling: Config.schema(SamplingRate, deploymentKey.observabilitySampling).pipe(
-    Config.withDefault(FULL_SAMPLING),
-  ),
+  observabilitySampling: Config.schema(SamplingRate, deploymentKey.observabilitySampling),
   otlp: otlpDestination,
   prefix: Config.schema(Prefix, deploymentKey.prefix),
   zoneId: Config.schema(CloudflareId, deploymentKey.cloudflareZoneId),

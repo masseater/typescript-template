@@ -12,7 +12,6 @@
     "./worker": "./src/worker.ts",
     "./identity": "./src/identity.ts"
   },
-  "scripts": {},
   "dependencies": {
     "effect": "catalog:"
   },

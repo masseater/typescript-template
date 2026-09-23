@@ -14,7 +14,6 @@ const workspaces = {
       "@effect/tsgo",
       "@shadcn/lint",
       "@swc/core",
-      "dependency-cruiser",
       "oxlint",
       "oxlint-tsgolint",
       "textlint",
@@ -27,11 +26,11 @@ const workspaces = {
     },
   },
   "infra/error-monitor": {
-    entry: ["src/worker.ts!"],
+    entry: ["alchemy.run.ts!", "src/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "infra/health-monitor": {
-    entry: ["src/worker.ts!"],
+    entry: ["alchemy.run.ts!", "src/worker.ts!"],
     project: ["src/**/*.ts!"],
   },
   "libs/auth": {
@@ -83,7 +82,6 @@ const workspaces = {
   "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
   "tools/dont-review-it": {
     entry: [
-      "dependency-cruiser.ts",
       "src/repository/dependency-cruiser.ts",
       "doctor.config.ts",
       "src/index.ts!",
@@ -105,21 +103,15 @@ const workspaces = {
 };
 
 const cloudflareStacks = [
-  "src/core.ts!",
   "src/database.ts!",
   "src/flagship.ts!",
   "src/email.ts!",
   "src/observability.ts!",
   "src/tokens.ts!",
-  "src/budget-monitor.ts!",
-  "src/error-monitor.ts!",
-  "src/health-monitor.ts!",
-  "src/service-member.ts!",
-  "src/service-admin.ts!",
-  "src/internal-dashboard.ts!",
   "src/storage.ts!",
   "src/zone.ts!",
   "src/bindings.ts!",
+  "src/stack-entrypoints.ts!",
 ];
 
 const application = {
@@ -141,6 +133,7 @@ const scripts = {
   ],
   "infra/local": ["src/compose.ts!"],
   "libs/db-local": ["src/bootstrap-local.ts!", "src/migrate-local.ts!"],
+  "libs/vite-config": ["src/compile-paraglide.ts!", "src/compile-workspace-paraglide.ts!"],
   "tools/dev": [
     "src/cli.ts!",
     "src/prepare-browser.ts!",
@@ -199,15 +192,16 @@ const config = ({
     treatConfigHintsAsErrors: true,
     workspaces: {
       ...workspaces,
-      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker") },
+      ".": { ...workspaces["."], ignoreBinaries: productionOnly("stryker", "depcruise") },
       "apps/*": app,
       "apps/core": {
-        entry: ["src/worker.ts!"],
+        entry: ["alchemy.run.ts!", "src/worker.ts!"],
         ignoreDependencies: ["cloudflare"],
         project: ["src/**/*.ts!"],
       },
       "apps/internal-dashboard": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: [
           "src/**/*.{ts,tsx,mdx}!",
           "src/**/*.css",
@@ -216,14 +210,20 @@ const config = ({
       },
       "apps/service-admin": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: ["src/**/*.{ts,tsx}!"],
       },
       "apps/service-member": {
         ...app,
+        entry: ["alchemy.run.ts!", ...application.entry],
         project: ["src/**/*.{ts,tsx}!"],
       },
       "infra/budget-monitor": {
-        entry: ["src/worker.ts!", ...productionOnly(...scripts["infra/budget-monitor"])],
+        entry: [
+          "alchemy.run.ts!",
+          "src/worker.ts!",
+          ...productionOnly(...scripts["infra/budget-monitor"]),
+        ],
         project: ["src/**/*.ts!"],
       },
       "infra/cloudflare": {
@@ -250,9 +250,9 @@ const config = ({
       },
       "libs/vite-config": {
         entry: [
-          "src/cloudflare-workers-loader.mjs",
           "src/cloudflare-workers-stub.mjs",
           "src/cloudflare-workflows-stub.mjs",
+          ...productionOnly(...scripts["libs/vite-config"]),
         ],
       },
       "tools/dev": {

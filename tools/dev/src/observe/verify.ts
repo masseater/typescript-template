@@ -2,8 +2,7 @@
 const { parseArgs } = process.getBuiltinModule("util");
 
 import { causeRecord, runCli } from "@repo/cli";
-import { APPLICATION, applicationOrigins, applications } from "@repo/config";
-import { httpStatus } from "@repo/observability";
+import { APPLICATION, applicationOrigins, applications, httpStatus } from "@repo/config";
 import { Clock, Console, Effect, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
@@ -108,7 +107,7 @@ const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<UR
     Effect.provide(FetchHttpClient.layer),
     Effect.mapError(() => fail("request_failed")),
   );
-  yield* response.arrayBuffer.pipe(Effect.ignore);
+  yield* response.arrayBuffer.pipe(Effect.mapError(() => fail("request_failed")));
   const requestId = response.headers["x-request-id"] ?? "";
   if (requestId === "" || response.status >= httpStatus.internalServerError) {
     return yield* fail("correlation_headers_missing");

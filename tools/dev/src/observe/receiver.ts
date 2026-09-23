@@ -1,12 +1,6 @@
 import { NodeHttpServer } from "@effect/platform-node";
-import { APPLICATION, loopbackAddress, loopbackOrigin } from "@repo/config";
-import {
-  flushTelemetry,
-  httpStatus,
-  observeRequest,
-  Telemetry,
-  TraceId,
-} from "@repo/observability";
+import { APPLICATION, httpStatus, loopbackAddress, loopbackOrigin } from "@repo/config";
+import { flushTelemetry, observeRequest, Telemetry, TraceId } from "@repo/observability";
 import { Cause, Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 import { HttpServer, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 

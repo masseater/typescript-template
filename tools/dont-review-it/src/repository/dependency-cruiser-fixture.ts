@@ -27,7 +27,13 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   },
   "libs/auth-ui": { ".": "./src/index.ts" },
   "libs/ui": { ".": "./src/index.ts" },
-  "infra/cloudflare": { "./deployment": "./src/deployment.ts" },
+  "infra/cloudflare": {
+    "./application": "./src/app.ts",
+    "./core-program": "./src/core-program.ts",
+    "./deployment": "./src/deployment.ts",
+    "./monitor": "./src/monitor.ts",
+    "./stacks": "./src/stacks.ts",
+  },
   "tools/dev": { ".": "./src/index.ts" },
 };
 const installedPackages = ["drizzle-orm", "miniflare", "msw"];

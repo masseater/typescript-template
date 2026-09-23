@@ -6,10 +6,8 @@
     ".": "./src/server.ts",
     "./browser": "./src/browser.ts",
     "./testing": "./src/testing.ts",
-    "./http-status": "./src/http-status.ts",
     "./deployment-keys": "./src/deployment-keys.ts"
   },
-  "scripts": {},
   "dependencies": {
     "@repo/config": "workspace:*",
     "effect": "catalog:",

@@ -4,9 +4,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./vite": "./src/vite.ts"
+    "./vite": "./src/vite.ts",
+    "./workers": "./src/workers.ts"
   },
-  "scripts": {},
   "dependencies": {
     "@repo/config": "workspace:*",
     "@repo/observability": "workspace:*",

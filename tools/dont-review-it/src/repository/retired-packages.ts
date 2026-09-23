@@ -3,14 +3,14 @@ import { retiredPackagesFromStateKinds } from "./state-kinds.ts";
 const atomState = "Effect Atom (effect/unstable/reactivity と @effect/atom-react)";
 
 const infrastructureRetiredPackages: Readonly<Record<string, string>> = {
+  "@base-ui/react": "@repo/ui の Base Web (baseui) 部品",
   "@pulumi/": "alchemy",
   "@types/styled-components": "Tailwind CSS v4 のユーティリティ",
   pulumi: "alchemy",
   "react-intl": "Paraglide JS",
-  "smarthr-ui": "@repo/ui の shadcn/ui (Base UI) 部品",
+  "smarthr-ui": "@repo/ui の Base Web (baseui) 部品",
   "styled-components": "Tailwind CSS v4 のユーティリティ",
 };
-
 const atomUiRetiredPackages: Readonly<Record<string, string>> = {
   "@effect-atom/": atomState,
   "@formatjs/": "Paraglide JS",

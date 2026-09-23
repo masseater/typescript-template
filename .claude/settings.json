@@ -11,5 +11,37 @@
       "Bash(pnpx alchemy*)",
       "Bash(bunx alchemy*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts"
+          }
+        ]
+      }
+    ]
   }
 }

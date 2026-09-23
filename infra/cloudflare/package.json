@@ -12,19 +12,20 @@
   },
   "type": "module",
   "exports": {
+    "./application": "./src/app.ts",
+    "./core-program": "./src/core-program.ts",
     "./deployment": "./src/deployment.ts",
-    "./lint-overrides": "./src/lint-overrides.ts"
+    "./lint-overrides": "./src/lint-overrides.ts",
+    "./monitor": "./src/monitor.ts",
+    "./stacks": "./src/stacks.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "@repo/budget-monitor": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/core-api": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/error-monitor": "workspace:*",
     "@repo/feature-flags": "workspace:*",
-    "@repo/health-monitor": "workspace:*",
     "@repo/monitor": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/runtime": "workspace:*",

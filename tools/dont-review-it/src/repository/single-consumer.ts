@@ -65,8 +65,6 @@ interface Read {
   readonly value: string;
 }
 
-const singleConsumerAllowlist: readonly string[] = ["subpath:@repo/db-local/platform"];
-
 const isIdent = (char: string): boolean => /[A-Za-z0-9_$]/u.test(char);
 
 const boundaryBefore = (text: string, index: number): boolean => {
@@ -451,10 +449,5 @@ const repositoryWorkspaces = (): readonly WorkspaceManifest[] => [
 const repositorySingleConsumerFindings = (): readonly Finding[] =>
   singleConsumerFindings(repositoryWorkspaces(), repositorySources(repositoryRoot));
 
-export {
-  moduleSpecifiers,
-  repositorySingleConsumerFindings,
-  singleConsumerAllowlist,
-  singleConsumerFindings,
-};
+export { moduleSpecifiers, repositorySingleConsumerFindings, singleConsumerFindings };
 export type { SourceText };

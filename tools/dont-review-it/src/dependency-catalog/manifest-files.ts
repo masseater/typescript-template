@@ -30,7 +30,9 @@ export const directoriesMatching = ({
   const parentDirectory = pattern.slice(0, -SINGLE_LEVEL_PATTERN_SUFFIX.length);
   const parentEntries =
     readUnlessMissing(() =>
-      readdirSync(join(repositoryRoot, parentDirectory), { withFileTypes: true }),
+      readdirSync(join(repositoryRoot, parentDirectory), {
+        withFileTypes: true,
+      }),
     ) ?? [];
 
   return parentEntries

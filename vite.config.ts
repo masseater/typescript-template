@@ -4,12 +4,18 @@ import {
   devServerTests,
   dontReviewItPreset,
   generatedFiles,
+  isolatedNodeTests,
   lintOptions,
   rootNodeToolTestIncludes,
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
-import { effectDiagnostics, lifecycle, taskInput } from "@repo/vite-config";
+import {
+  effectDiagnostics,
+  lifecycle,
+  taskInput,
+  workspaceParaglideCompile,
+} from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
 
@@ -17,6 +23,16 @@ const textModulePattern = /\.ya?ml$|\/\.vite-hooks\/[^/]+$/u;
 
 const textModule = (code: string, moduleId: string): string | undefined =>
   textModulePattern.test(moduleId) ? `export default ${JSON.stringify(code)};` : undefined;
+
+const nodeTestIncludes = [
+  "libs/**/*.test.ts",
+  "libs/**/*.test.tsx",
+  "apps/**/*.test.ts",
+  "apps/**/*.test.tsx",
+  ...rootNodeToolTestIncludes,
+  "tools/dont-review-it/src/repository/**/*.test.ts",
+  "infra/**/*.test.ts",
+] as const;
 
 export default defineConfig({
   fmt: dontReviewItPreset.fmt({
@@ -27,8 +43,10 @@ export default defineConfig({
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
   run: {
     tasks: {
+      "compile:paraglide": workspaceParaglideCompile,
       "check:client": {
         command: "quality-check-client",
+        dependsOn: ["compile:paraglide"],
         input: [
           ...taskInput,
           "!**/dist/**",
@@ -38,16 +56,25 @@ export default defineConfig({
         ],
         output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
       },
-      "check:code": { command: "vp check", input: [...taskInput] },
+      "check:code": {
+        command: "vp check",
+        dependsOn: ["compile:paraglide"],
+        input: [...taskInput],
+      },
       ...effectDiagnostics,
       "check:types": {
         command: "dont-review-it-typecheck",
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
-      "check:imports":
-        "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+      "check:imports": {
+        command:
+          "depcruise --config tools/dont-review-it/dependency-cruiser.ts --output-type err-long apps libs infra tools",
+        dependsOn: ["compile:paraglide"],
+      },
       "check:react": {
         command: "quality-check-react",
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**"],
         output: [{ auto: true }, "!**/node_modules/.cache/**"],
       },
@@ -57,6 +84,7 @@ export default defineConfig({
       },
       knip: {
         command: ["knip", "knip --strict"],
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
       },
@@ -66,6 +94,7 @@ export default defineConfig({
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
+        dependsOn: ["compile:paraglide"],
         input: [
           ...taskInput,
           "!coverage/**",
@@ -75,7 +104,16 @@ export default defineConfig({
         ],
         output: [],
       },
-      "test:dev-server": { cache: false, command: "vp test run --project dev-server" },
+      "test:dev-server": {
+        cache: false,
+        command: "vp test run --project dev-server",
+        dependsOn: ["compile:paraglide"],
+      },
+      "test:storybook": {
+        cache: false,
+        command: "vp test run --project storybook",
+        dependsOn: ["compile:paraglide"],
+      },
       "check:text": {
         command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
         input: [
@@ -96,7 +134,7 @@ export default defineConfig({
           "check:canonical-literal-types",
         ],
         prepr: ["check:imports"],
-        premerge: ["test", "test:dev-server"],
+        premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),
       "check:repository": rootOnDemandChecks["check:repository"],
@@ -124,17 +162,20 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          exclude: [...defaultExclude, workerTests, devServerTests],
-          include: [
-            "libs/**/*.test.ts",
-            "libs/**/*.test.tsx",
-            "apps/**/*.test.ts",
-            "apps/**/*.test.tsx",
-            ...rootNodeToolTestIncludes,
-            "tools/dont-review-it/src/repository/**/*.test.ts",
-            "infra/**/*.test.ts",
-          ],
+          exclude: [...defaultExclude, workerTests, devServerTests, isolatedNodeTests],
+          include: [...nodeTestIncludes],
+          isolate: false,
           name: "node",
+        },
+      },
+      {
+        extends: true,
+        test: {
+          exclude: [...defaultExclude, workerTests, devServerTests],
+          include: nodeTestIncludes.map((pattern) =>
+            pattern.replace("/**/*.test.", "/**/*.isolated.test."),
+          ),
+          name: "node-isolated",
         },
       },
       { extends: true, test: { include: [devServerTests], name: "dev-server" } },
