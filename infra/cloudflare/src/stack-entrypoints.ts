@@ -4,9 +4,8 @@ import { APPLICATION } from "@repo/config";
 
 import { path } from "./platform.ts";
 
-import type { Application } from "@repo/config";
 import type { MonitorStack } from "./monitors.ts";
-import type { StackName } from "./stacks.ts";
+import type { PackageStack, StackName } from "./stacks.ts";
 
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const cloudflareSrc = fileURLToPath(new URL(".", import.meta.url));
@@ -16,7 +15,7 @@ const applicationEntrypoints = {
   [APPLICATION.user]: path.join(repositoryRoot, "apps", APPLICATION.user, "alchemy.run.ts"),
   [APPLICATION.wiki]: path.join(repositoryRoot, "apps", APPLICATION.wiki, "alchemy.run.ts"),
   core: path.join(repositoryRoot, "apps", "core", "alchemy.run.ts"),
-} as const satisfies Readonly<Record<Application | "core", string>>;
+} as const satisfies Readonly<Record<PackageStack, string>>;
 
 const monitorEntrypoints = {
   "budget-monitor": path.join(repositoryRoot, "infra", "budget-monitor", "alchemy.run.ts"),
@@ -27,11 +26,11 @@ const monitorEntrypoints = {
 const packageEntrypoints = {
   ...applicationEntrypoints,
   ...monitorEntrypoints,
-} as const satisfies Readonly<Record<Application | "core" | MonitorStack, string>>;
+} as const satisfies Readonly<Record<PackageStack | MonitorStack, string>>;
 
 function stackEntrypoint(stack: StackName): string {
   return stack in packageEntrypoints
-    ? packageEntrypoints[stack as Application | "core" | MonitorStack]
+    ? packageEntrypoints[stack as PackageStack | MonitorStack]
     : path.join(cloudflareSrc, `${stack}.ts`);
 }
 
