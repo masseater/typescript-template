@@ -1,6 +1,7 @@
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { isAssertionEntryCall } from "../../lib/spec-syntax/assertion-entries.ts";
+import { isDataImportReference } from "../../lib/spec-syntax/data-imports.ts";
 import { fixtureDependenciesOf } from "../../lib/spec-syntax/fixture-declarations.ts";
 import {
   ASSERTION_CHAIN_MODIFIERS,
@@ -16,6 +17,7 @@ import {
 } from "../../lib/spec-syntax/test-block-declarations.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
+import type { ScopeLookup } from "../../lib/resolved-bindings.ts";
 
 const SNAPSHOT_MATCHERS_OPTION = "snapshotMatchers";
 
@@ -115,10 +117,18 @@ type Projection = {
   readonly site: BlockSite | null;
 };
 
-const projectionOf = (
-  assertionEntry: ESTree.CallExpression,
-  rootNames: ReadonlySet<string>,
-): Projection | null => {
+const readsDataImport = (subject: ESTree.Expression, scopeAt: ScopeLookup): boolean => {
+  if (subject.type !== "MemberExpression") return false;
+  const root = memberRootOf(subject);
+  return root !== null && isDataImportReference(root, scopeAt);
+};
+
+const projectionOf = (given: {
+  readonly assertionEntry: ESTree.CallExpression;
+  readonly rootNames: ReadonlySet<string>;
+  readonly scopeAt: ScopeLookup;
+}): Projection | null => {
+  const { assertionEntry, rootNames, scopeAt } = given;
   const handed = handedTo(assertionEntry);
   if (handed === null) return null;
   if (handed.type === "SpreadElement") {
@@ -127,7 +137,7 @@ const projectionOf = (
 
   const subject = unwrapSubject(handed);
   const messageId = messageIdFor(subject);
-  if (messageId === null) return null;
+  if (messageId === null || readsDataImport(subject, scopeAt)) return null;
 
   const site = blockSiteAround(assertionEntry, rootNames);
   return { at: subject, messageId, root: fixtureRootOf(subject, site), site };
@@ -215,7 +225,11 @@ export const noExpectProjectedSubject = createDontReviewItRule({
         });
 
         for (const assertionEntry of assertionEntries) {
-          const projection = projectionOf(assertionEntry, rootNames);
+          const projection = projectionOf({
+            assertionEntry,
+            rootNames,
+            scopeAt: (node: ESTree.Node) => inspection.sourceCode.getScope(node),
+          });
           if (projection === null) continue;
           if (pins.some((pin) => excusedBy(pin, projection))) continue;
           inspection.report({ node: projection.at, messageId: projection.messageId });
