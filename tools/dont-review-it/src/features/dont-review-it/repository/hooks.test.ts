@@ -263,7 +263,8 @@ describe("lifecycle entry points", () => {
     expect.hasAssertions();
     expect(lifecycleByJob("../../../../../../.github/workflows/check.yml")).toStrictEqual({
       cache: ["vp run -r prepr"],
-      check: ["vp run -r prepr"],
+      check: [],
+      "check-shard": [],
       e2e: [],
       "merge-queue": [],
       "merge-queue-packages": ["vp run -r premerge"],
@@ -279,7 +280,6 @@ describe("lifecycle entry points", () => {
   it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
     expect.hasAssertions();
     expect(workflowRuns("../../../../../../.github/workflows/check.yml")).toStrictEqual([
-      "vp run -r prepr",
       "vp run -w prepr",
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
       "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",

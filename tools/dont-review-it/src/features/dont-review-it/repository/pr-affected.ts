@@ -2,12 +2,13 @@
 import { appendFileSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-import { affectedTests, type WorkspacePackage } from "./pr-affected-scope.ts";
+import { affectedTests, shardDirectories, type WorkspacePackage } from "./pr-affected-scope.ts";
 import { repositoryRoot } from "./repository-root.ts";
+import { prCheckShardCount } from "./test-runtime.ts";
 
 const workspaceRoots = ["apps", "libs", "infra", "tools"] as const;
 
-const required = (name: "GITHUB_OUTPUT" | "PR_FILES_PATH"): string => {
+const required = (name: "CHECK_SHARD" | "GITHUB_OUTPUT" | "PR_FILES_PATH"): string => {
   const value = process.env[name];
   if (value === undefined || value === "") {
     throw new Error(`${name} is required`);
@@ -67,12 +68,17 @@ const outputLines = (): string => {
   const files = readFileSync(required("PR_FILES_PATH"), "utf8")
     .split("\n")
     .filter((line) => line !== "");
+  const shard = Number(required("CHECK_SHARD"));
   const packages = workspacePackages();
   const affected = affectedTests(files, packages);
-  if (affected.kind === "all") {
-    return "scope=all\n";
-  }
-  const names = affected.directories.map((directory) => {
+  const directories = shardDirectories(
+    affected.kind === "all"
+      ? packages.map((workspace) => workspace.directory)
+      : affected.directories,
+    shard,
+    prCheckShardCount,
+  );
+  const names = directories.map((directory) => {
     const workspace = packages.find((item) => item.directory === directory);
     if (
       workspace === undefined ||
@@ -83,10 +89,12 @@ const outputLines = (): string => {
     }
     return workspace.name;
   });
-  if (names.length === 0) {
-    throw new Error("affected scope is empty");
-  }
-  return `scope=subset\npaths=${affected.directories.join(" ")}\nfilters=${names.map((name) => `--filter ${name}`).join(" ")}\n`;
+  return [
+    `root=${String(shard === 1)}`,
+    `filters=${names.map((name) => `--filter ${name}`).join(" ")}`,
+    `paths=${affected.kind === "all" ? "" : directories.join(" ")}`,
+    "",
+  ].join("\n");
 };
 
 appendFileSync(required("GITHUB_OUTPUT"), outputLines());
