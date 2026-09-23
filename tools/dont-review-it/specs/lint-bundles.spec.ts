@@ -4,12 +4,18 @@ import { join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { LINT_BUNDLE, type LintBundleSelection } from "../src/configs/bundles/bundle-names.ts";
-import { BUNDLE_RULES } from "../src/configs/oxlint.ts";
-import { dontReviewItPreset } from "../src/index.ts";
-import { runChecks } from "../src/run-checks.ts";
+import {
+  LINT_BUNDLE,
+  type LintBundleSelection,
+} from "../src/features/dont-review-it/configs/bundles/bundle-names.ts";
+import { BUNDLE_RULES } from "../src/features/dont-review-it/configs/oxlint.ts";
+import { dontReviewItPreset } from "../src/features/dont-review-it/index.ts";
+import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
 
-const RULES_DIRECTORY = join(import.meta.dirname, "../src/lint/oxlint/rules");
+const RULES_DIRECTORY = join(
+  import.meta.dirname,
+  "../src/features/dont-review-it/lint/oxlint/rules",
+);
 
 const placedRuleNamesIn = async ({
   bundle,

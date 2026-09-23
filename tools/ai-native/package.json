@@ -12,10 +12,10 @@
     "directory": "tools/ai-native"
   },
   "bin": {
-    "spool": "./src/spool/cli.ts",
-    "sync-base": "./src/sync-base/cli.ts",
-    "throttle": "./src/throttle/cli.ts",
-    "unabridged": "./src/unabridged/cli.ts"
+    "spool": "./src/features/ai-native/spool/cli.ts",
+    "sync-base": "./src/features/ai-native/sync-base/cli.ts",
+    "throttle": "./src/features/ai-native/throttle/cli.ts",
+    "unabridged": "./src/features/ai-native/unabridged/cli.ts"
   },
   "files": [
     "dist",

@@ -1,1 +1,1 @@
-export { default } from "./src/repository/dependency-cruiser.ts";
+export { default } from "./src/features/dont-review-it/repository/dependency-cruiser.ts";

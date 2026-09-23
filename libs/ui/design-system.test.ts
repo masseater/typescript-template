@@ -11,7 +11,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   linkComponents,
   uiA11yComponents,
-} from "../../tools/dont-review-it/src/repository/ui-lint-settings.ts";
+} from "../../tools/dont-review-it/src/features/dont-review-it/repository/ui-lint-settings.ts";
 import {
   appStylesheetViolations,
   colorSchemeProbe,
@@ -34,7 +34,7 @@ import {
 } from "./design-system.ts";
 import { hoverViolations, relativeLuminance } from "./hover-colors.ts";
 import { field } from "./record-field.ts";
-import { Heading } from "./src/shared/ui/heading.tsx";
+import { Heading } from "./src/features/ui/shared/ui/heading.tsx";
 
 const appManifests: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../apps/*/package.json",
@@ -59,7 +59,7 @@ const tester = new RuleTester({});
 
 type RuleName = (typeof restyled)[number][0];
 
-const restyleProbe = "libs/ui/src/shared/ui/button.tsx";
+const restyleProbe = "libs/ui/src/features/ui/shared/ui/button.tsx";
 
 const reports = (rule: RuleName, className: string): boolean => {
   try {
@@ -85,7 +85,7 @@ const reports = (rule: RuleName, className: string): boolean => {
 describe("design token table", () => {
   it("reads the stylesheet the linter resolves from components.json", () => {
     expect.hasAssertions();
-    expect(stylesheetPath()).toMatch(/libs\/ui\/src\/styles\.css$/u);
+    expect(stylesheetPath()).toMatch(/libs\/ui\/src\/features\/ui\/styles\.css$/u);
   });
 
   it("keeps every ported token at the design token table value", () => {

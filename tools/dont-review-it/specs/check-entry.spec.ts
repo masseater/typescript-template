@@ -1,8 +1,8 @@
 import { runCommand } from "citty";
 import { describe, expect, it } from "vite-plus/test";
 
-import { dontReviewItCommand } from "../src/dont-review-it-command.ts";
-import { EXIT_MISUSE } from "../src/repository-checks/index.ts";
+import { dontReviewItCommand } from "../src/features/dont-review-it/dont-review-it-command.ts";
+import { EXIT_MISUSE } from "../src/features/dont-review-it/repository-checks/index.ts";
 
 describe("リポジトリ検査の入口", () => {
   it("check 以外の命令を名指しで拒否する", async () => {

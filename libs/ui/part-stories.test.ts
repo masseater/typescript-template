@@ -20,7 +20,7 @@ const configs: Readonly<Record<string, unknown>> = import.meta.glob("../../vite.
 });
 
 const origins: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../config/src/applications.ts",
+  "../config/src/features/config/applications.ts",
   { eager: true, import: "storybookOrigin" },
 );
 
@@ -37,20 +37,21 @@ const storybookProjects = (): unknown[] => {
 
 const acceptedA11yViolations = [
   {
-    file: "libs/ui/src/shared/ui/select-field.stories.tsx",
+    file: "libs/ui/src/features/ui/shared/ui/select-field.stories.tsx",
     rule: "aria-valid-attr-value",
     story: "Selects",
   },
   {
-    file: "libs/ui/src/shared/ui/toast-provider.stories.tsx",
+    file: "libs/ui/src/features/ui/shared/ui/toast-provider.stories.tsx",
     rule: "aria-hidden-focus",
     story: "Success",
   },
 ];
+
 describe("part stories", () => {
   it("looks for stories in the parts directory components.json points at", () => {
     expect.hasAssertions();
-    expect(partsDirectory()).toMatch(/libs\/ui\/src\/shared\/ui$/u);
+    expect(partsDirectory()).toMatch(/libs\/ui\/src\/features\/ui\/shared\/ui$/u);
   });
 
   it("keeps a story next to every part", () => {
@@ -60,7 +61,7 @@ describe("part stories", () => {
 
   it("reports a directory whose components have no stories", () => {
     expect.hasAssertions();
-    expect(storylessParts("libs/ui/src")).not.toStrictEqual([]);
+    expect(storylessParts("libs/ui/src/features/ui")).not.toStrictEqual([]);
   });
 
   it("runs the stories as a test project of this repository", () => {
@@ -82,7 +83,7 @@ describe("part stories", () => {
   it("points the agent configuration at the port this repository owns", () => {
     expect.hasAssertions();
     expect(
-      storybookEndpointViolations(String(origins["../config/src/applications.ts"])),
+      storybookEndpointViolations(String(origins["../config/src/features/config/applications.ts"])),
     ).toStrictEqual([]);
   });
 
