@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -24,27 +25,27 @@ const directoryLines = (directory: string): Effect.Effect<number> =>
     return counts.reduce((total, count) => total + count, 0);
   });
 
+const layerLines = (directory: string): Effect.Effect<number> =>
+  existsSync(directory) ? directoryLines(directory) : Effect.succeed(0);
+
 const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[]> =>
   Effect.gen(function* scan() {
     const [app, shared] = yield* Effect.forEach(["app", "shared"], (layer) =>
-      directoryLines(join(srcRoot, layer)).pipe(Effect.orElseSucceed(() => 0)),
+      layerLines(join(srcRoot, layer)),
     );
-    const entries = yield* Effect.tryPromise(() =>
-      readdir(join(srcRoot, "features"), { withFileTypes: true }),
-    ).pipe(Effect.orElseSucceed(() => []));
+    const featuresRoot = join(srcRoot, "features");
+    const entries = existsSync(featuresRoot)
+      ? yield* Effect.tryPromise(() => readdir(featuresRoot, { withFileTypes: true }))
+      : [];
     const features = yield* Effect.forEach(entries, (entry) =>
       Effect.tryPromise(async () => {
-        const names = entry.isDirectory()
-          ? await readdir(join(srcRoot, "features", entry.name))
-          : [];
+        const names = entry.isDirectory() ? await readdir(join(featuresRoot, entry.name)) : [];
         return {
           directory: entry.isDirectory(),
           name: entry.name,
           publicApi: names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name)),
         };
-      }).pipe(
-        Effect.orElseSucceed(() => ({ directory: true, name: entry.name, publicApi: false })),
-      ),
+      }),
     );
     return [
       ...layerBudgetFindings({ app: app ?? 0, shared: shared ?? 0 }),
