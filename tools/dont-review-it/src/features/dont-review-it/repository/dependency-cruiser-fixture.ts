@@ -59,8 +59,6 @@ const write = (root: string, file: string, code: string): FixtureBuild<void> =>
     yield* filesystem.writeFileString(target, code);
   });
 
-const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
-
 type Workspace = readonly [string, Readonly<Record<string, string>>];
 
 const developmentDependencies: Readonly<Record<string, readonly string[]>> = { "libs/ui": ["msw"] };
@@ -80,7 +78,11 @@ const createWorkspace = (root: string, [directory, exported]: Workspace): Fixtur
     yield* write(
       root,
       `${directory}/package.json`,
-      yield* encodeJson({ devDependencies, exports: exported, name }),
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        devDependencies,
+        exports: exported,
+        name,
+      }),
     );
     yield* filesystem.symlink(paths.join(root, directory), paths.join(root, "node_modules", name));
     yield* Effect.forEach(
@@ -92,7 +94,11 @@ const createWorkspace = (root: string, [directory, exported]: Workspace): Fixtur
 
 const createPackage = (root: string, name: string): FixtureBuild<void> =>
   Effect.gen(function* createPackage() {
-    yield* write(root, `node_modules/${name}/package.json`, yield* encodeJson({ name }));
+    yield* write(
+      root,
+      `node_modules/${name}/package.json`,
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name }),
+    );
     yield* write(root, `node_modules/${name}/index.js`, "export const value = 1;\n");
   });
 

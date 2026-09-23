@@ -18,10 +18,7 @@ export type { StaffInquiryCountsView, StaffInquiryThreadView } from "./inquiries
 export {
   PeopleList,
   PersonRegistration,
-  RecordingAccepted,
   RecordingList,
-  RecordingQuery,
-  RecordingTarget,
   RecordingUpload,
   RecordingView,
   SpeakerAssignment,
@@ -29,6 +26,7 @@ export {
   maximumRecordingBytes,
   maximumRecordingTitleLength,
 } from "./recordings.ts";
+export { Redirect } from "./redirect.ts";
 export {
   StaffInvitation,
   StaffInvited,

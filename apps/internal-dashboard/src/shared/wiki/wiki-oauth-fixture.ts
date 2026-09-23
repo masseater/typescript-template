@@ -9,11 +9,12 @@ import {
 import { APPLICATION } from "@repo/config";
 import { Effect, Schema } from "effect";
 
+import { Redirect } from "../contracts/index.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 import type { AuthorizationFlow, BrowserClient } from "@repo/auth/testing";
 
-const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
+const decodeRedirect = Schema.decodeUnknownEffect(Redirect);
 const Tokens = Schema.Struct({ access_token: Schema.String });
 
 function responseStatus(value: unknown): number | undefined {

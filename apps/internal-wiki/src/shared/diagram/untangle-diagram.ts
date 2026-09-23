@@ -3,6 +3,7 @@ import {
   center,
   distanceToRoute,
   formatPoints,
+  inflate,
   segmentsOf,
   withoutSpaces,
 } from "./diagram-geometry.ts";
@@ -74,13 +75,6 @@ const rerouteThroughShapes = (geometry: DiagramGeometry): readonly Route[] =>
     route.element.properties["points"] = formatPoints(route.points);
     return true;
   });
-
-const inflate = (box: Box, by: number): Box => ({
-  height: box.height + by * 2,
-  width: box.width + by * 2,
-  x: box.x - by,
-  y: box.y - by,
-});
 
 const boxAt = (middle: Point, width: number, height: number): Box => ({
   height,

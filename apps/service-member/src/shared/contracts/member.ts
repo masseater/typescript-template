@@ -1,6 +1,15 @@
 import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
-import { Identifier, maximumNameLength } from "@repo/runtime/contracts";
-import { Effect, Schema, SchemaGetter } from "effect";
+import {
+  Identifier,
+  IdentifierQuery,
+  SearchKeyword,
+  UserKeyword,
+  laterPage,
+  maximumKeywordLength,
+  maximumNameLength,
+  pageNumber,
+} from "@repo/runtime/contracts";
+import { Schema } from "effect";
 
 import { Sheet } from "#shared/interview/sheet.ts";
 import { ProfileLayout } from "#shared/profile-layout/schema.ts";
@@ -8,8 +17,6 @@ import { ProfileLayout } from "#shared/profile-layout/schema.ts";
 const maximumProfileLength = 2000;
 const maximumSocialLinkLength = 2048;
 const maximumSocialLinks = 10;
-const maximumKeywordLength = 100;
-const secondPage = 2;
 const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
 const maximumContactNameLength = 100;
@@ -51,7 +58,7 @@ const PhotoQuery = Schema.Struct({ slot: PhotoSlot });
 
 const PhotoView = Schema.Struct({ slot: PhotoSlot, version: PhotoVersion });
 
-const MemberQuery = Schema.Struct({ id: Identifier });
+const MemberQuery = IdentifierQuery;
 
 const MemberPhotoQuery = Schema.Struct({
   id: Identifier,
@@ -72,37 +79,9 @@ const MemberView = Schema.Struct({
   socialLinks: SocialLinks,
 });
 
-function pageNumber(
-  fallback: number,
-  minimum: number,
-  maximum: number,
-): Schema.withDecodingDefaultKey<Schema.FiniteFromString> {
-  const range = Schema.isBetween({ maximum, minimum });
-  const bounded = Schema.FiniteFromString.check(Schema.isInt(), range);
-  const fallbackText = Effect.succeed(String(fallback));
-  return bounded.pipe(Schema.withDecodingDefaultKey(fallbackText));
-}
-
-const UserKeyword = Schema.Trim.check(Schema.isLengthBetween(1, maximumKeywordLength));
-const JsonScalar = Schema.Union([Schema.String, Schema.Finite, Schema.Boolean, Schema.Null]);
-const ScalarText = JsonScalar.pipe(
-  Schema.decodeTo(Schema.String, {
-    decode: SchemaGetter.transform<string, string | number | boolean | null>(String),
-    encode: SchemaGetter.transform((text: string) => text),
-  }),
-);
-const SearchKeyword = ScalarText.pipe(Schema.decodeTo(UserKeyword));
-
-function laterPage(maximum: number): Schema.Codec<number, number | string> {
-  return Schema.Union([Schema.Finite, Schema.FiniteFromString]).check(
-    Schema.isInt(),
-    Schema.isBetween({ maximum, minimum: secondPage }),
-  );
-}
-
 const MemberListQuery = Schema.Struct({
   keyword: Schema.optionalKey(UserKeyword),
-  page: pageNumber(1, 1, maximumMemberPage),
+  page: pageNumber({ fallback: 1, maximum: maximumMemberPage, minimum: 1 }),
 });
 
 const MemberList = Schema.Struct({

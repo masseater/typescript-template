@@ -1,11 +1,10 @@
 import { useAtomValue } from "@effect/atom-react";
-import { NavigationLink, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
+import { NavigationLink, Page, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useInquiryList, useInquiryStatusFilter } from "#pages/inquiries/model/inquiry-list.ts";
 import { INQUIRY_STATUS, inquiryStatusLabel } from "#pages/inquiries/model/status-label.ts";
 import { pendingCountAtom } from "#shared/api/index.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -30,7 +29,7 @@ function InquiriesPage(): ReactElement {
   const pendingCount = AsyncResult.isSuccess(pendingState) ? pendingState.value : undefined;
 
   return (
-    <OpsPage title="問い合わせ">
+    <Page title="問い合わせ">
       {pendingCount !== undefined && (
         <p className="text-sm leading-normal text-muted-foreground">対応待ち: {pendingCount} 件</p>
       )}
@@ -86,7 +85,7 @@ function InquiriesPage(): ReactElement {
           </tbody>
         </table>
       )}
-    </OpsPage>
+    </Page>
   );
 }
 

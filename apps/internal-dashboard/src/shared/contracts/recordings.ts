@@ -12,13 +12,7 @@ const RecordingUpload = Schema.Struct({
   title: Schema.Trim.check(Schema.isLengthBetween(1, maximumRecordingTitleLength)),
 });
 
-const RecordingQuery = Schema.Struct({ id: Identifier });
-
 type RecordingView = typeof RecordingView.Type;
-
-const RecordingTarget = Schema.Struct({ id: Identifier });
-
-const RecordingAccepted = Schema.Struct({ id: Schema.String });
 
 const SpeakerAssignment = Schema.Struct({
   label: SpeakerLabel,
@@ -36,10 +30,7 @@ const PersonRegistration = Schema.Struct({
 export {
   PeopleList,
   PersonRegistration,
-  RecordingAccepted,
   RecordingList,
-  RecordingQuery,
-  RecordingTarget,
   RecordingUpload,
   RecordingView,
   SpeakerAssignment,

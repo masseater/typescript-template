@@ -1,4 +1,5 @@
 import { reportReasons, reportSubjects } from "@repo/config";
+import { CreatedResource } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { Identifier } from "./member.ts";
@@ -12,6 +13,6 @@ const ReportCreate = Schema.Struct({
   subjectKind: Schema.Literals(reportSubjects),
 });
 
-const ReportFiled = Schema.Struct({ id: Schema.String });
+const ReportFiled = CreatedResource;
 
 export { Blocked, BlockMember, ReportCreate, ReportFiled };

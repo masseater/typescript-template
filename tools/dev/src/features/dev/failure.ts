@@ -26,4 +26,8 @@ function failure(reason: LocalCommandFailure["reason"]): LocalCommandFailure {
   return new LocalCommandFailure({ reason });
 }
 
-export { LocalCommandFailure, failure };
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export { LocalCommandFailure, describeError, failure };

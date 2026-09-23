@@ -3,6 +3,7 @@ import {
   Field,
   FormColumn,
   Heading,
+  Page,
   STATUS_VARIANT,
   StatusMessage,
   resultError,
@@ -11,7 +12,6 @@ import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useAuditList } from "#pages/audit/model/audit-list.ts";
 import { DataTable } from "#shared/ui/data-table.tsx";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -36,7 +36,7 @@ function AuditPage(): ReactElement {
   const page = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
   return (
-    <OpsPage title="監査ログ">
+    <Page title="監査ログ">
       <form onSubmit={handleSubmit}>
         <FormColumn>
           <Field
@@ -82,7 +82,7 @@ function AuditPage(): ReactElement {
           />
         </section>
       )}
-    </OpsPage>
+    </Page>
   );
 }
 

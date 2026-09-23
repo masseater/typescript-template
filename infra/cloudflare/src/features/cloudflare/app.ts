@@ -8,6 +8,7 @@ import {
   wikiApiEntrypoint,
   wikiPagesBinding,
 } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import {
@@ -21,7 +22,7 @@ import {
 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
+import { loadArtifacts, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";

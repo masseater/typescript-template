@@ -1,13 +1,13 @@
 import { env as processEnvironment } from "node:process";
 import { pathToFileURL } from "node:url";
 
+import { repositoryRoot } from "@repo/config/repository-root";
 import { Stage, inMemoryState } from "alchemy";
 import { providers } from "alchemy/Cloudflare";
 import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { toEffect } from "alchemy/Test/Core";
 import { Effect, Predicate, References, Result, Schema } from "effect";
 
-import { repositoryRoot } from "./artifacts.ts";
 import { stackEntrypoint } from "./stack-entrypoints.ts";
 import { stackName } from "./stacks.ts";
 import { verificationEnvironment, verificationSettings } from "./verification-fixture.ts";
@@ -113,7 +113,7 @@ function opaqueValue(value: unknown): string | undefined {
 
 function declaredValue(value: unknown): unknown {
   if (typeof value === "string") {
-    return value.replace(repositoryRoot, "").replace(DIGEST_SEGMENT, "/<digest>/");
+    return value.replace(`${repositoryRoot}/`, "").replace(DIGEST_SEGMENT, "/<digest>/");
   }
   const opaque = opaqueValue(value);
   if (opaque !== undefined) {

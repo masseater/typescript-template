@@ -1,4 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
+import { isNotFound, isSystemError } from "@repo/cli";
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 
 import { failure } from "./failure.ts";
@@ -8,17 +9,6 @@ import type { LocalCommandFailure } from "./failure.ts";
 type DevServices = NodeServices.NodeServices;
 
 const layer = NodeServices.layer;
-
-function isSystemError(
-  error: PlatformError.PlatformError,
-  tag: PlatformError.SystemErrorTag,
-): boolean {
-  return error.reason instanceof PlatformError.SystemError && error.reason._tag === tag;
-}
-
-function isNotFound(error: PlatformError.PlatformError): boolean {
-  return isSystemError(error, "NotFound");
-}
 
 function isAlreadyExists(error: PlatformError.PlatformError): boolean {
   return isSystemError(error, "AlreadyExists");

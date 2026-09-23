@@ -1,5 +1,4 @@
 const rootOnDemandChecks = {
-  "check:repository": "dont-review-it check-repository",
   "check:types": "dont-review-it-typecheck",
 };
 
@@ -10,7 +9,6 @@ const onDemandGateEntries = new Set([
 ]);
 
 const frozenOnDemandGateEntries = [
-  ".: check:repository",
   ".: check:types",
   "tools/dev: verify",
   "tools/e2e: verify",

@@ -1,4 +1,4 @@
-import { Identifier } from "@repo/runtime/contracts";
+import { Identifier, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";
@@ -30,7 +30,7 @@ const InquiryThread = Schema.Struct({
 
 const InquiryList = Schema.Struct({ inquiries: Schema.Array(InquirySummary) });
 
-const InquiryQuery = Schema.Struct({ id: Identifier });
+const InquiryQuery = IdentifierQuery;
 
 const InquiryCreate = Schema.Struct({
   body: Schema.Trim.check(Schema.isLengthBetween(1, maximumBodyLength)),

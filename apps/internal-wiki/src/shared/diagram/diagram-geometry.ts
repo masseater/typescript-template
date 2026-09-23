@@ -260,5 +260,21 @@ const readGeometry = (root: Root): DiagramGeometry => {
   };
 };
 
-export { center, distanceToRoute, formatPoints, readGeometry, segmentsOf, svgOf, withoutSpaces };
+const inflate = (box: Box, by: number): Box => ({
+  height: box.height + by * 2,
+  width: box.width + by * 2,
+  x: box.x - by,
+  y: box.y - by,
+});
+
+export {
+  center,
+  distanceToRoute,
+  formatPoints,
+  inflate,
+  readGeometry,
+  segmentsOf,
+  svgOf,
+  withoutSpaces,
+};
 export type { Box, DiagramGeometry, Label, Point, Route };

@@ -1,4 +1,5 @@
 import { groupJoinPolicies } from "@repo/config";
+import { CreatedResource, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { Identifier } from "./member.ts";
@@ -51,18 +52,18 @@ const GroupJoin = Schema.Struct({
 
 const GroupJoined = Schema.Struct({ conversationId: Schema.String });
 
-const GroupLeave = Schema.Struct({ id: Identifier });
+const GroupLeave = IdentifierQuery;
 
-const GroupLeft = Schema.Struct({ id: Schema.String });
+const GroupLeft = CreatedResource;
 
 const GroupRename = Schema.Struct({
   id: Identifier,
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumGroupNameLength)),
 });
 
-const GroupRenamed = Schema.Struct({ id: Schema.String });
+const GroupRenamed = CreatedResource;
 
-const GroupInviteRefresh = Schema.Struct({ id: Identifier });
+const GroupInviteRefresh = IdentifierQuery;
 
 const GroupInviteRefreshed = Schema.Struct({ inviteToken: Schema.String });
 

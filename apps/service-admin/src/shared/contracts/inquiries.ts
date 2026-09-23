@@ -1,5 +1,5 @@
 import { inquiryStatuses, roles } from "@repo/config";
-import { Identifier } from "@repo/runtime/contracts";
+import { Identifier, IdentifierQuery } from "@repo/runtime/contracts";
 import { Effect, Schema } from "effect";
 
 const maximumReplyLength = 4000;
@@ -53,9 +53,9 @@ const AdminInquiryList = Schema.Struct({
   total: Schema.Finite,
 });
 
-const InquiryQuery = Schema.Struct({ id: Identifier });
+const InquiryQuery = IdentifierQuery;
 
-const MemberQuery = Schema.Struct({ id: Identifier });
+const MemberQuery = IdentifierQuery;
 
 const InquiryMemberSummary = Schema.Struct({
   email: Schema.String,
@@ -68,7 +68,7 @@ const InquiryReply = Schema.Struct({
   id: Identifier,
 });
 
-const InquiryClose = Schema.Struct({ id: Identifier });
+const InquiryClose = IdentifierQuery;
 
 const PendingCount = Schema.Struct({ count: Schema.Finite });
 

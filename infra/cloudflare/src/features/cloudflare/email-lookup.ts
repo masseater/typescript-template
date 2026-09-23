@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import {
+  NamedResults,
   endpoint,
   isUnreadable,
   readList,
@@ -24,7 +25,6 @@ const Nullable = Schema.optional(Schema.Union([Schema.String, Schema.Null]));
 const Addresses = Schema.Struct({
   result: Schema.Array(Schema.Struct({ email: Nullable, verified: Nullable })),
 });
-const Subdomains = Schema.Struct({ result: Schema.Array(Schema.Struct({ name: Schema.String })) });
 const Zone = Schema.Struct({ result: Schema.Struct({ name: Schema.String }) });
 
 function sendingRecordNames(config: SharedConfig): readonly string[] {
@@ -59,7 +59,7 @@ const onboardedDomains = Effect.fn("onboardedDomains")(function* onboardedDomain
   const listed = yield* readList(
     access,
     { source: endpoint`zones/${zoneId}/email/sending/subdomains` },
-    Subdomains,
+    NamedResults,
   );
   return listed.result.map((subdomain) => subdomain.name);
 });

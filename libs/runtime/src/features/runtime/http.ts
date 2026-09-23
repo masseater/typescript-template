@@ -12,6 +12,7 @@ import { jsonResponse } from "./responses.ts";
 import type { Reporting, RequestRejected } from "@repo/observability";
 import type { Cause } from "effect";
 import type { AnyElysia } from "elysia";
+import type { Decodable } from "./contracts.ts";
 import type {
   CommonFailure,
   Failure,
@@ -22,7 +23,6 @@ import type {
 } from "./failures.ts";
 import type { WorkerRuntime } from "./worker-runtime.ts";
 
-type Decodable = Schema.Top & { readonly DecodingServices: never };
 type Handler<Value, Failures, Requirements> = (
   request: Request,
 ) => Effect.Effect<Value, Failures, Requirements>;

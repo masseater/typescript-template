@@ -6,6 +6,7 @@ import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 
 import type { WebhookOutcome } from "@repo/config";
 import type { StripeEventRecord, SubscriptionRecord } from "@repo/db";
+import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeEvent } from "./stripe.ts";
 
 const millisecondsPerSecond = 1000;
@@ -49,8 +50,6 @@ const Invoice = Schema.Struct({
   ),
   subscription: Schema.optionalKey(Schema.NullOr(Schema.String)),
 });
-
-type Decodable = Schema.Top & { readonly DecodingServices: never };
 
 function readObject<Contract extends Decodable>(
   schema: Contract,

@@ -1,9 +1,10 @@
 import {
   Button,
   ButtonLink,
+  Page,
+  type RequestResult,
   STATUS_VARIANT,
   StatusMessage,
-  type RequestResult,
   formatWarekiDate,
   resultError,
 } from "@repo/ui";
@@ -12,7 +13,6 @@ import { AsyncResult } from "effect/unstable/reactivity";
 
 import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
 import { useAgreementVersion } from "#pages/terms/model/agreement-versions.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { DraftEditor } from "./draft-editor.tsx";
 
 import type { VersionDetail } from "#pages/terms/model/agreement-versions.ts";
@@ -75,14 +75,14 @@ function VersionContent({
 function TermsVersionPage({ version }: Readonly<{ version: string }>): ReactElement {
   const { reload, state } = useAgreementVersion(version);
   return (
-    <OpsPage title={version}>
+    <Page title={version}>
       <div>
         <ButtonLink search={{}} to="/terms">
           一覧に戻る
         </ButtonLink>
       </div>
       <VersionContent onReload={reload} state={state} />
-    </OpsPage>
+    </Page>
   );
 }
 

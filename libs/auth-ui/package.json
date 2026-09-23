@@ -20,10 +20,11 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@repo/telemetry": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "msw": "catalog:",
-    "storybook": "10.6.0",
+    "storybook": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }

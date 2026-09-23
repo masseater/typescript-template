@@ -1,7 +1,5 @@
 import { REPORT_REASON, REPORT_STATUS } from "@repo/config";
-import { NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
-
-import { OpsPage } from "#widgets/ops-page/index.ts";
+import { NavigationLink, Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ReportSummary } from "#pages/reports/api/load-reports.ts";
 import type { ReportStatus } from "@repo/config";
@@ -33,7 +31,7 @@ function ReportsPage({
   status: ReportStatus | undefined;
 }>): ReactElement {
   return (
-    <OpsPage title="通報">
+    <Page title="通報">
       <div className="flex flex-wrap gap-2">
         <NavigationLink search={{}} to="/reports">
           すべて
@@ -60,7 +58,7 @@ function ReportsPage({
           ))}
         </ul>
       )}
-    </OpsPage>
+    </Page>
   );
 }
 

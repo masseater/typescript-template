@@ -1,5 +1,5 @@
 import { roles } from "@repo/config";
-import { Identifier } from "@repo/runtime/contracts";
+import { IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const InquiryStatus = Schema.String;
@@ -46,9 +46,9 @@ const StaffInquiryThread = Schema.Struct({
 
 const StaffInquiryList = Schema.Struct({ inquiries: Schema.Array(StaffInquirySummary) });
 
-const InquiryQuery = Schema.Struct({ id: Identifier });
+const InquiryQuery = IdentifierQuery;
 
-const MemberQuery = Schema.Struct({ id: Identifier });
+const MemberQuery = IdentifierQuery;
 
 type StaffInquiryCountsView = typeof StaffInquiryCounts.Type;
 type StaffInquiryThreadView = typeof StaffInquiryThread.Type;

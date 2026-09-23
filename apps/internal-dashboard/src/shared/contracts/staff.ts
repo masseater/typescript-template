@@ -1,5 +1,5 @@
 import { Email, staffPermissions } from "@repo/config";
-import { Identifier } from "@repo/runtime/contracts";
+import { CreatedResource, Identifier, IdentifierQuery } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const StaffPermission = Schema.Literals(staffPermissions);
@@ -25,9 +25,9 @@ const StaffPermissionChanged = Schema.Struct({
   permission: Schema.optional(StaffPermission),
 });
 
-const StaffRemoval = Schema.Struct({ id: Identifier });
+const StaffRemoval = IdentifierQuery;
 
-const StaffRemoved = Schema.Struct({ id: Schema.String });
+const StaffRemoved = CreatedResource;
 
 export {
   StaffInvitation,

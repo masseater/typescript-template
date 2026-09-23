@@ -16,7 +16,12 @@ import { lazyMotionVisitor } from "./lazy-motion.ts";
 import { filename, reportViolation, type LintContext, type Node } from "./lint-context.ts";
 import { modularImportsVisitor } from "./modular-imports.ts";
 import { modularLayersVisitor } from "./modular-layers.ts";
-import { cliImplementation, processBoundaryVisitor, processMember } from "./process-boundary.ts";
+import {
+  cliImplementation,
+  exitCodeImplementation,
+  processBoundaryVisitor,
+  processMember,
+} from "./process-boundary.ts";
 import { effectEventDependencyVisitor, reactLegacyVisitor } from "./react-legacy.ts";
 import { propertyName, staticText, type Origin } from "./references.ts";
 import { retiredImportsVisitor } from "./retired-imports.ts";
@@ -365,7 +370,7 @@ const projectPlugin = definePlugin({
     "process-boundary": {
       create: processBoundaryVisitor,
       meta: metadata(
-        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console か @repo/cli の cliStdout / cliStderr、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.stdout・process.stderr・process.exitCode・NodeRuntime.runMain を参照できるのは ${cliImplementation} だけです。`,
+        `プロセスの入出力と終了コードを直接参照できません。別名と分割代入も同じ扱いです。標準出力と標準エラーへの書き込みは effect の Console か @repo/cli の cliStdout / cliStderr、終了コードは @repo/cli の reportFailed / markFailed / exitWith、起動は同じく runCli を通してください。process.stdout・process.stderr・NodeRuntime.runMain を参照できるのは ${cliImplementation} だけで、process.exitCode を参照できるのはそれと ${exitCodeImplementation} だけです。`,
       ),
     },
     "react-legacy": {

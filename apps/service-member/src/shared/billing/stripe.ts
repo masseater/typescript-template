@@ -7,6 +7,7 @@ import { StripeFailure } from "./stripe-failure.ts";
 import { verifyStripeSignature } from "./stripe-signature.ts";
 
 import type { ConfigurationInvalid, PriceInterval, StripeConfig } from "@repo/config";
+import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
 const stripeApi = "https://api.stripe.com/v1";
@@ -59,8 +60,6 @@ interface StripeShape {
     signature: string | null,
   ) => Effect.Effect<StripeEvent, StripeSignatureInvalid | StripeEventUnreadable>;
 }
-
-type Decodable = Schema.Top & { readonly DecodingServices: never };
 
 function decodeStripe<Contract extends Decodable>(
   schema: Contract,

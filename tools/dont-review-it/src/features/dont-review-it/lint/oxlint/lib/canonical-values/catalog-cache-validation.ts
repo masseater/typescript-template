@@ -112,7 +112,7 @@ const isImportRoute = (candidate: unknown): boolean => {
 };
 
 const hasCanonicalValues = (candidate: unknown): candidate is readonly CanonicalValue[] => {
-  if (!Array.isArray(candidate) || candidate.length === 0) return false;
+  if (!Array.isArray(candidate)) return false;
   if (!candidate.every(isCanonicalValue)) return false;
   return new Set(candidate.map(canonicalValueKey)).size === candidate.length;
 };

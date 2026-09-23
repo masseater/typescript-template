@@ -1,11 +1,10 @@
 import { REPORT_REASON, REPORT_STATUS } from "@repo/config";
 import { apiData } from "@repo/runtime/client";
-import { Button, Heading, TextLink, useAction } from "@repo/ui";
+import { Button, Heading, Page, TextLink, useAction } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 
 import { adminClient } from "#shared/api/index.ts";
 import { ReportActionResult } from "#shared/contracts/index.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReportItem } from "#pages/reports/api/load-reports.ts";
 import type { ReactElement } from "react";
@@ -29,7 +28,7 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
     action.run(() => task().then(() => router.invalidate()));
   }
   return (
-    <OpsPage title="通報">
+    <Page title="通報">
       <Heading as="h1" size="page">
         通報
       </Heading>
@@ -126,7 +125,7 @@ function ReportPage({ report }: Readonly<{ report: ReportItem }>): ReactElement 
         </Button>
       </div>
       {action.error !== undefined && <p className="text-sm text-destructive">{action.error}</p>}
-    </OpsPage>
+    </Page>
   );
 }
 

@@ -1,3 +1,4 @@
+import { CreatedResource } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { Identifier, pageNumber } from "./member.ts";
@@ -47,7 +48,7 @@ const GroupConversationSummary = Schema.Struct({
 const ConversationSummary = Schema.Union([DirectConversationSummary, GroupConversationSummary]);
 
 const ConversationListQuery = Schema.Struct({
-  page: pageNumber(1, 1, maximumMessagingPage),
+  page: pageNumber({ fallback: 1, maximum: maximumMessagingPage, minimum: 1 }),
 });
 
 const ConversationList = Schema.Struct({
@@ -58,7 +59,7 @@ const ConversationList = Schema.Struct({
 
 const ConversationQuery = Schema.Struct({
   id: Identifier,
-  page: pageNumber(1, 1, maximumMessagingPage),
+  page: pageNumber({ fallback: 1, maximum: maximumMessagingPage, minimum: 1 }),
 });
 
 const DirectConversationBody = Schema.Struct({
@@ -86,7 +87,7 @@ const MessageBody = Schema.Trim.check(Schema.isLengthBetween(1, maximumMessageBo
 
 const MessageSend = Schema.Struct({ body: MessageBody, conversationId: Identifier });
 
-const MessageSent = Schema.Struct({ id: Schema.String });
+const MessageSent = CreatedResource;
 
 const ConversationOpen = Schema.Struct({ body: MessageBody, recipientId: Identifier });
 
