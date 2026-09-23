@@ -22,7 +22,7 @@ export default defineConfig({
           include: [
             "libs/config/**/*.test.ts",
             "libs/runtime/**/*.test.ts",
-            "tools/dont-review-it/src/repository/**/*.test.ts",
+            "tools/dont-review-it/src/features/dont-review-it/repository/**/*.test.ts",
           ],
           name: "mutation",
         },
