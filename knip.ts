@@ -44,7 +44,7 @@ const workspaces = {
       "src/features/auth/unexpected-status.ts",
       "src/features/auth/wiki-oauth-fixture.ts",
     ],
-    project: ["src/**/*.ts!"],
+    project: ["src/**/*.ts!", "!src/features/auth/mock-network-fixture.ts!"],
   },
   "libs/feature-flags": {
     project: ["src/**/*.ts!"],
