@@ -1,6 +1,5 @@
-import { basename } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { OUT_OF_SCOPE_FILE_NAME } from "../../lib/out-of-scope-source.ts";
 
 import type { ESTree } from "@oxlint/plugins";
@@ -29,7 +28,7 @@ export const forbidTestAdjacentFile = createDontReviewItRule({
     schema: [],
   },
   create(inspection) {
-    const fileName = basename(inspection.filename);
+    const fileName = path.basename(inspection.filename);
     if (!isTestAdjacentFileName(fileName)) return {};
 
     return {

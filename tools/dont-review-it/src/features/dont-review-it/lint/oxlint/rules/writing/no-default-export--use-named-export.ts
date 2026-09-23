@@ -1,6 +1,5 @@
-import { basename } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 
 import type { ESTree, Options } from "@oxlint/plugins";
 
@@ -51,7 +50,7 @@ export const noDefaultExport = createDontReviewItRule({
   },
   create(inspection) {
     const isToolRequiredEntry = toolRequiredFileNamesFrom(inspection.options).includes(
-      basename(inspection.filename),
+      path.basename(inspection.filename),
     );
 
     return {

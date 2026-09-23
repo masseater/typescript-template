@@ -1,6 +1,5 @@
-import { resolve, sep } from "node:path";
-
 import { createDontReviewItRule } from "../../../create-rule.ts";
+import { path } from "../../../platform/path.ts";
 import { reExportCarriesValues } from "../lib/carried-values.ts";
 import { matchesGlobPath } from "../lib/glob-path-match.ts";
 import { listedTexts } from "../lib/listed-texts.ts";
@@ -54,8 +53,8 @@ export const noBarrelModule = createDontReviewItRule({
         if (!node.body.some(forwardsValues)) return;
 
         const pathSegments = segmentsOf({
-          path: resolve(inspection.cwd, inspection.filename),
-          separator: sep,
+          path: path.resolve(inspection.cwd, inspection.filename),
+          separator: path.sep,
         });
         const { cwd } = inspection;
         if (exclude.some((pattern) => matchesGlobPath({ pathSegments, pattern, cwd }))) return;

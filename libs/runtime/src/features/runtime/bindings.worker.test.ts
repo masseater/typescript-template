@@ -83,4 +83,13 @@ describe("readWorkerConfig", () => {
       );
     });
   });
+
+  describe("a FLAGS binding that is not Flagship", () => {
+    const it = test.extend("configurationRefusal", () =>
+      Effect.runPromise(Effect.flip(readWorkerConfig(appEnvironment({ FLAGS: {} })))));
+
+    it("refuses to start naming FLAGS", ({ configurationRefusal }) => {
+      expect(configurationRefusal).toStrictEqual(new ConfigurationInvalid({ reason: "FLAGS" }));
+    });
+  });
 });
