@@ -7,12 +7,13 @@ description: このリポジトリのコードレビュー指針。作業を完�
 
 1. `./references/ci-efficiency.md`
 2. `./references/colocation.md`
-3. `./references/config-cleanup.md`
-4. `./references/simplify.md`
-5. `./references/remove-useless-tests.md`
-6. `./references/no-silent-fallback.md`
-7. `./references/agents-md.md`
-8. `./references/verification-bypass.md`
+3. `./references/domain-authority.md`
+4. `./references/config-cleanup.md`
+5. `./references/simplify.md`
+6. `./references/remove-useless-tests.md`
+7. `./references/no-silent-fallback.md`
+8. `./references/agents-md.md`
+9. `./references/verification-bypass.md`
 
 以下は、その修正を行わないことを正当化する理由として認めない。かかる時間は度外視し、リポジトリ全体を俯瞰して、コード品質を向上させるための改善点を見つけることに全力を注ぐこと。
 
