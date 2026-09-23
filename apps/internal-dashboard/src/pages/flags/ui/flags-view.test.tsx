@@ -1,17 +1,10 @@
 import { RegistryProvider } from "@effect/atom-react";
-import { FLAG_KEY } from "@repo/feature-flags/definitions";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import { FlagsView } from "./flags-view.tsx";
 
 import type { FlagEntry } from "#shared/contracts/index.ts";
-
-const entry = {
-  description: "会員向けの掲示板を公開する",
-  enabled: true,
-  key: FLAG_KEY.memberBoard,
-} as const satisfies FlagEntry;
 
 function rendered(failure: string | undefined, flags: readonly FlagEntry[] | undefined): string {
   return renderToStaticMarkup(
@@ -42,12 +35,10 @@ describe("feature flag list", () => {
     expect(html).not.toContain("読み込み中です。");
   });
 
-  it("lists each flag with its description and current state", () => {
+  it("says there are no flags yet once an empty list arrives", () => {
     expect.hasAssertions();
-    const html = rendered(undefined, [entry]);
-    expect(html).toContain(FLAG_KEY.memberBoard);
-    expect(html).toContain(entry.description);
-    expect(html).toContain(`aria-label="${FLAG_KEY.memberBoard} をオフにする"`);
+    const html = rendered(undefined, []);
+    expect(html).toContain("機能フラグはまだありません。");
     expect(html).not.toContain("読み込み中です。");
   });
 });

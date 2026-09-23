@@ -7,11 +7,17 @@ import { FileStore } from "./file-store.ts";
 import { ReadCache } from "./read-cache.ts";
 import { StorageFailed } from "./storage-failed.ts";
 
-const storageLayer = Layer.unwrap(
-  Effect.map(readStorage(env), (storage) =>
-    Layer.mergeAll(FileStore.layer(storage.files), ReadCache.layer(storage.cache)),
-  ),
-);
+import type { ConfigurationInvalid } from "@repo/config";
+
+const storageLayerOf = (
+  bindings: unknown,
+): Layer.Layer<FileStore | ReadCache, ConfigurationInvalid> =>
+  Layer.unwrap(
+    Effect.map(readStorage(bindings), (storage) =>
+      Layer.mergeAll(FileStore.layer(storage.files), ReadCache.layer(storage.cache)),
+    ),
+  );
+const storageLayer = storageLayerOf(env);
 
 describe("file storage and read cache", () => {
   it.effect("stores a file in R2 and reads the same bytes back", () =>
@@ -49,22 +55,9 @@ describe("file storage and read cache", () => {
     }).pipe(Effect.provide(storageLayer)),
   );
 
-  it.effect("refuses to start when the file binding is missing from the environment", () =>
+  it.effect("refuses to start when the storage bindings are missing from the environment", () =>
     Effect.gen(function* program() {
-      const failure = yield* Layer.build(FileStore.fromEnvironment({})).pipe(
-        Effect.scoped,
-        Effect.flip,
-      );
-      assert.strictEqual(failure._tag, "ConfigurationInvalid");
-    }),
-  );
-
-  it.effect("refuses to start when the cache binding is missing from the environment", () =>
-    Effect.gen(function* program() {
-      const failure = yield* Layer.build(ReadCache.fromEnvironment({})).pipe(
-        Effect.scoped,
-        Effect.flip,
-      );
+      const failure = yield* Layer.build(storageLayerOf({})).pipe(Effect.scoped, Effect.flip);
       assert.strictEqual(failure._tag, "ConfigurationInvalid");
     }),
   );

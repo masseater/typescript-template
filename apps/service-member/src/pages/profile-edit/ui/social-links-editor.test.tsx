@@ -1,4 +1,4 @@
-import { FieldValidationMessageProvider } from "@repo/ui";
+import { AppProviders } from "@repo/ui/shell";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
@@ -19,9 +19,9 @@ const invalidMessage = "https で始まる URL を入力してください。";
 
 function rendered(values: readonly DraftLink[]): string {
   return renderToStaticMarkup(
-    <FieldValidationMessageProvider messages={validationMessages}>
+    <AppProviders fieldValidationMessages={validationMessages}>
       <SocialLinksEditor onChange={() => undefined} values={values} />
-    </FieldValidationMessageProvider>,
+    </AppProviders>,
   );
 }
 

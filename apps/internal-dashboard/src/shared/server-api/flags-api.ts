@@ -27,28 +27,34 @@ const listFlags = Effect.fn("listFlags")(function* listFlags(request: Request) {
   return { flags: entries };
 });
 
+const flagshipCredentials = (config: {
+  readonly FLAGSHIP_ACCOUNT_ID?: string | undefined;
+  readonly FLAGSHIP_API_TOKEN?: string | undefined;
+  readonly FLAGSHIP_APP_ID?: string | undefined;
+}): Parameters<typeof toggleFlagRemote>[0] | undefined =>
+  config.FLAGSHIP_API_TOKEN === undefined ||
+  config.FLAGSHIP_APP_ID === undefined ||
+  config.FLAGSHIP_ACCOUNT_ID === undefined
+    ? undefined
+    : {
+        accountId: config.FLAGSHIP_ACCOUNT_ID,
+        appId: config.FLAGSHIP_APP_ID,
+        authToken: Redacted.make(config.FLAGSHIP_API_TOKEN),
+      };
+
 const patchFlag = Effect.fn("patchFlag")(function* patchFlag(request: Request) {
   const { user } = yield* requireFlagEditor(request.headers);
   const change = yield* readJsonBody(FlagToggle, request);
   const config = yield* readWikiConfig(env);
-  if (
-    config.FLAGSHIP_API_TOKEN === undefined ||
-    config.FLAGSHIP_APP_ID === undefined ||
-    config.FLAGSHIP_ACCOUNT_ID === undefined
-  ) {
-    if (config.local) {
-      return yield* toggleFlag({ actorId: user.id, enabled: change.enabled, key: change.key });
-    }
-    return yield* new ConfigurationInvalid({ reason: "FLAGSHIP write credentials" });
+  const toggle = { actorId: user.id, enabled: change.enabled, key: change.key };
+  const credentials = flagshipCredentials(config);
+  if (credentials !== undefined) {
+    return yield* toggleFlagRemote(credentials, toggle);
   }
-  return yield* toggleFlagRemote(
-    {
-      accountId: config.FLAGSHIP_ACCOUNT_ID,
-      appId: config.FLAGSHIP_APP_ID,
-      authToken: Redacted.make(config.FLAGSHIP_API_TOKEN),
-    },
-    { actorId: user.id, enabled: change.enabled, key: change.key },
-  );
+  if (config.local) {
+    return yield* toggleFlag(toggle);
+  }
+  return yield* new ConfigurationInvalid({ reason: "FLAGSHIP write credentials" });
 });
 
 function flagsApi<Requirements>(api: ApiRoutes<WikiServices | Requirements>) {

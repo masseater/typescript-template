@@ -9,6 +9,7 @@ import { Console, Effect, Schema } from "effect";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
 import { ANALYSIS_TIMEOUT, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
+import { reactDoctorPassed } from "./react-doctor-verdict.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 interface Scan {
@@ -127,38 +128,38 @@ const scanProjects = (application: Application) =>
     return { report, scanned };
   })();
 
+const echoFailedScan = ({
+  failed,
+  stderr,
+}: {
+  readonly failed: boolean;
+  readonly stderr: string;
+}): Effect.Effect<void> => (failed && stderr !== "" ? Console.error(stderr) : Effect.void);
+
 const inspect = (application: Application) =>
   Effect.fn("inspect")(function* inspect() {
     const [{ report, scanned }, listed] = yield* Effect.all(
       [scanProjects(application), scan(["rules", "list", "--json", "-c", "tools/dont-review-it"])],
       { concurrency: "unbounded" },
     );
-    const { failed, stderr } = scanned;
-    if (failed && stderr !== "") {
-      yield* Console.error(stderr);
-    }
+    yield* echoFailedScan(scanned);
     const unclassified = yield* unclassifiedRules(listed);
     const findings = report.projects.flatMap((entry) => findingsOf(entry));
     const skipped = skippedIn(report);
     const found = new Set(report.projects.map((entry) => entry.project.projectName));
     const missing = [`@repo/${application}`].filter((name) => !found.has(name));
-    return {
-      application,
+    const outcome = {
       error: report.error?.message,
       findings,
       missing,
-      ok:
-        !failed &&
-        !listed.failed &&
-        report.error === null &&
-        findings.length === 0 &&
-        skipped.length === 0 &&
-        unclassified.length === 0 &&
-        report.projects.length > 0 &&
-        missing.length === 0,
       projects: report.projects.length,
       skipped,
       unclassified,
+    };
+    return {
+      application,
+      ...outcome,
+      ok: reactDoctorPassed({ ...outcome, failed: scanned.failed || listed.failed }),
     };
   })();
 

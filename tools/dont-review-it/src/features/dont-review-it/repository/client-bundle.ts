@@ -9,6 +9,7 @@ import { serverOnlyMarkers } from "@repo/vite-config";
 import { Console, Effect, Schema } from "effect";
 import { build } from "vite-plus";
 
+import { denialReason } from "./client-bundle-denial.ts";
 import { repositoryRoot } from "./repository-root.ts";
 
 const probeModules: Readonly<Record<Application, string>> = {
@@ -31,15 +32,6 @@ const serverOnly: readonly (readonly [string, string])[] = [
   ["@repo/auth", "**/libs/auth/src/features/auth/**"],
   ["#shared/server-api/index.ts", "**/src/**/server-api/**"],
 ];
-
-function denialReason(error: unknown): string {
-  const text = String(error);
-  return (
-    /Denied by file pattern: (?<pattern>\S+)/u.exec(text)?.groups?.["pattern"] ??
-    /Denied by specifier pattern: (?<pattern>\S+)/u.exec(text)?.groups?.["pattern"] ??
-    (text.includes("Denied by marker") ? "marker" : "denied")
-  );
-}
 
 async function clientBuild(
   application: Application,

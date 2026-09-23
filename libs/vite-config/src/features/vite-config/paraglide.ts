@@ -1,5 +1,9 @@
-import { paraglideVitePlugin } from "@inlang/paraglide-js";
+import { fileURLToPath } from "node:url";
 
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
+import { repositoryRoot } from "@repo/config/repository-root";
+
+import { paths } from "./host.ts";
 import { paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.ts";
 import { taskInput } from "./task-input.ts";
 
@@ -17,8 +21,15 @@ const withoutInlangState = [
   "!project.inlang/.lix/**",
 ] as const;
 
+const repositoryPath = (href: string): string =>
+  paths.relative(repositoryRoot, fileURLToPath(href)).replaceAll("\\", "/");
+
+const compileWorkspaceScript = repositoryPath(
+  new URL("./compile-workspace-paraglide.ts", import.meta.url).href,
+);
+
 const workspaceParaglideCompile = {
-  command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+  command: `./${compileWorkspaceScript}`,
   input: [
     ...taskInput,
     { base: "workspace", pattern: "apps/*/messages/**" },
@@ -29,12 +40,9 @@ const workspaceParaglideCompile = {
     })),
     {
       base: "workspace",
-      pattern: "libs/vite-config/src/features/vite-config/paraglide-options.ts",
+      pattern: repositoryPath(new URL("./paraglide-options.ts", import.meta.url).href),
     },
-    {
-      base: "workspace",
-      pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
-    },
+    { base: "workspace", pattern: compileWorkspaceScript },
   ],
   output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
 } satisfies NonNullable<NonNullable<NonNullable<UserConfig["run"]>["tasks"]>[string]>;
