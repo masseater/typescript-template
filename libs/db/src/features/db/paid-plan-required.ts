@@ -1,5 +1,1 @@
-import { Schema } from "effect";
-
-class PaidPlanRequired extends Schema.TaggedError<PaidPlanRequired>()("PaidPlanRequired", {}) {}
-
-export { PaidPlanRequired };
+export { PaidPlanRequired } from "@repo/config";

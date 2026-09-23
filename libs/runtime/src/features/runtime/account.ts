@@ -5,6 +5,7 @@ import {
   previewInvitation,
   verifyEmailToken,
   verifySession,
+  type EmailVerificationFailed,
 } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { Telemetry, ingestBrowser } from "@repo/observability";
@@ -21,11 +22,9 @@ import {
   SessionView,
 } from "./contracts.ts";
 import { DatabaseHealth } from "./database-health.ts";
-import { createApi, readJsonBody, readSearchParams } from "./http.ts";
+import { createApi, readJsonBody, readSearchParams, type ApiRoutes } from "./http.ts";
 
-import type { EmailVerificationFailed } from "@repo/auth";
 import type { Failure } from "./failures.ts";
-import type { ApiRoutes } from "./http.ts";
 import type { AppServices } from "./index.ts";
 
 const unavailable = { AuthFailure: "unexpected", DatabaseFailure: "unexpected" } as const;

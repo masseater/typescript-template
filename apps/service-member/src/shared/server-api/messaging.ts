@@ -15,7 +15,6 @@ import {
   query,
   requirePaid,
   schema,
-  sql,
 } from "@repo/db";
 import { DateTime, Effect } from "effect";
 
@@ -35,7 +34,7 @@ function visibleInThread(viewerId: string, conversationId: string, hideBlocked: 
   if (!hideBlocked) {
     return inThread;
   }
-  return and(inThread, not(blockBetween(viewerId, sql`${directMessage.senderId}`)));
+  return and(inThread, not(blockBetween(viewerId, directMessage.senderId)));
 }
 
 interface Page {

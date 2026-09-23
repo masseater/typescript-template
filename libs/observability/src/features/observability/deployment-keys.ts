@@ -16,7 +16,6 @@ const deploymentKey = {
   stripeSecretKey: "TEMPLATE_STRIPE_SECRET_KEY",
   stripeWebhookSecret: "TEMPLATE_STRIPE_WEBHOOK_SECRET",
 } as const;
-
 const deploymentKeys = [
   deploymentKey.alertEmail,
   deploymentKey.budgetJpy,
@@ -31,17 +30,14 @@ const deploymentKeys = [
   deploymentKey.stripeSecretKey,
   deploymentKey.stripeWebhookSecret,
 ] as const;
-
 const optionalDeploymentKeys = [
   deploymentKey.googleAnalyticsMeasurementId,
   deploymentKey.otlpAuthorization,
   deploymentKey.otlpEnabled,
   deploymentKey.otlpEndpoint,
 ] as const;
-
 const privateDeploymentKeys: readonly string[] = [
-  ...deploymentKeys.filter((key) => key !== deploymentKey.budgetJpy),
+  ...deploymentKeys.filter((settingName) => settingName !== deploymentKey.budgetJpy),
   ...optionalDeploymentKeys,
 ];
-
 export { deploymentKey, deploymentKeys, optionalDeploymentKeys, privateDeploymentKeys };

@@ -3,7 +3,7 @@ import handler from "@tanstack/react-start/server-entry";
 
 import { handleScheduled, reporting, runtime } from "#shared/server-api/index.ts";
 
-const fetchWorker = appServerEntry(runtime, handler, reporting);
+const fetchWorker = appServerEntry({ runtime, routeHandler: handler, reporting });
 
 export default {
   fetch: fetchWorker.fetch,

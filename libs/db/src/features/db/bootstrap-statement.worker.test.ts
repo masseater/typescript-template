@@ -1,24 +1,39 @@
 import { count, eq } from "drizzle-orm";
-import { Effect, type Layer } from "effect";
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { query } from "./database.ts";
-import { addUser } from "./records-fixture.ts";
 import { user } from "./schema.ts";
 import { TestDatabase } from "./testing.ts";
 
-const runTest = <Value>(
-  program: Effect.Effect<Value, unknown, Layer.Success<typeof TestDatabase>>,
-): Promise<Value> => Effect.runPromise(program.pipe(Effect.provide(TestDatabase)));
+const recordedAt = new Date("2026-01-01T00:00:00.000Z");
 
 describe("bootstrapAdmin", () => {
   describe("two verified users bootstrapped at the same time", () => {
-    const it = test.extend("administrators", () =>
-      runTest(
+    const it = test.extend("administrators", async () =>
+      Effect.runPromise(
         Effect.gen(function* bootstrapBoth() {
-          yield* addUser({ userId: "first" });
-          yield* addUser({ userId: "second" });
+          yield* query(async (database): Promise<void> => {
+            await database.insert(user).values([
+              {
+                createdAt: recordedAt,
+                email: "first@example.com",
+                emailVerified: true,
+                id: "first",
+                name: "first",
+                updatedAt: recordedAt,
+              },
+              {
+                createdAt: recordedAt,
+                email: "second@example.com",
+                emailVerified: true,
+                id: "second",
+                name: "second",
+                updatedAt: recordedAt,
+              },
+            ]);
+          });
           yield* Effect.all(
             [
               Effect.exit(bootstrapAdmin("first@example.com")),
@@ -26,10 +41,10 @@ describe("bootstrapAdmin", () => {
             ],
             { concurrency: "unbounded" },
           );
-          return yield* query((database) =>
+          return yield* query(async (database) =>
             database.select({ count: count() }).from(user).where(eq(user.role, "admin")),
           );
-        }),
+        }).pipe(Effect.provide(TestDatabase)),
       ));
 
     it("promotes exactly one of them", ({ administrators }) => {

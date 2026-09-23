@@ -2,7 +2,9 @@ import { Auth } from "@repo/auth";
 import {
   AuthApps,
   adminOrigin,
+  adminRedirectUri,
   startAdminAuthorization,
+  type AuthorizationFlow,
   type BrowserClient,
 } from "@repo/auth/testing";
 import { APPLICATION } from "@repo/config";
@@ -10,17 +12,10 @@ import { Data, Effect, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-type AuthorizationFlow = {
-  readonly clientId: string;
-  readonly oauthQuery: string;
-  readonly verifier: string;
-};
-
 type FetchMcp = (request: Request) => Effect.Effect<Response, never, never>;
 
 class McpResponseMissingData extends Data.TaggedError("McpResponseMissingData")<{}> {}
 
-const redirectUri = "http://127.0.0.1:43124/callback";
 const decodeRedirect = Schema.decodeUnknownEffect(Schema.Struct({ url: Schema.String }));
 const Tokens = Schema.Struct({ access_token: Schema.String });
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);
@@ -57,7 +52,7 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
       code,
       code_verifier: flow.verifier,
       grant_type: "authorization_code",
-      redirect_uri: redirectUri,
+      redirect_uri: adminRedirectUri,
       resource: `${adminOrigin}/mcp`,
     }),
     headers: { "content-type": "application/x-www-form-urlencoded" },

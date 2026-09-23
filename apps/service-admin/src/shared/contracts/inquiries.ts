@@ -1,12 +1,10 @@
 import { inquiryStatuses, roles } from "@repo/config";
+import { Identifier } from "@repo/runtime/contracts";
 import { Effect, Schema } from "effect";
 
-const maximumIdentifierLength = 256;
 const maximumReplyLength = 4000;
 const defaultPageSize = 50;
 const maximumPageSize = 100;
-
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const InquiryStatus = Schema.Literals(inquiryStatuses);
 

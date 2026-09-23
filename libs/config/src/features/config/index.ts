@@ -64,7 +64,7 @@ export {
 export {
   PLAN,
   SUBSCRIPTION_STATUS,
-  WEBHOOK_OUTCOME,
+  WEBHOOK_DISPOSITION,
   paidStatuses,
   plans,
   priceIntervals,
@@ -78,6 +78,7 @@ export {
   minimumCloudflareApiTokenLength,
 } from "./cloudflare-id.ts";
 export { ConfigurationInvalid } from "./configuration-invalid.ts";
+export { PaidPlanRequired } from "./paid-plan-required.ts";
 export {
   GoogleAnalyticsMeasurementId,
   activeGoogleAnalyticsMeasurementId,

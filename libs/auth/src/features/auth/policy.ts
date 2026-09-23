@@ -22,18 +22,11 @@ const enrollmentPaths = new Set([
   "/passkey/verify-authentication",
 ]);
 
-function deny(denial: string): never {
-  throw new APIError("FORBIDDEN", { message: denial });
-}
-
 const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const isStrongMethod = (method: string): boolean => strongMethods.has(method);
 
-const SECONDS_PER_MINUTE = 60;
-const MILLISECONDS_PER_SECOND = 1000;
-const STEP_UP_MINUTES = 10;
-const STEP_UP_MILLISECONDS = STEP_UP_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const STEP_UP_MILLISECONDS = 10 * 60 * 1000;
 
 const isRecentlyStrong = (
   sessionRecord: {
@@ -80,6 +73,10 @@ const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
 const authenticationMethodFor = (path: string | undefined): AuthenticationMethod =>
   (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
   AUTHENTICATION_METHOD.password;
+
+const deny: (denial: string) => never = (denial) => {
+  throw new APIError("FORBIDDEN", { message: denial });
+};
 
 const assertEligibleUser: <
   TUser extends {

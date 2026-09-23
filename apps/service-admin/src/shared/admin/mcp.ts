@@ -182,7 +182,7 @@ function createServer(
       description: "Permanently delete a member account. Requires operator permission or higher.",
       inputSchema: MemberId,
     },
-    ({ memberId }) => run(deleteUser(sessionId, memberId, channel)),
+    ({ memberId }) => run(deleteUser({ channel, sessionId, targetId: memberId })),
   );
 
   server.registerTool(
@@ -277,7 +277,7 @@ const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
   ): Promise<Value> => Effect.runPromiseWith(context)(program);
   const handler = createMcpHandler(() => createServer(authorized, runAdmin));
   const response = yield* Effect.promise(() => handler.fetch(request));
-  return secureResponse(request, response);
+  return secureResponse({ httpRequest: request, httpResponse: response });
 });
 
 export { serveMcp };

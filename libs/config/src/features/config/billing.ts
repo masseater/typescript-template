@@ -1,9 +1,9 @@
-const plans = ["free", "paid"] as const;
-type Plan = (typeof plans)[number];
-const PLAN = { free: plans[0], paid: plans[1] } as const satisfies Record<string, Plan>;
+export const plans = ["free", "paid"] as const;
+export type Plan = (typeof plans)[number];
+export const PLAN = { free: plans[0], paid: plans[1] } as const satisfies Record<string, Plan>;
 
 /** @canonical-values config.subscription-status */
-const subscriptionStatuses = [
+export const subscriptionStatuses = [
   "active",
   "canceled",
   "incomplete",
@@ -13,8 +13,8 @@ const subscriptionStatuses = [
   "trialing",
   "unpaid",
 ] as const;
-type SubscriptionStatus = (typeof subscriptionStatuses)[number];
-const SUBSCRIPTION_STATUS = {
+export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
+export const SUBSCRIPTION_STATUS = {
   active: subscriptionStatuses[0],
   canceled: subscriptionStatuses[1],
   incomplete: subscriptionStatuses[2],
@@ -25,31 +25,19 @@ const SUBSCRIPTION_STATUS = {
   unpaid: subscriptionStatuses[7],
 } as const satisfies Record<string, SubscriptionStatus>;
 
-const paidStatuses: readonly SubscriptionStatus[] = [
+export const paidStatuses: readonly SubscriptionStatus[] = [
   SUBSCRIPTION_STATUS.active,
   SUBSCRIPTION_STATUS.trialing,
 ];
 
 /** @canonical-values config.webhook-outcome */
-const webhookOutcomes = ["applied", "duplicate", "ignored"] as const;
-type WebhookOutcome = (typeof webhookOutcomes)[number];
-const WEBHOOK_OUTCOME = {
+export const webhookOutcomes = ["applied", "duplicate", "ignored"] as const;
+export type WebhookOutcome = (typeof webhookOutcomes)[number];
+export const WEBHOOK_DISPOSITION = {
   applied: webhookOutcomes[0],
   duplicate: webhookOutcomes[1],
   ignored: webhookOutcomes[2],
 } as const satisfies Record<string, WebhookOutcome>;
 
-const priceIntervals = ["day", "week", "month", "year"] as const;
-type PriceInterval = (typeof priceIntervals)[number];
-
-export {
-  PLAN,
-  SUBSCRIPTION_STATUS,
-  WEBHOOK_OUTCOME,
-  paidStatuses,
-  plans,
-  priceIntervals,
-  subscriptionStatuses,
-  webhookOutcomes,
-};
-export type { Plan, PriceInterval, SubscriptionStatus, WebhookOutcome };
+export const priceIntervals = ["day", "week", "month", "year"] as const;
+export type PriceInterval = (typeof priceIntervals)[number];

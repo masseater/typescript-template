@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { httpStatus } from "@repo/config";
-import { acceptRecovery, declineRecovery, findRecoveryOffer, withdrawMember } from "@repo/db";
+import { acceptRecovery, declineRecovery, findRecoveryOffer } from "@repo/db";
 import { unavailable } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { Effect } from "effect";
@@ -11,6 +11,7 @@ import {
   RecoveryAccepted,
   RecoveryOfferView,
 } from "#shared/contracts/index.ts";
+import { withdrawWithPhotos, type PhotoStore } from "#shared/photo/index.ts";
 
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
@@ -35,7 +36,7 @@ const failures = {
 const submitLeave = Effect.fn("leave.submit")(function* submitLeave(request: Request) {
   const { user } = yield* verifySession(request.headers);
   const { immediate } = yield* readJsonBody(LeaveRequest, request);
-  yield* withdrawMember(user.id, { immediate });
+  yield* withdrawWithPhotos(user.id, { immediate });
   return { ok: true as const };
 });
 
@@ -62,7 +63,7 @@ const submitRecoveryDecline = Effect.fn("leave.recoveryDecline")(function* submi
   return { ok: true as const };
 });
 
-function leaveApi(api: ApiRoutes<AppServices>) {
+function leaveApi(api: ApiRoutes<AppServices | PhotoStore>) {
   return createApi("")
     .post("/leave", api.route(LeaveAccepted, submitLeave, failures))
     .get("/recovery-offer", api.route(RecoveryOfferView, loadRecoveryOffer, failures))

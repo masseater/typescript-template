@@ -22,10 +22,8 @@ import {
   wikiStaff,
 } from "./testing.ts";
 
-const tokenOf = (link: URL): string => decodeURIComponent(link.pathname.split("/").at(-1) ?? "");
-
 describe("an administrator invite", () => {
-  const it = authTest().extend("outcome", ({ auth }) =>
+  const it = authTest.extend("invitedAdministrator", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* inviteAndAccept() {
         yield* bootstrapVerifiedAdmin("owner@example.com");
@@ -40,7 +38,7 @@ describe("an administrator invite", () => {
         });
         yield* mailInvite(invited).pipe(Effect.provideService(Auth, admin));
         const link = yield* receivedLink("invited@example.com", mailSubjects.invite);
-        const token = tokenOf(link);
+        const token = decodeURIComponent(link.pathname.split("/").at(-1) ?? "");
         const preview = yield* previewInvitation(token).pipe(Effect.provideService(Auth, admin));
         const accepted = yield* acceptInvitation({
           name: "Invited",
@@ -73,8 +71,10 @@ describe("an administrator invite", () => {
     ),
   );
 
-  it("mails a link that creates one administrator with the invited level", ({ outcome }) => {
-    expect(outcome).toStrictEqual({
+  it("mails a link that creates one administrator with the invited level", ({
+    invitedAdministrator,
+  }) => {
+    expect(invitedAdministrator).toStrictEqual({
       accepted: { permission: ADMIN_PERMISSION.operator, role: "admin" },
       link: { origin: true, path: "/invite/{token}" },
       memberSignIn: 403,
@@ -86,7 +86,7 @@ describe("an administrator invite", () => {
 });
 
 describe("a staff invite", () => {
-  const it = authTest().extend("outcome", ({ auth }) =>
+  const it = authTest.extend("invitedStaff", ({ auth }) =>
     runWith(auth, () =>
       Effect.gen(function* inviteStaffMember() {
         const editor = yield* wikiStaff("editor@example.com");
@@ -102,7 +102,7 @@ describe("a staff invite", () => {
         const accepted = yield* acceptInvitation({
           name: "Reader",
           password: PASSWORD,
-          token: tokenOf(link),
+          token: decodeURIComponent(link.pathname.split("/").at(-1) ?? ""),
         }).pipe(Effect.provideService(Auth, wiki));
         const client = yield* signInAs(APPLICATION.wiki, "reader@example.com");
         const session = yield* client.verify(true);
@@ -115,8 +115,8 @@ describe("a staff invite", () => {
     ),
   );
 
-  it("creates a staff account that signs in to the internal dashboard", ({ outcome }) => {
-    expect(outcome).toStrictEqual({
+  it("creates a staff account that signs in to the internal dashboard", ({ invitedStaff }) => {
+    expect(invitedStaff).toStrictEqual({
       accepted: { permission: STAFF_PERMISSION.viewer, role: "staff" },
       linkOrigin: true,
       session: { permission: STAFF_PERMISSION.viewer, role: "staff" },

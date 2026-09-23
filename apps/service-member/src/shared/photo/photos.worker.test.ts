@@ -15,10 +15,10 @@ import { Effect, Layer, DateTime } from "effect";
 
 import { containsExifMarker, jpegWithExif, pngWithText } from "./image-fixture.ts";
 import { PhotoStore } from "./photo-store.ts";
-import { deleteMemberPhotos, readPhoto, removePhoto, uploadPhoto } from "./photos.ts";
+import { readPhoto, removePhoto, uploadPhoto, withdrawWithPhotos } from "./photos.ts";
 import { readPhotoUpload } from "./upload.ts";
 
-import type { ProfileVisibility } from "@repo/config";
+import type { ProfileVisibility, Role } from "@repo/config";
 import type { Database, DatabaseFailure } from "@repo/db";
 import type { PhotoStorageFailed } from "./photo-storage-failed.ts";
 
@@ -43,6 +43,7 @@ function failureTag<Value, Failure extends { readonly _tag: string }, Requiremen
 function addUser(
   id: string,
   visibility: ProfileVisibility = PROFILE_VISIBILITY.allMembers,
+  role: Role = ROLE.member,
 ): Effect.Effect<void, DatabaseFailure, Database> {
   return query((database) =>
     database
@@ -53,7 +54,7 @@ function addUser(
         emailVerified: true,
         id,
         name: id,
-        role: ROLE.member,
+        role,
         updatedAt: DateTime.toDate(DateTime.nowUnsafe()),
         visibility,
       })
@@ -131,23 +132,34 @@ it.effect("deletes the previous object when a photo is replaced or removed", () 
   }).pipe(Effect.provide(services)),
 );
 
-it.effect("deleteMemberPhotos clears both slots and their objects", () =>
+it.effect.each([true, false])(
+  "a member withdrawing with immediate=%s leaves no photo behind",
+  (immediate) =>
+    Effect.gen(function* program() {
+      yield* addUser("leaver");
+      yield* addUser("stayer");
+      const leaverFace = yield* uploadPhoto("leaver", PHOTO_SLOT.face, jpegWithExif);
+      const leaverCompany = yield* uploadPhoto("leaver", PHOTO_SLOT.company, pngWithText);
+      const kept = yield* uploadPhoto("stayer", PHOTO_SLOT.face, jpegWithExif);
+      const withdrawn = yield* withdrawWithPhotos("leaver", { immediate });
+      assert.strictEqual(withdrawn.removedPhotos, 2);
+      assert.isUndefined(yield* storedBytes(`photos/leaver/face/${leaverFace.version ?? ""}`));
+      assert.isUndefined(
+        yield* storedBytes(`photos/leaver/company/${leaverCompany.version ?? ""}`),
+      );
+      assert.isDefined(yield* storedBytes(`photos/stayer/face/${kept.version ?? ""}`));
+    }).pipe(Effect.provide(services)),
+);
+
+it.effect("a refused withdrawal keeps the photos", () =>
   Effect.gen(function* program() {
-    yield* addUser("leaver");
-    yield* addUser("stayer");
-    const leaverFace = yield* uploadPhoto("leaver", PHOTO_SLOT.face, jpegWithExif);
-    const leaverCompany = yield* uploadPhoto("leaver", PHOTO_SLOT.company, pngWithText);
-    const kept = yield* uploadPhoto("stayer", PHOTO_SLOT.face, jpegWithExif);
-    const leaverFaceKey = `photos/leaver/face/${leaverFace.version ?? ""}`;
-    const leaverCompanyKey = `photos/leaver/company/${leaverCompany.version ?? ""}`;
-    const stayerKey = `photos/stayer/face/${kept.version ?? ""}`;
-    assert.strictEqual(yield* deleteMemberPhotos("leaver"), 2);
-    assert.deepStrictEqual(yield* photoKeysOf("leaver"), { company: null, face: null });
-    assert.isUndefined(yield* storedBytes(leaverFaceKey));
-    assert.isUndefined(yield* storedBytes(leaverCompanyKey));
-    assert.isDefined(yield* storedBytes(stayerKey));
-    assert.strictEqual(yield* deleteMemberPhotos("leaver"), 0);
-    assert.strictEqual(yield* failureTag(deleteMemberPhotos("missing")), "UserNotFound");
+    yield* addUser("administrator", PROFILE_VISIBILITY.allMembers, ROLE.administrator);
+    const face = yield* uploadPhoto("administrator", PHOTO_SLOT.face, jpegWithExif);
+    assert.strictEqual(
+      yield* failureTag(withdrawWithPhotos("administrator", { immediate: true })),
+      "MemberLeaveUnavailable",
+    );
+    assert.isDefined(yield* storedBytes(`photos/administrator/face/${face.version ?? ""}`));
   }).pipe(Effect.provide(services)),
 );
 

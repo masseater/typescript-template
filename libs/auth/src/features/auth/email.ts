@@ -21,11 +21,15 @@ type OutboundEmail = {
   readonly to: string;
 };
 
-const sendThroughMailpit = (
-  fetchImpl: typeof fetch,
-  mailpitSendUrl: string,
-  outbound: OutboundEmail,
-): Effect.Effect<void, EmailDeliveryFailed> =>
+const sendThroughMailpit = ({
+  fetchImpl,
+  mailpitSendUrl,
+  outbound,
+}: {
+  readonly fetchImpl: typeof fetch;
+  readonly mailpitSendUrl: string;
+  readonly outbound: OutboundEmail;
+}): Effect.Effect<void, EmailDeliveryFailed> =>
   Effect.gen(function* sendMailpit() {
     const requestPayload = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
       From: { Email: outbound.from },
@@ -85,7 +89,11 @@ const deliver = (
   const addressed: OutboundEmail = { ...outbound, from: settings.EMAIL_FROM };
   return settings.MAILPIT_SEND_URL === undefined
     ? sendThroughBinding(settings.EMAIL, addressed)
-    : sendThroughMailpit(fetch, settings.MAILPIT_SEND_URL, addressed);
+    : sendThroughMailpit({
+        fetchImpl: fetch,
+        mailpitSendUrl: settings.MAILPIT_SEND_URL,
+        outbound: addressed,
+      });
 };
 
 type LinkedMail = {
@@ -93,11 +101,15 @@ type LinkedMail = {
   readonly url: string;
 };
 
-const deliverLink = (
-  settings: MailSettings,
-  linked: LinkedMail,
-  template: { readonly lead: string; readonly span: string; readonly subject: string },
-): Effect.Effect<void, EmailDeliveryFailed> => {
+const deliverLink = ({
+  linked,
+  settings,
+  template,
+}: {
+  readonly linked: LinkedMail;
+  readonly settings: MailSettings;
+  readonly template: { readonly lead: string; readonly span: string; readonly subject: string };
+}): Effect.Effect<void, EmailDeliveryFailed> => {
   if (URL.parse(linked.url)?.origin !== settings.APP_ORIGIN) {
     return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
   }
@@ -108,57 +120,80 @@ const deliverLink = (
   }).pipe(withSpan(template.span));
 };
 
-const sendVerificationEmail = (
+/** @internal */
+export { mailSubjects, notificationMailSubjects };
+
+export const sendVerificationEmail = (
   settings: MailSettings,
   verification: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, verification, {
-    lead: "次のリンクでメールアドレスを確認してください。",
-    span: "email.verification",
-    subject: mailSubjects.verification,
+  deliverLink({
+    linked: verification,
+    settings,
+    template: {
+      lead: "次のリンクでメールアドレスを確認してください。",
+      span: "email.verification",
+      subject: mailSubjects.verification,
+    },
   });
 
-const sendExistingAccountNotice = (
+export const sendExistingAccountNotice = (
   settings: MailSettings,
   notice: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, notice, {
-    lead: "このメールアドレスで新規登録が試みられましたが、すでにアカウントがあります。次のリンクからログインしてください。心当たりがない場合は、このメールを破棄してください。",
-    span: "email.existing_account_notice",
-    subject: mailSubjects.existingAccount,
+  deliverLink({
+    linked: notice,
+    settings,
+    template: {
+      lead: "このメールアドレスで新規登録が試みられましたが、すでにアカウントがあります。次のリンクからログインしてください。心当たりがない場合は、このメールを破棄してください。",
+      span: "email.existing_account_notice",
+      subject: mailSubjects.existingAccount,
+    },
   });
 
-const sendEmailChangeVerification = (
+export const sendEmailChangeVerification = (
   settings: MailSettings,
   verification: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, verification, {
-    lead: "このメールアドレスへの変更が申請されました。次のリンクを開くと変更が確定します。心当たりがない場合は、このメールを破棄してください。",
-    span: "email.email_change_verification",
-    subject: mailSubjects.emailChangeVerification,
+  deliverLink({
+    linked: verification,
+    settings,
+    template: {
+      lead: "このメールアドレスへの変更が申請されました。次のリンクを開くと変更が確定します。心当たりがない場合は、このメールを破棄してください。",
+      span: "email.email_change_verification",
+      subject: mailSubjects.emailChangeVerification,
+    },
   });
 
-const sendEmailChangeNotice = (
+export const sendEmailChangeNotice = (
   settings: MailSettings,
   notice: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, notice, {
-    lead: "このアカウントのメールアドレスを変更する申請がありました。新しいメールアドレスに届いたリンクが開かれると、変更が確定します。心当たりがない場合は、次のリンクからセキュリティ設定を確認し、パスワードを変更してください。",
-    span: "email.email_change_notice",
-    subject: mailSubjects.emailChangeNotice,
+  deliverLink({
+    linked: notice,
+    settings,
+    template: {
+      lead: "このアカウントのメールアドレスを変更する申請がありました。新しいメールアドレスに届いたリンクが開かれると、変更が確定します。心当たりがない場合は、次のリンクからセキュリティ設定を確認し、パスワードを変更してください。",
+      span: "email.email_change_notice",
+      subject: mailSubjects.emailChangeNotice,
+    },
   });
 
-const sendEmailChangeCompleted = (
+export const sendEmailChangeCompleted = (
   settings: MailSettings,
   notice: LinkedMail,
 ): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliverLink(settings, notice, {
-    lead: "このアカウントのメールアドレスの変更が確定しました。心当たりがない場合は、次のリンクからセキュリティ設定を確認してください。",
-    span: "email.email_change_completed",
-    subject: mailSubjects.emailChangeCompleted,
+  deliverLink({
+    linked: notice,
+    settings,
+    template: {
+      lead: "このアカウントのメールアドレスの変更が確定しました。心当たりがない場合は、次のリンクからセキュリティ設定を確認してください。",
+      span: "email.email_change_completed",
+      subject: mailSubjects.emailChangeCompleted,
+    },
   });
 
-const sendInviteEmail = (
+export const sendInviteEmail = (
   settings: MailSettings,
   invitation: { readonly email: string; readonly url: string },
 ): Effect.Effect<void, EmailDeliveryFailed> => {
@@ -172,7 +207,7 @@ const sendInviteEmail = (
   }).pipe(withSpan("email.invite"));
 };
 
-const sendContactEmail = (
+export const sendContactEmail = (
   settings: MailSettings,
   outbound: Readonly<{
     readonly to: string;
@@ -190,7 +225,7 @@ const notificationMailSubjects = {
   conversationMessage: "新しいメッセージがあります",
 } as const;
 
-const sendNotificationEmail = (
+export const sendNotificationEmail = (
   settings: MailSettings,
   outbound: Readonly<{
     readonly href: string;
@@ -215,16 +250,4 @@ const sendNotificationEmail = (
   }).pipe(withSpan("email.notification"));
 };
 
-/** @internal */
-export { mailSubjects, notificationMailSubjects };
-export {
-  sendContactEmail,
-  sendEmailChangeCompleted,
-  sendEmailChangeNotice,
-  sendEmailChangeVerification,
-  sendExistingAccountNotice,
-  sendInviteEmail,
-  sendNotificationEmail,
-  sendVerificationEmail,
-};
 export type { MailSettings };

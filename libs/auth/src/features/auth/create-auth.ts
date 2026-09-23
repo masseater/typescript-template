@@ -5,7 +5,7 @@ import { claimMailSlot, findUser, schema, type DrizzleDatabase } from "@repo/db"
 import { logAt, logCause } from "@repo/observability";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { createEmailVerificationToken } from "better-auth/api";
-import { Cause, Clock, DateTime, Effect, Result } from "effect";
+import { Cause, Clock, DateTime, Duration, Effect, Result } from "effect";
 
 import { authPlugins } from "./auth-plugins.ts";
 import {
@@ -60,20 +60,16 @@ const createDatabaseHooks = (
   };
 };
 
-const SECONDS_PER_MINUTE = 60;
-const MINUTES_PER_HOUR = 60;
-const SECONDS_PER_HOUR = SECONDS_PER_MINUTE * MINUTES_PER_HOUR;
 const ADMIN_SESSION_HOURS = 8;
-const ADMIN_SESSION_SECONDS = ADMIN_SESSION_HOURS * SECONDS_PER_HOUR;
-const HOURS_PER_DAY = 24;
+const ADMIN_SESSION_SECONDS = Duration.toSeconds(Duration.hours(ADMIN_SESSION_HOURS));
 const USER_SESSION_DAYS = 7;
-const USER_SESSION_SECONDS = USER_SESSION_DAYS * HOURS_PER_DAY * SECONDS_PER_HOUR;
+const USER_SESSION_SECONDS = Duration.toSeconds(Duration.days(USER_SESSION_DAYS));
 const FRESH_SESSION_MINUTES = 5;
-const FRESH_SESSION_SECONDS = FRESH_SESSION_MINUTES * SECONDS_PER_MINUTE;
+const FRESH_SESSION_SECONDS = Duration.toSeconds(Duration.minutes(FRESH_SESSION_MINUTES));
 const EXISTING_ACCOUNT_NOTICE_MINUTES = 10;
-const MILLISECONDS_PER_SECOND = 1000;
-const EXISTING_ACCOUNT_NOTICE_MILLISECONDS =
-  EXISTING_ACCOUNT_NOTICE_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const EXISTING_ACCOUNT_NOTICE_MILLISECONDS = Duration.toMillis(
+  Duration.minutes(EXISTING_ACCOUNT_NOTICE_MINUTES),
+);
 
 const verificationLink = (origin: string, token: string): string => {
   return new URL(`/verify-email#${new URLSearchParams({ token }).toString()}`, origin).href;
@@ -135,12 +131,12 @@ const createEmailVerification = (
       user,
       token,
     }: Readonly<{ user: Readonly<{ email: string }>; token: string }>) => {
-      const target = emailChangeTarget(token);
-      if (Result.isFailure(target)) {
-        return run(Effect.fail(target.failure));
+      const emailChangeDestination = emailChangeTarget(token);
+      if (Result.isFailure(emailChangeDestination)) {
+        return run(Effect.fail(emailChangeDestination.failure));
       }
       return run(
-        target.success === undefined
+        emailChangeDestination.success === undefined
           ? sendVerificationEmail(authOptions.mail, {
               email: user.email,
               url: verificationLink(origin, token),
@@ -265,6 +261,22 @@ const RATE_LIMIT_WINDOW_SECONDS = 60;
 export type BetterAuthInstance = {
   readonly $context: Promise<unknown>;
   readonly api: {
+    readonly createApiKey?: (input: {
+      readonly body: { readonly name: string; readonly userId: string };
+    }) => Promise<{ readonly id: string; readonly key: string }>;
+    readonly updateApiKey?: (input: {
+      readonly body: { readonly enabled: boolean; readonly keyId: string; readonly userId: string };
+    }) => Promise<{ readonly id: string }>;
+    readonly verifyApiKey?: (input: {
+      readonly body: {
+        readonly key: string;
+        readonly permissions: Readonly<Record<string, readonly string[]>>;
+      };
+    }) => Promise<{
+      readonly error: { readonly code: string } | null;
+      readonly key: { readonly referenceId: string } | null;
+      readonly valid: boolean;
+    }>;
     readonly verifyEmail: (input: {
       readonly query: { readonly token: string };
     }) => Promise<unknown>;

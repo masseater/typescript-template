@@ -64,7 +64,7 @@ const memberSummary = Effect.fn("memberSummary")(function* memberSummary(request
 const reply = Effect.fn("reply")(function* reply(request: Request) {
   const sessionId = yield* sessionOf(request);
   const { body, id } = yield* readJsonBody(InquiryReply, request);
-  return yield* replyAsAdmin(sessionId, id, body);
+  return yield* replyAsAdmin({ body, inquiryId: id, sessionId });
 });
 
 const close = Effect.fn("close")(function* close(request: Request) {

@@ -1,4 +1,4 @@
-import { clearPhotoKeys, setPhotoKey, visiblePhotoKey } from "@repo/db";
+import { photoKeysOf, setPhotoKey, visiblePhotoKey, withdrawMember } from "@repo/db";
 import { Effect } from "effect";
 
 import { sanitizeImage } from "./image.ts";
@@ -26,7 +26,7 @@ const uploadPhoto = Effect.fn("uploadPhoto")(function* uploadPhoto(
   const store = yield* PhotoStore;
   const key = photoKey(memberId, slot, crypto.randomUUID());
   yield* store.put(key, sanitized);
-  const previous = yield* setPhotoKey(memberId, slot, key).pipe(
+  const previous = yield* setPhotoKey({ memberId, photoKey: key, slot }).pipe(
     Effect.tapError(() => store.remove([key]).pipe(Effect.ignore({ log: true }))),
   );
   if (previous !== null) {
@@ -40,7 +40,7 @@ const readPhoto = Effect.fn("readPhoto")(function* readPhoto(
   memberId: string,
   slot: PhotoSlot,
 ) {
-  const key = yield* visiblePhotoKey(viewerId, memberId, slot);
+  const key = yield* visiblePhotoKey({ memberId, slot, viewerId });
   if (key === undefined) {
     return yield* new PhotoNotFound();
   }
@@ -55,22 +55,22 @@ const removePhoto = Effect.fn("removePhoto")(function* removePhoto(
   memberId: string,
   slot: PhotoSlot,
 ) {
-  const previous = yield* setPhotoKey(memberId, slot, null);
+  const previous = yield* setPhotoKey({ memberId, photoKey: null, slot });
   if (previous !== null) {
     yield* (yield* PhotoStore).remove([previous]);
   }
   return { slot, version: null } satisfies PhotoState;
 });
 
-const deleteMemberPhotos = Effect.fn("deleteMemberPhotos")(function* deleteMemberPhotos(
+const withdrawWithPhotos = Effect.fn("withdrawWithPhotos")(function* withdrawWithPhotos(
   memberId: string,
+  options: Readonly<{ immediate: boolean }>,
 ) {
-  const keys = yield* clearPhotoKeys(memberId);
+  const keys = yield* photoKeysOf(memberId);
+  const withdrawn = yield* withdrawMember(memberId, options);
   const stored = Object.values(keys).filter((key): key is string => key !== null);
-  yield* (yield* PhotoStore).remove(stored);
-  return stored.length;
+  yield* (yield* PhotoStore).remove(stored).pipe(Effect.ignore({ log: true }));
+  return { ...withdrawn, removedPhotos: stored.length };
 });
 
-/** @public */
-export { deleteMemberPhotos };
-export { readPhoto, removePhoto, uploadPhoto };
+export { readPhoto, removePhoto, uploadPhoto, withdrawWithPhotos };

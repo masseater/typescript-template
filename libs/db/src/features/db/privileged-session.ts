@@ -49,9 +49,9 @@ const atLeast = (
 
 const requireActor = Effect.fn("requireActor")(function* requireActor(
   privilege: Privilege,
-  sessionId: string,
-  required: AccountPermission,
+  demand: Readonly<{ required: AccountPermission; sessionId: string }>,
 ) {
+  const { required, sessionId } = demand;
   const actor = yield* getSessionSecurity(sessionId, privilege.audience);
   if (
     actor?.user.role !== privilege.role ||
@@ -68,13 +68,32 @@ const requireActor = Effect.fn("requireActor")(function* requireActor(
   return { ...actor, permission };
 });
 
+const requireAdmin = (
+  sessionId: string,
+  required: AdminPermission = ADMIN_PERMISSION.viewer,
+): ReturnType<typeof requireActor> => requireActor(adminPrivilege, { required, sessionId });
+
+const requireStaff = (
+  sessionId: string,
+  required: StaffPermission = STAFF_PERMISSION.viewer,
+): ReturnType<typeof requireActor> => requireActor(staffPrivilege, { required, sessionId });
+
+type LiveCheck<Permission extends AccountPermission> = Readonly<{
+  checkedAt: Date;
+  required?: Permission;
+  sessionId: string;
+}>;
+
 const liveActor = (
   database: DrizzleDatabase,
-  privilege: Privilege,
-  sessionId: string,
-  required: AccountPermission,
-  checkedAt: Date,
+  check: Readonly<{
+    checkedAt: Date;
+    privilege: Privilege;
+    required: AccountPermission;
+    sessionId: string;
+  }>,
 ): SQL => {
+  const { checkedAt, privilege, required, sessionId } = check;
   const actor = alias(user, "actor");
   const liveSession = and(
     eq(session.id, sessionId),
@@ -95,28 +114,20 @@ const liveActor = (
   return exists(sessions);
 };
 
-const requireAdmin = (
-  sessionId: string,
-  required: AdminPermission = ADMIN_PERMISSION.viewer,
-): ReturnType<typeof requireActor> => requireActor(adminPrivilege, sessionId, required);
+const liveAdmin = (database: DrizzleDatabase, check: LiveCheck<AdminPermission>): SQL =>
+  liveActor(database, {
+    checkedAt: check.checkedAt,
+    privilege: adminPrivilege,
+    required: check.required ?? ADMIN_PERMISSION.viewer,
+    sessionId: check.sessionId,
+  });
 
-const liveAdmin = (
-  database: DrizzleDatabase,
-  sessionId: string,
-  checkedAt: Date,
-  required: AdminPermission = ADMIN_PERMISSION.viewer,
-): SQL => liveActor(database, adminPrivilege, sessionId, required, checkedAt);
-
-const requireStaff = (
-  sessionId: string,
-  required: StaffPermission = STAFF_PERMISSION.viewer,
-): ReturnType<typeof requireActor> => requireActor(staffPrivilege, sessionId, required);
-
-const liveStaff = (
-  database: DrizzleDatabase,
-  sessionId: string,
-  checkedAt: Date,
-  required: StaffPermission = STAFF_PERMISSION.viewer,
-): SQL => liveActor(database, staffPrivilege, sessionId, required, checkedAt);
+const liveStaff = (database: DrizzleDatabase, check: LiveCheck<StaffPermission>): SQL =>
+  liveActor(database, {
+    checkedAt: check.checkedAt,
+    privilege: staffPrivilege,
+    required: check.required ?? STAFF_PERMISSION.viewer,
+    sessionId: check.sessionId,
+  });
 
 export { liveAdmin, liveStaff, requireAdmin, requireStaff };

@@ -1,9 +1,6 @@
 import { roles } from "@repo/config";
+import { Identifier } from "@repo/runtime/contracts";
 import { Schema } from "effect";
-
-const maximumIdentifierLength = 256;
-
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const InquiryStatus = Schema.String;
 

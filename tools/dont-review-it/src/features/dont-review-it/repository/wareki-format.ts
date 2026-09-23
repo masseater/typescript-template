@@ -2,7 +2,7 @@ import { filename, reportViolation, type LintContext, type Node } from "./lint-c
 
 import type { Visitor } from "vite-plus/lint/plugins";
 
-const warekiOwner = /\/libs\/ui\/src\/wareki\.ts$/u;
+const warekiOwner = /\/libs\/ui\/src\/features\/ui\/wareki\.ts$/u;
 
 const isDateTimeFormat = (node: Node): boolean => {
   if (node.type !== "NewExpression") {

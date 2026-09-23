@@ -8,21 +8,6 @@ import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts"
 import { AgreementWithdrawalUnavailable } from "./agreement-withdrawal-unavailable.ts";
 import { query } from "./database.ts";
 
-interface PublishedAgreement {
-  readonly id: string;
-  readonly kind: AgreementKind;
-  readonly publishedAt: Date;
-  readonly summary: string | null;
-  readonly version: string;
-}
-
-interface AcceptedAgreement {
-  readonly acceptedAt: Date;
-  readonly kind: AgreementKind;
-  readonly version: string;
-  readonly versionId: string;
-}
-
 const publishedColumns = {
   id: agreementVersion.id,
   kind: agreementVersion.kind,
@@ -31,37 +16,53 @@ const publishedColumns = {
   version: agreementVersion.version,
 } as const;
 
+type PublishedAgreement = Readonly<{
+  id: string;
+  kind: AgreementKind;
+  publishedAt: Date;
+  summary: string | null;
+  version: string;
+}>;
+
+const firstOfEachKind = (
+  publishedVersions: readonly Readonly<
+    Omit<PublishedAgreement, "publishedAt"> & { publishedAt: Date | null }
+  >[],
+): readonly PublishedAgreement[] =>
+  publishedVersions.reduce<readonly PublishedAgreement[]>(
+    (latestByKind, publishedVersion) =>
+      publishedVersion.publishedAt === null ||
+      latestByKind.some((agreement) => agreement.kind === publishedVersion.kind)
+        ? latestByKind
+        : [...latestByKind, { ...publishedVersion, publishedAt: publishedVersion.publishedAt }],
+    [],
+  );
+
 const latestPublishedAgreements = Effect.fn("latestPublishedAgreements")(
   function* latestPublishedAgreements() {
-    const rows = yield* query((database) =>
+    const publishedVersions = yield* query((database) =>
       database
         .select(publishedColumns)
         .from(agreementVersion)
         .where(isNotNull(agreementVersion.publishedAt))
         .orderBy(desc(agreementVersion.publishedAt), desc(agreementVersion.id)),
     );
-    const latest = new Map<AgreementKind, PublishedAgreement>();
-    for (const row of rows) {
-      if (row.publishedAt !== null && !latest.has(row.kind)) {
-        latest.set(row.kind, { ...row, publishedAt: row.publishedAt });
-      }
-    }
-    return [...latest.values()];
+    return firstOfEachKind(publishedVersions);
   },
 );
 
 const publishedAgreement = Effect.fn("publishedAgreement")(function* publishedAgreement(
-  kind: AgreementKind,
+  agreementKind: AgreementKind,
 ) {
   const [latest] = yield* query((database) =>
     database
       .select({ ...publishedColumns, body: agreementVersion.body })
       .from(agreementVersion)
-      .where(and(eq(agreementVersion.kind, kind), isNotNull(agreementVersion.publishedAt)))
+      .where(and(eq(agreementVersion.kind, agreementKind), isNotNull(agreementVersion.publishedAt)))
       .orderBy(desc(agreementVersion.publishedAt), desc(agreementVersion.id))
       .limit(1),
   );
-  if (latest === undefined || latest.publishedAt === null) {
+  if (!latest?.publishedAt) {
     return null;
   }
   return { ...latest, publishedAt: latest.publishedAt };
@@ -74,6 +75,7 @@ const pendingAgreements = Effect.fn("pendingAgreements")(function* pendingAgreem
   if (latest.length === 0) {
     return [] as readonly PublishedAgreement[];
   }
+  const latestIds = latest.map((agreement) => agreement.id);
   const accepted = yield* query((database) =>
     database
       .select({ versionId: agreementAcceptance.versionId })
@@ -81,14 +83,11 @@ const pendingAgreements = Effect.fn("pendingAgreements")(function* pendingAgreem
       .where(
         and(
           eq(agreementAcceptance.userId, userId),
-          inArray(
-            agreementAcceptance.versionId,
-            latest.map((agreement) => agreement.id),
-          ),
+          inArray(agreementAcceptance.versionId, latestIds),
         ),
       ),
   );
-  const acceptedIds = new Set(accepted.map((row) => row.versionId));
+  const acceptedIds = new Set(accepted.map((acceptance) => acceptance.versionId));
   return latest.filter((agreement) => !acceptedIds.has(agreement.id));
 });
 
@@ -108,8 +107,8 @@ const requireAgreementsWhere = (
   Effect.Services<ReturnType<typeof pendingAgreements>>
 > =>
   Effect.gen(function* requireAgreements() {
-    const kinds = yield* pendingAgreementKinds(userId);
-    const missing = kinds.filter((kind) => applies(agreementPolicies[kind]));
+    const pendingKinds = yield* pendingAgreementKinds(userId);
+    const missing = pendingKinds.filter((pendingKind) => applies(agreementPolicies[pendingKind]));
     if (missing.length > 0) {
       return yield* new AgreementRequired({ kinds: missing });
     }
@@ -148,25 +147,28 @@ const acceptAgreementVersions = Effect.fn("acceptAgreementVersions")(
     if (published.length !== requested.length) {
       return yield* new AgreementVersionUnavailable();
     }
+    const acceptances = requested.map((versionId) => ({
+      acceptedAt: accepted.acceptedAt,
+      userId: accepted.userId,
+      versionId,
+    }));
     yield* query((database) =>
-      database
-        .insert(agreementAcceptance)
-        .values(
-          requested.map((versionId) => ({
-            acceptedAt: accepted.acceptedAt,
-            userId: accepted.userId,
-            versionId,
-          })),
-        )
-        .onConflictDoNothing(),
+      database.insert(agreementAcceptance).values(acceptances).onConflictDoNothing(),
     );
   },
 );
 
+type AcceptedAgreement = Readonly<{
+  acceptedAt: Date;
+  kind: AgreementKind;
+  version: string;
+  versionId: string;
+}>;
+
 const acceptedAgreements = Effect.fn("acceptedAgreements")(function* acceptedAgreements(
   userId: string,
 ) {
-  const rows: readonly AcceptedAgreement[] = yield* query((database) =>
+  const acceptedVersions: readonly AcceptedAgreement[] = yield* query((database) =>
     database
       .select({
         acceptedAt: agreementAcceptance.acceptedAt,
@@ -179,13 +181,13 @@ const acceptedAgreements = Effect.fn("acceptedAgreements")(function* acceptedAgr
       .where(eq(agreementAcceptance.userId, userId))
       .orderBy(desc(agreementAcceptance.acceptedAt), agreementVersion.kind),
   );
-  return rows;
+  return acceptedVersions;
 });
 
 const hasAcceptedLatestAgreement = Effect.fn("hasAcceptedLatestAgreement")(
-  function* hasAcceptedLatestAgreement(userId: string, kind: AgreementKind) {
+  function* hasAcceptedLatestAgreement(userId: string, agreementKind: AgreementKind) {
     const pending = yield* pendingAgreements(userId);
-    return !pending.some((agreement) => agreement.kind === kind);
+    return !pending.some((agreement) => agreement.kind === agreementKind);
   },
 );
 

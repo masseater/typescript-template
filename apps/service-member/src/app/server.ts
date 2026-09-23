@@ -30,7 +30,7 @@ export { Process, UserInbox };
 
 export default {
   ...withQueue(
-    appServerEntry(runtime, startHandler, reporting, { googleAnalytics }),
+    appServerEntry({ googleAnalytics, reporting, routeHandler: startHandler, runtime }),
     (batch, environment) =>
       Effect.runPromise(
         Effect.gen(function* consume() {

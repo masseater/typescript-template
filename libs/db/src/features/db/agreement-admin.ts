@@ -1,24 +1,18 @@
 import { ADMIN_PERMISSION, AUDIT_ACTION, type AgreementKind } from "@repo/config";
-import { and, desc, eq, isNull, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 import { agreementVersion } from "./agreement-schema.ts";
 import { AgreementVersionTaken } from "./agreement-version-taken.ts";
 import { AgreementVersionUnavailable } from "./agreement-version-unavailable.ts";
 import { auditWhen } from "./audit.ts";
-import { query, type DrizzleDatabase } from "./database.ts";
+import { query } from "./database.ts";
 import { liveAdmin, requireAdmin } from "./privileged-session.ts";
-
-const requirePublishingAdmin = (sessionId: string): ReturnType<typeof requireAdmin> =>
-  requireAdmin(sessionId, ADMIN_PERMISSION.operator);
-
-const livePublishingAdmin = (database: DrizzleDatabase, sessionId: string, checkedAt: Date): SQL =>
-  liveAdmin(database, sessionId, checkedAt, ADMIN_PERMISSION.operator);
 
 const canPublishAgreements = Effect.fn("canPublishAgreements")(function* canPublishAgreements(
   sessionId: string,
 ) {
-  return yield* requirePublishingAdmin(sessionId).pipe(
+  return yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator).pipe(
     Effect.as(true),
     Effect.catchTags({
       AdminStrongSessionRequired: () => Effect.succeed(false),
@@ -35,11 +29,6 @@ const listedColumns = {
   summary: agreementVersion.summary,
   version: agreementVersion.version,
 } as const;
-
-const blankToNull = (summary: string | undefined): string | null => {
-  const trimmed = summary?.trim() ?? "";
-  return trimmed === "" ? null : trimmed;
-};
 
 const listAgreementVersions = Effect.fn("listAgreementVersions")(function* listAgreementVersions(
   sessionId: string,
@@ -72,6 +61,11 @@ const readAgreementVersion = Effect.fn("readAgreementVersion")(function* readAgr
   return { ...found, canPublish: yield* canPublishAgreements(sessionId) };
 });
 
+const blankToNull = (summary: string | undefined): string | null => {
+  const trimmed = summary?.trim() ?? "";
+  return trimmed === "" ? null : trimmed;
+};
+
 const createAgreementDraft = Effect.fn("createAgreementDraft")(
   function* createAgreementDraft(draft: {
     readonly body: string;
@@ -82,7 +76,7 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
   }) {
     const actor = yield* requireAdmin(draft.sessionId);
     const createdAt = DateTime.toDate(yield* DateTime.now);
-    const [created] = yield* query((database) =>
+    const [createdDraft] = yield* query((database) =>
       database
         .insert(agreementVersion)
         .values({
@@ -97,10 +91,10 @@ const createAgreementDraft = Effect.fn("createAgreementDraft")(
         .onConflictDoNothing({ target: agreementVersion.version })
         .returning({ id: agreementVersion.id, version: agreementVersion.version }),
     );
-    if (!created) {
+    if (!createdDraft) {
       return yield* new AgreementVersionTaken();
     }
-    return created;
+    return createdDraft;
   },
 );
 
@@ -131,7 +125,7 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
     readonly id: string;
     readonly sessionId: string;
   }) {
-    const actor = yield* requirePublishingAdmin(published.sessionId);
+    const actor = yield* requireAdmin(published.sessionId, ADMIN_PERMISSION.operator);
     const publishedAt = DateTime.toDate(yield* DateTime.now);
     const change = {
       action: AUDIT_ACTION.agreementPublished,
@@ -139,18 +133,21 @@ const publishAgreementVersion = Effect.fn("publishAgreementVersion")(
       targetId: published.id,
     } as const;
     const [, publishedVersions] = yield* query((database) => {
+      const publishingAdminIsLive = liveAdmin(database, {
+        checkedAt: publishedAt,
+        required: ADMIN_PERMISSION.operator,
+        sessionId: published.sessionId,
+      });
       const unpublishedDraft = and(
         eq(agreementVersion.id, published.id),
         isNull(agreementVersion.publishedAt),
       );
-      const targeted = sql`SELECT 1 FROM ${agreementVersion} WHERE ${unpublishedDraft} AND ${livePublishingAdmin(database, published.sessionId, publishedAt)}`;
+      const targeted = sql`SELECT 1 FROM ${agreementVersion} WHERE ${unpublishedDraft} AND ${publishingAdminIsLive}`;
       const audit = database.run(auditWhen(change, targeted));
       const publication = database
         .update(agreementVersion)
         .set({ publishedAt, publishedBy: actor.user.id })
-        .where(
-          and(unpublishedDraft, livePublishingAdmin(database, published.sessionId, publishedAt)),
-        )
+        .where(and(unpublishedDraft, publishingAdminIsLive))
         .returning({
           id: agreementVersion.id,
           kind: agreementVersion.kind,

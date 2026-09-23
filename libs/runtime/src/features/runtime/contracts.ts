@@ -1,7 +1,6 @@
 import { applications } from "@repo/config";
 import { accountPermissions, roles } from "@repo/config/identity";
 import { Schema } from "effect";
-
 const maximumTokenLength = 4096;
 const maximumIdentifierLength = 256;
 
@@ -15,7 +14,6 @@ const AccountPermission = Schema.Literals(accountPermissions);
 const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const ErrorBody = Schema.Struct({ error: Schema.String });
-
 const SessionView = Schema.Struct({
   strong: Schema.Boolean,
   user: Schema.Struct({
@@ -47,9 +45,7 @@ const InviteAccepted = Schema.Struct({ accepted: Schema.Literal(true), email: Sc
 const EmailVerificationRequest = Schema.Struct({
   token: Schema.String.check(Schema.isLengthBetween(1, maximumTokenLength)),
 });
-
 const EmailVerified = Schema.Struct({ verified: Schema.Literal(true) });
-
 const HealthView = Schema.Struct({
   ok: Schema.Literal(true),
   release: Schema.String,
@@ -69,6 +65,7 @@ export {
   InvitePreviewQuery,
   Role,
   SessionView,
+  maximumIdentifierLength,
   maximumNameLength,
   maximumPasswordLength,
   minimumPasswordLength,

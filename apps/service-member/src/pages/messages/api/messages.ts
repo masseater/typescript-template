@@ -1,5 +1,5 @@
 import { httpStatus } from "@repo/config";
-import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
+import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
 import { notFound } from "@tanstack/react-router";
 
 import { userClient } from "#shared/api/index.ts";
@@ -28,7 +28,7 @@ function loadConversations(page: number): Promise<ConversationListView> {
 function loadConversation(id: string, page: number): Promise<ConversationThread> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.messages.conversation.get({ query: { id, page: String(page) } }).then((response) => {
-      const conversation = apiDataOrNone(ConversationView, response, absent.notFound);
+      const conversation = apiDataOrNoneFor(absent.notFound)(ConversationView, response);
       if (conversation === undefined) {
         throw notFound();
       }

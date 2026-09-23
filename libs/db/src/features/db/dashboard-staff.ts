@@ -1,35 +1,20 @@
-import {
-  METRIC_KEY,
-  METRIC_PERIOD,
-  ROLE,
-  auditActions,
-  metricKeys,
-  metricPeriods,
-} from "@repo/config";
-import { and, count, desc, eq, gte, lte } from "drizzle-orm";
-import { DateTime, Effect, Schema } from "effect";
+import { METRIC_KEY, METRIC_PERIOD, ROLE, metricKeys } from "@repo/config";
+import { and, count, desc, eq, gte, lte, type SQL } from "drizzle-orm";
+import { DateTime, Effect } from "effect";
 
 import { AGGREGATE_CLIENT_KIND, type ClientKind } from "./client-kind.ts";
 import { query } from "./database.ts";
 import { bucketFor, currentSnapshotValues, refreshMetricSnapshots } from "./metric-snapshot.ts";
-import { auditEvent, metricSnapshot, user, type AuditAction, type MetricKey } from "./schema.ts";
+import {
+  auditEvent,
+  metricSnapshot,
+  user,
+  type AuditAction,
+  type MetricKey,
+  type MetricPeriod,
+} from "./schema.ts";
 
-const MAX_PAGE_SIZE = 100;
 const DEFAULT_TREND_DAYS = 30;
-
-const AuditPage = Schema.Struct({
-  action: Schema.optionalKey(Schema.Literals(auditActions)),
-  actorId: Schema.optionalKey(Schema.String),
-  limit: Schema.Int.check(Schema.isBetween({ maximum: MAX_PAGE_SIZE, minimum: 1 })),
-  offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  targetId: Schema.optionalKey(Schema.String),
-});
-
-const TrendQuery = Schema.Struct({
-  days: Schema.optionalKey(Schema.Int.check(Schema.isBetween({ maximum: 365, minimum: 1 }))),
-  metric: Schema.Literals(metricKeys),
-  period: Schema.Literals(metricPeriods),
-});
 
 type AuditEventView = Readonly<{
   action: AuditAction;
@@ -55,6 +40,11 @@ type OverviewMetrics = Readonly<{
   trend: readonly MetricTrendPoint[];
 }>;
 
+const latestValueOf = (
+  latestValues: readonly Readonly<{ metric: MetricKey; value: number }>[],
+  metric: MetricKey,
+): number => latestValues.find((candidate) => candidate.metric === metric)?.value ?? 0;
+
 const overviewCardsFromSnapshots = Effect.fn("overviewCardsFromSnapshots")(
   function* overviewCardsFromSnapshotsProgram() {
     const [latest] = yield* query((database) =>
@@ -68,7 +58,7 @@ const overviewCardsFromSnapshots = Effect.fn("overviewCardsFromSnapshots")(
     if (!latest) {
       return undefined;
     }
-    const rows = yield* query((database) =>
+    const latestValues = yield* query((database) =>
       database
         .select({ metric: metricSnapshot.metric, value: metricSnapshot.value })
         .from(metricSnapshot)
@@ -80,31 +70,30 @@ const overviewCardsFromSnapshots = Effect.fn("overviewCardsFromSnapshots")(
           ),
         ),
     );
-    const cards: OverviewCard[] = [];
-    for (const metric of metricKeys) {
-      if (metric === METRIC_KEY.wikiSessionCount) {
-        continue;
-      }
-      const row = rows.find((candidate) => candidate.metric === metric);
-      cards.push({ metric, value: row?.value ?? 0 });
-    }
-    return cards;
+    return metricKeys
+      .filter((metric) => metric !== METRIC_KEY.wikiSessionCount)
+      .map((metric): OverviewCard => ({ metric, value: latestValueOf(latestValues, metric) }));
   },
 );
 
 const overviewCardsLive = Effect.fn("overviewCardsLive")(function* overviewCardsLiveProgram() {
-  const values = yield* currentSnapshotValues();
-  return values
+  const snapshotValues = yield* currentSnapshotValues();
+  return snapshotValues
     .filter(
-      (entry) =>
-        entry.clientKind === AGGREGATE_CLIENT_KIND && entry.metric !== METRIC_KEY.wikiSessionCount,
+      (snapshotValue) =>
+        snapshotValue.clientKind === AGGREGATE_CLIENT_KIND &&
+        snapshotValue.metric !== METRIC_KEY.wikiSessionCount,
     )
-    .map((entry) => ({ metric: entry.metric, value: entry.value }));
+    .map((snapshotValue) => ({ metric: snapshotValue.metric, value: snapshotValue.value }));
 });
 
-const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(
-  queryInput: typeof TrendQuery.Type,
-) {
+type TrendQuery = Readonly<{
+  days?: number;
+  metric: MetricKey;
+  period: MetricPeriod;
+}>;
+
+const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(queryInput: TrendQuery) {
   const days = queryInput.days ?? DEFAULT_TREND_DAYS;
   const until = DateTime.toDate(yield* DateTime.now);
   until.setUTCHours(0, 0, 0, 0);
@@ -112,7 +101,7 @@ const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(
   since.setUTCDate(since.getUTCDate() - days);
   const sinceBucket = bucketFor(queryInput.period, since);
   const untilBucket = bucketFor(queryInput.period, until);
-  const rows = yield* query((database) =>
+  const trendSnapshots = yield* query((database) =>
     database
       .select({
         bucket: metricSnapshot.bucket,
@@ -130,10 +119,10 @@ const metricTrend = Effect.fn("metricTrend")(function* metricTrendProgram(
       )
       .orderBy(metricSnapshot.bucket, metricSnapshot.clientKind),
   );
-  return rows.map((row): MetricTrendPoint => ({
-    bucket: row.bucket,
-    clientKind: row.clientKind ?? AGGREGATE_CLIENT_KIND,
-    value: row.value,
+  return trendSnapshots.map((trendSnapshot): MetricTrendPoint => ({
+    bucket: trendSnapshot.bucket,
+    clientKind: trendSnapshot.clientKind,
+    value: trendSnapshot.value,
   }));
 });
 
@@ -147,7 +136,15 @@ const staffOverview = Effect.fn("staffOverview")(function* staffOverviewProgram(
   return { cards, trend } satisfies OverviewMetrics;
 });
 
-const matchesAuditPage = (page: typeof AuditPage.Type) =>
+type AuditPage = Readonly<{
+  action?: AuditAction;
+  actorId?: string;
+  limit: number;
+  offset: number;
+  targetId?: string;
+}>;
+
+const matchesAuditPage = (page: AuditPage): SQL | undefined =>
   and(
     page.action === undefined ? undefined : eq(auditEvent.action, page.action),
     page.actorId === undefined ? undefined : eq(auditEvent.actorId, page.actorId),
@@ -155,9 +152,9 @@ const matchesAuditPage = (page: typeof AuditPage.Type) =>
   );
 
 const staffAuditEvents = Effect.fn("staffAuditEvents")(function* staffAuditEventsProgram(
-  page: typeof AuditPage.Type,
+  page: AuditPage,
 ) {
-  const events = yield* query((database) =>
+  const auditEvents = yield* query((database) =>
     database
       .select({
         action: auditEvent.action,
@@ -176,7 +173,7 @@ const staffAuditEvents = Effect.fn("staffAuditEvents")(function* staffAuditEvent
     database.select({ count: count() }).from(auditEvent).where(matchesAuditPage(page)),
   );
   return {
-    events: events satisfies readonly AuditEventView[],
+    events: auditEvents satisfies readonly AuditEventView[],
     total: matching?.count ?? 0,
   };
 });
@@ -191,13 +188,13 @@ const staffOverviewWithoutPii = Effect.fn("staffOverviewWithoutPii")(
         .where(eq(user.role, ROLE.member))
         .limit(1),
     ).pipe(
-      Effect.flatMap((rows) => {
-        const [sample] = rows;
-        if (!sample) {
+      Effect.flatMap((members) => {
+        const [sampledMember] = members;
+        if (!sampledMember) {
           return Effect.void;
         }
         const serialized = JSON.stringify(overview);
-        if (serialized.includes(sample.email) || serialized.includes(sample.name)) {
+        if (serialized.includes(sampledMember.email) || serialized.includes(sampledMember.name)) {
           return Effect.die("overview leaked personal data");
         }
         return Effect.void;
@@ -207,12 +204,12 @@ const staffOverviewWithoutPii = Effect.fn("staffOverviewWithoutPii")(
   },
 );
 
-interface ReadOnlyDashboardStaff {
-  readonly auditEvents: typeof staffAuditEvents;
-  readonly metricTrend: typeof metricTrend;
-  readonly overview: typeof staffOverview;
-  readonly overviewWithoutPii: typeof staffOverviewWithoutPii;
-}
+type ReadOnlyDashboardStaff = Readonly<{
+  auditEvents: typeof staffAuditEvents;
+  metricTrend: typeof metricTrend;
+  overview: typeof staffOverview;
+  overviewWithoutPii: typeof staffOverviewWithoutPii;
+}>;
 
 const dashboardStaff: ReadOnlyDashboardStaff = {
   auditEvents: staffAuditEvents,
@@ -221,11 +218,13 @@ const dashboardStaff: ReadOnlyDashboardStaff = {
   overviewWithoutPii: staffOverviewWithoutPii,
 };
 
-export { AuditPage, TrendQuery, dashboardStaff, refreshMetricSnapshots };
+export { dashboardStaff, refreshMetricSnapshots };
 export type {
   AuditEventView,
+  AuditPage,
   MetricTrendPoint,
   OverviewCard,
   OverviewMetrics,
   ReadOnlyDashboardStaff,
+  TrendQuery,
 };

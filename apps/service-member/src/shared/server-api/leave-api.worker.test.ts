@@ -2,14 +2,14 @@ import { assert, it } from "@effect/vitest";
 import { APPLICATION, httpStatus } from "@repo/config";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { recordingSink } from "@repo/observability/testing";
-import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
+import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes, createApi } from "@repo/runtime/http";
 import { appEnvironment, fixtureOrigin } from "@repo/runtime/testing";
 import { workerRuntime } from "@repo/runtime/worker";
 import { Effect, Layer } from "effect";
 
 import { leaveApi } from "./leave-api.ts";
-import { opsMailLayer } from "./ops-mail.ts";
+import { memberRequirementLayer } from "./member-requirement-layer.ts";
 
 const routes = {
   "/api/recovery/accept": "recovery-accept-api",
@@ -21,12 +21,13 @@ const migrated = Effect.orDie(Effect.provide(runStatement("select 1"), TestDatab
 
 function leaveApp() {
   const environment = appEnvironment({});
-  const runtime = workerRuntime(() =>
-    Layer.merge(
-      Layer.orDie(appLayer(environment, APPLICATION.user, routes)),
-      Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map(opsMailLayer), Effect.orDie)),
-    ),
-  );
+  const runtime = workerRuntime(() => {
+    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
+    return Layer.merge(
+      base,
+      Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
+    );
+  });
   return createApi(apiRoot).use(leaveApi(apiRoutes(runtime, reporting)));
 }
 

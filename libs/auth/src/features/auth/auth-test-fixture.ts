@@ -35,10 +35,6 @@ import type { AuthFailure } from "./auth-failure.ts";
 
 const PASSWORD = "test-password-safe-123";
 const authTestSecret = "integration-test-secret-at-least-32-characters-long";
-const TotpEnrollment = Schema.Struct({
-  backupCodes: Schema.Array(Schema.String),
-  totpURI: Schema.String,
-});
 
 class AuthApps extends Context.Service<AuthApps, Readonly<Record<Application, Auth["Service"]>>>()(
   "@repo/auth/AuthApps",
@@ -96,14 +92,12 @@ const provideAuth = (
   return Effect.runPromise(Layer.buildWithScope(authTestLayer, scope));
 };
 
-const authTest = () => test.extend("auth", provideAuth);
+const authTest = test.extend("auth", provideAuth);
 
 const runWith = <Value, Failure>(
   auth: Context.Context<AuthTestServices>,
   program: () => Effect.Effect<Value, Failure, AuthTestServices>,
-): Promise<Value> => {
-  return Effect.runPromise(Effect.provideContext(program(), auth));
-};
+): Promise<Value> => Effect.runPromise(Effect.provideContext(program(), auth));
 
 const withAuth = <Value, Failure>(
   effect: Effect.Effect<Value, Failure, AuthTestServices>,
@@ -112,15 +106,14 @@ const withAuth = <Value, Failure>(
 
 const audienceOnEmptyDatabase = (
   audience: Application,
-): Effect.Effect<AuthFailure["_tag"] | Application, unknown> => {
-  return Effect.scoped(authFor(audience)).pipe(
+): Effect.Effect<AuthFailure["_tag"] | Application> =>
+  Effect.scoped(authFor(audience)).pipe(
     Effect.match({
       onFailure: (failure) => failure._tag,
       onSuccess: (built) => built.audience,
     }),
     Effect.provide(Layer.merge(EmptyTestDatabase, sequentialIdentifiers)),
   );
-};
 
 const requireStatus = Effect.fn("requireStatus")(function* requireStatus(
   expectedStatus: number,
@@ -172,10 +165,10 @@ const registerVerified = Effect.fn("registerVerified")(function* registerVerifie
 
 const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
   email: string,
-  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
+  bootstrapKind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   yield* registerVerified(email);
-  yield* bootstrapAdmin(email, kind);
+  yield* bootstrapAdmin(email, bootstrapKind);
 });
 
 const bootstrapVerifiedStaff = Effect.fn("bootstrapVerifiedStaff")(function* bootstrapVerifiedStaff(
@@ -200,7 +193,12 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(audience: Application,
 
 const enableTotp = Effect.fn("enableTotp")(function* enableTotp(client: BrowserClient) {
   const enabled = yield* client.json("/two-factor/enable", { password: PASSWORD });
-  const enrollment = yield* Schema.decodeUnknownEffect(TotpEnrollment)(enabled.body);
+  const enrollment = yield* Schema.decodeUnknownEffect(
+    Schema.Struct({
+      backupCodes: Schema.Array(Schema.String),
+      totpURI: Schema.String,
+    }),
+  )(enabled.body);
   const authenticator = URI.parse(enrollment.totpURI);
   yield* requireStatus(httpStatus.ok, {
     client,
@@ -338,20 +336,9 @@ const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSes
   token: string,
 ) {
   const { instance } = yield* Auth;
-  const options: unknown = instance.options;
-  const advanced =
-    typeof options === "object" && options !== null && "advanced" in options
-      ? options.advanced
-      : undefined;
-  const cookiePrefix =
-    typeof advanced === "object" && advanced !== null && "cookiePrefix" in advanced
-      ? advanced.cookiePrefix
-      : undefined;
-  const secret =
-    typeof options === "object" && options !== null && "secret" in options
-      ? options.secret
-      : undefined;
-  if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
+  const cookiePrefix = instance.options.advanced?.cookiePrefix;
+  const { secret } = instance.options;
+  if (cookiePrefix === undefined || secret === undefined) {
     return yield* new SessionRequired();
   }
   const signature = yield* Effect.promise(() => makeSignature(token, secret));

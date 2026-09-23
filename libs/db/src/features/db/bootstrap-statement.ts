@@ -24,12 +24,14 @@ const BootstrappedAdmin = Schema.Struct({
   role: Schema.Literals([ROLE.administrator, ROLE.staff]),
 });
 
-const bootstrapStatement = (
-  email: typeof Email.Type,
-  kind: BootstrapKind,
-  updatedAt: number,
-): SQL => {
-  const { permission, role } = bootstrapRoles[kind];
+type RolePromotion = Readonly<{
+  bootstrapKind: BootstrapKind;
+  email: typeof Email.Type;
+  updatedAt: number;
+}>;
+
+const bootstrapStatement = ({ bootstrapKind, email, updatedAt }: RolePromotion): SQL => {
+  const { permission, role } = bootstrapRoles[bootstrapKind];
   return sql`UPDATE ${user}
     SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
@@ -39,12 +41,8 @@ const bootstrapStatement = (
     RETURNING id, email, role, permission`;
 };
 
-const ensureRoleStatement = (
-  email: typeof Email.Type,
-  kind: BootstrapKind,
-  updatedAt: number,
-): SQL => {
-  const { permission, role } = bootstrapRoles[kind];
+const ensureRoleStatement = ({ bootstrapKind, email, updatedAt }: RolePromotion): SQL => {
+  const { permission, role } = bootstrapRoles[bootstrapKind];
   return sql`UPDATE ${user}
     SET role = ${role}, permission = ${permission}, updated_at = ${updatedAt}
     WHERE ${user.email} = ${email.toLowerCase()}
@@ -59,11 +57,11 @@ class BootstrapUnavailable extends Schema.TaggedError<BootstrapUnavailable>()(
 
 const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
   email: typeof Email.Type,
-  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
+  bootstrapKind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   const updatedAt = yield* Clock.currentTimeMillis;
   const [promotedRow] = yield* query((database) =>
-    database.all(bootstrapStatement(email, kind, updatedAt)),
+    database.all(bootstrapStatement({ bootstrapKind, email, updatedAt })),
   );
   if (promotedRow === undefined) {
     return yield* new BootstrapUnavailable();
@@ -75,16 +73,16 @@ const bootstrapAdmin = Effect.fn("bootstrapAdmin")(function* bootstrapAdmin(
 
 const ensureAdminRole = Effect.fn("ensureAdminRole")(function* ensureAdminRole(
   email: typeof Email.Type,
-  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
+  bootstrapKind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   const updatedAt = yield* Clock.currentTimeMillis;
-  const [updated] = yield* query((database) =>
-    database.all(ensureRoleStatement(email, kind, updatedAt)),
+  const [adminRow] = yield* query((database) =>
+    database.all(ensureRoleStatement({ bootstrapKind, email, updatedAt })),
   );
-  if (updated === undefined) {
+  if (adminRow === undefined) {
     return yield* new BootstrapUnavailable();
   }
-  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(updated).pipe(
+  return yield* Schema.decodeUnknownEffect(BootstrappedAdmin)(adminRow).pipe(
     Effect.mapError((cause) => new DatabaseFailure({ cause })),
   );
 });
@@ -93,6 +91,7 @@ export {
   BOOTSTRAP_KIND,
   BootstrapKind,
   BootstrappedAdmin,
+  BootstrapUnavailable,
   Email,
   bootstrapAdmin,
   bootstrapStatement,

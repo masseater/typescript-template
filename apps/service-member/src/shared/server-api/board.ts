@@ -128,7 +128,7 @@ const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThread
   yield* requireBoardMember(viewerId);
   const visible = or(
     isNull(boardThread.authorId),
-    not(blockBetween(viewerId, sql`${boardThread.authorId}`)),
+    not(blockBetween(viewerId, boardThread.authorId)),
   );
   const threads = yield* query((database) =>
     database
@@ -174,7 +174,7 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
       .where(
         and(
           eq(boardPost.threadId, threadId),
-          or(isNull(boardPost.authorId), not(blockBetween(viewerId, sql`${boardPost.authorId}`))),
+          or(isNull(boardPost.authorId), not(blockBetween(viewerId, boardPost.authorId))),
         ),
       )
       .orderBy(boardPost.createdAt, boardPost.id)

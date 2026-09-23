@@ -7,7 +7,13 @@ import {
   runWith,
   signInAs,
 } from "@repo/auth/testing";
-import { APPLICATION, PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, httpStatus } from "@repo/config";
+import {
+  APPLICATION,
+  PLAN,
+  SUBSCRIPTION_STATUS,
+  WEBHOOK_DISPOSITION,
+  httpStatus,
+} from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
@@ -51,7 +57,7 @@ function billingApp() {
     STRIPE_WEBHOOK_SECRET: webhookSecret,
   });
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer(environment, APPLICATION.user, routes));
+    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
     return Layer.mergeAll(
       base,
       Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
@@ -226,7 +232,7 @@ const member = Effect.fn("member")(function* member(app: App) {
 });
 
 describe("billing api", () => {
-  const it = authTest();
+  const it = authTest;
 
   it("keeps a free member out of the member list and lets them in once Stripe confirms the checkout", ({
     auth,
@@ -261,7 +267,7 @@ describe("billing api", () => {
       expect(result.freePlan).toStrictEqual({ cancelAtPeriodEnd: false, plan: PLAN.free });
       expect(result.started).toBe(httpStatus.ok);
       expect(result.checkout).toStrictEqual({ url: checkoutUrl });
-      expect(result.outcome).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
+      expect(result.outcome).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
       expect(result.admitted).toBe(httpStatus.ok);
       expect(result.paidPlan).toStrictEqual({
         cancelAtPeriodEnd: false,
@@ -301,10 +307,10 @@ describe("billing api", () => {
         };
       }),
     ).then((result) => {
-      expect(result.replayed).toStrictEqual({ outcome: WEBHOOK_OUTCOME.duplicate });
+      expect(result.replayed).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.duplicate });
       expect(result.stillPaid).toBe(httpStatus.ok);
       expect(result.portal).toStrictEqual({ url: portalUrl });
-      expect(result.deleted).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
+      expect(result.deleted).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
       expect(result.refusedAgain).toBe(httpStatus.paymentRequired);
       expect(result.lapsedPlan).toMatchObject({
         plan: PLAN.free,

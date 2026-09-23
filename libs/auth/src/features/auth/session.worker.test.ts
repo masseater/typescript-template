@@ -32,7 +32,7 @@ import {
 
 describe("verifySession", () => {
   describe("an administrator signed in with a password alone", () => {
-    const it = authTest()
+    const it = authTest
       .extend("client", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* signInPasswordOnly() {
@@ -65,7 +65,7 @@ describe("verifySession", () => {
   });
 
   describe("an administrator who verified a TOTP code on the same session", () => {
-    const it = authTest().extend("verified", ({ auth }) =>
+    const it = authTest.extend("verified", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* enrollTotp() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -93,7 +93,7 @@ describe("verifySession", () => {
   });
 
   describe("a user whose password sign-in awaits the second factor", () => {
-    const it = authTest()
+    const it = authTest
       .extend("pending", ({ auth }) =>
         runWith(auth, () =>
           Effect.gen(function* awaitSecondFactor() {
@@ -149,7 +149,7 @@ describe("verifySession", () => {
   });
 
   describe("an administrator signed in with a recovery code", () => {
-    const it = authTest().extend("recovery", ({ auth }) =>
+    const it = authTest.extend("recovery", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* recover() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -192,7 +192,7 @@ describe("verifySession", () => {
   });
 
   describe("an administrator signing in to the user app", () => {
-    const it = authTest().extend("status", ({ auth }) =>
+    const it = authTest.extend("crossOverStatus", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* crossOver() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -201,13 +201,13 @@ describe("verifySession", () => {
       ),
     );
 
-    it("is refused because administrators are not members", ({ status }) => {
-      expect(status).toBe(403);
+    it("is refused because administrators are not members", ({ crossOverStatus }) => {
+      expect(crossOverStatus).toBe(403);
     });
   });
 
   describe("user app cookies replayed against the admin app", () => {
-    const it = authTest().extend("replayed", ({ auth }) =>
+    const it = authTest.extend("replayed", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* replay() {
           yield* registerVerified("member@example.com");
@@ -224,7 +224,7 @@ describe("verifySession", () => {
   });
 
   describe("a member suspended by an operator", () => {
-    const it = authTest().extend("suspension", ({ auth }) =>
+    const it = authTest.extend("suspension", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* suspend() {
           yield* bootstrapVerifiedAdmin("owner@example.com");
@@ -247,17 +247,16 @@ describe("verifySession", () => {
       ),
     );
 
-    it("loses the session it held", ({ suspension }) => {
-      expect(suspension.lostSession).toStrictEqual(new SessionRequired());
-    });
-
-    it("cannot sign in again", ({ suspension }) => {
-      expect(suspension.signInStatus).toBe(403);
+    it("loses the session it held and cannot sign in again", ({ suspension }) => {
+      expect(suspension).toStrictEqual({
+        lostSession: new SessionRequired(),
+        signInStatus: 403,
+      });
     });
   });
 
   describe("a user who posts role, audience and strength updates", () => {
-    const it = authTest().extend("selfAssigned", ({ auth }) =>
+    const it = authTest.extend("selfAssigned", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* selfAssign() {
           yield* registerVerified("reader@example.com");
@@ -299,7 +298,7 @@ describe("verifySession", () => {
   });
 
   describe("a staff member demoted to member", () => {
-    const it = authTest().extend("demoted", ({ auth }) =>
+    const it = authTest.extend("demoted", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* demote() {
           const wiki = yield* wikiStaff("owner@example.com");

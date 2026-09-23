@@ -7,24 +7,25 @@ import {
 } from "./google-analytics-measurement-id.ts";
 
 describe("GoogleAnalyticsMeasurementId", () => {
-  describe.for([
-    ["G-ABCDEFGHIJ", true],
-    ["G-123", true],
-    ["UA-123456-1", false],
-    ["G-", false],
-    ["not-an-id", false],
-  ] as const)("%s", ([candidate, accepted]) => {
+  describe.for(["G-ABCDEFGHIJ", "G-123"])("well-formed %s", (candidate) => {
     const it = test.extend("decoded", () =>
-      Effect.runPromise(Schema.decodeEffect(GoogleAnalyticsMeasurementId)(candidate)).catch(
-        () => undefined,
+      Effect.runPromise(Schema.decodeEffect(GoogleAnalyticsMeasurementId)(candidate)));
+
+    it("is accepted", ({ decoded }) => {
+      expect(decoded).toBe(candidate);
+    });
+  });
+
+  describe.for(["UA-123456-1", "G-", "not-an-id"])("malformed %s", (candidate) => {
+    const it = test.extend("decoded", () =>
+      Effect.runPromise(
+        Schema.decodeEffect(GoogleAnalyticsMeasurementId)(candidate).pipe(
+          Effect.orElseSucceed(() => undefined),
+        ),
       ));
 
-    it(accepted ? "is accepted" : "is refused", ({ decoded }) => {
-      if (accepted) {
-        expect(decoded).toBe(candidate);
-      } else {
-        expect(decoded).toBeUndefined();
-      }
+    it("is refused", ({ decoded }) => {
+      expect(decoded).toBe(undefined);
     });
   });
 });
@@ -51,7 +52,7 @@ describe("activeGoogleAnalyticsMeasurementId", () => {
     const it = test.extend("active", () => activeGoogleAnalyticsMeasurementId(input));
 
     it("keeps analytics off", ({ active }) => {
-      expect(active).toBeUndefined();
+      expect(active).toBe(undefined);
     });
   });
 });

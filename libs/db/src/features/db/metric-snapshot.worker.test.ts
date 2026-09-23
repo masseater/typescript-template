@@ -1,15 +1,24 @@
-import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
 import { refreshMetricSnapshots } from "./metric-snapshot.ts";
 import { addUser } from "./records-fixture.ts";
 import { TestDatabase } from "./testing.ts";
 
-it.effect("refreshes metric snapshots for scheduled aggregation", () =>
-  Effect.gen(function* program() {
-    yield* addUser({ userId: "member" });
-    const result = yield* refreshMetricSnapshots();
-    assert.isAbove(result.metricCount, 0);
-    assert.instanceOf(result.computedAt, Date);
-  }).pipe(Effect.provide(TestDatabase)),
-);
+describe("refreshMetricSnapshots", () => {
+  const it = test.extend("refreshedSnapshots", () =>
+    Effect.runPromise(
+      Effect.gen(function* refreshSnapshots() {
+        yield* addUser({ userId: "member" });
+        const refreshed = yield* refreshMetricSnapshots();
+        return {
+          computedAtIsDate: refreshed.computedAt instanceof Date,
+          metricsRecorded: refreshed.metricCount > 0,
+        };
+      }).pipe(Effect.provide(TestDatabase)),
+    ));
+
+  it("refreshes metric snapshots for scheduled aggregation", ({ refreshedSnapshots }) => {
+    expect(refreshedSnapshots).toStrictEqual({ computedAtIsDate: true, metricsRecorded: true });
+  });
+});

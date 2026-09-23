@@ -1,6 +1,6 @@
 import { applications } from "@repo/config";
 import {
-  effectDiagnostics,
+  awaitingEffectDiagnostics,
   lifecycle,
   taskInput,
   checkCode,
@@ -18,7 +18,7 @@ const stackBuilds = ["core", ...applications, ...monitorStacks].map(
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...awaitingEffectDiagnostics,
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

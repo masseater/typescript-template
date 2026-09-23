@@ -1,11 +1,10 @@
 import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
+import { Identifier, maximumNameLength } from "@repo/runtime/contracts";
 import { Effect, Schema, SchemaGetter } from "effect";
 
 import { Sheet } from "#shared/interview/sheet.ts";
 import { ProfileLayout } from "#shared/profile-layout/schema.ts";
 
-const maximumIdentifierLength = 256;
-const maximumNameLength = 100;
 const maximumProfileLength = 2000;
 const maximumSocialLinkLength = 2048;
 const maximumSocialLinks = 10;
@@ -15,8 +14,6 @@ const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
 const maximumContactNameLength = 100;
 const maximumContactMessageLength = 4000;
-
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 
 const SocialLink = Schema.String.check(
   Schema.isMaxLength(maximumSocialLinkLength),

@@ -1,7 +1,6 @@
 import { agreementKinds } from "@repo/config";
+import { maximumIdentifierLength } from "@repo/runtime/contracts";
 import { Schema } from "effect";
-
-const maximumIdentifierLength = 256;
 
 const AgreementKind = Schema.Literals(agreementKinds);
 

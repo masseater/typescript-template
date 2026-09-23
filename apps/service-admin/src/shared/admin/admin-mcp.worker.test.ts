@@ -61,11 +61,11 @@ function adminMcpApp(auth: Parameters<typeof runWith>[0]): {
     Layer.orDie(
       Layer.merge(
         Layer.succeed(Auth, adminAuth),
-        appLayer(
-          appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret }),
-          APPLICATION.admin,
+        appLayer({
+          audience: APPLICATION.admin,
+          env: appEnvironment({ APP_ORIGIN: adminOrigin, AUTH_SECRET: authSecret }),
           routes,
-        ),
+        }),
       ),
     ),
   );
@@ -97,7 +97,7 @@ const parseGrantedBody = (granted: Response): Effect.Effect<unknown> =>
   }).pipe(Effect.orDie);
 
 describe("admin MCP authorization", () => {
-  const it = authTest();
+  const it = authTest;
 
   it("admin publishes OAuth discovery for its MCP resource", ({ auth }) =>
     runWith(auth, () =>

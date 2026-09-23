@@ -237,7 +237,7 @@ const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
   ): Promise<Value> => Effect.runPromiseWith(context)(program);
   const handler = createMcpHandler(() => createServer(authorized, runMember));
   const response = yield* Effect.promise(() => Promise.resolve(handler.fetch(request)));
-  return secureResponse(request, response);
+  return secureResponse({ httpRequest: request, httpResponse: response });
 });
 
 export { serveMcp };

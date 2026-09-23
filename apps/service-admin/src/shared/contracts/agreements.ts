@@ -1,13 +1,12 @@
 import { agreementKinds } from "@repo/config";
+import { Identifier } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
-const maximumIdentifierLength = 256;
 const maximumVersionLength = 64;
 const maximumSummaryLength = 500;
 const maximumBodyLength = 100_000;
 
 const AgreementKind = Schema.Literals(agreementKinds);
-const Identifier = Schema.String.check(Schema.isLengthBetween(1, maximumIdentifierLength));
 const versionLabelPattern = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 const VersionLabel = Schema.Trim.check(
   Schema.isLengthBetween(1, maximumVersionLength),

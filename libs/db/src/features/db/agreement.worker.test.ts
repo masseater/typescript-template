@@ -43,14 +43,14 @@ const publishDraft = Effect.fn("publishDraft")(function* publishDraft(draft: {
   readonly sessionId: string;
   readonly version: string;
 }) {
-  const created = yield* createAgreementDraft({
+  const createdDraft = yield* createAgreementDraft({
     body: `${draft.version} body`,
     kind: draft.kind,
     sessionId: draft.sessionId,
     summary: undefined,
     version: draft.version,
   });
-  return yield* publishAgreementVersion({ id: created.id, sessionId: draft.sessionId });
+  return yield* publishAgreementVersion({ id: createdDraft.id, sessionId: draft.sessionId });
 });
 
 const acceptAllPending = Effect.fn("acceptAllPending")(function* acceptAllPending(userId: string) {
@@ -119,10 +119,10 @@ it.effect("records who accepted which version and when, then clears the pending 
         { at: acceptedAt.getTime(), kind: AGREEMENT_KIND.terms, version: "terms-1" },
       ],
     );
-    const rows = yield* query((database) =>
+    const storedAcceptances = yield* query((database) =>
       database.select().from(agreementAcceptance).where(eq(agreementAcceptance.userId, "member")),
     );
-    assert.strictEqual(rows.length, 3);
+    assert.strictEqual(storedAcceptances.length, 3);
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -199,33 +199,33 @@ it.effect("publishes once, records an audit event and refuses a second publicati
   Effect.gen(function* program() {
     yield* afterSeededAgreements();
     const sessionId = yield* adminSession("admin");
-    const created = yield* createAgreementDraft({
+    const createdDraft = yield* createAgreementDraft({
       body: "new terms",
       kind: AGREEMENT_KIND.terms,
       sessionId,
       summary: "  ",
       version: "terms-2",
     });
-    const published = yield* publishAgreementVersion({ id: created.id, sessionId });
+    const published = yield* publishAgreementVersion({ id: createdDraft.id, sessionId });
     assert.deepStrictEqual(published, {
-      id: created.id,
+      id: createdDraft.id,
       kind: AGREEMENT_KIND.terms,
       version: "terms-2",
     });
     const audits = yield* query((database) =>
-      database.select().from(auditEvent).where(eq(auditEvent.targetId, created.id)),
+      database.select().from(auditEvent).where(eq(auditEvent.targetId, createdDraft.id)),
     );
     assert.deepStrictEqual(
       audits.map(({ action, actorId }) => ({ action, actorId })),
       [{ action: AUDIT_ACTION.agreementPublished, actorId: "admin" }],
     );
     const [stored] = yield* query((database) =>
-      database.select().from(agreementVersion).where(eq(agreementVersion.id, created.id)),
+      database.select().from(agreementVersion).where(eq(agreementVersion.id, createdDraft.id)),
     );
     assert.strictEqual(stored?.publishedBy, "admin");
     assert.strictEqual(stored?.createdBy, "admin");
     assert.isNull(stored?.summary);
-    const again = yield* Effect.flip(publishAgreementVersion({ id: created.id, sessionId }));
+    const again = yield* Effect.flip(publishAgreementVersion({ id: createdDraft.id, sessionId }));
     assert.strictEqual(again._tag, "AgreementVersionUnavailable");
     assert.strictEqual((yield* publishedAgreement(AGREEMENT_KIND.terms))?.version, "terms-2");
   }).pipe(Effect.provide(TestDatabase)),

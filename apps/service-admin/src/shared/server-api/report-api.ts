@@ -55,14 +55,14 @@ const detail = Effect.fn("reports.detail")(function* detail(request: Request) {
 const suspend = Effect.fn("reports.suspend")(function* suspend(request: Request) {
   const sessionId = yield* sessionOf(request);
   const { id } = yield* readJsonBody(ReportAction, request);
-  yield* suspendTarget(sessionId, id, true);
+  yield* suspendTarget({ reportId: id, sessionId, suspended: true });
   return { ok: true as const };
 });
 
 const unsuspend = Effect.fn("reports.unsuspend")(function* unsuspend(request: Request) {
   const sessionId = yield* sessionOf(request);
   const { id } = yield* readJsonBody(ReportAction, request);
-  yield* suspendTarget(sessionId, id, false);
+  yield* suspendTarget({ reportId: id, sessionId, suspended: false });
   return { ok: true as const };
 });
 

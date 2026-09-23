@@ -1,4 +1,4 @@
-import { absent, apiDataOrNone } from "@repo/runtime/client";
+import { absent, apiDataOrNoneFor } from "@repo/runtime/client";
 
 import { userClient } from "#shared/api/index.ts";
 import { PublishedAgreementView } from "#shared/contracts/index.ts";
@@ -11,7 +11,7 @@ function loadPublishedAgreement(
   return Promise.resolve(userClient()).then(({ api }) =>
     api.agreements.published
       .get({ query: { kind } })
-      .then((response) => apiDataOrNone(PublishedAgreementView, response, absent.notFound)),
+      .then((response) => apiDataOrNoneFor(absent.notFound)(PublishedAgreementView, response)),
   );
 }
 

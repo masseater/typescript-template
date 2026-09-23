@@ -52,11 +52,11 @@ function memberMcpApp(auth: Parameters<typeof runWith>[0]): {
     Layer.orDie(
       Layer.merge(
         Layer.succeed(Auth, memberAuth),
-        appLayer(
-          appEnvironment({ APP_ORIGIN: memberOrigin, AUTH_SECRET: authTestSecret }),
-          APPLICATION.user,
+        appLayer({
+          audience: APPLICATION.user,
+          env: appEnvironment({ APP_ORIGIN: memberOrigin, AUTH_SECRET: authTestSecret }),
           routes,
-        ),
+        }),
       ),
     ),
   );
@@ -92,7 +92,7 @@ const toolText = (body: unknown): string => {
 };
 
 describe("member MCP authorization", () => {
-  const it = authTest();
+  const it = authTest;
 
   it("publishes OAuth discovery for the member MCP resource", ({ auth }) =>
     runWith(auth, () =>

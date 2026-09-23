@@ -78,7 +78,7 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
     database
       .select(memberColumns)
       .from(user)
-      .where(and(liveAdmin(database, sessionId, checkedAt), matchesPage(page)))
+      .where(and(liveAdmin(database, { checkedAt, sessionId }), matchesPage(page)))
       .orderBy(desc(user.createdAt), user.id)
       .limit(page.limit)
       .offset(page.offset),
@@ -88,7 +88,7 @@ export const listUsers = Effect.fn("listUsers")(function* listUsers(
     database
       .select({ count: count() })
       .from(user)
-      .where(and(liveAdmin(database, sessionId, checkedAt), matchesPage(page))),
+      .where(and(liveAdmin(database, { checkedAt, sessionId }), matchesPage(page))),
   );
   return { total: matching?.count ?? 0, users };
 });
@@ -104,10 +104,12 @@ const adminActor = (
 
 const adminEntry = (
   actor: Readonly<{ user: Readonly<{ id: string }> }>,
-  action: AuditEntry["action"],
-  targetId: string,
-  channel: AuditChannel = AUDIT_CHANNEL.ui,
-): AuditEntry => ({ ...adminActor(actor, action), channel, targetId });
+  targeting: Readonly<{ action: AuditEntry["action"]; channel: AuditChannel; targetId: string }>,
+): AuditEntry => ({
+  ...adminActor(actor, targeting.action),
+  channel: targeting.channel,
+  targetId: targeting.targetId,
+});
 
 export const getMember = Effect.fn("getMember")(function* getMember(
   sessionId: string,
@@ -123,7 +125,7 @@ export const getMember = Effect.fn("getMember")(function* getMember(
         and(
           eq(user.id, memberId),
           eq(user.role, ROLE.member),
-          liveAdmin(database, sessionId, checkedAt),
+          liveAdmin(database, { checkedAt, sessionId }),
         ),
       )
       .limit(1),
@@ -148,9 +150,16 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
       : AUDIT_ACTION.memberUnsuspended;
   const updatedAt = DateTime.toDate(yield* DateTime.now);
   const [, changedMembers] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.operator);
+    const live = liveAdmin(database, {
+      checkedAt: updatedAt,
+      required: ADMIN_PERMISSION.operator,
+      sessionId,
+    });
     const audit = database.run(
-      auditWhenTargeted(database, adminEntry(actor, action, memberId, channel), live),
+      auditWhenTargeted(database, {
+        actorIsLive: live,
+        entry: adminEntry(actor, { action, channel, targetId: memberId }),
+      }),
     );
     const transition = database
       .update(user)
@@ -166,21 +175,21 @@ export const setMemberState = Effect.fn("setMemberState")(function* setMemberSta
   return changed;
 });
 
-export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(
-  sessionId: string,
-  targetId: string,
-  channel: AuditChannel = AUDIT_CHANNEL.ui,
-) {
+export const deleteUser = Effect.fn("deleteUser")(function* deleteUser(removal: {
+  readonly channel?: AuditChannel;
+  readonly sessionId: string;
+  readonly targetId: string;
+}) {
+  const { channel = AUDIT_CHANNEL.ui, sessionId, targetId } = removal;
   const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.operator);
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [, removedUsers] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, checkedAt, ADMIN_PERMISSION.operator);
+    const live = liveAdmin(database, { checkedAt, required: ADMIN_PERMISSION.operator, sessionId });
     const audit = database.run(
-      auditWhenTargeted(
-        database,
-        adminEntry(actor, AUDIT_ACTION.userDeleted, targetId, channel),
-        live,
-      ),
+      auditWhenTargeted(database, {
+        actorIsLive: live,
+        entry: adminEntry(actor, { action: AUDIT_ACTION.userDeleted, channel, targetId }),
+      }),
     );
     const removal = database
       .delete(user)
@@ -215,7 +224,7 @@ export const listAdmins = Effect.fn("listAdmins")(function* listAdmins(sessionId
       .where(
         and(
           eq(user.role, ROLE.administrator),
-          liveAdmin(database, sessionId, checkedAt, ADMIN_PERMISSION.owner),
+          liveAdmin(database, { checkedAt, required: ADMIN_PERMISSION.owner, sessionId }),
         ),
       )
       .orderBy(desc(user.createdAt), user.id),
@@ -253,13 +262,20 @@ export const setAdminPermission = Effect.fn("setAdminPermission")(
     const actor = yield* requireAdmin(sessionId, ADMIN_PERMISSION.owner);
     const updatedAt = DateTime.toDate(yield* DateTime.now);
     const [, changedAdmins] = yield* query((database) => {
-      const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.owner);
+      const live = liveAdmin(database, {
+        checkedAt: updatedAt,
+        required: ADMIN_PERMISSION.owner,
+        sessionId,
+      });
       const audit = database.run(
-        auditWhenTargeted(
-          database,
-          adminEntry(actor, AUDIT_ACTION.adminPermissionChanged, adminId, channel),
-          live,
-        ),
+        auditWhenTargeted(database, {
+          actorIsLive: live,
+          entry: adminEntry(actor, {
+            action: AUDIT_ACTION.adminPermissionChanged,
+            channel,
+            targetId: adminId,
+          }),
+        }),
       );
       const transition = database
         .update(user)
@@ -287,15 +303,25 @@ export const setAdminState = Effect.fn("setAdminState")(function* setAdminState(
   if (actor.user.id === adminId) {
     return yield* new TargetUnavailable();
   }
-  const action =
-    accountState === ACCOUNT_STATE.suspended
-      ? AUDIT_ACTION.adminDisabled
-      : AUDIT_ACTION.adminEnabled;
   const updatedAt = DateTime.toDate(yield* DateTime.now);
   const [, changedAdmins] = yield* query((database) => {
-    const live = liveAdmin(database, sessionId, updatedAt, ADMIN_PERMISSION.owner);
+    const live = liveAdmin(database, {
+      checkedAt: updatedAt,
+      required: ADMIN_PERMISSION.owner,
+      sessionId,
+    });
     const audit = database.run(
-      auditWhenTargeted(database, adminEntry(actor, action, adminId, channel), live),
+      auditWhenTargeted(database, {
+        actorIsLive: live,
+        entry: adminEntry(actor, {
+          action:
+            accountState === ACCOUNT_STATE.suspended
+              ? AUDIT_ACTION.adminDisabled
+              : AUDIT_ACTION.adminEnabled,
+          channel,
+          targetId: adminId,
+        }),
+      }),
     );
     const transition = database
       .update(user)
@@ -332,4 +358,5 @@ export {
   suspendTarget,
   warnTarget,
 } from "./trust-admin.ts";
-export { TrustSubjectNotFound, TrustTargetUnavailable } from "./trust.ts";
+export { TrustSubjectNotFound } from "./trust-subject-not-found.ts";
+export { TrustTargetUnavailable } from "./trust-target-unavailable.ts";

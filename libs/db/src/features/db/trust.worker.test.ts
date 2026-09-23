@@ -28,59 +28,56 @@ it.effect("shows an administrator only the reported message, then records a susp
       userId: "operator",
     });
     yield* query((database) =>
-      database
-        .insert(conversation)
-        .values({
-          directKey: "author:reporter",
-          id: "thread",
-          kind: CONVERSATION_KIND.direct,
-          lastMessageAt: recordedAt,
-        })
-        .then(() =>
-          database.insert(conversationParticipant).values([
-            {
-              conversationId: "thread",
-              id: "part-reporter",
-              joinedAt: recordedAt,
-              memberId: "reporter",
-              memberName: "reporter",
-            },
-            {
-              conversationId: "thread",
-              id: "part-author",
-              joinedAt: recordedAt,
-              memberId: "author",
-              memberName: "author",
-            },
-          ]),
-        )
-        .then(() =>
-          database.insert(directMessage).values([
-            {
-              body: secret,
-              conversationId: "thread",
-              createdAt: recordedAt,
-              id: "secret-message",
-              senderId: "author",
-              senderName: "author",
-            },
-            {
-              body: reported,
-              conversationId: "thread",
-              createdAt: DateTime.toDate(DateTime.makeUnsafe(recordedAt.getTime() + 1)),
-              id: "reported-message",
-              senderId: "author",
-              senderName: "author",
-            },
-          ]),
-        )
-        .then(() => undefined),
+      database.insert(conversation).values({
+        directKey: "author:reporter",
+        id: "thread",
+        kind: CONVERSATION_KIND.direct,
+        lastMessageAt: recordedAt,
+      }),
     );
-    const filed = yield* fileReport(
-      "reporter",
-      { id: "reported-message", kind: REPORT_SUBJECT.message },
-      REPORT_REASON.harassment,
+    yield* query((database) =>
+      database.insert(conversationParticipant).values([
+        {
+          conversationId: "thread",
+          id: "part-reporter",
+          joinedAt: recordedAt,
+          memberId: "reporter",
+          memberName: "reporter",
+        },
+        {
+          conversationId: "thread",
+          id: "part-author",
+          joinedAt: recordedAt,
+          memberId: "author",
+          memberName: "author",
+        },
+      ]),
     );
+    yield* query((database) =>
+      database.insert(directMessage).values([
+        {
+          body: secret,
+          conversationId: "thread",
+          createdAt: recordedAt,
+          id: "secret-message",
+          senderId: "author",
+          senderName: "author",
+        },
+        {
+          body: reported,
+          conversationId: "thread",
+          createdAt: DateTime.toDate(DateTime.makeUnsafe(recordedAt.getTime() + 1)),
+          id: "reported-message",
+          senderId: "author",
+          senderName: "author",
+        },
+      ]),
+    );
+    const filed = yield* fileReport({
+      reason: REPORT_REASON.harassment,
+      reporterId: "reporter",
+      subject: { id: "reported-message", kind: REPORT_SUBJECT.message },
+    });
     const listed = yield* listReports(sessionId, { limit: 20, offset: 0 });
     const detail = yield* readReport(sessionId, filed.id);
     const visible = yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
@@ -91,7 +88,7 @@ it.effect("shows an administrator only the reported message, then records a susp
     assert.strictEqual(detail.status, REPORT_STATUS.open);
     assert.notInclude(visible, secret);
     assert.strictEqual(listed.reports.length, 1);
-    yield* suspendTarget(sessionId, filed.id, true);
+    yield* suspendTarget({ reportId: filed.id, sessionId, suspended: true });
     const [suspended] = yield* query((database) =>
       database.select({ accountState: user.accountState }).from(user).where(eq(user.id, "author")),
     );
