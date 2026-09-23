@@ -86,14 +86,14 @@ describe("a wiki worker whose database has not been migrated", () => {
   );
 });
 
-describe("a wiki worker without FLAGS", () => {
+describe("a deployed wiki worker without FLAGS", () => {
   it.effect("refuses to start instead of falling back to memory flags", () =>
     Effect.gen(function* program() {
       const logs = recordingSink();
-      const response = yield* servedUnavailable(() => wikiLayer(appEnvironment(), validRoutes), {
-        log: logs.sink,
-        service: wikiService,
-      });
+      const response = yield* servedUnavailable(
+        () => wikiLayer(appEnvironment({ APP_ORIGIN: "https://wiki.example.test" }), validRoutes),
+        { log: logs.sink, service: wikiService },
+      );
       assert.strictEqual(response.status, httpStatus.serviceUnavailable);
       const reported = yield* Schema.decodeUnknownEffect(ReportedLog)(logs.stderr[0]).pipe(
         Effect.orDie,

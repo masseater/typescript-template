@@ -1,5 +1,6 @@
 import { FlagshipServerProvider, type FlagshipBinding } from "@cloudflare/flagship/server";
 import { OpenFeature, TypedInMemoryProvider } from "@openfeature/server-sdk";
+import { ConfigurationInvalid } from "@repo/config";
 import { Context, Effect, Layer, Ref } from "effect";
 
 import {
@@ -134,4 +135,20 @@ const flagshipFeatureFlagsLayer = (binding: FlagshipBinding): Layer.Layer<Featur
     ),
   );
 
-export { FeatureFlags, flagshipFeatureFlagsLayer, memoryFeatureFlagsLayer };
+const configuredFeatureFlagsLayer = (
+  config: Readonly<{ FLAGS?: FlagshipBinding; local: boolean }>,
+): Effect.Effect<Layer.Layer<FeatureFlags>, ConfigurationInvalid> => {
+  if (config.FLAGS !== undefined) {
+    return Effect.succeed(flagshipFeatureFlagsLayer(config.FLAGS));
+  }
+  return config.local
+    ? Effect.succeed(memoryFeatureFlagsLayer)
+    : Effect.fail(new ConfigurationInvalid({ reason: "FLAGS" }));
+};
+
+export {
+  configuredFeatureFlagsLayer,
+  FeatureFlags,
+  flagshipFeatureFlagsLayer,
+  memoryFeatureFlagsLayer,
+};

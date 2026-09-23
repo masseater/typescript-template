@@ -14,6 +14,7 @@ import {
   FLAG_KEY,
   FlagEditorAccess,
   allowAllEditors,
+  configuredFeatureFlagsLayer,
   flagshipFeatureFlagsLayer,
   memoryFeatureFlagsLayer,
 } from "./index.ts";
@@ -168,5 +169,23 @@ describe("flagshipFeatureFlagsLayer", () => {
         } as FlagshipBinding),
       ),
     ),
+  );
+});
+
+describe("configuredFeatureFlagsLayer", () => {
+  it.effect("refuses to run without Flagship outside local development", () =>
+    Effect.gen(function* refuseMissingFlagship() {
+      const invalid = yield* configuredFeatureFlagsLayer({ local: false }).pipe(Effect.flip);
+      assert.strictEqual(invalid.reason, "FLAGS");
+    }),
+  );
+
+  it.effect("serves definition defaults from memory in local development", () =>
+    Effect.gen(function* localDefaults() {
+      const layer = yield* configuredFeatureFlagsLayer({ local: true });
+      const featureFlags = yield* FeatureFlags.pipe(Effect.provide(layer));
+      const evaluation = yield* featureFlags.evaluateBoolean(FLAG_KEY.memberBoard);
+      assert.strictEqual(evaluation.kind, FLAG_EVALUATION_KIND.evaluated);
+    }),
   );
 });

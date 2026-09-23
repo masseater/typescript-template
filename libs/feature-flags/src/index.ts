@@ -18,6 +18,7 @@ export { requireFlagEditor } from "./require-flag-editor.ts";
 export {
   FeatureFlags,
   flagshipFeatureFlagsLayer,
+  configuredFeatureFlagsLayer,
   memoryFeatureFlagsLayer,
   type FlagState,
 } from "./service.ts";

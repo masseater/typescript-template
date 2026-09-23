@@ -1,5 +1,5 @@
-import { APPLICATION, ConfigurationInvalid } from "@repo/config";
-import { flagshipFeatureFlagsLayer } from "@repo/feature-flags";
+import { APPLICATION } from "@repo/config";
+import { configuredFeatureFlagsLayer } from "@repo/feature-flags";
 import { appLayer, readWorkerConfig } from "@repo/runtime/bindings";
 import { workerRuntime } from "@repo/runtime/worker";
 import { env } from "cloudflare:workers";
@@ -18,14 +18,11 @@ const runtime = workerRuntime(() =>
     appLayer(env, service, routes),
     Layer.unwrap(
       readWorkerConfig(env).pipe(
-        Effect.flatMap((config) => {
-          if (config.FLAGS === undefined) {
-            return Effect.fail(new ConfigurationInvalid({ reason: "FLAGS" }));
-          }
-          return Effect.succeed(
-            Layer.mergeAll(opsMailLayer(config), flagshipFeatureFlagsLayer(config.FLAGS)),
-          );
-        }),
+        Effect.flatMap((config) =>
+          configuredFeatureFlagsLayer(config).pipe(
+            Effect.map((flags) => Layer.mergeAll(opsMailLayer(config), flags)),
+          ),
+        ),
       ),
     ),
     Interviewer.fromEnvironment(env),
