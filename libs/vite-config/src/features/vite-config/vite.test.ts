@@ -136,31 +136,26 @@ describe("paraglideAppRun", () => {
     expect(localizedApplicationRun).toStrictEqual({
       tasks: {
         ...appRun.tasks,
-        "compile:paraglide": {
-          command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-          input: [
-            ...taskInput,
-            "messages/**",
-            "project.inlang/**",
-            { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-            {
-              base: "workspace",
-              pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-            },
-          ],
-          output: [".paraglide/**"],
-        },
         "check:effect": {
           ...awaitingEffectDiagnostics["check:effect"],
-          dependsOn: ["compile:paraglide"],
+          dependsOn: ["typescript-template#compile:paraglide"],
         },
-        "check:code": { ...checkCode["check:code"], dependsOn: ["compile:paraglide"] },
+        "check:code": {
+          ...checkCode["check:code"],
+          dependsOn: ["typescript-template#compile:paraglide"],
+        },
         "check:imports": {
           ...workspaceCheckImports["check:imports"],
-          dependsOn: ["compile:paraglide"],
+          dependsOn: ["typescript-template#compile:paraglide"],
         },
-        "check:client": { ...appRun.tasks["check:client"], dependsOn: ["compile:paraglide"] },
-        "check:react": { ...appRun.tasks["check:react"], dependsOn: ["compile:paraglide"] },
+        "check:client": {
+          ...appRun.tasks["check:client"],
+          dependsOn: ["typescript-template#compile:paraglide"],
+        },
+        "check:react": {
+          ...appRun.tasks["check:react"],
+          dependsOn: ["typescript-template#compile:paraglide"],
+        },
       },
     });
   });

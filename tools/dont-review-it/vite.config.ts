@@ -12,6 +12,11 @@ import {
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
+import {
+  isolatedNodeTestSuffix,
+  isolatedNodeTests,
+} from "./src/features/dont-review-it/repository/test-runtime.ts";
+
 export default defineConfig({
   run: {
     tasks: {
@@ -20,7 +25,13 @@ export default defineConfig({
       ...workspaceCheckImports,
       ...modularBoundaries,
       ...intentValidation,
-      ...testRun,
+      test: {
+        ...testRun.test,
+        command: [
+          `vp test run --isolate=false --exclude '${isolatedNodeTests}'`,
+          `vp test run ${isolatedNodeTestSuffix}`,
+        ],
+      },
       "check:staged": {
         cache: false,
         command: "./src/features/dont-review-it/repository/check-staged.ts",

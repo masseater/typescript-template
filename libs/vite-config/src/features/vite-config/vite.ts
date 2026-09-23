@@ -282,37 +282,20 @@ const workspaceParaglideCompile = {
     { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
     {
       base: "workspace",
-      pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-    },
-    {
-      base: "workspace",
       pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
     },
   ],
   output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
 } satisfies NonNullable<Tasks[string]>;
 
-const paraglideCompileInputs = [
-  ...taskInput,
-  "messages/**",
-  "project.inlang/**",
-  { base: "workspace", pattern: "libs/vite-config/src/paraglide-options.ts" },
-  { base: "workspace", pattern: "libs/vite-config/src/features/vite-config/compile-paraglide.ts" },
-] as const;
-
 const paraglideAppRun = {
   tasks: {
     ...appRun.tasks,
-    "compile:paraglide": {
-      command: "../../libs/vite-config/src/features/vite-config/compile-paraglide.ts",
-      input: [...paraglideCompileInputs],
-      output: [".paraglide/**"],
-    },
     ...Object.fromEntries(
       (["check:effect", "check:code", "check:imports", "check:client", "check:react"] as const).map(
         (gatedTask) => [
           gatedTask,
-          { ...appRun.tasks[gatedTask], dependsOn: ["compile:paraglide"] },
+          { ...appRun.tasks[gatedTask], dependsOn: ["typescript-template#compile:paraglide"] },
         ],
       ),
     ),
