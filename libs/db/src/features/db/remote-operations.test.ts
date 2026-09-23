@@ -1,7 +1,5 @@
-import { DatabaseSync } from "node:sqlite";
-
 import { NodeServices } from "@effect/platform-node";
-import { EmptyTestDatabase, TestBinding, runStatement } from "@repo/db-local";
+import { EmptyTestDatabase, TestBinding, deployMigrations, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { DateTime, Effect, FileSystem, Layer, Path } from "effect";
@@ -10,7 +8,6 @@ import { describe, expect, test } from "vite-plus/test";
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
 import { query } from "./database.ts";
 import {
-  APPLICATION_TABLES,
   RemoteFailure,
   bootstrapDatabase,
   loadRemoteMigrations,
@@ -190,31 +187,6 @@ describe("migrateD1", () => {
   });
 });
 
-describe("the application tables of a database holding Cloudflare and migration tables", () => {
-  const it = test.extend("applicationTables", () => {
-    const storage = new DatabaseSync(":memory:");
-    for (const tableName of [
-      "__drizzle_migrations",
-      "_cf_KV",
-      "_cf_METADATA",
-      "acfxtable",
-      "cf_users",
-      "d1_migrations",
-      "sqlitex_thing",
-      "user",
-    ]) {
-      storage.exec(`CREATE TABLE "${tableName}" (id TEXT)`);
-    }
-    const listed = storage.prepare(APPLICATION_TABLES).all();
-    storage.close();
-    return listed.map((listedTable) => String(Object.values(listedTable)[0]));
-  });
-
-  it("leave out the Cloudflare and migration tables", ({ applicationTables }) => {
-    expect(applicationTables).toStrictEqual(["acfxtable", "cf_users", "sqlitex_thing", "user"]);
-  });
-});
-
 describe("bootstrapDatabase", () => {
   describe.for([
     ["an unverified user", "unverified@example.test"],
@@ -226,7 +198,7 @@ describe("bootstrapDatabase", () => {
         Effect.gen(function* bootstrapOther() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
-          yield* migrateD1(binding);
+          yield* deployMigrations(binding);
           yield* query((database) =>
             database
               .insert(user)
@@ -264,7 +236,7 @@ describe("bootstrapDatabase", () => {
         Effect.gen(function* promoteFirst() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
-          yield* migrateD1(binding);
+          yield* deployMigrations(binding);
           const createdAt = wallDate();
           yield* query((database) =>
             database
@@ -312,7 +284,7 @@ describe("bootstrapDatabase", () => {
         Effect.gen(function* bootstrapAgain() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
-          yield* migrateD1(binding);
+          yield* deployMigrations(binding);
           yield* query((database) =>
             database
               .insert(user)
@@ -348,7 +320,7 @@ describe("the last administrator guard of the migrated database", () => {
         Effect.gen(function* removeLast() {
           const binding = yield* TestBinding;
           const database = drizzle(binding);
-          yield* migrateD1(binding);
+          yield* deployMigrations(binding);
           yield* query((database) =>
             database
               .insert(user)

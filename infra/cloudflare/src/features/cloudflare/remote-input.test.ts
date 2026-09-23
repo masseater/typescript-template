@@ -8,32 +8,39 @@ const d1Target = {
   accountId: "a".repeat(32),
   databaseId: "11111111-1111-4111-8111-111111111111",
 };
+const bootstrapTarget = { ...d1Target, email: "private@example.test" };
 
 describe("parseRemoteInput", () => {
   describe.for([
-    ["an operation without a mode", ["migrate"], d1Target, "REMOTE_COMMAND_INVALID"],
+    ["an operation without a mode", ["bootstrap"], bootstrapTarget, "REMOTE_COMMAND_INVALID"],
     [
-      "a plan followed by a surplus argument",
-      ["migrate", "--plan", "extra"],
+      "an operation the deployment now applies itself",
+      ["migrate", "--plan"],
       d1Target,
       "REMOTE_COMMAND_INVALID",
     ],
     [
+      "a plan followed by a surplus argument",
+      ["bootstrap", "--plan", "extra"],
+      bootstrapTarget,
+      "REMOTE_COMMAND_INVALID",
+    ],
+    [
       "an execution without an API token",
-      ["migrate", "--execute", "--confirm-database", d1Target.databaseId],
-      d1Target,
+      ["bootstrap", "--execute", "--confirm-database", d1Target.databaseId],
+      bootstrapTarget,
       "REMOTE_INPUT_INVALID",
     ],
     [
       "an execution confirming another database",
-      ["migrate", "--execute", "--confirm-database", "wrong"],
-      { ...d1Target, apiToken: "test-token-at-least-20-characters" },
+      ["bootstrap", "--execute", "--confirm-database", "wrong"],
+      { ...bootstrapTarget, apiToken: "test-token-at-least-20-characters" },
       "REMOTE_TARGET_MISMATCH",
     ],
     [
       "a placeholder database",
-      ["migrate", "--plan"],
-      { ...d1Target, databaseId: "00000000-0000-0000-0000-000000000001" },
+      ["bootstrap", "--plan"],
+      { ...bootstrapTarget, databaseId: "00000000-0000-0000-0000-000000000001" },
       "REMOTE_INPUT_INVALID",
     ],
     ["a bootstrap without an email", ["bootstrap", "--plan"], d1Target, "REMOTE_INPUT_INVALID"],
@@ -54,10 +61,14 @@ describe("parseRemoteInput", () => {
 
   describe("a plan for a real database", () => {
     const it = test.extend("remoteInput", () =>
-      Effect.runPromise(parseRemoteInput(["migrate", "--plan"], d1Target)));
+      Effect.runPromise(parseRemoteInput(["bootstrap", "--plan"], bootstrapTarget)));
 
     it("is accepted as a plan that executes nothing", ({ remoteInput }) => {
-      expect(remoteInput).toStrictEqual({ execute: false, operation: "migrate", target: d1Target });
+      expect(remoteInput).toStrictEqual({
+        execute: false,
+        operation: "bootstrap",
+        target: bootstrapTarget,
+      });
     });
   });
 });

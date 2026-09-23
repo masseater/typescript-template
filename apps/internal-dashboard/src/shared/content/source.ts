@@ -5,6 +5,7 @@ import { defineDocs } from "fumadocs-mdx/macro";
 import { SourceMapGenerator } from "source-map";
 
 import { processedMarkdown } from "./mermaid-markdown.ts";
+import { remarkMermaidSvg } from "./remark-mermaid-svg.ts";
 import { remarkWikiTerm } from "./remark-wiki-term.ts";
 import { WIKI_DOCS_BASE_URL } from "./resolve-wiki-doc-href.ts";
 
@@ -13,7 +14,7 @@ const docs = defineDocs({
   docs: {
     mdxOptions: applyMdxPreset({
       SourceMapGenerator,
-      remarkPlugins: [remarkMdxMermaid, remarkWikiTerm],
+      remarkPlugins: [remarkMdxMermaid, remarkMermaidSvg, remarkWikiTerm],
     }),
     postprocess: { includeProcessedMarkdown: processedMarkdown },
   },
