@@ -5,13 +5,13 @@
   "tsx": true,
   "tailwind": {
     "config": "",
-    "css": "src/styles.css",
+    "css": "src/features/ui/styles.css",
     "baseColor": "neutral",
     "cssVariables": true
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "ui": "./src/shared/ui",
+    "ui": "./src/features/ui/shared/ui",
     "utils": "cn"
   }
 }
