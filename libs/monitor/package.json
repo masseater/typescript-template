@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./vite": "./src/vite.ts",
-    "./workers": "./src/workers.ts"
+    ".": "./src/features/monitor/index.ts",
+    "./vite": "./src/features/monitor/vite.ts",
+    "./workers": "./src/features/monitor/workers.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

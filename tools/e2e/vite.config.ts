@@ -1,17 +1,18 @@
 import { MergifyReporter } from "@mergifyio/vitest";
-import { effectDiagnostics, lifecycle } from "@repo/vite-config";
+import { effectDiagnostics, lifecycle, modularBoundaries } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...modularBoundaries,
       "test:e2e": {
         cache: false,
         command: "vp test run",
         dependsOn: ["@repo/dev#setup"],
       },
-      ...lifecycle({ prepush: ["check:effect"] }),
+      ...lifecycle({ prepush: ["check:effect", "check:modular"] }),
     },
   },
   test: {
@@ -21,7 +22,7 @@ export default defineConfig({
     },
     fileParallelism: false,
     hookTimeout: 900_000,
-    include: ["src/**/*.test.ts"],
+    include: ["src/features/e2e/**/*.test.ts"],
     maxWorkers: 1,
     mockReset: true,
     pool: "forks",

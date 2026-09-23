@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./definitions": "./src/definitions.ts"
+    ".": "./src/features/feature-flags/index.ts",
+    "./definitions": "./src/features/feature-flags/definitions.ts"
   },
   "dependencies": {
     "@cloudflare/flagship": "catalog:",

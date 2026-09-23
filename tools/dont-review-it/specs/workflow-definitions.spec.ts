@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { runChecks } from "../src/run-checks.ts";
+import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
 
 const WORKFLOW_PATH = ".github/workflows/ci.yml";
 

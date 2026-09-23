@@ -4,9 +4,9 @@ import { dirname, join } from "node:path";
 
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
-import { defaultIntentSkillsConfig } from "../src/intent-skills/config.ts";
-import { writeSkillVersions } from "../src/intent-skills/write-skill-versions.ts";
-import { runChecks } from "../src/run-checks.ts";
+import { defaultIntentSkillsConfig } from "../src/features/dont-review-it/intent-skills/config.ts";
+import { writeSkillVersions } from "../src/features/dont-review-it/intent-skills/write-skill-versions.ts";
+import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
 
 const MANIFEST_PATH = "packages/versioned/package.json";
 

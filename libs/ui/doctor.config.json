@@ -12,12 +12,12 @@
     "overrides": [
       {
         "files": [
-          "src/shared/ui/button-link.tsx",
-          "src/shared/ui/card-link.tsx",
-          "src/shared/ui/dropdown-menu-link-item.tsx",
-          "src/shared/ui/navigation-link.tsx",
-          "src/shared/ui/pagination-link.tsx",
-          "src/shared/ui/text-link.tsx"
+          "src/features/ui/shared/ui/button-link.tsx",
+          "src/features/ui/shared/ui/card-link.tsx",
+          "src/features/ui/shared/ui/dropdown-menu-link-item.tsx",
+          "src/features/ui/shared/ui/navigation-link.tsx",
+          "src/features/ui/shared/ui/pagination-link.tsx",
+          "src/features/ui/shared/ui/text-link.tsx"
         ],
         "rules": ["react-doctor/jsx-props-no-spreading"]
       }
