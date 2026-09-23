@@ -120,13 +120,16 @@ const readWorkerConfig = Effect.fn("readWorkerConfig")(function* readWorkerConfi
     return yield* new ConfigurationInvalid({ reason: "An email delivery binding is required" });
   }
   const flags = Reflect.get(env, "FLAGS");
+  if (flags !== undefined && !isFlagship(flags)) {
+    return yield* new ConfigurationInvalid({ reason: "FLAGS" });
+  }
   const config: WorkerAppConfig = {
     ...scalars,
     AI: loaded.AI,
     ASSETS: loaded.ASSETS,
     DB: loaded.DB,
     ...(loaded.EMAIL === undefined ? {} : { EMAIL: loaded.EMAIL }),
-    ...(isFlagship(flags) ? { FLAGS: flags } : {}),
+    ...(flags === undefined ? {} : { FLAGS: flags }),
   };
   return config;
 });
