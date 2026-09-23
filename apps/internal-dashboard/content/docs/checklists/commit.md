@@ -20,11 +20,11 @@ description: 予算か人を割くと決めてから、範囲と期限と予算�
 
 ## 日程
 
-- 公開日を決め、そこから逆算した節目を GitHub の milestone にします。
+- 公開日を決め、そこから逆算した節目を [GitHub の milestone](https://docs.github.com/ja/issues/using-labels-and-milestones-to-track-work/about-milestones) にします。
 
 ## 資金
 
-- 固定費と変動費を見積もり、月の予算と予備費を決めます。予算は GitHub Environment に入れ、超えそうなときは予算監視が警告します。入れるキーは [使い始める手順](/getting-started/first-steps) の 3. にあります。
+- 固定費と変動費を見積もり、月の予算と予備費を決めます。予算は [GitHub Environment](https://docs.github.com/ja/actions/deployment/targeting-different-environments/using-environments-for-deployment) に入れ、超えそうなときは予算監視が警告します。入れるキーは [使い始める手順](/getting-started/first-steps) の 3. にあります。
 - 収益の見込みと、赤字を続けてよい期間を決めます。
 
 ## 関係者
