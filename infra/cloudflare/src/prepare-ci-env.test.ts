@@ -8,7 +8,7 @@ import {
 } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 
-import { writeCiSecretsFile } from "./ci-env.ts";
+import { writeCiSecretsFile, writeConfiguredOutput } from "./ci-env.ts";
 import { layer, path } from "./platform.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";
 
@@ -66,6 +66,30 @@ it.effect("reports unconfigured when every deployment key is absent", () =>
       RUNNER_TEMP: path.join(directory, "runner"),
     });
     assert.strictEqual(preparation.status, "unconfigured");
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses when GitHub output is missing", () =>
+  Effect.gen(function* program() {
+    const failure = yield* writeConfiguredOutput({}, true).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "ci_env_output_missing");
+  }),
+);
+
+it.effect("writes configured=true into GitHub output", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const githubOutput = path.join(directory, "github.output");
+    yield* Effect.gen(function* seedOutput() {
+      const filesystem = yield* FileSystem.FileSystem;
+      yield* filesystem.writeFileString(githubOutput, "");
+    }).pipe(Effect.orDie, Effect.provide(layer));
+    yield* writeConfiguredOutput({ GITHUB_OUTPUT: githubOutput }, true);
+    const contents = yield* Effect.gen(function* readOutput() {
+      const filesystem = yield* FileSystem.FileSystem;
+      return yield* filesystem.readFileString(githubOutput);
+    }).pipe(Effect.orDie, Effect.provide(layer));
+    assert.include(contents, "configured=true");
   }).pipe(Effect.scoped),
 );
 

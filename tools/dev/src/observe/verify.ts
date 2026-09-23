@@ -107,7 +107,7 @@ const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<UR
     Effect.provide(FetchHttpClient.layer),
     Effect.mapError(() => fail("request_failed")),
   );
-  yield* response.arrayBuffer.pipe(Effect.ignore);
+  yield* response.arrayBuffer.pipe(Effect.mapError(() => fail("request_failed")));
   const requestId = response.headers["x-request-id"] ?? "";
   if (requestId === "" || response.status >= httpStatus.internalServerError) {
     return yield* fail("correlation_headers_missing");
