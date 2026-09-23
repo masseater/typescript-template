@@ -52,7 +52,10 @@ No rule of this repository declares this document as its grounds. What the off-t
 
 ## [.claude/skills/reviews/references/frontend.md](../.claude/skills/reviews/references/frontend.md)
 
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+| Rule | Description |
+| --- | --- |
+| [no-hand-rolled-server-read--use-tanstack-query](../tools/dont-review-it/docs/lint/no-hand-rolled-server-read--use-tanstack-query.md) | Disallow combining useState with fetch for server data after the TanStack Query migration |
+| [require-query-options-in-api-segment--move-query-options-to-api](../tools/dont-review-it/docs/lint/require-query-options-in-api-segment--move-query-options-to-api.md) | Require queryOptions, infiniteQueryOptions, and mutationOptions factories to live in an FSD api segment |
 
 ## [.claude/skills/reviews/references/infrastructure.md](../.claude/skills/reviews/references/infrastructure.md)
 
@@ -209,12 +212,5 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-version-range--pin-the-exact-version](../tools/dont-review-it/docs/lint/no-version-range--pin-the-exact-version.md) | Disallow every dependency version that matches more than one release, in workspace manifests and in the catalog alike, so the release a workspace installs is decided by the declaration instead of by the moment the install ran |
 | [require-catalog-entry--register-shared-dependency](../tools/dont-review-it/docs/lint/require-catalog-entry--register-shared-dependency.md) | Require every package that more than one workspace declares to be registered in the catalog, so the version they resolve to is decided in one place instead of workspace by workspace |
 | [require-spec-directory-outside-coverage--exclude-it-from-the-measurement](../tools/dont-review-it/docs/lint/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.md) | Require the test config to keep the specification directory out of the coverage measurement, so the number a run reports is what the tests beside the sources reached rather than what the specifications happened to touch |
-
-## [apps/internal-dashboard/content/docs/plans/modernization.md](../apps/internal-dashboard/content/docs/plans/modernization.md)
-
-| Rule | Description |
-| --- | --- |
-| [no-hand-rolled-server-read--use-tanstack-query](../tools/dont-review-it/docs/lint/no-hand-rolled-server-read--use-tanstack-query.md) | Disallow combining useState with fetch for server data after the TanStack Query migration |
-| [require-query-options-in-api-segment--move-query-options-to-api](../tools/dont-review-it/docs/lint/require-query-options-in-api-segment--move-query-options-to-api.md) | Require queryOptions, infiniteQueryOptions, and mutationOptions factories to live in an FSD api segment |
 
 <!-- END GENERATED rules-by-guideline -->

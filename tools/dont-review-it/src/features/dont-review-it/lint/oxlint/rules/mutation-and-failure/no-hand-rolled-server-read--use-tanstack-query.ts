@@ -20,7 +20,7 @@ export const noHandRolledServerRead = createDontReviewItRule({
     docs: {
       description:
         "Disallow combining useState with fetch for server data after the TanStack Query migration",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/plans/modernization.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/frontend.md"],
     },
     messages: {
       handRolledServerRead:
