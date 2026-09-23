@@ -94,7 +94,7 @@ export const noHandmadeStandardIoDouble = createDontReviewItRule({
     docs: {
       description:
         "Disallow a spec that assembles its own stdout or stderr test double, so stream capture is solved once by the shared `standardIoTest` fixture",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
     },
     messages: {
       ownFixture:

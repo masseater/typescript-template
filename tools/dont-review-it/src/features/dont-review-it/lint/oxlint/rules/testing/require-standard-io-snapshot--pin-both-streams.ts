@@ -123,7 +123,7 @@ export const requireStandardIoSnapshot = createDontReviewItRule({
     docs: {
       description:
         "Require a spec that derives tests from `standardIoTest` to pin both captured streams with a snapshot, so every change to what the command prints surfaces as a diff",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/tests.md"],
     },
     messages: {
       missingSnapshot:

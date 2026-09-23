@@ -127,7 +127,7 @@ export const noUnorderedImport = createDontReviewItRule({
     docs: {
       description:
         "Disallow an import list whose order does not follow origin then specifier, so what a file depends on is read off the block boundaries instead of every specifier",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
     },
     messages: {
       originOutOfOrder:

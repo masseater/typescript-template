@@ -13,7 +13,7 @@ Disallow a lint configuration naming a rule of a plugin that no plugin list it c
 - Suggestions: no
 - Options: yes
 - Bundle: `governance`
-- Source: [`no-unregistered-rule-plugin--enable-the-plugin.ts`](../../src/lint/oxlint/rules/governance/no-unregistered-rule-plugin--enable-the-plugin.ts)
+- Source: [`no-unregistered-rule-plugin--enable-the-plugin.ts`](../../src/features/dont-review-it/lint/oxlint/rules/governance/no-unregistered-rule-plugin--enable-the-plugin.ts)
 
 <!-- END GENERATED rule-header -->
 

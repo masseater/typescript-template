@@ -13,7 +13,7 @@ Require every file under a directory named for specs to be a spec or the test da
 - Suggestions: no
 - Options: yes
 - Shipped in the preset: no
-- Source: [`require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts`](../../src/lint/oxlint/rules/require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts)
+- Source: [`require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts`](../../src/features/dont-review-it/lint/oxlint/rules/require-spec-or-assets-only-in-spec-directory--move-out-or-inline.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -36,6 +36,7 @@ Code this rule rejects.
 ```ts
 // a file that is neither a spec nor test data is reported against the workspace holding it
 export const held = true;
+
 ```
 
 <!-- END GENERATED examples -->

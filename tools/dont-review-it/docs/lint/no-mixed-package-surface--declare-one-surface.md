@@ -13,7 +13,7 @@ Require a package to declare either the surface it is run through or the surface
 - Suggestions: no
 - Options: yes
 - Shipped in the preset: no
-- Source: [`no-mixed-package-surface--declare-one-surface.ts`](../../src/lint/oxlint/rules/no-mixed-package-surface--declare-one-surface.ts)
+- Source: [`no-mixed-package-surface--declare-one-surface.ts`](../../src/features/dont-review-it/lint/oxlint/rules/no-mixed-package-surface--declare-one-surface.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -34,6 +34,7 @@ Code this rule rejects.
 ```ts
 // a manifest that declares a runnable entry and an import surface carries both
 export const shipped = true;
+
 ```
 
 <!-- END GENERATED examples -->

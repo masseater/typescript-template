@@ -13,7 +13,7 @@ Disallow an external snapshot whose recorded value fits within the shared inline
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-undersized-external-snapshot--use-inline-snapshot.ts`](../../src/lint/oxlint/rules/testing/no-undersized-external-snapshot--use-inline-snapshot.ts)
+- Source: [`no-undersized-external-snapshot--use-inline-snapshot.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-undersized-external-snapshot--use-inline-snapshot.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -58,7 +58,7 @@ Code this rule accepts.
 // a record past the budget is already in the right place
 describe("outer", () => {
   it("names a behaviour", () => {
-    expect(subject).toMatchSnapshot();
+expect(subject).toMatchSnapshot();
   });
 });
 ```
@@ -67,7 +67,7 @@ describe("outer", () => {
 // an inline record is the other rule's subject
 describe("outer", () => {
   it("names a behaviour", () => {
-    expect(subject).toMatchInlineSnapshot(`"alpha"`);
+expect(subject).toMatchInlineSnapshot(`"alpha"`);
   });
 });
 ```
