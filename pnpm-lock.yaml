@@ -760,9 +760,6 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db
-      '@repo/feature-flags':
-        specifier: workspace:*
-        version: link:../../libs/feature-flags
       '@repo/infra-cloudflare':
         specifier: workspace:*
         version: link:../../infra/cloudflare
@@ -1347,9 +1344,6 @@ importers:
       '@repo/vite-config':
         specifier: workspace:*
         version: link:../vite-config
-      msw:
-        specifier: 'catalog:'
-        version: 2.15.0(@types/node@26.6.1)(typescript@7.0.2)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

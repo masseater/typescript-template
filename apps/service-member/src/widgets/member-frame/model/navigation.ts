@@ -26,7 +26,7 @@ type MemberNavItem = Readonly<
     }
 >;
 
-function memberNavItems(memberBoard: boolean, profileId: string): readonly MemberNavItem[] {
+function memberNavItems(profileId: string): readonly MemberNavItem[] {
   return [
     { icon: HomeIcon, id: "home", label: m.nav_home(), to: "/home" },
     {
@@ -36,16 +36,7 @@ function memberNavItems(memberBoard: boolean, profileId: string): readonly Membe
       params: { id: profileId },
       to: "/users/$id",
     },
-    ...(memberBoard
-      ? [
-          {
-            icon: SquareStackIcon,
-            id: "board",
-            label: m.nav_board(),
-            to: "/board",
-          } satisfies MemberNavItem,
-        ]
-      : []),
+    { icon: SquareStackIcon, id: "board", label: m.nav_board(), to: "/board" },
   ];
 }
 

@@ -1,7 +1,3 @@
-/** @canonical-values feature-flag.key */
-export const flagKeys = ["member-board"] as const;
-export const FLAG_KEY = { memberBoard: flagKeys[0] } as const;
-
 /** @canonical-values feature-flag.variation */
 export const flagVariations = ["disabled", "enabled"] as const;
 export const FLAG_VARIATION = {
@@ -10,6 +6,9 @@ export const FLAG_VARIATION = {
 } as const;
 
 export type FlagVariation = (typeof flagVariations)[number];
+
+/** @canonical-values feature-flag.key */
+export const flagKeys = [] as const;
 
 export type FlagKey = (typeof flagKeys)[number];
 
@@ -21,19 +20,13 @@ export type FlagDefinition = Readonly<{
   variations: Readonly<Record<FlagVariation, boolean>>;
 }>;
 
-export const flagDefinitions: readonly FlagDefinition[] = [
-  {
-    defaultVariation: FLAG_VARIATION.enabled,
-    description: "会員向けアプリの掲示板タブを表示する",
-    enabled: true,
-    key: FLAG_KEY.memberBoard,
-    variations: { [FLAG_VARIATION.disabled]: false, [FLAG_VARIATION.enabled]: true },
-  },
-];
+export const flagDefinitions: readonly FlagDefinition[] = [];
 
-export const flagDefinitionByKey: Readonly<Record<FlagKey, FlagDefinition>> = Object.fromEntries(
+const flagDefinitionByKey: Readonly<Record<FlagKey, FlagDefinition>> = Object.fromEntries(
   flagDefinitions.map((definition) => [definition.key, definition]),
-) as Readonly<Record<FlagKey, FlagDefinition>>;
+);
+
+export const flagDefinitionFor = (flagKey: FlagKey): FlagDefinition => flagDefinitionByKey[flagKey];
 
 export const variationForBoolean = (isEnabled: boolean): FlagVariation =>
   isEnabled ? FLAG_VARIATION.enabled : FLAG_VARIATION.disabled;
@@ -56,4 +49,4 @@ export const auditTargetForToggle = (
     from: boolean;
     to: boolean;
   }>,
-): string => `${toggle.flagKey}:${toggle.from}:${toggle.to}`;
+): string => `${String(toggle.flagKey)}:${toggle.from}:${toggle.to}`;
