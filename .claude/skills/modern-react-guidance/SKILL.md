@@ -18,7 +18,7 @@ metadata:
 
 大本は https://github.com/adhhamdev/modern-react-guidance （MIT、`LICENSE`）。元になった async-react の議論は https://github.com/reactwg/async-react/discussions/12 。宣言的 UI とトランジションの設計論は https://speakerdeck.com/uhyo/react-no-sekkeiron 。操作を止めないミューテーションの UX は https://zenn.dev/uhyo/articles/async-react-action-queue 。重い派生の一貫性は https://zenn.dev/uhyo/articles/async-react-debounce 。名前とファイルは https://gist.github.com/rafaelrozon/9fd6bc9efbce3e70311b364f87b89241 をこのリポジトリ向けに置き換えたもの。コンポーネント API は https://imply.io/blog/an-opinionated-guide-to-component-apis を密封・クラスタに合わせたもの。React 19.3 と React Compiler が有効なこのリポジトリ向けに、既にある lint と衝突する手順は下の拘束に置き換えてある。拘束と出典が食い違うときは拘束を採る。
 
-非同期の待ち方（独立した処理を直列に待たない、安い条件を先に見る、Suspense で殻だけ先に出す）は `.claude/skills/react-best-practices/SKILL.md` が SSOT である。
+非同期の待ち方（独立した処理を直列に待たない、安い条件を先に見る、Suspense で殻だけ先に出す）は `.claude/skills/react-best-practices/SKILL.md` に従う。
 
 ## 拘束
 

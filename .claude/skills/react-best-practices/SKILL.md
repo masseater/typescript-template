@@ -11,7 +11,7 @@ metadata:
 
 # React best practices
 
-大本は https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices （skill の宣言は MIT。本文は https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/SKILL.md ）。優先度がいちばん高いのは瀑布を消す `async-` 規則で、ここがその SSOT である。React 19 の API の選び方は `.claude/skills/modern-react-guidance/SKILL.md` に従う。
+大本は https://github.com/vercel-labs/agent-skills/tree/main/skills/react-best-practices （skill の宣言は MIT。本文は https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/SKILL.md ）。優先度がいちばん高いのは瀑布を消す `async-` 規則で、その規則はここに書く。React 19 の API の選び方は `.claude/skills/modern-react-guidance/SKILL.md` に従う。
 
 出典が Next.js、SWR、`useState`、`useMemo`、`useRef`、`better-all`、リクエストをまたぐ LRU を例にしている箇所は、このリポジトリでは採らない。
 
