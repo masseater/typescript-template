@@ -81,11 +81,14 @@ it.effect("the model's structured answer becomes values and the next question", 
     );
     const understanding = yield* understand(access, "東京でエンジニアやってます");
     assert.deepStrictEqual(understanding, {
-      ask: "nickname",
-      finish: false,
-      message: "東京のエンジニアさんなんですね。なんて呼べばいいですか？",
-      skip: false,
-      values: { area: "東京", occupation: "エンジニア" },
+      source: "model",
+      understanding: {
+        ask: "nickname",
+        finish: false,
+        message: "東京のエンジニアさんなんですね。なんて呼べばいいですか？",
+        skip: false,
+        values: { area: "東京", occupation: "エンジニア" },
+      },
     });
   }),
 );
@@ -112,10 +115,13 @@ it.effect("parts of the answer that break the sheet's rules are dropped one by o
     );
     const understanding = yield* understand(access, "大阪です");
     assert.deepStrictEqual(understanding, {
-      finish: false,
-      message: "お仕事は？",
-      skip: false,
-      values: { area: "大阪" },
+      source: "model",
+      understanding: {
+        finish: false,
+        message: "お仕事は？",
+        skip: false,
+        values: { area: "大阪" },
+      },
     });
   }),
 );
@@ -164,9 +170,12 @@ it.effect("a model error and an unreadable answer are both reported as a model f
   }),
 );
 
-it.effect("without access to a model the interviewer reports that it is unavailable", () =>
+it.effect("without access to a model the interviewer uses rules as the primary source", () =>
   Effect.gen(function* program() {
-    const failed = yield* understand(undefined, "たろう").pipe(Effect.flip);
-    assert.deepStrictEqual(failed.reason, "unavailable");
+    const reading = yield* understand(undefined, "たろう");
+    assert.deepStrictEqual(reading, {
+      source: "rules",
+      understanding: { finish: false, skip: false, values: { nickname: "たろう" } },
+    });
   }),
 );

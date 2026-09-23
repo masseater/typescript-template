@@ -51,11 +51,14 @@ it.effect("what the model understood is applied to the sheet", () => {
   const message = "大阪の学生さんなんですね。なんて呼べばいいですか？";
   function understand(): ReturnType<Understand> {
     return Effect.succeed({
-      ask: "nickname",
-      finish: false,
-      message,
-      skip: false,
-      values: { area: "大阪", occupation: "学生" },
+      source: "model",
+      understanding: {
+        ask: "nickname",
+        finish: false,
+        message,
+        skip: false,
+        values: { area: "大阪", occupation: "学生" },
+      },
     });
   }
   return Effect.gen(function* program() {
@@ -75,20 +78,22 @@ it.effect("what the model understood is applied to the sheet", () => {
   }).pipe(Effect.provide(services(understand)));
 });
 
-it.effect("a failing model is hidden from the member and the scripted interview continues", () => {
-  const failure = new UnderstandingFailed({ reason: "model_failed" });
-  function understand(): ReturnType<Understand> {
-    return Effect.fail(failure);
-  }
-  return Effect.gen(function* program() {
-    yield* addMember("member");
-    const view = yield* takeTurn("member", { kind: "text", text: "たろう" });
-    assert.deepStrictEqual(view.messages.at(-1), {
-      role: "interviewer",
-      text: "ありがとうございます。ふだんはどんなお仕事をしていますか？",
-    });
-  }).pipe(Effect.provide(services(understand)));
-});
+it.effect(
+  "a failing model is returned to the member instead of continuing as rules success",
+  () => {
+    const failure = new UnderstandingFailed({ reason: "model_failed" });
+    function understand(): ReturnType<Understand> {
+      return Effect.fail(failure);
+    }
+    return Effect.gen(function* program() {
+      yield* addMember("member");
+      const refused = yield* takeTurn("member", { kind: "text", text: "たろう" }).pipe(Effect.flip);
+      assert.deepStrictEqual(refused, failure);
+      const opened = yield* openInterview("member");
+      assert.deepStrictEqual(opened.messages, [greeting]);
+    }).pipe(Effect.provide(services(understand)));
+  },
+);
 
 it.effect("saving keeps the sheet and is refused while questions remain", () =>
   Effect.gen(function* program() {
