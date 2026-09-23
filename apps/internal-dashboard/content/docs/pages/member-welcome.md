@@ -11,8 +11,6 @@ description: メール確認のあと、規約同意とプロフィールの作�
 | プロフィールの作り方を選ぶ | `/welcome`           |
 | 基本項目の入力             | `/welcome/profile`   |
 
-AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。規約の再同意は [規約への同意](/pages/member-agreement) が持つ。
-
 ## 規約への同意（登録時）
 
 上から次の順に置く。

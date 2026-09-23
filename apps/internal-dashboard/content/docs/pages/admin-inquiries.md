@@ -8,7 +8,7 @@ description: 公開と会員からの問い合わせを読み、返信するペ�
 - `/inquiries`: サイドバー「問い合わせ」から開く一覧
 - `/inquiries/{id}`: 一覧・利用者の詳細から開く 1 件
 
-実体は [信頼と安全](/data-model/trust) が持つ。wiki は同じ Inquiry を読むだけで、返信はここだけが書く。
+wiki は同じ Inquiry を読むだけで、返信はここだけが書く。
 
 ## 一覧
 

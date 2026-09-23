@@ -5,7 +5,7 @@ description: 無料の利用者が有料プランの内容を知り、契約へ�
 
 パス: `/upgrade`。[会員の枠](/pages/member-layout#会員の枠) に入る。探す・最初のメッセージなど、有料の操作から移ってくる。
 
-実体は [契約](/data-model/billing) が持つ。すでに有料の利用者が開いたときは、[プランと解約](/pages/member-settings)（`/settings/plan`）へ移る。
+すでに有料の利用者が開いたときは、[プランと解約](/pages/member-settings)（`/settings/plan`）へ移る。
 
 ## 構成
 

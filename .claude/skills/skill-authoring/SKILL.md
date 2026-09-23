@@ -8,8 +8,6 @@ metadata:
 
 # skill の作成・変更
 
-**skill の文体の責任は自分が持つ。**
-
 1. `.claude/skills/<name>/SKILL.md` に置き、frontmatter に `name`（ディレクトリ名と同じ）と `description` を書く。詳細は同じディレクトリの `references/` に分ける。
 2. 検証する。frontmatter、参照ファイルの存在、他 skill へのリンクは `tools/dont-review-it/src/features/dont-review-it/repository/claude-skills.test.ts` がチェックする。
 3. 構造的な規則ならテストを足す。主観的な内容なら足さない。

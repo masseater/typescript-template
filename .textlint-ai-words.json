@@ -18,40 +18,101 @@
       ]
     },
     {
-      "message": "\"唯一の出所\" は使わないでください。置き場所を指すだけの文なら文ごと消してください。",
+      "message": "\"〜に従う\" で終わる文は置き場所だけを述べがちです。判断を変えないなら文ごと消し、規則なら何をするかを命じてください。",
       "tokens": [
         {
-          "surface_form": "唯一"
+          "surface_form": "に"
         },
         {
-          "surface_form": "の"
+          "surface_form": "従う"
         },
         {
-          "surface_form": "出所"
+          "surface_form": "。"
         }
       ]
     },
     {
-      "message": "\"SSOT\" は使わないでください。置き場所を指すだけの文なら文ごと消してください。",
+      "message": "\"〜に従います\" で終わる文は置き場所だけを述べがちです。判断を変えないなら文ごと消し、規則なら何をするかを命じてください。",
       "tokens": [
         {
-          "surface_form": "SSOT"
+          "surface_form": "に"
+        },
+        {
+          "surface_form": "従い"
+        },
+        {
+          "surface_form": "ます"
+        },
+        {
+          "surface_form": "。"
         }
       ]
     },
     {
-      "message": "\"SSoT\" は使わないでください。置き場所を指すだけの文なら文ごと消してください。",
+      "message": "\"〜が持つ\" で終わる文は置き場所だけを述べがちです。判断を変えないなら文ごと消し、規則なら何をするかを命じてください。",
       "tokens": [
         {
-          "surface_form": "SSoT"
+          "surface_form": "が"
+        },
+        {
+          "surface_form": "持つ"
+        },
+        {
+          "surface_form": "。"
         }
       ]
     },
     {
-      "message": "\"ssot\" は使わないでください。置き場所を指すだけの文なら文ごと消してください。",
+      "message": "\"〜が持ちます\" で終わる文は置き場所だけを述べがちです。判断を変えないなら文ごと消し、規則なら何をするかを命じてください。",
       "tokens": [
         {
-          "surface_form": "ssot"
+          "surface_form": "が"
+        },
+        {
+          "surface_form": "持ち"
+        },
+        {
+          "surface_form": "ます"
+        },
+        {
+          "surface_form": "。"
+        }
+      ]
+    },
+    {
+      "message": "\"〜で定義する\" で終わる文は置き場所だけを述べがちです。判断を変えないなら文ごと消し、規則なら何をするかを命じてください。",
+      "tokens": [
+        {
+          "surface_form": "で"
+        },
+        {
+          "surface_form": "定義"
+        },
+        {
+          "surface_form": "する"
+        },
+        {
+          "surface_form": "。"
+        }
+      ]
+    },
+    {
+      "message": "\"〜で定義します\" で終わる文は置き場所だけを述べがちです。判断を変えないなら文ごと消し、規則なら何をするかを命じてください。",
+      "tokens": [
+        {
+          "surface_form": "で"
+        },
+        {
+          "surface_form": "定義"
+        },
+        {
+          "surface_form": "し"
+        },
+        {
+          "surface_form": "ます"
+        },
+        {
+          "surface_form": "。"
         }
       ]
     }

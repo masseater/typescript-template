@@ -5,7 +5,7 @@ description: 規約の改定のあと、会員が最新版に再同意するペ�
 
 パス: `/agreement`。[会員の枠](/pages/member-layout#会員の枠) に入るが、最新の規約に未同意のときは他の会員ページより先に出す。
 
-登録直後の同意は [登録の段階](/pages/member-welcome) が持つ。実体は [信頼と安全](/data-model/trust) の AgreementVersion である。
+実体は [信頼と安全](/data-model/trust) の AgreementVersion である。
 
 ## 構成
 

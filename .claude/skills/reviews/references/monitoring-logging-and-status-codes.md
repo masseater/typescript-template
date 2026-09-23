@@ -9,7 +9,7 @@
 
 ## 応答の状態コード
 
-- 意味は RFC 9110、場面ごとの選択は Google の `google.rpc.Code` の分類と HTTP への対応に従う。本体は RFC 9457 の Problem Details（`application/problem+json`）。
+- 状態コードは RFC 9110 の意味で使い、場面ごとには Google の `google.rpc.Code` の分類と HTTP への対応で選ぶ。本体は RFC 9457 の Problem Details（`application/problem+json`）。
 - 使いたいコードが `@repo/config` の `httpStatus`（失敗側は `@repo/runtime` の `FailureStatus`）に無ければ型に足してから使う。
 - 資源が存在しない: 404。見つからなかった値を描画へ渡して 500 にしない。
 - 資格が無い、または無効: 401。

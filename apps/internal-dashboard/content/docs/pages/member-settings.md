@@ -3,7 +3,7 @@ title: 利用者アプリの設定
 description: 通知・セキュリティ・AI・プラン・退会など、設定の各ページ
 ---
 
-設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。プロフィールの編集は [プロフィール](/pages/member-profile) が、AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。
+設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。
 
 ## 一覧
 
@@ -63,7 +63,7 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 ## プランと解約
 
-パス: `/settings/plan`。実体は [契約](/data-model/billing) が持つ。
+パス: `/settings/plan`。
 
 1. 見出し「プランと解約」
 2. いまのプラン（無料 / 有料）と、有料なら現在期間の末

@@ -5,8 +5,6 @@ description: 運用担当の一覧と招待、権限の変更を行うページ
 
 パス: `/admins`。[管理操作の枠](/pages/admin-layout#管理操作の枠) に入り、「管理者を追加できる」権限の管理者だけが見る。
 
-実体は [アカウント](/data-model/accounts) の AdminAccount と Invite が持つ。
-
 ## 構成
 
 上から次の順に置く。
