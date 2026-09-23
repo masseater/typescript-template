@@ -9,7 +9,7 @@
 
 ## サーバー状態と UI 状態
 
-サーバー状態は TanStack Query、UI 状態は Effect Atom に置く。TanStack Query を導入するまでのサーバー読み取りは `@repo/ui` の `requestAtom` を通す。
+サーバー状態は TanStack Query、UI 状態は Effect Atom に置く。
 
 - サーバーにある事実（一覧、詳細、権限、集計）は TanStack Query が取得とキャッシュを担う。`queryOptions` は FSD の `api` セグメントに置く。応答を Effect Atom や `useState` に写さない。
 - 画面の一時状態（選択、開閉、フィルタの入力、タブ、下書き）は Effect Atom が持つ。Atom にサーバーの応答やその複製を載せない。
