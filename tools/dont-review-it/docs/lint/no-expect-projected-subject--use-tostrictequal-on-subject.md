@@ -21,7 +21,9 @@ Disallow handing an assertion anything other than the bare binding a fixture pro
 
 Anything but a bare identifier handed to `expect(...)` in a spec file, with wrappers peeled first. The report differs by what is left: a member read, a list built inside the assertion, a function written there, a value spelled out in the spec, and any other expression evaluated there. A call, a `new` expression, an object literal and a tagged template belong to other rules of this bundle and are not reported here.
 
-One exemption: where another block among the same siblings pins the whole fixture value with a snapshot matcher, a member read off that same fixture inside a different block passes. `snapshotMatchers` replaces the matcher vocabulary that exemption reads.
+A member read off an imported data file, an import whose specifier ends in `.json` or that carries the `type: "json"` attribute, passes. That member is the part of a hand-written file a spec keeps, and `no-whole-data-import-subject--assert-the-contract-member` rejects asserting the whole file.
+
+One more exemption: where another block among the same siblings pins the whole fixture value with a snapshot matcher, a member read off that same fixture inside a different block passes. `snapshotMatchers` replaces the matcher vocabulary that exemption reads.
 
 ## Fix
 
@@ -52,6 +54,15 @@ test("carries both fields", ({ report }) => {
 ```
 
 Code this rule accepts.
+
+```ts
+// a member of an imported data file is the part of that file a spec keeps
+// in report.test.ts
+import manifest from "../package.json" with { type: "json" };
+test("is run and not imported", () => {
+  expect(manifest.exports).toStrictEqual({ "./package.json": "./package.json" });
+});
+```
 
 ```ts
 // the bare binding a fixture handed back is the subject the rule asks for

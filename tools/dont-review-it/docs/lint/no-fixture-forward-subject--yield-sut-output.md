@@ -22,11 +22,13 @@ Disallow a fixture handing back a binding it was given, a member read off an exi
 A fixture handing back something narrower than its own output. The subject is normalised first — wrapper calls named in `handlerScopingWrappers` are peeled and what they return is re-read, then type wrappers, then an identifier is followed to a `const` in the factory body — and the report differs by what is left.
 
 - A binding the factory was given, whether through a destructured dependency or the whole context parameter
-- A member expression, whatever its root
+- A member expression, whatever its root, except a member read off an imported data file
 - A call carrying a given binding among its arguments, a spread included
 - An object or array literal taking a given binding in through a spread
 
 A method call on a binding, and a `new` expression, produce a new value and are not reported.
+
+An imported data file is an import whose specifier ends in `.json` or that carries the `type: "json"` attribute. A member of it is the part of a hand-written file a spec keeps, and `no-whole-data-import-subject--assert-the-contract-member` rejects handing the whole file over.
 
 ## Fix
 
@@ -49,6 +51,13 @@ const test = baseTest.extend("path", async ({ lockOptions }) => lockOptions.lock
 ```
 
 Code this rule accepts.
+
+```ts
+// a member of an imported data file is the part of that file a spec keeps
+// in report.test.ts
+import manifest from "../package.json" with { type: "json" };
+const test = baseTest.extend("manifestExports", () => manifest.exports);
+```
 
 ```ts
 // a local binding handed back whole carries every field the code produced

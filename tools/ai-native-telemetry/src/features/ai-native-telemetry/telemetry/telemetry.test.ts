@@ -687,73 +687,14 @@ describe("environmentCarryingContext", () => {
 });
 
 describe("the package surface", () => {
-  const it = test.extend("declaredManifest", () => packageManifest);
+  const it = test.extend("manifestExports", () => packageManifest.exports);
 
-  it("is imported and not run", ({ declaredManifest }) => {
-    expect(declaredManifest).toStrictEqual({
-      name: "@repo/ai-native-telemetry",
-      version: "0.0.0",
-      description: "One OpenTelemetry provider startup for a process.",
-      keywords: ["tanstack-intent"],
-      license: "MIT",
-      repository: {
-        type: "git",
-        url: "git+https://github.com/masseater/typescript-template.git",
-        directory: "tools/ai-native-telemetry",
-      },
-      files: ["dist"],
-      type: "module",
-      sideEffects: false,
-      exports: {
-        ".": "./src/features/ai-native-telemetry/index.ts",
-        "./optional-setting": "./src/features/ai-native-telemetry/telemetry/optional-setting.ts",
-        "./vitest-sdk": "./src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
-        "./package.json": "./package.json",
-      },
-      publishConfig: {
-        exports: {
-          ".": {
-            types: "./dist/telemetry/telemetry.d.mts",
-            default: "./dist/telemetry/telemetry.mjs",
-          },
-          "./optional-setting": {
-            types: "./dist/telemetry/optional-setting.d.mts",
-            default: "./dist/telemetry/optional-setting.mjs",
-          },
-          "./vitest-sdk": {
-            types: "./dist/telemetry/vitest-sdk.d.mts",
-            default: "./dist/telemetry/vitest-sdk.mjs",
-          },
-          "./package.json": "./package.json",
-        },
-        access: "public",
-      },
-      dependencies: {
-        "@opentelemetry/api": "catalog:",
-        "@opentelemetry/api-logs": "0.221.0",
-        "@opentelemetry/context-async-hooks": "2.10.0",
-        "@opentelemetry/core": "catalog:",
-        "@opentelemetry/exporter-logs-otlp-http": "0.221.0",
-        "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
-        "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
-        "@opentelemetry/propagator-env-carrier": "0.221.0",
-        "@opentelemetry/resources": "2.10.0",
-        "@opentelemetry/sdk-logs": "0.221.0",
-        "@opentelemetry/sdk-metrics": "catalog:",
-        "@opentelemetry/sdk-trace": "2.10.0",
-        "@opentelemetry/semantic-conventions": "1.43.0",
-        effect: "catalog:",
-        "es-toolkit": "catalog:",
-      },
-      devDependencies: {
-        "@repo/vite-config": "workspace:*",
-        "@tanstack/intent": "catalog:",
-        "@types/node": "catalog:",
-        "@vitest/coverage-v8": "catalog:",
-        typescript: "catalog:",
-        vite: "catalog:",
-        "vite-plus": "catalog:",
-      },
+  it("is imported through its declared entries", ({ manifestExports }) => {
+    expect(manifestExports).toStrictEqual({
+      ".": "./src/features/ai-native-telemetry/index.ts",
+      "./optional-setting": "./src/features/ai-native-telemetry/telemetry/optional-setting.ts",
+      "./vitest-sdk": "./src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
+      "./package.json": "./package.json",
     });
   });
 });
