@@ -8,9 +8,10 @@ metadata:
   library: "@repo/ai-native-telemetry"
   library_version: "0.0.0"
 sources:
-  - "masseater/typescript-template:tools/ai-native-telemetry/src/features/ai-native-telemetry/telemetry/telemetry.ts"
-  - "masseater/typescript-template:tools/ai-native-telemetry/src/features/ai-native-telemetry/telemetry/optional-setting.ts"
-  - "masseater/typescript-template:tools/ai-native-telemetry/src/features/ai-native-telemetry/telemetry/vitest-sdk.ts"
+  - "masseater/typescript-template:libs/telemetry/src/features/telemetry/telemetry.ts"
+  - "masseater/typescript-template:libs/telemetry/src/features/telemetry/context-carrier.ts"
+  - "masseater/typescript-template:libs/telemetry/src/features/telemetry/optional-setting.ts"
+  - "masseater/typescript-template:libs/telemetry/src/features/telemetry/vitest-sdk.ts"
 ---
 
 # @repo/ai-native-telemetry — one OpenTelemetry provider per process
