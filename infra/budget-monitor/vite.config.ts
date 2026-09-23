@@ -1,14 +1,14 @@
 import { monitorWorkerVite } from "@repo/monitor/vite";
 import { defineConfig } from "vite-plus";
 
-const budgetMonitorVite = monitorWorkerVite();
+const budgetMonitorVite = monitorWorkerVite("budget-monitor");
 
 export default defineConfig({
   ...budgetMonitorVite,
   run: {
     tasks: {
       ...budgetMonitorVite.run.tasks,
-      inspect: { cache: false, command: "./src/inspect.ts" },
+      inspect: { cache: false, command: "./src/features/budget-monitor/inspect.ts" },
     },
   },
   test: {

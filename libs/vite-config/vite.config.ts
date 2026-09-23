@@ -1,6 +1,6 @@
 import { defineConfig } from "vite-plus";
 
-import { awaitingEffectRun } from "./src/vite.ts";
+import { awaitingEffectRun } from "./src/features/vite-config/vite.ts";
 
 export default defineConfig({
   run: awaitingEffectRun,

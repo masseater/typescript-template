@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./config": "./src/config.ts",
-    "./worker": "./src/worker.ts"
+    ".": "./src/features/health-monitor/index.ts"
   },
   "dependencies": {
     "@repo/config": "workspace:*",

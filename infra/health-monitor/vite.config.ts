@@ -1,7 +1,7 @@
 import { monitorWorkerVite } from "@repo/monitor/vite";
 import { defineConfig } from "vite-plus";
 
-const healthMonitorVite = monitorWorkerVite();
+const healthMonitorVite = monitorWorkerVite("health-monitor");
 
 export default defineConfig({
   ...healthMonitorVite,

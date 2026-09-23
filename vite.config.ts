@@ -30,14 +30,17 @@ const nodeTestIncludes = [
   "apps/**/*.test.ts",
   "apps/**/*.test.tsx",
   ...rootNodeToolTestIncludes,
-  "tools/dont-review-it/src/repository/**/*.test.ts",
+  "tools/dont-review-it/src/features/dont-review-it/repository/**/*.test.ts",
   "infra/**/*.test.ts",
 ] as const;
 
 export default defineConfig({
   fmt: dontReviewItPreset.fmt({
     ignorePatterns: [...generatedFiles],
-    sortTailwindcss: { functions: ["cn", "cva"], stylesheet: "./libs/ui/src/styles.css" },
+    sortTailwindcss: {
+      functions: ["cn", "cva"],
+      stylesheet: "./libs/ui/src/features/ui/styles.css",
+    },
   }),
   lint: dontReviewItPreset.lint(lintOptions),
   plugins: [{ enforce: "pre", name: "text-modules", transform: textModule }],
@@ -90,7 +93,8 @@ export default defineConfig({
       },
       mutation: {
         cache: false,
-        command: "stryker run tools/dont-review-it/src/repository/stryker.ts",
+        command:
+          "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker.ts",
       },
       test: {
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
@@ -155,8 +159,8 @@ export default defineConfig({
       "**/vitest.*.config.*",
       "libs/ui/storybook/**",
       "libs/db/migrations/**",
-      "libs/config/src/worker.ts",
-      "tools/dont-review-it/src/repository/test-runtime.ts",
+      "libs/config/src/features/config/worker.ts",
+      "tools/dont-review-it/src/features/dont-review-it/repository/test-runtime.ts",
     ].map((pattern) => `${import.meta.dirname}/${pattern}`),
     projects: [
       {

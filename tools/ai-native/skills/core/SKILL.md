@@ -11,7 +11,7 @@ sources:
   - "masseater/mst:tools/ai-native/src/throttle/usage.ts"
   - "masseater/mst:tools/ai-native/src/spool/run-spool.ts"
   - "masseater/mst:tools/ai-native/src/unabridged/find-slicing-commands.ts"
-  - "masseater/mst:tools/ai-native/src/sync-base/decision.ts"
+  - "masseater/mst:tools/ai-native/src/features/ai-native/sync-base/decision.ts"
   - "masseater/mst:tools/ai-native-telemetry/src/telemetry/telemetry.ts"
   - "masseater/mst:tools/ai-native/AGENTS.md"
 ---
@@ -90,7 +90,7 @@ The hook denies the tool call when `head` or `tail` stands at a command position
 }
 ```
 
-The hook calls `gh pr view --json number,url,baseRefName,mergeStateStatus` in the payload's `cwd`. When that pull request's `mergeStateStatus` is `BEHIND`, it returns `hookSpecificOutput.additionalContext` naming the pull request, its base, and how to bring the latest base in (`git fetch` plus rebase/merge, or `mergify stack sync`). Any other status, a missing pull request, or a failed `gh` call produces no output. Where `sync-base` is not on `PATH`, `vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/sync-base/cli.ts` reaches it from this repository root.
+The hook calls `gh pr view --json number,url,baseRefName,mergeStateStatus` in the payload's `cwd`. When that pull request's `mergeStateStatus` is `BEHIND`, it returns `hookSpecificOutput.additionalContext` naming the pull request, its base, and how to bring the latest base in (`git fetch` plus rebase/merge, or `mergify stack sync`). Any other status, a missing pull request, or a failed `gh` call produces no output. Where `sync-base` is not on `PATH`, `vp exec -F @repo/ai-native -- node --experimental-strip-types ./src/features/ai-native/sync-base/cli.ts` reaches it from this repository root.
 
 ### Start the provider once, at the process entry
 
