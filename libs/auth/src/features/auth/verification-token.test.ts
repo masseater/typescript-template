@@ -1,7 +1,7 @@
 import { Encoding, Result } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { VerificationTokenInvalid, emailChangeTarget } from "./verification-token.ts";
+import { emailChangeTarget } from "./verification-token.ts";
 
 describe("emailChangeTarget", () => {
   describe("a decoded token without updateTo", () => {
@@ -26,18 +26,19 @@ describe("emailChangeTarget", () => {
 
   describe("a token whose claims segment cannot be decoded", () => {
     const it = test.extend("undecodableClaimsRefusal", () =>
-      emailChangeTarget("hdr.!!!not-base64!!!.sig"));
+      Result.mapError(emailChangeTarget("hdr.!!!not-base64!!!.sig"), (refusal) => refusal._tag));
 
     it("fails closed", ({ undecodableClaimsRefusal }) => {
-      expect(undecodableClaimsRefusal).toStrictEqual(Result.fail(new VerificationTokenInvalid()));
+      expect(undecodableClaimsRefusal).toStrictEqual(Result.fail("VerificationTokenInvalid"));
     });
   });
 
   describe("a token with no claims segment", () => {
-    const it = test.extend("opaqueTokenRefusal", () => emailChangeTarget("opaque-token"));
+    const it = test.extend("opaqueTokenRefusal", () =>
+      Result.mapError(emailChangeTarget("opaque-token"), (refusal) => refusal._tag));
 
     it("fails closed", ({ opaqueTokenRefusal }) => {
-      expect(opaqueTokenRefusal).toStrictEqual(Result.fail(new VerificationTokenInvalid()));
+      expect(opaqueTokenRefusal).toStrictEqual(Result.fail("VerificationTokenInvalid"));
     });
   });
 });

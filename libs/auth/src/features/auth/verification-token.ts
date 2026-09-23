@@ -23,4 +23,4 @@ const emailChangeTarget = (
   return Result.succeed(decoded.success.updateTo);
 };
 
-export { VerificationTokenInvalid, emailChangeTarget };
+export { emailChangeTarget };
