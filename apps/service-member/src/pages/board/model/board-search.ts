@@ -1,4 +1,5 @@
-import { Option, Schema } from "effect";
+import { searchValidator } from "@repo/ui";
+import { Schema } from "effect";
 
 import { laterPage, maximumBoardPage } from "#shared/contracts/index.ts";
 
@@ -22,13 +23,9 @@ class InvalidBoardSearch extends Schema.TaggedError<InvalidBoardSearch>()(
 const decodeBoardSearch = Schema.decodeUnknownOption(BoardSearchParams);
 const decodeThreadSearch = Schema.decodeUnknownOption(ThreadSearchParams);
 
-function normalizeBoardSearch(raw: unknown): BoardSearch {
-  return Option.getOrThrowWith(decodeBoardSearch(raw), () => new InvalidBoardSearch());
-}
+const normalizeBoardSearch = searchValidator(decodeBoardSearch, () => new InvalidBoardSearch());
 
-function normalizeThreadSearch(raw: unknown): ThreadSearch {
-  return Option.getOrThrowWith(decodeThreadSearch(raw), () => new InvalidBoardSearch());
-}
+const normalizeThreadSearch = searchValidator(decodeThreadSearch, () => new InvalidBoardSearch());
 
 function pageSearch(page: number): ThreadSearch {
   return page <= 1 ? {} : { page };

@@ -1,4 +1,5 @@
 import { createRouter, type AnyRoute } from "@tanstack/react-router";
+import { Option } from "effect";
 
 import { nonceOptions } from "./nonce.ts";
 import { NotFoundPage } from "./not-found.tsx";
@@ -26,4 +27,12 @@ const createAppRouter = <TRouteTree extends AnyRoute>(
   return createRouter(router as Parameters<typeof createRouter<TRouteTree>>[0]);
 };
 
-export { createAppRouter };
+const searchValidator =
+  <Search>(
+    decode: (raw: unknown) => Option.Option<Search>,
+    invalid: () => Error,
+  ): ((raw: unknown) => Search) =>
+  (raw) =>
+    Option.getOrThrowWith(decode(raw), invalid);
+
+export { createAppRouter, searchValidator };
