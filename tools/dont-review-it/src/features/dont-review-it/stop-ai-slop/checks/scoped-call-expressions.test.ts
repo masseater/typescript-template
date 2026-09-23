@@ -3,14 +3,15 @@ import { layer } from "@effect/vitest";
 import { Config, Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { parseSync } from "oxc-parser";
-import { describe, expect } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { runStopAiSlop } from "../run-cli.ts";
+import { stopAiSlop } from "../run-cli.ts";
 import { scopedCallExpressionsIn } from "./scoped-call-expressions.ts";
 
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
   exitCode: Schema.Finite,
+  stderr: Schema.String,
 }) {}
 
 const git = Effect.fn("git")(function* git(
@@ -32,16 +33,19 @@ const git = Effect.fn("git")(function* git(
         PATH: yield* Config.String("PATH"),
       },
       stdin: "ignore",
-      stderr: "ignore",
     }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
     { concurrency: "unbounded" },
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(
@@ -81,11 +85,16 @@ const newRepository = Effect.gen(function* newRepository() {
   return repositoryRoot;
 });
 
-const stopAiSlopAnswer = (argv: readonly string[]) => Effect.promise(() => runStopAiSlop(argv));
+const lastCommitAnswer = Effect.fn("lastCommitAnswer")(function* lastCommitAnswer(
+  repositoryRoot: string,
+) {
+  yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "HEAD~1"]);
+  return yield* stopAiSlop({ repositoryRoot });
+});
 
-layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
+describe("scopedCallExpressionsIn", () => {
   describe("a program of held declarations and destructuring patterns", () => {
-    const programScopeBindings = Effect.sync(() => {
+    const it = test.extend("programScopeBindings", () => {
       const source = `
         export const { property: assigned = true, ...objectRest } = sourceObject;
         export const [arrayValue, ...arrayRest] = sourceArray;
@@ -102,25 +111,25 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
       );
     });
 
-    it.effect("collects held declarations and destructured bindings in a program", () =>
-      Effect.gen(function* program() {
-        expect(yield* programScopeBindings).toStrictEqual([
-          "assigned",
-          "objectRest",
-          "arrayValue",
-          "arrayRest",
-          "exportedFunction",
-          "DeclaredClass",
-          "DeclaredEnum",
-          "DeclaredNamespace",
-          "importedValue",
-        ]);
-      }),
-    );
+    it("collects held declarations and destructured bindings in a program", ({
+      programScopeBindings,
+    }) => {
+      expect(programScopeBindings).toStrictEqual([
+        "assigned",
+        "objectRest",
+        "arrayValue",
+        "arrayRest",
+        "exportedFunction",
+        "DeclaredClass",
+        "DeclaredEnum",
+        "DeclaredNamespace",
+        "importedValue",
+      ]);
+    });
   });
 
   describe("catch, loop, switch, class, and named function scopes around the same call", () => {
-    const targetCallBindings = Effect.sync(() => {
+    const it = test.extend("targetCallBindings", () => {
       const source = [
         "function namedFunction({ value: functionBinding }) { target(); }",
         "const namedExpression = function innerName() { target(); };",
@@ -136,24 +145,22 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         .map(({ localBindings }) => [...localBindings]);
     });
 
-    it.effect("tracks catch, loop, switch, class, and named function scopes", () =>
-      Effect.gen(function* program() {
-        expect(yield* targetCallBindings).toStrictEqual([
-          ["namedFunction", "namedExpression", "NamedClass", "functionBinding"],
-          ["namedFunction", "namedExpression", "NamedClass", "innerName"],
-          ["namedFunction", "namedExpression", "NamedClass", "caught"],
-          ["namedFunction", "namedExpression", "NamedClass", "initialized"],
-          ["namedFunction", "namedExpression", "NamedClass", "forOfBinding"],
-          ["namedFunction", "namedExpression", "NamedClass", "forInBinding"],
-          ["namedFunction", "namedExpression", "NamedClass", "switched"],
-          ["namedFunction", "namedExpression", "NamedClass", "InnerClass"],
-        ]);
-      }),
-    );
+    it("tracks catch, loop, switch, class, and named function scopes", ({ targetCallBindings }) => {
+      expect(targetCallBindings).toStrictEqual([
+        ["namedFunction", "namedExpression", "NamedClass", "functionBinding"],
+        ["namedFunction", "namedExpression", "NamedClass", "innerName"],
+        ["namedFunction", "namedExpression", "NamedClass", "caught"],
+        ["namedFunction", "namedExpression", "NamedClass", "initialized"],
+        ["namedFunction", "namedExpression", "NamedClass", "forOfBinding"],
+        ["namedFunction", "namedExpression", "NamedClass", "forInBinding"],
+        ["namedFunction", "namedExpression", "NamedClass", "switched"],
+        ["namedFunction", "namedExpression", "NamedClass", "InnerClass"],
+      ]);
+    });
   });
 
   describe("a var declared under a branch inside a class static block", () => {
-    const staticBlockExpectBindingStates = Effect.sync(() => {
+    const it = test.extend("staticBlockExpectBindingStates", () => {
       const source =
         "class Probe { static { if (true) { var expect = (value: boolean) => held; } expect(true); } }";
       return scopedCallExpressionsIn(parseSync("source.test.ts", source).program).flatMap(
@@ -164,15 +171,13 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
       );
     });
 
-    it.effect("hoists var bindings inside a class static block", () =>
-      Effect.gen(function* program() {
-        expect(yield* staticBlockExpectBindingStates).toStrictEqual([true]);
-      }),
-    );
+    it("hoists var bindings inside a class static block", ({ staticBlockExpectBindingStates }) => {
+      expect(staticBlockExpectBindingStates).toStrictEqual([true]);
+    });
   });
 
   describe("a var declared under a branch inside a TypeScript module block", () => {
-    const moduleBlockExpectBindingStates = Effect.sync(() => {
+    const it = test.extend("moduleBlockExpectBindingStates", () => {
       const source =
         "namespace Probe { if (true) { var expect = (value: boolean) => held; } expect(true); }";
       return scopedCallExpressionsIn(parseSync("source.test.ts", source).program).flatMap(
@@ -183,15 +188,15 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
       );
     });
 
-    it.effect("hoists var bindings inside a TypeScript module block", () =>
-      Effect.gen(function* program() {
-        expect(yield* moduleBlockExpectBindingStates).toStrictEqual([true]);
-      }),
-    );
+    it("hoists var bindings inside a TypeScript module block", ({
+      moduleBlockExpectBindingStates,
+    }) => {
+      expect(moduleBlockExpectBindingStates).toStrictEqual([true]);
+    });
   });
 
   describe("a static block var beside a call in the containing function", () => {
-    const containingFunctionExpectBindingStates = Effect.sync(() => {
+    const it = test.extend("containingFunctionExpectBindingStates", () => {
       const source =
         "const run = () => { class Probe { static { var expect = true; } } expect(true); };";
       return scopedCallExpressionsIn(parseSync("source.test.ts", source).program).flatMap(
@@ -202,13 +207,15 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
       );
     });
 
-    it.effect("does not leak a static block var into its containing function", () =>
-      Effect.gen(function* program() {
-        expect(yield* containingFunctionExpectBindingStates).toStrictEqual([false]);
-      }),
-    );
+    it("does not leak a static block var into its containing function", ({
+      containingFunctionExpectBindingStates,
+    }) => {
+      expect(containingFunctionExpectBindingStates).toStrictEqual([false]);
+    });
   });
+});
 
+layer(NodeServices.layer)("scopedCallExpressionsIn in a checked change", (it) => {
   describe("an imported assertion beside a binding of the same name in another lexical scope", () => {
     const otherLexicalScopeReport = Effect.gen(function* otherLexicalScopeReport() {
       const repositoryRoot = yield* newRepository;
@@ -221,15 +228,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import { existsSync } from "node:fs";\nimport { expect, test } from "vite-plus/test";\n\nconst helper = (expect: boolean) => expect;\n\ntest("legacy is gone", () => {\n  expect(existsSync("src/legacy.ts")).toBe(false);\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not let a binding in another lexical scope hide an imported assertion", () =>
@@ -255,15 +254,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import { existsSync } from "node:fs";\nimport { expect, test } from "vite-plus/test";\n\ntest("legacy is gone", (expect) => {\n  expect(existsSync("src/legacy.ts")).toBe(false);\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve an imported assertion through a shadowing parameter", () =>
@@ -285,15 +276,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import { existsSync } from "node:fs";\nimport { expect } from "vite-plus/test";\n\nclass Probe {\n  static {\n    const expect = (value: boolean) => ({ toBe: (expected: boolean) => held === expected });\n    expect(existsSync("src/legacy.ts")).toBe(false);\n  }\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve an imported assertion through a static block binding", () =>
@@ -315,15 +298,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import { existsSync } from "node:fs";\nimport { expect } from "vite-plus/test";\n\nnamespace Probe {\n  const expect = (value: boolean) => ({ toBe: (expected: boolean) => held === expected });\n  expect(existsSync("src/legacy.ts")).toBe(false);\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve an imported assertion through a TypeScript module binding", () =>
@@ -345,15 +320,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import { existsSync } from "node:fs";\nimport { expect, test } from "vite-plus/test";\n\ntest("legacy is gone", () => {\n  class Probe {\n    static {\n      var expect = true;\n    }\n  }\n  expect(existsSync("src/legacy.ts")).toBe(false);\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not let a static block var hide an outer imported assertion", () =>
@@ -379,15 +346,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import { existsSync } from "node:fs";\nimport { expect } from "vite-plus/test";\n\nclass Probe {\n  constructor(private expect: (value: boolean) => { toBe(expected: boolean): boolean }) {\n    expect(existsSync("src/legacy.ts")).toBe(false);\n  }\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve an imported assertion through a parameter property", () =>
@@ -414,15 +373,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
           'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nclass Probe {\n  constructor(private legacy: object) {\n    expect(legacy).not.toHaveProperty("legacyMode");\n  }\n}\n',
         );
         yield* commitSnapshot(repositoryRoot);
-        return yield* stopAiSlopAnswer([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "HEAD~1",
-          "--head",
-          "HEAD",
-        ]);
+        return yield* lastCommitAnswer(repositoryRoot);
       },
     );
 
@@ -453,15 +404,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nfunction probe() {\n  enum legacy { current }\n  expect(legacy).not.toHaveProperty("legacyMode");\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve a namespace import through a local enum", () =>
@@ -487,15 +430,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nnamespace Probe {\n  export namespace legacy { export const current = true; }\n  expect(legacy).not.toHaveProperty("legacyMode");\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve a namespace import through a local namespace", () =>
@@ -521,15 +456,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nnamespace Probe {\n  namespace legacy.inner { export const current = true; }\n  expect(legacy).not.toHaveProperty("legacyMode");\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve a namespace import through a qualified local namespace", () =>
@@ -555,15 +482,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\ndeclare module "legacy" {}\nexpect(legacy).not.toHaveProperty("legacyMode");\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("keeps resolving a namespace import past a string-literal module declaration", () =>
@@ -593,15 +512,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nnamespace Probe {\n  import legacy = Other.legacy;\n  expect(legacy).not.toHaveProperty("legacyMode");\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("does not resolve a namespace import through an import-equals binding", () =>
@@ -627,15 +538,7 @@ layer(NodeServices.layer)("scopedCallExpressionsIn", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nfunction probe() {\n  interface legacy {}\n  expect(legacy).not.toHaveProperty("legacyMode");\n}\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("keeps resolving a namespace import past a type-only declaration", () =>

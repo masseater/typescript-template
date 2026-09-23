@@ -1,3 +1,4 @@
+import { Schema } from "effect";
 import {
   parseSync,
   type Argument,
@@ -7,7 +8,7 @@ import {
   type ParseResult,
 } from "oxc-parser";
 
-import { path } from "../../platform/path.ts";
+import { gitPath } from "../git-path.ts";
 import { scopedCallExpressionsIn } from "./scoped-call-expressions.ts";
 
 type FileAbsenceVerification = {
@@ -31,10 +32,14 @@ type ExportAbsenceVerification = {
 
 export type AbsenceVerification = FileAbsenceVerification | ExportAbsenceVerification;
 
+export class SourceUnparsable extends Schema.TaggedError<SourceUnparsable>()("SourceUnparsable", {
+  message: Schema.String,
+}) {}
+
 const parsedSource = (file: string, source: string): ParseResult => {
   const parsedNode = parseSync(file, source, { preserveParens: false });
   const [problem] = parsedNode.errors;
-  if (problem !== undefined) throw new Error(`${file}: ${problem.message}`);
+  if (problem !== undefined) throw new SourceUnparsable({ message: `${file}: ${problem.message}` });
   return parsedNode;
 };
 
@@ -87,7 +92,7 @@ const staticMember = (
 
 const repositoryPath = (held: string): string | null => {
   if (held.startsWith("/") || /^[A-Za-z]:[\\/]/u.test(held)) return null;
-  const normalizedText = path.normalize(held);
+  const normalizedText = gitPath.normalize(held);
   if (normalizedText === "." || normalizedText === ".." || normalizedText.startsWith("../"))
     return null;
   return normalizedText;
@@ -185,7 +190,7 @@ const fileVerificationFrom = ({
 const importedModulePath = (testFile: string, moduleRequest: string): string | null => {
   if (!moduleRequest.startsWith("./") && !moduleRequest.startsWith("../")) return null;
   if (!/\.[cm]?[jt]sx?$/u.test(moduleRequest)) return null;
-  return repositoryPath(path.join(path.dirname(testFile), moduleRequest));
+  return repositoryPath(gitPath.join(gitPath.dirname(testFile), moduleRequest));
 };
 
 const negatedExpectationFrom = (

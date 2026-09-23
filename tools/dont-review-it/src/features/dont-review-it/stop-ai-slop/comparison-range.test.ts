@@ -10,6 +10,7 @@ import { gitEnvironmentLayer } from "./git-text.ts";
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
   exitCode: Schema.Finite,
+  stderr: Schema.String,
 }) {}
 
 const git = Effect.fn("git")(function* git(
@@ -33,16 +34,19 @@ const git = Effect.fn("git")(function* git(
         PATH: yield* Config.String("PATH"),
       },
       stdin: "ignore",
-      stderr: "ignore",
     }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
     { concurrency: "unbounded" },
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const commitSource = Effect.fn("commitSource")(function* commitSource(
@@ -83,7 +87,7 @@ const repositoryMergingFeature = Effect.gen(function* repositoryMergingFeature()
   return repositoryRoot;
 });
 
-layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("comparisonRangeIn", (it) => {
+layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("comparisonRangeIn", (it) => {
   const sharedCommitRevision = "2bd9e78c8de105cae8f7e2ee2626041c397fe893";
   const featureTipCommitRevision = "6558ebc69c85f6fe83d0f6324945fe524f5c9ba8";
   const mergedIndexTreeRevision = "34ce6086051fdb587dc8ecac255c7a02b7375c4d";

@@ -1,10 +1,14 @@
 import { Effect, Schema } from "effect";
-import { attempt } from "es-toolkit";
+import { attempt, uniqBy, zip } from "es-toolkit";
 
-import { path } from "../platform/path.ts";
+import { failingWhenThrown } from "./expected-throw.ts";
+import { gitPath } from "./git-path.ts";
 import { runGitBuffer, runGitText } from "./git-text.ts";
-import { parsingRefused, type ParsingRefused } from "./parsing-refused.ts";
-import { parseRepositoryChanges, type RepositoryChange } from "./repository-diff.ts";
+import {
+  DiffUnreadable,
+  parseRepositoryChanges,
+  type RepositoryChange,
+} from "./repository-diff.ts";
 
 export type CompareRevisionsOptions = Readonly<{
   repositoryRoot: string;
@@ -67,17 +71,34 @@ export type RepositoryComparison = Readonly<{
 
 export class UndecodableSource extends Schema.TaggedError<UndecodableSource>()(
   "UndecodableSource",
-  { message: Schema.String },
+  { message: Schema.String, cause: Schema.Defect() },
 ) {}
 
-const resolveRevisionObject = (repositoryRoot: string, revision: string) =>
-  Effect.map(
-    runGitText({
-      repositoryRoot,
-      args: ["rev-parse", "--verify", "--end-of-options", `${revision}^{tree}`],
-    }),
-    (answered) => answered.trim(),
-  );
+export class BlobUnreadable extends Schema.TaggedError<BlobUnreadable>()("BlobUnreadable", {
+  message: Schema.String,
+}) {}
+
+type Side = "base" | "head";
+
+export type SourceRequest = Readonly<{ side: Side; sourcePath: string }>;
+
+export type SourceReader<E, R> = (
+  requests: readonly SourceRequest[],
+) => Effect.Effect<readonly Uint8Array[], E, R>;
+
+const SOURCE_EXTENSIONS: readonly string[] = [
+  ".cjs",
+  ".cts",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".mts",
+  ".ts",
+  ".tsx",
+];
+
+const isSource = (sourcePath: string): boolean =>
+  SOURCE_EXTENSIONS.includes(gitPath.extname(sourcePath).toLowerCase());
 
 const utf8SourceOf = (sourceBytes: Uint8Array): string | null => {
   const [undecodable, decoded] = attempt<string, Error>(() =>
@@ -86,136 +107,103 @@ const utf8SourceOf = (sourceBytes: Uint8Array): string | null => {
   return undecodable === null ? decoded : null;
 };
 
-export const decodedSource = (
-  sourcePath: string,
+const decodedSource = (
+  { side, sourcePath }: SourceRequest,
   sourceBytes: Uint8Array,
-): Effect.Effect<string, UndecodableSource> => {
-  const decoded = utf8SourceOf(sourceBytes);
-  return decoded === null
-    ? Effect.fail(
-        new UndecodableSource({ message: `Source blob does not decode as UTF-8: ${sourcePath}` }),
-      )
-    : Effect.succeed(decoded);
-};
+): Effect.Effect<string | null, UndecodableSource> =>
+  side === "base"
+    ? Effect.succeed(utf8SourceOf(sourceBytes))
+    : Effect.try({
+        try: () => new TextDecoder("utf-8", { fatal: true }).decode(sourceBytes),
+        catch: (cause) =>
+          new UndecodableSource({
+            message: `Source blob does not decode as UTF-8: ${sourcePath}`,
+            cause,
+          }),
+      });
 
-export const decodedPreviousSource = (sourceBytes: Uint8Array): string | null =>
-  utf8SourceOf(sourceBytes);
+const requestKey = ({ side, sourcePath }: SourceRequest): string => `${side}\0${sourcePath}`;
 
-export type SideSources<E, R> = Readonly<{
-  base: (sourcePath: string) => Effect.Effect<string | null, E, R>;
-  head: (sourcePath: string) => Effect.Effect<string | null, E, R>;
-}>;
+const sourceRequestsOf = (change: RepositoryChange): readonly SourceRequest[] => [
+  ...(change.beforePath !== null && isSource(change.beforePath)
+    ? [{ side: "base" as const, sourcePath: change.beforePath }]
+    : []),
+  ...(change.afterPath !== null && isSource(change.afterPath)
+    ? [{ side: "head" as const, sourcePath: change.afterPath }]
+    : []),
+];
 
-const sourceExtensions = [".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"];
-
-const readSource = <E, R>({
-  sources,
-  side,
-  sourcePath,
-}: Readonly<{
-  sources: SideSources<E, R>;
-  side: keyof SideSources<E, R>;
-  sourcePath: string;
-}>): Effect.Effect<string | null, E, R> =>
-  sourceExtensions.includes(path.extname(sourcePath).toLowerCase())
-    ? sources[side](sourcePath)
-    : Effect.succeed(null);
-
-type FileConversionInput<File extends RepositoryChange, E, R> = Readonly<{
-  sources: SideSources<E, R>;
-  file: File;
-}>;
-
-const toAddedComparisonFile = <E, R>({
-  sources,
-  file,
-}: FileConversionInput<Extract<RepositoryChange, { kind: "added" }>, E, R>): Effect.Effect<
-  AddedComparisonFile,
-  E,
-  R
-> =>
-  Effect.map(readSource({ sources, side: "head", sourcePath: file.afterPath }), (afterSource) => ({
-    ...file,
-    beforeSource: null,
-    afterSource,
-    firstAddedLine: file.addedLines[0] ?? null,
-  }));
-
-const toDeletedComparisonFile = <E, R>({
-  sources,
-  file,
-}: FileConversionInput<Extract<RepositoryChange, { kind: "deleted" }>, E, R>): Effect.Effect<
-  DeletedComparisonFile,
-  E,
-  R
-> =>
-  Effect.map(
-    readSource({ sources, side: "base", sourcePath: file.beforePath }),
-    (beforeSource) => ({
-      ...file,
-      beforeSource,
-      afterSource: null,
-      firstAddedLine: null,
-    }),
-  );
-
-const toTwoSidedComparisonFile = <E, R>({
-  sources,
-  file,
-}: FileConversionInput<
-  Extract<RepositoryChange, { kind: "changed" | "renamed" }>,
-  E,
-  R
->): Effect.Effect<ChangedComparisonFile | RenamedComparisonFile, E, R> =>
-  Effect.map(
-    Effect.all(
-      [
-        readSource({ sources, side: "base", sourcePath: file.beforePath }),
-        readSource({ sources, side: "head", sourcePath: file.afterPath }),
-      ],
-      { concurrency: "unbounded" },
-    ),
-    ([beforeSource, afterSource]) => ({
-      ...file,
-      beforeSource,
-      afterSource,
-      firstAddedLine: file.addedLines[0] ?? null,
-    }),
-  );
-
-const toComparisonFile = <E, R>({
-  sources,
-  file,
-}: FileConversionInput<RepositoryChange, E, R>): Effect.Effect<ComparisonFile, E, R> => {
-  switch (file.kind) {
+const comparisonFileFor = (
+  change: RepositoryChange,
+  sourceAt: (side: Side, sourcePath: string) => string | null,
+): ComparisonFile => {
+  switch (change.kind) {
     case "added":
-      return toAddedComparisonFile({ sources, file });
+      return {
+        ...change,
+        beforeSource: null,
+        afterSource: sourceAt("head", change.afterPath),
+        firstAddedLine: change.addedLines[0] ?? null,
+      };
     case "deleted":
-      return toDeletedComparisonFile({ sources, file });
+      return {
+        ...change,
+        beforeSource: sourceAt("base", change.beforePath),
+        afterSource: null,
+        firstAddedLine: null,
+      };
     case "changed":
     case "renamed":
-      return toTwoSidedComparisonFile({ sources, file });
+      return {
+        ...change,
+        beforeSource: sourceAt("base", change.beforePath),
+        afterSource: sourceAt("head", change.afterPath),
+        firstAddedLine: change.addedLines[0] ?? null,
+      };
   }
 };
 
 export const comparisonFrom = <E, R>({
   inventoryOutput,
   diff,
-  sources,
+  readSources,
 }: Readonly<{
   inventoryOutput: string;
   diff: string;
-  sources: SideSources<E, R>;
-}>): Effect.Effect<readonly ComparisonFile[], E | ParsingRefused, R> =>
-  Effect.flatMap(
-    Effect.try({
-      try: () => parseRepositoryChanges({ inventoryOutput, diff }),
-      catch: parsingRefused,
+  readSources: SourceReader<E, R>;
+}>): Effect.Effect<readonly ComparisonFile[], E | DiffUnreadable | UndecodableSource, R> =>
+  Effect.gen(function* comparisonFrom() {
+    const changes = yield* failingWhenThrown(
+      () => parseRepositoryChanges({ inventoryOutput, diff }),
+      Schema.is(DiffUnreadable),
+    );
+    const requests = uniqBy(changes.flatMap(sourceRequestsOf), requestKey);
+    const blobs = yield* readSources(requests);
+    const sources = new Map(
+      yield* Effect.forEach(zip(requests, blobs), ([request, sourceBytes]) =>
+        Effect.map(
+          decodedSource(request, sourceBytes),
+          (source) => [requestKey(request), source] as const,
+        ),
+      ),
+    );
+    const sourceAt = (side: Side, sourcePath: string): string | null => {
+      if (!isSource(sourcePath)) return null;
+      const request = { side, sourcePath };
+      const source = sources.get(requestKey(request));
+      if (source === undefined) throw new Error(`No source was read for ${side}:${sourcePath}`);
+      return source;
+    };
+    return changes.map((change) => comparisonFileFor(change, sourceAt));
+  });
+
+const resolveRevisionObject = (repositoryRoot: string, revision: string) =>
+  Effect.map(
+    runGitText({
+      repositoryRoot,
+      args: ["rev-parse", "--verify", "--end-of-options", `${revision}^{tree}`],
     }),
-    (changes) =>
-      Effect.forEach(changes, (file) => toComparisonFile({ sources, file }), {
-        concurrency: "unbounded",
-      }),
+    (answered) => answered.trim(),
   );
 
 const diffArguments = ({
@@ -243,6 +231,33 @@ const diffArguments = ({
   "--",
 ];
 
+const NUL = 0;
+
+const indexAfter = (bytes: Uint8Array, from: number, wanted: number): number => {
+  const found = bytes.indexOf(wanted, from);
+  return found === -1 ? bytes.length : found;
+};
+
+const batchedBlobs = (
+  output: Uint8Array,
+  objectNames: readonly string[],
+): Effect.Effect<readonly Uint8Array[], BlobUnreadable> =>
+  Effect.suspend(() => {
+    const blobs: Uint8Array[] = [];
+    const headerDecoder = new TextDecoder("utf-8");
+    let offset = 0;
+    for (const objectName of objectNames) {
+      const headerEnd = indexAfter(output, offset, NUL);
+      const [, type, size] = headerDecoder.decode(output.subarray(offset, headerEnd)).split(" ");
+      const length = Number(size);
+      if (type !== "blob" || !Number.isSafeInteger(length)) {
+        return Effect.fail(new BlobUnreadable({ message: `Git holds no blob at ${objectName}` }));
+      }
+      blobs.push(output.subarray(headerEnd + 1, headerEnd + 1 + length));
+      offset = headerEnd + 1 + length + 1;
+    }
+    return Effect.succeed(blobs);
+  });
 export const compareRevisions = Effect.fn("compareRevisions")(function* compareRevisions({
   repositoryRoot,
   baseRevision,
@@ -268,34 +283,28 @@ export const compareRevisions = Effect.fn("compareRevisions")(function* compareR
     ],
     { concurrency: "unbounded" },
   );
-  const blobAt =
-    (
-      revision: string,
-      decode: (
-        sourcePath: string,
-        sourceBytes: Uint8Array,
-      ) => Effect.Effect<string | null, UndecodableSource>,
-    ) =>
-    (sourcePath: string) =>
-      Effect.flatMap(
-        runGitBuffer({ repositoryRoot, args: ["cat-file", "blob", `${revision}:${sourcePath}`] }),
-        (sourceBytes) => decode(sourcePath, sourceBytes),
-      );
+  const readBlobs = (requests: readonly SourceRequest[]) => {
+    if (requests.length === 0) return Effect.succeed([]);
+    const objectNames = requests.map(
+      ({ side, sourcePath }) => `${side === "base" ? baseObject : headObject}:${sourcePath}`,
+    );
+    return Effect.flatMap(
+      runGitBuffer({
+        repositoryRoot,
+        args: ["cat-file", "--batch", "-Z"],
+        input: new TextEncoder().encode(
+          objectNames.map((objectName) => `${objectName}\0`).join(""),
+        ),
+      }),
+      (output) => batchedBlobs(output, objectNames),
+    );
+  };
 
   const comparison: RepositoryComparison = {
     repositoryRoot,
     baseRevision,
     headRevision,
-    files: yield* comparisonFrom({
-      inventoryOutput,
-      diff,
-      sources: {
-        base: blobAt(baseObject, (_sourcePath, sourceBytes) =>
-          Effect.succeed(decodedPreviousSource(sourceBytes)),
-        ),
-        head: blobAt(headObject, decodedSource),
-      },
-    }),
+    files: yield* comparisonFrom({ inventoryOutput, diff, readSources: readBlobs }),
   };
   return comparison;
 });

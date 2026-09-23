@@ -7,11 +7,12 @@ import { describe, expect, vi } from "vite-plus/test";
 import { gitEnvironmentLayer } from "./git-text.ts";
 import { ComparisonUnresolved, resolvedComparison } from "./resolved-comparison.ts";
 
-import type { GitHubRequest } from "./github-comparison.ts";
+import type { GitHubApi } from "./github-request.ts";
 
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
   exitCode: Schema.Finite,
+  stderr: Schema.String,
 }) {}
 
 const git = Effect.fn("git")(function* git(
@@ -35,16 +36,19 @@ const git = Effect.fn("git")(function* git(
         PATH: yield* Config.String("PATH"),
       },
       stdin: "ignore",
-      stderr: "ignore",
     }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
     { concurrency: "unbounded" },
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(
@@ -109,14 +113,15 @@ const repositoryHoldingOnlyThePullRequestMerge = Effect.gen(
       "pull request merge",
     ])).trim();
     yield* git(repositoryRoot, ["reset", "--hard", "--quiet", mergeCommit]);
-    const compare = vi.fn<GitHubRequest>(() =>
+    const compare = vi.fn<GitHubApi["compare"]>(() =>
       Effect.succeed({ merge_base_commit: { sha: baseCommit }, files: [] }),
     );
-    return { repositoryRoot, compare };
+    const contents = vi.fn<GitHubApi["contents"]>(() => Effect.succeed(new Uint8Array()));
+    return { repositoryRoot, compare, api: { compare, contents } };
   },
 );
 
-layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("resolvedComparison", (it) => {
+layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("resolvedComparison", (it) => {
   describe("a checkout that holds the integration branch", () => {
     const integrationBranchComparison = Effect.gen(function* integrationBranchComparison() {
       const repositoryRoot = yield* repositoryHoldingCurrent;
@@ -127,7 +132,7 @@ layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("resolvedComparison"
         repositoryRoot,
         comparison: yield* resolvedComparison(repositoryRoot, {
           repository: undefined,
-          request: null,
+          api: null,
         }),
       };
     });
@@ -162,7 +167,7 @@ layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("resolvedComparison"
         repositoryRoot,
         comparison: yield* resolvedComparison(repositoryRoot, {
           repository: undefined,
-          request: null,
+          api: null,
         }),
       };
     });
@@ -214,19 +219,16 @@ layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("resolvedComparison"
 
   describe("a checkout that holds only the merge of a pull request", () => {
     const pullRequestComparison = Effect.gen(function* pullRequestComparison() {
-      const { repositoryRoot, compare } = yield* repositoryHoldingOnlyThePullRequestMerge;
+      const { repositoryRoot, api } = yield* repositoryHoldingOnlyThePullRequestMerge;
       return {
         repositoryRoot,
-        comparison: yield* resolvedComparison(repositoryRoot, {
-          repository: "owner/name",
-          request: compare,
-        }),
+        comparison: yield* resolvedComparison(repositoryRoot, { repository: "owner/name", api }),
       };
     });
 
     const pullRequestCompareCall = Effect.gen(function* pullRequestCompareCall() {
-      const { repositoryRoot, compare } = yield* repositoryHoldingOnlyThePullRequestMerge;
-      yield* resolvedComparison(repositoryRoot, { repository: "owner/name", request: compare });
+      const { repositoryRoot, compare, api } = yield* repositoryHoldingOnlyThePullRequestMerge;
+      yield* resolvedComparison(repositoryRoot, { repository: "owner/name", api });
       return compare;
     });
 
@@ -244,24 +246,26 @@ layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("resolvedComparison"
 
     it.effect("asks the compare endpoint for the range spanned by the merged parents", () =>
       Effect.gen(function* program() {
-        expect(yield* pullRequestCompareCall).toHaveBeenCalledExactlyOnceWith(
-          "/repos/owner/name/compare/2f9ca1284d91be6c277f0b4baf015234f3bfc8d1...d8fde84998100e7b6119bddff27a36a2e20e9ad6",
-        );
+        expect(yield* pullRequestCompareCall).toHaveBeenCalledExactlyOnceWith("owner/name", {
+          base: "2f9ca1284d91be6c277f0b4baf015234f3bfc8d1",
+          head: "d8fde84998100e7b6119bddff27a36a2e20e9ad6",
+        });
       }),
     );
   });
 
   describe("a checkout that holds neither the integration branch nor a merge", () => {
     const guessworkRefusal = Effect.flatMap(repositoryHoldingCurrent, (repositoryRoot) =>
-      Effect.flip(resolvedComparison(repositoryRoot, { repository: undefined, request: null })),
+      Effect.flip(resolvedComparison(repositoryRoot, { repository: undefined, api: null })),
     );
 
     it.effect("refuses a checkout that holds neither the integration branch nor a merge", () =>
       Effect.gen(function* program() {
-        const refusal = yield* guessworkRefusal;
-        expect(refusal).toBeInstanceOf(ComparisonUnresolved);
-        expect(refusal.message).toBe(
-          "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch, or name both ends with --base and --head.",
+        expect(yield* guessworkRefusal).toStrictEqual(
+          new ComparisonUnresolved({
+            message:
+              "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch before checking.",
+          }),
         );
       }),
     );

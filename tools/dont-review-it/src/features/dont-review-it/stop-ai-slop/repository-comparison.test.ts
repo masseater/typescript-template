@@ -1,15 +1,17 @@
 import { NodeServices } from "@effect/platform-node";
-import { it as effectIt, layer } from "@effect/vitest";
-import { Config, ConfigProvider, Effect, FileSystem, Layer, Path, Schema, Stream } from "effect";
+import { layer } from "@effect/vitest";
+import { Config, Effect, FileSystem, Layer, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { describe, expect } from "vite-plus/test";
+import { describe, expect, vi } from "vite-plus/test";
 
-import { gitEnvironmentLayer } from "./git-text.ts";
-import { compareRevisions, decodedPreviousSource, decodedSource } from "./repository-comparison.ts";
+import { gitExecutablePath } from "../repository-checks/index.ts";
+import { GitCommandFailed, gitEnvironmentLayer } from "./git-text.ts";
+import { BlobUnreadable, compareRevisions, UndecodableSource } from "./repository-comparison.ts";
 
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
   exitCode: Schema.Finite,
+  stderr: Schema.String,
 }) {}
 
 const git = Effect.fn("git")(function* git(
@@ -31,16 +33,19 @@ const git = Effect.fn("git")(function* git(
         PATH: yield* Config.String("PATH"),
       },
       stdin: "ignore",
-      stderr: "ignore",
     }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
     { concurrency: "unbounded" },
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(
@@ -64,7 +69,7 @@ const newRepository = Effect.gen(function* newRepository() {
   return repositoryRoot;
 });
 
-layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("compareRevisions", (it) => {
+layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("compareRevisions", (it) => {
   describe("a base and a head naming the same revision", () => {
     const comparedRepository = Effect.gen(function* comparedRepository() {
       const repositoryRoot = yield* newRepository;
@@ -525,26 +530,23 @@ layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("compareRevisions", 
       yield* writeSource(repositoryRoot, "src/current.ts", "export const current = false;\n");
       yield* git(repositoryRoot, ["add", "--all"]);
       yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* Effect.acquireRelease(
+        Effect.sync(() => {
+          vi.stubEnv("GIT_DIR", paths.join(repositoryRoot, "absent.git"));
+          vi.stubEnv("GIT_WORK_TREE", paths.join(repositoryRoot, "absent"));
+        }),
+        () =>
+          Effect.sync(() => {
+            vi.unstubAllEnvs();
+          }),
+      );
       return {
         repositoryRoot,
         comparison: yield* compareRevisions({
           repositoryRoot,
           baseRevision: "HEAD~1",
           headRevision: "HEAD",
-        }).pipe(
-          Effect.provide(Layer.fresh(gitEnvironmentLayer)),
-          Effect.provideService(
-            ConfigProvider.ConfigProvider,
-            ConfigProvider.fromEnv({
-              env: {
-                GIT_DIR: paths.join(repositoryRoot, "absent.git"),
-                GIT_WORK_TREE: paths.join(repositoryRoot, "absent"),
-                HOME: repositoryRoot,
-                PATH: yield* Config.String("PATH"),
-              },
-            }),
-          ),
-        ),
+        }),
       };
     });
 
@@ -577,47 +579,134 @@ layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("compareRevisions", 
       yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
       yield* git(repositoryRoot, ["add", "--all"]);
       yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
-      const refusal = yield* Effect.flip(
+      return yield* Effect.flip(
         compareRevisions({
           repositoryRoot,
           baseRevision: "missing-revision",
           headRevision: "HEAD",
         }),
       );
-      return refusal.message;
     });
 
     it.effect("refuses the comparison with the failed command", () =>
       Effect.gen(function* program() {
-        expect(yield* missingRevisionRefusal).toContain(
-          "rev-parse --verify --end-of-options missing-revision^{tree}\nfatal: Needed a single revision\n",
+        const executable = gitExecutablePath(yield* Config.String("PATH"));
+        expect(yield* missingRevisionRefusal).toStrictEqual(
+          new GitCommandFailed({
+            message: `Command failed: ${executable} rev-parse --verify --end-of-options missing-revision^{tree}\nfatal: Needed a single revision\n`,
+          }),
         );
       }),
     );
   });
-});
 
-describe("decodedSource", () => {
-  describe("a blob with a source extension that does not decode as UTF-8", () => {
-    const undecodableRefusal = Effect.flip(
-      decodedSource("src/binary.ts", Uint8Array.from([0xff, 0xfe, 0xff])),
-    );
+  describe("a head whose source does not decode as UTF-8", () => {
+    const undecodableRefusal = Effect.gen(function* undecodableRefusal() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/binary.ts", "export const binary = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* filesystem.writeFile(
+        paths.join(repositoryRoot, "src/binary.ts"),
+        Uint8Array.from([0x00, 0xff, 0xfe]),
+      );
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return yield* Effect.flip(
+        compareRevisions({ repositoryRoot, baseRevision: "HEAD~1", headRevision: "HEAD" }),
+      );
+    });
 
-    effectIt.effect("refuses the blob and names its path", () =>
+    it.effect("refuses the head source and names its path", () =>
       Effect.gen(function* program() {
-        expect((yield* undecodableRefusal).message).toBe(
-          "Source blob does not decode as UTF-8: src/binary.ts",
+        expect(yield* undecodableRefusal).toStrictEqual(
+          new UndecodableSource({
+            message: "Source blob does not decode as UTF-8: src/binary.ts",
+            cause: expect.any(TypeError),
+          }),
         );
       }),
     );
   });
-});
 
-describe("decodedPreviousSource", () => {
-  describe("a blob that does not decode as UTF-8", () => {
-    effectIt.effect("reads the blob as an absent source", () =>
-      Effect.sync(() => {
-        expect(decodedPreviousSource(Uint8Array.from([0xff, 0xfe, 0xff]))).toBe(null);
+  describe("a base whose source does not decode as UTF-8", () => {
+    const comparedRepository = Effect.gen(function* comparedRepository() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* newRepository;
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "src"));
+      yield* filesystem.writeFile(
+        paths.join(repositoryRoot, "src/binary.ts"),
+        Uint8Array.from([0x00, 0xff, 0xfe]),
+      );
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* writeSource(repositoryRoot, "src/binary.ts", "export const binary = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      return {
+        repositoryRoot,
+        comparison: yield* compareRevisions({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+        }),
+      };
+    });
+
+    it.effect("reads the previous source as absent", () =>
+      Effect.gen(function* program() {
+        const { repositoryRoot, comparison } = yield* comparedRepository;
+        expect(comparison).toStrictEqual({
+          repositoryRoot,
+          baseRevision: "HEAD~1",
+          headRevision: "HEAD",
+          files: [
+            {
+              kind: "changed",
+              beforePath: "src/binary.ts",
+              afterPath: "src/binary.ts",
+              beforeSource: null,
+              afterSource: "export const binary = true;\n",
+              addedLines: [],
+              firstAddedLine: null,
+            },
+          ],
+        });
+      }),
+    );
+  });
+
+  describe("a head recording a source path as a submodule commit", () => {
+    const gitlinkRefusal = Effect.gen(function* gitlinkRefusal() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+      yield* git(repositoryRoot, ["add", "--all"]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      yield* git(repositoryRoot, [
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        "160000,1111111111111111111111111111111111111111,vendor/linked.ts",
+      ]);
+      yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+      const headTree = (yield* git(repositoryRoot, ["rev-parse", "HEAD^{tree}"])).trim();
+      return {
+        headTree,
+        refusal: yield* Effect.flip(
+          compareRevisions({ repositoryRoot, baseRevision: "HEAD~1", headRevision: "HEAD" }),
+        ),
+      };
+    });
+
+    it.effect("refuses the path Git holds no blob for", () =>
+      Effect.gen(function* program() {
+        const { headTree, refusal } = yield* gitlinkRefusal;
+        expect(refusal).toStrictEqual(
+          new BlobUnreadable({ message: `Git holds no blob at ${headTree}:vendor/linked.ts` }),
+        );
       }),
     );
   });

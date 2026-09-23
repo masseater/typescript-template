@@ -1,15 +1,16 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
-import { Config, Effect, FileSystem, Path, Schema, Stream } from "effect";
+import { Config, ConfigProvider, Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { describe, expect, vi } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import { gitExecutablePath } from "../repository-checks/index.ts";
-import { runStopAiSlop } from "./run-cli.ts";
+import { stopAiSlop } from "./run-cli.ts";
 
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
   exitCode: Schema.Finite,
+  stderr: Schema.String,
 }) {}
 
 const git = Effect.fn("git")(function* git(
@@ -31,16 +32,19 @@ const git = Effect.fn("git")(function* git(
         PATH: yield* Config.String("PATH"),
       },
       stdin: "ignore",
-      stderr: "ignore",
     }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
     { concurrency: "unbounded" },
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(
@@ -69,28 +73,26 @@ const newRepository = Effect.gen(function* newRepository() {
   return repositoryRoot;
 });
 
-const stopAiSlopAnswer = (argv: readonly string[]) => Effect.promise(() => runStopAiSlop(argv));
+const withEnvironmentOf = (variables: Readonly<Record<string, string>>) =>
+  Effect.gen(function* withEnvironmentOf() {
+    return ConfigProvider.fromEnv({ env: { PATH: yield* Config.String("PATH"), ...variables } });
+  });
 
-const USAGE_TEXT = `Usage: stop-ai-slop check [--base <revision> --head <revision>] [--repository-root <path>]
-
-Commands:
-  check   Run every registered check in definition order.
-
-Options:
-  --base <revision>         Git revision before the change. Requires --head.
-  --head <revision>         Git revision after the change. Requires --base.
-  --repository-root <path>  Root of the Git repository. Defaults to the current working directory.
-
-Without --base and --head the change on its way into the integration branch is compared:
-the staged merge result when a merge is in progress, and the history since it left
-origin/main otherwise.
-`;
+const answerWithout = (repositoryRoot: string, variables: Readonly<Record<string, string>>) =>
+  Effect.flatMap(withEnvironmentOf(variables), (provider) =>
+    stopAiSlop({ repositoryRoot }).pipe(
+      Effect.provideService(ConfigProvider.ConfigProvider, provider),
+    ),
+  );
 
 const REMOVAL_PROBLEM_LINE =
   'src/legacy-api.test.ts:4 no-removal-verification: Do not assert that removed export "legacyMode" from "src/legacy.ts" remains absent; remove the assertion.\n';
 
 const REMOVAL_VERIFYING_SPEC =
   'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nexpect(legacy).not.toHaveProperty("legacyMode");\n';
+
+const GUESSWORK_REFUSAL =
+  "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch before checking.\n";
 
 const repositoryChangingCurrent = Effect.gen(function* repositoryChangingCurrent() {
   const repositoryRoot = yield* newRepository;
@@ -113,6 +115,7 @@ const repositoryWithABranchBehindTheRemoval = Effect.gen(
     yield* git(repositoryRoot, ["branch", "branch-point"]);
     yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = false;\n");
     yield* commitSnapshot(repositoryRoot);
+    yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "main"]);
     yield* git(repositoryRoot, ["checkout", "--quiet", "-b", "feature", "branch-point"]);
     yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = true;\n");
     yield* writeSource(repositoryRoot, "src/legacy-api.test.ts", REMOVAL_VERIFYING_SPEC);
@@ -121,103 +124,13 @@ const repositoryWithABranchBehindTheRemoval = Effect.gen(
   },
 );
 
-layer(NodeServices.layer)("runStopAiSlop", (it) => {
-  describe("an argument list naming no command at all", () => {
-    it.effect("refuses the run and writes the usage text", () =>
-      Effect.gen(function* program() {
-        expect(yield* stopAiSlopAnswer([])).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: USAGE_TEXT,
-        });
-      }),
-    );
-  });
-
-  describe("an argument list naming a command the runner does not carry", () => {
-    it.effect("refuses the run and writes the usage text", () =>
-      Effect.gen(function* program() {
-        expect(yield* stopAiSlopAnswer(["scan"])).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: USAGE_TEXT,
-        });
-      }),
-    );
-  });
-
-  describe("a check command carrying a positional beside its own name", () => {
-    it.effect("refuses the run and writes the usage text", () =>
-      Effect.gen(function* program() {
-        expect(yield* stopAiSlopAnswer(["check", "extra"])).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: USAGE_TEXT,
-        });
-      }),
-    );
-  });
-
-  describe("a check command carrying an option the runner does not declare", () => {
-    it.effect("refuses the run and writes the usage text", () =>
-      Effect.gen(function* program() {
-        expect(yield* stopAiSlopAnswer(["check", "--unknown"])).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: USAGE_TEXT,
-        });
-      }),
-    );
-  });
-
-  describe("a check command whose base is empty", () => {
-    it.effect("refuses the run and writes the usage text", () =>
-      Effect.gen(function* program() {
-        expect(yield* stopAiSlopAnswer(["check", "--base", ""])).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: USAGE_TEXT,
-        });
-      }),
-    );
-  });
-
-  describe("a check command naming a base without naming a head", () => {
-    it.effect("refuses the run and writes the usage text", () =>
-      Effect.gen(function* program() {
-        expect(yield* stopAiSlopAnswer(["check", "--base", "base"])).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: USAGE_TEXT,
-        });
-      }),
-    );
-  });
-
-  describe("a check command naming a base whose head is empty", () => {
-    it.effect("refuses the run and writes the usage text", () =>
-      Effect.gen(function* program() {
-        expect(yield* stopAiSlopAnswer(["check", "--base", "base", "--head", ""])).toStrictEqual({
-          exitCode: 2,
-          out: "",
-          error: USAGE_TEXT,
-        });
-      }),
-    );
-  });
-
+layer(NodeServices.layer)("stopAiSlop", (it) => {
   describe("a head every registered check passes", () => {
-    const passingCheck = Effect.flatMap(repositoryChangingCurrent, (repositoryRoot) =>
-      stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]),
-    );
+    const passingCheck = Effect.gen(function* passingCheck() {
+      const repositoryRoot = yield* repositoryChangingCurrent;
+      yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "HEAD~1"]);
+      return yield* answerWithout(repositoryRoot, {});
+    });
 
     it.effect("stays silent and reports success", () =>
       Effect.gen(function* program() {
@@ -228,7 +141,7 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
 
   describe("a checkout that holds neither the integration branch nor a merge", () => {
     const unresolvedCheck = Effect.flatMap(repositoryChangingCurrent, (repositoryRoot) =>
-      stopAiSlopAnswer(["check", "--repository-root", repositoryRoot]),
+      answerWithout(repositoryRoot, {}),
     );
 
     it.effect("refuses the run and names the missing comparison", () =>
@@ -236,23 +149,33 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
         expect(yield* unresolvedCheck).toStrictEqual({
           exitCode: 2,
           out: "",
-          error:
-            "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch, or name both ends with --base and --head.\n",
+          error: GUESSWORK_REFUSAL,
         });
       }),
     );
   });
 
-  describe("a run naming no repository root", () => {
-    const workingDirectoryCheck = Effect.gen(function* workingDirectoryCheck() {
+  describe("a pull request merge checked with an empty token", () => {
+    const emptyTokenCheck = Effect.gen(function* emptyTokenCheck() {
       const repositoryRoot = yield* repositoryChangingCurrent;
-      vi.spyOn(process, "cwd").mockReturnValue(repositoryRoot);
-      return yield* stopAiSlopAnswer(["check", "--base", "HEAD~1", "--head", "HEAD"]);
+      yield* git(repositoryRoot, ["checkout", "--quiet", "-b", "feature", "HEAD~1"]);
+      yield* writeSource(repositoryRoot, "src/feature.ts", "export const feature = true;\n");
+      yield* commitSnapshot(repositoryRoot);
+      yield* git(repositoryRoot, ["checkout", "--quiet", "main"]);
+      yield* git(repositoryRoot, ["merge", "--quiet", "--no-ff", "--no-edit", "feature"]);
+      return yield* answerWithout(repositoryRoot, {
+        GITHUB_REPOSITORY: "owner/name",
+        GITHUB_TOKEN: "",
+      });
     });
 
-    it.effect("reads the repository at the current working directory", () =>
+    it.effect("asks nothing of the API and names the missing comparison", () =>
       Effect.gen(function* program() {
-        expect(yield* workingDirectoryCheck).toStrictEqual({ exitCode: 0, out: "", error: "" });
+        expect(yield* emptyTokenCheck).toStrictEqual({
+          exitCode: 2,
+          out: "",
+          error: GUESSWORK_REFUSAL,
+        });
       }),
     );
   });
@@ -266,18 +189,9 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
       };
     });
 
-    const checkAgainst = (base: string) =>
-      Effect.flatMap(repositoryWithABranchBehindTheRemoval, (repositoryRoot) =>
-        stopAiSlopAnswer([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          base,
-          "--head",
-          "feature",
-        ]),
-      );
+    const featureCheck = Effect.flatMap(repositoryWithABranchBehindTheRemoval, (repositoryRoot) =>
+      answerWithout(repositoryRoot, {}),
+    );
 
     it.effect("left the branch point standing as the merge base of the two branches", () =>
       Effect.gen(function* program() {
@@ -286,15 +200,9 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
       }),
     );
 
-    it.effect("sees no removal when the base is the tip of the integration branch", () =>
+    it.effect("names the removal the branch makes against the merge base", () =>
       Effect.gen(function* program() {
-        expect(yield* checkAgainst("main")).toStrictEqual({ exitCode: 0, out: "", error: "" });
-      }),
-    );
-
-    it.effect("names the stale removal when the base is the merge base", () =>
-      Effect.gen(function* program() {
-        expect(yield* checkAgainst("branch-point")).toStrictEqual({
+        expect(yield* featureCheck).toStrictEqual({
           exitCode: 1,
           out: REMOVAL_PROBLEM_LINE,
           error: "",
@@ -303,7 +211,7 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
     );
   });
 
-  describe("a head carrying a stale removal and no named revision", () => {
+  describe("a head carrying a stale removal since the integration branch", () => {
     const integrationBranchCheck = Effect.gen(function* integrationBranchCheck() {
       const repositoryRoot = yield* newRepository;
       yield* writeSource(
@@ -316,7 +224,7 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
       yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = true;\n");
       yield* writeSource(repositoryRoot, "src/legacy-api.test.ts", REMOVAL_VERIFYING_SPEC);
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer(["check", "--repository-root", repositoryRoot]);
+      return yield* answerWithout(repositoryRoot, {});
     });
 
     it.effect("compares the history since the integration branch", () =>
@@ -330,29 +238,28 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
     );
   });
 
-  describe("a base revision the repository does not carry", () => {
-    const missingBaseRefusal = Effect.gen(function* missingBaseRefusal() {
-      const repositoryRoot = yield* newRepository;
-      yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
-      yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "missing-revision",
-        "--head",
-        "HEAD",
-      ]);
+  describe("an integration branch that shares no history with the head", () => {
+    const unrelatedHistoryRefusal = Effect.gen(function* unrelatedHistoryRefusal() {
+      const repositoryRoot = yield* repositoryChangingCurrent;
+      const tree = (yield* git(repositoryRoot, ["rev-parse", "HEAD^{tree}"])).trim();
+      const unrelated = (yield* git(repositoryRoot, [
+        "commit-tree",
+        tree,
+        "-m",
+        "unrelated",
+      ])).trim();
+      yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", unrelated]);
+      return { unrelated, answer: yield* answerWithout(repositoryRoot, {}) };
     });
 
     it.effect("fails closed and names the command that refused", () =>
       Effect.gen(function* program() {
-        const searchPath = yield* Config.String("PATH");
-        expect(yield* missingBaseRefusal).toStrictEqual({
+        const executable = gitExecutablePath(yield* Config.String("PATH"));
+        const { unrelated, answer } = yield* unrelatedHistoryRefusal;
+        expect(answer).toStrictEqual({
           exitCode: 2,
           out: "",
-          error: `Command failed: ${gitExecutablePath(searchPath)} rev-parse --verify --end-of-options missing-revision^{tree}\nfatal: Needed a single revision\n\n`,
+          error: `Command failed: ${executable} merge-base ${unrelated} HEAD\n\n`,
         });
       }),
     );
@@ -363,17 +270,10 @@ layer(NodeServices.layer)("runStopAiSlop", (it) => {
       const repositoryRoot = yield* newRepository;
       yield* writeSource(repositoryRoot, "src/legacy.ts", "export const legacyMode = true;\n");
       yield* commitSnapshot(repositoryRoot);
+      yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "HEAD"]);
       yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = ;\n");
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* answerWithout(repositoryRoot, {});
     });
 
     it.effect("fails closed and names the source it could not read", () =>

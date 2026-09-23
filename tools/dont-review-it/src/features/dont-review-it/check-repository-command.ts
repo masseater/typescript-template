@@ -11,7 +11,7 @@ import {
   measureCheck,
   type CliResult,
 } from "./repository-checks/index.ts";
-import { runStopAiSlop } from "./stop-ai-slop/run-cli.ts";
+import { stopAiSlop } from "./stop-ai-slop/run-cli.ts";
 
 const writeCliResult = (result: CliResult): number => {
   if (result.out !== "") process.stdout.write(result.out);
@@ -58,9 +58,7 @@ export const checkRepositoryCommand = defineCommand({
           const lintRuleAuthoringExit = writeCliResult(
             yield* runLintRuleAuthoring(["check", ...rootArgs]),
           );
-          const stopAiSlopExit = writeCliResult(
-            yield* Effect.promise(() => runStopAiSlop(["check", ...rootArgs])),
-          );
+          const stopAiSlopExit = writeCliResult(yield* stopAiSlop({ repositoryRoot }));
           const worst = Math.max(afterDontReviewIt, lintRuleAuthoringExit, stopAiSlopExit);
           if (worst !== EXIT_SUCCESS) process.exitCode = worst;
         }).pipe(Effect.provide(NodeServices.layer)),

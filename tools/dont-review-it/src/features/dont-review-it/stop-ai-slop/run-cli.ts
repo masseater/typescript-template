@@ -1,152 +1,74 @@
-import { NodeServices } from "@effect/platform-node";
-import { Config, Effect, Layer, Option, Path, Schema } from "effect";
+import { Config, Effect, Layer, Option, Schema } from "effect";
+import { FetchHttpClient } from "effect/unstable/http";
 
 import {
-  createCliRunner,
   EXIT_MISUSE,
   EXIT_PROBLEMS_FOUND,
   EXIT_SUCCESS,
   type CliResult,
 } from "../repository-checks/index.ts";
-import { type ComparisonRange } from "./comparison-range.ts";
-import { gitEnvironmentLayer } from "./git-text.ts";
-import { githubRequestFor } from "./github-request.ts";
-import { parsingRefused } from "./parsing-refused.ts";
-import { formatProblem } from "./problem.ts";
-import { compareRevisions, type RepositoryComparison } from "./repository-comparison.ts";
-import { ComparisonUnresolved, resolvedComparison } from "./resolved-comparison.ts";
+import { SourceUnparsable } from "./checks/verification-source.ts";
+import { failingWhenThrown } from "./expected-throw.ts";
+import { gitEnvironmentLayer, type GitCommandFailed } from "./git-text.ts";
+import {
+  gitHubApiFor,
+  type GitHubAnswerUnexpected,
+  type GitHubRequestFailed,
+} from "./github-request.ts";
+import { formatProblem, type SlopProblem } from "./problem.ts";
+import { resolvedComparison, type ComparisonUnresolved } from "./resolved-comparison.ts";
 import { runChecks } from "./run-checks.ts";
 
-const USAGE = `Usage: stop-ai-slop check [--base <revision> --head <revision>] [--repository-root <path>]
+import type { BlobUnreadable, UndecodableSource } from "./repository-comparison.ts";
+import type { DiffUnreadable } from "./repository-diff.ts";
 
-Commands:
-  check   Run every registered check in definition order.
-
-Options:
-  --base <revision>         Git revision before the change. Requires --head.
-  --head <revision>         Git revision after the change. Requires --base.
-  --repository-root <path>  Root of the Git repository. Defaults to the current working directory.
-
-Without --base and --head the change on its way into the integration branch is compared:
-the staged merge result when a merge is in progress, and the history since it left
-origin/main otherwise.
-`;
-
-const misuse = (): CliResult => ({ exitCode: EXIT_MISUSE, out: "", error: USAGE });
-
-const OPTION_NAMES = ["base", "head", "repository-root"] as const;
-
-type OptionName = (typeof OPTION_NAMES)[number];
-
-type ParsedArguments = Readonly<{
-  positionals: readonly string[];
-  values: Readonly<Partial<Record<OptionName, string>>>;
+export type StopAiSlopOptions = Readonly<{
+  repositoryRoot: string;
 }>;
 
-const OPTION_PREFIX = "--";
+const gitHubApiFromEnvironment = Effect.flatMap(
+  Config.option(Config.Redacted("GITHUB_TOKEN")),
+  Option.match({
+    onNone: () => Effect.succeed(null),
+    onSome: gitHubApiFor,
+  }),
+);
 
-const optionNamed = (spelled: string): OptionName | null =>
-  OPTION_NAMES.find((declared) => declared === spelled) ?? null;
-
-const looksLikeOption = (held: string): boolean => held.length > 1 && held.startsWith("-");
-
-const withPositionals = (
-  parsed: ParsedArguments,
-  positionals: readonly string[],
-): ParsedArguments => ({ ...parsed, positionals: [...parsed.positionals, ...positionals] });
-
-const withValue = (parsed: ParsedArguments, name: OptionName, value: string): ParsedArguments => ({
-  ...parsed,
-  values: { ...parsed.values, [name]: value },
-});
-
-const parsedFrom = (
-  remaining: readonly string[],
-  parsed: ParsedArguments,
-): ParsedArguments | null => {
-  const [current, ...rest] = remaining;
-  if (current === undefined) return parsed;
-  if (current === OPTION_PREFIX) return withPositionals(parsed, rest);
-  if (!looksLikeOption(current)) return parsedFrom(rest, withPositionals(parsed, [current]));
-  if (!current.startsWith(OPTION_PREFIX)) return null;
-
-  const separator = current.indexOf("=");
-  const name = optionNamed(
-    current.slice(OPTION_PREFIX.length, separator === -1 ? undefined : separator),
-  );
-  if (name === null) return null;
-  if (separator !== -1) {
-    return parsedFrom(rest, withValue(parsed, name, current.slice(separator + 1)));
-  }
-
-  const [value, ...afterValue] = rest;
-  if (value === undefined || looksLikeOption(value)) return null;
-  return parsedFrom(afterValue, withValue(parsed, name, value));
-};
-
-const parsedArguments = (argv: readonly string[]): ParsedArguments | null =>
-  parsedFrom(argv, { positionals: [], values: {} });
-
-const namedRange = (base: string | undefined, head: string | undefined): ComparisonRange | null =>
-  base === undefined || base === "" || head === undefined || head === ""
-    ? null
-    : { baseRevision: base, headRevision: head };
-
-const reportedComparison = (comparison: RepositoryComparison) =>
-  Effect.try({
-    try: (): CliResult => {
-      const problems = runChecks({ comparison });
-      return {
-        exitCode: problems.length === 0 ? EXIT_SUCCESS : EXIT_PROBLEMS_FOUND,
-        out: problems.map((problem) => `${formatProblem(problem)}\n`).join(""),
-        error: "",
-      };
-    },
-    catch: parsingRefused,
+const checkedProblems = Effect.fn("checkedProblems")(function* checkedProblems({
+  repositoryRoot,
+}: StopAiSlopOptions) {
+  const comparison = yield* resolvedComparison(repositoryRoot, {
+    repository: Option.getOrUndefined(yield* Config.option(Config.String("GITHUB_REPOSITORY"))),
+    api: yield* gitHubApiFromEnvironment,
   });
-
-const optionalSetting = <A>(setting: Config.Config<A>) =>
-  Effect.map(Config.option(setting), Option.getOrUndefined);
-
-const comparisonFor = Effect.fn("comparisonFor")(function* comparisonFor(
-  repositoryRoot: string,
-  named: ComparisonRange | null,
-) {
-  if (named !== null) return yield* compareRevisions({ repositoryRoot, ...named });
-  return yield* resolvedComparison(repositoryRoot, {
-    repository: yield* optionalSetting(Config.String("GITHUB_REPOSITORY")),
-    request: githubRequestFor(yield* optionalSetting(Config.Redacted("GITHUB_TOKEN"))),
-  });
+  return yield* failingWhenThrown(() => runChecks({ comparison }), Schema.is(SourceUnparsable));
 });
 
-const stopAiSlop = Effect.fn("stopAiSlop")(function* stopAiSlop(argv: readonly string[]) {
-  const parsed = parsedArguments(argv);
-  if (parsed === null) return misuse();
-  if (parsed.positionals.length !== 1 || parsed.positionals[0] !== "check") return misuse();
-
-  const { base, head } = parsed.values;
-  const named = namedRange(base, head);
-  if (named === null && (base !== undefined || head !== undefined)) return misuse();
-
-  const paths = yield* Path.Path;
-  const repositoryRoot = paths.resolve(parsed.values["repository-root"] ?? process.cwd());
-  return yield* reportedComparison(yield* comparisonFor(repositoryRoot, named));
+const reported = (problems: readonly SlopProblem[]): CliResult => ({
+  exitCode: problems.length === 0 ? EXIT_SUCCESS : EXIT_PROBLEMS_FOUND,
+  out: problems.map((problem) => `${formatProblem(problem)}\n`).join(""),
+  error: "",
 });
 
-const unresolvedMisuse = (refusal: ComparisonUnresolved): CliResult => ({
+type Refusal =
+  | Config.ConfigError
+  | GitCommandFailed
+  | ComparisonUnresolved
+  | GitHubRequestFailed
+  | GitHubAnswerUnexpected
+  | DiffUnreadable
+  | BlobUnreadable
+  | UndecodableSource
+  | SourceUnparsable;
+
+const refused = (failure: Refusal): CliResult => ({
   exitCode: EXIT_MISUSE,
   out: "",
-  error: `${refusal.message}\n`,
+  error: `${failure.message}\n`,
 });
 
-const dispatch = (argv: readonly string[]): Promise<CliResult> =>
-  Effect.runPromise(
-    stopAiSlop(argv).pipe(
-      Effect.catchIf(Schema.is(ComparisonUnresolved), (refusal) =>
-        Effect.succeed(unresolvedMisuse(refusal)),
-      ),
-      Effect.provide(Layer.merge(NodeServices.layer, gitEnvironmentLayer)),
-    ),
+export const stopAiSlop = (options: StopAiSlopOptions) =>
+  checkedProblems(options).pipe(
+    Effect.provide(Layer.merge(gitEnvironmentLayer, FetchHttpClient.layer)),
+    Effect.match({ onFailure: refused, onSuccess: reported }),
   );
-
-export const runStopAiSlop = createCliRunner(dispatch);

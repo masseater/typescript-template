@@ -4,11 +4,12 @@ import { Config, Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { describe, expect } from "vite-plus/test";
 
-import { runStopAiSlop } from "../run-cli.ts";
+import { stopAiSlop } from "../run-cli.ts";
 
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
   exitCode: Schema.Finite,
+  stderr: Schema.String,
 }) {}
 
 const git = Effect.fn("git")(function* git(
@@ -30,16 +31,19 @@ const git = Effect.fn("git")(function* git(
         PATH: yield* Config.String("PATH"),
       },
       stdin: "ignore",
-      stderr: "ignore",
     }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
     { concurrency: "unbounded" },
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
 const writeSource = Effect.fn("writeSource")(function* writeSource(
@@ -79,7 +83,12 @@ const newRepository = Effect.gen(function* newRepository() {
   return repositoryRoot;
 });
 
-const stopAiSlopAnswer = (argv: readonly string[]) => Effect.promise(() => runStopAiSlop(argv));
+const lastCommitAnswer = Effect.fn("lastCommitAnswer")(function* lastCommitAnswer(
+  repositoryRoot: string,
+) {
+  yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "HEAD~1"]);
+  return yield* stopAiSlop({ repositoryRoot });
+});
 
 layer(NodeServices.layer)("no-removal-verification", (it) => {
   describe("a head that adds a test file for each source file it deletes", () => {
@@ -93,15 +102,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
       yield* removeSource(repositoryRoot, "src/zeta.ts");
       yield* removeSource(repositoryRoot, "src/alpha.ts");
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("names every test file that stands for a deleted source file", () =>
@@ -127,15 +128,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
       );
       yield* removeSource(repositoryRoot, "src/legacy.ts");
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("names the assertion and the file it says is gone", () =>
@@ -161,15 +154,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
       );
       yield* removeSource(repositoryRoot, "src/legacy.ts");
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("resolves both aliases and names the deleted file", () =>
@@ -199,15 +184,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("legacy modes are gone", () => {\n  expect(legacy).not.toHaveProperty("secondLegacyMode");\n  expect(legacy).not.toHaveProperty("legacyMode");\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("names every removed export the assertions speak about", () =>
@@ -246,15 +223,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         'import * as publicApi from "./public.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("legacy mode is gone", () => {\n  expect(publicApi).not.toHaveProperty("legacyMode");\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("names the re-exporting module the assertion speaks about", () =>
@@ -284,15 +253,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("legacy mode is gone", () => {\n  expect(legacy.legacyMode).toBeUndefined();\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("reads the undefined assertion as the same claim", () =>
@@ -332,15 +293,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
           `${assertionImports}\ntest("legacy mode is gone", () => {\n  expect(legacy).not.toHaveProperty("legacyMode");\n});\n\n${skippedGuard}`,
         );
         yield* commitSnapshot(repositoryRoot);
-        return yield* stopAiSlopAnswer([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "HEAD~1",
-          "--head",
-          "HEAD",
-        ]);
+        return yield* lastCommitAnswer(repositoryRoot);
       },
     );
 
@@ -375,15 +328,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         guardingSpec.replace("./other.ts", "./legacy.ts"),
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("names the module the import now points at", () =>
@@ -405,15 +350,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
       yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
       yield* removeSource(repositoryRoot, "src/legacy.ts");
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("lets the deletion through", () =>
@@ -438,15 +375,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         'import { existsSync } from "node:fs";\nimport { expect, test } from "vite-plus/test";\n\ntest("legacy is gone", () => {\n  expect(existsSync("src/legacy.ts")).toBe(false);\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("lets the assertion through", () =>
@@ -473,15 +402,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         );
         yield* removeSource(repositoryRoot, "src/legacy.ts");
         yield* commitSnapshot(repositoryRoot);
-        return yield* stopAiSlopAnswer([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "HEAD~1",
-          "--head",
-          "HEAD",
-        ]);
+        return yield* lastCommitAnswer(repositoryRoot);
       },
     );
 
@@ -512,15 +433,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
       yield* commitSnapshot(repositoryRoot);
       yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = true;\n");
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("lets the assertion the head left alone through", () =>
@@ -552,15 +465,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
           'import * as other from "./other.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("other module", () => {\n  expect(other).not.toHaveProperty("legacyMode");\n});\n',
         );
         yield* commitSnapshot(repositoryRoot);
-        return yield* stopAiSlopAnswer([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "HEAD~1",
-          "--head",
-          "HEAD",
-        ]);
+        return yield* lastCommitAnswer(repositoryRoot);
       },
     );
 
@@ -592,15 +497,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         'import * as other from "./a.ts#x.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("other module", () => {\n  expect(other).not.toHaveProperty("foo");\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("keeps the two locators apart", () =>
@@ -630,15 +527,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("non-value exports", () => {\n  expect(legacy).not.toHaveProperty("Legacy");\n  expect(legacy).not.toHaveProperty("default");\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("counts neither of them as a removed value export", () =>
@@ -676,15 +565,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
           'import * as alias from "./alias.ts";\nimport * as reExport from "./re-export.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("default exports", () => {\n  expect(alias).not.toHaveProperty("default");\n  expect(reExport).not.toHaveProperty("default");\n});\n',
         );
         yield* commitSnapshot(repositoryRoot);
-        return yield* stopAiSlopAnswer([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "HEAD~1",
-          "--head",
-          "HEAD",
-        ]);
+        return yield* lastCommitAnswer(repositoryRoot);
       },
     );
 
@@ -713,15 +594,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
       );
       yield* removeSource(repositoryRoot, "src/legacy.ts");
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("reads the rename as a move rather than a deletion", () =>
@@ -751,15 +624,7 @@ layer(NodeServices.layer)("no-removal-verification", (it) => {
         'import * as legacy from "./legacy.ts";\nimport { expect, test } from "vite-plus/test";\n\ntest("legacy mode is gone", () => {\n  expect(legacy["legacyMode"]).toBeUndefined();\n});\n',
       );
       yield* commitSnapshot(repositoryRoot);
-      return yield* stopAiSlopAnswer([
-        "check",
-        "--repository-root",
-        repositoryRoot,
-        "--base",
-        "HEAD~1",
-        "--head",
-        "HEAD",
-      ]);
+      return yield* lastCommitAnswer(repositoryRoot);
     });
 
     it.effect("reads only the static member as the claim", () =>

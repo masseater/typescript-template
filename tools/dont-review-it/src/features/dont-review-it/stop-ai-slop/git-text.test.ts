@@ -1,75 +1,78 @@
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
-import { Config, ConfigProvider, Effect, FileSystem, Layer, Schema, Stream } from "effect";
-import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
-import { describe, expect } from "vite-plus/test";
+import { Config, Effect, FileSystem, Layer } from "effect";
+import { describe, expect, vi } from "vite-plus/test";
 
-import { gitEnvironmentLayer, runGitText } from "./git-text.ts";
+import { gitExecutablePath } from "../repository-checks/index.ts";
+import { GitCommandFailed, gitEnvironmentLayer, runGitText } from "./git-text.ts";
 
-class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
-  command: Schema.String,
-  exitCode: Schema.Finite,
-}) {}
+const scratchDirectory = Effect.flatMap(FileSystem.FileSystem, (filesystem) =>
+  filesystem.makeTempDirectoryScoped({ prefix: "stop-ai-slop-git-text-" }),
+);
 
-const git = Effect.fn("git")(function* git(
-  repositoryRoot: string,
-  gitArguments: readonly string[],
-) {
-  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
-  const handle = yield* spawner.spawn(
-    ChildProcess.make("git", [...gitArguments], {
-      cwd: repositoryRoot,
-      env: {
-        GIT_AUTHOR_EMAIL: "stop-ai-slop@example.test",
-        GIT_AUTHOR_NAME: "Stop AI Slop",
-        GIT_COMMITTER_EMAIL: "stop-ai-slop@example.test",
-        GIT_COMMITTER_NAME: "Stop AI Slop",
-        GIT_CONFIG_GLOBAL: "/dev/null",
-        GIT_CONFIG_SYSTEM: "/dev/null",
-        HOME: repositoryRoot,
-        PATH: yield* Config.String("PATH"),
-      },
-      stdin: "ignore",
-      stderr: "ignore",
+const stubbedVariable = (name: string, value: string) =>
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      vi.stubEnv(name, value);
     }),
+    () =>
+      Effect.sync(() => {
+        vi.unstubAllEnvs();
+      }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
-    { concurrency: "unbounded" },
-  );
-  return exitCode === 0
-    ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
-}, Effect.scoped);
 
-layer(Layer.merge(NodeServices.layer, gitEnvironmentLayer))("runGitText", (it) => {
+const aliasRun = (alias: string) =>
+  Effect.flatMap(scratchDirectory, (repositoryRoot) =>
+    runGitText({ repositoryRoot, args: ["-c", `alias.probe=!${alias}`, "probe"] }),
+  );
+
+layer(Layer.provideMerge(gitEnvironmentLayer, NodeServices.layer))("runGitText", (it) => {
   describe("a successful Git command that writes to stderr", () => {
-    const stderrRejection = Effect.gen(function* stderrRejection() {
-      const filesystem = yield* FileSystem.FileSystem;
-      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
-        prefix: "stop-ai-slop-git-text-",
-      });
-      yield* git(repositoryRoot, ["init", "--quiet", "--initial-branch=main"]);
-      yield* git(repositoryRoot, ["commit", "--quiet", "--allow-empty", "--message", "snapshot"]);
-      yield* git(repositoryRoot, ["tag", "main"]);
-      return yield* runGitText({ repositoryRoot, args: ["rev-parse", "main"] }).pipe(
-        Effect.flip,
-        Effect.provide(Layer.fresh(gitEnvironmentLayer)),
-        Effect.provideService(
-          ConfigProvider.ConfigProvider,
-          ConfigProvider.fromEnv({
-            env: { HOME: repositoryRoot, PATH: yield* Config.String("PATH") },
-          }),
-        ),
-      );
-    });
-
-    it.effect("rejects with an error carrying the stderr text", () =>
+    it.effect("fails with the text Git wrote to stderr", () =>
       Effect.gen(function* program() {
-        const rejection = yield* stderrRejection;
-        expect(rejection.message).toBe(
-          "Git command wrote to stderr: warning: refname 'main' is ambiguous.\n",
+        expect(yield* Effect.flip(aliasRun("printf notice >&2"))).toStrictEqual(
+          new GitCommandFailed({ message: "Git command wrote to stderr: notice" }),
         );
+      }),
+    );
+  });
+
+  describe("a Git command that exits with a failure", () => {
+    it.effect("fails with the command and the text Git wrote to stderr", () =>
+      Effect.gen(function* program() {
+        const executable = gitExecutablePath(yield* Config.String("PATH"));
+        expect(yield* Effect.flip(aliasRun("printf refused >&2; exit 3"))).toStrictEqual(
+          new GitCommandFailed({
+            message: `Command failed: ${executable} -c alias.probe=!printf refused >&2; exit 3 probe\nrefused`,
+          }),
+        );
+      }),
+    );
+  });
+
+  describe("a caller environment holding a variable set to the empty string", () => {
+    it.effect("hands the empty variable to Git", () =>
+      Effect.gen(function* program() {
+        yield* stubbedVariable("STOP_AI_SLOP_EMPTY", "");
+        expect(yield* aliasRun("printenv STOP_AI_SLOP_EMPTY")).toBe("\n");
+      }),
+    );
+  });
+
+  describe("a caller environment holding a name that ends in a large number", () => {
+    it.effect("hands the variable to Git without walking up to the number", () =>
+      Effect.gen(function* program() {
+        yield* stubbedVariable("STOP_AI_SLOP_PORT_99999999", "open");
+        expect(yield* aliasRun("printenv STOP_AI_SLOP_PORT_99999999")).toBe("open\n");
+      }),
+    );
+  });
+
+  describe("a caller environment naming a repository of its own", () => {
+    it.effect("keeps the repository variables away from Git", () =>
+      Effect.gen(function* program() {
+        yield* stubbedVariable("GIT_DIR", "/absent.git");
+        expect(yield* aliasRun('printf "%s" "${GIT_DIR-unset}"')).toBe("unset");
       }),
     );
   });

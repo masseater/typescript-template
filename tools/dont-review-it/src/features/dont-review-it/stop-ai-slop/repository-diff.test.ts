@@ -3,15 +3,16 @@ import { layer } from "@effect/vitest";
 import { Config, Effect, FileSystem, Path, Schema, Stream } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { attempt } from "es-toolkit";
-import { expect } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
-import { parseRepositoryChanges } from "./repository-diff.ts";
+import { DiffUnreadable, parseRepositoryChanges } from "./repository-diff.ts";
 
 const nulCharacter = String.fromCodePoint(0);
 
 class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
   command: Schema.String,
   exitCode: Schema.Finite,
+  stderr: Schema.String,
 }) {}
 
 const git = Effect.fn("git")(function* git(
@@ -33,20 +34,23 @@ const git = Effect.fn("git")(function* git(
         PATH: yield* Config.String("PATH"),
       },
       stdin: "ignore",
-      stderr: "ignore",
     }),
   );
-  const [answered, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
     { concurrency: "unbounded" },
   );
   return exitCode === 0
     ? answered
-    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode });
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
 }, Effect.scoped);
 
-const refusalOf = (inventoryOutput: string, diff: string): Error | null => {
-  const [rejection] = attempt<unknown, Error>(() =>
+const refusalOf = (inventoryOutput: string, diff: string): unknown => {
+  const [rejection] = attempt<unknown, unknown>(() =>
     parseRepositoryChanges({ inventoryOutput, diff }),
   );
   return rejection;
@@ -98,67 +102,52 @@ const realGitTypeChange = Effect.gen(function* realGitTypeChange() {
   };
 });
 
-layer(NodeServices.layer)("parseRepositoryChanges", (it) => {
-  it.effect("hands back no changes for empty metadata and patch", () =>
-    Effect.sync(() => {
-      expect(parseRepositoryChanges({ inventoryOutput: "", diff: "" })).toStrictEqual([]);
-    }),
-  );
+describe("parseRepositoryChanges", () => {
+  test("hands back no changes for empty metadata and patch", () => {
+    expect(parseRepositoryChanges({ inventoryOutput: "", diff: "" })).toStrictEqual([]);
+  });
 
-  it.effect("refuses a non-empty diff that produces no files", () =>
-    Effect.sync(() => {
-      expect(refusalOf("", "not a git diff\n")).toStrictEqual(
-        new Error("Unable to parse non-empty Git diff"),
-      );
-    }),
-  );
+  test("refuses a non-empty diff that produces no files", () => {
+    expect(refusalOf("", "not a git diff\n")).toStrictEqual(
+      new DiffUnreadable({ message: "Unable to parse non-empty Git diff" }),
+    );
+  });
 
-  it.effect("refuses inventory text that carries no NUL delimiters", () =>
-    Effect.sync(() => {
-      expect(refusalOf("invalid metadata", "")).toStrictEqual(
-        new Error("Invalid NUL-delimited Git diff metadata"),
-      );
-    }),
-  );
+  test("refuses inventory text that carries no NUL delimiters", () => {
+    expect(refusalOf("invalid metadata", "")).toStrictEqual(
+      new DiffUnreadable({ message: "Invalid NUL-delimited Git diff metadata" }),
+    );
+  });
 
-  it.effect("refuses an inventory record whose path is empty", () =>
-    Effect.sync(() => {
-      expect(refusalOf(`A${nulCharacter}${nulCharacter}`, "")).toStrictEqual(
-        new Error("Invalid NUL-delimited Git diff metadata"),
-      );
-    }),
-  );
+  test("refuses an inventory record whose path is empty", () => {
+    expect(refusalOf(`A${nulCharacter}${nulCharacter}`, "")).toStrictEqual(
+      new DiffUnreadable({ message: "Invalid NUL-delimited Git diff metadata" }),
+    );
+  });
 
-  it.effect("refuses a rename record whose source path is empty", () =>
-    Effect.sync(() => {
-      expect(
-        refusalOf(`R100${nulCharacter}${nulCharacter}src/current.ts${nulCharacter}`, ""),
-      ).toStrictEqual(new Error("Invalid NUL-delimited Git diff metadata"));
-    }),
-  );
+  test("refuses a rename record whose source path is empty", () => {
+    expect(
+      refusalOf(`R100${nulCharacter}${nulCharacter}src/current.ts${nulCharacter}`, ""),
+    ).toStrictEqual(new DiffUnreadable({ message: "Invalid NUL-delimited Git diff metadata" }));
+  });
 
-  it.effect("refuses an inventory status the parser does not know", () =>
-    Effect.sync(() => {
-      expect(refusalOf(`X${nulCharacter}src/current.ts${nulCharacter}`, "")).toStrictEqual(
-        new Error("Unsupported Git diff status"),
-      );
-    }),
-  );
+  test("refuses an inventory status the parser does not know", () => {
+    expect(refusalOf(`X${nulCharacter}src/current.ts${nulCharacter}`, "")).toStrictEqual(
+      new DiffUnreadable({ message: "Unsupported Git diff status" }),
+    );
+  });
 
-  it.effect("refuses an inventory file the patch omits", () =>
-    Effect.sync(() => {
-      expect(refusalOf(`A${nulCharacter}src/added.ts${nulCharacter}`, "")).toStrictEqual(
-        new Error("Git diff metadata and patch file counts disagree: 1 != 0"),
-      );
-    }),
-  );
+  test("refuses an inventory file the patch omits", () => {
+    expect(refusalOf(`A${nulCharacter}src/added.ts${nulCharacter}`, "")).toStrictEqual(
+      new DiffUnreadable({ message: "Git diff metadata and patch file counts disagree: 1 != 0" }),
+    );
+  });
 
-  it.effect("refuses a patch whose file type disagrees with the inventory", () =>
-    Effect.sync(() => {
-      expect(
-        refusalOf(
-          `D${nulCharacter}src/current.ts${nulCharacter}`,
-          `diff --git src/current.ts src/current.ts
+  test("refuses a patch whose file type disagrees with the inventory", () => {
+    expect(
+      refusalOf(
+        `D${nulCharacter}src/current.ts${nulCharacter}`,
+        `diff --git src/current.ts src/current.ts
 new file mode 100644
 index 0000000..6cd59c7
 --- /dev/null
@@ -166,11 +155,16 @@ index 0000000..6cd59c7
 @@ -0,0 +1 @@
 +export const current = true;
 `,
-        ),
-      ).toStrictEqual(new Error("Git diff metadata and patch disagree: DeletedFile != AddedFile"));
-    }),
-  );
+      ),
+    ).toStrictEqual(
+      new DiffUnreadable({
+        message: "Git diff metadata and patch disagree: DeletedFile != AddedFile",
+      }),
+    );
+  });
+});
 
+layer(NodeServices.layer)("parseRepositoryChanges over real Git output", (it) => {
   it.effect("reconciles a real Git type change as deleted then added", () =>
     Effect.gen(function* program() {
       expect(parseRepositoryChanges(yield* realGitTypeChange)).toStrictEqual([
@@ -189,7 +183,9 @@ index 0000000..6cd59c7
       const { inventoryOutput, diff } = yield* realGitTypeChange;
       const patchFiles = diff.split(/(?=diff --git )/u);
       expect(refusalOf(inventoryOutput, patchFiles.toReversed().join(""))).toStrictEqual(
-        new Error("Git diff metadata and patch disagree: DeletedFile != AddedFile"),
+        new DiffUnreadable({
+          message: "Git diff metadata and patch disagree: DeletedFile != AddedFile",
+        }),
       );
     }),
   );

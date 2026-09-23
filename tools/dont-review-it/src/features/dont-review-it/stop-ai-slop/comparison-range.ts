@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 import { runGitText } from "./git-text.ts";
 
-export type ComparisonRange = Readonly<{
+type ComparisonRange = Readonly<{
   baseRevision: string;
   headRevision: string;
 }>;

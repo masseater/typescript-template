@@ -2,8 +2,10 @@ import { Effect, Schema } from "effect";
 
 import { comparisonRangeIn } from "./comparison-range.ts";
 import { runGitText } from "./git-text.ts";
-import { compareGitHubPullRequest, type GitHubRequest } from "./github-comparison.ts";
+import { compareGitHubPullRequest } from "./github-comparison.ts";
 import { compareRevisions } from "./repository-comparison.ts";
+
+import type { GitHubApi } from "./github-request.ts";
 
 const PARENT_PREFIX = "parent ";
 
@@ -22,7 +24,7 @@ const parentsOf = (repositoryRoot: string) =>
 
 export type ComparisonEnvironment = Readonly<{
   repository: string | undefined;
-  request: GitHubRequest | null;
+  api: GitHubApi | null;
 }>;
 
 export const resolvedComparison = Effect.fn("resolvedComparison")(function* resolvedComparison(
@@ -33,11 +35,11 @@ export const resolvedComparison = Effect.fn("resolvedComparison")(function* reso
   if (range !== null) return yield* compareRevisions({ repositoryRoot, ...range });
 
   const [base, head] = yield* parentsOf(repositoryRoot);
-  const { repository, request } = environment;
-  if (repository === undefined || request === null || base === undefined || head === undefined) {
+  const { repository, api } = environment;
+  if (repository === undefined || api === null || base === undefined || head === undefined) {
     return yield* new ComparisonUnresolved({
       message:
-        "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch, or name both ends with --base and --head.",
+        "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor a pull request merge to read. Fetch the integration branch before checking.",
     });
   }
 
@@ -46,6 +48,6 @@ export const resolvedComparison = Effect.fn("resolvedComparison")(function* reso
     repository,
     baseRevision: base,
     headRevision: head,
-    request,
+    api,
   });
 });
