@@ -7,6 +7,7 @@ export { flushTelemetry, otlpSignalUrl } from "./otlp.ts";
 export type { TelemetryFlusher } from "./otlp.ts";
 export { TelemetryInvalid } from "./telemetry-invalid.ts";
 export { ingestBrowser } from "./ingress.ts";
+export { initBrowserTelemetry } from "./browser.ts";
 export { observeRequest, reportFailure } from "./request-span.ts";
 export { logAt, logCause, statusSeverity } from "./severity.ts";
 export type { Severity } from "./severity.ts";

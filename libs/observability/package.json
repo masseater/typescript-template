@@ -2,9 +2,9 @@
   "name": "@repo/observability",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/server.ts",
-    "./browser": "./src/browser.ts",
     "./testing": "./src/testing.ts",
     "./deployment-keys": "./src/deployment-keys.ts"
   },

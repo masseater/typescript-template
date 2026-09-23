@@ -1,5 +1,5 @@
 import "./temporal.ts";
-import { initBrowserTelemetry } from "@repo/observability/browser";
+import { initBrowserTelemetry } from "@repo/observability";
 import { HeadContent } from "@tanstack/react-router";
 import { useEffect, type ReactElement } from "react";
 
