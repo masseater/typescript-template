@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { defaultIntentSkillsConfig } from "../src/features/dont-review-it/intent-skills/config.ts";
@@ -40,7 +42,11 @@ const repositoryWith = async (files: Readonly<Record<string, string>>): Promise<
 };
 
 const reportedFor = async (files: Readonly<Record<string, string>>): Promise<string> =>
-  runChecks(await repositoryWith(files)).problems.join("\n");
+  (
+    await Effect.runPromise(
+      runChecks(await repositoryWith(files)).pipe(Effect.provide(NodeServices.layer)),
+    )
+  ).problems.join("\n");
 
 describe("出荷する skill と宣言した版の突き合わせ", () => {
   it("npm へ公開できるパッケージが skill の隣に changelog を持たなければ報告する", async () => {
@@ -107,10 +113,12 @@ describe("出荷する skill と宣言した版の突き合わせ", () => {
       [SKILL_PATH]: skillDeclaring("0.0.9"),
     });
 
-    const { failures } = writeSkillVersions({
-      repositoryRoot,
-      config: defaultIntentSkillsConfig,
-    });
+    const { failures } = await Effect.runPromise(
+      writeSkillVersions({
+        repositoryRoot,
+        config: defaultIntentSkillsConfig,
+      }).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(failures).toStrictEqual([]);
     expect(await readFile(join(repositoryRoot, SKILL_PATH), "utf-8")).toContain(

@@ -1,8 +1,7 @@
-import { readFileSync } from "node:fs";
-import { basename, dirname, extname, join } from "node:path";
-
+import { Effect, FileSystem, type PlatformError } from "effect";
 import { parseSync } from "oxc-parser";
 
+import { path } from "../../platform/path.ts";
 import {
   declaratorsIn,
   isAstNode,
@@ -51,8 +50,8 @@ const ruleNameOf = ({
   const resolved = namedAs === null ? null : resolveText({ node: namedAs, constants, visited: [] });
   if (resolved !== null) return resolved;
 
-  const stem = basename(sourcePath, extname(sourcePath));
-  return GENERIC_FILE_STEMS.includes(stem) ? basename(dirname(sourcePath)) : stem;
+  const stem = path.basename(sourcePath, path.extname(sourcePath));
+  return GENERIC_FILE_STEMS.includes(stem) ? path.basename(path.dirname(sourcePath)) : stem;
 };
 
 const descriptionOf = ({
@@ -184,17 +183,19 @@ export const lintRuleFactsIn = ({
 }: {
   readonly workspaceRoot: string;
   readonly sourcePath: string;
-}): readonly LintRuleFacts[] => {
-  const sourceText = readFileSync(join(workspaceRoot, sourcePath), "utf8");
-  const statements = nodesIn(parseSync(sourcePath, sourceText).program.body);
-  const constants = moduleConstantsIn(statements);
+}): Effect.Effect<readonly LintRuleFacts[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* lintRuleFactsIn() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const sourceText = yield* filesystem.readFileString(path.join(workspaceRoot, sourcePath));
+    const statements = nodesIn(parseSync(sourcePath, sourceText).program.body);
+    const constants = moduleConstantsIn(statements);
 
-  return statements
-    .filter((statement) => statement.type === "ExportNamedDeclaration")
-    .flatMap(declaratorsIn)
-    .map((declarator) => declarator.init)
-    .filter(isAstNode)
-    .map(ruleCandidateOf)
-    .filter((candidate): candidate is UnknownFields => candidate !== null)
-    .flatMap((definition) => factsOf({ definition, constants, sourcePath }));
-};
+    return statements
+      .filter((statement) => statement.type === "ExportNamedDeclaration")
+      .flatMap(declaratorsIn)
+      .map((declarator) => declarator.init)
+      .filter(isAstNode)
+      .map(ruleCandidateOf)
+      .filter((candidate): candidate is UnknownFields => candidate !== null)
+      .flatMap((definition) => factsOf({ definition, constants, sourcePath }));
+  });

@@ -1,5 +1,3 @@
-import { dirname, join } from "node:path";
-
 import { parseSync } from "oxc-parser";
 
 import {
@@ -7,25 +5,29 @@ import {
   readTextFile,
 } from "../lint/oxlint/lib/canonical-values/source-files.ts";
 import { defaultExportedValue, unwrappedCall, valueAt } from "../lint/oxlint/lib/config-object.ts";
+import { path } from "../platform/path.ts";
 
 import type { RepositoryProblem, ScannedProblems } from "../repository-checks/index.ts";
 import type { TelemetryWiringConfig } from "./config.ts";
 
 const configDirectoriesIn = (repositoryRoot: string): readonly string[] =>
   listRepositoryFiles(repositoryRoot)
-    .manifests.map((manifest) => dirname(manifest.relativePath))
+    .manifests.map((manifest) => path.dirname(manifest.relativePath))
     .toSorted();
 
 const declaredAt = ({
   held,
-  path,
+  fieldPath,
 }: {
   readonly held: unknown;
-  readonly path: readonly string[];
+  readonly fieldPath: readonly string[];
 }): boolean =>
-  path.length === 0
+  fieldPath.length === 0
     ? held !== null
-    : declaredAt({ held: valueAt({ held, key: path[0] as string }), path: path.slice(1) });
+    : declaredAt({
+        held: valueAt({ held, key: fieldPath[0] as string }),
+        fieldPath: fieldPath.slice(1),
+      });
 
 const problemsIn = ({
   relativePath,
@@ -43,7 +45,7 @@ const problemsIn = ({
     }),
   );
   if (measured === null) return [];
-  if (declaredAt({ held: measured, path: config.wiringFieldPath })) return [];
+  if (declaredAt({ held: measured, fieldPath: config.wiringFieldPath })) return [];
 
   return [
     {
@@ -65,8 +67,8 @@ export const runTelemetryWiringChecks = ({
 
   return {
     problems: directories.flatMap((directory) => {
-      const relativePath = join(directory, config.toolchainConfigFileName);
-      const source = readTextFile(join(repositoryRoot, relativePath));
+      const relativePath = path.join(directory, config.toolchainConfigFileName);
+      const source = readTextFile(path.join(repositoryRoot, relativePath));
       return source === null ? [] : problemsIn({ relativePath, source, config });
     }),
     scanned: directories.length,

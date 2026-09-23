@@ -1,7 +1,5 @@
-import { join } from "node:path";
-import { normalize } from "node:path/posix";
-
 import { isFile } from "../lint/oxlint/lib/canonical-values/source-files.ts";
+import { path } from "../platform/path.ts";
 
 import type { RepositoryProblem } from "../problem.ts";
 import type { RequiredFileFormConfig, ToolConfigFormats } from "./config.ts";
@@ -16,9 +14,9 @@ const configsOf = ({
   readonly tool: ToolConfigFormats;
 }): readonly RepositoryProblem[] =>
   tool.foreignFileNames
-    .filter((fileName) => isFile(join(repositoryRoot, packageRoot, fileName)))
+    .filter((fileName) => isFile(path.join(repositoryRoot, packageRoot, fileName)))
     .map((fileName) => ({
-      file: normalize(`${packageRoot}/${fileName}`),
+      file: path.normalize(`${packageRoot}/${fileName}`),
       line: null,
       message: `A configuration for ${tool.toolName} must not stay in a format the type checker never reads. Move what it declares into ${tool.typeScriptFileName}.`,
     }));

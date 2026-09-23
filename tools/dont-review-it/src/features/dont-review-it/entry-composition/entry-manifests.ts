@@ -1,29 +1,34 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { normalize } from "node:path/posix";
-
+import { Effect, FileSystem, type PlatformError } from "effect";
 import { attempt, uniq } from "es-toolkit";
 import { parseTree, type Node, type ParseError } from "jsonc-parser";
 import { parse } from "yaml";
 
 import { directoriesMatching } from "../dependency-catalog/manifest-files.ts";
 import { recordOf } from "../dependency-catalog/record-fields.ts";
-import { readUnlessMissing } from "../repository-checks/index.ts";
+import { isMissingPath } from "../platform/file-system.ts";
+import { path } from "../platform/path.ts";
 
 import type { EntryCompositionConfig, EntryCompositionLayer } from "./config.ts";
 
-const readOutcomeOf = (
-  absolutePath: string,
-):
+type ReadOutcome =
   | { readonly kind: "missing" }
   | { readonly kind: "unreadable" }
-  | { readonly kind: "read"; readonly source: string } => {
-  const [unreadable, source] = attempt<string | null, Error>(() =>
-    readUnlessMissing(() => readFileSync(absolutePath, "utf8")),
-  );
-  if (unreadable !== null) return { kind: "unreadable" };
-  return source === null ? { kind: "missing" } : { kind: "read", source };
-};
+  | { readonly kind: "read"; readonly source: string };
+
+const readOutcomeOf = (
+  absolutePath: string,
+): Effect.Effect<ReadOutcome, never, FileSystem.FileSystem> =>
+  Effect.gen(function* readOutcomeOf() {
+    const filesystem = yield* FileSystem.FileSystem;
+    return yield* filesystem.readFileString(absolutePath).pipe(
+      Effect.map((source): ReadOutcome => ({ kind: "read", source })),
+      Effect.catch((unreadable) =>
+        Effect.succeed<ReadOutcome>(
+          isMissingPath(unreadable) ? { kind: "missing" } : { kind: "unreadable" },
+        ),
+      ),
+    );
+  });
 
 const unreadableFailureOf = (relativePath: string): string =>
   `${relativePath} exists but cannot be read, so the entry composition check did not run.`;
@@ -51,28 +56,31 @@ const manifestListingAt = ({
   readonly repositoryRoot: string;
   readonly relativePath: string;
   readonly layer: EntryCompositionLayer;
-}): EntryManifestListing => {
-  const absolutePath = join(repositoryRoot, relativePath);
-  const manifestRead = readOutcomeOf(absolutePath);
-  if (manifestRead.kind === "missing") return EMPTY_LISTING;
-  if (manifestRead.kind === "unreadable") {
-    return { manifests: [], failures: [unreadableFailureOf(relativePath)] };
-  }
+}): Effect.Effect<EntryManifestListing, never, FileSystem.FileSystem> =>
+  Effect.gen(function* manifestListingAt() {
+    const absolutePath = path.join(repositoryRoot, relativePath);
+    const manifestRead = yield* readOutcomeOf(absolutePath);
+    if (manifestRead.kind === "missing") return EMPTY_LISTING;
+    if (manifestRead.kind === "unreadable") {
+      return { manifests: [], failures: [unreadableFailureOf(relativePath)] };
+    }
 
-  const failures: ParseError[] = [];
-  const tree = parseTree(manifestRead.source, failures);
-  return tree !== undefined && failures.length === 0 && tree.type === "object"
-    ? {
-        manifests: [{ relativePath, absolutePath, source: manifestRead.source, root: tree, layer }],
-        failures: [],
-      }
-    : {
-        manifests: [],
-        failures: [
-          `${relativePath} exists but does not parse as a JSON object, so the entry composition check did not run.`,
-        ],
-      };
-};
+    const failures: ParseError[] = [];
+    const tree = parseTree(manifestRead.source, failures);
+    return tree !== undefined && failures.length === 0 && tree.type === "object"
+      ? {
+          manifests: [
+            { relativePath, absolutePath, source: manifestRead.source, root: tree, layer },
+          ],
+          failures: [],
+        }
+      : {
+          manifests: [],
+          failures: [
+            `${relativePath} exists but does not parse as a JSON object, so the entry composition check did not run.`,
+          ],
+        };
+  });
 
 const workspaceDirectoriesOf = ({
   repositoryRoot,
@@ -80,34 +88,42 @@ const workspaceDirectoriesOf = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: EntryCompositionConfig;
-}): { readonly directories: readonly string[]; readonly failures: readonly string[] } => {
-  const definitionRead = readOutcomeOf(join(repositoryRoot, config.workspaceDefinitionFileName));
-  if (definitionRead.kind === "missing") return { directories: [], failures: [] };
-  if (definitionRead.kind === "unreadable") {
-    return { directories: [], failures: [unreadableFailureOf(config.workspaceDefinitionFileName)] };
-  }
+}): Effect.Effect<
+  { readonly directories: readonly string[]; readonly failures: readonly string[] },
+  PlatformError.PlatformError,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* workspaceDirectoriesOf() {
+    const definitionRead = yield* readOutcomeOf(
+      path.join(repositoryRoot, config.workspaceDefinitionFileName),
+    );
+    if (definitionRead.kind === "missing") return { directories: [], failures: [] };
+    if (definitionRead.kind === "unreadable") {
+      return {
+        directories: [],
+        failures: [unreadableFailureOf(config.workspaceDefinitionFileName)],
+      };
+    }
 
-  const [unparsable, definition] = attempt<unknown, Error>(() => parse(definitionRead.source));
-  if (unparsable !== null) {
-    return {
-      directories: [],
-      failures: [
-        `${config.workspaceDefinitionFileName} exists but does not parse as YAML, so the entry composition check did not run.`,
-      ],
-    };
-  }
+    const [unparsable, definition] = attempt<unknown, Error>(() => parse(definitionRead.source));
+    if (unparsable !== null) {
+      return {
+        directories: [],
+        failures: [
+          `${config.workspaceDefinitionFileName} exists but does not parse as YAML, so the entry composition check did not run.`,
+        ],
+      };
+    }
 
-  const declaredPatterns = recordOf(definition)[config.workspacePatternsKey];
-  const patterns = Array.isArray(declaredPatterns)
-    ? declaredPatterns.filter((pattern): pattern is string => typeof pattern === "string")
-    : [];
-  return {
-    directories: uniq(
-      patterns.flatMap((pattern) => directoriesMatching({ repositoryRoot, pattern })),
-    ).toSorted(),
-    failures: [],
-  };
-};
+    const declaredPatterns = recordOf(definition)[config.workspacePatternsKey];
+    const patterns = Array.isArray(declaredPatterns)
+      ? declaredPatterns.filter((pattern): pattern is string => typeof pattern === "string")
+      : [];
+    const matched = yield* Effect.forEach(patterns, (pattern) =>
+      directoriesMatching({ repositoryRoot, pattern }),
+    );
+    return { directories: uniq(matched.flat()).toSorted(), failures: [] };
+  });
 
 export const readEntryManifests = ({
   repositoryRoot,
@@ -115,27 +131,28 @@ export const readEntryManifests = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: EntryCompositionConfig;
-}): EntryManifestListing => {
-  const expansion = workspaceDirectoriesOf({ repositoryRoot, config });
-  const workspacePaths = expansion.directories
-    .map((directory) => normalize(`${directory}/${config.manifestFileName}`))
-    .filter((relativePath) => relativePath !== config.manifestFileName);
-  const listings = [
-    manifestListingAt({
-      repositoryRoot,
-      relativePath: config.manifestFileName,
-      layer: config.rootLayer,
-    }),
-    ...workspacePaths.map((relativePath) =>
-      manifestListingAt({ repositoryRoot, relativePath, layer: config.workspaceLayer }),
-    ),
-  ];
+}): Effect.Effect<EntryManifestListing, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* readEntryManifests() {
+    const expansion = yield* workspaceDirectoriesOf({ repositoryRoot, config });
+    const workspacePaths = expansion.directories
+      .map((directory) => path.normalize(`${directory}/${config.manifestFileName}`))
+      .filter((relativePath) => relativePath !== config.manifestFileName);
+    const listings = [
+      yield* manifestListingAt({
+        repositoryRoot,
+        relativePath: config.manifestFileName,
+        layer: config.rootLayer,
+      }),
+      ...(yield* Effect.forEach(workspacePaths, (relativePath) =>
+        manifestListingAt({ repositoryRoot, relativePath, layer: config.workspaceLayer }),
+      )),
+    ];
 
-  return {
-    manifests: listings.flatMap((listing) => listing.manifests),
-    failures: [
-      ...expansion.failures,
-      ...listings.flatMap((listing) => listing.failures),
-    ].toSorted(),
-  };
-};
+    return {
+      manifests: listings.flatMap((listing) => listing.manifests),
+      failures: [
+        ...expansion.failures,
+        ...listings.flatMap((listing) => listing.failures),
+      ].toSorted(),
+    };
+  });

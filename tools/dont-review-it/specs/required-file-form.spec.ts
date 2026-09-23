@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { defaultRequiredFileFormConfig } from "../src/features/dont-review-it/required-file-form/config.ts";
@@ -32,7 +34,11 @@ const scannedFor = async ({
     ),
   );
 
-  return runRequiredFileFormChecks({ repositoryRoot, config: defaultRequiredFileFormConfig });
+  return await Effect.runPromise(
+    runRequiredFileFormChecks({ repositoryRoot, config: defaultRequiredFileFormConfig }).pipe(
+      Effect.provide(NodeServices.layer),
+    ),
+  );
 };
 
 describe("必須ファイルの形の検査", () => {

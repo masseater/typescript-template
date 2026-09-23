@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
@@ -39,7 +41,9 @@ describe("型を見る canonical literal の検査", () => {
 export const selected: OrderStatus = "draft";
 `,
     });
-    const reported = runChecks(repositoryRoot).problems.join("\n");
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems.join("\n");
     expect(reported).toContain("src/consumer.ts:2");
     expect(reported).toContain("order.status");
   });
@@ -51,8 +55,10 @@ export const selected: OrderStatus = "draft";
       "src/fetch.ts": `export const request: RequestInit = { redirect: "error" };
 `,
     });
-    const reported = runChecks(repositoryRoot)
-      .problems.filter((problem) => problem.includes("src/fetch.ts"))
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems
+      .filter((problem) => problem.includes("src/fetch.ts"))
       .join("\n");
     expect(reported).toBe("");
   });
@@ -64,7 +70,9 @@ export const selected: OrderStatus = "draft";
       "src/loose.ts": `export const selected: string = "draft";
 `,
     });
-    const reported = runChecks(repositoryRoot).problems.join("\n");
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems.join("\n");
     expect(reported).toContain("src/loose.ts:1");
     expect(reported).toContain("order.status");
   });
@@ -79,8 +87,10 @@ export const selected: OrderStatus = "draft";
 export const chosen = load("error");
 `,
     });
-    const reported = runChecks(repositoryRoot)
-      .problems.filter((problem) => problem.includes("src/redirect.ts"))
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems
+      .filter((problem) => problem.includes("src/redirect.ts"))
       .join("\n");
     expect(reported).toBe("");
   });
@@ -95,7 +105,9 @@ export const chosen = load("error");
 export const painted = paint("draft");
 `,
     });
-    const reported = runChecks(repositoryRoot).problems.join("\n");
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems.join("\n");
     expect(reported).toContain("src/inline.ts:");
     expect(reported).toContain("order.status");
   });
@@ -115,8 +127,10 @@ export type ArticleStatus = (typeof ARTICLE_STATUSES)[number];
 export const selected: ArticleStatus = "draft";
 `,
     });
-    const reported = runChecks(repositoryRoot)
-      .problems.filter((problem) => problem.includes("order.status"))
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems
+      .filter((problem) => problem.includes("order.status"))
       .join("\n");
     expect(reported).toBe("");
   });
@@ -131,9 +145,11 @@ export const ARTICLE_STATUSES = ["draft", "published"] as const;
 export type ArticleStatus = (typeof ARTICLE_STATUSES)[number];
 `;
 
-const problemsIn = (repositoryRoot: string, fileName: string): string =>
-  runChecks(repositoryRoot)
-    .problems.filter((problem) => problem.includes(fileName))
+const problemsIn = async (repositoryRoot: string, fileName: string): Promise<string> =>
+  (
+    await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+  ).problems
+    .filter((problem) => problem.includes(fileName))
     .join("\n");
 
 describe("型の由来で owner を決める canonical literal の検査", () => {
@@ -146,7 +162,7 @@ export const selected: ArticleStatus = "draft";
 export const labels: { readonly status?: ArticleStatus } = { status: "published" };
 `,
     });
-    const reported = problemsIn(repositoryRoot, "src/article.ts");
+    const reported = await problemsIn(repositoryRoot, "src/article.ts");
     expect(reported).toContain("src/article.ts:2");
     expect(reported).toContain("src/article.ts:3");
     expect(reported).toContain("article.status");
@@ -169,7 +185,7 @@ export const label = (status: ArticleStatus): string => {
 };
 `,
     });
-    const reported = problemsIn(repositoryRoot, "src/compare.ts");
+    const reported = await problemsIn(repositoryRoot, "src/compare.ts");
     expect(reported).toContain("src/compare.ts:2");
     expect(reported).toContain("src/compare.ts:5");
     expect(reported).toContain("article.status");
@@ -185,7 +201,7 @@ export type Listed = OrderStatus | "deleted";
 export const listed: Listed = "draft";
 `,
     });
-    const reported = problemsIn(repositoryRoot, "src/extended.ts:3");
+    const reported = await problemsIn(repositoryRoot, "src/extended.ts:3");
     expect(reported).toContain("order.status");
   });
 });
@@ -201,7 +217,7 @@ export type Listed = OrderStatus | "deleted";
 export type Indexed = (typeof ORDER_STATUSES)[number] | "archived";
 `,
     });
-    const reported = problemsIn(repositoryRoot, "src/extended.ts");
+    const reported = await problemsIn(repositoryRoot, "src/extended.ts");
     expect(reported).toContain("src/extended.ts:3");
     expect(reported).toContain('"deleted"');
     expect(reported).toContain("src/extended.ts:4");
@@ -218,7 +234,7 @@ export type Maybe = OrderStatus | null | undefined;
 export type Flagged = OrderStatus | false;
 `,
     });
-    expect(problemsIn(repositoryRoot, "src/optional.ts")).toBe("");
+    expect(await problemsIn(repositoryRoot, "src/optional.ts")).toBe("");
   });
 
   it("owner と無関係な型とリテラルの union は報告しない", async () => {
@@ -229,7 +245,7 @@ export type Flagged = OrderStatus | false;
 export type Sizing = Size | "auto";
 `,
     });
-    expect(problemsIn(repositoryRoot, "src/unrelated.ts")).toBe("");
+    expect(await problemsIn(repositoryRoot, "src/unrelated.ts")).toBe("");
   });
 });
 
@@ -243,6 +259,6 @@ export type Selection = "all" | readonly OrderStatus[];
 export type Remaining = Exclude<string, OrderStatus | "deleted">;
 `,
     });
-    expect(problemsIn(repositoryRoot, "src/narrowed.ts")).toBe("");
+    expect(await problemsIn(repositoryRoot, "src/narrowed.ts")).toBe("");
   });
 });

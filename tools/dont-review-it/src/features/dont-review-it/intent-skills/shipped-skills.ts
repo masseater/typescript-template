@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-
+import { Effect, FileSystem, type PlatformError } from "effect";
 import { parseTree } from "jsonc-parser";
 
 import {
@@ -18,21 +17,32 @@ import type { RepositoryProblem } from "../problem.ts";
 import type { ScannedProblems } from "../repository-checks/index.ts";
 import type { IntentSkillsConfig } from "./config.ts";
 
-const shipsSkillFile = (scope: SkillPackage): boolean =>
-  listSkillFiles({ directory: skillsDirectoryOf(scope), config: scope.config }).length > 0;
+type ScopeProblems = Effect.Effect<
+  readonly RepositoryProblem[],
+  PlatformError.PlatformError,
+  FileSystem.FileSystem
+>;
 
-const missingSkillFiles = (scope: SkillPackage): readonly RepositoryProblem[] => {
-  const { manifest, config } = scope;
-  if (shipsSkillFile(scope)) return [];
+const shipsSkillFile = (
+  scope: SkillPackage,
+): Effect.Effect<boolean, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  listSkillFiles({ directory: skillsDirectoryOf(scope), config: scope.config }).pipe(
+    Effect.map((skillFiles) => skillFiles.length > 0),
+  );
 
-  return [
-    {
-      file: manifest.file.relativePath,
-      line: lineOfProperty({ manifest, key: "name" }),
-      message: `A package that npm can publish must not ship without a TanStack Intent skill, because an agent that installs it finds nothing to load. Create ${config.skillsDirectory}/<topic>/${config.skillFileName} with npx @tanstack/intent scaffold, or mark the package "private": true.`,
-    },
-  ];
-};
+const missingSkillFiles = (scope: SkillPackage): ScopeProblems =>
+  Effect.gen(function* missingSkillFiles() {
+    const { manifest, config } = scope;
+    if (yield* shipsSkillFile(scope)) return [];
+
+    return [
+      {
+        file: manifest.file.relativePath,
+        line: lineOfProperty({ manifest, key: "name" }),
+        message: `A package that npm can publish must not ship without a TanStack Intent skill, because an agent that installs it finds nothing to load. Create ${config.skillsDirectory}/<topic>/${config.skillFileName} with npx @tanstack/intent scaffold, or mark the package "private": true.`,
+      },
+    ];
+  });
 
 const missingFilesEntry = ({ manifest, config }: SkillPackage): readonly RepositoryProblem[] => {
   const declared = stringEntriesOf(propertyValueOf(manifest.root, "files"));
@@ -60,12 +70,17 @@ const missingKeyword = ({ manifest, config }: SkillPackage): readonly Repository
   ];
 };
 
-const missingProblems = (scope: SkillPackage): readonly RepositoryProblem[] => [
-  ...missingSkillFiles(scope),
-  ...missingFilesEntry(scope),
-  ...missingKeyword(scope),
-  ...publishedVersionProblems(scope),
-];
+const missingProblems = (scope: SkillPackage): ScopeProblems =>
+  Effect.gen(function* missingProblems() {
+    const skillFileProblems = yield* missingSkillFiles(scope);
+    const versionProblems = yield* publishedVersionProblems(scope);
+    return [
+      ...skillFileProblems,
+      ...missingFilesEntry(scope),
+      ...missingKeyword(scope),
+      ...versionProblems,
+    ];
+  });
 
 const unexpectedFilesEntry = ({ manifest, config }: SkillPackage): readonly RepositoryProblem[] => {
   const declared = stringEntriesOf(propertyValueOf(manifest.root, "files")) ?? [];
@@ -80,18 +95,19 @@ const unexpectedFilesEntry = ({ manifest, config }: SkillPackage): readonly Repo
   ];
 };
 
-const unexpectedSkillFiles = (scope: SkillPackage): readonly RepositoryProblem[] => {
-  const { manifest, config } = scope;
-  if (!shipsSkillFile(scope)) return [];
+const unexpectedSkillFiles = (scope: SkillPackage): ScopeProblems =>
+  Effect.gen(function* unexpectedSkillFiles() {
+    const { manifest, config } = scope;
+    if (!(yield* shipsSkillFile(scope))) return [];
 
-  return [
-    {
-      file: manifest.file.relativePath,
-      line: lineOfProperty({ manifest, key: "private" }),
-      message: `A workspace-internal package must not carry TanStack Intent skills, because a skill that never ships trains agents on a surface nobody can install. Delete the ${config.skillsDirectory} directory, or let the package publish by removing "private": true.`,
-    },
-  ];
-};
+    return [
+      {
+        file: manifest.file.relativePath,
+        line: lineOfProperty({ manifest, key: "private" }),
+        message: `A workspace-internal package must not carry TanStack Intent skills, because a skill that never ships trains agents on a surface nobody can install. Delete the ${config.skillsDirectory} directory, or let the package publish by removing "private": true.`,
+      },
+    ];
+  });
 
 const unexpectedKeyword = ({ manifest, config }: SkillPackage): readonly RepositoryProblem[] => {
   const declared = stringEntriesOf(propertyValueOf(manifest.root, "keywords")) ?? [];
@@ -106,12 +122,17 @@ const unexpectedKeyword = ({ manifest, config }: SkillPackage): readonly Reposit
   ];
 };
 
-const unexpectedProblems = (scope: SkillPackage): readonly RepositoryProblem[] => [
-  ...unexpectedSkillFiles(scope),
-  ...unexpectedFilesEntry(scope),
-  ...unexpectedKeyword(scope),
-  ...unexpectedChangelogProblems(scope),
-];
+const unexpectedProblems = (scope: SkillPackage): ScopeProblems =>
+  Effect.gen(function* unexpectedProblems() {
+    const skillFileProblems = yield* unexpectedSkillFiles(scope);
+    const changelogProblems = yield* unexpectedChangelogProblems(scope);
+    return [
+      ...skillFileProblems,
+      ...unexpectedFilesEntry(scope),
+      ...unexpectedKeyword(scope),
+      ...changelogProblems,
+    ];
+  });
 
 const manifestProblems = ({
   file,
@@ -121,16 +142,18 @@ const manifestProblems = ({
   readonly file: ScannedFile;
   readonly config: IntentSkillsConfig;
   readonly repositoryRoot: string;
-}): readonly RepositoryProblem[] => {
-  const source = readFileSync(file.absolutePath, "utf8");
-  const root = parseTree(source);
-  if (root === undefined || typeof propertyValueOf(root, "name") !== "string") return [];
+}): ScopeProblems =>
+  Effect.gen(function* manifestProblems() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const source = yield* filesystem.readFileString(file.absolutePath);
+    const root = parseTree(source);
+    if (root === undefined || typeof propertyValueOf(root, "name") !== "string") return [];
 
-  const scope = { manifest: { file, source, root }, config, repositoryRoot };
-  return propertyValueOf(root, "private") === true
-    ? unexpectedProblems(scope)
-    : missingProblems(scope);
-};
+    const scope = { manifest: { file, source, root }, config, repositoryRoot };
+    return yield* propertyValueOf(root, "private") === true
+      ? unexpectedProblems(scope)
+      : missingProblems(scope);
+  });
 
 export const shippedSkillsProblems = ({
   repositoryRoot,
@@ -138,10 +161,11 @@ export const shippedSkillsProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: IntentSkillsConfig;
-}): ScannedProblems => {
-  const manifests = listRepositoryFiles(repositoryRoot).manifests;
-  return {
-    problems: manifests.flatMap((file) => manifestProblems({ file, config, repositoryRoot })),
-    scanned: manifests.length,
-  };
-};
+}): Effect.Effect<ScannedProblems, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* shippedSkillsProblems() {
+    const manifests = listRepositoryFiles(repositoryRoot).manifests;
+    const problems = yield* Effect.forEach(manifests, (file) =>
+      manifestProblems({ file, config, repositoryRoot }),
+    );
+    return { problems: problems.flat(), scanned: manifests.length };
+  });

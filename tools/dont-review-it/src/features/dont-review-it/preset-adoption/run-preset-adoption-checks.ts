@@ -1,5 +1,3 @@
-import { dirname, join } from "node:path";
-
 import { adoptedBundlesIn } from "../configs/bundles/adopted-bundles.ts";
 import { LINT_BUNDLE_NAMES, type LintBundle } from "../configs/bundles/bundle-names.ts";
 import { BUNDLE_RULES } from "../configs/oxlint.ts";
@@ -8,6 +6,7 @@ import {
   readTextFile,
 } from "../lint/oxlint/lib/canonical-values/source-files.ts";
 import { matchesAnchoredGlobPath } from "../lint/oxlint/lib/glob-path-match.ts";
+import { path } from "../platform/path.ts";
 import {
   disabledRuleDeclarationsIn,
   type DisabledRuleDeclaration,
@@ -24,7 +23,7 @@ export type PresetAdoptionReport = {
 
 const workspaceDirectoriesIn = (repositoryRoot: string): readonly string[] =>
   listRepositoryFiles(repositoryRoot)
-    .manifests.map((manifest) => dirname(manifest.relativePath))
+    .manifests.map((manifest) => path.dirname(manifest.relativePath))
     .filter((directory) => directory !== ".")
     .toSorted();
 
@@ -86,7 +85,7 @@ export const runPresetAdoptionChecks = ({
   readonly repositoryRoot: string;
   readonly config: PresetAdoptionConfig;
 }): PresetAdoptionReport => {
-  const source = readTextFile(join(repositoryRoot, config.toolchainConfigFileName));
+  const source = readTextFile(path.join(repositoryRoot, config.toolchainConfigFileName));
   const workspaces = workspaceDirectoriesIn(repositoryRoot);
   if (source === null) return { warnings: [], scanned: workspaces.length, configMissing: true };
 

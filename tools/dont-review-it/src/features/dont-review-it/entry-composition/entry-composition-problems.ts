@@ -1,3 +1,4 @@
+import { Effect, type FileSystem, type PlatformError } from "effect";
 import { findNodeAtLocation, type Node } from "jsonc-parser";
 
 import { composedPrefixOf, type EntryCompositionConfig } from "./config.ts";
@@ -89,15 +90,15 @@ export const entryCompositionProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: EntryCompositionConfig;
-}): EntryCompositionReport => {
-  const listing = readEntryManifests({ repositoryRoot, config });
-  return {
-    problems: listing.manifests.flatMap((manifest) =>
-      entryFindingsIn({ manifest, config }).map((finding) =>
-        problemOf({ manifest, finding, config }),
+}): Effect.Effect<EntryCompositionReport, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  readEntryManifests({ repositoryRoot, config }).pipe(
+    Effect.map((listing) => ({
+      problems: listing.manifests.flatMap((manifest) =>
+        entryFindingsIn({ manifest, config }).map((finding) =>
+          problemOf({ manifest, finding, config }),
+        ),
       ),
-    ),
-    failures: listing.failures,
-    scanned: listing.manifests.length,
-  };
-};
+      failures: listing.failures,
+      scanned: listing.manifests.length,
+    })),
+  );

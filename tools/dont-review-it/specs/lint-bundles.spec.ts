@@ -2,6 +2,8 @@ import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import {
@@ -114,10 +116,9 @@ export default defineConfig({
       "utf-8",
     );
     const byCheck = new Map(
-      runChecks(repositoryRoot).outcomes.map((ranCheck) => [
-        ranCheck.check,
-        ranCheck.skippedReason,
-      ]),
+      (
+        await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+      ).outcomes.map((ranCheck) => [ranCheck.check, ranCheck.skippedReason]),
     );
 
     expect(byCheck.get("canonical-values")).toBe("bundle not adopted");
@@ -128,9 +129,9 @@ export default defineConfig({
   it("束を名指ししていないツールチェーン設定では、どの検査も走る", async () => {
     const repositoryRoot = await mkdtemp(join(tmpdir(), "dont-review-it-bundles-"));
     onTestFinished(async () => rm(repositoryRoot, { recursive: true, force: true }));
-    const skipped = runChecks(repositoryRoot).outcomes.filter(
-      (ranCheck) => ranCheck.skippedReason === "bundle not adopted",
-    );
+    const skipped = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).outcomes.filter((ranCheck) => ranCheck.skippedReason === "bundle not adopted");
 
     expect(skipped).toStrictEqual([]);
   });

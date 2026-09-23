@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
@@ -28,7 +30,9 @@ const repositoryWith = async (files: Readonly<Record<string, string>>): Promise<
 
 const reportedForWorkflow = async (workflowSource: string): Promise<string> => {
   const repositoryRoot = await repositoryWith({ [WORKFLOW_PATH]: workflowSource });
-  const { problems } = runChecks(repositoryRoot);
+  const { problems } = await Effect.runPromise(
+    runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
+  );
   return problems.join("\n");
 };
 
@@ -202,7 +206,9 @@ jobs:
       - run: vp run guard
 `,
     });
-    const { problems, warnings, failures } = runChecks(repositoryRoot);
+    const { problems, warnings, failures } = await Effect.runPromise(
+      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(problems).toStrictEqual([]);
     expect(warnings).toStrictEqual([]);

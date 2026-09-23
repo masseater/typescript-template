@@ -1,8 +1,7 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { formatLintRuleProblem } from "../lint-rule-problem.ts";
 import { lintRuleIndexProblems } from "./reconcile-rule-index.ts";
@@ -43,88 +42,119 @@ const HANDWRITTEN_INDEX = "# A hand written index\n\nProse and nothing else.\n";
 
 const STALE_REGION_INDEX = `# An index\n\nFront matter prose.\n\n<!-- BEGIN GENERATED lint-rules -->\n\nA stale table\n\n<!-- END GENERATED lint-rules -->\n\nTrailing prose.\n`;
 
-describe("lintRuleIndexProblems", () => {
+layer(NodeServices.layer)("lintRuleIndexProblems", (it) => {
   describe("a repository without declaring workspaces", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      return lintRuleIndexProblems({ repositoryRoot: root, write: false });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: false });
     });
 
-    it("has nothing to reconcile", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 0 });
-    });
+    it.effect("has nothing to reconcile", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 0 });
+      }),
+    );
   });
 
   describe("an index that is missing while the check only reads", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      return lintRuleIndexProblems({ repositoryRoot: root, write: false });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: false });
     });
 
-    it("is reported against the path it should have been written to", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: INDEX_PATH, message: MISSING_INDEX }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported against the path it should have been written to", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: INDEX_PATH, message: MISSING_INDEX }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("an index that is missing while the check may write", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      return lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
     });
 
-    it("leaves nothing to report", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("leaves nothing to report", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("the file a scaffolding run leaves behind", () => {
-    const it = test.extend("indexText", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const indexTextFixture = Effect.gen(function* indexText() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      lintRuleIndexProblems({ repositoryRoot: root, write: true });
-      return readFileSync(join(root, INDEX_PATH), "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* filesystem.readFileString(paths.join(root, INDEX_PATH));
     });
 
-    it("carries the generated region and the rule", ({ indexText }) => {
-      expect(indexText).toMatchInlineSnapshot(`
+    it.effect("carries the generated region and the rule", () =>
+      Effect.gen(function* program() {
+        const indexText = yield* indexTextFixture;
+        expect(indexText).toMatchInlineSnapshot(`
         "# Lint rule index
 
         Every lint rule this workspace implements. Generated from the rule sources; refresh it with \`vp run guard:fix\` rather than editing it.
@@ -138,81 +168,115 @@ describe("lintRuleIndexProblems", () => {
         <!-- END GENERATED lint-rules -->
         "
       `);
-    });
+      }),
+    );
   });
 
   describe("the check that follows a scaffolding run", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      lintRuleIndexProblems({ repositoryRoot: root, write: true });
-      return lintRuleIndexProblems({ repositoryRoot: root, write: false });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: false });
     });
 
-    it("stays silent", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("stays silent", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("an index without the generated region while the check only reads", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      mkdirSync(dirname(join(root, INDEX_PATH)), { recursive: true });
-      writeFileSync(join(root, INDEX_PATH), HANDWRITTEN_INDEX, "utf8");
-      return lintRuleIndexProblems({ repositoryRoot: root, write: false });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, INDEX_PATH)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(paths.join(root, INDEX_PATH), HANDWRITTEN_INDEX);
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: false });
     });
 
-    it("is reported", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: INDEX_PATH, message: MISSING_MARKERS }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: INDEX_PATH, message: MISSING_MARKERS }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("an index without the generated region while the check may write", () => {
-    const it = test.extend("indexText", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const indexTextFixture = Effect.gen(function* indexText() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      mkdirSync(dirname(join(root, INDEX_PATH)), { recursive: true });
-      writeFileSync(join(root, INDEX_PATH), HANDWRITTEN_INDEX, "utf8");
-      lintRuleIndexProblems({ repositoryRoot: root, write: true });
-      return readFileSync(join(root, INDEX_PATH), "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, INDEX_PATH)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(paths.join(root, INDEX_PATH), HANDWRITTEN_INDEX);
+      yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* filesystem.readFileString(paths.join(root, INDEX_PATH));
     });
 
-    it("gets the generated region inserted ahead of the prose", ({ indexText }) => {
-      expect(indexText).toMatchInlineSnapshot(`
+    it.effect("gets the generated region inserted ahead of the prose", () =>
+      Effect.gen(function* program() {
+        const indexText = yield* indexTextFixture;
+        expect(indexText).toMatchInlineSnapshot(`
         "<!-- BEGIN GENERATED lint-rules -->
 
         | Rule | Description | Tool | Notices |
@@ -226,35 +290,46 @@ describe("lintRuleIndexProblems", () => {
         Prose and nothing else.
         "
       `);
-    });
+      }),
+    );
   });
 
   describe("a document that opens with frontmatter", () => {
-    const it = test.extend("indexText", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const indexTextFixture = Effect.gen(function* indexText() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
         RULE_SOURCE,
-        "utf8",
       );
-      mkdirSync(dirname(join(root, INDEX_PATH)), { recursive: true });
-      writeFileSync(
-        join(root, INDEX_PATH),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, INDEX_PATH)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, INDEX_PATH),
         "---\ndescription: an index\n---\n\n# A hand written index\n",
-        "utf8",
       );
-      lintRuleIndexProblems({ repositoryRoot: root, write: true });
-      return readFileSync(join(root, INDEX_PATH), "utf8");
+      yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* filesystem.readFileString(paths.join(root, INDEX_PATH));
     });
 
-    it("takes the inserted region after the frontmatter", ({ indexText }) => {
-      expect(indexText).toMatchInlineSnapshot(`
+    it.effect("takes the inserted region after the frontmatter", () =>
+      Effect.gen(function* program() {
+        const indexText = yield* indexTextFixture;
+        expect(indexText).toMatchInlineSnapshot(`
         "---
         description: an index
         ---
@@ -271,31 +346,46 @@ describe("lintRuleIndexProblems", () => {
         # A hand written index
         "
       `);
-    });
+      }),
+    );
   });
 
   describe("an opening fence that never closes", () => {
-    const it = test.extend("indexText", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const indexTextFixture = Effect.gen(function* indexText() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      mkdirSync(dirname(join(root, INDEX_PATH)), { recursive: true });
-      writeFileSync(join(root, INDEX_PATH), "---\nThis line is not a fence.\n", "utf8");
-      lintRuleIndexProblems({ repositoryRoot: root, write: true });
-      return readFileSync(join(root, INDEX_PATH), "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, INDEX_PATH)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, INDEX_PATH),
+        "---\nThis line is not a fence.\n",
+      );
+      yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* filesystem.readFileString(paths.join(root, INDEX_PATH));
     });
 
-    it("is treated as prose", ({ indexText }) => {
-      expect(indexText).toMatchInlineSnapshot(`
+    it.effect("is treated as prose", () =>
+      Effect.gen(function* program() {
+        const indexText = yield* indexTextFixture;
+        expect(indexText).toMatchInlineSnapshot(`
         "<!-- BEGIN GENERATED lint-rules -->
 
         | Rule | Description | Tool | Notices |
@@ -308,58 +398,82 @@ describe("lintRuleIndexProblems", () => {
         This line is not a fence.
         "
       `);
-    });
+      }),
+    );
   });
 
   describe("a stale region while the check only reads", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      mkdirSync(dirname(join(root, INDEX_PATH)), { recursive: true });
-      writeFileSync(join(root, INDEX_PATH), STALE_REGION_INDEX, "utf8");
-      return lintRuleIndexProblems({ repositoryRoot: root, write: false });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, INDEX_PATH)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(paths.join(root, INDEX_PATH), STALE_REGION_INDEX);
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: false });
     });
 
-    it("is reported", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: INDEX_PATH, message: STALE_INDEX }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: INDEX_PATH, message: STALE_INDEX }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a stale region while the check may write", () => {
-    const it = test.extend("indexText", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const indexTextFixture = Effect.gen(function* indexText() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      mkdirSync(dirname(join(root, INDEX_PATH)), { recursive: true });
-      writeFileSync(join(root, INDEX_PATH), STALE_REGION_INDEX, "utf8");
-      lintRuleIndexProblems({ repositoryRoot: root, write: true });
-      return readFileSync(join(root, INDEX_PATH), "utf8");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, INDEX_PATH)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(paths.join(root, INDEX_PATH), STALE_REGION_INDEX);
+      yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* filesystem.readFileString(paths.join(root, INDEX_PATH));
     });
 
-    it("is refreshed while the prose around it stays", ({ indexText }) => {
-      expect(indexText).toMatchInlineSnapshot(`
+    it.effect("is refreshed while the prose around it stays", () =>
+      Effect.gen(function* program() {
+        const indexText = yield* indexTextFixture;
+        expect(indexText).toMatchInlineSnapshot(`
         "# An index
 
         Front matter prose.
@@ -375,154 +489,218 @@ describe("lintRuleIndexProblems", () => {
         Trailing prose.
         "
       `);
-    });
+      }),
+    );
   });
 
   describe("a region the formatter padded", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
         RULE_SOURCE,
-        "utf8",
       );
-      mkdirSync(dirname(join(root, INDEX_PATH)), { recursive: true });
-      writeFileSync(
-        join(root, INDEX_PATH),
+      yield* filesystem.makeDirectory(paths.dirname(paths.join(root, INDEX_PATH)), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, INDEX_PATH),
         `# An index\n\n<!-- BEGIN GENERATED lint-rules -->\n\n| Rule                                        | Description        | Tool   | Notices |\n| ------------------------------------------- | ------------------ | ------ | ---- |\n| [no-thing--allow-it](./no-thing--allow-it.md) | Disallow the thing | -      |      |\n\n<!-- END GENERATED lint-rules -->\n`,
-        "utf8",
       );
-      return lintRuleIndexProblems({ repositoryRoot: root, write: false });
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: false });
     });
 
-    it("still counts as fresh", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("still counts as fresh", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("two rules sharing a name while the check only reads", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/src/rules/twin.ts"), RULE_SOURCE, "utf8");
-      return lintRuleIndexProblems({ repositoryRoot: root, write: false });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/twin.ts"),
+        RULE_SOURCE,
+      );
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: false });
     });
 
-    it("are reported ahead of the missing index", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [
-          { file: INDEX_PATH, message: DUPLICATED_RULE_NAME },
-          { file: INDEX_PATH, message: MISSING_INDEX },
-        ],
-        scanned: 1,
-      });
-    });
+    it.effect("are reported ahead of the missing index", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [
+            { file: INDEX_PATH, message: DUPLICATED_RULE_NAME },
+            { file: INDEX_PATH, message: MISSING_INDEX },
+          ],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("two rules sharing a name while the check may write", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
-        RULE_SOURCE,
-        "utf8",
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/src/rules/twin.ts"), RULE_SOURCE, "utf8");
-      return lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-thing--allow-it.ts"),
+        RULE_SOURCE,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/twin.ts"),
+        RULE_SOURCE,
+      );
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
     });
 
-    it("are reported even though the index gets written", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: INDEX_PATH, message: DUPLICATED_RULE_NAME }],
-        scanned: 1,
-      });
-    });
+    it.effect("are reported even though the index gets written", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: INDEX_PATH, message: DUPLICATED_RULE_NAME }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a shipped rule left outside the bundle directories a workspace has", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules/core"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules/core"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(
-        join(root, "packages/example/src/rules/core/no-thing--allow-it.ts"),
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/core/no-thing--allow-it.ts"),
         RULE_SOURCE,
-        "utf8",
       );
-      writeFileSync(
-        join(root, "packages/example/src/rules/no-stray--allow-it.ts"),
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/src/rules/no-stray--allow-it.ts"),
         STRAY_RULE_SOURCE,
-        "utf8",
       );
-      return lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
     });
 
-    it("is reported against the source that has to move", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: STRAY_RULE_PATH, message: UNBUNDLED_SHIPPED_RULE }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported against the source that has to move", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: STRAY_RULE_PATH, message: UNBUNDLED_SHIPPED_RULE }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a workspace with no rules yet while the check may write", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      mkdirSync(join(root, "packages/example"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      return lintRuleIndexProblems({ repositoryRoot: root, write: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
     });
 
-    it("leaves nothing to report", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("leaves nothing to report", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("the file a workspace with no rules yet gets", () => {
-    const it = test.extend("indexText", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "reconcile-rule-index-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      mkdirSync(join(root, "packages/example"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      lintRuleIndexProblems({ repositoryRoot: root, write: true });
-      return readFileSync(join(root, INDEX_PATH), "utf8");
+    const indexTextFixture = Effect.gen(function* indexText() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+      return yield* filesystem.readFileString(paths.join(root, INDEX_PATH));
     });
 
-    it("carries an empty table", ({ indexText }) => {
-      expect(indexText).toMatchInlineSnapshot(`
+    it.effect("carries an empty table", () =>
+      Effect.gen(function* program() {
+        const indexText = yield* indexTextFixture;
+        expect(indexText).toMatchInlineSnapshot(`
         "# Lint rule index
 
         Every lint rule this workspace implements. Generated from the rule sources; refresh it with \`vp run guard:fix\` rather than editing it.
@@ -535,17 +713,22 @@ describe("lintRuleIndexProblems", () => {
         <!-- END GENERATED lint-rules -->
         "
       `);
-    });
+      }),
+    );
   });
 });
 
-describe("formatLintRuleProblem", () => {
+layer(NodeServices.layer)("formatLintRuleProblem", (it) => {
   describe("a problem naming the index it was found against", () => {
-    const it = test.extend("formattedProblem", () =>
-      formatLintRuleProblem({ file: INDEX_PATH, message: MISSING_INDEX }));
-
-    it("spells the path first and the message after it", ({ formattedProblem }) => {
-      expect(formattedProblem).toBe(`${INDEX_PATH} ${MISSING_INDEX}`);
+    const formattedProblemFixture = Effect.gen(function* formattedProblem() {
+      return formatLintRuleProblem({ file: INDEX_PATH, message: MISSING_INDEX });
     });
+
+    it.effect("spells the path first and the message after it", () =>
+      Effect.gen(function* program() {
+        const formattedProblem = yield* formattedProblemFixture;
+        expect(formattedProblem).toBe(`${INDEX_PATH} ${MISSING_INDEX}`);
+      }),
+    );
   });
 });

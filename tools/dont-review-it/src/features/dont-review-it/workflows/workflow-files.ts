@@ -1,6 +1,6 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { Effect, FileSystem, type PlatformError } from "effect";
 
+import { path } from "../platform/path.ts";
 import { parseWorkflowDocument, type WorkflowDocument } from "./workflow-document.ts";
 
 import type { WorkflowChecksConfig } from "./config.ts";
@@ -11,26 +11,36 @@ export const readWorkflowDocuments = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: WorkflowChecksConfig;
-}): readonly WorkflowDocument[] => {
-  const directory = join(repositoryRoot, config.workflowDirectory);
-  if (!existsSync(directory)) {
-    const githubDirectory = dirname(directory);
-    if (existsSync(githubDirectory)) {
-      readdirSync(directory);
+}): Effect.Effect<
+  readonly WorkflowDocument[],
+  PlatformError.PlatformError,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* readWorkflowDocuments() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const directory = path.join(repositoryRoot, config.workflowDirectory);
+    if (!(yield* filesystem.exists(directory))) {
+      if (yield* filesystem.exists(path.dirname(directory))) {
+        yield* filesystem.readDirectory(directory);
+      }
+      return [];
     }
-    return [];
-  }
-  const entryNames = readdirSync(directory);
+    const entryNames = yield* filesystem.readDirectory(directory);
 
-  return entryNames
-    .filter((spelled) =>
-      config.workflowFileExtensions.some((extension) => spelled.endsWith(extension)),
-    )
-    .toSorted()
-    .map((spelled) =>
-      parseWorkflowDocument({
-        relativePath: `${config.workflowDirectory}/${spelled}`,
-        source: readFileSync(join(directory, spelled), "utf8"),
-      }),
+    return yield* Effect.forEach(
+      entryNames
+        .filter((spelled) =>
+          config.workflowFileExtensions.some((extension) => spelled.endsWith(extension)),
+        )
+        .toSorted(),
+      (spelled) =>
+        filesystem.readFileString(path.join(directory, spelled)).pipe(
+          Effect.map((source) =>
+            parseWorkflowDocument({
+              relativePath: `${config.workflowDirectory}/${spelled}`,
+              source,
+            }),
+          ),
+        ),
     );
-};
+  });

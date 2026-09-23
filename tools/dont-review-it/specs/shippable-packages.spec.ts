@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { defaultShippablePackagesConfig } from "../src/features/dont-review-it/shippable-packages/config.ts";
@@ -40,7 +42,15 @@ describe("出荷できるパッケージの検査", () => {
 }`,
     });
 
-    expect(shippablePackagesProblems({ repositoryRoot, config }).problems).toStrictEqual([
+    expect(
+      (
+        await Effect.runPromise(
+          shippablePackagesProblems({ repositoryRoot, config }).pipe(
+            Effect.provide(NodeServices.layer),
+          ),
+        )
+      ).problems,
+    ).toStrictEqual([
       {
         file: "packages/shipped/package.json",
         line: 3,
@@ -59,7 +69,15 @@ describe("出荷できるパッケージの検査", () => {
 }`,
     });
 
-    expect(shippablePackagesProblems({ repositoryRoot, config }).problems).toStrictEqual([]);
+    expect(
+      (
+        await Effect.runPromise(
+          shippablePackagesProblems({ repositoryRoot, config }).pipe(
+            Effect.provide(NodeServices.layer),
+          ),
+        )
+      ).problems,
+    ).toStrictEqual([]);
   });
 
   it("公開後に実行時が解決する入口が型注釈を持つソースを指していることを報告する", async () => {
@@ -70,7 +88,15 @@ describe("出荷できるパッケージの検査", () => {
 }`,
     });
 
-    expect(shippablePackagesProblems({ repositoryRoot, config }).problems).toStrictEqual([
+    expect(
+      (
+        await Effect.runPromise(
+          shippablePackagesProblems({ repositoryRoot, config }).pipe(
+            Effect.provide(NodeServices.layer),
+          ),
+        )
+      ).problems,
+    ).toStrictEqual([
       {
         file: "packages/shipped/package.json",
         line: 3,
@@ -90,7 +116,15 @@ describe("出荷できるパッケージの検査", () => {
 }`,
     });
 
-    expect(shippablePackagesProblems({ repositoryRoot, config }).problems).toStrictEqual([]);
+    expect(
+      (
+        await Effect.runPromise(
+          shippablePackagesProblems({ repositoryRoot, config }).pipe(
+            Effect.provide(NodeServices.layer),
+          ),
+        )
+      ).problems,
+    ).toStrictEqual([]);
   });
 
   it("型を渡す条件がソースを指していても報告しない", async () => {
@@ -102,7 +136,15 @@ describe("出荷できるパッケージの検査", () => {
 }`,
     });
 
-    expect(shippablePackagesProblems({ repositoryRoot, config }).problems).toStrictEqual([]);
+    expect(
+      (
+        await Effect.runPromise(
+          shippablePackagesProblems({ repositoryRoot, config }).pipe(
+            Effect.provide(NodeServices.layer),
+          ),
+        )
+      ).problems,
+    ).toStrictEqual([]);
   });
 
   it("公開後の入口が指す場所を files の許可リストが載せていないことを報告する", async () => {
@@ -114,7 +156,15 @@ describe("出荷できるパッケージの検査", () => {
 }`,
     });
 
-    expect(shippablePackagesProblems({ repositoryRoot, config }).problems).toStrictEqual([
+    expect(
+      (
+        await Effect.runPromise(
+          shippablePackagesProblems({ repositoryRoot, config }).pipe(
+            Effect.provide(NodeServices.layer),
+          ),
+        )
+      ).problems,
+    ).toStrictEqual([
       {
         file: "packages/shipped/package.json",
         line: 3,
@@ -132,6 +182,14 @@ describe("出荷できるパッケージの検査", () => {
 }`,
     });
 
-    expect(shippablePackagesProblems({ repositoryRoot, config }).scanned).toBe(1);
+    expect(
+      (
+        await Effect.runPromise(
+          shippablePackagesProblems({ repositoryRoot, config }).pipe(
+            Effect.provide(NodeServices.layer),
+          ),
+        )
+      ).scanned,
+    ).toBe(1);
   });
 });

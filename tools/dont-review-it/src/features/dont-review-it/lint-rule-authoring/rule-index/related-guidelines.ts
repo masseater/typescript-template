@@ -1,13 +1,17 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { Effect, FileSystem, type PlatformError } from "effect";
 
+import { path } from "../../platform/path.ts";
 import {
   DOCUMENT_SUFFIX,
   normativeDocumentPlacesIn,
   normativeDocumentsIn,
   type NormativeDocumentPlaces,
 } from "../../repository-checks/index.ts";
-import { lintRuleWorkspacesIn, type LintRuleWorkspace } from "./lint-rule-workspaces.ts";
+import {
+  lintRuleWorkspacesIn,
+  type LintRuleWorkspace,
+  type LintRuleWorkspaceFailure,
+} from "./lint-rule-workspaces.ts";
 import { workspaceRulesOf } from "./workspace-rules.ts";
 
 import type { LintRuleCheckReport, LintRuleProblem } from "../lint-rule-problem.ts";
@@ -27,7 +31,7 @@ const reachableDocuments = ({
 }: {
   readonly workspace: LintRuleWorkspace;
   readonly places: NormativeDocumentPlaces;
-}): readonly string[] => [places.fileName, join(workspace.workspaceDir, places.fileName)];
+}): readonly string[] => [places.fileName, path.join(workspace.workspaceDir, places.fileName)];
 
 const outsideTheNorms = ({
   declaredPath,
@@ -50,18 +54,24 @@ const declarationProblem = ({
   readonly places: NormativeDocumentPlaces;
   readonly normativeDocuments: readonly string[];
   readonly declaredPath: string;
-}): string | null => {
-  if (normativeDocuments.includes(declaredPath)) return null;
+}): Effect.Effect<string | null, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* declarationProblem() {
+    if (normativeDocuments.includes(declaredPath)) return null;
 
-  if (reachableDocuments({ workspace, places }).includes(declaredPath)) {
-    return existsSync(join(repositoryRoot, declaredPath)) ? null : absent(declaredPath);
-  }
+    const filesystem = yield* FileSystem.FileSystem;
+    if (reachableDocuments({ workspace, places }).includes(declaredPath)) {
+      return (yield* filesystem.exists(path.join(repositoryRoot, declaredPath)))
+        ? null
+        : absent(declaredPath);
+    }
 
-  if (!declaredPath.endsWith(DOCUMENT_SUFFIX)) return notADocument(declaredPath);
-  if (!existsSync(join(repositoryRoot, declaredPath))) return absent(declaredPath);
+    if (!declaredPath.endsWith(DOCUMENT_SUFFIX)) return notADocument(declaredPath);
+    if (!(yield* filesystem.exists(path.join(repositoryRoot, declaredPath)))) {
+      return absent(declaredPath);
+    }
 
-  return outsideTheNorms({ declaredPath, places });
-};
+    return outsideTheNorms({ declaredPath, places });
+  });
 
 const MISSING = `A rule must not go without the normative documents it enforces. Declare their repository-relative paths in \`meta.docs.relatedGuidelines\`, so a reader of the norm can find what enforces it.`;
 
@@ -82,57 +92,60 @@ const ruleGuidelineProblems = ({
   readonly places: NormativeDocumentPlaces;
   readonly normativeDocuments: readonly string[];
   readonly rule: BundledLintRule;
-}): readonly LintRuleProblem[] => {
-  const file = join(workspace.workspaceDir, rule.sourcePath);
-  if (rule.unreadableGuidelines > 0) return [{ file, message: UNREADABLE }];
-  if (rule.relatedGuidelines.length === 0) return [{ file, message: MISSING }];
+}): Effect.Effect<readonly LintRuleProblem[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* ruleGuidelineProblems() {
+    const file = path.join(workspace.workspaceDir, rule.sourcePath);
+    if (rule.unreadableGuidelines > 0) return [{ file, message: UNREADABLE }];
+    if (rule.relatedGuidelines.length === 0) return [{ file, message: MISSING }];
 
-  return rule.relatedGuidelines.flatMap((declaredPath, position): readonly LintRuleProblem[] => {
-    if (rule.relatedGuidelines.indexOf(declaredPath) !== position) {
-      return [{ file, message: repeated(declaredPath) }];
-    }
-
-    const complaint = declarationProblem({
-      repositoryRoot,
-      workspace,
-      places,
-      normativeDocuments,
-      declaredPath,
-    });
-    return complaint === null ? [] : [{ file, message: complaint }];
+    const complaints = yield* Effect.forEach(rule.relatedGuidelines, (declaredPath, position) =>
+      rule.relatedGuidelines.indexOf(declaredPath) === position
+        ? declarationProblem({
+            repositoryRoot,
+            workspace,
+            places,
+            normativeDocuments,
+            declaredPath,
+          })
+        : Effect.succeed(repeated(declaredPath)),
+    );
+    return complaints
+      .filter((complaint): complaint is string => complaint !== null)
+      .map((complaint) => ({ file, message: complaint }));
   });
-};
 
 export const relatedGuidelineProblems = ({
   repositoryRoot,
 }: {
   readonly repositoryRoot: string;
-}): LintRuleCheckReport => {
-  const places = normativeDocumentPlacesIn(repositoryRoot);
-  const workspaces = lintRuleWorkspacesIn(repositoryRoot);
-  const normativeDocuments = normativeDocumentsIn({
-    repositoryRoot,
-    places,
-    workspaceDirectories: workspaces.map((workspace) => workspace.workspaceDir),
-  });
-  const scanned = workspaces.flatMap((workspace) =>
-    workspaceRulesOf({ repositoryRoot, workspace }).map((rule) => ({ workspace, rule })),
-  );
+}): Effect.Effect<LintRuleCheckReport, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* relatedGuidelineProblems() {
+    const places = normativeDocumentPlacesIn(repositoryRoot);
+    const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
+    const normativeDocuments = normativeDocumentsIn({
+      repositoryRoot,
+      places,
+      workspaceDirectories: workspaces.map((workspace) => workspace.workspaceDir),
+    });
+    const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
+      workspaceRulesOf({ repositoryRoot, workspace }).pipe(
+        Effect.map((rules) => rules.map((rule) => ({ workspace, rule }))),
+      ),
+    );
+    const scanned = workspaceRules.flat();
 
-  const namingAPlace = scanned.some(({ rule }) =>
-    rule.relatedGuidelines.some((declaredPath) => declaredPath.includes("/")),
-  );
-  if (places.directories.length === 0 && namingAPlace) {
-    return {
-      problems: [{ file: "package.json", message: NO_PLACE_DECLARED }],
-      scanned: scanned.length,
-    };
-  }
+    const namingAPlace = scanned.some(({ rule }) =>
+      rule.relatedGuidelines.some((declaredPath) => declaredPath.includes("/")),
+    );
+    if (places.directories.length === 0 && namingAPlace) {
+      return {
+        problems: [{ file: "package.json", message: NO_PLACE_DECLARED }],
+        scanned: scanned.length,
+      };
+    }
 
-  return {
-    problems: scanned.flatMap(({ workspace, rule }) =>
+    const problems = yield* Effect.forEach(scanned, ({ workspace, rule }) =>
       ruleGuidelineProblems({ repositoryRoot, workspace, places, normativeDocuments, rule }),
-    ),
-    scanned: scanned.length,
-  };
-};
+    );
+    return { problems: problems.flat(), scanned: scanned.length };
+  });

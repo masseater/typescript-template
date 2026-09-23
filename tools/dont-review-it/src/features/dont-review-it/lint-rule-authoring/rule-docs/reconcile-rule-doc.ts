@@ -1,13 +1,14 @@
-import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { Effect, FileSystem, type PlatformError } from "effect";
 
+import { textOrNull } from "../../platform/file-system.ts";
+import { path } from "../../platform/path.ts";
 import { normalizedContent, regionIn, withRefreshedRegionIn } from "../generated-region.ts";
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
 import {
   lintRuleWorkspacesIn,
   type LintRuleWorkspace,
+  type LintRuleWorkspaceFailure,
 } from "../rule-index/lint-rule-workspaces.ts";
-import { textOrNull } from "../rule-index/read-text.ts";
 import { workspaceRulesOf } from "../rule-index/workspace-rules.ts";
 import {
   FRONTMATTER_DESCRIPTION_PATTERN,
@@ -150,17 +151,19 @@ const generatedProblems = ({
   readonly rendered: readonly RenderedRegion[];
   readonly write: boolean;
   readonly absolutePath: string;
-}): readonly string[] => {
-  const absent = absentTargetsIn({ source, rendered });
-  if (absent.length > 0) return absent.map(missingRegion);
+}): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* generatedProblems() {
+    const absent = absentTargetsIn({ source, rendered });
+    if (absent.length > 0) return absent.map(missingRegion);
 
-  const stale = staleTargetsIn({ source, rule, rendered });
-  if (stale.length === 0) return [];
-  if (!write) return stale.map(staleRegion);
+    const stale = staleTargetsIn({ source, rule, rendered });
+    if (stale.length === 0) return [];
+    if (!write) return stale.map(staleRegion);
 
-  writeFileSync(absolutePath, upToDateSource({ source, rule, rendered }), "utf8");
-  return [];
-};
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem.writeFileString(absolutePath, upToDateSource({ source, rule, rendered }));
+    return [];
+  });
 
 const seededSourceOf = ({
   absolutePath,
@@ -172,16 +175,18 @@ const seededSourceOf = ({
   readonly rule: BundledLintRule;
   readonly examples: LintRuleExamples;
   readonly write: boolean;
-}): string | null => {
-  const existing = textOrNull(absolutePath);
-  if (existing !== null) return existing;
-  if (!write) return null;
+}): Effect.Effect<string | null, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* seededSourceOf() {
+    const existing = yield* textOrNull(absolutePath);
+    if (existing !== null) return existing;
+    if (!write) return null;
 
-  mkdirSync(dirname(absolutePath), { recursive: true });
-  const seeded = scaffoldRuleDoc({ rule, examples });
-  writeFileSync(absolutePath, seeded, "utf8");
-  return seeded;
-};
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem.makeDirectory(path.dirname(absolutePath), { recursive: true });
+    const seeded = scaffoldRuleDoc({ rule, examples });
+    yield* filesystem.writeFileString(absolutePath, seeded);
+    return seeded;
+  });
 
 const ruleDocProblems = ({
   repositoryRoot,
@@ -193,28 +198,36 @@ const ruleDocProblems = ({
   readonly workspace: LintRuleWorkspace;
   readonly rule: BundledLintRule;
   readonly write: boolean;
-}): readonly LintRuleProblem[] => {
-  const file = join(workspace.workspaceDir, RULE_DOCS_DIR, `${rule.name}.md`);
-  if (rule.description === "") return [{ file: rule.sourcePath, message: MISSING_DESCRIPTION }];
+}): Effect.Effect<readonly LintRuleProblem[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* ruleDocProblems() {
+    const file = path.join(workspace.workspaceDir, RULE_DOCS_DIR, `${rule.name}.md`);
+    if (rule.description === "") return [{ file: rule.sourcePath, message: MISSING_DESCRIPTION }];
 
-  const workspaceRoot = join(repositoryRoot, workspace.workspaceDir);
-  const examples = lintRuleExamplesIn({ workspaceRoot, sourcePath: rule.sourcePath });
-  const absolutePath = join(repositoryRoot, file);
-  const source = seededSourceOf({ absolutePath, rule, examples, write });
-  if (source === null) return [{ file, message: MISSING_DOC }];
+    const workspaceRoot = path.join(repositoryRoot, workspace.workspaceDir);
+    const examples = yield* lintRuleExamplesIn({ workspaceRoot, sourcePath: rule.sourcePath });
+    const absolutePath = path.join(repositoryRoot, file);
+    const source = yield* seededSourceOf({ absolutePath, rule, examples, write });
+    if (source === null) return [{ file, message: MISSING_DOC }];
 
-  const rendered = renderedRegionsOf({ rule, examples });
-  const complaints = [
-    ...missingHeadings(source).map(missingHeading),
-    ...generatedProblems({ source, rule, rendered, write, absolutePath }),
-    ...PLACEHOLDER_TOKENS.filter((token) => source.includes(token)).map(remainingPlaceholder),
-    ...(hasNoExample(examples) ? [noExample(testFilePathFor(rule.sourcePath))] : []),
-    ...examples.unspellable.map((caseName) =>
-      unspellableExample({ caseName, testPath: testFilePathFor(rule.sourcePath) }),
-    ),
-  ];
-  return complaints.map((complaint) => ({ file, message: complaint }));
-};
+    const rendered = renderedRegionsOf({ rule, examples });
+    const regionComplaints = yield* generatedProblems({
+      source,
+      rule,
+      rendered,
+      write,
+      absolutePath,
+    });
+    const complaints = [
+      ...missingHeadings(source).map(missingHeading),
+      ...regionComplaints,
+      ...PLACEHOLDER_TOKENS.filter((token) => source.includes(token)).map(remainingPlaceholder),
+      ...(hasNoExample(examples) ? [noExample(testFilePathFor(rule.sourcePath))] : []),
+      ...examples.unspellable.map((caseName) =>
+        unspellableExample({ caseName, testPath: testFilePathFor(rule.sourcePath) }),
+      ),
+    ];
+    return complaints.map((complaint) => ({ file, message: complaint }));
+  });
 
 export const lintRuleDocProblems = ({
   repositoryRoot,
@@ -222,14 +235,17 @@ export const lintRuleDocProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly write: boolean;
-}): LintRuleCheckReport => {
-  const rules = lintRuleWorkspacesIn(repositoryRoot).flatMap((workspace) =>
-    workspaceRulesOf({ repositoryRoot, workspace }).map((rule) => ({ workspace, rule })),
-  );
-  return {
-    problems: rules.flatMap(({ workspace, rule }) =>
+}): Effect.Effect<LintRuleCheckReport, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* lintRuleDocProblems() {
+    const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
+    const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
+      workspaceRulesOf({ repositoryRoot, workspace }).pipe(
+        Effect.map((rules) => rules.map((rule) => ({ workspace, rule }))),
+      ),
+    );
+    const rules = workspaceRules.flat();
+    const problems = yield* Effect.forEach(rules, ({ workspace, rule }) =>
       ruleDocProblems({ repositoryRoot, workspace, rule, write }),
-    ),
-    scanned: rules.length,
-  };
-};
+    );
+    return { problems: problems.flat(), scanned: rules.length };
+  });

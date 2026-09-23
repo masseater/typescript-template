@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
@@ -26,7 +28,9 @@ describe("重複した宣言本体の検査", () => {
       "src/twice.ts": "export const twice = (value: number): number => value * 2;\n",
       "src/doubled.ts": "export const doubled = (value: number): number => value * 2;\n",
     });
-    const reported = runChecks(repositoryRoot).problems.join("\n");
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems.join("\n");
     expect(reported).toContain("src/twice.ts:1 (twice)");
     expect(reported).toContain("src/doubled.ts:1 (doubled)");
   });
@@ -36,7 +40,9 @@ describe("重複した宣言本体の検査", () => {
       "src/twice.ts": "export const twice = (value: number): number => value * 2;\n",
       "src/twice.test.ts": "export const doubled = (value: number): number => value * 2;\n",
     });
-    const { problems, warnings, failures } = runChecks(repositoryRoot);
+    const { problems, warnings, failures } = await Effect.runPromise(
+      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(problems).toStrictEqual([]);
     expect(warnings).toStrictEqual([]);

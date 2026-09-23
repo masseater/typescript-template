@@ -1,22 +1,26 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { defaultRequiredFileFormConfig } from "./config.ts";
 import { foreignToolConfigsIn } from "./foreign-tool-configs.ts";
 
 const PACKAGE_ROOT = ".";
 
-describe("foreignToolConfigsIn", () => {
+layer(NodeServices.layer)("foreignToolConfigsIn", (it) => {
   describe("a package root holding no configuration the type checker misses", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "foreign-tool-configs-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "foreign-tool-configs-",
       });
-      writeFileSync(join(repositoryRoot, "vite.config.ts"), "export default {};\n", "utf8");
+
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "vite.config.ts"),
+        "export default {};\n",
+      );
       return foreignToolConfigsIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
@@ -24,18 +28,23 @@ describe("foreignToolConfigsIn", () => {
       });
     });
 
-    it("says nothing about it", ({ problems }) => {
-      expect(problems).toStrictEqual([]);
-    });
+    it.effect("says nothing about it", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a package root holding a configuration in a format the type checker never reads", () => {
-    const it = test.extend("problems", ({}, { onCleanup }) => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "foreign-tool-configs-"));
-      onCleanup(() => {
-        rmSync(repositoryRoot, { recursive: true, force: true });
+    const problemsFixture = Effect.gen(function* problems() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "foreign-tool-configs-",
       });
-      writeFileSync(join(repositoryRoot, ".oxlintrc.json"), "{}\n", "utf8");
+
+      yield* filesystem.writeFileString(paths.join(repositoryRoot, ".oxlintrc.json"), "{}\n");
       return foreignToolConfigsIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
@@ -43,15 +52,18 @@ describe("foreignToolConfigsIn", () => {
       });
     });
 
-    it("names the spelling the tool reads instead", ({ problems }) => {
-      expect(problems).toStrictEqual([
-        {
-          file: ".oxlintrc.json",
-          line: null,
-          message:
-            "A configuration for oxlint must not stay in a format the type checker never reads. Move what it declares into vite.config.ts.",
-        },
-      ]);
-    });
+    it.effect("names the spelling the tool reads instead", () =>
+      Effect.gen(function* program() {
+        const problems = yield* problemsFixture;
+        expect(problems).toStrictEqual([
+          {
+            file: ".oxlintrc.json",
+            line: null,
+            message:
+              "A configuration for oxlint must not stay in a format the type checker never reads. Move what it declares into vite.config.ts.",
+          },
+        ]);
+      }),
+    );
   });
 });

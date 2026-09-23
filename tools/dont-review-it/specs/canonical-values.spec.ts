@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
@@ -30,7 +32,9 @@ export const ORDER_STATUSES = ["draft", "published"] as const;
 export const STATUSES = ["draft", "published"] as const;
 `,
     });
-    const reported = runChecks(repositoryRoot).problems.join("\n");
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems.join("\n");
     expect(reported).toContain("A concept must be declared in one place");
     expect(reported).toContain("src/order.ts");
   });
@@ -44,7 +48,9 @@ export const ARTICLE_STATUSES = ["published", "draft"] as const;
 export const ORDER_STATUSES = ["draft", "published"] as const;
 `,
     });
-    const report = runChecks(repositoryRoot);
+    const report = await Effect.runPromise(
+      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
     const reported = report.warnings.join("\n");
     expect(reported).toContain("article.status");
     expect(reported).toContain("order.status");
@@ -57,7 +63,9 @@ export const ORDER_STATUSES = ["draft", "published"] as const;
 export const ORDER_STATUSES = ["draft"] as const;
 `,
     });
-    const reported = runChecks(repositoryRoot).problems.join("\n");
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems.join("\n");
     expect(reported).toContain("must name the concept it declares");
   });
 
@@ -67,7 +75,9 @@ export const ORDER_STATUSES = ["draft"] as const;
 export const ORDER_STATUSES = ["draft"] as const;
 `,
     });
-    const reported = runChecks(repositoryRoot).problems.join("\n");
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).problems.join("\n");
     expect(reported).toContain("@canonical-values-exempt");
   });
 
@@ -79,7 +89,9 @@ export const ORDER_STATUSES = ["draft"] as const;
       "src/order.test.ts": `const FIXTURE_STATUSES = ["draft"] as const;
 `,
     });
-    const { problems, warnings, failures } = runChecks(repositoryRoot);
+    const { problems, warnings, failures } = await Effect.runPromise(
+      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(problems).toStrictEqual([]);
     expect(warnings).toStrictEqual([]);

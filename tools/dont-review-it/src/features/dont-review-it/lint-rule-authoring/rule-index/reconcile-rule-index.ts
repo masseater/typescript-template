@@ -1,10 +1,14 @@
-import { join } from "node:path";
-
+import { Effect, type FileSystem } from "effect";
 import { countBy } from "es-toolkit";
 
+import { path } from "../../platform/path.ts";
 import { generatedFileProblems, staleGeneratedFile } from "../reconcile-generated-file.ts";
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
-import { lintRuleWorkspacesIn, type LintRuleWorkspace } from "./lint-rule-workspaces.ts";
+import {
+  lintRuleWorkspacesIn,
+  type LintRuleWorkspace,
+  type LintRuleWorkspaceFailure,
+} from "./lint-rule-workspaces.ts";
 import { renderRuleIndex } from "./render-rule-index.ts";
 import { bundleNamesIn } from "./rule-bundle.ts";
 import { shippedRuleReferenceProblems } from "./shipped-rule-reference.ts";
@@ -51,34 +55,32 @@ const reconcileWorkspace = ({
   readonly repositoryRoot: string;
   readonly workspace: LintRuleWorkspace;
   readonly write: boolean;
-}): readonly LintRuleProblem[] => {
-  const file = join(workspace.workspaceDir, "docs", "lint", "index.md");
-  const rules = workspaceRulesOf({ repositoryRoot, workspace });
+}): Effect.Effect<readonly LintRuleProblem[], LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* reconcileWorkspace() {
+    const file = path.join(workspace.workspaceDir, "docs", "lint", "index.md");
+    const rules = yield* workspaceRulesOf({ repositoryRoot, workspace });
 
-  const duplicates = Object.entries(countBy(rules, (rule) => rule.name))
-    .filter(([, spellings]) => spellings > 1)
-    .map(([ruleName]) => ({
-      file,
-      message: duplicatedRuleName({ ruleName, workspaceDir: workspace.workspaceDir }),
-    }));
+    const duplicates = Object.entries(countBy(rules, (rule) => rule.name))
+      .filter(([, spellings]) => spellings > 1)
+      .map(([ruleName]) => ({
+        file,
+        message: duplicatedRuleName({ ruleName, workspaceDir: workspace.workspaceDir }),
+      }));
 
-  const strays =
-    bundleNamesIn(rules).length === 0
-      ? []
-      : rules
-          .filter((rule) => rule.shipped && rule.bundle === null)
-          .map((rule) => ({
-            file: join(workspace.workspaceDir, rule.sourcePath),
-            message: unbundledShippedRule({
-              ruleName: rule.name,
-              workspaceDir: workspace.workspaceDir,
-            }),
-          }));
+    const strays =
+      bundleNamesIn(rules).length === 0
+        ? []
+        : rules
+            .filter((rule) => rule.shipped && rule.bundle === null)
+            .map((rule) => ({
+              file: path.join(workspace.workspaceDir, rule.sourcePath),
+              message: unbundledShippedRule({
+                ruleName: rule.name,
+                workspaceDir: workspace.workspaceDir,
+              }),
+            }));
 
-  return [
-    ...duplicates,
-    ...strays,
-    ...generatedFileProblems({
+    const indexProblems = yield* generatedFileProblems({
       repositoryRoot,
       file,
       begin: BEGIN_MARKER,
@@ -88,15 +90,15 @@ const reconcileWorkspace = ({
       absent: missingIndex,
       stale: staleIndex,
       write,
-    }),
-    ...shippedRuleReferenceProblems({
+    });
+    const referenceProblems = yield* shippedRuleReferenceProblems({
       repositoryRoot,
       workspaceDir: workspace.workspaceDir,
       rules,
       write,
-    }),
-  ];
-};
+    });
+    return [...duplicates, ...strays, ...indexProblems, ...referenceProblems];
+  });
 
 export const lintRuleIndexProblems = ({
   repositoryRoot,
@@ -104,12 +106,11 @@ export const lintRuleIndexProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly write: boolean;
-}): LintRuleCheckReport => {
-  const workspaces = lintRuleWorkspacesIn(repositoryRoot);
-  return {
-    problems: workspaces.flatMap((workspace) =>
+}): Effect.Effect<LintRuleCheckReport, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
+  Effect.gen(function* lintRuleIndexProblems() {
+    const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
+    const problems = yield* Effect.forEach(workspaces, (workspace) =>
       reconcileWorkspace({ repositoryRoot, workspace, write }),
-    ),
-    scanned: workspaces.length,
-  };
-};
+    );
+    return { problems: problems.flat(), scanned: workspaces.length };
+  });

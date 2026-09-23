@@ -1,7 +1,7 @@
-import { readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { Effect, type FileSystem, type PlatformError } from "effect";
 
-import { readUnlessMissing } from "../../repository-checks/index.ts";
+import { filesUnder } from "../../platform/file-system.ts";
+import { path } from "../../platform/path.ts";
 
 import type { LintRuleWorkspace } from "./lint-rule-workspaces.ts";
 
@@ -18,16 +18,12 @@ const isRuleSourceFileName = (fileName: string): boolean =>
   !fileName.includes(TEST_FILE_MARKER) &&
   !fileName.endsWith(TYPE_DECLARATION_SUFFIX);
 
-const sourceFilesUnder = (directory: string): readonly string[] => {
-  const dirents = readUnlessMissing(() => readdirSync(directory, { withFileTypes: true }));
-  return (dirents ?? []).flatMap((dirent) => {
-    if (dirent.isDirectory()) {
-      return EXCLUDED_DIRECTORY_NAMES.includes(dirent.name)
-        ? []
-        : sourceFilesUnder(join(directory, dirent.name));
-    }
-    return isRuleSourceFileName(dirent.name) ? [join(directory, dirent.name)] : [];
-  });
+const isRuleSourcePath = (relativePath: string): boolean => {
+  const segments = relativePath.split(path.sep);
+  return (
+    isRuleSourceFileName(segments.at(-1) ?? "") &&
+    !segments.slice(0, -1).some((segment) => EXCLUDED_DIRECTORY_NAMES.includes(segment))
+  );
 };
 
 export const ruleSourceFilesIn = ({
@@ -36,10 +32,14 @@ export const ruleSourceFilesIn = ({
 }: {
   readonly repositoryRoot: string;
   readonly workspace: LintRuleWorkspace;
-}): readonly string[] => {
-  const workspaceRoot = join(repositoryRoot, workspace.workspaceDir);
-  return workspace.ruleDirectories
-    .flatMap((ruleDirectory) => sourceFilesUnder(join(workspaceRoot, ruleDirectory)))
-    .map((absolutePath) => relative(workspaceRoot, absolutePath))
-    .toSorted();
-};
+}): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* ruleSourceFilesIn() {
+    const workspaceRoot = path.join(repositoryRoot, workspace.workspaceDir);
+    const ruleFiles = yield* Effect.forEach(workspace.ruleDirectories, (ruleDirectory) =>
+      filesUnder({ directory: path.join(workspaceRoot, ruleDirectory), keeps: isRuleSourcePath }),
+    );
+    return ruleFiles
+      .flat()
+      .map((absolutePath) => path.relative(workspaceRoot, absolutePath))
+      .toSorted();
+  });

@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it, onTestFinished } from "vite-plus/test";
 
 import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
@@ -39,10 +41,9 @@ describe("検査の走査証跡", () => {
       ".github/workflows/ci.yml": GATED_WORKFLOW,
     });
 
-    const scanned = runChecks(repositoryRoot).outcomes.map((ranCheck) => [
-      ranCheck.check,
-      ranCheck.count,
-    ]);
+    const scanned = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).outcomes.map((ranCheck) => [ranCheck.check, ranCheck.count]);
 
     expect(scanned).toStrictEqual([
       ["entry-composition", 0],
@@ -66,8 +67,10 @@ describe("検査の走査証跡", () => {
   it("対象を持てなかった観点に、開かなかった理由を持たせる", async () => {
     const repositoryRoot = await repositoryWith({ "package.json": `{"name": "solo"}` });
 
-    const skipped = runChecks(repositoryRoot)
-      .outcomes.filter((ranCheck) => ranCheck.skippedReason !== null)
+    const skipped = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).outcomes
+      .filter((ranCheck) => ranCheck.skippedReason !== null)
       .map((ranCheck) => [ranCheck.check, ranCheck.skippedReason]);
 
     expect(skipped).toStrictEqual([
@@ -83,9 +86,9 @@ describe("検査の走査証跡", () => {
       "vite.config.ts": "export default defineConfig({ lint: { rules: {} } });\n",
     });
 
-    const presetAdoption = runChecks(repositoryRoot).outcomes.find(
-      (presetAdoptionRun) => presetAdoptionRun.check === "preset-adoption",
-    );
+    const presetAdoption = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).outcomes.find((presetAdoptionRun) => presetAdoptionRun.check === "preset-adoption");
 
     expect(presetAdoption?.skippedReason).toBeNull();
   });
@@ -95,7 +98,9 @@ describe("検査の走査証跡", () => {
       "renovate.json": `{}\n`,
       ".github/workflows/ci.yml": GATED_WORKFLOW,
     });
-    const { outcomes } = runChecks(repositoryRoot);
+    const { outcomes } = await Effect.runPromise(
+      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(scanTraceFor({ outcomes, readByAgent: false, colored: false })).toMatchInlineSnapshot(`
       "  ✓ entry-composition        0 manifests
@@ -124,7 +129,9 @@ describe("検査の走査証跡", () => {
       "renovate.json": `{}\n`,
       ".github/workflows/ci.yml": GATED_WORKFLOW,
     });
-    const { outcomes } = runChecks(repositoryRoot);
+    const { outcomes } = await Effect.runPromise(
+      runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)),
+    );
 
     expect(scanTraceFor({ outcomes, readByAgent: true, colored: false })).toMatchInlineSnapshot(`
       "checked entry-composition 0 manifests 0 problems 0 warnings
@@ -152,8 +159,10 @@ describe("検査の走査証跡", () => {
       ".github/workflows/ci.yml": "jobs:\n  build:\n    steps: []\n",
     });
 
-    const reported = runChecks(repositoryRoot)
-      .outcomes.filter((ranCheck) => ranCheck.problems.length > 0)
+    const reported = (
+      await Effect.runPromise(runChecks(repositoryRoot).pipe(Effect.provide(NodeServices.layer)))
+    ).outcomes
+      .filter((ranCheck) => ranCheck.problems.length > 0)
       .map((ranCheck) => [ranCheck.check, ranCheck.problems.length]);
 
     expect(reported).toStrictEqual([["workflow-definitions", 1]]);

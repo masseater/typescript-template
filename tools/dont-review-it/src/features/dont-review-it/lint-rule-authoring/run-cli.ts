@@ -1,14 +1,13 @@
-import { statSync } from "node:fs";
-import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 
-import { attempt } from "es-toolkit";
+import { Cause, Effect, FileSystem, Schema } from "effect";
 
+import { unlessMissing } from "../platform/file-system.ts";
+import { path } from "../platform/path.ts";
 import {
   EXIT_MISUSE,
   EXIT_PROBLEMS_FOUND,
   EXIT_SUCCESS,
-  readUnlessMissing,
   type CliResult,
 } from "../repository-checks/index.ts";
 import { formatLintRuleProblem } from "./lint-rule-problem.ts";
@@ -34,46 +33,74 @@ Options:
   --repository-root <path>  Root of the repository to scan. Defaults to the current working directory.
 `;
 
-const scannableDirectory = (candidatePath: string): boolean =>
-  readUnlessMissing(() => statSync(candidatePath))?.isDirectory() === true;
+class CommandLineRefused extends Schema.TaggedError<CommandLineRefused>()("CommandLineRefused", {
+  reason: Schema.String,
+}) {
+  override get message(): string {
+    return this.reason;
+  }
+}
 
-const dispatch = (argv: readonly string[]): CliResult => {
-  const parsedNode = parseArgs({
-    args: [...argv],
-    allowPositionals: true,
-    options: { "repository-root": { type: "string" }, write: { type: "boolean" } },
+const scannableDirectory = (candidatePath: string) =>
+  Effect.gen(function* scannableDirectory() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const info = yield* unlessMissing(filesystem.stat(candidatePath));
+    return info?.type === "Directory";
   });
-  const [command] = parsedNode.positionals;
-  if (command !== "check") {
-    return { exitCode: EXIT_MISUSE, out: "", error: USAGE };
-  }
 
-  const repositoryRoot = resolve(parsedNode.values["repository-root"] ?? process.cwd());
-  if (!scannableDirectory(repositoryRoot)) {
+const dispatch = (argv: readonly string[]) =>
+  Effect.gen(function* dispatch() {
+    const parsedNode = yield* Effect.try({
+      try: () =>
+        parseArgs({
+          args: [...argv],
+          allowPositionals: true,
+          options: { "repository-root": { type: "string" }, write: { type: "boolean" } },
+        }),
+      catch: (refusal) =>
+        new CommandLineRefused({
+          reason: refusal instanceof Error ? refusal.message : String(refusal),
+        }),
+    });
+    const [command] = parsedNode.positionals;
+    if (command !== "check") {
+      return { exitCode: EXIT_MISUSE, out: "", error: USAGE };
+    }
+
+    const repositoryRoot = path.resolve(parsedNode.values["repository-root"] ?? process.cwd());
+    if (!(yield* scannableDirectory(repositoryRoot))) {
+      return {
+        exitCode: EXIT_MISUSE,
+        out: "",
+        error: `${repositoryRoot} is not a directory that can be scanned.\n`,
+      };
+    }
+
+    const write = parsedNode.values.write ?? false;
+    const index = yield* lintRuleIndexProblems({ repositoryRoot, write });
+    const docs = yield* lintRuleDocProblems({ repositoryRoot, write });
+    const grounds = yield* relatedGuidelineProblems({ repositoryRoot });
+    const guidelineIndex = yield* guidelineIndexProblems({ repositoryRoot, write });
+    const problems = [
+      ...index.problems,
+      ...docs.problems,
+      ...grounds.problems,
+      ...guidelineIndex.problems,
+    ];
     return {
-      exitCode: EXIT_MISUSE,
-      out: "",
-      error: `${repositoryRoot} is not a directory that can be scanned.\n`,
+      exitCode: problems.length === 0 ? EXIT_SUCCESS : EXIT_PROBLEMS_FOUND,
+      out: problems.map((problem) => `${formatLintRuleProblem(problem)}\n`).join(""),
+      error: "",
     };
-  }
+  });
 
-  const write = parsedNode.values.write ?? false;
-  const problems = [
-    ...lintRuleIndexProblems({ repositoryRoot, write }).problems,
-    ...lintRuleDocProblems({ repositoryRoot, write }).problems,
-    ...relatedGuidelineProblems({ repositoryRoot }).problems,
-    ...guidelineIndexProblems({ repositoryRoot, write }).problems,
-  ];
-  return {
-    exitCode: problems.length === 0 ? EXIT_SUCCESS : EXIT_PROBLEMS_FOUND,
-    out: problems.map((problem) => `${formatLintRuleProblem(problem)}\n`).join(""),
-    error: "",
-  };
-};
+const misuseOf = (failure: unknown): CliResult => ({
+  exitCode: EXIT_MISUSE,
+  out: "",
+  error: `${failure instanceof Error ? failure.message : String(failure)}\n`,
+});
 
-export const runLintRuleAuthoring = (argv: readonly string[]): CliResult => {
-  const [failure, ranCheck] = attempt<CliResult, Error>(() => dispatch(argv));
-  return failure === null
-    ? ranCheck
-    : { exitCode: EXIT_MISUSE, out: "", error: `${failure.message}\n` };
-};
+export const runLintRuleAuthoring = (
+  argv: readonly string[],
+): Effect.Effect<CliResult, never, FileSystem.FileSystem> =>
+  dispatch(argv).pipe(Effect.catchCause((cause) => Effect.succeed(misuseOf(Cause.squash(cause)))));

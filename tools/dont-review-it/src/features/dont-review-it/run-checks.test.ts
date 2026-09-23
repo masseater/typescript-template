@@ -25,8 +25,8 @@ const checksIn = ({
       yield* filesystem.makeDirectory(paths.dirname(filePath), { recursive: true });
       yield* filesystem.writeFileString(filePath, content);
     }
-    return runChecks(repositoryRoot)
-      .outcomes.filter((ranCheck) => skipped(ranCheck.skippedReason))
+    return (yield* runChecks(repositoryRoot)).outcomes
+      .filter((ranCheck) => skipped(ranCheck.skippedReason))
       .map((ranCheck) => ranCheck.check);
   }).pipe(Effect.scoped);
 

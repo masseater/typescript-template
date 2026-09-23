@@ -1,6 +1,7 @@
-import { join } from "node:path";
+import { Effect, type FileSystem, type PlatformError } from "effect";
 
 import { readTextFile } from "../lint/oxlint/lib/canonical-values/source-files.ts";
+import { path } from "../platform/path.ts";
 import { bypassedCatalogFindings } from "./checks/bypassed-catalog-entry.ts";
 import { singleUseCatalogEntryFindings } from "./checks/single-use-catalog-entry.ts";
 import { sharedDependencyFindings } from "./checks/uncataloged-shared-dependency.ts";
@@ -55,58 +56,63 @@ const findingsIn = ({
   readonly definition: WorkspaceDefinition;
   readonly definitionPath: string;
   readonly config: DependencyCatalogChecksConfig;
-}): DependencyCatalogFindings & { readonly scanned: number } => {
-  const manifests = readWorkspaceManifests({
-    repositoryRoot,
-    packagePatterns: definition.packagePatterns,
-    config,
-  });
-  const usages = dependencyUsagesIn({
-    references: manifests.flatMap((workspaceManifest) =>
-      dependencyReferencesIn({
-        manifestPath: workspaceManifest.relativePath,
-        manifest: workspaceManifest.manifest,
-        config,
-      }),
-    ),
-    config,
-  });
-  const overrideReferences = [
-    ...definition.catalogReferencingOverrides,
-    ...rootOverrideReferences({ manifests, config }),
-  ];
+}): Effect.Effect<
+  DependencyCatalogFindings & { readonly scanned: number },
+  PlatformError.PlatformError,
+  FileSystem.FileSystem
+> =>
+  Effect.gen(function* findingsIn() {
+    const manifests = yield* readWorkspaceManifests({
+      repositoryRoot,
+      packagePatterns: definition.packagePatterns,
+      config,
+    });
+    const usages = dependencyUsagesIn({
+      references: manifests.flatMap((workspaceManifest) =>
+        dependencyReferencesIn({
+          manifestPath: workspaceManifest.relativePath,
+          manifest: workspaceManifest.manifest,
+          config,
+        }),
+      ),
+      config,
+    });
+    const overrideReferences = [
+      ...definition.catalogReferencingOverrides,
+      ...rootOverrideReferences({ manifests, config }),
+    ];
 
-  const singleUse = singleUseCatalogEntryFindings({
-    catalogEntries: definition.catalogEntries,
-    definitionPath,
-    usages,
-    overrideReferences,
-  });
-  const singleUseEntries = singleUse.map((finding) => finding.entry);
-  const bypassed = bypassedCatalogFindings({
-    catalogEntries: definition.catalogEntries.filter(
-      (catalogEntry) => !singleUseEntries.includes(catalogEntry),
-    ),
-    usages,
-    config,
-  });
-  const shared = sharedDependencyFindings({
-    usages,
-    catalogedNames: definition.catalogEntries.map((catalogEntry) => catalogEntry.dependencyName),
-    definitionPath,
-    config,
-  });
+    const singleUse = singleUseCatalogEntryFindings({
+      catalogEntries: definition.catalogEntries,
+      definitionPath,
+      usages,
+      overrideReferences,
+    });
+    const singleUseEntries = singleUse.map((finding) => finding.entry);
+    const bypassed = bypassedCatalogFindings({
+      catalogEntries: definition.catalogEntries.filter(
+        (catalogEntry) => !singleUseEntries.includes(catalogEntry),
+      ),
+      usages,
+      config,
+    });
+    const shared = sharedDependencyFindings({
+      usages,
+      catalogedNames: definition.catalogEntries.map((catalogEntry) => catalogEntry.dependencyName),
+      definitionPath,
+      config,
+    });
 
-  return {
-    problems: [
-      ...singleUse.map((finding) => finding.problem),
-      ...bypassed.problems,
-      ...shared.problems,
-    ].toSorted(byFileThenMessage),
-    warnings: [...bypassed.warnings, ...shared.warnings].toSorted(byFileThenMessage),
-    scanned: manifests.length,
-  };
-};
+    return {
+      problems: [
+        ...singleUse.map((finding) => finding.problem),
+        ...bypassed.problems,
+        ...shared.problems,
+      ].toSorted(byFileThenMessage),
+      warnings: [...bypassed.warnings, ...shared.warnings].toSorted(byFileThenMessage),
+      scanned: manifests.length,
+    };
+  });
 
 export const runDependencyCatalogChecks = ({
   repositoryRoot,
@@ -114,38 +120,39 @@ export const runDependencyCatalogChecks = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: DependencyCatalogChecksConfig;
-}): DependencyCatalogReport => {
-  const definitionPath = config.workspaceDefinitionFileName;
-  const source = readTextFile(join(repositoryRoot, definitionPath));
-  if (source === null) {
+}): Effect.Effect<DependencyCatalogReport, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* runDependencyCatalogChecks() {
+    const definitionPath = config.workspaceDefinitionFileName;
+    const source = readTextFile(path.join(repositoryRoot, definitionPath));
+    if (source === null) {
+      return {
+        ...NO_DEPENDENCY_CATALOG_FINDINGS,
+        definitionUnreadable: false,
+        definitionMissing: true,
+        scanned: 0,
+      };
+    }
+
+    const definition = parsedWorkspaceDefinitionOrNull({ source, config });
+    if (definition === null) {
+      return {
+        problems: [
+          {
+            file: definitionPath,
+            line: null,
+            message: `A workspace definition that does not parse must not stay in the repository, because every dependency check reads it as an empty file and reports nothing. Fix the YAML here so the definition can be read.`,
+          },
+        ],
+        warnings: [],
+        definitionUnreadable: true,
+        definitionMissing: false,
+        scanned: 0,
+      };
+    }
+
     return {
-      ...NO_DEPENDENCY_CATALOG_FINDINGS,
+      ...(yield* findingsIn({ repositoryRoot, definition, definitionPath, config })),
       definitionUnreadable: false,
-      definitionMissing: true,
-      scanned: 0,
-    };
-  }
-
-  const definition = parsedWorkspaceDefinitionOrNull({ source, config });
-  if (definition === null) {
-    return {
-      problems: [
-        {
-          file: definitionPath,
-          line: null,
-          message: `A workspace definition that does not parse must not stay in the repository, because every dependency check reads it as an empty file and reports nothing. Fix the YAML here so the definition can be read.`,
-        },
-      ],
-      warnings: [],
-      definitionUnreadable: true,
       definitionMissing: false,
-      scanned: 0,
     };
-  }
-
-  return {
-    ...findingsIn({ repositoryRoot, definition, definitionPath, config }),
-    definitionUnreadable: false,
-    definitionMissing: false,
-  };
-};
+  });

@@ -1,8 +1,7 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { relatedGuidelineProblems } from "./related-guidelines.ts";
 
@@ -145,484 +144,776 @@ const NO_PLACE_DECLARED = `A repository whose rules stand on documents must not 
 
 const NOT_A_DOCUMENT = `A rule must not name anything but a document as its grounds. \`docs/guidelines/notes.txt\` is not a \`.md\` file. Name the document that carries the norm.`;
 
-describe("relatedGuidelineProblems", () => {
+layer(NodeServices.layer)("relatedGuidelineProblems", (it) => {
   describe("a rule declaring an empty list", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_NOTHING, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(paths.join(root, RULE_PATH), RULE_STANDING_ON_NOTHING);
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported as standing on no norm", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: RULE_PATH, message: MISSING }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported as standing on no norm", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: MISSING }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a rule naming grounds by a constant of another file", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_NAMING_GROUNDS_BY_A_CONSTANT, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_NAMING_GROUNDS_BY_A_CONSTANT,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported because the checks cannot read what it named", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: RULE_PATH, message: UNREADABLE }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported because the checks cannot read what it named", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: UNREADABLE }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a rule naming a normative document that is there", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_A_NORM, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(paths.join(root, RULE_PATH), RULE_STANDING_ON_A_NORM);
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is left alone", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a rule naming the repository's own operating document", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_THE_OPERATING_DOCUMENT, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_THE_OPERATING_DOCUMENT,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is left alone", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a rule naming a norm its own workspace carries", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_ITS_OWN_WORKSPACE, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_ITS_OWN_WORKSPACE,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is left alone", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a rule naming the operating document of its own workspace", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_ITS_OWN_OPERATING_DOCUMENT, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_ITS_OWN_OPERATING_DOCUMENT,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is left alone", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 
   describe("a rule naming the operating document its own workspace does not carry", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_ITS_OWN_OPERATING_DOCUMENT, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_ITS_OWN_OPERATING_DOCUMENT,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported as standing on a document that moved away", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: RULE_PATH, message: ABSENT_OPERATING_DOCUMENT }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported as standing on a document that moved away", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: ABSENT_OPERATING_DOCUMENT }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a rule naming the same document twice", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_NAMING_ONE_NORM_TWICE, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(paths.join(root, RULE_PATH), RULE_NAMING_ONE_NORM_TWICE);
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported against the repetition", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: RULE_PATH, message: REPEATED }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported against the repetition", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: REPEATED }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a rule naming a normative document that is not there", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_A_NORM_THAT_MOVED, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_A_NORM_THAT_MOVED,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported as standing on a document that moved away", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: RULE_PATH, message: ABSENT }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported as standing on a document that moved away", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: ABSENT }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a rule naming a record of a decision", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_A_RECORD, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(paths.join(root, RULE_PATH), RULE_STANDING_ON_A_RECORD);
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported because a record binds nobody", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [
-          {
-            file: RULE_PATH,
-            message: OUTSIDE_A_RECORD,
-          },
-        ],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported because a record binds nobody", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [
+            {
+              file: RULE_PATH,
+              message: OUTSIDE_A_RECORD,
+            },
+          ],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a rule naming the operating document of another workspace", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_ANOTHER_WORKSPACE, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_ANOTHER_WORKSPACE,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported because the grounds sit outside the rule's reach", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: RULE_PATH, message: OUTSIDE_ANOTHER_WORKSPACE }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported because the grounds sit outside the rule's reach", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: OUTSIDE_ANOTHER_WORKSPACE }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a rule naming something that is not a document", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "packages/other"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      mkdirSync(join(root, "docs/engineering-decision-logs"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), DECLARING_ROOT_MANIFEST, "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/other/AGENTS.md"), "# other\n", "utf8");
-      writeFileSync(join(root, "packages/example/AGENTS.md"), "# example\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/guidelines/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/guidelines/local.md"), "# local\n", "utf8");
-      writeFileSync(
-        join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
-        "# a decision\n",
-        "utf8",
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
       );
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_SOMETHING_UNREADABLE, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_SOMETHING_UNREADABLE,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is reported because only a document carries a norm", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: RULE_PATH, message: NOT_A_DOCUMENT }],
-        scanned: 1,
-      });
-    });
+    it.effect("is reported because only a document carries a norm", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: NOT_A_DOCUMENT }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a repository that declares no place while its rules name one", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      mkdirSync(join(root, "docs/guidelines"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), JSON.stringify({ name: "probe" }), "utf8");
-      writeFileSync(join(root, "docs/guidelines/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_A_NORM, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name: "probe" }),
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(paths.join(root, RULE_PATH), RULE_STANDING_ON_A_NORM);
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("names the missing declaration once, instead of every rule", ({ report }) => {
-      expect(report).toStrictEqual({
-        problems: [{ file: "package.json", message: NO_PLACE_DECLARED }],
-        scanned: 1,
-      });
-    });
+    it.effect("names the missing declaration once, instead of every rule", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: "package.json", message: NO_PLACE_DECLARED }],
+          scanned: 1,
+        });
+      }),
+    );
   });
 
   describe("a repository that declares no place while its rules name only the operating document", () => {
-    const it = test.extend("report", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "related-guidelines-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "packages/example/src/rules"), { recursive: true });
-      writeFileSync(join(root, "pnpm-workspace.yaml"), WORKSPACE_DEFINITION, "utf8");
-      writeFileSync(join(root, "package.json"), JSON.stringify({ name: "probe" }), "utf8");
-      writeFileSync(join(root, "AGENTS.md"), "# root\n", "utf8");
-      writeFileSync(join(root, "packages/example/package.json"), DECLARING_MANIFEST, "utf8");
-      writeFileSync(join(root, RULE_PATH), RULE_STANDING_ON_THE_OPERATING_DOCUMENT, "utf8");
-      return relatedGuidelineProblems({ repositoryRoot: root });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "package.json"),
+        yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name: "probe" }),
+      );
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, RULE_PATH),
+        RULE_STANDING_ON_THE_OPERATING_DOCUMENT,
+      );
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
     });
 
-    it("is left alone", ({ report }) => {
-      expect(report).toStrictEqual({ problems: [], scanned: 1 });
-    });
+    it.effect("is left alone", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({ problems: [], scanned: 1 });
+      }),
+    );
   });
 });

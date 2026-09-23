@@ -47,16 +47,16 @@ export const checkRepositoryCommand = defineCommand({
             return;
           }
 
-          if (args.write && !repairGeneratedParts(repositoryRoot)) return;
+          if (args.write && !(yield* repairGeneratedParts(repositoryRoot))) return;
 
           process.exitCode = EXIT_SUCCESS;
-          reportProblems(repositoryRoot);
+          yield* reportProblems(repositoryRoot);
           const afterDontReviewIt = process.exitCode ?? EXIT_SUCCESS;
           if (afterDontReviewIt === EXIT_MISUSE) return;
 
           const rootArgs = ["--repository-root", repositoryRoot];
           const lintRuleAuthoringExit = writeCliResult(
-            runLintRuleAuthoring(["check", ...rootArgs]),
+            yield* runLintRuleAuthoring(["check", ...rootArgs]),
           );
           const stopAiSlopExit = writeCliResult(
             yield* Effect.promise(() => runStopAiSlop(["check", ...rootArgs])),
