@@ -26,7 +26,7 @@ const nestedTsconfigs: Readonly<Record<string, { readonly default?: unknown }>> 
 );
 
 const qualityTsconfig: Readonly<Record<string, { readonly default?: unknown }>> = import.meta.glob(
-  "../../../../../../tsconfig.json",
+  "../../../../tsconfig.json",
   { eager: true },
 );
 

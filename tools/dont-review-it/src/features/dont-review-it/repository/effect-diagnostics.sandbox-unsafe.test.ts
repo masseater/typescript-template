@@ -28,7 +28,10 @@ const EFFECT_LANGUAGE_SERVICE = {
 } as const;
 
 const configs: Readonly<Record<string, unknown>> = import.meta.glob(
-  ["../../../../../../vite.config.ts", "../../../../../../{apps,libs,infra,tools}/*/vite.config.ts"],
+  [
+    "../../../../../../vite.config.ts",
+    "../../../../../../{apps,libs,infra,tools}/*/vite.config.ts",
+  ],
   { eager: true, import: "default" },
 );
 const projects: Readonly<Record<string, unknown>> = import.meta.glob(
@@ -42,7 +45,7 @@ const nestedProjects: Readonly<Record<string, unknown>> = import.meta.glob(
 const projectTexts: Readonly<Record<string, string>> = import.meta.glob(
   [
     "../../../../../../tsconfig.base.json",
-    "../../tsconfig/base.json",
+    "../../../../tsconfig/base.json",
     "../../../../../../{apps,libs,infra,tools}/*/tsconfig.json",
   ],
   { eager: true, import: "default", query: "?raw" },
