@@ -59,7 +59,7 @@ export const noUncheckedCast = createDontReviewItRule({
     docs: {
       description:
         "Disallow handing a concrete type to a value the source declares as `any` or `unknown`, so every concrete type a value carries reached it through a step that read the value",
-      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/boundaries.md"],
     },
     messages: {
       uncheckedCast:

@@ -73,7 +73,7 @@ export const noIdentityWrapper = createDontReviewItRule({
     docs: {
       description:
         "Disallow a named function whose whole body forwards its own parameters unchanged to one other call and declares no type contract of its own, so a caller reaches the function that does the work instead of a name that only stands in front of it",
-      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/ownership.md"],
     },
     messages: {
       identityWrapper:

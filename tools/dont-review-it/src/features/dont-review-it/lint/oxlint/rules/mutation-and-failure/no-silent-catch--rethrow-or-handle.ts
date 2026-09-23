@@ -32,7 +32,7 @@ export const noSilentCatch = createDontReviewItRule({
     docs: {
       description:
         "Disallow a catch clause whose body never carries the failure it bound out of the clause, so a failure that was caught reaches something able to act on it instead of ending where it was caught",
-      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/failures.md"],
     },
     messages: {
       silentCatch:

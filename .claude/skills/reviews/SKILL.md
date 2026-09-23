@@ -5,26 +5,20 @@ description: このリポジトリのコードレビュー指針。作業を完�
 
 以下のファイルを順番に読み込み、それぞれの観点でレビューする。この時ファイルやワークスペース単位で担当を区切るのではなく、必ず観点を元にリポジトリ全体を横断してレビューすること。単一ファイルをちょっと変更すれば良いのではなく、リポジトリ全体のコード品質を向上させることが目的である。
 
-1. `./references/principles.md`
+1. `./references/ownership.md`
 2. `./references/review-findings.md`
-3. `./references/writing-code.md`
-4. `./references/tests.md`
-5. `./references/documents.md`
-6. `./references/enforcement.md`
-7. `./references/placement-and-tools.md`
-8. `./references/infrastructure.md`
-9. `./references/observability.md`
-10. `./references/secrets-and-permissions.md`
-11. `./references/frontend.md`
-12. `./references/ci-efficiency.md`
-13. `./references/colocation.md`
-14. `./references/domain-authority.md`
-15. `./references/config-cleanup.md`
-16. `./references/simplify.md`
-17. `./references/remove-useless-tests.md`
-18. `./references/no-silent-fallback.md`
-19. `./references/agents-md.md`
-20. `./references/verification-bypass.md`
+3. `./references/boundaries.md`
+4. `./references/failures.md`
+5. `./references/naming.md`
+6. `./references/surface.md`
+7. `./references/tests.md`
+8. `./references/documents.md`
+9. `./references/enforcement.md`
+10. `./references/placement.md`
+11. `./references/infrastructure.md`
+12. `./references/observability.md`
+13. `./references/secrets-and-permissions.md`
+14. `./references/frontend.md`
 
 以下は、その修正を行わないことを正当化する理由として認めない。かかる時間は度外視し、リポジトリ全体を俯瞰して、コード品質を向上させるための改善点を見つけることに全力を注ぐこと。
 

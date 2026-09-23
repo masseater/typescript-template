@@ -33,7 +33,7 @@ export const noBarrelImport = createDontReviewItRule({
     docs: {
       description:
         "Disallow a module specifier that names a re-export module while the statement takes a value through it, so the module a binding is taken from is the module that declares it",
-      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/ownership.md"],
       shipped: false,
     },
     messages: {
