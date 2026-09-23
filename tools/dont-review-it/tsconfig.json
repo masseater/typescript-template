@@ -4,5 +4,5 @@
     "lib": ["esnext"],
     "types": ["vite-plus/client", "node"]
   },
-  "include": ["src/**/*.ts", "specs/**/*.ts", "*.ts", "vite.config.ts", "doctor.config.ts"]
+  "exclude": ["dist"]
 }

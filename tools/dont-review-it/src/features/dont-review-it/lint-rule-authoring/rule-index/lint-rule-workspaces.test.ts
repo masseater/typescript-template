@@ -61,7 +61,7 @@ layer(NodeServices.layer)("lintRuleWorkspacesIn", (it) => {
   });
 
   describe("a workspace definition that does not parse", () => {
-    const failureMessageFixture = Effect.gen(function* failureMessage() {
+    const failureFixture = Effect.gen(function* failure() {
       const filesystem = yield* FileSystem.FileSystem;
       const paths = yield* Path.Path;
       const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "lint-rule-workspaces-" });
@@ -71,13 +71,18 @@ layer(NodeServices.layer)("lintRuleWorkspacesIn", (it) => {
         "packages: [packages/*\n",
       );
       const failure = yield* Effect.flip(lintRuleWorkspacesIn(root));
-      return failure.message;
+      return failure._tag === "WorkspaceDefinitionUnparsable"
+        ? { _tag: failure._tag, file: failure.file }
+        : { _tag: failure._tag };
     });
 
     it.effect("is raised instead of being skipped", () =>
       Effect.gen(function* program() {
-        const failureMessage = yield* failureMessageFixture;
-        expect(failureMessage).toBe("pnpm-workspace.yaml exists but does not parse as YAML");
+        const failure = yield* failureFixture;
+        expect(failure).toStrictEqual({
+          _tag: "WorkspaceDefinitionUnparsable",
+          file: "pnpm-workspace.yaml",
+        });
       }),
     );
   });

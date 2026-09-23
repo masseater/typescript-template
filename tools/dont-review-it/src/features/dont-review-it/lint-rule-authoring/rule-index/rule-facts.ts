@@ -1,7 +1,7 @@
 import { Effect, FileSystem, type PlatformError } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { path } from "../../platform/path.ts";
+import { path, posixPath } from "../../platform/path.ts";
 import {
   declaratorsIn,
   isAstNode,
@@ -50,8 +50,10 @@ const ruleNameOf = ({
   const resolved = namedAs === null ? null : resolveText({ node: namedAs, constants, visited: [] });
   if (resolved !== null) return resolved;
 
-  const stem = path.basename(sourcePath, path.extname(sourcePath));
-  return GENERIC_FILE_STEMS.includes(stem) ? path.basename(path.dirname(sourcePath)) : stem;
+  const stem = posixPath.basename(sourcePath, posixPath.extname(sourcePath));
+  return GENERIC_FILE_STEMS.includes(stem)
+    ? posixPath.basename(posixPath.dirname(sourcePath))
+    : stem;
 };
 
 const descriptionOf = ({

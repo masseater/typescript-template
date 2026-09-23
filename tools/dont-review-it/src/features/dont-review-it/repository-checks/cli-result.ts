@@ -14,7 +14,7 @@ export type CliResult = {
   readonly error: string;
 };
 
-const misuseOf = (failure: unknown): CliResult => ({
+export const misuseOf = (failure: unknown): CliResult => ({
   exitCode: EXIT_MISUSE,
   out: "",
   error: `${failure instanceof Error ? failure.message : String(failure)}\n`,

@@ -1,12 +1,13 @@
 import { Effect, FileSystem, type PlatformError } from "effect";
 
 import { textOrNull } from "../platform/file-system.ts";
-import { path } from "../platform/path.ts";
+import { path, relativePosixPath } from "../platform/path.ts";
 import { declaresVersion } from "./changelog.ts";
 import { lineOfProperty, propertyValueOf, type PublishedManifest } from "./manifest.ts";
 import { listSkillFiles, skillsDirectoryOf } from "./skill-files.ts";
 import { libraryVersionOf, lineOfLibraryVersion } from "./skill-version.ts";
 
+import type { TreeFailure } from "../platform/directory-entries.ts";
 import type { RepositoryProblem } from "../problem.ts";
 import type { IntentSkillsConfig } from "./config.ts";
 
@@ -41,7 +42,7 @@ const missingChangelog = (scope: SkillPackage): readonly RepositoryProblem[] => 
 };
 
 const relativeTo = ({ repositoryRoot }: SkillPackage, absolutePath: string): string =>
-  path.relative(repositoryRoot, absolutePath);
+  relativePosixPath(repositoryRoot, absolutePath);
 
 const missingVersionHeading = ({
   scope,
@@ -86,11 +87,7 @@ const staleLibraryVersion = ({
 
 export const publishedVersionProblems = (
   scope: SkillPackage,
-): Effect.Effect<
-  readonly RepositoryProblem[],
-  PlatformError.PlatformError,
-  FileSystem.FileSystem
-> =>
+): Effect.Effect<readonly RepositoryProblem[], TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* publishedVersionProblems() {
     const version = declaredVersionOf(scope);
     if (version === null) return [];

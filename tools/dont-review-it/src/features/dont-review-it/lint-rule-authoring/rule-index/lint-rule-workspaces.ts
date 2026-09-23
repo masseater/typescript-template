@@ -1,18 +1,21 @@
-import { Effect, type FileSystem, type PlatformError, Schema } from "effect";
+import { Effect, type FileSystem, Schema } from "effect";
 import { attempt, isPlainObject } from "es-toolkit";
 import { parse } from "yaml";
 
-import { childDirectoryNamesIn, textOrNull } from "../../platform/file-system.ts";
+import { directoriesMatching } from "../../dependency-catalog/manifest-files.ts";
+import { textOrNull } from "../../platform/file-system.ts";
 import { path } from "../../platform/path.ts";
+
+import type { TreeFailure } from "../../platform/directory-entries.ts";
 
 export type LintRuleWorkspace = {
   readonly workspaceDir: string;
   readonly ruleDirectories: readonly string[];
 };
 
-export class WorkspaceDefinitionUnparsable extends Schema.TaggedError<WorkspaceDefinitionUnparsable>()(
+class WorkspaceDefinitionUnparsable extends Schema.TaggedError<WorkspaceDefinitionUnparsable>()(
   "WorkspaceDefinitionUnparsable",
-  { file: Schema.String },
+  { file: Schema.String, cause: Schema.Defect() },
 ) {
   override get message(): string {
     return `${this.file} exists but does not parse as YAML`;
@@ -20,24 +23,9 @@ export class WorkspaceDefinitionUnparsable extends Schema.TaggedError<WorkspaceD
 }
 
 export type LintRuleWorkspaceFailure =
-  | PlatformError.PlatformError
+  | TreeFailure
   | WorkspaceDefinitionUnparsable
   | Schema.SchemaError;
-
-const expandedPattern = ({
-  repositoryRoot,
-  pattern,
-}: {
-  readonly repositoryRoot: string;
-  readonly pattern: string;
-}): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> => {
-  if (!pattern.endsWith("/*")) return Effect.succeed([pattern]);
-
-  const parentDirectory = pattern.slice(0, -"/*".length);
-  return childDirectoryNamesIn(path.join(repositoryRoot, parentDirectory)).pipe(
-    Effect.map((childNames) => childNames.map((childName) => `${parentDirectory}/${childName}`)),
-  );
-};
 
 const WORKSPACE_DEFINITION_FILE = "pnpm-workspace.yaml";
 
@@ -52,7 +40,10 @@ const declaredWorkspaceDirs = (
 
     const [unparsableDefinition, definition] = attempt((): unknown => parse(definitionText));
     if (unparsableDefinition !== null) {
-      return yield* new WorkspaceDefinitionUnparsable({ file: WORKSPACE_DEFINITION_FILE });
+      return yield* new WorkspaceDefinitionUnparsable({
+        file: WORKSPACE_DEFINITION_FILE,
+        cause: unparsableDefinition,
+      });
     }
     if (typeof definition !== "object" || definition === null) return [];
 
@@ -61,7 +52,7 @@ const declaredWorkspaceDirs = (
 
     const expanded = yield* Effect.forEach(
       patterns.filter((pattern): pattern is string => typeof pattern === "string"),
-      (pattern) => expandedPattern({ repositoryRoot, pattern }),
+      (pattern) => directoriesMatching({ repositoryRoot, pattern }),
     );
     return expanded.flat();
   });

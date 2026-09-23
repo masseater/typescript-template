@@ -1,9 +1,8 @@
 import { Effect, FileSystem, type PlatformError } from "effect";
 
-import { isFile } from "../lint/oxlint/lib/canonical-values/source-files.ts";
-import { isMissingPath } from "../platform/file-system.ts";
-import { path } from "../platform/path.ts";
-import { failureCodeOf } from "../repository-checks/index.ts";
+import { isFileAt } from "../platform/file-system.ts";
+import { isMissingPath, isNotALink } from "../platform/path-failure.ts";
+import { path, posixPath } from "../platform/path.ts";
 
 import type { RepositoryProblem } from "../problem.ts";
 import type { RequiredFileFormConfig } from "./config.ts";
@@ -13,8 +12,6 @@ type LinkedEntry =
   | { readonly kind: "link"; readonly pointsAt: string }
   | { readonly kind: "copy" };
 
-const NOT_A_LINK_CODE = "EINVAL";
-
 const linkedEntryAt = (
   linkedPath: string,
 ): Effect.Effect<LinkedEntry, PlatformError.PlatformError, FileSystem.FileSystem> =>
@@ -23,10 +20,7 @@ const linkedEntryAt = (
     return yield* filesystem.readLink(linkedPath).pipe(
       Effect.map((pointsAt): LinkedEntry => ({ kind: "link", pointsAt })),
       Effect.catchIf(isMissingPath, () => Effect.succeed<LinkedEntry>({ kind: "missing" })),
-      Effect.catchIf(
-        (unreadLink) => failureCodeOf(unreadLink.reason.cause) === NOT_A_LINK_CODE,
-        () => Effect.succeed<LinkedEntry>({ kind: "copy" }),
-      ),
+      Effect.catchIf(isNotALink, () => Effect.succeed<LinkedEntry>({ kind: "copy" })),
     );
   });
 
@@ -44,7 +38,7 @@ export const agentInstructionLinksIn = ({
   FileSystem.FileSystem
 > =>
   Effect.gen(function* agentInstructionLinksIn() {
-    const instructionExists = isFile(
+    const instructionExists = yield* isFileAt(
       path.join(repositoryRoot, packageRoot, config.agentInstructionFileName),
     );
     const linked = yield* linkedEntryAt(
@@ -55,7 +49,7 @@ export const agentInstructionLinksIn = ({
       return instructionExists
         ? [
             {
-              file: path.normalize(`${packageRoot}/${config.linkedAgentInstructionFileName}`),
+              file: posixPath.normalize(`${packageRoot}/${config.linkedAgentInstructionFileName}`),
               line: null,
               message: `A directory that instructs agents must not leave the second name unreachable. Create it here as a symbolic link to ${config.agentInstructionFileName}.`,
             },
@@ -66,7 +60,7 @@ export const agentInstructionLinksIn = ({
     if (!instructionExists) {
       return [
         {
-          file: path.normalize(`${packageRoot}/${config.agentInstructionFileName}`),
+          file: posixPath.normalize(`${packageRoot}/${config.agentInstructionFileName}`),
           line: null,
           message: `Agent instructions must not live under ${config.linkedAgentInstructionFileName} alone. Write them here and leave ${config.linkedAgentInstructionFileName} pointing at this file.`,
         },
@@ -77,7 +71,7 @@ export const agentInstructionLinksIn = ({
       ? []
       : [
           {
-            file: path.normalize(`${packageRoot}/${config.linkedAgentInstructionFileName}`),
+            file: posixPath.normalize(`${packageRoot}/${config.linkedAgentInstructionFileName}`),
             line: null,
             message: `Agent instructions must not be spelled twice. Replace this file with a symbolic link to ${config.agentInstructionFileName}.`,
           },

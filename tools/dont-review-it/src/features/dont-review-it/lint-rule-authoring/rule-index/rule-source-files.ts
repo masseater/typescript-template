@@ -1,7 +1,7 @@
-import { Effect, type FileSystem, type PlatformError } from "effect";
+import { Effect, type FileSystem } from "effect";
 
-import { filesUnder } from "../../platform/file-system.ts";
-import { path } from "../../platform/path.ts";
+import { filesUnder, type TreeFailure } from "../../platform/directory-entries.ts";
+import { path, relativePosixPath } from "../../platform/path.ts";
 
 import type { LintRuleWorkspace } from "./lint-rule-workspaces.ts";
 
@@ -18,12 +18,9 @@ const isRuleSourceFileName = (fileName: string): boolean =>
   !fileName.includes(TEST_FILE_MARKER) &&
   !fileName.endsWith(TYPE_DECLARATION_SUFFIX);
 
-const isRuleSourcePath = (relativePath: string): boolean => {
-  const segments = relativePath.split(path.sep);
-  return (
-    isRuleSourceFileName(segments.at(-1) ?? "") &&
-    !segments.slice(0, -1).some((segment) => EXCLUDED_DIRECTORY_NAMES.includes(segment))
-  );
+type RuleSourceFiles = {
+  readonly sourcePaths: readonly string[];
+  readonly absentDirectories: readonly string[];
 };
 
 export const ruleSourceFilesIn = ({
@@ -32,14 +29,23 @@ export const ruleSourceFilesIn = ({
 }: {
   readonly repositoryRoot: string;
   readonly workspace: LintRuleWorkspace;
-}): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+}): Effect.Effect<RuleSourceFiles, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* ruleSourceFilesIn() {
     const workspaceRoot = path.join(repositoryRoot, workspace.workspaceDir);
-    const ruleFiles = yield* Effect.forEach(workspace.ruleDirectories, (ruleDirectory) =>
-      filesUnder({ directory: path.join(workspaceRoot, ruleDirectory), keeps: isRuleSourcePath }),
+    const walked = yield* Effect.forEach(workspace.ruleDirectories, (ruleDirectory) =>
+      filesUnder({
+        directory: path.join(workspaceRoot, ruleDirectory),
+        prunedDirectoryNames: EXCLUDED_DIRECTORY_NAMES,
+        keepsFileName: isRuleSourceFileName,
+      }).pipe(Effect.map((files) => ({ ruleDirectory, files }))),
     );
-    return ruleFiles
-      .flat()
-      .map((absolutePath) => path.relative(workspaceRoot, absolutePath))
-      .toSorted();
+    return {
+      sourcePaths: walked
+        .flatMap(({ files }) => files ?? [])
+        .map((absolutePath) => relativePosixPath(workspaceRoot, absolutePath))
+        .toSorted(),
+      absentDirectories: walked
+        .filter(({ files }) => files === null)
+        .map(({ ruleDirectory }) => ruleDirectory),
+    };
   });

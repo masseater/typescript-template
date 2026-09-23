@@ -6,12 +6,13 @@ import {
   type ScannedFile,
 } from "../lint/oxlint/lib/canonical-values/source-files.ts";
 import { failureMessageOf } from "../platform/file-system.ts";
-import { path } from "../platform/path.ts";
+import { relativePosixPath } from "../platform/path.ts";
 import { propertyValueOf } from "./manifest.ts";
 import { declaredVersionOf, type SkillPackage } from "./shipped-versions.ts";
 import { listSkillFiles, skillsDirectoryOf } from "./skill-files.ts";
 import { withLibraryVersion } from "./skill-version.ts";
 
+import type { TreeFailure } from "../platform/directory-entries.ts";
 import type { IntentSkillsConfig } from "./config.ts";
 
 export type SkillVersionWriteReport = {
@@ -56,7 +57,7 @@ const rewriteSkillFile = ({
       Effect.as([]),
       Effect.catch((unwritable) =>
         Effect.succeed([
-          `${path.relative(scope.repositoryRoot, skillFile)} could not be rewritten: ${failureMessageOf(unwritable)}`,
+          `${relativePosixPath(scope.repositoryRoot, skillFile)} could not be rewritten: ${failureMessageOf(unwritable)}`,
         ]),
       ),
     );
@@ -64,7 +65,7 @@ const rewriteSkillFile = ({
 
 const scopeFailures = (
   scope: SkillPackage,
-): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+): Effect.Effect<readonly string[], TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* scopeFailures() {
     const version = declaredVersionOf(scope);
     if (version === null) return [];
@@ -85,7 +86,7 @@ export const writeSkillVersions = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: IntentSkillsConfig;
-}): Effect.Effect<SkillVersionWriteReport, PlatformError.PlatformError, FileSystem.FileSystem> =>
+}): Effect.Effect<SkillVersionWriteReport, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* writeSkillVersions() {
     const scopes = yield* Effect.forEach(listRepositoryFiles(repositoryRoot).manifests, (file) =>
       publishedScopeOf({ file, config, repositoryRoot }),

@@ -1,7 +1,8 @@
-import { filesUnder } from "../platform/file-system.ts";
+import { Effect, type FileSystem } from "effect";
+
+import { filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
 import { path } from "../platform/path.ts";
 
-import type { Effect, FileSystem, PlatformError } from "effect";
 import type { IntentSkillsConfig } from "./config.ts";
 import type { PublishedManifest } from "./manifest.ts";
 
@@ -19,8 +20,9 @@ export const listSkillFiles = ({
 }: {
   readonly directory: string;
   readonly config: IntentSkillsConfig;
-}): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> =>
+}): Effect.Effect<readonly string[], TreeFailure, FileSystem.FileSystem> =>
   filesUnder({
     directory,
-    keeps: (relativePath) => path.basename(relativePath) === config.skillFileName,
-  });
+    prunedDirectoryNames: [],
+    keepsFileName: (fileName) => fileName === config.skillFileName,
+  }).pipe(Effect.map((skillFiles) => skillFiles ?? []));

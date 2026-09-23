@@ -3,7 +3,7 @@ import { defineCommand } from "citty";
 import { Effect } from "effect";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
-import { isDirectory } from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import { isDirectoryAt } from "./platform/file-system.ts";
 import { path } from "./platform/path.ts";
 import { measureCheck } from "./repository-checks/index.ts";
 
@@ -45,7 +45,7 @@ export const checkCommand = defineCommand({
           }
 
           const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
-          if (!isDirectory(repositoryRoot)) {
+          if (!(yield* isDirectoryAt(repositoryRoot))) {
             refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
             return;
           }

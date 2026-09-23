@@ -63,6 +63,15 @@ const PACKAGE_ROUTE_FILES = {
   }),
 };
 
+class LintReportUnparsable extends Schema.TaggedError<LintReportUnparsable>()(
+  "LintReportUnparsable",
+  { stderr: Schema.String, cause: Schema.Defect() },
+) {
+  override get message(): string {
+    return `The lint run printed no JSON report. It wrote this to stderr:\n${this.stderr}`;
+  }
+}
+
 const lintedConsumer = (consumerPath: string) =>
   Effect.gen(function* lintedConsumer() {
     const filesystem = yield* FileSystem.FileSystem;
@@ -80,16 +89,23 @@ const lintedConsumer = (consumerPath: string) =>
         cwd: root,
         env: { FORCE_COLOR: "0", NO_COLOR: "1" },
         extendEnv: true,
-        stderr: "ignore",
+        stderr: "pipe",
         stdin: "ignore",
         stdout: "pipe",
       }),
     );
-    const [stdout, exitCode] = yield* Effect.all(
-      [Stream.mkString(Stream.decodeText(handle.stdout)), handle.exitCode],
+    const [stdout, stderr, exitCode] = yield* Effect.all(
+      [
+        Stream.mkString(Stream.decodeText(handle.stdout)),
+        Stream.mkString(Stream.decodeText(handle.stderr)),
+        handle.exitCode,
+      ],
       { concurrency: "unbounded" },
     ).pipe(Effect.timeout(PROCESS_TIMEOUT));
-    return { exitCode, stdout };
+    const report = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(stdout).pipe(
+      Effect.mapError((unparsable) => new LintReportUnparsable({ stderr, cause: unparsable })),
+    );
+    return { exitCode, stdout, report };
   });
 
 const messagesIn = (jsonNode: unknown): readonly string[] => {
@@ -104,8 +120,7 @@ layer(NodeServices.layer)("canonical values oxlint plugin wiring", (it) => {
   describe("a vocabulary package exposing a shadow subpath beside an alias subpath", () => {
     describe("the consumer importing through the shadow subpath", () => {
       const fixture = Effect.gen(function* shadowConsumerLint() {
-        const { exitCode, stdout } = yield* lintedConsumer("src/shadow-consumer.ts");
-        const report = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(stdout);
+        const { exitCode, stdout, report } = yield* lintedConsumer("src/shadow-consumer.ts");
         return [
           exitCode,
           stdout.includes(NO_LOCAL_CODE),
@@ -125,17 +140,20 @@ layer(NodeServices.layer)("canonical values oxlint plugin wiring", (it) => {
     });
 
     describe("the consumer importing through the alias subpath", () => {
-      const fixture = Effect.gen(function* aliasConsumerLint() {
-        const { exitCode } = yield* lintedConsumer("src/alias-consumer.ts");
-        return exitCode;
-      });
+      const fixture = Effect.map(
+        lintedConsumer("src/alias-consumer.ts"),
+        ({ exitCode, report }) => ({
+          exitCode,
+          messages: messagesIn(report),
+        }),
+      );
 
       it.effect(
         "passes the lint",
         () =>
           Effect.gen(function* program() {
             const aliasConsumerLint = yield* fixture;
-            expect(aliasConsumerLint).toStrictEqual(0);
+            expect(aliasConsumerLint).toStrictEqual({ exitCode: 0, messages: [] });
           }),
         PROCESS_TIMEOUT * 2,
       );

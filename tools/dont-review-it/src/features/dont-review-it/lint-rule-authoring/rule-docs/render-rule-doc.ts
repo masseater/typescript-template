@@ -1,11 +1,11 @@
-import { path } from "../../platform/path.ts";
+import { posixPath } from "../../platform/path.ts";
 import { lintToolOf } from "../lint-tool.ts";
 
 import type { BundledLintRule } from "../rule-index/rule-bundle.ts";
 import type { LintRuleFacts } from "../rule-index/rule-facts.ts";
 import type { LintRuleExample, LintRuleExamples } from "./rule-examples.ts";
 
-export const RULE_DOCS_DIR = path.join("docs", "lint");
+export const RULE_DOCS_DIR = posixPath.join("docs", "lint");
 
 export const REQUIRED_HEADINGS: readonly string[] = [
   "## Violation",
@@ -34,8 +34,8 @@ export const renderFrontmatterDescription = (rule: LintRuleFacts): string =>
   `description: "${escapedDescription(rule.description)}"`;
 
 const sourceLinkOf = (sourcePath: string): string => {
-  const shown = path.basename(sourcePath);
-  const reached = path.relative(RULE_DOCS_DIR, sourcePath);
+  const shown = posixPath.basename(sourcePath);
+  const reached = posixPath.relative(RULE_DOCS_DIR, sourcePath);
   return `[\`${shown}\`](${reached})`;
 };
 

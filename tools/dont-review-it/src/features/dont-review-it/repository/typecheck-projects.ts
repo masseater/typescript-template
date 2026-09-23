@@ -1,6 +1,7 @@
-import { Effect, FileSystem, Path, type PlatformError } from "effect";
+import { Effect, type FileSystem, Path, type PlatformError } from "effect";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
+import { pathExists } from "../platform/file-system.ts";
 
 const workspaceGroups = ["apps", "libs", "infra", "tools"] as const;
 
@@ -42,16 +43,15 @@ const tsconfigFilesUnder = (root: string, directory: string): ProjectDiscovery<r
 
 const typecheckProjects = (root: string): ProjectDiscovery<readonly string[]> =>
   Effect.gen(function* typecheckProjects() {
-    const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
     const nested = yield* Effect.forEach(workspaceGroups, (group) =>
-      Effect.flatMap(filesystem.exists(paths.join(root, group)), (present) =>
+      Effect.flatMap(pathExists(paths.join(root, group)), (present) =>
         present ? tsconfigFilesUnder(root, group) : Effect.succeed([]),
       ),
     );
     const candidates = ["tsconfig.json", ...nested.flat()];
     const present = yield* Effect.filter(candidates, (project) =>
-      filesystem.exists(paths.join(root, project)),
+      pathExists(paths.join(root, project)),
     );
     return present.toSorted();
   });

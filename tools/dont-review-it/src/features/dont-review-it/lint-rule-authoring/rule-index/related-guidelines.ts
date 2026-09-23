@@ -1,6 +1,7 @@
-import { Effect, FileSystem, type PlatformError } from "effect";
+import { Effect, type FileSystem, type PlatformError } from "effect";
 
-import { path } from "../../platform/path.ts";
+import { pathExists } from "../../platform/file-system.ts";
+import { path, posixPath } from "../../platform/path.ts";
 import {
   DOCUMENT_SUFFIX,
   normativeDocumentPlacesIn,
@@ -31,7 +32,7 @@ const reachableDocuments = ({
 }: {
   readonly workspace: LintRuleWorkspace;
   readonly places: NormativeDocumentPlaces;
-}): readonly string[] => [places.fileName, path.join(workspace.workspaceDir, places.fileName)];
+}): readonly string[] => [places.fileName, posixPath.join(workspace.workspaceDir, places.fileName)];
 
 const outsideTheNorms = ({
   declaredPath,
@@ -57,16 +58,14 @@ const declarationProblem = ({
 }): Effect.Effect<string | null, PlatformError.PlatformError, FileSystem.FileSystem> =>
   Effect.gen(function* declarationProblem() {
     if (normativeDocuments.includes(declaredPath)) return null;
-
-    const filesystem = yield* FileSystem.FileSystem;
     if (reachableDocuments({ workspace, places }).includes(declaredPath)) {
-      return (yield* filesystem.exists(path.join(repositoryRoot, declaredPath)))
+      return (yield* pathExists(path.join(repositoryRoot, declaredPath)))
         ? null
         : absent(declaredPath);
     }
 
     if (!declaredPath.endsWith(DOCUMENT_SUFFIX)) return notADocument(declaredPath);
-    if (!(yield* filesystem.exists(path.join(repositoryRoot, declaredPath)))) {
+    if (!(yield* pathExists(path.join(repositoryRoot, declaredPath)))) {
       return absent(declaredPath);
     }
 
@@ -94,7 +93,7 @@ const ruleGuidelineProblems = ({
   readonly rule: BundledLintRule;
 }): Effect.Effect<readonly LintRuleProblem[], PlatformError.PlatformError, FileSystem.FileSystem> =>
   Effect.gen(function* ruleGuidelineProblems() {
-    const file = path.join(workspace.workspaceDir, rule.sourcePath);
+    const file = posixPath.join(workspace.workspaceDir, rule.sourcePath);
     if (rule.unreadableGuidelines > 0) return [{ file, message: UNREADABLE }];
     if (rule.relatedGuidelines.length === 0) return [{ file, message: MISSING }];
 
@@ -129,7 +128,7 @@ export const relatedGuidelineProblems = ({
     });
     const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
       workspaceRulesOf({ repositoryRoot, workspace }).pipe(
-        Effect.map((rules) => rules.map((rule) => ({ workspace, rule }))),
+        Effect.map(({ rules }) => rules.map((rule) => ({ workspace, rule }))),
       ),
     );
     const scanned = workspaceRules.flat();

@@ -1,9 +1,15 @@
 import { Effect, FileSystem, type PlatformError } from "effect";
 
-import { path } from "../platform/path.ts";
+import { pathExists, unlessMissing } from "../platform/file-system.ts";
+import { path, posixPath } from "../platform/path.ts";
 import { parseWorkflowDocument, type WorkflowDocument } from "./workflow-document.ts";
 
 import type { WorkflowChecksConfig } from "./config.ts";
+
+type WorkflowTree =
+  | { readonly kind: "no-ci-tree" }
+  | { readonly kind: "workflows-omitted" }
+  | { readonly kind: "read"; readonly documents: readonly WorkflowDocument[] };
 
 export const readWorkflowDocuments = ({
   repositoryRoot,
@@ -11,23 +17,18 @@ export const readWorkflowDocuments = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: WorkflowChecksConfig;
-}): Effect.Effect<
-  readonly WorkflowDocument[],
-  PlatformError.PlatformError,
-  FileSystem.FileSystem
-> =>
+}): Effect.Effect<WorkflowTree, PlatformError.PlatformError, FileSystem.FileSystem> =>
   Effect.gen(function* readWorkflowDocuments() {
     const filesystem = yield* FileSystem.FileSystem;
     const directory = path.join(repositoryRoot, config.workflowDirectory);
-    if (!(yield* filesystem.exists(directory))) {
-      if (yield* filesystem.exists(path.dirname(directory))) {
-        yield* filesystem.readDirectory(directory);
-      }
-      return [];
+    const entryNames = yield* unlessMissing(filesystem.readDirectory(directory));
+    if (entryNames === null) {
+      return (yield* pathExists(path.dirname(directory)))
+        ? { kind: "workflows-omitted" }
+        : { kind: "no-ci-tree" };
     }
-    const entryNames = yield* filesystem.readDirectory(directory);
 
-    return yield* Effect.forEach(
+    const documents = yield* Effect.forEach(
       entryNames
         .filter((spelled) =>
           config.workflowFileExtensions.some((extension) => spelled.endsWith(extension)),
@@ -37,10 +38,11 @@ export const readWorkflowDocuments = ({
         filesystem.readFileString(path.join(directory, spelled)).pipe(
           Effect.map((source) =>
             parseWorkflowDocument({
-              relativePath: `${config.workflowDirectory}/${spelled}`,
+              relativePath: posixPath.join(config.workflowDirectory, spelled),
               source,
             }),
           ),
         ),
     );
+    return { kind: "read", documents };
   });

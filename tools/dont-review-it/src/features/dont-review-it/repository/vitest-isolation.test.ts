@@ -2,7 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect, FileSystem, Path, type PlatformError } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { commands } from "./tasks.ts";
 import {

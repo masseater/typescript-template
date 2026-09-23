@@ -80,6 +80,6 @@ export default defineConfig({
       "src/features/dont-review-it/index.ts",
     ],
     external: [/^vite-plus/],
-    dts: { generator: "tsgo", tsconfig: "tsconfig.pack.json" },
+    dts: { generator: "tsgo" },
   },
 });

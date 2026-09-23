@@ -3,7 +3,7 @@ import { applications, architectureKindOf } from "@repo/config";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
 import { reported } from "./lint-harness.ts";
 import { commands, workspaceDirectories } from "./tasks.ts";
 

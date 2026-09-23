@@ -1,6 +1,7 @@
-import { Effect, FileSystem, type PlatformError } from "effect";
+import { Effect, type FileSystem, type PlatformError } from "effect";
 
-import { path } from "../../platform/path.ts";
+import { pathExists } from "../../platform/file-system.ts";
+import { path, posixPath } from "../../platform/path.ts";
 import { generatedFileProblems, staleGeneratedFile } from "../reconcile-generated-file.ts";
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
 import { renderShippedRuleReference } from "./render-shipped-rule-reference.ts";
@@ -12,9 +13,9 @@ const BEGIN_MARKER = "<!-- BEGIN GENERATED shipped-lint-rules -->";
 
 const END_MARKER = "<!-- END GENERATED shipped-lint-rules -->";
 
-const SKILL_DIRECTORY = path.join("skills", "core");
+const SKILL_DIRECTORY = posixPath.join("skills", "core");
 
-const REFERENCE_FILE = path.join(SKILL_DIRECTORY, "references", "lint-rules.md");
+const REFERENCE_FILE = posixPath.join(SKILL_DIRECTORY, "references", "lint-rules.md");
 
 const scaffoldOf = (block: string): string =>
   `# Lint rules this package ships\n\nEvery rule below is registered at error severity unless the table says the preset leaves it off. Generated from the rule implementations; regenerate with \`${REGENERATE_COMMAND}\` rather than editing it.\n\n${block}\n`;
@@ -37,13 +38,12 @@ export const shippedRuleReferenceProblems = ({
   readonly write: boolean;
 }): Effect.Effect<readonly LintRuleProblem[], PlatformError.PlatformError, FileSystem.FileSystem> =>
   Effect.gen(function* shippedRuleReferenceProblems() {
-    const filesystem = yield* FileSystem.FileSystem;
     const skillPath = path.join(repositoryRoot, workspaceDir, SKILL_DIRECTORY, "SKILL.md");
-    if (!(yield* filesystem.exists(skillPath))) return [];
+    if (!(yield* pathExists(skillPath))) return [];
 
     return yield* generatedFileProblems({
       repositoryRoot,
-      file: path.join(workspaceDir, REFERENCE_FILE),
+      file: posixPath.join(workspaceDir, REFERENCE_FILE),
       begin: BEGIN_MARKER,
       end: END_MARKER,
       expected: renderShippedRuleReference({ rules, workspaceDir }),

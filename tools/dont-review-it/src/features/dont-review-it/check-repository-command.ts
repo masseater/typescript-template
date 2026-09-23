@@ -4,7 +4,7 @@ import { Effect, Path } from "effect";
 
 import { refuseMisuse, repairGeneratedParts, reportProblems } from "./check-support.ts";
 import { runLintRuleAuthoring } from "./lint-rule-authoring/run-cli.ts";
-import { isDirectory } from "./lint/oxlint/lib/canonical-values/source-files.ts";
+import { isDirectoryAt } from "./platform/file-system.ts";
 import {
   EXIT_MISUSE,
   EXIT_SUCCESS,
@@ -42,7 +42,7 @@ export const checkRepositoryCommand = defineCommand({
         Effect.gen(function* checkRepository() {
           const path = yield* Path.Path;
           const repositoryRoot = path.resolve(args["repository-root"] ?? process.cwd());
-          if (!isDirectory(repositoryRoot)) {
+          if (!(yield* isDirectoryAt(repositoryRoot))) {
             refuseMisuse(`${repositoryRoot} is not a directory that can be scanned.\n`);
             return;
           }

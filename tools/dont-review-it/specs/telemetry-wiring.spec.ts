@@ -43,7 +43,9 @@ layer(NodeServices.layer)("計測の配線の検査", (it) => {
 });`,
       });
 
-      expect(runTelemetryWiringChecks({ repositoryRoot, config }).problems).toStrictEqual([]);
+      expect((yield* runTelemetryWiringChecks({ repositoryRoot, config })).problems).toStrictEqual(
+        [],
+      );
     }),
   );
 
@@ -56,7 +58,7 @@ layer(NodeServices.layer)("計測の配線の検査", (it) => {
 });`,
       });
 
-      expect(runTelemetryWiringChecks({ repositoryRoot, config }).problems).toStrictEqual([
+      expect((yield* runTelemetryWiringChecks({ repositoryRoot, config })).problems).toStrictEqual([
         {
           file: "packages/measured/vite.config.ts",
           line: 1,
@@ -76,7 +78,9 @@ layer(NodeServices.layer)("計測の配線の検査", (it) => {
 });`,
       });
 
-      expect(runTelemetryWiringChecks({ repositoryRoot, config }).problems).toHaveLength(1);
+      expect((yield* runTelemetryWiringChecks({ repositoryRoot, config })).problems).toHaveLength(
+        1,
+      );
     }),
   );
 
@@ -89,7 +93,9 @@ layer(NodeServices.layer)("計測の配線の検査", (it) => {
 });`,
       });
 
-      expect(runTelemetryWiringChecks({ repositoryRoot, config }).problems).toStrictEqual([]);
+      expect((yield* runTelemetryWiringChecks({ repositoryRoot, config })).problems).toStrictEqual(
+        [],
+      );
     }),
   );
 
@@ -102,7 +108,9 @@ layer(NodeServices.layer)("計測の配線の検査", (it) => {
 });`,
       });
 
-      expect(runTelemetryWiringChecks({ repositoryRoot, config }).problems).toStrictEqual([]);
+      expect((yield* runTelemetryWiringChecks({ repositoryRoot, config })).problems).toStrictEqual(
+        [],
+      );
     }),
   );
 
@@ -110,7 +118,9 @@ layer(NodeServices.layer)("計測の配線の検査", (it) => {
     Effect.gen(function* program() {
       const repositoryRoot = yield* repositoryWith(WORKSPACES);
 
-      expect(runTelemetryWiringChecks({ repositoryRoot, config }).problems).toStrictEqual([]);
+      expect((yield* runTelemetryWiringChecks({ repositoryRoot, config })).problems).toStrictEqual(
+        [],
+      );
     }),
   );
 
@@ -118,7 +128,7 @@ layer(NodeServices.layer)("計測の配線の検査", (it) => {
     Effect.gen(function* program() {
       const repositoryRoot = yield* repositoryWith(WORKSPACES);
 
-      expect(runTelemetryWiringChecks({ repositoryRoot, config }).scanned).toBe(2);
+      expect((yield* runTelemetryWiringChecks({ repositoryRoot, config })).scanned).toBe(2);
     }),
   );
 });

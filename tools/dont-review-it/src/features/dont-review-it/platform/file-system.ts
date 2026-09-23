@@ -1,14 +1,6 @@
 import { Effect, FileSystem, type PlatformError } from "effect";
 
-import { failureCodeOf } from "../repository-checks/index.ts";
-import { path } from "./path.ts";
-
-const MISSING_PARENT_CODE = "ENOTDIR";
-
-export const isMissingPath = (failure: PlatformError.PlatformError): boolean =>
-  failure.reason._tag === "NotFound" ||
-  (failure.reason._tag === "BadResource" &&
-    failureCodeOf(failure.reason.cause) === MISSING_PARENT_CODE);
+import { isMissingPath } from "./path-failure.ts";
 
 export const failureMessageOf = (failure: PlatformError.PlatformError): string =>
   failure.reason.cause instanceof Error ? failure.reason.cause.message : failure.message;
@@ -26,44 +18,26 @@ export const textOrNull = (
     return yield* unlessMissing(filesystem.readFileString(filePath));
   });
 
-const entryTypeOf = (
-  entryPath: string,
+const resolvedTypeAt = (
+  targetPath: string,
 ): Effect.Effect<FileSystem.File.Type | null, PlatformError.PlatformError, FileSystem.FileSystem> =>
-  Effect.gen(function* entryTypeOf() {
+  Effect.gen(function* resolvedTypeAt() {
     const filesystem = yield* FileSystem.FileSystem;
-    const info = yield* unlessMissing(filesystem.stat(entryPath));
+    const info = yield* unlessMissing(filesystem.stat(targetPath));
     return info === null ? null : info.type;
   });
 
-export const childDirectoryNamesIn = (
-  parentPath: string,
-): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> =>
-  Effect.gen(function* childDirectoryNamesIn() {
-    const filesystem = yield* FileSystem.FileSystem;
-    const childNames = (yield* unlessMissing(filesystem.readDirectory(parentPath))) ?? [];
-    const directoryNames = yield* Effect.filter(childNames, (childName) =>
-      entryTypeOf(path.join(parentPath, childName)).pipe(
-        Effect.map((entryType) => entryType === "Directory"),
-      ),
-    );
-    return directoryNames.toSorted();
-  });
+export const pathExists = (
+  targetPath: string,
+): Effect.Effect<boolean, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.map(resolvedTypeAt(targetPath), (resolved) => resolved !== null);
 
-export const filesUnder = ({
-  directory,
-  keeps,
-}: {
-  readonly directory: string;
-  readonly keeps: (relativePath: string) => boolean;
-}): Effect.Effect<readonly string[], PlatformError.PlatformError, FileSystem.FileSystem> =>
-  Effect.gen(function* filesUnder() {
-    const filesystem = yield* FileSystem.FileSystem;
-    const listed =
-      (yield* unlessMissing(filesystem.readDirectory(directory, { recursive: true }))) ?? [];
-    const files = yield* Effect.filter(listed.filter(keeps), (relativePath) =>
-      entryTypeOf(path.join(directory, relativePath)).pipe(
-        Effect.map((entryType) => entryType === "File"),
-      ),
-    );
-    return files.map((relativePath) => path.join(directory, relativePath)).toSorted();
-  });
+export const isDirectoryAt = (
+  targetPath: string,
+): Effect.Effect<boolean, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.map(resolvedTypeAt(targetPath), (resolved) => resolved === "Directory");
+
+export const isFileAt = (
+  targetPath: string,
+): Effect.Effect<boolean, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.map(resolvedTypeAt(targetPath), (resolved) => resolved === "File");

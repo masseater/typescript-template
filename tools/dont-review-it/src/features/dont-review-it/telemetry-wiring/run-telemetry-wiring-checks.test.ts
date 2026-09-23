@@ -30,7 +30,10 @@ layer(NodeServices.layer)("runTelemetryWiringChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runTelemetryWiringChecks({ repositoryRoot, config: defaultTelemetryWiringConfig });
+        return yield* runTelemetryWiringChecks({
+          repositoryRoot,
+          config: defaultTelemetryWiringConfig,
+        });
       },
     );
 
@@ -61,7 +64,10 @@ layer(NodeServices.layer)("runTelemetryWiringChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runTelemetryWiringChecks({ repositoryRoot, config: defaultTelemetryWiringConfig });
+        return yield* runTelemetryWiringChecks({
+          repositoryRoot,
+          config: defaultTelemetryWiringConfig,
+        });
       },
     );
 
@@ -102,7 +108,10 @@ layer(NodeServices.layer)("runTelemetryWiringChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runTelemetryWiringChecks({ repositoryRoot, config: defaultTelemetryWiringConfig });
+        return yield* runTelemetryWiringChecks({
+          repositoryRoot,
+          config: defaultTelemetryWiringConfig,
+        });
       },
     );
 

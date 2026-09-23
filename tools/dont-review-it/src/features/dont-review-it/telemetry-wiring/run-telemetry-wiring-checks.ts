@@ -1,18 +1,17 @@
+import { Effect, type FileSystem, type PlatformError } from "effect";
 import { parseSync } from "oxc-parser";
 
-import {
-  listRepositoryFiles,
-  readTextFile,
-} from "../lint/oxlint/lib/canonical-values/source-files.ts";
+import { listRepositoryFiles } from "../lint/oxlint/lib/canonical-values/source-files.ts";
 import { defaultExportedValue, unwrappedCall, valueAt } from "../lint/oxlint/lib/config-object.ts";
-import { path } from "../platform/path.ts";
+import { textOrNull } from "../platform/file-system.ts";
+import { path, posixPath } from "../platform/path.ts";
 
 import type { RepositoryProblem, ScannedProblems } from "../repository-checks/index.ts";
 import type { TelemetryWiringConfig } from "./config.ts";
 
 const configDirectoriesIn = (repositoryRoot: string): readonly string[] =>
   listRepositoryFiles(repositoryRoot)
-    .manifests.map((manifest) => path.dirname(manifest.relativePath))
+    .manifests.map((manifest) => posixPath.dirname(manifest.relativePath))
     .toSorted();
 
 const declaredAt = ({
@@ -62,15 +61,14 @@ export const runTelemetryWiringChecks = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: TelemetryWiringConfig;
-}): ScannedProblems => {
-  const directories = configDirectoriesIn(repositoryRoot);
-
-  return {
-    problems: directories.flatMap((directory) => {
-      const relativePath = path.join(directory, config.toolchainConfigFileName);
-      const source = readTextFile(path.join(repositoryRoot, relativePath));
-      return source === null ? [] : problemsIn({ relativePath, source, config });
-    }),
-    scanned: directories.length,
-  };
-};
+}): Effect.Effect<ScannedProblems, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* runTelemetryWiringChecks() {
+    const directories = configDirectoriesIn(repositoryRoot);
+    const problems = yield* Effect.forEach(directories, (directory) => {
+      const relativePath = posixPath.join(directory, config.toolchainConfigFileName);
+      return Effect.map(textOrNull(path.join(repositoryRoot, relativePath)), (source) =>
+        source === null ? [] : problemsIn({ relativePath, source, config }),
+      );
+    });
+    return { problems: problems.flat(), scanned: directories.length };
+  });

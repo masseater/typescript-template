@@ -16,10 +16,10 @@ layer(NodeServices.layer)("ruleSourceFilesIn", (it) => {
       return yield* ruleSourceFilesIn({ repositoryRoot: root, workspace: WORKSPACE });
     });
 
-    it.effect("yields nothing", () =>
+    it.effect("is named as absent instead of yielding no rule", () =>
       Effect.gen(function* program() {
         const candidates = yield* candidatesFixture;
-        expect(candidates).toStrictEqual([]);
+        expect(candidates).toStrictEqual({ sourcePaths: [], absentDirectories: ["src/rules"] });
       }),
     );
   });
@@ -52,7 +52,10 @@ layer(NodeServices.layer)("ruleSourceFilesIn", (it) => {
     it.effect("leaves the tests, the type declarations, and the prose out", () =>
       Effect.gen(function* program() {
         const candidates = yield* candidatesFixture;
-        expect(candidates).toStrictEqual(["src/rules/keep.ts"]);
+        expect(candidates).toStrictEqual({
+          sourcePaths: ["src/rules/keep.ts"],
+          absentDirectories: [],
+        });
       }),
     );
   });
@@ -104,7 +107,10 @@ layer(NodeServices.layer)("ruleSourceFilesIn", (it) => {
     it.effect("walks none of those directories and keeps the plain nested one", () =>
       Effect.gen(function* program() {
         const candidates = yield* candidatesFixture;
-        expect(candidates).toStrictEqual(["src/rules/nested/inner.ts"]);
+        expect(candidates).toStrictEqual({
+          sourcePaths: ["src/rules/nested/inner.ts"],
+          absentDirectories: [],
+        });
       }),
     );
   });
@@ -142,11 +148,10 @@ layer(NodeServices.layer)("ruleSourceFilesIn", (it) => {
     it.effect("lets every declared directory contribute and comes back sorted", () =>
       Effect.gen(function* program() {
         const candidates = yield* candidatesFixture;
-        expect(candidates).toStrictEqual([
-          "src/more-rules/extra.ts",
-          "src/rules/alpha.ts",
-          "src/rules/zebra.ts",
-        ]);
+        expect(candidates).toStrictEqual({
+          sourcePaths: ["src/more-rules/extra.ts", "src/rules/alpha.ts", "src/rules/zebra.ts"],
+          absentDirectories: [],
+        });
       }),
     );
   });

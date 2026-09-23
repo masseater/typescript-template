@@ -40,7 +40,7 @@ export const guidelineIndexProblems = ({
     const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
     const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
       workspaceRulesOf({ repositoryRoot, workspace }).pipe(
-        Effect.map((rules) =>
+        Effect.map(({ rules }) =>
           rules.map((rule) => ({ rule, workspaceDir: workspace.workspaceDir })),
         ),
       ),

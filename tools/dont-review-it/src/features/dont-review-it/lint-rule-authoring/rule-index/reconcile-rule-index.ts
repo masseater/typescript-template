@@ -1,7 +1,7 @@
 import { Effect, type FileSystem } from "effect";
 import { countBy } from "es-toolkit";
 
-import { path } from "../../platform/path.ts";
+import { posixPath } from "../../platform/path.ts";
 import { generatedFileProblems, staleGeneratedFile } from "../reconcile-generated-file.ts";
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
 import {
@@ -47,6 +47,15 @@ const unbundledShippedRule = ({
 }): string =>
   `A rule the preset carries must not sit outside a bundle directory once \`${workspaceDir}\` declares bundles. Move \`${ruleName}\` under the directory of the bundle that carries it, or declare \`shipped: false\` on it.`;
 
+const absentRuleDirectory = ({
+  ruleDirectory,
+  workspaceDir,
+}: {
+  readonly ruleDirectory: string;
+  readonly workspaceDir: string;
+}): string =>
+  `A workspace must not declare a rule directory that is not there, because the index then lists no rule from it and every rule check passes with nothing read. Create \`${posixPath.join(workspaceDir, ruleDirectory)}\` or remove it from \`lintRules\`.`;
+
 const reconcileWorkspace = ({
   repositoryRoot,
   workspace,
@@ -57,8 +66,12 @@ const reconcileWorkspace = ({
   readonly write: boolean;
 }): Effect.Effect<readonly LintRuleProblem[], LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
   Effect.gen(function* reconcileWorkspace() {
-    const file = path.join(workspace.workspaceDir, "docs", "lint", "index.md");
-    const rules = yield* workspaceRulesOf({ repositoryRoot, workspace });
+    const file = posixPath.join(workspace.workspaceDir, "docs", "lint", "index.md");
+    const { rules, absentDirectories } = yield* workspaceRulesOf({ repositoryRoot, workspace });
+    const absent = absentDirectories.map((ruleDirectory) => ({
+      file: posixPath.join(workspace.workspaceDir, "package.json"),
+      message: absentRuleDirectory({ ruleDirectory, workspaceDir: workspace.workspaceDir }),
+    }));
 
     const duplicates = Object.entries(countBy(rules, (rule) => rule.name))
       .filter(([, spellings]) => spellings > 1)
@@ -73,7 +86,7 @@ const reconcileWorkspace = ({
         : rules
             .filter((rule) => rule.shipped && rule.bundle === null)
             .map((rule) => ({
-              file: path.join(workspace.workspaceDir, rule.sourcePath),
+              file: posixPath.join(workspace.workspaceDir, rule.sourcePath),
               message: unbundledShippedRule({
                 ruleName: rule.name,
                 workspaceDir: workspace.workspaceDir,
@@ -97,7 +110,7 @@ const reconcileWorkspace = ({
       rules,
       write,
     });
-    return [...duplicates, ...strays, ...indexProblems, ...referenceProblems];
+    return [...absent, ...duplicates, ...strays, ...indexProblems, ...referenceProblems];
   });
 
 export const lintRuleIndexProblems = ({

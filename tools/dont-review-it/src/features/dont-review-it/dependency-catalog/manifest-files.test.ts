@@ -277,4 +277,42 @@ layer(NodeServices.layer)("readWorkspaceManifests", (it) => {
       }),
     );
   });
+
+  describe("a package manifest that does not parse as JSON", () => {
+    const unparsableManifestFixture = Effect.gen(function* unparsableManifest() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-manifest-files-",
+      });
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "packages", "left"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "packages", "left", "package.json"),
+        `{"name": `,
+      );
+      const failure = yield* Effect.flip(
+        readWorkspaceManifests({
+          repositoryRoot,
+          packagePatterns: ["packages/*"],
+          config: defaultDependencyCatalogChecksConfig,
+        }),
+      );
+      return {
+        failure:
+          failure._tag === "ManifestUnparsable"
+            ? { _tag: failure._tag, file: failure.file }
+            : failure,
+        file: paths.join(repositoryRoot, "packages", "left", "package.json"),
+      };
+    });
+
+    it.effect("fails naming the manifest", () =>
+      Effect.gen(function* program() {
+        const { failure, file } = yield* unparsableManifestFixture;
+        expect(failure).toStrictEqual({ _tag: "ManifestUnparsable", file });
+      }),
+    );
+  });
 });

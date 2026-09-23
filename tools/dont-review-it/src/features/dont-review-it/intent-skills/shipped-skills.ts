@@ -1,4 +1,4 @@
-import { Effect, FileSystem, type PlatformError } from "effect";
+import { Effect, FileSystem } from "effect";
 import { parseTree } from "jsonc-parser";
 
 import {
@@ -13,19 +13,20 @@ import {
 } from "./shipped-versions.ts";
 import { listSkillFiles, skillsDirectoryOf } from "./skill-files.ts";
 
+import type { TreeFailure } from "../platform/directory-entries.ts";
 import type { RepositoryProblem } from "../problem.ts";
 import type { ScannedProblems } from "../repository-checks/index.ts";
 import type { IntentSkillsConfig } from "./config.ts";
 
 type ScopeProblems = Effect.Effect<
   readonly RepositoryProblem[],
-  PlatformError.PlatformError,
+  TreeFailure,
   FileSystem.FileSystem
 >;
 
 const shipsSkillFile = (
   scope: SkillPackage,
-): Effect.Effect<boolean, PlatformError.PlatformError, FileSystem.FileSystem> =>
+): Effect.Effect<boolean, TreeFailure, FileSystem.FileSystem> =>
   listSkillFiles({ directory: skillsDirectoryOf(scope), config: scope.config }).pipe(
     Effect.map((skillFiles) => skillFiles.length > 0),
   );
@@ -161,7 +162,7 @@ export const shippedSkillsProblems = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: IntentSkillsConfig;
-}): Effect.Effect<ScannedProblems, PlatformError.PlatformError, FileSystem.FileSystem> =>
+}): Effect.Effect<ScannedProblems, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* shippedSkillsProblems() {
     const manifests = listRepositoryFiles(repositoryRoot).manifests;
     const problems = yield* Effect.forEach(manifests, (file) =>

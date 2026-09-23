@@ -21,7 +21,7 @@ layer(NodeServices.layer)("foreignToolConfigsIn", (it) => {
         paths.join(repositoryRoot, "vite.config.ts"),
         "export default {};\n",
       );
-      return foreignToolConfigsIn({
+      return yield* foreignToolConfigsIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,
@@ -45,7 +45,7 @@ layer(NodeServices.layer)("foreignToolConfigsIn", (it) => {
       });
 
       yield* filesystem.writeFileString(paths.join(repositoryRoot, ".oxlintrc.json"), "{}\n");
-      return foreignToolConfigsIn({
+      return yield* foreignToolConfigsIn({
         repositoryRoot,
         packageRoot: PACKAGE_ROOT,
         config: defaultRequiredFileFormConfig,

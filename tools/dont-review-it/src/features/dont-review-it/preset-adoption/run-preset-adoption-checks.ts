@@ -1,12 +1,12 @@
+import { Effect, type FileSystem, type PlatformError } from "effect";
+
 import { adoptedBundlesIn } from "../configs/bundles/adopted-bundles.ts";
 import { LINT_BUNDLE_NAMES, type LintBundle } from "../configs/bundles/bundle-names.ts";
 import { BUNDLE_RULES } from "../configs/oxlint.ts";
-import {
-  listRepositoryFiles,
-  readTextFile,
-} from "../lint/oxlint/lib/canonical-values/source-files.ts";
+import { listRepositoryFiles } from "../lint/oxlint/lib/canonical-values/source-files.ts";
 import { matchesAnchoredGlobPath } from "../lint/oxlint/lib/glob-path-match.ts";
-import { path } from "../platform/path.ts";
+import { textOrNull } from "../platform/file-system.ts";
+import { path, posixPath } from "../platform/path.ts";
 import {
   disabledRuleDeclarationsIn,
   type DisabledRuleDeclaration,
@@ -23,7 +23,7 @@ export type PresetAdoptionReport = {
 
 const workspaceDirectoriesIn = (repositoryRoot: string): readonly string[] =>
   listRepositoryFiles(repositoryRoot)
-    .manifests.map((manifest) => path.dirname(manifest.relativePath))
+    .manifests.map((manifest) => posixPath.dirname(manifest.relativePath))
     .filter((directory) => directory !== ".")
     .toSorted();
 
@@ -84,23 +84,24 @@ export const runPresetAdoptionChecks = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: PresetAdoptionConfig;
-}): PresetAdoptionReport => {
-  const source = readTextFile(path.join(repositoryRoot, config.toolchainConfigFileName));
-  const workspaces = workspaceDirectoriesIn(repositoryRoot);
-  if (source === null) return { warnings: [], scanned: workspaces.length, configMissing: true };
+}): Effect.Effect<PresetAdoptionReport, PlatformError.PlatformError, FileSystem.FileSystem> =>
+  Effect.gen(function* runPresetAdoptionChecks() {
+    const source = yield* textOrNull(path.join(repositoryRoot, config.toolchainConfigFileName));
+    const workspaces = workspaceDirectoriesIn(repositoryRoot);
+    if (source === null) return { warnings: [], scanned: workspaces.length, configMissing: true };
 
-  const adopted =
-    adoptedBundlesIn({ source, toolchainConfigFileName: config.toolchainConfigFileName }) ??
-    LINT_BUNDLE_NAMES;
+    const adopted =
+      adoptedBundlesIn({ source, toolchainConfigFileName: config.toolchainConfigFileName }) ??
+      LINT_BUNDLE_NAMES;
 
-  return {
-    warnings: disabledRuleDeclarationsIn({ source, config }).flatMap((declaration) => {
-      const bundle = bundleCarrying(declaration.ruleId);
-      return bundle !== null && !adopted.includes(bundle)
-        ? unreachedWarning({ declaration, config, bundle })
-        : warningsFor({ declaration, workspaces, config });
-    }),
-    scanned: workspaces.length,
-    configMissing: false,
-  };
-};
+    return {
+      warnings: disabledRuleDeclarationsIn({ source, config }).flatMap((declaration) => {
+        const bundle = bundleCarrying(declaration.ruleId);
+        return bundle !== null && !adopted.includes(bundle)
+          ? unreachedWarning({ declaration, config, bundle })
+          : warningsFor({ declaration, workspaces, config });
+      }),
+      scanned: workspaces.length,
+      configMissing: false,
+    };
+  });

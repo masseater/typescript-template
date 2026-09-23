@@ -1,13 +1,17 @@
-import { Effect, type FileSystem, type PlatformError } from "effect";
+import { Effect, type FileSystem } from "effect";
 
-import { readTextFile } from "../lint/oxlint/lib/canonical-values/source-files.ts";
+import { textOrNull } from "../platform/file-system.ts";
 import { path } from "../platform/path.ts";
 import { bypassedCatalogFindings } from "./checks/bypassed-catalog-entry.ts";
 import { singleUseCatalogEntryFindings } from "./checks/single-use-catalog-entry.ts";
 import { sharedDependencyFindings } from "./checks/uncataloged-shared-dependency.ts";
 import { dependencyUsagesIn } from "./dependency-usage.ts";
 import { dependencyReferencesIn } from "./manifest-dependencies.ts";
-import { readWorkspaceManifests, type WorkspaceManifest } from "./manifest-files.ts";
+import {
+  readWorkspaceManifests,
+  type ManifestReadFailure,
+  type WorkspaceManifest,
+} from "./manifest-files.ts";
 import {
   NO_DEPENDENCY_CATALOG_FINDINGS,
   type DependencyCatalogFindings,
@@ -58,7 +62,7 @@ const findingsIn = ({
   readonly config: DependencyCatalogChecksConfig;
 }): Effect.Effect<
   DependencyCatalogFindings & { readonly scanned: number },
-  PlatformError.PlatformError,
+  ManifestReadFailure,
   FileSystem.FileSystem
 > =>
   Effect.gen(function* findingsIn() {
@@ -120,10 +124,10 @@ export const runDependencyCatalogChecks = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: DependencyCatalogChecksConfig;
-}): Effect.Effect<DependencyCatalogReport, PlatformError.PlatformError, FileSystem.FileSystem> =>
+}): Effect.Effect<DependencyCatalogReport, ManifestReadFailure, FileSystem.FileSystem> =>
   Effect.gen(function* runDependencyCatalogChecks() {
     const definitionPath = config.workspaceDefinitionFileName;
-    const source = readTextFile(path.join(repositoryRoot, definitionPath));
+    const source = yield* textOrNull(path.join(repositoryRoot, definitionPath));
     if (source === null) {
       return {
         ...NO_DEPENDENCY_CATALOG_FINDINGS,

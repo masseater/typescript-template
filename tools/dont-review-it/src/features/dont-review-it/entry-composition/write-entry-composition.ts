@@ -1,4 +1,4 @@
-import { Effect, FileSystem, type PlatformError } from "effect";
+import { Effect, FileSystem } from "effect";
 import { applyEdits, modify, type ModificationOptions } from "jsonc-parser";
 
 import { failureMessageOf } from "../platform/file-system.ts";
@@ -10,6 +10,8 @@ import {
 } from "./config.ts";
 import { entryFindingsIn } from "./entry-composition-problems.ts";
 import { readEntryManifests, type EntryManifest } from "./entry-manifests.ts";
+
+import type { TreeFailure } from "../platform/directory-entries.ts";
 
 export type EntryCompositionWriteReport = {
   readonly failures: readonly string[];
@@ -85,11 +87,7 @@ export const writeEntryComposition = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: EntryCompositionConfig;
-}): Effect.Effect<
-  EntryCompositionWriteReport,
-  PlatformError.PlatformError,
-  FileSystem.FileSystem
-> =>
+}): Effect.Effect<EntryCompositionWriteReport, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* writeEntryComposition() {
     const filesystem = yield* FileSystem.FileSystem;
     const listing = yield* readEntryManifests({ repositoryRoot, config });

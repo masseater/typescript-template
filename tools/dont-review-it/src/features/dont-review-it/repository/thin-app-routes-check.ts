@@ -4,7 +4,7 @@ import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { Console, Effect, FileSystem, Path, type PlatformError } from "effect";
 import { parseSync } from "oxc-parser";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
 import { isAppRouteModule } from "./thin-app-routes.ts";
 
 const violation =

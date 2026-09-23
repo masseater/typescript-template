@@ -8,7 +8,7 @@ import { readWorkflowDocuments } from "./workflow-files.ts";
 
 layer(NodeServices.layer)("readWorkflowDocuments", (it) => {
   describe("a repository whose .github tree omits the workflows directory", () => {
-    it.effect("fails instead of treating the missing tree as an empty scan", () =>
+    it.effect("is told apart from an empty scan", () =>
       Effect.gen(function* program() {
         const filesystem = yield* FileSystem.FileSystem;
         const paths = yield* Path.Path;
@@ -16,13 +16,12 @@ layer(NodeServices.layer)("readWorkflowDocuments", (it) => {
           prefix: "dont-review-it-workflow-files-",
         });
         yield* filesystem.makeDirectory(paths.join(repositoryRoot, ".github"));
-        const failure = yield* Effect.flip(
-          readWorkflowDocuments({
+        expect(
+          yield* readWorkflowDocuments({
             repositoryRoot,
             config: defaultWorkflowChecksConfig,
           }),
-        );
-        expect(failure.reason._tag).toBe("NotFound");
+        ).toStrictEqual({ kind: "workflows-omitted" });
       }),
     );
   });
@@ -38,7 +37,7 @@ layer(NodeServices.layer)("readWorkflowDocuments", (it) => {
             }),
             config: defaultWorkflowChecksConfig,
           }),
-        ).toStrictEqual([]);
+        ).toStrictEqual({ kind: "no-ci-tree" });
       }),
     );
   });
@@ -56,10 +55,11 @@ layer(NodeServices.layer)("readWorkflowDocuments", (it) => {
       yield* filesystem.writeFileString(paths.join(directory, "ci.yml"), "name: CI\n");
       yield* filesystem.writeFileString(paths.join(directory, "README.md"), "# not a workflow\n");
 
-      return (yield* readWorkflowDocuments({
+      const tree = yield* readWorkflowDocuments({
         repositoryRoot,
         config: defaultWorkflowChecksConfig,
-      })).map((document) => document.relativePath);
+      });
+      return tree.kind === "read" ? tree.documents.map((document) => document.relativePath) : tree;
     });
 
     it.effect("reads both definitions and leaves the other file alone", () =>

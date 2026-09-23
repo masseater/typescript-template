@@ -9,8 +9,7 @@ import { EXIT_MISUSE, EXIT_PROBLEMS_FOUND } from "./repository-checks/index.ts";
 import { runChecks } from "./run-checks.ts";
 import { scanTraceFor } from "./scan-trace/scan-trace-report.ts";
 
-import type { PlatformError } from "effect";
-import type { LintRuleWorkspaceFailure } from "./lint-rule-authoring/rule-index/lint-rule-workspaces.ts";
+import type { TreeFailure } from "./platform/directory-entries.ts";
 
 export const refuseMisuse = (complaint: string): void => {
   process.stderr.write(complaint);
@@ -19,7 +18,7 @@ export const refuseMisuse = (complaint: string): void => {
 
 export const repairGeneratedParts = (
   repositoryRoot: string,
-): Effect.Effect<boolean, PlatformError.PlatformError, FileSystem.FileSystem> =>
+): Effect.Effect<boolean, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* repairGeneratedParts() {
     const entries = yield* writeEntryComposition({
       repositoryRoot,
@@ -34,7 +33,7 @@ export const repairGeneratedParts = (
 
 export const reportProblems = (
   repositoryRoot: string,
-): Effect.Effect<void, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
+): Effect.Effect<void, never, FileSystem.FileSystem> =>
   Effect.gen(function* reportProblems() {
     const { outcomes, problems, warnings, failures } = yield* runChecks(repositoryRoot);
     const lines = [...problems, ...warnings.map((warning) => `warning: ${warning}`)];
@@ -47,4 +46,8 @@ export const reportProblems = (
       return;
     }
     if (problems.length > 0) process.exitCode = EXIT_PROBLEMS_FOUND;
-  });
+  }).pipe(
+    Effect.catchTag("RepositoryUnreadable", (unread) =>
+      Effect.sync(() => refuseMisuse(`${unread.message}\n`)),
+    ),
+  );

@@ -17,12 +17,15 @@ export const runRequiredFileFormChecks = ({
   Effect.gen(function* runRequiredFileFormChecks() {
     const packageRoots = packageRootsIn(repositoryRoot);
     const problems = yield* Effect.forEach(packageRoots, (packageRoot) =>
-      agentInstructionLinksIn({ repositoryRoot, packageRoot, config }).pipe(
-        Effect.map((linkProblems) => [
-          ...foreignToolConfigsIn({ repositoryRoot, packageRoot, config }),
-          ...linkProblems,
-        ]),
-      ),
+      Effect.gen(function* packageRootProblems() {
+        const foreignConfigs = yield* foreignToolConfigsIn({ repositoryRoot, packageRoot, config });
+        const linkProblems = yield* agentInstructionLinksIn({
+          repositoryRoot,
+          packageRoot,
+          config,
+        });
+        return [...foreignConfigs, ...linkProblems];
+      }),
     );
     return { problems: problems.flat(), scanned: packageRoots.length };
   });

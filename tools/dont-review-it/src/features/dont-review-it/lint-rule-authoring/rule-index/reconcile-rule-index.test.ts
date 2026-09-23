@@ -38,6 +38,9 @@ const STRAY_RULE_PATH = "packages/example/src/rules/no-stray--allow-it.ts";
 
 const UNBUNDLED_SHIPPED_RULE = `A rule the preset carries must not sit outside a bundle directory once \`packages/example\` declares bundles. Move \`no-stray--allow-it\` under the directory of the bundle that carries it, or declare \`shipped: false\` on it.`;
 
+const ABSENT_RULE_DIRECTORY =
+  "A workspace must not declare a rule directory that is not there, because the index then lists no rule from it and every rule check passes with nothing read. Create `packages/example/src/rules` or remove it from `lintRules`.";
+
 const HANDWRITTEN_INDEX = "# A hand written index\n\nProse and nothing else.\n";
 
 const STALE_REGION_INDEX = `# An index\n\nFront matter prose.\n\n<!-- BEGIN GENERATED lint-rules -->\n\nA stale table\n\n<!-- END GENERATED lint-rules -->\n\nTrailing prose.\n`;
@@ -658,7 +661,9 @@ layer(NodeServices.layer)("lintRuleIndexProblems", (it) => {
       const paths = yield* Path.Path;
       const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
 
-      yield* filesystem.makeDirectory(paths.join(root, "packages/example"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
+      });
       yield* filesystem.writeFileString(
         paths.join(root, "pnpm-workspace.yaml"),
         WORKSPACE_DEFINITION,
@@ -678,13 +683,44 @@ layer(NodeServices.layer)("lintRuleIndexProblems", (it) => {
     );
   });
 
+  describe("a workspace declaring a rule directory that is not there", () => {
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example"), { recursive: true });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      return yield* lintRuleIndexProblems({ repositoryRoot: root, write: true });
+    });
+
+    it.effect("is reported against the manifest that declares it", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: "packages/example/package.json", message: ABSENT_RULE_DIRECTORY }],
+          scanned: 1,
+        });
+      }),
+    );
+  });
+
   describe("the file a workspace with no rules yet gets", () => {
     const indexTextFixture = Effect.gen(function* indexText() {
       const filesystem = yield* FileSystem.FileSystem;
       const paths = yield* Path.Path;
       const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "reconcile-rule-index-" });
 
-      yield* filesystem.makeDirectory(paths.join(root, "packages/example"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
+      });
       yield* filesystem.writeFileString(
         paths.join(root, "pnpm-workspace.yaml"),
         WORKSPACE_DEFINITION,
@@ -720,9 +756,9 @@ layer(NodeServices.layer)("lintRuleIndexProblems", (it) => {
 
 layer(NodeServices.layer)("formatLintRuleProblem", (it) => {
   describe("a problem naming the index it was found against", () => {
-    const formattedProblemFixture = Effect.gen(function* formattedProblem() {
-      return formatLintRuleProblem({ file: INDEX_PATH, message: MISSING_INDEX });
-    });
+    const formattedProblemFixture = Effect.sync(() =>
+      formatLintRuleProblem({ file: INDEX_PATH, message: MISSING_INDEX }),
+    );
 
     it.effect("spells the path first and the message after it", () =>
       Effect.gen(function* program() {

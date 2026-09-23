@@ -6,7 +6,7 @@ import { Effect, FileSystem, Path, Schema, type PlatformError } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks.ts";
 import {
   commands,

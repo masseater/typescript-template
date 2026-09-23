@@ -1,7 +1,7 @@
 import { Effect, FileSystem, type PlatformError } from "effect";
 
 import { textOrNull } from "../../platform/file-system.ts";
-import { path } from "../../platform/path.ts";
+import { path, posixPath } from "../../platform/path.ts";
 import { normalizedContent, regionIn, withRefreshedRegionIn } from "../generated-region.ts";
 import { REGENERATE_COMMAND } from "../regenerate-command.ts";
 import {
@@ -200,7 +200,7 @@ const ruleDocProblems = ({
   readonly write: boolean;
 }): Effect.Effect<readonly LintRuleProblem[], PlatformError.PlatformError, FileSystem.FileSystem> =>
   Effect.gen(function* ruleDocProblems() {
-    const file = path.join(workspace.workspaceDir, RULE_DOCS_DIR, `${rule.name}.md`);
+    const file = posixPath.join(workspace.workspaceDir, RULE_DOCS_DIR, `${rule.name}.md`);
     if (rule.description === "") return [{ file: rule.sourcePath, message: MISSING_DESCRIPTION }];
 
     const workspaceRoot = path.join(repositoryRoot, workspace.workspaceDir);
@@ -240,7 +240,7 @@ export const lintRuleDocProblems = ({
     const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
     const workspaceRules = yield* Effect.forEach(workspaces, (workspace) =>
       workspaceRulesOf({ repositoryRoot, workspace }).pipe(
-        Effect.map((rules) => rules.map((rule) => ({ workspace, rule }))),
+        Effect.map(({ rules }) => rules.map((rule) => ({ workspace, rule }))),
       ),
     );
     const rules = workspaceRules.flat();

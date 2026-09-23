@@ -86,6 +86,16 @@ const RULE_STANDING_ON_A_NORM_THAT_MOVED = `export const rule = {
 };
 `;
 
+const RULE_STANDING_BELOW_A_FILE = `export const rule = {
+  name: "no-thing--allow-it",
+  meta: {
+    docs: { description: "Disallow the thing", relatedGuidelines: ["docs/guidelines/tests.md/inner.md"] },
+    messages: { report: "No." },
+  },
+  create: () => ({}),
+};
+`;
+
 const RULE_STANDING_ON_A_RECORD = `export const rule = {
   name: "no-thing--allow-it",
   meta: {
@@ -133,6 +143,8 @@ const UNREADABLE = `A rule must not name its grounds with anything the checks ca
 const REPEATED = `A rule must not name the same normative document twice. Remove the repeated \`docs/guidelines/tests.md\`.`;
 
 const ABSENT = `A rule must not name a normative document that does not exist. Point \`docs/guidelines/gone.md\` at a document that is there, or drop the grounds that moved away.`;
+
+const ABSENT_BELOW_A_FILE = `A rule must not name a normative document that does not exist. Point \`docs/guidelines/tests.md/inner.md\` at a document that is there, or drop the grounds that moved away.`;
 
 const ABSENT_OPERATING_DOCUMENT = `A rule must not name a normative document that does not exist. Point \`packages/example/AGENTS.md\` at a document that is there, or drop the grounds that moved away.`;
 
@@ -654,6 +666,63 @@ layer(NodeServices.layer)("relatedGuidelineProblems", (it) => {
         const report = yield* reportFixture;
         expect(report).toStrictEqual({
           problems: [{ file: RULE_PATH, message: ABSENT }],
+          scanned: 1,
+        });
+      }),
+    );
+  });
+
+  describe("a rule naming a path below a normative document", () => {
+    const reportFixture = Effect.gen(function* report() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "related-guidelines-" });
+
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/src/rules"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/guidelines"), {
+        recursive: true,
+      });
+      yield* filesystem.makeDirectory(paths.join(root, "packages/other"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/guidelines"), { recursive: true });
+      yield* filesystem.makeDirectory(paths.join(root, "docs/engineering-decision-logs"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(root, "pnpm-workspace.yaml"),
+        WORKSPACE_DEFINITION,
+      );
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), DECLARING_ROOT_MANIFEST);
+      yield* filesystem.writeFileString(paths.join(root, "AGENTS.md"), "# root\n");
+      yield* filesystem.writeFileString(paths.join(root, "packages/other/AGENTS.md"), "# other\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/AGENTS.md"),
+        "# example\n",
+      );
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/guidelines/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/guidelines/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/engineering-decision-logs/0001-a-decision.md"),
+        "# a decision\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/package.json"),
+        DECLARING_MANIFEST,
+      );
+      yield* filesystem.writeFileString(paths.join(root, RULE_PATH), RULE_STANDING_BELOW_A_FILE);
+      return yield* relatedGuidelineProblems({ repositoryRoot: root });
+    });
+
+    it.effect("is reported as standing on a document that is not there", () =>
+      Effect.gen(function* program() {
+        const report = yield* reportFixture;
+        expect(report).toStrictEqual({
+          problems: [{ file: RULE_PATH, message: ABSENT_BELOW_A_FILE }],
           scanned: 1,
         });
       }),

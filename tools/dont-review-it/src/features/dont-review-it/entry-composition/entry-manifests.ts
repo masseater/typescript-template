@@ -1,13 +1,14 @@
-import { Effect, FileSystem, type PlatformError } from "effect";
+import { Effect, FileSystem } from "effect";
 import { attempt, uniq } from "es-toolkit";
 import { parseTree, type Node, type ParseError } from "jsonc-parser";
 import { parse } from "yaml";
 
 import { directoriesMatching } from "../dependency-catalog/manifest-files.ts";
 import { recordOf } from "../dependency-catalog/record-fields.ts";
-import { isMissingPath } from "../platform/file-system.ts";
-import { path } from "../platform/path.ts";
+import { isMissingPath } from "../platform/path-failure.ts";
+import { path, posixPath } from "../platform/path.ts";
 
+import type { TreeFailure } from "../platform/directory-entries.ts";
 import type { EntryCompositionConfig, EntryCompositionLayer } from "./config.ts";
 
 type ReadOutcome =
@@ -90,7 +91,7 @@ const workspaceDirectoriesOf = ({
   readonly config: EntryCompositionConfig;
 }): Effect.Effect<
   { readonly directories: readonly string[]; readonly failures: readonly string[] },
-  PlatformError.PlatformError,
+  TreeFailure,
   FileSystem.FileSystem
 > =>
   Effect.gen(function* workspaceDirectoriesOf() {
@@ -131,11 +132,11 @@ export const readEntryManifests = ({
 }: {
   readonly repositoryRoot: string;
   readonly config: EntryCompositionConfig;
-}): Effect.Effect<EntryManifestListing, PlatformError.PlatformError, FileSystem.FileSystem> =>
+}): Effect.Effect<EntryManifestListing, TreeFailure, FileSystem.FileSystem> =>
   Effect.gen(function* readEntryManifests() {
     const expansion = yield* workspaceDirectoriesOf({ repositoryRoot, config });
     const workspacePaths = expansion.directories
-      .map((directory) => path.normalize(`${directory}/${config.manifestFileName}`))
+      .map((directory) => posixPath.normalize(`${directory}/${config.manifestFileName}`))
       .filter((relativePath) => relativePath !== config.manifestFileName);
     const listings = [
       yield* manifestListingAt({

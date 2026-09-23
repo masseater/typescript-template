@@ -1,13 +1,14 @@
 import { parseArgs } from "node:util";
 
-import { Cause, Effect, FileSystem, Schema } from "effect";
+import { Effect, type FileSystem, Schema } from "effect";
 
-import { unlessMissing } from "../platform/file-system.ts";
+import { isDirectoryAt } from "../platform/file-system.ts";
 import { path } from "../platform/path.ts";
 import {
   EXIT_MISUSE,
   EXIT_PROBLEMS_FOUND,
   EXIT_SUCCESS,
+  misuseOf,
   type CliResult,
 } from "../repository-checks/index.ts";
 import { formatLintRuleProblem } from "./lint-rule-problem.ts";
@@ -34,19 +35,12 @@ Options:
 `;
 
 class CommandLineRefused extends Schema.TaggedError<CommandLineRefused>()("CommandLineRefused", {
-  reason: Schema.String,
+  cause: Schema.Defect(),
 }) {
   override get message(): string {
-    return this.reason;
+    return this.cause instanceof Error ? this.cause.message : String(this.cause);
   }
 }
-
-const scannableDirectory = (candidatePath: string) =>
-  Effect.gen(function* scannableDirectory() {
-    const filesystem = yield* FileSystem.FileSystem;
-    const info = yield* unlessMissing(filesystem.stat(candidatePath));
-    return info?.type === "Directory";
-  });
 
 const dispatch = (argv: readonly string[]) =>
   Effect.gen(function* dispatch() {
@@ -57,10 +51,7 @@ const dispatch = (argv: readonly string[]) =>
           allowPositionals: true,
           options: { "repository-root": { type: "string" }, write: { type: "boolean" } },
         }),
-      catch: (refusal) =>
-        new CommandLineRefused({
-          reason: refusal instanceof Error ? refusal.message : String(refusal),
-        }),
+      catch: (refusal) => new CommandLineRefused({ cause: refusal }),
     });
     const [command] = parsedNode.positionals;
     if (command !== "check") {
@@ -68,7 +59,7 @@ const dispatch = (argv: readonly string[]) =>
     }
 
     const repositoryRoot = path.resolve(parsedNode.values["repository-root"] ?? process.cwd());
-    if (!(yield* scannableDirectory(repositoryRoot))) {
+    if (!(yield* isDirectoryAt(repositoryRoot))) {
       return {
         exitCode: EXIT_MISUSE,
         out: "",
@@ -94,13 +85,7 @@ const dispatch = (argv: readonly string[]) =>
     };
   });
 
-const misuseOf = (failure: unknown): CliResult => ({
-  exitCode: EXIT_MISUSE,
-  out: "",
-  error: `${failure instanceof Error ? failure.message : String(failure)}\n`,
-});
-
 export const runLintRuleAuthoring = (
   argv: readonly string[],
 ): Effect.Effect<CliResult, never, FileSystem.FileSystem> =>
-  dispatch(argv).pipe(Effect.catchCause((cause) => Effect.succeed(misuseOf(Cause.squash(cause)))));
+  dispatch(argv).pipe(Effect.catch((failure) => Effect.succeed(misuseOf(failure))));

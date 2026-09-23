@@ -9,7 +9,7 @@ import {
 } from "../src/features/dont-review-it/configs/bundles/bundle-names.ts";
 import { BUNDLE_RULES } from "../src/features/dont-review-it/configs/oxlint.ts";
 import { dontReviewItPreset } from "../src/features/dont-review-it/index.ts";
-import { childDirectoryNamesIn } from "../src/features/dont-review-it/platform/file-system.ts";
+import { childDirectoryNamesIn } from "../src/features/dont-review-it/platform/directory-entries.ts";
 import { runChecks } from "../src/features/dont-review-it/run-checks.ts";
 
 const placedRuleNamesIn = ({
@@ -37,7 +37,7 @@ const strayRuleNames = Effect.gen(function* strayRuleNames() {
     import.meta.dirname,
     "../src/features/dont-review-it/lint/oxlint/rules",
   );
-  const directories = new Set(yield* childDirectoryNamesIn(rulesDirectory));
+  const directories = new Set((yield* childDirectoryNamesIn(rulesDirectory)) ?? []);
   const perBundle = yield* Effect.forEach(Object.entries(BUNDLE_RULES), ([bundle, rules]) =>
     Effect.gen(function* bundleDrift() {
       const placed = yield* placedRuleNamesIn({ bundle, directories, rulesDirectory });

@@ -42,7 +42,9 @@ layer(NodeServices.layer)("preset の適用範囲の検査", (it) => {
         "vite.config.ts": `export default defineConfig({ lint: { rules: {} } });`,
       });
 
-      expect(runPresetAdoptionChecks({ repositoryRoot, config }).warnings).toStrictEqual([]);
+      expect((yield* runPresetAdoptionChecks({ repositoryRoot, config })).warnings).toStrictEqual(
+        [],
+      );
     }),
   );
 
@@ -64,7 +66,7 @@ layer(NodeServices.layer)("preset の適用範囲の検査", (it) => {
 });`,
         });
 
-        const { warnings } = runPresetAdoptionChecks({ repositoryRoot, config });
+        const { warnings } = yield* runPresetAdoptionChecks({ repositoryRoot, config });
 
         expect(warnings.map((warning) => warning.message)).toStrictEqual([
           "The lint configuration must not leave dont-review-it/no-reassign--use-spread-or-iife switched off for packages/left. Delete the override and repair what it reports, or record in an engineering decision log why the rule cannot reach there.",
@@ -83,7 +85,9 @@ layer(NodeServices.layer)("preset の適用範囲の検査", (it) => {
 });`,
         });
 
-        expect(runPresetAdoptionChecks({ repositoryRoot, config }).warnings).toHaveLength(2);
+        expect((yield* runPresetAdoptionChecks({ repositoryRoot, config })).warnings).toHaveLength(
+          2,
+        );
       }),
   );
 
@@ -96,7 +100,9 @@ layer(NodeServices.layer)("preset の適用範囲の検査", (it) => {
 });`,
       });
 
-      expect(runPresetAdoptionChecks({ repositoryRoot, config }).warnings).toStrictEqual([]);
+      expect((yield* runPresetAdoptionChecks({ repositoryRoot, config })).warnings).toStrictEqual(
+        [],
+      );
     }),
   );
 
@@ -114,7 +120,7 @@ layer(NodeServices.layer)("preset の適用範囲の検査", (it) => {
 });`,
         });
 
-        const { warnings } = runPresetAdoptionChecks({ repositoryRoot, config });
+        const { warnings } = yield* runPresetAdoptionChecks({ repositoryRoot, config });
 
         expect(warnings.map((warning) => warning.message)).toStrictEqual([
           "The lint configuration must not switch dont-review-it/no-reassign--use-spread-or-iife off while it does not carry the mutation-and-failure bundle, because the override stops nothing. Delete the override, or name that bundle where the preset is called.",
@@ -126,7 +132,7 @@ layer(NodeServices.layer)("preset の適用範囲の検査", (it) => {
     Effect.gen(function* program() {
       const repositoryRoot = yield* repositoryWith(WORKSPACES);
 
-      expect(runPresetAdoptionChecks({ repositoryRoot, config }).configMissing).toBe(true);
+      expect((yield* runPresetAdoptionChecks({ repositoryRoot, config })).configMissing).toBe(true);
     }),
   );
 });

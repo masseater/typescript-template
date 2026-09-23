@@ -4,7 +4,8 @@ import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { architectureKindOf, modularBudgets } from "@repo/config";
 import { Console, Effect, FileSystem, Path, Schema, type PlatformError } from "effect";
 
-import { directoryEntries } from "./directory-entries.ts";
+import { directoryEntries } from "../platform/directory-entries.ts";
+import { pathExists } from "../platform/file-system.ts";
 
 const sourceSuffix = /\.[cm]?[jt]sx?$/u;
 
@@ -66,8 +67,7 @@ const whenPresent = <Scanned>(
   scan: (present: string) => SourceScan<Scanned>,
 ): SourceScan<Scanned> =>
   Effect.gen(function* whenPresent() {
-    const filesystem = yield* FileSystem.FileSystem;
-    return (yield* filesystem.exists(directory)) ? yield* scan(directory) : absent;
+    return (yield* pathExists(directory)) ? yield* scan(directory) : absent;
   });
 
 const budgetFindings = (srcRoot: string): SourceScan<readonly string[]> =>

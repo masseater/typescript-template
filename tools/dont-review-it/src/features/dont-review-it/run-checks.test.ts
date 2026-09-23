@@ -113,4 +113,33 @@ layer(NodeServices.layer)("runChecks", (it) => {
       }),
     );
   });
+
+  describe("a repository holding a workspace manifest that does not parse", () => {
+    const unreadFixture = Effect.gen(function* unread() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "run-checks-" });
+      yield* filesystem.makeDirectory(paths.join(repositoryRoot, "packages", "left"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        paths.join(repositoryRoot, "pnpm-workspace.yaml"),
+        "packages:\n  - packages/*\n",
+      );
+      const manifestPath = paths.join(repositoryRoot, "packages", "left", "package.json");
+      yield* filesystem.writeFileString(manifestPath, `{"name": `);
+      const failure = yield* Effect.flip(runChecks(repositoryRoot));
+      return { failure: { _tag: failure._tag, message: failure.message }, manifestPath };
+    }).pipe(Effect.scoped);
+
+    it.effect("stops naming the manifest it could not read", () =>
+      Effect.gen(function* program() {
+        const { failure, manifestPath } = yield* unreadFixture;
+        expect(failure).toStrictEqual({
+          _tag: "RepositoryUnreadable",
+          message: `The repository checks stopped before reporting, because what they scan could not be read: ${manifestPath} exists but does not parse as JSON, so the dependencies it declares cannot be checked.`,
+        });
+      }),
+    );
+  });
 });

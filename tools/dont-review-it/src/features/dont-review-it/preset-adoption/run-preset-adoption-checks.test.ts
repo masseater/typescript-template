@@ -36,7 +36,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+        return yield* runPresetAdoptionChecks({
+          repositoryRoot,
+          config: defaultPresetAdoptionConfig,
+        });
       },
     );
 
@@ -85,7 +88,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
         yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
         yield* filesystem.writeFileString(writtenPath, writtenSource);
       }
-      return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+      return yield* runPresetAdoptionChecks({
+        repositoryRoot,
+        config: defaultPresetAdoptionConfig,
+      });
     });
 
     it.effect("says the override stops nothing", () =>
@@ -123,7 +129,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+        return yield* runPresetAdoptionChecks({
+          repositoryRoot,
+          config: defaultPresetAdoptionConfig,
+        });
       },
     );
 
@@ -155,7 +164,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
         yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
         yield* filesystem.writeFileString(writtenPath, writtenSource);
       }
-      return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+      return yield* runPresetAdoptionChecks({
+        repositoryRoot,
+        config: defaultPresetAdoptionConfig,
+      });
     });
 
     it.effect("counts every workspace it held the configuration against", () =>
@@ -195,7 +207,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+        return yield* runPresetAdoptionChecks({
+          repositoryRoot,
+          config: defaultPresetAdoptionConfig,
+        });
       },
     );
 
@@ -237,7 +252,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+        return yield* runPresetAdoptionChecks({
+          repositoryRoot,
+          config: defaultPresetAdoptionConfig,
+        });
       },
     );
 
@@ -285,7 +303,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+        return yield* runPresetAdoptionChecks({
+          repositoryRoot,
+          config: defaultPresetAdoptionConfig,
+        });
       },
     );
 
@@ -322,7 +343,10 @@ layer(NodeServices.layer)("runPresetAdoptionChecks", (it) => {
           yield* filesystem.makeDirectory(paths.dirname(writtenPath), { recursive: true });
           yield* filesystem.writeFileString(writtenPath, writtenSource);
         }
-        return runPresetAdoptionChecks({ repositoryRoot, config: defaultPresetAdoptionConfig });
+        return yield* runPresetAdoptionChecks({
+          repositoryRoot,
+          config: defaultPresetAdoptionConfig,
+        });
       },
     );
 

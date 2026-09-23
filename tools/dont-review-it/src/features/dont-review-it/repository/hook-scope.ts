@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, runCli } from "@repo/cli";
-import { Console, Effect, FileSystem, Option, Path, Schema } from "effect";
+import { Console, Effect, Option, Path, Schema } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 
+import { pathExists } from "../platform/file-system.ts";
 import { capturedProcess } from "./captured-process.ts";
 import { hookFilters } from "./pr-affected-scope.ts";
 import { repositoryRoot } from "./repository-root.ts";
@@ -31,11 +32,10 @@ const lines = (output: Option.Option<string>): Option.Option<readonly string[]> 
 
 const changedFiles = Effect.fn("changedFiles")(function* changedFiles(stage: string) {
   if (stage === "precommit") {
-    const filesystem = yield* FileSystem.FileSystem;
     const paths = yield* Path.Path;
     const gitDirectory = yield* git("rev-parse", "--git-dir");
     const merging = Option.isSome(gitDirectory)
-      ? yield* filesystem.exists(paths.resolve(repositoryRoot, gitDirectory.value, "MERGE_HEAD"))
+      ? yield* pathExists(paths.resolve(repositoryRoot, gitDirectory.value, "MERGE_HEAD"))
       : false;
     return lines(
       yield* git(
