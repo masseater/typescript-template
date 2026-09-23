@@ -13,7 +13,7 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics,
+      ...awaitingEffectDiagnostics(import.meta.dirname),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

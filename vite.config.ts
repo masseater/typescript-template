@@ -84,7 +84,7 @@ export default defineConfig({
         command: `vp check ${rootOwnedPaths.join(" ")}`,
         input: [...taskInput],
       },
-      ...effectDiagnostics,
+      ...effectDiagnostics(import.meta.dirname),
       "check:types": {
         command: rootOnDemandChecks["check:types"],
         dependsOn: ["compile:paraglide"],
@@ -92,6 +92,7 @@ export default defineConfig({
       },
       "check:canonical-literal-types": {
         command: "dont-review-it-canonical-literal-types",
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
       knip: {
