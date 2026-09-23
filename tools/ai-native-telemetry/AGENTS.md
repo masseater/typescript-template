@@ -17,4 +17,4 @@ description: One OpenTelemetry provider startup for a process.
 
 npm へは `publishConfig.access: public` で出す。エントリは `.` と `./vitest-sdk` である。コマンドは持たない。
 
-OpenTelemetry API 1。Logs / metrics / trace の SDK は package.json の pin に従う。
+OpenTelemetry API 1。

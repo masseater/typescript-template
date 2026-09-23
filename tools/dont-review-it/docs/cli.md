@@ -55,7 +55,6 @@ CLI 固有の束は無い。CLI に関わるルールは `writing` に入って�
   - MUST: 実行時文脈から導出する
   - PROHIBIT: 呼び出し側が保守するモードフラグや、複製したスクリプトで分岐する
 - IF: stdout / stderr の内容をテストする; THEN MUST: `@repo/dont-review-it/vitest` の `standardIoTest` からテストを導出し、両ストリームをスナップショットで固定する
-  - 機械で強制される側は [no-handmade-standard-io-double](lint/no-handmade-standard-io-double--use-standard-io-test.md) と [require-standard-io-snapshot](lint/require-standard-io-snapshot--pin-both-streams.md) が持つ
 - IF: チェックを実行するコマンドが、どの観点をどれだけ開いたかを残す; THEN
   - MUST: 走査証跡を stderr に書く
   - PROHIBIT: stdout に混ぜる

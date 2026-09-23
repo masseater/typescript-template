@@ -7,7 +7,7 @@ Feature-Sliced Design は、フロントエンドのコードをレイヤー、�
 
 モジュールが import できるのは、自分より下のレイヤーだけである。同じレイヤーの別スライスは import しない。`pages/profile` は `pages/settings` を知らない。`app` と `shared` にはスライスが無く、その中のセグメント同士は import できる。スライスの外から見えるのは、そのスライスの `index.ts` だけである。セグメントのファイルを直接 import しない。
 
-画面そのものは `pages` のスライスに置く。一度しか出てこない操作も、そこに残す。複数の画面で同じ操作を繰り返すときは `features` に出す。業務の用語そのもの、たとえば会員やセッションは `entities` に置く。entity が別の entity の型をフィールドに含むときだけ、`@x` 経由で型を渡す。それ以外の関係は、上のレイヤーに書く。業務を含まない再利用は `shared`、アプリをまたぐ見た目を `libs/ui` へ出す判断は `.claude/skills/reviews/references/frontend-components-and-state.md` が持つ。
+画面そのものは `pages` のスライスに置く。一度しか出てこない操作も、そこに残す。複数の画面で同じ操作を繰り返すときは `features` に出す。業務の用語そのもの、たとえば会員やセッションは `entities` に置く。entity が別の entity の型をフィールドに含むときだけ、`@x` 経由で型を渡す。それ以外の関係は、上のレイヤーに書く。業務を含まない再利用は `shared` に置く。
 
 仕様は `widgets` を勧めていない。特定の画面だけの塊は `pages` に残し、繰り返す操作は `features` に出す。アプリ全体の枠は `app` に置ける。
 
