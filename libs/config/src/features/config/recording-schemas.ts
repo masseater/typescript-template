@@ -1,5 +1,6 @@
-import { recordingFailures, recordingStatuses } from "@repo/config";
 import { Schema } from "effect";
+
+import { recordingFailures, recordingStatuses } from "./recordings.ts";
 
 const SpeakerLabel = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 

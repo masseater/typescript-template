@@ -1,9 +1,4 @@
-import {
-  RecordingSummary,
-  RecordingView,
-  RegisteredPerson,
-  SpeakerLabel,
-} from "@repo/core-api/recording-schemas";
+import { RecordingSummary, RecordingView, RegisteredPerson, SpeakerLabel } from "@repo/config";
 import { Schema } from "effect";
 
 const maximumRecordingTitleLength = 100;

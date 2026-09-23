@@ -1,4 +1,11 @@
-import { recordingFailures } from "@repo/config";
+import {
+  RecordingSegment,
+  RecordingSummary,
+  RecordingView,
+  RegisteredPerson,
+  SpeakerLabel,
+  recordingFailures,
+} from "@repo/config";
 import {
   DatabaseFailure,
   RecordingNotFound,
@@ -7,14 +14,6 @@ import {
 } from "@repo/db";
 import { Schema } from "effect";
 import { Rpc } from "effect/unstable/rpc";
-
-import {
-  RecordingSegment,
-  RecordingSummary,
-  RecordingView,
-  RegisteredPerson,
-  SpeakerLabel,
-} from "./recording-schemas.ts";
 
 const createRecording = Rpc.make("createRecording", {
   error: DatabaseFailure,

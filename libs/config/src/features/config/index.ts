@@ -68,6 +68,14 @@ export {
 } from "./recordings.ts";
 export type { RecordingFailure, RecordingStatus } from "./recordings.ts";
 export {
+  RecordingSegment,
+  RecordingSpeaker,
+  RecordingSummary,
+  RecordingView,
+  RegisteredPerson,
+  SpeakerLabel,
+} from "./recording-schemas.ts";
+export {
   JobPayload,
   jobsQueueBinding,
   jobsQueueName,

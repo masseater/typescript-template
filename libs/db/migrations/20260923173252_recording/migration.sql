@@ -5,7 +5,7 @@ CREATE TABLE `recording` (
 	`created_at` integer NOT NULL,
 	`duration_ms` integer,
 	`failure` text,
-	`id` text PRIMARY KEY,
+	`id` text PRIMARY KEY NOT NULL,
 	`job_id` text NOT NULL,
 	`object_key` text NOT NULL,
 	`owner_id` text,
@@ -37,7 +37,7 @@ CREATE TABLE `recording_speaker` (
 CREATE TABLE `speaker_person` (
 	`consent_recorded_by` text,
 	`consented_at` integer NOT NULL,
-	`id` text PRIMARY KEY,
+	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	CONSTRAINT `fk_speaker_person_consent_recorded_by_user_id_fk` FOREIGN KEY (`consent_recorded_by`) REFERENCES `user`(`id`) ON DELETE SET NULL
 );
