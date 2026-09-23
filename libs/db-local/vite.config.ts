@@ -8,7 +8,10 @@ export default defineConfig({
       ...modularBoundaries,
       "db:bootstrap:local": { cache: false, command: "./src/features/db-local/bootstrap-local.ts" },
       "db:migrate:local": { cache: false, command: "./src/features/db-local/migrate-local.ts" },
-      "db:schema-document": { cache: false, command: "./src/features/db-local/write-schema-document.ts" },
+      "db:schema-document": {
+        cache: false,
+        command: "./src/features/db-local/write-schema-document.ts",
+      },
       ...lifecycle({ prepush: ["check:effect", "check:modular"] }),
     },
   },

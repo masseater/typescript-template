@@ -3,7 +3,10 @@ import { Effect, Path } from "effect";
 
 const schemaDocumentPath = Effect.flatMap(Path.Path, (hostPath) =>
   hostPath.fromFileUrl(
-    new URL("../../../../../apps/internal-dashboard/content/docs/data-model/schema.md", import.meta.url),
+    new URL(
+      "../../../../../apps/internal-dashboard/content/docs/data-model/schema.md",
+      import.meta.url,
+    ),
   ),
 );
 
