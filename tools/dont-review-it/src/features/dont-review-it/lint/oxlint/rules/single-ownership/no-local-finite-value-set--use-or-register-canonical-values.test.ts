@@ -1,8 +1,7 @@
-import { join } from "node:path";
-
 import { describe } from "vite-plus/test";
 
 import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { buildCatalog } from "../../lib/canonical-values/catalog.ts";
 import { fingerprintValues } from "../../lib/canonical-values/fingerprint.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
@@ -376,7 +375,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport const schema = z.enum(ENGINES);',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/direct-engine-schema.ts",
           ),
@@ -384,7 +383,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { SHADOW as LOCAL_ENGINES } from "./throttle/signals.ts";\nexport function schema(LOCAL_ENGINES: readonly ["shadow", "values"]) { return z.enum(LOCAL_ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -394,7 +393,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport function schema(ENGINES: readonly ["shadow", "values"]) { return z.enum(ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -403,7 +402,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport function schema() { const ENGINES = ["shadow", "values"] as const; return z.enum(ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -412,7 +411,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\nexport function schema(ENGINES: { shadow: null; values: null }) { return z.enum(Object.keys(ENGINES)); }',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -421,7 +420,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINE_NAMES } from "./throttle/signals.ts";\nexport function schema(ENGINE_NAMES: readonly ["shadow", "values"]) { return z.enum(ENGINE_NAMES); }',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -430,7 +429,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINES } from "./throttle/signals.ts";\ndeclare const ENGINES: readonly ["shadow", "values"];\nexport const schema = z.enum(ENGINES);',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -439,7 +438,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'declare const ENGINE_NAMES: readonly ["shadow", "values"];\nexport const schema = z.enum(ENGINE_NAMES);',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -448,7 +447,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINES as LOCAL_ENGINES } from "./throttle/signals.ts";\nexport function schema(LOCAL_ENGINES: readonly ["shadow", "values"]) { return z.enum(LOCAL_ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
@@ -457,7 +456,7 @@ describe("dont-review-it/no-local-finite-value-set--use-or-register-canonical-va
         {
           code: 'import { ENGINE_NAMES as LOCAL_ENGINES } from "./throttle/signals.ts";\nexport function schema(LOCAL_ENGINES: readonly ["shadow", "values"]) { return z.enum(LOCAL_ENGINES); }',
           cwd: repositoryRoot,
-          filename: join(
+          filename: path.join(
             repositoryRoot,
             "tools/ai-native/src/features/ai-native/shadow-engine-schema.ts",
           ),
