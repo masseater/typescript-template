@@ -7,9 +7,7 @@ const OnboardingView = Schema.Struct({
   step: OnboardingStep,
 });
 
-const OnboardingAdvance = Schema.Struct({
-  step: OnboardingStep,
-});
+const OnboardingAdvance = OnboardingView;
 
 const FeedItem = Schema.Struct({
   actorId: Schema.String,
