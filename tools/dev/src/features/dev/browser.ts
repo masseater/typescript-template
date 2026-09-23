@@ -1,23 +1,13 @@
-import { env as processEnvironment } from "node:process";
-
 import { exitWith, markFailed } from "@repo/cli";
-import { applicationOrigins, applicationReadyPaths } from "@repo/config";
+import { applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
+import { agent, configuredOrigin, sessionArguments, sessionName } from "./agent-session.ts";
 import { failure } from "./failure.ts";
-import { browserLaunchArguments } from "./lan-gateway.ts";
-import {
-  browserConfig,
-  lanOrigin,
-  readCredentials,
-  refreshBrowserConfig,
-  root,
-  run,
-} from "./local-environment.ts";
-import { urlPath } from "./platform.ts";
+import { readCredentials, refreshBrowserConfig, root } from "./local-environment.ts";
 
-import type { App, Credentials } from "./local-environment.ts";
+import type { App } from "./local-environment.ts";
 
 interface BrowserReport {
   readonly event: "local.browser_opened";
@@ -31,34 +21,14 @@ type ChildExit =
   | { readonly started: false }
   | { readonly started: true; readonly code: number | null };
 
-function sessionName(app: App): string {
-  return `template-local-${app}`;
-}
-
-function configuredOrigin(app: App, credentials: Credentials): string {
-  return credentials.origins === "loopback" ? applicationOrigins[app] : lanOrigin(app);
-}
-
-const sessionArguments = Effect.fn("sessionArguments")(function* sessionArguments(
-  app: App,
-  credentials: Credentials,
-) {
-  const launch =
-    credentials.origins === "loopback" ? ([] as const) : yield* browserLaunchArguments();
-  const config = yield* urlPath(browserConfig);
-  return ["--config", config, ...launch, "--session", sessionName(app)];
-});
-
 const browser = Effect.fn("browser")(function* browser(app: App) {
   const credentials = yield* readCredentials();
   const socketDirectory = yield* refreshBrowserConfig();
-  const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
-  const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
-  yield* run("agent-browser", [...args, "open", `${origin}${applicationReadyPaths[app]}`], {
-    cwd: root,
-    env,
-  });
+  yield* agent(app, credentials, socketDirectory, [
+    "open",
+    `${origin}${applicationReadyPaths[app]}`,
+  ]);
   const report: BrowserReport = {
     event: "local.browser_opened",
     ok: true,

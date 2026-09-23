@@ -10,3 +10,11 @@ export const Default = meta.story({
     title: "認証設定",
   },
 });
+
+export const Full = meta.story({
+  args: {
+    children: <StatusMessage>{"通報はありません。"}</StatusMessage>,
+    layout: "full",
+    title: "通報",
+  },
+});

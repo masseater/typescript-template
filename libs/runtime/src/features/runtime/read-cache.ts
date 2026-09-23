@@ -1,7 +1,6 @@
-import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
-import { StorageFailed } from "./storage-failed.ts";
+import { storageAttempt, unavailable, type StorageFailed } from "./storage-failed.ts";
 
 import type { KVNamespace } from "@cloudflare/workers-types";
 
@@ -22,17 +21,7 @@ interface ReadCacheShape {
 
 type Namespace = Pick<KVNamespace, "delete" | "get" | "put">;
 
-const unavailable = Effect.fail(new StorageFailed({ reason: "unavailable" }));
-
-function attempt<Value>(
-  operation: string,
-  run: () => Promise<Value>,
-): Effect.Effect<Value, StorageFailed> {
-  return Effect.tryPromise({
-    catch: (cause) => new StorageFailed({ cause, reason: "operation_failed" }),
-    try: run,
-  }).pipe(withSpan(`storage.cache.${operation}`));
-}
+const attempt = storageAttempt("cache");
 
 function cacheOf(namespace: Namespace): ReadCacheShape {
   const get = (key: string): Effect.Effect<string | undefined, StorageFailed> =>

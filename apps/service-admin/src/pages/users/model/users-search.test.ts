@@ -1,8 +1,8 @@
+import { InvalidSearch, maximumKeywordLength } from "@repo/config/paging";
 import { describe, expect, it } from "vite-plus/test";
 
-import { maximumKeywordLength } from "#shared/contracts/index.ts";
 import { maximumUsersPage } from "./users-pagination.ts";
-import { InvalidUsersSearch, normalizeUsersSearch, userListQuery } from "./users-search.ts";
+import { normalizeUsersSearch, userListQuery } from "./users-search.ts";
 
 const numericKeyword = 2026;
 
@@ -35,10 +35,10 @@ describe("users page search normalization", () => {
         role: "owner",
         verified: "yes",
       }),
-    ).toThrow(InvalidUsersSearch);
-    expect(() => normalizeUsersSearch({ verified: 1 })).toThrow(InvalidUsersSearch);
+    ).toThrow(InvalidSearch);
+    expect(() => normalizeUsersSearch({ verified: 1 })).toThrow(InvalidSearch);
     expect(() => normalizeUsersSearch({ keyword: "a".repeat(maximumKeywordLength + 1) })).toThrow(
-      InvalidUsersSearch,
+      InvalidSearch,
     );
   });
 });
@@ -49,13 +49,13 @@ describe("users page paging in the URL", () => {
     expect(normalizeUsersSearch({ page: maximumUsersPage })).toStrictEqual({
       page: maximumUsersPage,
     });
-    expect(() => normalizeUsersSearch({ page: maximumUsersPage + 1 })).toThrow(InvalidUsersSearch);
-    expect(() => normalizeUsersSearch({ page: 1e20 })).toThrow(InvalidUsersSearch);
+    expect(() => normalizeUsersSearch({ page: maximumUsersPage + 1 })).toThrow(InvalidSearch);
+    expect(() => normalizeUsersSearch({ page: 1e20 })).toThrow(InvalidSearch);
   });
 
   it("rejects a search that is not a record", () => {
     expect.hasAssertions();
-    expect(() => normalizeUsersSearch("not a record")).toThrow(InvalidUsersSearch);
+    expect(() => normalizeUsersSearch("not a record")).toThrow(InvalidSearch);
   });
 });
 

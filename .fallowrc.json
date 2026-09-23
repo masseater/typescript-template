@@ -48,7 +48,9 @@
     "tools/dont-review-it/src/repository/clean-shared-task-cache.ts",
     "tools/dont-review-it/src/repository/pr-affected.ts",
     "tools/dont-review-it/src/vitest/parsed-fields.ts",
-    "libs/vite-config/src/{compile-paraglide,compile-workspace-paraglide}.ts"
+    "libs/vite-config/src/{compile-paraglide,compile-workspace-paraglide}.ts",
+    "tools/dont-review-it/src/lint-rule-authoring/index.ts",
+    "tools/dont-review-it/src/repository/can-not-now.ts"
   ],
   "ignorePatterns": ["**/routeTree.gen.ts", "libs/ui/storybook/public/mockServiceWorker.js"],
   "ignoreDependencies": [
@@ -73,46 +75,7 @@
       "package": "valibot"
     },
     {
-      "package": "@effect/platform-node-shared"
-    },
-    {
       "package": "zod-validation-error"
-    }
-  ],
-  "ignoreExports": [
-    {
-      "file": "apps/*/src/shared/server-api/server-app.ts",
-      "exports": ["app", "default"]
-    },
-    {
-      "file": "apps/service-member/src/shared/inbox/binding.ts",
-      "exports": ["userInboxClassName"]
-    },
-    {
-      "file": "apps/service-member/src/shared/inbox/client.ts",
-      "exports": ["publishFeedPost", "publishNotification"]
-    },
-    {
-      "file": "apps/service-member/src/shared/inbox/index.ts",
-      "exports": [
-        "userInboxBinding",
-        "userInboxClassName",
-        "publishFeedPost",
-        "publishNotification",
-        "InboxBindings",
-        "FeedPostRecord",
-        "InboxEvent",
-        "NotificationKind",
-        "NotificationRecord"
-      ]
-    },
-    {
-      "file": "infra/cloudflare/src/credentials.ts",
-      "exports": ["verifySecretsFile"]
-    },
-    {
-      "file": "tools/dont-review-it/src/lint-rule-authoring/index.ts",
-      "exports": ["testLintRule"]
     }
   ],
   "rules": {
@@ -122,27 +85,11 @@
     "unused-dependency-overrides": "error"
   },
   "health": {
-    "maxCrap": 0,
-    "thresholdOverrides": [
-      {
-        "files": ["tools/dont-review-it/src/repository/single-consumer.ts"],
-        "functions": ["codeSpecifiers"],
-        "maxCyclomatic": 30,
-        "maxCognitive": 51
-      },
-      {
-        "files": ["tools/dont-review-it/src/repository/staged.ts"],
-        "functions": ["indexSecretHits"],
-        "maxCognitive": 24
-      },
-      {
-        "files": ["tools/dont-review-it/src/repository/scripts.ts"],
-        "functions": ["assertBalancedShellQuotes"],
-        "maxCognitive": 16
-      }
-    ]
+    "maxCrap": 0
   },
   "duplicates": {
-    "threshold": 1.31
-  }
+    "ignore": ["**/vite.config.ts"],
+    "threshold": 0.0001
+  },
+  "dynamicallyLoaded": ["apps/*/src/shared/server-api/server-app.ts"]
 }

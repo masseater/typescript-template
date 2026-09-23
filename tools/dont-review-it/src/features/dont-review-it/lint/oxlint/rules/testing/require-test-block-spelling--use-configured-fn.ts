@@ -3,9 +3,7 @@ import { sortBy } from "es-toolkit";
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { optionsRecord } from "../../lib/rule-options.ts";
-import { FIXTURE_BUILDER_MEMBER } from "../../lib/spec-syntax/fixture-declarations.ts";
-import { staticMemberName } from "../../lib/spec-syntax/static-names.ts";
-import { unwrapSubject } from "../../lib/spec-syntax/subject-expressions.ts";
+import { fixtureBuilderBaseOf } from "../../lib/spec-syntax/fixture-declarations.ts";
 import {
   INJECTED_TEST_BLOCK_SPELLINGS,
   RUNNER_MODULES,
@@ -38,15 +36,6 @@ const boundVariable = (scope: Scope | null, identifierName: string): Variable | 
 const initializerOf = (variable: Variable): ESTree.Expression | null => {
   const initial = variable.references.find((reference) => reference.init);
   return initial === undefined ? null : initial.writeExpr;
-};
-
-const fixtureBuilderBase = (initializer: ESTree.Expression): ESTree.Expression | null => {
-  const written = unwrapSubject(initializer);
-  if (written.type !== "CallExpression") return null;
-
-  const callee = unwrapSubject(written.callee);
-  if (callee.type !== "MemberExpression") return null;
-  return staticMemberName(callee) === FIXTURE_BUILDER_MEMBER ? callee.object : null;
 };
 
 const importedSpelling = (imported: ESTree.ModuleExportName): string =>
@@ -140,7 +129,7 @@ export const requireTestBlockSpelling = createDontReviewItRule({
       const initializer = initializerOf(variable);
       if (initializer === null) return null;
 
-      const derived = testBlockRootIdentifier(fixtureBuilderBase(initializer) ?? initializer);
+      const derived = testBlockRootIdentifier(fixtureBuilderBaseOf(initializer) ?? initializer);
       if (derived === null) return null;
 
       const reached = runnerBlockKind({

@@ -1,9 +1,9 @@
-import { ButtonLink, NavigationLink } from "@repo/ui";
+import { ButtonLink, LocaleSwitch, NavigationLink } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { serviceName } from "#shared/config/index.ts";
+import * as i18n from "#shared/i18n/index.ts";
 import { m } from "#shared/i18n/index.ts";
-import { LocaleSwitch } from "#shared/ui/locale-switch.tsx";
 import { publicContentTrack } from "../model/public-content-track.ts";
 
 import type { ReactElement } from "react";
@@ -19,7 +19,7 @@ function PublicHeader(): ReactElement {
             {serviceName}
           </NavigationLink>
         </div>
-        <LocaleSwitch />
+        <LocaleSwitch i18n={i18n} />
         {pathname !== "/login" && <ButtonLink to="/login">{m.login_link()}</ButtonLink>}
         {pathname !== "/signup" && (
           <ButtonLink to="/signup" variant="primary">

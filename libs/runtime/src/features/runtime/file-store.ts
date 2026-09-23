@@ -1,7 +1,6 @@
-import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
-import { StorageFailed } from "./storage-failed.ts";
+import { storageAttempt, unavailable, type StorageFailed } from "./storage-failed.ts";
 
 import type { R2Bucket } from "@cloudflare/workers-types";
 
@@ -18,17 +17,7 @@ interface FileStoreShape {
 
 type Bucket = Pick<R2Bucket, "delete" | "get" | "put">;
 
-const unavailable = Effect.fail(new StorageFailed({ reason: "unavailable" }));
-
-function attempt<Value>(
-  operation: string,
-  run: () => Promise<Value>,
-): Effect.Effect<Value, StorageFailed> {
-  return Effect.tryPromise({
-    catch: (cause) => new StorageFailed({ cause, reason: "operation_failed" }),
-    try: run,
-  }).pipe(withSpan(`storage.files.${operation}`));
-}
+const attempt = storageAttempt("files");
 
 function storeOf(bucket: Bucket): FileStoreShape {
   return {

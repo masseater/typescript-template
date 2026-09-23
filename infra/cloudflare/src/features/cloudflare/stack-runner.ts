@@ -87,14 +87,15 @@ const previewStacks = Effect.fn("previewStacks")(function* previewStacks(
   }
 });
 
-const applyStack = Effect.fn("applyStack")(function* applyStack(
-  requested: { readonly confirmation: string; readonly stack: StackName },
+const applyPlannedStack = Effect.fn("applyPlannedStack")(function* applyPlannedStack(
+  stack: StackName,
   deployment: Deployment,
+  confirming: (planned: PlannedStack) => Readonly<{ announced?: string; confirmation: string }>,
 ) {
-  const { confirmation, stack } = requested;
   yield* assertStackReady(stack, deployment, stateStore(deployment.secrets));
   const { planned, snapshot } = yield* planStack(stack, deployment);
-  yield* announce(planned, stack);
+  const { announced, confirmation } = confirming(planned);
+  yield* announce(planned, stack, announced);
   yield* acceptPlan(planned, { accountId: deployment.access.accountId, confirmation });
   yield* StackRoute.apply(snapshot).pipe(
     Effect.provideService(Progress, reportProgress(stack)),
@@ -103,21 +104,23 @@ const applyStack = Effect.fn("applyStack")(function* applyStack(
   yield* write({ event: "cloudflare.applied", stack });
 });
 
+const applyStack = (
+  requested: { readonly confirmation: string; readonly stack: StackName },
+  deployment: Deployment,
+): ReturnType<typeof applyPlannedStack> =>
+  applyPlannedStack(requested.stack, deployment, () => ({
+    confirmation: requested.confirmation,
+  }));
+
 const applyStacks = Effect.fn("applyStacks")(function* applyStacks(
   stacks: readonly StackName[],
   deployment: Deployment,
 ) {
   for (const stack of stacks) {
-    yield* assertStackReady(stack, deployment, stateStore(deployment.secrets));
-    const { planned, snapshot } = yield* planStack(stack, deployment);
-    const confirmation = planConfirmation(planned, deployment.access.accountId);
-    yield* announce(planned, stack, confirmation);
-    yield* acceptPlan(planned, { accountId: deployment.access.accountId, confirmation });
-    yield* StackRoute.apply(snapshot).pipe(
-      Effect.provideService(Progress, reportProgress(stack)),
-      Effect.asVoid,
-    );
-    yield* write({ event: "cloudflare.applied", stack });
+    yield* applyPlannedStack(stack, deployment, (planned) => {
+      const confirmation = planConfirmation(planned, deployment.access.accountId);
+      return { announced: confirmation, confirmation };
+    });
   }
 });
 

@@ -11,7 +11,8 @@
     "./account": "./src/features/runtime/account.ts",
     "./jobs": "./src/features/runtime/jobs.ts",
     "./testing": "./src/features/runtime/app-fixture.ts",
-    "./security": "./src/features/runtime/security.ts"
+    "./security": "./src/features/runtime/security.ts",
+    "./request-client": "./src/features/runtime/request-client.ts"
   },
   "dependencies": {
     "@cloudflare/workers-types": "catalog:",
@@ -22,6 +23,7 @@
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/observability": "workspace:*",
+    "@tanstack/react-start": "catalog:",
     "effect": "catalog:",
     "effect-cf": "0.47.0",
     "elysia": "2.0.0-beta.16"

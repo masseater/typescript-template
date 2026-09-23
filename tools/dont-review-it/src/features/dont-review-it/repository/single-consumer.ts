@@ -132,88 +132,100 @@ const remember = (found: string[], read: Read | undefined): void => {
   }
 };
 
+interface Scan {
+  readonly next: number;
+  readonly mode: ScanMode;
+}
+
+type QuotedMode = "single" | "double" | "template";
+
+const closingQuotes = { double: '"', single: "'", template: "`" } as const satisfies Record<
+  QuotedMode,
+  string
+>;
+
+const openers = [
+  ["//", "line"],
+  ["/*", "block"],
+  ["'", "single"],
+  ['"', "double"],
+  ["`", "template"],
+] as const satisfies readonly (readonly [string, ScanMode])[];
+
+const scanLineComment = (text: string, index: number): Scan => ({
+  mode: text[index] === "\n" ? "code" : "line",
+  next: index + 1,
+});
+
+const scanBlockComment = (text: string, index: number): Scan =>
+  text.startsWith("*/", index)
+    ? { mode: "code", next: index + 2 }
+    : { mode: "block", next: index + 1 };
+
+const scanQuoted = (text: string, index: number, mode: QuotedMode): Scan => {
+  const char = text[index];
+  if (char === "\\") {
+    return { mode, next: index + 2 };
+  }
+  return { mode: char === closingQuotes[mode] ? "code" : mode, next: index + 1 };
+};
+
+const specifierAt = (
+  text: string,
+  index: number,
+): { readonly read: Read | undefined; readonly next: number } | undefined => {
+  const prefix = boundaryBefore(text, index)
+    ? callPrefixes.find((candidate) => text.startsWith(candidate, index))
+    : undefined;
+  if (prefix !== undefined) {
+    const read = stringAfterSpace(text, index + prefix.length);
+    return { next: read?.next ?? index + prefix.length, read };
+  }
+  const property = propertySpecifier(text, index);
+  if (property !== undefined) {
+    return { next: property.next, read: property };
+  }
+  const word = (["from", "import"] as const).find((candidate) =>
+    startsWithWord(text, index, candidate),
+  );
+  if (word === undefined) {
+    return undefined;
+  }
+  const read = stringAfterSpace(text, index + word.length);
+  return { next: read?.next ?? index + word.length, read };
+};
+
+const scanCode = (text: string, index: number, found: string[]): Scan => {
+  const opener = openers.find(([token]) => text.startsWith(token, index));
+  if (opener !== undefined) {
+    return { mode: opener[1], next: index + opener[0].length };
+  }
+  const specifier = specifierAt(text, index);
+  if (specifier === undefined) {
+    return { mode: "code", next: index + 1 };
+  }
+  remember(found, specifier.read);
+  return { mode: "code", next: specifier.next };
+};
+
+const scanStep = (text: string, scan: Scan, found: string[]): Scan => {
+  if (scan.mode === "code") {
+    return scanCode(text, scan.next, found);
+  }
+  if (scan.mode === "line") {
+    return scanLineComment(text, scan.next);
+  }
+  if (scan.mode === "block") {
+    return scanBlockComment(text, scan.next);
+  }
+  return scanQuoted(text, scan.next, scan.mode);
+};
+
 const codeSpecifiers = (text: string): readonly string[] => {
   const found: string[] = [];
-  let index = 0;
-  let mode: ScanMode = "code";
-  while (index < text.length) {
-    const char = text[index] ?? "";
-    if (mode === "line") {
-      mode = char === "\n" ? "code" : mode;
-      index += 1;
-      continue;
-    }
-    if (mode === "block") {
-      if (char === "*" && text[index + 1] === "/") {
-        mode = "code";
-        index += 2;
-        continue;
-      }
-      index += 1;
-      continue;
-    }
-    if (mode === "single" || mode === "double" || mode === "template") {
-      if (char === "\\") {
-        index += 2;
-        continue;
-      }
-      const quote = mode === "single" ? "'" : mode === "double" ? '"' : "`";
-      if (char === quote) {
-        mode = "code";
-      }
-      index += 1;
-      continue;
-    }
-    if (char === "/" && text[index + 1] === "/") {
-      mode = "line";
-      index += 2;
-      continue;
-    }
-    if (char === "/" && text[index + 1] === "*") {
-      mode = "block";
-      index += 2;
-      continue;
-    }
-    if (char === "'") {
-      mode = "single";
-      index += 1;
-      continue;
-    }
-    if (char === '"') {
-      mode = "double";
-      index += 1;
-      continue;
-    }
-    if (char === "`") {
-      mode = "template";
-      index += 1;
-      continue;
-    }
-    const prefix = boundaryBefore(text, index)
-      ? callPrefixes.find((candidate) => text.startsWith(candidate, index))
-      : undefined;
-    if (prefix !== undefined) {
-      const read = stringAfterSpace(text, index + prefix.length);
-      remember(found, read);
-      index = read?.next ?? index + prefix.length;
-      continue;
-    }
-    const property = propertySpecifier(text, index);
-    if (property !== undefined) {
-      remember(found, property);
-      index = property.next;
-      continue;
-    }
-    const word = (["from", "import"] as const).find((candidate) =>
-      startsWithWord(text, index, candidate),
-    );
-    if (word !== undefined) {
-      const read = stringAfterSpace(text, index + word.length);
-      remember(found, read);
-      index = read?.next ?? index + word.length;
-      continue;
-    }
-    index += 1;
+  let scan: Scan = { mode: "code", next: 0 };
+  while (scan.next < text.length) {
+    scan = scanStep(text, scan, found);
   }
   return found;
 };

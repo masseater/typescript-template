@@ -1,5 +1,5 @@
 import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Console, Effect } from "effect";
+import { Cause, Console, Effect, PlatformError } from "effect";
 
 const failedExitCode = 1;
 const firstUserArgumentIndex = 2;
@@ -52,12 +52,16 @@ const runCli = <Failure>(
   );
 };
 
+const isSystemError = (reason: unknown, tag: PlatformError.SystemErrorTag): boolean =>
+  reason instanceof PlatformError.SystemError && reason._tag === tag;
+
 export {
   causeRecord,
   cliStderr,
   cliStdout,
   exitWith,
   firstUserArgumentIndex,
+  isSystemError,
   markFailed,
   reportFailed,
   runCli,

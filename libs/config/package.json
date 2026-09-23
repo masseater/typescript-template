@@ -10,7 +10,8 @@
     "./paging": "./src/features/config/paging.ts",
     "./storage": "./src/features/config/storage.ts",
     "./worker": "./src/features/config/worker.ts",
-    "./identity": "./src/features/config/identity.ts"
+    "./identity": "./src/features/config/identity.ts",
+    "./schema-mismatches": "./src/features/config/schema-mismatches.ts"
   },
   "dependencies": {
     "effect": "catalog:"

@@ -1,12 +1,4 @@
-import { Effect, Schema } from "effect";
-
-import { userInboxBinding } from "./binding.ts";
-import {
-  CreateFeedPost,
-  CreateNotification,
-  FeedPostRecord,
-  NotificationRecord,
-} from "./messages.ts";
+import { userInboxBinding } from "@repo/config";
 
 type InboxNamespace = Pick<DurableObjectNamespace, "get" | "idFromName">;
 
@@ -33,52 +25,4 @@ function openRealtime(env: InboxEnv, userId: string, request: Request): Promise<
   return stubFor(env, userId).fetch(request);
 }
 
-function publishNotification(
-  env: InboxEnv,
-  userId: string,
-  notification: CreateNotification,
-): Effect.Effect<NotificationRecord> {
-  return Effect.gen(function* publish() {
-    const body = yield* Schema.encodeEffect(Schema.fromJsonString(CreateNotification))(
-      notification,
-    );
-    const response = yield* Effect.promise(() =>
-      stubFor(env, userId).fetch("https://inbox.internal/notifications", {
-        body,
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }),
-    );
-    if (!response.ok) {
-      return yield* Effect.die(`notification_publish_failed:${response.status}`);
-    }
-    return yield* Schema.decodeEffect(Schema.fromJsonString(NotificationRecord))(
-      yield* Effect.promise(() => response.text()),
-    );
-  }).pipe(Effect.orDie);
-}
-
-function publishFeedPost(
-  env: InboxEnv,
-  userId: string,
-  post: CreateFeedPost,
-): Effect.Effect<FeedPostRecord> {
-  return Effect.gen(function* publish() {
-    const body = yield* Schema.encodeEffect(Schema.fromJsonString(CreateFeedPost))(post);
-    const response = yield* Effect.promise(() =>
-      stubFor(env, userId).fetch("https://inbox.internal/posts", {
-        body,
-        headers: { "content-type": "application/json" },
-        method: "POST",
-      }),
-    );
-    if (!response.ok) {
-      return yield* Effect.die(`feed_post_publish_failed:${response.status}`);
-    }
-    return yield* Schema.decodeEffect(Schema.fromJsonString(FeedPostRecord))(
-      yield* Effect.promise(() => response.text()),
-    );
-  }).pipe(Effect.orDie);
-}
-
-export { openRealtime, publishFeedPost, publishNotification };
+export { openRealtime };

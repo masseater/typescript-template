@@ -1,6 +1,7 @@
-import { Option, Schema } from "effect";
+import { SearchKeyword, laterPage, searchNormalizer } from "@repo/config/paging";
+import { Schema } from "effect";
 
-import { BooleanText, Role, SearchKeyword, laterPage } from "#shared/contracts/index.ts";
+import { BooleanText, Role } from "#shared/contracts/index.ts";
 import { maximumUsersPage, usersPageSize } from "./users-pagination.ts";
 
 const Verified = Schema.Union([Schema.Boolean, BooleanText]);
@@ -14,16 +15,7 @@ const UsersSearchParams = Schema.Struct({
 
 type UsersSearch = typeof UsersSearchParams.Type;
 
-class InvalidUsersSearch extends Schema.TaggedError<InvalidUsersSearch>()(
-  "InvalidUsersSearch",
-  {},
-) {}
-
-const decodeUsersSearch = Schema.decodeUnknownOption(UsersSearchParams);
-
-function normalizeUsersSearch(raw: unknown): UsersSearch {
-  return Option.getOrThrowWith(decodeUsersSearch(raw), () => new InvalidUsersSearch());
-}
+const normalizeUsersSearch = searchNormalizer(UsersSearchParams);
 
 function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
   return {
@@ -35,5 +27,5 @@ function userListQuery(search: UsersSearch): Readonly<Record<string, string>> {
   };
 }
 
-export { InvalidUsersSearch, normalizeUsersSearch, userListQuery };
+export { normalizeUsersSearch, userListQuery };
 export type { UsersSearch };

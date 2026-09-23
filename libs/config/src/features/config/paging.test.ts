@@ -1,7 +1,7 @@
 import { Option, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { SearchKeyword, laterPage, maximumKeywordLength } from "./member.ts";
+import { SearchKeyword, laterPage, maximumKeywordLength } from "./paging.ts";
 
 const lastPage = 1000;
 const numericKeyword = 2026;

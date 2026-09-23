@@ -4,29 +4,27 @@ import { launchers, packageManagers, scriptPolicy } from "./script-policy.ts";
 
 const segmentOperators = new Set(["&&", "||", ";", "|", "&", "|&", ";;"]);
 
-const assertBalancedShellQuotes = (command: string): void => {
-  let escaped = false;
-  let quote: string | undefined;
-  for (const character of command) {
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (character === "\\" && quote !== "'") {
-      escaped = true;
-      continue;
-    }
-    if (quote !== undefined) {
-      if (character === quote) {
-        quote = undefined;
-      }
-      continue;
-    }
-    if (character === "'" || character === '"') {
-      quote = character;
-    }
+interface QuoteState {
+  readonly escaped: boolean;
+  readonly quote: "'" | '"' | undefined;
+}
+
+const nextQuoteState = (state: QuoteState, character: string): QuoteState => {
+  if (state.escaped) {
+    return { ...state, escaped: false };
   }
-  if (quote !== undefined || escaped) {
+  if (character === "\\" && state.quote !== "'") {
+    return { ...state, escaped: true };
+  }
+  if (state.quote !== undefined) {
+    return character === state.quote ? { ...state, quote: undefined } : state;
+  }
+  return character === "'" || character === '"' ? { ...state, quote: character } : state;
+};
+
+const assertBalancedShellQuotes = (command: string): void => {
+  const end = [...command].reduce(nextQuoteState, { escaped: false, quote: undefined });
+  if (end.quote !== undefined || end.escaped) {
     throw new Error("Script has an unfinished shell quote or escape");
   }
 };

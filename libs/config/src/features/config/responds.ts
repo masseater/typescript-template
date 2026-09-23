@@ -7,7 +7,7 @@ function respondedSuccessfully(status: number): boolean {
   return status >= firstSuccess && status < firstRedirect;
 }
 
-function waitUntilResponds<Rejected, Unreachable>(request: {
+interface RespondsRequest<Rejected, Unreachable> {
   readonly accept: (status: number) => boolean;
   readonly method: "GET" | "POST";
   readonly onStatus: (status: number) => Rejected;
@@ -15,21 +15,17 @@ function waitUntilResponds<Rejected, Unreachable>(request: {
   readonly retry?: { readonly interval: Duration.Input; readonly times: number };
   readonly timeoutMilliseconds?: number;
   readonly url: string;
-}): Effect.Effect<number, Rejected | Unreachable> {
+}
+
+function waitUntilResponds<Rejected, Unreachable>(
+  request: RespondsRequest<Rejected, Unreachable>,
+): Effect.Effect<number, Rejected | Unreachable> {
   return waitUntilRespondsWith(fetch, request);
 }
 
 function waitUntilRespondsWith<Rejected, Unreachable>(
   fetchImpl: typeof fetch,
-  request: {
-    readonly accept: (status: number) => boolean;
-    readonly method: "GET" | "POST";
-    readonly onStatus: (status: number) => Rejected;
-    readonly onUnreachable: (error: unknown) => Unreachable;
-    readonly retry?: { readonly interval: Duration.Input; readonly times: number };
-    readonly timeoutMilliseconds?: number;
-    readonly url: string;
-  },
+  request: RespondsRequest<Rejected, Unreachable>,
 ): Effect.Effect<number, Rejected | Unreachable> {
   const attempt = Effect.tryPromise({
     catch: (error) => request.onUnreachable(error),

@@ -29,7 +29,7 @@ const declaredVariablesOf = (inspection: LintContext, node: Node): readonly Vari
   return inspection.sourceCode.getDeclaredVariables(node as ESTree.Node);
 };
 
-const importVisitor = (checkSource: (node: Node) => void): Visitor => {
+const runtimeImportVisitor = (checkSource: (node: Node) => void): Visitor => {
   return {
     ExportAllDeclaration(node: Node): void {
       if (node.type === "ExportAllDeclaration") {
@@ -51,6 +51,12 @@ const importVisitor = (checkSource: (node: Node) => void): Visitor => {
         checkSource(node.source);
       }
     },
+  };
+};
+
+const importVisitor = (checkSource: (node: Node) => void): Visitor => {
+  return {
+    ...runtimeImportVisitor(checkSource),
     TSExternalModuleReference(node: Node): void {
       if (node.type === "TSExternalModuleReference") {
         checkSource(node.expression);
@@ -59,6 +65,22 @@ const importVisitor = (checkSource: (node: Node) => void): Visitor => {
     TSImportType(node: Node): void {
       if (node.type === "TSImportType") {
         checkSource(node.source);
+      }
+    },
+  };
+};
+
+const testCallVisitor = (
+  inspection: LintContext,
+  onCall: (node: NodeOf<"CallExpression">) => void,
+): Visitor => {
+  if (!fixtureOrTestFile.test(inspection.filename.replaceAll("\\", "/"))) {
+    return {};
+  }
+  return {
+    CallExpression(node: Node): void {
+      if (node.type === "CallExpression") {
+        onCall(node);
       }
     },
   };
@@ -74,6 +96,8 @@ export {
   fixtureOrTestFile,
   importVisitor,
   reportViolation,
+  runtimeImportVisitor,
   scopeOf,
+  testCallVisitor,
 };
 export type { DeepReadonly, LintContext, Node, NodeOf };

@@ -343,6 +343,32 @@ const toolTest: NonNullable<UserConfig["test"]> = {
   unstubGlobals: true,
 };
 
+const publishedToolConfig = ({
+  entry,
+  openTelemetry,
+}: Readonly<{
+  entry: readonly string[];
+  openTelemetry: Readonly<{ enabled: boolean; sdkPath: string }>;
+}>): UserConfig => ({
+  pack: { dts: { generator: "tsgo" }, entry: [...entry] },
+  run: {
+    tasks: {
+      ...effectDiagnostics,
+      ...modularBoundaries,
+      ...intentValidation,
+      ...testRun,
+      ...lifecycle({ prepr: ["test"], prepush: ["check:effect", "check", "check:modular"] }),
+    },
+  },
+  test: {
+    experimental: { openTelemetry: { ...openTelemetry } },
+    pool: "threads",
+    testTimeout: 60_000,
+    unstubEnvs: true,
+    unstubGlobals: true,
+  },
+});
+
 const noExtraPlugins: readonly PluginOption[] = [];
 
 const coreDevWorker = {
@@ -453,6 +479,7 @@ export {
   modularBoundaries,
   paraglideAppRun,
   previewDevVars,
+  publishedToolConfig,
   workspaceParaglideCompile,
   reactCompiler,
   serverOnlyMarkers,

@@ -1,14 +1,12 @@
-import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
-
-import { OpsPage } from "#widgets/ops-page/index.ts";
+import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
 function StaffPage(): ReactElement {
   return (
-    <OpsPage title="メンバー">
+    <Page layout="full" title="メンバー">
       <StatusMessage variant={STATUS_VARIANT.empty}>メンバーの一覧はまだありません。</StatusMessage>
-    </OpsPage>
+    </Page>
   );
 }
 

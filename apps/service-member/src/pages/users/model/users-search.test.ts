@@ -1,7 +1,8 @@
+import { InvalidSearch, maximumKeywordLength } from "@repo/config/paging";
 import { describe, expect, it } from "vite-plus/test";
 
-import { maximumKeywordLength, maximumMemberPage } from "#shared/contracts/index.ts";
-import { InvalidUsersSearch, normalizeUsersSearch } from "./users-search.ts";
+import { maximumMemberPage } from "#shared/contracts/index.ts";
+import { normalizeUsersSearch } from "./users-search.ts";
 
 describe("member list search in the URL", () => {
   it("keeps a trimmed keyword and a later page", () => {
@@ -17,13 +18,13 @@ describe("member list search in the URL", () => {
     expect(normalizeUsersSearch({ page: maximumMemberPage })).toStrictEqual({
       page: maximumMemberPage,
     });
-    expect(() => normalizeUsersSearch({ page: maximumMemberPage + 1 })).toThrow(InvalidUsersSearch);
+    expect(() => normalizeUsersSearch({ page: maximumMemberPage + 1 })).toThrow(InvalidSearch);
   });
 
   it("rejects a keyword longer than the member API accepts", () => {
     expect.hasAssertions();
     expect(() => normalizeUsersSearch({ keyword: "あ".repeat(maximumKeywordLength + 1) })).toThrow(
-      InvalidUsersSearch,
+      InvalidSearch,
     );
   });
 

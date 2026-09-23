@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import { useProfileForm } from "#pages/profile-edit/model/profile-form.ts";
 import { ProfileEditor } from "./profile-editor.tsx";
 
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
+import type { Profile } from "#shared/api/index.ts";
 import type { ReactElement } from "react";
 
 function showSaved(

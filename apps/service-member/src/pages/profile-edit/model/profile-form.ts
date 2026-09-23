@@ -3,9 +3,9 @@ import { useAction } from "@repo/ui";
 import { Effect } from "effect";
 import { Atom } from "effect/unstable/reactivity";
 
-import { saveProfile } from "#pages/profile-edit/api/profile.ts";
+import { saveProfile } from "#shared/api/index.ts";
 
-import type { Profile } from "#pages/profile-edit/api/profile.ts";
+import type { Profile } from "#shared/api/index.ts";
 import type { SubmitEventHandler } from "react";
 
 type DraftLink = Readonly<{ id: string; url: string }>;

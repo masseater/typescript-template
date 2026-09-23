@@ -10,12 +10,7 @@ declare module "@tanstack/react-router" {
 }
 
 function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
-  return createAppRouter(routeTree, {
-    rewrite: {
-      input: ({ url }) => deLocalizeUrl(url),
-      output: ({ url }) => localizeUrl(url),
-    },
-  });
+  return createAppRouter(routeTree, { localizedUrls: { deLocalizeUrl, localizeUrl } });
 }
 
 export { getRouter };

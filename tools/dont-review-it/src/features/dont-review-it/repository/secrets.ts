@@ -90,6 +90,7 @@ const secretViolations = (
 export {
   contentRules,
   deploymentValues,
+  leaks,
   PREFIX_KEY,
   prefixScan,
   privateFile,

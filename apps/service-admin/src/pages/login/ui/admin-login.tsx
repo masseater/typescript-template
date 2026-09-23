@@ -1,9 +1,10 @@
 import { redirectTarget } from "@repo/auth-ui";
 import { LoginPage } from "@repo/auth-ui";
+import { LocaleSwitch } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
+import * as i18n from "#shared/i18n/index.ts";
 import { m } from "#shared/i18n/index.ts";
-import { LocaleSwitch } from "#shared/ui/locale-switch.tsx";
 
 import type { ReactElement } from "react";
 
@@ -15,7 +16,7 @@ function AdminLogin(): ReactElement {
   }
   return (
     <div className="flex flex-col items-center gap-4">
-      <LocaleSwitch />
+      <LocaleSwitch i18n={i18n} />
       <LoginPage title={m.admin_login_title()} signUp={false} onAuthenticated={goToRedirect} />
     </div>
   );

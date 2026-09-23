@@ -1,9 +1,8 @@
 import { CloudflareId } from "@repo/config";
-import { Effect, Schema, SchemaIssue } from "effect";
+import { schemaMismatches } from "@repo/config/schema-mismatches";
+import { Effect, Schema } from "effect";
 
 import { ErrorMonitorFailure } from "./config.ts";
-
-import type { StandardSchema } from "effect";
 
 interface ErrorGroup {
   readonly fingerprint: string;
@@ -27,7 +26,6 @@ interface QueryWindow {
 
 const isCloudflareId = Schema.is(CloudflareId);
 const QUERY_LIMIT = 2000;
-const WHOLE_BODY = "$";
 const FINGERPRINT = /^[0-9a-f]{8}$/u;
 const groupKeys = ["error.fingerprint", "service", "event", "error.tag", "error.type"] as const;
 const Scalar = Schema.Union([Schema.String, Schema.Finite, Schema.Boolean]);
@@ -40,19 +38,6 @@ const QueryEnvelope = Schema.Struct({
   success: Schema.Literal(true),
 });
 const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
-
-const issueFormatter = SchemaIssue.makeFormatterStandardSchemaV1({
-  leafHook: (issue) => issue._tag,
-});
-
-function mismatches(failure: StandardSchema.StandardSchemaV1.FailureResult): readonly string[] {
-  return failure.issues.map((issue) => {
-    const path = (issue.path ?? [])
-      .map((key) => (typeof key === "object" ? String(key.key) : String(key)))
-      .join(".");
-    return `${path === "" ? WHOLE_BODY : path}:${issue.message}`;
-  });
-}
 
 function failure(
   code: ErrorMonitorFailure["code"],
@@ -148,7 +133,7 @@ const fetchPage = Effect.fn("fetchPage")(function* fetchPage(
       (error) =>
         new ErrorMonitorFailure({
           code: "telemetry_response_invalid",
-          keys: mismatches(issueFormatter(error.issue)),
+          keys: schemaMismatches(error.issue),
         }),
     ),
   );

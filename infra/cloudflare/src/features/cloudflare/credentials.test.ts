@@ -5,8 +5,8 @@ import { assert, it } from "@effect/vitest";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 
-import { verifySecretsFile } from "./credentials.ts";
-import { secretsFile } from "./deployment.ts";
+import { verifiedSecrets } from "./credentials.ts";
+import { ENVIRONMENT_FILE_VARIABLE, secretsFile } from "./deployment.ts";
 import { layer, path } from "./platform.ts";
 import { verificationEnvironment } from "./verification-fixture.ts";
 
@@ -36,6 +36,28 @@ function writeSecrets(filename: string, content: string, mode: number): Effect.E
     yield* filesystem.writeFileString(filename, content);
     yield* filesystem.chmod(filename, mode);
   }).pipe(Effect.orDie, Effect.provide(layer));
+}
+
+function restoreEnvironmentFile(previous: string | undefined): Effect.Effect<void> {
+  return Effect.sync(() => {
+    delete processEnvironment[ENVIRONMENT_FILE_VARIABLE];
+    Object.assign(
+      processEnvironment,
+      previous === undefined ? {} : { [ENVIRONMENT_FILE_VARIABLE]: previous },
+    );
+  });
+}
+
+function verifySecretsFile(filename: string): ReturnType<typeof verifiedSecrets> {
+  return Effect.acquireUseRelease(
+    Effect.sync(() => {
+      const previous = processEnvironment[ENVIRONMENT_FILE_VARIABLE];
+      processEnvironment[ENVIRONMENT_FILE_VARIABLE] = filename;
+      return previous;
+    }),
+    () => verifiedSecrets(),
+    restoreEnvironmentFile,
+  );
 }
 
 it.effect("accepts an owner-only file that declares every deployment input", () =>
@@ -116,21 +138,14 @@ it.effect("reports a missing file instead of deploying without it", () =>
 
 it.effect("resolves the same file the staged-diff check reads", () =>
   Effect.acquireUseRelease(
-    Effect.sync(() => processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"]),
+    Effect.sync(() => processEnvironment[ENVIRONMENT_FILE_VARIABLE]),
     () =>
       Effect.sync(() => {
-        delete processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
+        delete processEnvironment[ENVIRONMENT_FILE_VARIABLE];
         assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"] = "/elsewhere/cloudflare.env";
+        processEnvironment[ENVIRONMENT_FILE_VARIABLE] = "/elsewhere/cloudflare.env";
         assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
       }),
-    (previous) =>
-      Effect.sync(() => {
-        delete processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
-        Object.assign(
-          processEnvironment,
-          previous === undefined ? {} : { TEMPLATE_CLOUDFLARE_ENV_FILE: previous },
-        );
-      }),
+    restoreEnvironmentFile,
   ),
 );

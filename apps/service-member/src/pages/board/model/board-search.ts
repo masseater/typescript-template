@@ -1,6 +1,7 @@
+import { laterPage } from "@repo/config/paging";
 import { Option, Schema } from "effect";
 
-import { laterPage, maximumBoardPage } from "#shared/contracts/index.ts";
+import { maximumBoardPage } from "#shared/contracts/index.ts";
 
 const BoardSearchParams = Schema.Struct({
   new: Schema.optionalKey(Schema.Literal(true)),

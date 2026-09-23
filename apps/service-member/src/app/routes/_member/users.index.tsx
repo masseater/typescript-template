@@ -1,8 +1,8 @@
+import { InvalidSearch } from "@repo/config/paging";
 import { createFileRoute, defaultStringifySearch, redirect } from "@tanstack/react-router";
 import { Schema } from "effect";
 
 import {
-  InvalidUsersSearch,
   UsersFailed,
   UsersPending,
   UsersRoute,
@@ -16,7 +16,7 @@ function requireUsersSearch(raw: unknown): UsersSearch {
   try {
     return normalizeUsersSearch(raw);
   } catch (error) {
-    if (Schema.is(InvalidUsersSearch)(error)) {
+    if (Schema.is(InvalidSearch)(error)) {
       throw redirect({ replace: true, search: {}, to: "/users" });
     }
     throw error;

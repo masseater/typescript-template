@@ -4,7 +4,7 @@ import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { resolveBinding } from "../../lib/resolved-bindings.ts";
 import { optionsRecord } from "../../lib/rule-options.ts";
-import { isFixtureBuilderCall } from "../../lib/spec-syntax/fixture-declarations.ts";
+import { fixtureBuilderBaseOf } from "../../lib/spec-syntax/fixture-declarations.ts";
 import {
   ASSERTION_COUNT_DECLARATIONS,
   DERIVED_ASSERTION_RECEIVERS,
@@ -116,15 +116,6 @@ const placementMessageId = (
   return canonical ? null : "foreignTestBlockAssertion";
 };
 
-const derivedFactoryBase = (initializer: ESTree.Expression): ESTree.Expression | null => {
-  const written = unwrapSubject(initializer);
-  if (written.type !== "CallExpression") return null;
-
-  const callee = unwrapSubject(written.callee);
-  if (callee.type !== "MemberExpression") return null;
-  return isFixtureBuilderCall(written) ? callee.object : null;
-};
-
 const namesRootedAt = (
   reached: ReadonlySet<string>,
   bases: ReadonlyMap<string, string>,
@@ -201,7 +192,7 @@ export const noExpectOutsideIt = createDontReviewItRule({
     const takeDerivation = (declarator: ESTree.VariableDeclarator): void => {
       if (declarator.id.type !== "Identifier" || declarator.init === null) return;
 
-      const factoryBase = derivedFactoryBase(declarator.init);
+      const factoryBase = fixtureBuilderBaseOf(declarator.init);
       const written = unwrapSubject(factoryBase ?? declarator.init);
       if (written.type !== "Identifier") return;
 

@@ -1,16 +1,14 @@
-import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
-
-import { OpsPage } from "#widgets/ops-page/index.ts";
+import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
 import type { ReactElement } from "react";
 
 function InquiriesPage(): ReactElement {
   return (
-    <OpsPage title="問い合わせ">
+    <Page layout="full" title="問い合わせ">
       <StatusMessage variant={STATUS_VARIANT.empty}>
         問い合わせの一覧はまだありません。
       </StatusMessage>
-    </OpsPage>
+    </Page>
   );
 }
 

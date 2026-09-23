@@ -29,14 +29,11 @@ const argumentHolder = (input: {
   return input.checker.getResolvedSignature(input.call)?.parameters[position];
 };
 
-export const declaredHolderSymbol = (input: {
+const enclosingHolder = (input: {
   readonly checker: ts.TypeChecker;
   readonly node: ts.Node;
 }): ts.Symbol | undefined => {
   const { parent } = input.node;
-  if (ts.isVariableDeclaration(parent) && parent.initializer === input.node) {
-    return input.checker.getSymbolAtLocation(parent.name);
-  }
   if (ts.isPropertyAssignment(parent) && ts.isObjectLiteralExpression(parent.parent)) {
     return propertyHolder({ assignment: parent, checker: input.checker });
   }
@@ -45,20 +42,25 @@ export const declaredHolderSymbol = (input: {
     : undefined;
 };
 
+export const declaredHolderSymbol = (input: {
+  readonly checker: ts.TypeChecker;
+  readonly node: ts.Node;
+}): ts.Symbol | undefined => {
+  const { parent } = input.node;
+  if (ts.isVariableDeclaration(parent) && parent.initializer === input.node) {
+    return input.checker.getSymbolAtLocation(parent.name);
+  }
+  return enclosingHolder(input);
+};
+
 export const contextualOriginSymbol = (input: {
   readonly checker: ts.TypeChecker;
   readonly contextualType: ts.Type;
   readonly node: ts.Node;
 }): ts.Symbol | undefined => {
-  const named = input.contextualType.aliasSymbol ?? input.contextualType.getSymbol();
-  if (named !== undefined) return named;
-  const { parent } = input.node;
-  if (ts.isPropertyAssignment(parent) && ts.isObjectLiteralExpression(parent.parent)) {
-    return propertyHolder({ assignment: parent, checker: input.checker });
-  }
-  return ts.isCallExpression(parent) || ts.isNewExpression(parent)
-    ? argumentHolder({ call: parent, checker: input.checker, node: input.node })
-    : undefined;
+  return (
+    input.contextualType.aliasSymbol ?? input.contextualType.getSymbol() ?? enclosingHolder(input)
+  );
 };
 
 const DEPENDENCY_PATH_SEGMENT = "/node_modules/";

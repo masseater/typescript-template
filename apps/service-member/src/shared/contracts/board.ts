@@ -1,6 +1,5 @@
+import { Identifier, pageNumber } from "@repo/config/paging";
 import { Schema } from "effect";
-
-import { Identifier, pageNumber } from "./member.ts";
 
 const maximumBoardTitleLength = 100;
 const maximumBoardBodyLength = 5000;

@@ -1,13 +1,15 @@
 import { apiData } from "@repo/runtime/client";
 
-import { userClient } from "#shared/api/index.ts";
 import { ProfileView } from "#shared/contracts/index.ts";
+import { userClient } from "./client.ts";
+
+type Profile = typeof ProfileView.Type;
 
 function saveProfile(
   name: string,
   profile: string,
   socialLinks: readonly string[],
-): Promise<typeof ProfileView.Type> {
+): Promise<Profile> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.profile
       .patch({ name, profile, socialLinks })
@@ -16,3 +18,4 @@ function saveProfile(
 }
 
 export { saveProfile };
+export type { Profile };
