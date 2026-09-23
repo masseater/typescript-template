@@ -13,7 +13,7 @@ Disallow a fixture handing back a binding it was given, a member read off an exi
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-fixture-forward-subject--yield-sut-output.ts`](../../src/lint/oxlint/rules/testing/no-fixture-forward-subject--yield-sut-output.ts)
+- Source: [`no-fixture-forward-subject--yield-sut-output.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-fixture-forward-subject--yield-sut-output.ts)
 
 <!-- END GENERATED rule-header -->
 

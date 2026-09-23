@@ -13,7 +13,7 @@ Disallow creating a mock or settling what it does anywhere but a module replacem
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-module-scope-mock-config--lift-into-fixture.ts`](../../src/lint/oxlint/rules/testing/no-module-scope-mock-config--lift-into-fixture.ts)
+- Source: [`no-module-scope-mock-config--lift-into-fixture.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-module-scope-mock-config--lift-into-fixture.ts)
 
 <!-- END GENERATED rule-header -->
 

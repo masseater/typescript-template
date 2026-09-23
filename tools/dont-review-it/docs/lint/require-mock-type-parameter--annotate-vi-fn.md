@@ -13,7 +13,7 @@ Require every mock function creation to carry a type parameter that pins the cal
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`require-mock-type-parameter--annotate-vi-fn.ts`](../../src/lint/oxlint/rules/testing/require-mock-type-parameter--annotate-vi-fn.ts)
+- Source: [`require-mock-type-parameter--annotate-vi-fn.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/require-mock-type-parameter--annotate-vi-fn.ts)
 
 <!-- END GENERATED rule-header -->
 

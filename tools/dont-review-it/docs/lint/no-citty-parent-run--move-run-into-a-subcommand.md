@@ -13,7 +13,7 @@ Disallow a `run` handler on a citty command that declares `subCommands`, so a ma
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-citty-parent-run--move-run-into-a-subcommand.ts`](../../src/lint/oxlint/rules/writing/no-citty-parent-run--move-run-into-a-subcommand.ts)
+- Source: [`no-citty-parent-run--move-run-into-a-subcommand.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-citty-parent-run--move-run-into-a-subcommand.ts)
 
 <!-- END GENERATED rule-header -->
 

@@ -13,7 +13,7 @@ Disallow a test that another test in the same file spells with the same title an
 - Suggestions: no
 - Options: no
 - Bundle: `testing`
-- Source: [`no-duplicated-test--delete-the-copy.ts`](../../src/lint/oxlint/rules/testing/no-duplicated-test--delete-the-copy.ts)
+- Source: [`no-duplicated-test--delete-the-copy.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-duplicated-test--delete-the-copy.ts)
 
 <!-- END GENERATED rule-header -->
 
