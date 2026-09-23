@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./testing": "./src/testing.ts"
+    ".": "./src/features/auth/index.ts",
+    "./testing": "./src/features/auth/testing.ts"
   },
   "dependencies": {
     "@better-auth/api-key": "catalog:",

@@ -7,6 +7,7 @@ import {
   intentValidation,
   lifecycle,
   testCoverageRun,
+  modularBoundaries,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -14,12 +15,13 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...modularBoundaries,
       ...intentValidation,
       ...checkCode,
       ...testCoverageRun,
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check"],
+        prepush: ["check:effect", "check", "check:modular"],
         premerge: ["test"],
       }),
     },
@@ -44,9 +46,9 @@ export default defineConfig({
   },
   pack: {
     entry: [
-      "src/telemetry/optional-setting.ts",
-      "src/telemetry/telemetry.ts",
-      "src/telemetry/vitest-sdk.ts",
+      "src/features/ai-native-telemetry/telemetry/optional-setting.ts",
+      "src/features/ai-native-telemetry/telemetry/telemetry.ts",
+      "src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
     ],
     dts: { generator: "tsgo" },
   },

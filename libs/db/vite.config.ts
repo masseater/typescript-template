@@ -17,7 +17,7 @@ export default defineConfig({
       },
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check:imports", "check"],
+        prepush: ["check:effect", "check:imports", "check", "check:modular"],
         premerge: ["test"],
       }),
     },

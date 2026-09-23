@@ -7,6 +7,7 @@ import {
   intentValidation,
   lifecycle,
   testCoverageRun,
+  modularBoundaries,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -14,12 +15,13 @@ export default defineConfig({
   run: {
     tasks: {
       ...effectDiagnostics,
+      ...modularBoundaries,
       ...intentValidation,
       ...checkCode,
       ...testCoverageRun,
       ...lifecycle({
         precommit: ["check:code"],
-        prepush: ["check:effect", "check"],
+        prepush: ["check:effect", "check", "check:modular"],
         premerge: ["test"],
       }),
     },
@@ -44,10 +46,10 @@ export default defineConfig({
   },
   pack: {
     entry: [
-      "src/throttle/cli.ts",
-      "src/spool/cli.ts",
-      "src/sync-base/cli.ts",
-      "src/unabridged/cli.ts",
+      "src/features/ai-native/throttle/cli.ts",
+      "src/features/ai-native/spool/cli.ts",
+      "src/features/ai-native/sync-base/cli.ts",
+      "src/features/ai-native/unabridged/cli.ts",
     ],
     dts: { generator: "tsgo" },
   },

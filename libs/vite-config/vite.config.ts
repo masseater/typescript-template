@@ -1,6 +1,6 @@
 import { defineConfig } from "vite-plus";
 
-import { testableLibraryRun } from "./src/vite.ts";
+import { testableLibraryRun } from "./src/features/vite-config/vite.ts";
 
 export default defineConfig({
   run: testableLibraryRun,

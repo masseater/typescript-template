@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: Ink Paper
-description: Warm paper surfaces, ink neutrals, one terracotta accent. Tokens mirror libs/ui/src/styles.css.
+description: Warm paper surfaces, ink neutrals, one terracotta accent. Tokens mirror libs/ui/src/features/ui/styles.css.
 colors:
   primary: "#9a3412"
   primary-hover: "#7c2a0e"
@@ -122,7 +122,7 @@ components:
 
 Warm paper canvas, ink-dark neutrals, one terracotta accent for primary action. Calm product UI for member, admin, and ops surfaces — not a marketing landing kit and not a dense dashboard chrome language.
 
-Source of visual truth is `@repo/ui` (`libs/ui/src/styles.css` and the parts under `libs/ui/src/shared/ui`). YAML tokens here must stay aligned with that stylesheet. Prefer existing parts (`Button`, `Heading`, `Card`, `Field`, `Page`, …) over hand-rolled color or type classes.
+Source of visual truth is `@repo/ui` (`libs/ui/src/features/ui/styles.css` and the parts under `libs/ui/src/features/ui/shared/ui`). YAML tokens here must stay aligned with that stylesheet. Prefer existing parts (`Button`, `Heading`, `Card`, `Field`, `Page`, …) over hand-rolled color or type classes.
 
 ## Colors
 
@@ -160,7 +160,7 @@ Named containers only. Pick the **smallest** track that fits the job; do not inv
 | Page   | `max-w-page` (48rem)   | Default reading / working main                             |
 | Wide   | `max-w-wide` (64rem)   | Dense tables or multi-column lists only                    |
 
-Steps sit near a 3:2 / 4:3 ladder from the column unit (28 → 48 → 64). New widths must register in `libs/ui/src/styles.css` with that kind of ratio rationale — harmonic or golden steps from an existing token — never a one-off.
+Steps sit near a 3:2 / 4:3 ladder from the column unit (28 → 48 → 64). New widths must register in `libs/ui/src/features/ui/styles.css` with that kind of ratio rationale — harmonic or golden steps from an existing token — never a one-off.
 
 ### Alignment
 
@@ -214,7 +214,7 @@ Do not copy external UI kit demos as normative styling. Do not add app-local CSS
 
 ## Do's and Don'ts
 
-- Do read this file before changing UI, then confirm tokens in `libs/ui/src/styles.css`.
+- Do read this file before changing UI, then confirm tokens in `libs/ui/src/features/ui/styles.css`.
 - Do use semantic Tailwind tokens (`bg-background`, `text-foreground`, `bg-primary`, `border-border`, …).
 - Do keep primary terracotta on primary actions only.
 - Do pick the smallest content track and keep header / main / footer on that same track.

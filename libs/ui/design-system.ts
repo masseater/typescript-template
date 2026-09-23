@@ -316,7 +316,7 @@ const read = (file: string): string => {
   return readFileSync(fromRepo(file), "utf-8");
 };
 
-const designSystemProbe = "libs/ui/src/shared/ui/button.tsx";
+const designSystemProbe = "libs/ui/src/features/ui/shared/ui/button.tsx";
 
 const stylesheetPath = (): string => {
   return project.themeFileFor(designSystemProbe) ?? "";
