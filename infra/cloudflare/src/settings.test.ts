@@ -189,15 +189,38 @@ it.effect("leaves OTLP unconfigured when neither the endpoint nor the switch is 
   }),
 );
 
-it.effect("an endpoint without the switch keeps OTLP enabled", () =>
+it.effect("an endpoint without the switch is refused", () =>
   Effect.gen(function* program() {
-    const config = yield* Effect.provideService(
+    const failure = yield* Effect.provideService(
       deploymentSettings,
       ConfigProvider,
       environment({ TEMPLATE_OTLP_ENABLED: undefined }),
-    );
-    assert.deepStrictEqual(config.otlp, { enabled: true, endpoint: settings.otlp.endpoint });
+    ).pipe(Effect.flip);
+    assert.deepStrictEqual(describeFailure(failure, []), {
+      code: "otlp_endpoint_without_enabled",
+      keys: ["TEMPLATE_OTLP_ENABLED", "TEMPLATE_OTLP_ENDPOINT"],
+    });
   }),
+);
+
+it.effect("refuses missing budget and sampling values instead of inventing defaults", () =>
+  Effect.forEach(
+    [
+      "TEMPLATE_FIXED_COST_USD",
+      "TEMPLATE_JPY_PER_USD",
+      "TEMPLATE_RESERVE_USD",
+      "TEMPLATE_OBSERVABILITY_SAMPLING",
+    ] as const,
+    (key) =>
+      Effect.gen(function* program() {
+        const failure = yield* Effect.provideService(
+          deploymentSettings,
+          ConfigProvider,
+          environment({ [key]: undefined }),
+        ).pipe(Effect.flip);
+        assert.include(yield* encodeJson(describeFailure(failure, [])), key);
+      }),
+  ),
 );
 
 it.effect("the settings every command reads carry the shared checks", () =>

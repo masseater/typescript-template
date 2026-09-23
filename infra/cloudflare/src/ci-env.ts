@@ -14,7 +14,12 @@ const retiredOriginKeys = [
 ] as const;
 
 class PrepareCiEnvFailure extends Schema.TaggedError<PrepareCiEnvFailure>()("PrepareCiEnvFailure", {
-  code: Schema.Literals(["ci_env_incomplete", "ci_env_retired_origins", "ci_env_unwritable"]),
+  code: Schema.Literals([
+    "ci_env_incomplete",
+    "ci_env_output_missing",
+    "ci_env_retired_origins",
+    "ci_env_unwritable",
+  ]),
   keys: Schema.Array(Schema.String),
 }) {}
 
@@ -99,5 +104,25 @@ function writeCiSecretsFileProvided(
   return writeCiSecretsFile(environment).pipe(Effect.provide(layer));
 }
 
-export { PrepareCiEnvFailure, writeCiSecretsFileProvided as writeCiSecretsFile };
+function writeConfiguredOutput(
+  environment: Readonly<Record<string, string | undefined>>,
+  configured: boolean,
+): Effect.Effect<void, PrepareCiEnvFailure> {
+  const output = environment["GITHUB_OUTPUT"];
+  if (output === undefined || output === "") {
+    return Effect.fail(new PrepareCiEnvFailure({ code: "ci_env_output_missing", keys: [] }));
+  }
+  return Effect.gen(function* appendOutput() {
+    const filesystem = yield* FileSystem.FileSystem;
+    yield* filesystem
+      .writeFileString(output, `configured=${configured}\n`, { flag: "a" })
+      .pipe(Effect.mapError(unwritable));
+  }).pipe(Effect.provide(layer));
+}
+
+export {
+  PrepareCiEnvFailure,
+  writeCiSecretsFileProvided as writeCiSecretsFile,
+  writeConfiguredOutput,
+};
 export type { CiEnvPreparation };
