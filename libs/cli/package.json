@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/features/cli/index.ts"
+    ".": "./src/features/cli/index.ts",
+    "./exit-code": "./src/features/cli/exit-code.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",
