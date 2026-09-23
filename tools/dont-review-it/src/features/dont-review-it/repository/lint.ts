@@ -239,7 +239,6 @@ const lintOptions = {
     {
       files: [
         "libs/db/src/features/db/security.ts",
-        "libs/db/src/remote-http.test.ts",
         "libs/db/src/features/db/local-platform.test.ts",
         "libs/db/src/features/db/identity-schema.ts",
         "infra/budget-monitor/src/features/budget-monitor/decision.ts",
@@ -522,19 +521,6 @@ const lintOptions = {
       ],
       rules: {
         "dont-review-it/no-handmade-standard-io-double--use-standard-io-test": LINT_SEVERITY.OFF,
-      },
-    },
-    {
-      files: ["libs/config/src/features/config/cli.ts"],
-      rules: {
-        "no-restricted-properties": [
-          LINT_SEVERITY.ERROR,
-          ...["stdout", "stderr"].map((property) => ({
-            message: "effect の Console で出力してください。",
-            object: "process",
-            property,
-          })),
-        ],
       },
     },
     {
