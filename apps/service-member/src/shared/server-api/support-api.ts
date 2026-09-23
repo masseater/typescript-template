@@ -6,7 +6,7 @@ import {
   listMemberInquiries,
   replyAsMember,
 } from "@repo/db";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
 
@@ -23,7 +23,7 @@ import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   InquiryForbidden: { message: "この問い合わせには返信できません。", status: httpStatus.conflict },
   InquiryNotFound: { message: "問い合わせが見つかりません。", status: httpStatus.notFound },
 };
@@ -32,8 +32,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/support",
-      api.route(
-        InquiryList,
+      ...api.route(
+        { response: InquiryList },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -45,8 +45,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/support/detail",
-      api.route(
-        InquiryThread,
+      ...api.route(
+        { response: InquiryThread },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -58,8 +58,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/support",
-      api.route(
-        InquiryThread,
+      ...api.route(
+        { response: InquiryThread },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
@@ -71,8 +71,8 @@ function supportApi(api: ApiRoutes<AppServices>) {
     )
     .post(
       "/support/reply",
-      api.route(
-        InquiryThread,
+      ...api.route(
+        { response: InquiryThread },
         (request) =>
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);

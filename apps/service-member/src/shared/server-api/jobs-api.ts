@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
 import { JobPayload, readJobs, httpStatus } from "@repo/config";
-import { unavailable } from "@repo/runtime/account";
+import { sessionFailures } from "@repo/runtime/account";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { enqueueJob, jobStatus } from "@repo/runtime/jobs";
 import { env } from "cloudflare:workers";
@@ -23,7 +23,7 @@ const JobStatusView = Schema.Struct({
 });
 
 const failures = {
-  ...unavailable,
+  ...sessionFailures,
   ConfigurationInvalid: "unexpected" as const,
   InputInvalid: { message: "入力内容を確認してください。", status: httpStatus.badRequest },
   JobLookupFailed: "unexpected" as const,
@@ -34,8 +34,8 @@ function jobsApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .post(
       "/jobs",
-      api.route(
-        JobAccepted,
+      ...api.route(
+        { response: JobAccepted },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySession(request.headers);
@@ -49,8 +49,8 @@ function jobsApi(api: ApiRoutes<AppServices>) {
     )
     .get(
       "/jobs/:id",
-      api.route(
-        JobStatusView,
+      ...api.route(
+        { response: JobStatusView },
         (request) =>
           Effect.gen(function* handleRequest() {
             const { user } = yield* verifySession(request.headers);

@@ -32,7 +32,6 @@ function InquiriesPage(): ReactElement {
             label="会員 ID"
             name="memberId"
             onValueChange={lookup.handleMemberIdChange}
-            required
             value={lookup.memberId}
           />
           <Button type="submit">会員の問い合わせを表示</Button>

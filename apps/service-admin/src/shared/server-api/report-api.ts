@@ -82,12 +82,12 @@ const dismiss = Effect.fn("reports.dismiss")(function* dismiss(request: Request)
 
 function reportApi(api: ApiRoutes<AppServices>) {
   return createApi("/reports")
-    .get("/", api.route(ReportList, listPage, failures))
-    .get("/detail", api.route(ReportDetail, detail, failures))
-    .post("/suspend", api.route(ReportActionResult, suspend, failures))
-    .post("/unsuspend", api.route(ReportActionResult, unsuspend, failures))
-    .post("/warn", api.route(ReportActionResult, warn, failures))
-    .post("/dismiss", api.route(ReportActionResult, dismiss, failures));
+    .get("/", ...api.route({ response: ReportList }, listPage, failures))
+    .get("/detail", ...api.route({ response: ReportDetail }, detail, failures))
+    .post("/suspend", ...api.route({ response: ReportActionResult }, suspend, failures))
+    .post("/unsuspend", ...api.route({ response: ReportActionResult }, unsuspend, failures))
+    .post("/warn", ...api.route({ response: ReportActionResult }, warn, failures))
+    .post("/dismiss", ...api.route({ response: ReportActionResult }, dismiss, failures));
 }
 
 export { reportApi };

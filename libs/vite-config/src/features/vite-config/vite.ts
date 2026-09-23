@@ -41,6 +41,7 @@ import { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
 import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { previewDevVars } from "./preview-dev-vars.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
+import { scalarReference } from "./scalar-reference.ts";
 import { taskInput } from "./task-input.ts";
 import {
   wikiCompanion,
@@ -267,6 +268,7 @@ const appConfig = (
     plugins: [
       lazyPlugins(() => [
         failOnBrokenSourceMaps(),
+        scalarReference(),
         previewDevVars(appRoot),
         privateSourceMaps(app),
         devBoundary(app),
@@ -464,6 +466,7 @@ export {
   workspaceCheckImports,
 };
 export { paths } from "./host.ts";
+export { readScalarReference, scalarReference } from "./scalar-reference.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
 export { failOnBrokenSourceMaps, privateSourceMaps };
 export { runTypecheckGate } from "./effect-typecheck.ts";

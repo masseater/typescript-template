@@ -112,13 +112,22 @@ const changeAdminState = Effect.fn("changeAdminState")(function* changeAdminStat
 function adminRoutes<Requirements = never>(api: ApiRoutes<AppServices | Requirements>) {
   return createApi("")
     .use(inviteApi(api))
-    .get("/users", api.route(UserList, listMembers, failures))
-    .patch("/users", api.route(MemberStateChanged, changeMemberState, failures))
-    .delete("/users", api.route(UserDeleted, removeMember, failures))
-    .get("/admins", api.route(AdminList, listAdministrators, failures))
-    .post("/admins/invites", api.route(AdminInvited, inviteAdministrator, failures))
-    .patch("/admins", api.route(AdminPermissionChanged, changeAdminPermission, failures))
-    .patch("/admins/state", api.route(AdminStateChanged, changeAdminState, failures));
+    .get("/users", ...api.route({ response: UserList }, listMembers, failures))
+    .patch("/users", ...api.route({ response: MemberStateChanged }, changeMemberState, failures))
+    .delete("/users", ...api.route({ response: UserDeleted }, removeMember, failures))
+    .get("/admins", ...api.route({ response: AdminList }, listAdministrators, failures))
+    .post(
+      "/admins/invites",
+      ...api.route({ response: AdminInvited }, inviteAdministrator, failures),
+    )
+    .patch(
+      "/admins",
+      ...api.route({ response: AdminPermissionChanged }, changeAdminPermission, failures),
+    )
+    .patch(
+      "/admins/state",
+      ...api.route({ response: AdminStateChanged }, changeAdminState, failures),
+    );
 }
 
 export { adminRoutes };

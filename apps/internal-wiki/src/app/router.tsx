@@ -1,5 +1,8 @@
+import { loadBrowserSession, provideSessionLoader } from "@repo/auth-ui/session-loader";
 import { wikiBasePath } from "@repo/config";
 import { createAppRouter } from "@repo/ui/shell";
+import { QueryClient } from "@tanstack/react-query";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -25,7 +28,13 @@ const rootSlash = {
 };
 
 function getRouter(): ReturnType<typeof createAppRouter<typeof routeTree>> {
-  return createAppRouter(routeTree, { rewrite: rootSlash });
+  const queryClient = new QueryClient({
+    defaultOptions: { mutations: { networkMode: "always" }, queries: { networkMode: "always" } },
+  });
+  provideSessionLoader(queryClient, loadBrowserSession);
+  const router = createAppRouter(routeTree, { rewrite: rootSlash, routerContext: { queryClient } });
+  setupRouterSsrQueryIntegration({ queryClient, router });
+  return router;
 }
 
 export { getRouter };
