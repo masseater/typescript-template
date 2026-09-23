@@ -244,7 +244,7 @@ const lifecycle = (
 });
 
 const checkCode = {
-  "check:code": { command: "vp check", input: [...taskInput] },
+  "check:code": { command: "vp check --no-error-on-unmatched-pattern", input: [...taskInput] },
 } satisfies Tasks;
 
 const workspaceCheckImports = {

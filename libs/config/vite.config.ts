@@ -10,7 +10,7 @@ export default defineConfig({
         input: [...effectTypecheckInputs],
       },
       "check:code": {
-        command: "vp check",
+        command: "vp check --no-error-on-unmatched-pattern",
         input: [
           { auto: true },
           { base: "workspace", pattern: "!node_modules/.modules.yaml" },
