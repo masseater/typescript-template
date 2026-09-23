@@ -44,6 +44,6 @@ export default defineConfig({
   pack: {
     entry: ["src/cli.ts", "src/canonical-literal-types/run-as-task.ts", "src/index.ts"],
     external: [/^vite-plus/],
-    dts: { generator: "tsgo" },
+    dts: { generator: "tsgo", tsconfig: "tsconfig.pack.json" },
   },
 });
