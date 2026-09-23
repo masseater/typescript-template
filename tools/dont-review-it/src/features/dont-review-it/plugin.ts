@@ -1,8 +1,10 @@
 import { loadCanonicalValuesCatalogSnapshot } from "./lint/oxlint/lib/canonical-values/builder.ts";
+import { findWorkspaceRoot } from "./lint/oxlint/lib/canonical-values/workspace-root.ts";
 import { loadCatalogEntries } from "./lint/oxlint/lib/dependency-catalog/catalog-entries.ts";
 import { loadWorkspaceDependencies } from "./lint/oxlint/lib/dependency-catalog/workspace-manifests.ts";
 import { loadRepositoryBodyIndex } from "./lint/oxlint/lib/duplicated-bodies/builder.ts";
 import { replacedModuleAt } from "./lint/oxlint/lib/external-io-boundary.ts";
+import { warmGitSourceScope } from "./lint/oxlint/lib/git-ignored-source.ts";
 import { createLibraryVocabularyLoader } from "./lint/oxlint/lib/library-vocabulary/harvester.ts";
 import { openTypeScriptApi } from "./lint/oxlint/lib/library-vocabulary/open-api.ts";
 import { loadRepositoryCellClassIndex } from "./lint/oxlint/lib/mutable-cell-classes/builder.ts";
@@ -124,6 +126,8 @@ import { createNoUnusedStyleClass } from "./lint/oxlint/rules/writing/no-unused-
 import { requireReExportOnlyFiles } from "./lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts";
 
 import type { Plugin } from "@oxlint/plugins";
+
+warmGitSourceScope(findWorkspaceRoot(process.cwd()));
 
 export const noLocalFiniteValueSet = createNoLocalFiniteValueSet({
   loadCatalog: loadCanonicalValuesCatalogSnapshot,

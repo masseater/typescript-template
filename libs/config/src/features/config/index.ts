@@ -116,6 +116,7 @@ export {
   readStripeConfig,
   stripeKeyModes,
   readSiteEnvironment,
+  readCore,
   readWikiBindings,
 } from "./environment.ts";
 export { httpStatus } from "./http-status.ts";
@@ -134,6 +135,22 @@ export {
   reportSubjects,
 } from "./trust.ts";
 export type { ModerationKind, ReportReason, ReportStatus, ReportSubject } from "./trust.ts";
+export {
+  RECORDING_FAILURE,
+  RECORDING_STATUS,
+  recordingFailures,
+  recordingStatuses,
+  transcriptionFailures,
+} from "./recordings.ts";
+export type { RecordingFailure, RecordingStatus } from "./recordings.ts";
+export {
+  RecordingSegment,
+  RecordingSpeaker,
+  RecordingSummary,
+  RecordingView,
+  RegisteredPerson,
+  SpeakerLabel,
+} from "./recording-schemas.ts";
 export {
   JobPayload,
   jobsQueueBinding,

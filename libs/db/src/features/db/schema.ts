@@ -40,6 +40,12 @@ import {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+import {
+  recording,
+  recordingSegment,
+  recordingSpeaker,
+  speakerPerson,
+} from "./recording-schema.ts";
 import { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
 
 const account = sqliteTable(
@@ -241,7 +247,11 @@ const schema = {
   passkey,
   planSubscription,
   rateLimit,
+  recording,
+  recordingSegment,
+  recordingSpeaker,
   session,
+  speakerPerson,
   stripeEvent,
   twoFactor,
   user,
@@ -306,3 +316,9 @@ export {
   memberGroup,
 } from "./messaging-schema.ts";
 export type { ConversationKind, GroupMembershipRole } from "./messaging-schema.ts";
+export {
+  recording,
+  recordingSegment,
+  recordingSpeaker,
+  speakerPerson,
+} from "./recording-schema.ts";

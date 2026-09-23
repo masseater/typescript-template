@@ -16,6 +16,20 @@ export {
 } from "./inquiries.ts";
 export type { StaffInquiryCountsView, StaffInquiryThreadView } from "./inquiries.ts";
 export {
+  PeopleList,
+  PersonRegistration,
+  RecordingAccepted,
+  RecordingList,
+  RecordingQuery,
+  RecordingTarget,
+  RecordingUpload,
+  RecordingView,
+  SpeakerAssignment,
+  maximumPersonNameLength,
+  maximumRecordingBytes,
+  maximumRecordingTitleLength,
+} from "./recordings.ts";
+export {
   StaffInvitation,
   StaffInvited,
   StaffList,

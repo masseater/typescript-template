@@ -172,10 +172,16 @@ const config = ({
     ignoreIssues: {
       "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/mcp.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/recordings-api.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/recordings-api.worker.test.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/server-app.ts": ["exports"],
       "apps/internal-dashboard/src/shared/server-api/staff-api.worker.test.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/wiki-gateway.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/transcription/process.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/transcription/transcribe-job.worker.test.ts": [
+        "unlisted",
+      ],
       "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/admin-api.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],

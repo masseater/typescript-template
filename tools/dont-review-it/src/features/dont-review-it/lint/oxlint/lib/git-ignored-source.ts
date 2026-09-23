@@ -1,10 +1,10 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 
-import { attempt } from "es-toolkit";
+import { attempt, memoize } from "es-toolkit";
 
 import { measureStage } from "../../../lint-rule-authoring/index.ts";
-import { path } from "../../../platform/path.ts";
+import { path, relativePosixPath } from "../../../platform/path.ts";
 import { gitOutput } from "./git-output.ts";
 import { pathIsInside } from "./path-is-inside.ts";
 
@@ -38,18 +38,16 @@ const firstSymbolicPath = (repositoryRoot: string, repositoryPath: string): stri
   return null;
 };
 
-const carriesRepositoryLink = (directory: string): boolean => {
-  if (existsSync(path.join(directory, ".git"))) return true;
+const repositoryTopLevel = (directory: string): string | null => {
+  if (existsSync(path.join(directory, ".git"))) return directory;
   const parent = path.dirname(directory);
-  return parent !== directory && carriesRepositoryLink(parent);
+  return parent === directory ? null : repositoryTopLevel(parent);
 };
 
-const ignoredRepositoryPaths = (repositoryRoot: string): ReadonlySet<string> => {
-  if (!carriesRepositoryLink(repositoryRoot)) return new Set();
-
+const gitIgnoredPaths = (directory: string): ReadonlySet<string> => {
   const ignoredPathOutput = measureStage("canonical.scope.git", () =>
     gitOutput(["ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z"], {
-      cwd: repositoryRoot,
+      cwd: directory,
       env: process.env,
     }),
   );
@@ -58,14 +56,40 @@ const ignoredRepositoryPaths = (repositoryRoot: string): ReadonlySet<string> => 
     : new Set();
 };
 
+const topLevelIgnoredPaths = memoize(gitIgnoredPaths);
+
+const isIgnoredDirectoryEntry = (ignoredPath: string, directoryPath: string): boolean =>
+  ignoredPath.endsWith("/") && directoryPath.startsWith(ignoredPath);
+
+const ignoredRepositoryPaths = (repositoryRoot: string): ReadonlySet<string> => {
+  const topLevel = repositoryTopLevel(repositoryRoot);
+  if (topLevel === null) return new Set();
+
+  const topLevelPaths = topLevelIgnoredPaths(topLevel);
+  if (topLevel === repositoryRoot) return topLevelPaths;
+
+  const prefix = `${relativePosixPath(topLevel, repositoryRoot)}/`;
+  if ([...topLevelPaths].some((ignoredPath) => isIgnoredDirectoryEntry(ignoredPath, prefix))) {
+    return gitIgnoredPaths(repositoryRoot);
+  }
+  return new Set(
+    [...topLevelPaths]
+      .filter((ignoredPath) => ignoredPath.startsWith(prefix))
+      .map((ignoredPath) => ignoredPath.slice(prefix.length)),
+  );
+};
+
 const pathIsIgnored = (repositoryPath: string, ignoredPaths: ReadonlySet<string>): boolean =>
   ignoredPaths.has(repositoryPath) ||
-  [...ignoredPaths].some(
-    (ignoredPath) => ignoredPath.endsWith("/") && repositoryPath.startsWith(ignoredPath),
-  );
+  ignoredPaths.has(`${repositoryPath}/`) ||
+  [...ignoredPaths].some((ignoredPath) => isIgnoredDirectoryEntry(ignoredPath, repositoryPath));
 
 export type GitSourceScope = {
   readonly isIgnored: (sourcePath: string) => boolean;
+};
+
+export const warmGitSourceScope = (repositoryRoot: string): void => {
+  ignoredRepositoryPaths(path.resolve(repositoryRoot));
 };
 
 export const readGitSourceScope = (repositoryRoot: string): GitSourceScope => {

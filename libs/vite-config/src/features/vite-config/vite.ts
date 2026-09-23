@@ -197,6 +197,7 @@ const appRun = {
       dependsOn: ["@repo/dev#setup", "check:effect"],
       input: [
         ...taskInput,
+        "!.",
         ...withoutGenerated(".wrangler", "dist"),
         ...withoutLocalState,
         ...withoutInlangState,
