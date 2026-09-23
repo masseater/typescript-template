@@ -1,19 +1,37 @@
 import { URL, fileURLToPath } from "node:url";
 
+import { withSpan } from "@repo/observability";
 import { sql } from "drizzle-orm";
 import { drizzle as connectD1 } from "drizzle-orm/d1";
 import { migrate as applyD1MigrationFiles } from "drizzle-orm/d1/migrator";
-import { readMigrationFiles } from "drizzle-orm/migrator";
+import { readMigrationFiles, type MigrationConfig } from "drizzle-orm/migrator";
 import { Clock, Effect, Schema } from "effect";
 
-import { BOOTSTRAP_KIND, BootstrappedAdmin, bootstrapStatement } from "./bootstrap-statement.ts";
-import { remoteDatabase } from "./remote-http.ts";
-import { RemoteFailure, fail, parseRemoteInput } from "./remote-input.ts";
+import { BootstrappedAdmin, bootstrapStatement, type Email } from "./bootstrap-statement.ts";
 
 import type { D1Database } from "@cloudflare/workers-types";
-import type { MigrationConfig } from "drizzle-orm/migrator";
 import type { SQLiteAsyncDatabase } from "drizzle-orm/sqlite-core";
-import type { Email } from "./bootstrap-statement.ts";
+
+const RemoteFailureCode = Schema.Literals([
+  "REMOTE_COMMAND_INVALID",
+  "REMOTE_INPUT_INVALID",
+  "REMOTE_TARGET_MISMATCH",
+  "REMOTE_QUERY_FAILED",
+  "REMOTE_RESPONSE_INVALID",
+  "REMOTE_MIGRATIONS_INVALID",
+  "REMOTE_MIGRATION_HISTORY_MISMATCH",
+  "REMOTE_MIGRATION_HISTORY_MISSING",
+  "REMOTE_MIGRATIONS_REQUIRED",
+  "BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN",
+]);
+
+class RemoteFailure extends Schema.TaggedError<RemoteFailure>()("RemoteFailure", {
+  code: RemoteFailureCode,
+}) {}
+
+const fail = (code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteFailure> => {
+  return Effect.fail(new RemoteFailure({ code }));
+};
 
 const migrationsFolder = fileURLToPath(new URL("../../../migrations/", import.meta.url));
 
@@ -27,14 +45,9 @@ const MigrationFile = Schema.Struct({
 const MigrationFiles = Schema.Array(MigrationFile).check(Schema.isMinLength(1));
 type Migration = typeof MigrationFile.Type;
 
-const Names = Schema.Array(Schema.Tuple([Schema.String]));
+const TableNameRows = Schema.Array(Schema.Tuple([Schema.String]));
 const HistoryRows = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
-const BootstrappedRow = Schema.Tuple([
-  Schema.Unknown,
-  Schema.Unknown,
-  Schema.Unknown,
-  Schema.Unknown,
-]);
+const BootstrappedRow = Schema.Tuple([Schema.Unknown, Schema.Unknown, Schema.Unknown]);
 
 const APPLICATION_TABLES = String.raw`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' AND name NOT LIKE '\_cf\_%' ESCAPE '\' AND name NOT IN ('__drizzle_migrations', 'd1_migrations')`;
 
@@ -63,31 +76,38 @@ const loadRemoteMigrations = Effect.fn("loadRemoteMigrations")(function* loadRem
 });
 
 const queryValues = <Result>(
-  database: SQLiteAsyncDatabase<"async", Result>,
+  database: Readonly<SQLiteAsyncDatabase<"async", Result>>,
   query: Parameters<SQLiteAsyncDatabase<"async", Result>["values"]>[0],
 ): Effect.Effect<unknown, RemoteFailure> => {
   return Effect.tryPromise({
     catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
-    try: () => database.values(query),
+    try: async () => database.values(query),
   });
 };
 
 const listedNames = <Result>(
-  database: SQLiteAsyncDatabase<"async", Result>,
+  database: Readonly<SQLiteAsyncDatabase<"async", Result>>,
   statement: string,
 ): Effect.Effect<readonly string[], RemoteFailure> => {
   return queryValues(database, sql.raw(statement)).pipe(
-    Effect.flatMap((rows) =>
-      Schema.decodeUnknownEffect(Names)(rows).pipe(
+    Effect.flatMap((tableNameRows) =>
+      Schema.decodeUnknownEffect(TableNameRows)(tableNameRows).pipe(
         Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
       ),
     ),
-    Effect.map((rows) => rows.map(([name]) => name)),
+    Effect.map((tableNameRows) => tableNameRows.map(([tableName]) => tableName)),
   );
 };
 
+const decodeHistoryRows = (
+  historyRows: unknown,
+): Effect.Effect<typeof HistoryRows.Type, RemoteFailure> =>
+  Schema.decodeUnknownEffect(HistoryRows)(historyRows).pipe(
+    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
+  );
+
 const appliedMigrations = <Result>(
-  database: SQLiteAsyncDatabase<"async", Result>,
+  database: Readonly<SQLiteAsyncDatabase<"async", Result>>,
   migrations: readonly Pick<Migration, "hash" | "name">[],
 ): Effect.Effect<number, RemoteFailure> => {
   return Effect.gen(function* recordedMigrations() {
@@ -97,20 +117,14 @@ const appliedMigrations = <Result>(
         : yield* queryValues(
             database,
             sql`SELECT hash, name FROM __drizzle_migrations ORDER BY id`,
-          ).pipe(
-            Effect.flatMap((rows) =>
-              Schema.decodeUnknownEffect(HistoryRows)(rows).pipe(
-                Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
-              ),
-            ),
-          );
+          ).pipe(Effect.flatMap(decodeHistoryRows));
     if (history.length === 0 && (yield* listedNames(database, APPLICATION_TABLES)).length > 0) {
       return yield* fail("REMOTE_MIGRATION_HISTORY_MISSING");
     }
     if (
       history.some(
-        ([hash, name], index) =>
-          hash !== migrations[index]?.hash || name !== migrations[index]?.name,
+        ([hash, migrationName], index) =>
+          hash !== migrations[index]?.hash || migrationName !== migrations[index].name,
       )
     ) {
       return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
@@ -120,22 +134,25 @@ const appliedMigrations = <Result>(
 };
 
 const migrateDatabase = <Result>(
-  database: SQLiteAsyncDatabase<"async", Result>,
-  apply: (config: Readonly<MigrationConfig>) => Promise<unknown>,
-  folder: string = migrationsFolder,
+  input: Readonly<{
+    readonly database: SQLiteAsyncDatabase<"async", Result>;
+    readonly apply: (config: Readonly<MigrationConfig>) => Promise<unknown>;
+    readonly folder?: string;
+  }>,
 ): Effect.Effect<number, RemoteFailure> => {
+  const folder = input.folder ?? migrationsFolder;
   return Effect.gen(function* migrate() {
     const migrations = yield* loadRemoteMigrations(folder);
-    const applied = yield* appliedMigrations(database, migrations);
+    const applied = yield* appliedMigrations(input.database, migrations);
     yield* Effect.tryPromise({
       catch: () => new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }),
-      try: () => apply({ migrationsFolder: folder }),
+      try: async () => input.apply({ migrationsFolder: folder }),
     });
-    if ((yield* appliedMigrations(database, migrations)) !== migrations.length) {
+    if ((yield* appliedMigrations(input.database, migrations)) !== migrations.length) {
       return yield* fail("REMOTE_MIGRATION_HISTORY_MISMATCH");
     }
     return migrations.length - applied;
-  }).pipe(Effect.withSpan("migrateDatabase"));
+  }).pipe(withSpan("migrateDatabase"));
 };
 
 const migrateD1 = (
@@ -143,7 +160,11 @@ const migrateD1 = (
   folder: string = migrationsFolder,
 ): Effect.Effect<number, RemoteFailure> => {
   const database = connectD1(binding);
-  return migrateDatabase(database, (config) => applyD1MigrationFiles(database, config), folder);
+  return migrateDatabase({
+    apply: async (config) => applyD1MigrationFiles(database, config),
+    database,
+    folder,
+  });
 };
 
 const ALCHEMY_HISTORY_PRESENT =
@@ -170,34 +191,36 @@ const deployedMigrations = <Result>(
   });
 };
 
+const decodeBootstrappedRows = (
+  listed: unknown,
+): Effect.Effect<readonly (typeof BootstrappedRow.Type)[], RemoteFailure> =>
+  Schema.decodeUnknownEffect(Schema.Array(BootstrappedRow))(listed).pipe(
+    Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
+  );
+
 const bootstrapDatabase = <Result>(
-  database: SQLiteAsyncDatabase<"async", Result>,
-  email: typeof Email.Type,
+  input: Readonly<{
+    readonly database: SQLiteAsyncDatabase<"async", Result>;
+    readonly email: typeof Email.Type;
+  }>,
 ): Effect.Effect<void, RemoteFailure> => {
   return Effect.gen(function* bootstrap() {
-    yield* deployedMigrations(database, yield* loadRemoteMigrations());
-    const rows = yield* queryValues(
-      database,
-      bootstrapStatement(email, BOOTSTRAP_KIND.admin, yield* Clock.currentTimeMillis),
-    ).pipe(
-      Effect.flatMap((listed) =>
-        Schema.decodeUnknownEffect(Schema.Array(BootstrappedRow))(listed).pipe(
-          Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })),
-        ),
-      ),
-    );
-    const [row] = rows;
-    if (rows.length !== 1 || row === undefined) {
+    yield* deployedMigrations(input.database, yield* loadRemoteMigrations());
+    const bootstrappedRows = yield* queryValues(
+      input.database,
+      bootstrapStatement(input.email, yield* Clock.currentTimeMillis),
+    ).pipe(Effect.flatMap(decodeBootstrappedRows));
+    const [bootstrappedAdministrator] = bootstrappedRows;
+    if (bootstrappedRows.length !== 1 || bootstrappedAdministrator === undefined) {
       return yield* fail("BOOTSTRAP_REQUIRES_VERIFIED_USER_AND_NO_ADMIN");
     }
-    const [id, address, role, permission] = row;
+    const [administratorId, address, role] = bootstrappedAdministrator;
     yield* Schema.decodeUnknownEffect(BootstrappedAdmin)({
       email: address,
-      id,
-      permission,
+      id: administratorId,
       role,
     }).pipe(Effect.mapError(() => new RemoteFailure({ code: "REMOTE_RESPONSE_INVALID" })));
-  }).pipe(Effect.withSpan("bootstrapDatabase"));
+  }).pipe(withSpan("bootstrapDatabase"));
 };
 
 export {
@@ -208,6 +231,4 @@ export {
   migrateD1,
   migrateDatabase,
   migrationsFolder,
-  parseRemoteInput,
-  remoteDatabase,
 };

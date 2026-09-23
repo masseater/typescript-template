@@ -1,8 +1,7 @@
-import { dirname, join, resolve } from "node:path";
-
 import { zip } from "es-toolkit";
 
 import { matchesGlobSegment } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import {
   EXPORTS_CONDITION_DEPTH_LIMIT,
   MANIFEST_FILE_NAME,
@@ -13,7 +12,7 @@ import { segmentsOf } from "../path-segments.ts";
 import { toPosixPath } from "../posix-path.ts";
 
 const manifestOf = (packageDirectory: string): Readonly<Record<string, unknown>> | null => {
-  const read = readJsonFile(join(packageDirectory, MANIFEST_FILE_NAME));
+  const read = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
   if (read === null || typeof read !== "object" || Array.isArray(read)) return null;
   return read as Readonly<Record<string, unknown>>;
 };
@@ -64,14 +63,15 @@ const declaredEntriesOf = (packageDirectory: string): readonly DeclaredEntry[] =
 
 const MODULE_FILE_NAME = /\.[cm]?[jt]sx?$/u;
 
-const isModuleFile = (path: string): boolean => MODULE_FILE_NAME.test(path) && isFile(path);
+const isModuleFile = (filePath: string): boolean =>
+  MODULE_FILE_NAME.test(filePath) && isFile(filePath);
 
 export const publicEntryFilesOf = (packageDirectory: string): readonly string[] | null => {
   const declared = declaredEntriesOf(packageDirectory);
   if (declared.length === 0) return null;
 
   const files = declared
-    .map((listed) => resolve(packageDirectory, listed.target))
+    .map((listed) => path.resolve(packageDirectory, listed.target))
     .filter(isModuleFile);
   return files.length === 0 ? null : [...new Set(files)];
 };
@@ -101,17 +101,17 @@ export const declaresPublicSubpath = ({
 };
 
 export const owningPackageDirectoryOf = (file: string): string | null => {
-  const directory = dirname(file);
-  if (isFile(join(directory, MANIFEST_FILE_NAME))) return directory;
+  const directory = path.dirname(file);
+  if (isFile(path.join(directory, MANIFEST_FILE_NAME))) return directory;
 
-  const parent = dirname(directory);
+  const parent = path.dirname(directory);
   return parent === directory ? null : owningPackageDirectoryOf(directory);
 };
 
 export const isInsideDirectory = ({
-  path,
+  path: filePath,
   directory,
 }: {
   readonly path: string;
   readonly directory: string;
-}): boolean => toPosixPath(path).startsWith(`${toPosixPath(directory)}/`);
+}): boolean => toPosixPath(filePath).startsWith(`${toPosixPath(directory)}/`);

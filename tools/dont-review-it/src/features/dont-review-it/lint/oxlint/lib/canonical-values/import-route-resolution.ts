@@ -1,10 +1,11 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readFileSync } from "node:fs";
-import { dirname, extname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { attempt } from "es-toolkit";
 import * as ts from "typescript-6";
 
+import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import {
   realPathOf,
@@ -28,7 +29,7 @@ export type ImportRouteQuery = {
 };
 
 const containingFileOf = (query: ImportRouteQuery): string =>
-  resolve(query.repositoryRoot, query.filename);
+  path.resolve(query.repositoryRoot, query.filename);
 
 const configPathAtOrAbove = (input: {
   readonly configName: "jsconfig.json" | "tsconfig.json";
@@ -36,16 +37,16 @@ const configPathAtOrAbove = (input: {
   readonly repositoryRoot: string;
 }): string | undefined => {
   if (!pathIsInside(input.repositoryRoot, input.directory)) return undefined;
-  const candidate = resolve(input.directory, input.configName);
+  const candidate = path.resolve(input.directory, input.configName);
   if (ts.sys.fileExists(candidate)) return candidate;
   if (input.directory === input.repositoryRoot) return undefined;
-  return configPathAtOrAbove({ ...input, directory: dirname(input.directory) });
+  return configPathAtOrAbove({ ...input, directory: path.dirname(input.directory) });
 };
 
 const parsedCompilerOptions = (configPath: string): ts.CompilerOptions | null => {
-  const read = ts.readConfigFile(configPath, (path) => ts.sys.readFile(path));
+  const read = ts.readConfigFile(configPath, (filePath) => ts.sys.readFile(filePath));
   if (read.error !== undefined) return null;
-  return ts.parseJsonConfigFileContent(read.config, ts.sys, dirname(configPath)).options;
+  return ts.parseJsonConfigFileContent(read.config, ts.sys, path.dirname(configPath)).options;
 };
 
 const compilerOptionsFor = (
@@ -53,7 +54,7 @@ const compilerOptionsFor = (
 ): { readonly containingFile: string; readonly options: ts.CompilerOptions } => {
   const containingFile = containingFileOf(query);
   const repositoryRoot = realPathOf(query.repositoryRoot);
-  const directory = realPathOf(dirname(containingFile));
+  const directory = realPathOf(path.dirname(containingFile));
   const configPath =
     configPathAtOrAbove({ configName: "tsconfig.json", directory, repositoryRoot }) ??
     configPathAtOrAbove({ configName: "jsconfig.json", directory, repositoryRoot });
@@ -94,16 +95,16 @@ const relativeModuleLocation = (
   query: ImportRouteQuery,
   resolution: CompilerResolution,
 ): ResolvedModuleLocation => {
-  if (!isRelativeImportSpecifier(query.specifier) && !isAbsolute(query.specifier)) {
+  if (!isRelativeImportSpecifier(query.specifier) && !path.isAbsolute(query.specifier)) {
     return { kind: "unresolved" };
   }
-  const base = isAbsolute(query.specifier)
+  const base = path.isAbsolute(query.specifier)
     ? query.specifier
-    : resolve(dirname(resolution.containingFile), query.specifier);
-  const extensions = extname(base) === "" ? [".ts", ".tsx", ".mts", ".cts"] : [""];
+    : path.resolve(path.dirname(resolution.containingFile), query.specifier);
+  const extensions = path.extname(base) === "" ? [".ts", ".tsx", ".mts", ".cts"] : [""];
   const candidate = extensions
     .map((extension) => `${base}${extension}`)
-    .find((path) => ts.sys.fileExists(path));
+    .find((filePath) => ts.sys.fileExists(filePath));
   return candidate === undefined ? { kind: "unresolved" } : repositoryLocation(query, candidate);
 };
 
@@ -129,9 +130,9 @@ const typescriptModuleLocation = (
 
 const fileUrlLocation = (query: ImportRouteQuery): ResolvedModuleLocation | null => {
   if (!query.specifier.startsWith("file:")) return null;
-  const [failure, path] = attempt(() => fileURLToPath(query.specifier));
-  return failure === null && path !== null
-    ? repositoryLocation(query, path)
+  const [failure, filePath] = attempt(() => fileURLToPath(query.specifier));
+  return failure === null && filePath !== null
+    ? repositoryLocation(query, filePath)
     : { kind: "unresolved" };
 };
 
@@ -163,13 +164,14 @@ const routeMatchesResolvedSource = (input: {
   input.route.specifier === input.query.specifier &&
   input.route.exportName === input.query.importedName &&
   input.route.resolvedSourcePaths.some(
-    (path) => realPathOf(resolve(input.query.repositoryRoot, path)) === input.location.path,
+    (filePath) =>
+      realPathOf(path.resolve(input.query.repositoryRoot, filePath)) === input.location.path,
   );
 
-const declarationExportsName = (path: string, importedName: string): boolean => {
-  if (!/\.d\.[cm]?ts$/u.test(path)) return false;
-  const source = readFileSync(path, "utf8");
-  const sourceFile = ts.createSourceFile(path, source, ts.ScriptTarget.ESNext, true);
+const declarationExportsName = (filePath: string, importedName: string): boolean => {
+  if (!/\.d\.[cm]?ts$/u.test(filePath)) return false;
+  const source = readFileSync(filePath, "utf8");
+  const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.ESNext, true);
   return sourceFile.statements.some((statement) => {
     if (!ts.isVariableStatement(statement)) return false;
     const modifiers = ts.getModifiers(statement);
@@ -219,7 +221,7 @@ const matchesDeclarationPath = (input: {
 }): boolean =>
   input.query.importedName === input.declaration.binding &&
   input.resolvedPath ===
-    realPathOf(resolve(input.query.repositoryRoot, input.declaration.declarationPath));
+    realPathOf(path.resolve(input.query.repositoryRoot, input.declaration.declarationPath));
 
 export const resolvedDirectImportEntries = (
   query: ImportRouteQuery,

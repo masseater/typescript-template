@@ -20,7 +20,6 @@ import { agreementApi, consentGate } from "./agreement-api.ts";
 import { billingApi } from "./billing-api.ts";
 import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
-import { flagsApi } from "./flags-api.ts";
 import { groupsApi } from "./groups-api.ts";
 import { interviewApi } from "./interview-api.ts";
 import { jobsApi } from "./jobs-api.ts";
@@ -38,7 +37,6 @@ import type { Stripe } from "#shared/billing/index.ts";
 import type { Interviewer } from "#shared/interview/server.ts";
 import type { PhotoStore } from "#shared/photo/index.ts";
 import type { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
-import type { FeatureFlags } from "@repo/feature-flags";
 import type { AppServices } from "@repo/runtime";
 import type { ApiRoutes } from "@repo/runtime/http";
 import type { OpsMail } from "./ops-mail.ts";
@@ -47,20 +45,13 @@ const failures = { ...memberFailures, ...apiKeyWriteFailure, ...paidFailures };
 
 function memberApi(
   api: ApiRoutes<
-    | AppServices
-    | FeatureFlags
-    | Interviewer
-    | OpsMail
-    | PhotoStore
-    | ProfileLayoutAssembler
-    | Stripe
+    AppServices | Interviewer | OpsMail | PhotoStore | ProfileLayoutAssembler | Stripe
   >,
 ) {
   return createApi(apiRoot)
     .use(apiDocs(APPLICATION.user))
     .use(accountApi(api))
     .use(contactApi(api))
-    .use(flagsApi(api))
     .use(agreementApi(api))
     .use(onboardingStepApi(api))
     .use(leaveApi(api))

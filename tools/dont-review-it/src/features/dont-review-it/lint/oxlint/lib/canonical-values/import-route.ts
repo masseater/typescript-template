@@ -1,6 +1,6 @@
 import { isBuiltin } from "node:module";
-import { isAbsolute } from "node:path";
 
+import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import {
   isIgnoredRepositoryModule,
@@ -56,7 +56,7 @@ export const importRouteStatus = (
   if (isIgnoredRepositoryModule(query, catalog)) return "external";
   if (registeredEntriesForImportRoute(query, catalog).length !== 0) return "registered";
   if (isRelativeImportSpecifier(query.specifier)) return "unregistered";
-  if (isAbsolute(query.specifier)) {
+  if (path.isAbsolute(query.specifier)) {
     return pathIsInside(query.repositoryRoot, query.specifier) ? "unregistered" : "external";
   }
   if (isKnownRepositorySpecifier(query, catalog)) return "unregistered";

@@ -3,7 +3,7 @@ import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effec
 
 import {
   booleanForVariation,
-  flagDefinitionByKey,
+  flagDefinitionFor,
   flagVariations,
   variationForBoolean,
   type FlagKey,
@@ -32,7 +32,7 @@ const FlagshipWriteConfig = Schema.Struct({
 });
 
 const flagshipFlagUrl = (config: FlagshipWriteConfig, flagKey: FlagKey): string =>
-  `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/flagship/apps/${config.appId}/flags/${flagKey}`;
+  `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/flagship/apps/${config.appId}/flags/${String(flagKey)}`;
 
 const authorization = (config: FlagshipWriteConfig): { readonly Authorization: string } => ({
   Authorization: `Bearer ${Redacted.value(config.authToken)}`,
@@ -70,7 +70,7 @@ const writeFlag = Effect.fn("writeFlag")(function* writeFlag(change: {
   readonly enabled: boolean;
   readonly flagKey: FlagKey;
 }) {
-  const definition = flagDefinitionByKey[change.flagKey];
+  const definition = flagDefinitionFor(change.flagKey);
   const remoteFlag = yield* readFlag(change.config, change.flagKey);
   const defaultVariation = variationForBoolean(change.enabled);
   const requestBody = yield* HttpBody.json({

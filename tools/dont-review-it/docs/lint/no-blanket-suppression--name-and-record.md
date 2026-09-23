@@ -13,7 +13,7 @@ Disallow any lint suppression comment and disallow a repository ledger of approv
 - Suggestions: no
 - Options: no
 - Bundle: `governance`
-- Source: [`no-blanket-suppression--name-and-record.ts`](../../src/lint/oxlint/rules/governance/no-blanket-suppression--name-and-record.ts)
+- Source: [`no-blanket-suppression--name-and-record.ts`](../../src/features/dont-review-it/lint/oxlint/rules/governance/no-blanket-suppression--name-and-record.ts)
 
 <!-- END GENERATED rule-header -->
 

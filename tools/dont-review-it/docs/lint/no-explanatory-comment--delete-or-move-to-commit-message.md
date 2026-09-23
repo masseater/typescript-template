@@ -13,7 +13,7 @@ Disallow comments that explain the code, so reasoning lives in the commit messag
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-explanatory-comment--delete-or-move-to-commit-message.ts`](../../src/lint/oxlint/rules/writing/no-explanatory-comment--delete-or-move-to-commit-message.ts)
+- Source: [`no-explanatory-comment--delete-or-move-to-commit-message.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-explanatory-comment--delete-or-move-to-commit-message.ts)
 
 <!-- END GENERATED rule-header -->
 

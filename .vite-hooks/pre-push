@@ -1,1 +1,3 @@
-vp run -r prepush
+scope="$(node tools/dont-review-it/src/features/dont-review-it/repository/hook-scope.ts prepush)" || scope="-r"
+[ -n "$scope" ] || exit 0
+vp run --concurrency-limit 1 $scope prepush

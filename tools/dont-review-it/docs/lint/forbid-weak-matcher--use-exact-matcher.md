@@ -13,7 +13,7 @@ Disallow a matcher that reads only part of the value or the shape of its subject
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`forbid-weak-matcher--use-exact-matcher.ts`](../../src/lint/oxlint/rules/testing/forbid-weak-matcher--use-exact-matcher.ts)
+- Source: [`forbid-weak-matcher--use-exact-matcher.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/forbid-weak-matcher--use-exact-matcher.ts)
 
 <!-- END GENERATED rule-header -->
 

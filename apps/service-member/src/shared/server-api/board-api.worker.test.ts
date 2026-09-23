@@ -14,7 +14,6 @@ import { BoardThreadCreated, BoardThreadList, BoardThreadView } from "#shared/co
 import { boardApi } from "./board-api.ts";
 
 declare global {
-  // oxlint-disable-next-line typescript/no-namespace
   namespace Cloudflare {
     interface Env {
       readonly EMAIL: {
@@ -44,7 +43,7 @@ type App = ReturnType<typeof boardApp>;
 
 function boardApp() {
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer(appEnvironment(), APPLICATION.user, routes)),
+    Layer.orDie(appLayer({ env: appEnvironment(), audience: APPLICATION.user, routes })),
   );
   const api = apiRoutes(runtime, reporting);
   return createApi(apiRoot).use(accountApi(api)).use(boardApi(api));

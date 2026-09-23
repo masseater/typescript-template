@@ -1,24 +1,33 @@
+import { Schema } from "effect";
+
 const trustedAssociations: ReadonlySet<string> = new Set(["OWNER", "MEMBER", "COLLABORATOR"]);
 
 const canNotNowLimit = 3;
 
-export type IssueRecord = Readonly<{
-  author_association: string;
-  body: string | null;
-  number: number;
-  pull_request?: unknown;
-  title: string;
-}>;
+export const Issue = Schema.Struct({
+  author_association: Schema.String,
+  body: Schema.NullOr(Schema.String),
+  number: Schema.Int,
+  pull_request: Schema.optionalKey(Schema.Unknown),
+  title: Schema.String,
+});
 
-export type CommentRecord = Readonly<{
-  author_association: string;
-  body: string | null;
-  user: Readonly<{ login: string }> | null;
-}>;
+export const Comment = Schema.Struct({
+  author_association: Schema.String,
+  body: Schema.NullOr(Schema.String),
+  user: Schema.NullOr(Schema.Struct({ login: Schema.String })),
+});
 
-export type PullRecord = Readonly<{
-  head: Readonly<{ ref: string; repo: Readonly<{ full_name: string }> | null }>;
-}>;
+export const Pull = Schema.Struct({
+  head: Schema.Struct({
+    ref: Schema.String,
+    repo: Schema.NullOr(Schema.Struct({ full_name: Schema.String })),
+  }),
+});
+
+export type IssueRecord = typeof Issue.Type;
+type CommentRecord = typeof Comment.Type;
+type PullRecord = typeof Pull.Type;
 
 const canNotNowHead = (issueNumber: number): string => `can-not-now/issue-${issueNumber}`;
 

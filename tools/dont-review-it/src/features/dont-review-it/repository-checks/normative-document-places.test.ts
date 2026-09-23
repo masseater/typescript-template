@@ -1,132 +1,123 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { normativeDocumentPlacesIn, normativeDocumentsIn } from "./normative-document-places.ts";
 
 const WITHOUT_A_DECLARATION = { fileName: "AGENTS.md", directories: [] };
 
-describe("normativeDocumentPlacesIn", () => {
-  describe("a repository without a manifest", () => {
-    const it = test.extend("places", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      return normativeDocumentPlacesIn(root);
-    });
+const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown));
 
-    it("names the document every repository is read through, and no place", ({ places }) => {
-      expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
-    });
+const repositoryWithManifest = (manifestText: string | null) =>
+  Effect.gen(function* repositoryWithManifest() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "normative-places-" });
+    if (manifestText !== null) {
+      yield* filesystem.writeFileString(paths.join(root, "package.json"), manifestText);
+    }
+    return root;
+  });
+
+layer(NodeServices.layer)("normativeDocumentPlacesIn", (it) => {
+  describe("a repository without a manifest", () => {
+    it.effect("names the document every repository is read through, and no place", () =>
+      Effect.gen(function* program() {
+        const places = normativeDocumentPlacesIn(yield* repositoryWithManifest(null));
+        expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
+      }),
+    );
   });
 
   describe("a manifest that is not an object", () => {
-    const it = test.extend("places", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "package.json"), "[]", "utf8");
-      return normativeDocumentPlacesIn(root);
-    });
-
-    it("reads it as no declaration", ({ places }) => {
-      expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
-    });
+    it.effect("reads it as no declaration", () =>
+      Effect.gen(function* program() {
+        const places = normativeDocumentPlacesIn(yield* repositoryWithManifest("[]"));
+        expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
+      }),
+    );
   });
 
   describe("a manifest declaring nothing about its norms", () => {
-    const it = test.extend("places", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(join(root, "package.json"), JSON.stringify({ name: "probe" }), "utf8");
-      return normativeDocumentPlacesIn(root);
-    });
-
-    it("reads it as no declaration", ({ places }) => {
-      expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
-    });
+    it.effect("reads it as no declaration", () =>
+      Effect.gen(function* program() {
+        const places = normativeDocumentPlacesIn(
+          yield* repositoryWithManifest(yield* encodeJson({ name: "probe" })),
+        );
+        expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
+      }),
+    );
   });
 
   describe("a declaration naming both the document and the places", () => {
-    const it = test.extend("places", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(
-        join(root, "package.json"),
-        JSON.stringify({
-          normativeDocuments: { fileName: "CONVENTIONS.md", directories: ["docs/norms"] },
-        }),
-        "utf8",
-      );
-      return normativeDocumentPlacesIn(root);
-    });
-
-    it("takes both from the declaration", ({ places }) => {
-      expect(places).toStrictEqual({ fileName: "CONVENTIONS.md", directories: ["docs/norms"] });
-    });
+    it.effect("takes both from the declaration", () =>
+      Effect.gen(function* program() {
+        const places = normativeDocumentPlacesIn(
+          yield* repositoryWithManifest(
+            yield* encodeJson({
+              normativeDocuments: { fileName: "CONVENTIONS.md", directories: ["docs/norms"] },
+            }),
+          ),
+        );
+        expect(places).toStrictEqual({ fileName: "CONVENTIONS.md", directories: ["docs/norms"] });
+      }),
+    );
   });
 
   describe("a declaration whose fields are of the wrong shape", () => {
-    const it = test.extend("places", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(
-        join(root, "package.json"),
-        JSON.stringify({ normativeDocuments: { fileName: 7, directories: "docs/norms" } }),
-        "utf8",
-      );
-      return normativeDocumentPlacesIn(root);
-    });
-
-    it("falls back to what a repository without a declaration gets", ({ places }) => {
-      expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
-    });
+    it.effect("falls back to what a repository without a declaration gets", () =>
+      Effect.gen(function* program() {
+        const places = normativeDocumentPlacesIn(
+          yield* repositoryWithManifest(
+            yield* encodeJson({ normativeDocuments: { fileName: 7, directories: "docs/norms" } }),
+          ),
+        );
+        expect(places).toStrictEqual(WITHOUT_A_DECLARATION);
+      }),
+    );
   });
 
   describe("a declaration listing something that is not a path", () => {
-    const it = test.extend("places", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      writeFileSync(
-        join(root, "package.json"),
-        JSON.stringify({ normativeDocuments: { directories: ["docs/norms", 7] } }),
-        "utf8",
-      );
-      return normativeDocumentPlacesIn(root);
-    });
-
-    it("keeps the paths and drops the rest", ({ places }) => {
-      expect(places).toStrictEqual({ fileName: "AGENTS.md", directories: ["docs/norms"] });
-    });
+    it.effect("keeps the paths and drops the rest", () =>
+      Effect.gen(function* program() {
+        const places = normativeDocumentPlacesIn(
+          yield* repositoryWithManifest(
+            yield* encodeJson({ normativeDocuments: { directories: ["docs/norms", 7] } }),
+          ),
+        );
+        expect(places).toStrictEqual({ fileName: "AGENTS.md", directories: ["docs/norms"] });
+      }),
+    );
   });
 });
 
-describe("normativeDocumentsIn", () => {
+layer(NodeServices.layer)("normativeDocumentsIn", (it) => {
   describe("a place the repository holds at its root and under a workspace", () => {
-    const it = test.extend("documents", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
+    const fixture = Effect.gen(function* documents() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const paths = yield* Path.Path;
+      const root = yield* repositoryWithManifest(null);
+      yield* filesystem.makeDirectory(paths.join(root, "docs/norms/rationales"), {
+        recursive: true,
       });
-      mkdirSync(join(root, "docs/norms/rationales"), { recursive: true });
-      mkdirSync(join(root, "packages/example/docs/norms"), { recursive: true });
-      writeFileSync(join(root, "docs/norms/tests.md"), "# tests\n", "utf8");
-      writeFileSync(join(root, "docs/norms/notes.txt"), "plain\n", "utf8");
-      writeFileSync(join(root, "docs/norms/rationales/why.md"), "# why\n", "utf8");
-      writeFileSync(join(root, "packages/example/docs/norms/local.md"), "# local\n", "utf8");
-      symlinkSync(join(root, "docs/norms/tests.md"), join(root, "docs/norms/linked.md"));
+      yield* filesystem.makeDirectory(paths.join(root, "packages/example/docs/norms"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(paths.join(root, "docs/norms/tests.md"), "# tests\n");
+      yield* filesystem.writeFileString(paths.join(root, "docs/norms/notes.txt"), "plain\n");
+      yield* filesystem.writeFileString(
+        paths.join(root, "docs/norms/rationales/why.md"),
+        "# why\n",
+      );
+      yield* filesystem.writeFileString(
+        paths.join(root, "packages/example/docs/norms/local.md"),
+        "# local\n",
+      );
+      yield* filesystem.symlink(
+        paths.join(root, "docs/norms/tests.md"),
+        paths.join(root, "docs/norms/linked.md"),
+      );
       return normativeDocumentsIn({
         repositoryRoot: root,
         places: { fileName: "AGENTS.md", directories: ["docs/norms"] },
@@ -134,29 +125,27 @@ describe("normativeDocumentsIn", () => {
       });
     });
 
-    it("takes the documents directly in each place, following no link", ({ documents }) => {
-      expect(documents).toStrictEqual([
-        "docs/norms/tests.md",
-        "packages/example/docs/norms/local.md",
-      ]);
-    });
+    it.effect("takes the documents directly in each place, following no link", () =>
+      Effect.gen(function* program() {
+        const documents = yield* fixture;
+        expect(documents).toStrictEqual([
+          "docs/norms/tests.md",
+          "packages/example/docs/norms/local.md",
+        ]);
+      }),
+    );
   });
 
   describe("a place the repository does not hold", () => {
-    const it = test.extend("documents", ({}, { onCleanup }) => {
-      const root = mkdtempSync(join(tmpdir(), "normative-places-"));
-      onCleanup(() => {
-        rmSync(root, { recursive: true, force: true });
-      });
-      return normativeDocumentsIn({
-        repositoryRoot: root,
-        places: { fileName: "AGENTS.md", directories: ["docs/norms"] },
-        workspaceDirectories: [],
-      });
-    });
-
-    it("finds nothing", ({ documents }) => {
-      expect(documents).toStrictEqual([]);
-    });
+    it.effect("finds nothing", () =>
+      Effect.gen(function* program() {
+        const documents = normativeDocumentsIn({
+          repositoryRoot: yield* repositoryWithManifest(null),
+          places: { fileName: "AGENTS.md", directories: ["docs/norms"] },
+          workspaceDirectories: [],
+        });
+        expect(documents).toStrictEqual([]);
+      }),
+    );
   });
 });

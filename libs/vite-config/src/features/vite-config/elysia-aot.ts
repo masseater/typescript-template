@@ -63,6 +63,7 @@ const elysiaAot = (appRoot: string): Plugin => {
       }
       return compiled.resolveId(specifier);
     },
+    transform: (code: string, moduleUrl: string) => compiled.transform(code, moduleUrl),
   };
 };
 

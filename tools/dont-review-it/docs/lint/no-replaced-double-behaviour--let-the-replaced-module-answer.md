@@ -13,7 +13,7 @@ Disallow settling what a double taken from a replaced module hands back, so a re
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-replaced-double-behaviour--let-the-replaced-module-answer.ts`](../../src/lint/oxlint/rules/testing/no-replaced-double-behaviour--let-the-replaced-module-answer.ts)
+- Source: [`no-replaced-double-behaviour--let-the-replaced-module-answer.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-replaced-double-behaviour--let-the-replaced-module-answer.ts)
 
 <!-- END GENERATED rule-header -->
 

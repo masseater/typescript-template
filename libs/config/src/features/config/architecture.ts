@@ -1,10 +1,5 @@
 import { applications } from "./applications.ts";
 
-export const architectureKinds = ["fsd", "modular"] as const;
-export type ArchitectureKind = (typeof architectureKinds)[number];
-
-export const fsdPackages = applications;
-
 export const modularLayers = ["app", "features", "shared"] as const;
 export type ModularLayer = (typeof modularLayers)[number];
 
@@ -16,6 +11,10 @@ export const modularBudgets = {
   shared: 800,
 } as const;
 
+export const architectureKinds = ["fsd", "modular"] as const;
+export type ArchitectureKind = (typeof architectureKinds)[number];
+
+export const fsdPackages = applications;
 const fsdPackageSet: ReadonlySet<string> = new Set(fsdPackages);
 
 export const architectureKindOf = (workspacePath: string): ArchitectureKind | undefined => {

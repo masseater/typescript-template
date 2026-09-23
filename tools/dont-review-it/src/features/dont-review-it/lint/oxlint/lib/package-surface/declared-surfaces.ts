@@ -1,8 +1,7 @@
-import { dirname, join, relative, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { isRecord } from "../../../../dependency-catalog/record-fields.ts";
+import { path } from "../../../../platform/path.ts";
 import {
   EXPORTS_CONDITION_DEPTH_LIMIT,
   MANIFEST_FILE_NAME,
@@ -59,7 +58,7 @@ const declaredFieldsAt = memoize(
     readonly runnableFields: readonly string[];
     readonly importableFields: readonly string[];
   } | null => {
-    const read = readJsonFile(join(packageDirectory, MANIFEST_FILE_NAME));
+    const read = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
     if (!isRecord(read)) return null;
 
     return {
@@ -76,7 +75,7 @@ const withinRepository = (location: {
   readonly repositoryRoot: string;
   readonly path: string;
 }): string => {
-  const within = toPosixPath(relative(location.repositoryRoot, location.path));
+  const within = toPosixPath(path.relative(location.repositoryRoot, location.path));
   return within === "" ? REPOSITORY_ROOT_PACKAGE : within;
 };
 
@@ -84,7 +83,7 @@ export const governingSurfacesOf = (source: {
   readonly cwd: string;
   readonly filename: string;
 }): PackageSurfaces | null => {
-  const fileDirectory = dirname(resolve(source.cwd, source.filename));
+  const fileDirectory = path.dirname(path.resolve(source.cwd, source.filename));
   const repositoryRoot = findWorkspaceRoot(fileDirectory);
   const packageDirectory = nearestPackageDirectory(fileDirectory, repositoryRoot);
   if (packageDirectory === null) return null;
@@ -97,7 +96,7 @@ export const governingSurfacesOf = (source: {
       declared.packageName ?? withinRepository({ repositoryRoot, path: packageDirectory }),
     manifestPath: withinRepository({
       repositoryRoot,
-      path: join(packageDirectory, MANIFEST_FILE_NAME),
+      path: path.join(packageDirectory, MANIFEST_FILE_NAME),
     }),
     runnableFields: declared.runnableFields,
     importableFields: declared.importableFields,

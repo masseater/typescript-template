@@ -13,7 +13,7 @@ Disallow assembling the subject of an assertion in the assertion itself or in a 
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-expect-synthetic-subject--yield-from-fixture.ts`](../../src/lint/oxlint/rules/testing/no-expect-synthetic-subject--yield-from-fixture.ts)
+- Source: [`no-expect-synthetic-subject--yield-from-fixture.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-expect-synthetic-subject--yield-from-fixture.ts)
 
 <!-- END GENERATED rule-header -->
 

@@ -1,10 +1,8 @@
-import { audienceRoles, type Application } from "@repo/config";
+import { APPLICATION, type Application } from "@repo/config";
 import {
-  ACCOUNT_STATE,
   AUTHENTICATION_METHOD,
   ROLE,
   strongAuthenticationMethods,
-  type AccountState,
   type AuthenticationMethod,
 } from "@repo/config/identity";
 import { APIError } from "better-auth/api";
@@ -22,18 +20,11 @@ const enrollmentPaths = new Set([
   "/passkey/verify-authentication",
 ]);
 
-function deny(denial: string): never {
-  throw new APIError("FORBIDDEN", { message: denial });
-}
-
 const strongMethods: ReadonlySet<string> = new Set(strongAuthenticationMethods);
 
 const isStrongMethod = (method: string): boolean => strongMethods.has(method);
 
-const SECONDS_PER_MINUTE = 60;
-const MILLISECONDS_PER_SECOND = 1000;
-const STEP_UP_MINUTES = 10;
-const STEP_UP_MILLISECONDS = STEP_UP_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const STEP_UP_MILLISECONDS = 10 * 60 * 1000;
 
 const isRecentlyStrong = (
   sessionRecord: {
@@ -54,9 +45,7 @@ const sessionIsLive = (
       readonly securityVersion: number;
     };
     readonly user: {
-      readonly accountState: AccountState;
       readonly emailVerified: boolean;
-      readonly role: string;
       readonly securityVersion: number;
     };
   },
@@ -65,11 +54,7 @@ const sessionIsLive = (
   sessionRecord.session.expiresAt.getTime() > DateTime.toEpochMillis(DateTime.nowUnsafe()) &&
   sessionRecord.session.audience === audience &&
   sessionRecord.session.securityVersion === sessionRecord.user.securityVersion &&
-  sessionRecord.user.emailVerified &&
-  sessionRecord.user.accountState === ACCOUNT_STATE.active &&
-  sessionRecord.user.role === audienceRoles[audience];
-
-const isPrivilegedRole = (role: string): boolean => role !== ROLE.member;
+  sessionRecord.user.emailVerified;
 
 const authenticationMethodsByPath = new Map<string, AuthenticationMethod>([
   ["/passkey/verify-authentication", AUTHENTICATION_METHOD.passkey],
@@ -81,25 +66,21 @@ const authenticationMethodFor = (path: string | undefined): AuthenticationMethod
   (path === undefined ? undefined : authenticationMethodsByPath.get(path)) ??
   AUTHENTICATION_METHOD.password;
 
+const deny = (denial: string): never => {
+  throw new APIError("FORBIDDEN", { message: denial });
+};
+
 const assertEligibleUser: <
-  TUser extends {
-    readonly accountState: AccountState;
-    readonly emailVerified: boolean;
-    readonly role: string;
-  },
+  TUser extends { readonly emailVerified: boolean; readonly role: string },
 >(
   eligibleUser: TUser | undefined,
   audience: Application,
 ) => asserts eligibleUser is TUser = (eligibleUser, audience) => {
-  if (eligibleUser === undefined || !eligibleUser.emailVerified) {
-    deny("VERIFIED_EMAIL_REQUIRED");
+  const verified = eligibleUser?.emailVerified === true;
+  if (verified && (audience === APPLICATION.user || eligibleUser.role === ROLE.administrator)) {
+    return;
   }
-  if (eligibleUser.accountState !== ACCOUNT_STATE.active) {
-    deny("ACCOUNT_SUSPENDED");
-  }
-  if (eligibleUser.role !== audienceRoles[audience]) {
-    deny("ROLE_REQUIRED");
-  }
+  deny(verified ? "ADMIN_REQUIRED" : "VERIFIED_EMAIL_REQUIRED");
 };
 
 export {
@@ -107,7 +88,6 @@ export {
   authenticationMethodFor,
   deny,
   enrollmentPaths,
-  isPrivilegedRole,
   isRecentlyStrong,
   isStrongMethod,
   sessionIsLive,

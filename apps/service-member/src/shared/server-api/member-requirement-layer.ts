@@ -1,4 +1,3 @@
-import { configuredFeatureFlagsLayer } from "@repo/feature-flags";
 import { readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
@@ -10,15 +9,7 @@ import { opsMailLayer } from "./ops-mail.ts";
 
 function memberRequirementLayer(environment: unknown) {
   return Layer.mergeAll(
-    Layer.unwrap(
-      readWorkerConfig(environment).pipe(
-        Effect.flatMap((config) =>
-          configuredFeatureFlagsLayer(config).pipe(
-            Effect.map((flags) => Layer.mergeAll(opsMailLayer(config), flags)),
-          ),
-        ),
-      ),
-    ),
+    Layer.unwrap(readWorkerConfig(environment).pipe(Effect.map((config) => opsMailLayer(config)))),
     Interviewer.fromEnvironment(environment),
     PhotoStore.fromFileStore(),
     ProfileLayoutAssembler.fromEnvironment(environment),

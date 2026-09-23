@@ -3,7 +3,7 @@ title: HTTP
 description: ブラウザとサーバが、要求と応答と計時を往復させるプロトコル
 ---
 
-HTTP は、ブラウザとサーバが要求と応答を往復させるプロトコルである。状態コードは応答の意味を一つに決め、所要時間は送り始めから応答を受け終わるまでである。どの状態コードを選ぶかは [観測性](/guidelines/observability) が持つ。
+HTTP は、ブラウザとサーバが要求と応答を往復させるプロトコルである。状態コードは応答の意味を一つに決め、所要時間は送り始めから応答を受け終わるまでである。どの状態コードを選ぶかは `.claude/skills/reviews/references/observability.md` が持つ。
 
 ```http
 GET /users/123 HTTP/1.1

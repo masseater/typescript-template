@@ -13,7 +13,7 @@ Require every report from the rules that keep one declaration in one place to en
 - Suggestions: no
 - Options: yes
 - Bundle: `governance`
-- Source: [`no-silent-suppression--fix-or-justify-inline.ts`](../../src/lint/oxlint/rules/governance/no-silent-suppression--fix-or-justify-inline.ts)
+- Source: [`no-silent-suppression--fix-or-justify-inline.ts`](../../src/features/dont-review-it/lint/oxlint/rules/governance/no-silent-suppression--fix-or-justify-inline.ts)
 
 <!-- END GENERATED rule-header -->
 

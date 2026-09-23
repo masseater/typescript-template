@@ -1,52 +1,60 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { setupModuleReachedBy, spelledPathOf } from "./setup-module-verdict.ts";
 
-describe("spelledPathOf", () => {
+layer(NodeServices.layer)("spelledPathOf", (it) => {
   describe("a file outside the workspace", () => {
-    const it = test
-      .extend("directoryOutsideAnyPackage", ({}, { onCleanup }) => {
-        const root = mkdtempSync(join(tmpdir(), "setup-modules-verdict-"));
-        onCleanup(() => {
-          rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const paths = yield* Path.Path;
+      const directoryOutsideAnyPackage = yield* Effect.gen(function* directoryOutsideAnyPackage() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({
+          prefix: "setup-modules-verdict-",
         });
-        return root;
-      })
-      .extend("spelledPath", ({ directoryOutsideAnyPackage }) =>
-        spelledPathOf({
-          file: join(directoryOutsideAnyPackage, "held.ts"),
-          workspaceRoot: "/elsewhere",
-        }),
-      );
 
-    it("is spelled by the whole path to it", ({ spelledPath, directoryOutsideAnyPackage }) => {
-      expect(spelledPath).toBe(join(directoryOutsideAnyPackage, "held.ts"));
+        return root;
+      });
+      const spelledPath = spelledPathOf({
+        file: paths.join(directoryOutsideAnyPackage, "held.ts"),
+        workspaceRoot: "/elsewhere",
+      });
+      return { directoryOutsideAnyPackage, spelledPath };
     });
+
+    it.effect("is spelled by the whole path to it", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { spelledPath, directoryOutsideAnyPackage } = yield* fixtures;
+        expect(spelledPath).toBe(paths.join(directoryOutsideAnyPackage, "held.ts"));
+      }),
+    );
   });
 });
 
-describe("setupModuleReachedBy", () => {
+layer(NodeServices.layer)("setupModuleReachedBy", (it) => {
   describe("a module belonging to no package at all", () => {
-    const it = test
-      .extend("directoryOutsideAnyPackage", ({}, { onCleanup }) => {
-        const root = mkdtempSync(join(tmpdir(), "setup-modules-verdict-"));
-        onCleanup(() => {
-          rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const directoryOutsideAnyPackage = yield* Effect.gen(function* directoryOutsideAnyPackage() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({
+          prefix: "setup-modules-verdict-",
         });
+
         return root;
-      })
-      .extend("verdictOnForbiddenName", ({ directoryOutsideAnyPackage }) => {
-        writeFileSync(
-          join(directoryOutsideAnyPackage, "helpers.ts"),
+      });
+      const verdictOnForbiddenName = yield* Effect.gen(function* verdictOnForbiddenName() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        yield* filesystem.writeFileString(
+          paths.join(directoryOutsideAnyPackage, "helpers.ts"),
           "export const build = () => 1;\n",
         );
         return setupModuleReachedBy({
           specifier: "./helpers.ts",
-          fromFile: join(directoryOutsideAnyPackage, "loose.test.ts"),
+          fromFile: paths.join(directoryOutsideAnyPackage, "loose.test.ts"),
           policy: {
             workspaceRoot: "/elsewhere",
             namePatterns: ["*helper*"],
@@ -55,33 +63,42 @@ describe("setupModuleReachedBy", () => {
           },
         });
       });
-
-    it("is judged by its name alone", ({ verdictOnForbiddenName, directoryOutsideAnyPackage }) => {
-      expect(verdictOnForbiddenName).toStrictEqual({
-        path: join(directoryOutsideAnyPackage, "helpers.ts"),
-        relays: [],
-        reason: "forbiddenName",
-      });
+      return { directoryOutsideAnyPackage, verdictOnForbiddenName };
     });
+
+    it.effect("is judged by its name alone", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { verdictOnForbiddenName, directoryOutsideAnyPackage } = yield* fixtures;
+        expect(verdictOnForbiddenName).toStrictEqual({
+          path: paths.join(directoryOutsideAnyPackage, "helpers.ts"),
+          relays: [],
+          reason: "forbiddenName",
+        });
+      }),
+    );
   });
 
   describe("a module belonging to no package and named as nothing in particular", () => {
-    const it = test
-      .extend("directoryOutsideAnyPackage", ({}, { onCleanup }) => {
-        const root = mkdtempSync(join(tmpdir(), "setup-modules-verdict-"));
-        onCleanup(() => {
-          rmSync(root, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const directoryOutsideAnyPackage = yield* Effect.gen(function* directoryOutsideAnyPackage() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const root = yield* filesystem.makeTempDirectoryScoped({
+          prefix: "setup-modules-verdict-",
         });
+
         return root;
-      })
-      .extend("verdictOnNeutralName", ({ directoryOutsideAnyPackage }) => {
-        writeFileSync(
-          join(directoryOutsideAnyPackage, "neutral.ts"),
+      });
+      const verdictOnNeutralName = yield* Effect.gen(function* verdictOnNeutralName() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        yield* filesystem.writeFileString(
+          paths.join(directoryOutsideAnyPackage, "neutral.ts"),
           "export const held = () => 1;\n",
         );
         return setupModuleReachedBy({
           specifier: "./neutral.ts",
-          fromFile: join(directoryOutsideAnyPackage, "loose.test.ts"),
+          fromFile: paths.join(directoryOutsideAnyPackage, "loose.test.ts"),
           policy: {
             workspaceRoot: "/elsewhere",
             namePatterns: ["*helper*"],
@@ -90,9 +107,14 @@ describe("setupModuleReachedBy", () => {
           },
         });
       });
-
-    it("is left undecided", ({ verdictOnNeutralName }) => {
-      expect(verdictOnNeutralName).toBe(null);
+      return { directoryOutsideAnyPackage, verdictOnNeutralName };
     });
+
+    it.effect("is left undecided", () =>
+      Effect.gen(function* program() {
+        const { verdictOnNeutralName } = yield* fixtures;
+        expect(verdictOnNeutralName).toBe(null);
+      }),
+    );
   });
 });

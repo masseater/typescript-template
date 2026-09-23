@@ -3,8 +3,8 @@ import { redirect } from "@tanstack/react-router";
 import { Effect } from "effect";
 
 import { blocksMember, loadAgreements } from "#entities/agreement/index.ts";
-import { onboardingOptions } from "#pages/account/welcome/index.ts";
-import { loadMemberFlags } from "#pages/flags/index.ts";
+import { loadSession } from "#entities/session/index.ts";
+import { loadOnboardingStep, onboardingOptions } from "#pages/account/welcome/index.ts";
 import { loadRecoveryOffer } from "#pages/recovery/index.ts";
 
 import type { Agreements } from "#entities/agreement/index.ts";
@@ -25,8 +25,16 @@ const welcomePath = {
 
 const recoveryPath = "/welcome/recovery";
 
-function currentSession(queries: QueryClient): Promise<Session | undefined> {
-  return queries.fetchQuery(sessionOptions);
+async function currentSession(queries: QueryClient): Promise<Session | undefined> {
+  const session = await loadSession();
+  queries.setQueryData(sessionOptions.queryKey, session);
+  return session;
+}
+
+async function currentOnboardingStep(queries: QueryClient): Promise<OnboardingStep> {
+  const step = await loadOnboardingStep();
+  queries.setQueryData(onboardingOptions.queryKey, step);
+  return step;
 }
 
 function enterPublicFrame(queries: QueryClient, pathname: string): Promise<void> {
@@ -47,14 +55,14 @@ function enterMemberFrame(
   queries: QueryClient,
   href: string,
   pathname: string,
-): Promise<{ agreements: Agreements; memberBoard: boolean; session: Session }> {
+): Promise<{ agreements: Agreements; session: Session }> {
   return Effect.runPromise(
     Effect.gen(function* enterMember() {
       const session = yield* Effect.promise(() => currentSession(queries));
       if (session === undefined) {
         throw redirect({ href: loginPath(href) });
       }
-      const step = yield* Effect.promise(() => queries.fetchQuery(onboardingOptions));
+      const step = yield* Effect.promise(() => currentOnboardingStep(queries));
       if (step !== "done") {
         const offer = yield* Effect.promise(() => loadRecoveryOffer());
         if (offer.available) {
@@ -69,8 +77,7 @@ function enterMemberFrame(
       if (blocksMember(agreements.pending) && pathname !== agreementPath) {
         throw redirect({ search: { redirect: href }, to: agreementPath });
       }
-      const memberBoard = yield* Effect.promise(() => loadMemberFlags());
-      return { agreements, memberBoard, session };
+      return { agreements, session };
     }),
   );
 }
@@ -86,7 +93,7 @@ function enterWelcomeFrame(
       if (session === undefined) {
         throw redirect({ href: loginPath(href) });
       }
-      const step = yield* Effect.promise(() => queries.fetchQuery(onboardingOptions));
+      const step = yield* Effect.promise(() => currentOnboardingStep(queries));
       if (step === "done") {
         throw redirect({ to: "/home" });
       }

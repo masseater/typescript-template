@@ -13,7 +13,7 @@ Disallow defining a finite value set inside a file that does not own it, so one 
 - Suggestions: no
 - Options: yes
 - Bundle: `single-ownership`
-- Source: [`no-local-finite-value-set--use-or-register-canonical-values.ts`](../../src/lint/oxlint/rules/single-ownership/no-local-finite-value-set--use-or-register-canonical-values.ts)
+- Source: [`no-local-finite-value-set--use-or-register-canonical-values.ts`](../../src/features/dont-review-it/lint/oxlint/rules/single-ownership/no-local-finite-value-set--use-or-register-canonical-values.ts)
 
 <!-- END GENERATED rule-header -->
 
@@ -37,6 +37,8 @@ An owner is registered with a `@canonical-values` JSDoc directly above a single 
 Delete the local values and derive the schema, the type and the membership check from the owner's binding, imported through a registered route.
 
 Where no owner exists, register the runtime values in the module that owns the concept. Where a dependency already owns the vocabulary, derive from its published type.
+
+Where the values overlap an owner, derive the shared values from it. Where the set names a different concept that only shares values with an owner, register the whole set as a separate concept in the module that owns it.
 
 <!-- BEGIN GENERATED examples -->
 
@@ -82,7 +84,7 @@ export type Status = "draft" | "published";
 | `localFiniteValueSetWithOwnerCandidates` | Defining a finite value set inside a file that does not own it is forbidden. Delete the local values and derive them from the matching owner among {{owners}}. Ownership policy: {{ownershipPolicy}}. |
 | `localFiniteValueSetWithoutOwner` | Defining a finite value set without an owner is forbidden. Register the runtime values in the module that owns the concept. Ownership policy: {{ownershipPolicy}}. |
 | `localFiniteValueSetSubsetOfOwner` | Defining part of a declared vocabulary as a new finite value set is forbidden. Derive the subset from {{owners}}, for example with Extract or the schema's extract, instead of spelling the values again. Ownership policy: {{ownershipPolicy}}. |
-| `localFiniteValueSetOverlapsOwner` | Defining a finite value set without an owner is forbidden. {{sharedValues}} already belong to {{owners}}: derive from that owner when this is the same concept, otherwise register these runtime values as a separate concept. Ownership policy: {{ownershipPolicy}}. |
+| `localFiniteValueSetOverlapsOwner` | Defining a finite value set without an owner is forbidden. Derive {{sharedValues}} from {{owners}} and register the remaining runtime values in the module that owns the concept. Ownership policy: {{ownershipPolicy}}. |
 | `localFiniteValueSetOwnedByLibraryType` | Defining a finite value set that a dependency already owns is forbidden. Delete the local values and derive the type from {{owner}}. Ownership policy: {{ownershipPolicy}}. |
 | `localFiniteValueSetOwnedByLibraryTypeCandidates` | Defining a finite value set that dependencies already own is forbidden. Delete the local values and derive the type from the matching owner among {{owners}}. Ownership policy: {{ownershipPolicy}}. |
 | `unregisteredCanonicalValuesImportRoute` | Feeding a finite value set from an unregistered repository route is forbidden. \`{{name}}\` from \`{{specifier}}\` has neither a registered public export path nor an annotated declaration. Register the owner and import its registered binding. |

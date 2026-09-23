@@ -13,7 +13,7 @@ Disallow text written out in the source at an identity argument of a client buil
 - Suggestions: no
 - Options: no
 - Bundle: `writing`
-- Source: [`no-hardcoded-provider-id--read-from-configuration.ts`](../../src/lint/oxlint/rules/writing/no-hardcoded-provider-id--read-from-configuration.ts)
+- Source: [`no-hardcoded-provider-id--read-from-configuration.ts`](../../src/features/dont-review-it/lint/oxlint/rules/writing/no-hardcoded-provider-id--read-from-configuration.ts)
 
 <!-- END GENERATED rule-header -->
 

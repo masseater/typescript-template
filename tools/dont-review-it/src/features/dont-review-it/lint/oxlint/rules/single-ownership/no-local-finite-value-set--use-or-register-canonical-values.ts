@@ -166,7 +166,7 @@ export const createNoLocalFiniteValueSet = ({
       docs: {
         description:
           "Disallow defining a finite value set inside a file that does not own it, so one place declares the vocabulary and every other place derives from it",
-        relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
+        relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
       },
       messages: {
         localFiniteValueSetWithOwner:
@@ -178,7 +178,7 @@ export const createNoLocalFiniteValueSet = ({
         localFiniteValueSetSubsetOfOwner:
           "Defining part of a declared vocabulary as a new finite value set is forbidden. Derive the subset from {{owners}}, for example with Extract or the schema's extract, instead of spelling the values again. Ownership policy: {{ownershipPolicy}}.",
         localFiniteValueSetOverlapsOwner:
-          "Defining a finite value set without an owner is forbidden. {{sharedValues}} already belong to {{owners}}: derive from that owner when this is the same concept, otherwise register these runtime values as a separate concept. Ownership policy: {{ownershipPolicy}}.",
+          "Defining a finite value set without an owner is forbidden. Derive {{sharedValues}} from {{owners}} and register the remaining runtime values in the module that owns the concept. Ownership policy: {{ownershipPolicy}}.",
         localFiniteValueSetOwnedByLibraryType:
           "Defining a finite value set that a dependency already owns is forbidden. Delete the local values and derive the type from {{owner}}. Ownership policy: {{ownershipPolicy}}.",
         localFiniteValueSetOwnedByLibraryTypeCandidates:

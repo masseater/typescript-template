@@ -1,53 +1,44 @@
-import { assert, describe, it } from "@effect/vitest";
-import { Effect, Encoding, Result } from "effect";
+import { Encoding, Result } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
 import { emailChangeTarget } from "./verification-token.ts";
 
-const claimsToken = (claims: unknown): string =>
-  `hdr.${Encoding.encodeBase64Url(JSON.stringify(claims))}.sig`;
-
 describe("emailChangeTarget", () => {
-  it.effect("treats a decoded token without updateTo as signup verification", () =>
-    Effect.sync(() => {
-      const target = emailChangeTarget(claimsToken({}));
-      assert.isTrue(Result.isSuccess(target));
-      if (Result.isFailure(target)) {
-        return;
-      }
-      assert.isUndefined(target.success);
-    }),
-  );
+  describe("a decoded token without updateTo", () => {
+    const it = test.extend("signupDestination", () =>
+      emailChangeTarget(`hdr.${Encoding.encodeBase64Url(JSON.stringify({}))}.sig`));
 
-  it.effect("returns the email-change destination when updateTo is present", () =>
-    Effect.sync(() => {
-      const target = emailChangeTarget(claimsToken({ updateTo: "next@example.com" }));
-      assert.isTrue(Result.isSuccess(target));
-      if (Result.isFailure(target)) {
-        return;
-      }
-      assert.strictEqual(target.success, "next@example.com");
-    }),
-  );
+    it("treats the token as signup verification", ({ signupDestination }) => {
+      expect(signupDestination).toStrictEqual(Result.succeed(undefined));
+    });
+  });
 
-  it.effect("fails closed when the claims segment cannot be decoded", () =>
-    Effect.sync(() => {
-      const target = emailChangeTarget("hdr.!!!not-base64!!!.sig");
-      assert.isTrue(Result.isFailure(target));
-      if (Result.isSuccess(target)) {
-        return;
-      }
-      assert.strictEqual(target.failure._tag, "VerificationTokenInvalid");
-    }),
-  );
+  describe("a decoded token carrying updateTo", () => {
+    const it = test.extend("emailChangeDestination", () =>
+      emailChangeTarget(
+        `hdr.${Encoding.encodeBase64Url(JSON.stringify({ updateTo: "next@example.com" }))}.sig`,
+      ));
 
-  it.effect("fails closed when the token has no claims segment", () =>
-    Effect.sync(() => {
-      const target = emailChangeTarget("opaque-token");
-      assert.isTrue(Result.isFailure(target));
-      if (Result.isSuccess(target)) {
-        return;
-      }
-      assert.strictEqual(target.failure._tag, "VerificationTokenInvalid");
-    }),
-  );
+    it("returns the email-change destination", ({ emailChangeDestination }) => {
+      expect(emailChangeDestination).toStrictEqual(Result.succeed("next@example.com"));
+    });
+  });
+
+  describe("a token whose claims segment cannot be decoded", () => {
+    const it = test.extend("undecodableClaimsRefusal", () =>
+      Result.mapError(emailChangeTarget("hdr.!!!not-base64!!!.sig"), (refusal) => refusal._tag));
+
+    it("fails closed", ({ undecodableClaimsRefusal }) => {
+      expect(undecodableClaimsRefusal).toStrictEqual(Result.fail("VerificationTokenInvalid"));
+    });
+  });
+
+  describe("a token with no claims segment", () => {
+    const it = test.extend("opaqueTokenRefusal", () =>
+      Result.mapError(emailChangeTarget("opaque-token"), (refusal) => refusal._tag));
+
+    it("fails closed", ({ opaqueTokenRefusal }) => {
+      expect(opaqueTokenRefusal).toStrictEqual(Result.fail("VerificationTokenInvalid"));
+    });
+  });
 });

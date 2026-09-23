@@ -1,3 +1,4 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { execFileSync } from "node:child_process";
 
 import { attempt, omitBy } from "es-toolkit";

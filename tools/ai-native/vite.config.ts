@@ -52,6 +52,7 @@ export default defineConfig({
       "src/features/ai-native/spool/cli.ts",
       "src/features/ai-native/sync-base/cli.ts",
       "src/features/ai-native/unabridged/cli.ts",
+      "src/features/ai-native/worktree-home/cli.ts",
     ],
     dts: { generator: "tsgo" },
   },

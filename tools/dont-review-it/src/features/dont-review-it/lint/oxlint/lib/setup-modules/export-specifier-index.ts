@@ -1,7 +1,6 @@
-import { dirname, join, resolve } from "node:path";
-
 import { groupBy, uniq, uniqBy } from "es-toolkit";
 
+import { path } from "../../../../platform/path.ts";
 import {
   EXPORTS_CONDITION_DEPTH_LIMIT,
   MANIFEST_FILE_NAME,
@@ -19,7 +18,7 @@ const subpathTargetPairsOf = (
 ): readonly (readonly [string, string])[] => {
   if (typeof exportTarget === "string") {
     if (!exportTarget.startsWith("./") || exportTarget.endsWith(".d.ts")) return [];
-    return [[subpath, resolve(packageDirectory, exportTarget)]];
+    return [[subpath, path.resolve(packageDirectory, exportTarget)]];
   }
   if (depth > EXPORTS_CONDITION_DEPTH_LIMIT) return [];
   if (exportTarget === null || typeof exportTarget !== "object" || Array.isArray(exportTarget)) {
@@ -58,7 +57,7 @@ const exportSpecifierOf = (packageName: string, subpath: string): string =>
 const manifestSurfaceOf = (
   packageDirectory: string,
 ): { readonly packageName: string; readonly exportsField: unknown } | null => {
-  const manifest = readJsonFile(join(packageDirectory, MANIFEST_FILE_NAME));
+  const manifest = readJsonFile(path.join(packageDirectory, MANIFEST_FILE_NAME));
   if (manifest === null || typeof manifest !== "object") return null;
   if (!("name" in manifest) || typeof manifest.name !== "string" || manifest.name.length === 0) {
     return null;
@@ -78,15 +77,15 @@ const RELATIVE_SPECIFIER_PATTERN = /^\.\.?\//u;
 
 const resolveRelativeSpecifier = (fromFile: string, specifier: string): string | null => {
   if (!RELATIVE_SPECIFIER_PATTERN.test(specifier)) return null;
-  const base = resolve(dirname(fromFile), specifier);
+  const base = path.resolve(path.dirname(fromFile), specifier);
   const candidates = [
     base,
     base.replace(/\.js$/u, ".ts"),
     base.replace(/\.mjs$/u, ".mts"),
     `${base}.ts`,
     `${base}.tsx`,
-    join(base, "index.ts"),
-    join(base, "index.tsx"),
+    path.join(base, "index.ts"),
+    path.join(base, "index.tsx"),
   ];
   return candidates.find(isFile) ?? null;
 };

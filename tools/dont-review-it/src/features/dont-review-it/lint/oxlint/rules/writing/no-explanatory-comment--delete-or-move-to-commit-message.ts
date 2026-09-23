@@ -25,7 +25,7 @@ export const noExplanatoryComment = createDontReviewItRule({
     docs: {
       description:
         "Disallow comments that explain the code, so reasoning lives in the commit message instead of drifting beside an implementation that moves on without it",
-      relatedGuidelines: ["apps/internal-dashboard/content/docs/guidelines/writing-code.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/writing-code.md"],
     },
     messages: {
       explanatoryComment:

@@ -8,7 +8,7 @@ import {
   minimumAuthSecretLength,
 } from "@repo/config";
 import { workerCompatibility } from "@repo/config/worker";
-import { maximumAlertRecipients } from "@repo/monitor";
+import { Recipients } from "@repo/monitor";
 import { otlpSignalUrl } from "@repo/observability";
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { hstsIncludesSubdomains, hstsMaxAgeSeconds } from "@repo/runtime/security";
@@ -53,6 +53,7 @@ function fail(
 const MIN_AUTH_SECRET_VARIETY = 16;
 const CONFIRMATION_LENGTH = 16;
 const CONFIRMATION_PATTERN = new RegExp(`^[0-9a-f]{${CONFIRMATION_LENGTH}}$`, "u");
+const Confirmation = Schema.String.check(Schema.isPattern(CONFIRMATION_PATTERN));
 
 const Positive = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThan(0));
 const Prefix = Schema.String.check(Schema.isPattern(/^[a-z][a-z0-9-]{2,35}$/u));
@@ -73,7 +74,6 @@ const Domain = Schema.String.check(
 const HttpsUrl = Schema.String.check(
   Schema.makeFilter((value: string) => URL.parse(value)?.protocol === "https:"),
 );
-const Recipients = Schema.Array(Email).check(Schema.isLengthBetween(1, maximumAlertRecipients));
 const observabilitySampling = 1;
 const AuthSecret = Schema.String.check(
   Schema.isMinLength(minimumAuthSecretLength),
@@ -182,7 +182,7 @@ const DeployCommand = Schema.Tuple([
   Schema.Literal("deploy"),
   Schema.Literals(stackNames),
   Schema.Literal("--confirm-plan"),
-  Schema.String.check(Schema.isPattern(CONFIRMATION_PATTERN)),
+  Confirmation,
 ]);
 const DeploymentCommand = Schema.Union([PlanCommand, DeployAllCommand, DeployCommand]);
 
@@ -231,6 +231,7 @@ export {
   AuthSecret,
   CONFIRMATION_LENGTH,
   CloudflareFailure,
+  Confirmation,
   Domain,
   Email,
   HttpsUrl,

@@ -13,7 +13,7 @@ Require every path registered as untrackable to stay out of the tracked file lis
 - Suggestions: no
 - Options: yes
 - Bundle: `toolchain`
-- Source: [`forbid-tracked-path--untrack-and-ignore.ts`](../../src/lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.ts)
+- Source: [`forbid-tracked-path--untrack-and-ignore.ts`](../../src/features/dont-review-it/lint/oxlint/rules/toolchain/forbid-tracked-path--untrack-and-ignore.ts)
 
 <!-- END GENERATED rule-header -->
 

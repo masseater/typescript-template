@@ -13,7 +13,7 @@ Disallow a catch clause whose body carries no statement, so catching a failure i
 - Suggestions: no
 - Options: no
 - Bundle: `mutation-and-failure`
-- Source: [`no-empty-catch--throw-or-handle.ts`](../../src/lint/oxlint/rules/mutation-and-failure/no-empty-catch--throw-or-handle.ts)
+- Source: [`no-empty-catch--throw-or-handle.ts`](../../src/features/dont-review-it/lint/oxlint/rules/mutation-and-failure/no-empty-catch--throw-or-handle.ts)
 
 <!-- END GENERATED rule-header -->
 

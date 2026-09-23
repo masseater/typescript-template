@@ -13,7 +13,7 @@ Disallow a declaration whose body is spelled exactly as another declaration else
 - Suggestions: no
 - Options: no
 - Bundle: `single-ownership`
-- Source: [`no-duplicated-body--import-the-existing-declaration.ts`](../../src/lint/oxlint/rules/single-ownership/no-duplicated-body--import-the-existing-declaration.ts)
+- Source: [`no-duplicated-body--import-the-existing-declaration.ts`](../../src/features/dont-review-it/lint/oxlint/rules/single-ownership/no-duplicated-body--import-the-existing-declaration.ts)
 
 <!-- END GENERATED rule-header -->
 

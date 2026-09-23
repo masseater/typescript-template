@@ -13,7 +13,7 @@ Disallow clearing, resetting, restoring or releasing mock state by hand, so the 
 - Suggestions: no
 - Options: yes
 - Bundle: `testing`
-- Source: [`no-redundant-mock-reset--lift-mocks-into-fixture.ts`](../../src/lint/oxlint/rules/testing/no-redundant-mock-reset--lift-mocks-into-fixture.ts)
+- Source: [`no-redundant-mock-reset--lift-mocks-into-fixture.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/no-redundant-mock-reset--lift-mocks-into-fixture.ts)
 
 <!-- END GENERATED rule-header -->
 

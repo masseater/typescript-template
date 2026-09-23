@@ -1,9 +1,8 @@
-import { dirname, resolve } from "node:path";
-
 import { uniqBy } from "es-toolkit";
 import * as ts from "typescript-6";
 
 import { measureStage } from "../../../../lint-rule-authoring/index.ts";
+import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 
 type ProgramInput = {
@@ -17,7 +16,7 @@ export const canonicalValuesTypeScriptConfigPath = (
   input: Pick<ProgramInput, "repositoryRoot" | "searchDirectory">,
 ): string | null =>
   ts.findConfigFile(input.searchDirectory, (candidate) => {
-    const absoluteCandidate = resolve(candidate);
+    const absoluteCandidate = path.resolve(candidate);
     return (
       pathIsInside(input.repositoryRoot, absoluteCandidate) && ts.sys.fileExists(absoluteCandidate)
     );
@@ -34,14 +33,14 @@ const parsedConfigAt = (input: {
   const parsedConfig = ts.parseJsonSourceFileConfigFileContent(
     source,
     ts.sys,
-    dirname(input.configPath),
+    path.dirname(input.configPath),
     undefined,
     input.configPath,
   );
   const [firstError] = parsedConfig.errors;
   if (firstError !== undefined) throw new Error(diagnosticText(firstError));
   const externalConfig = source.extendedSourceFiles?.find(
-    (fileName) => !pathIsInside(input.repositoryRoot, resolve(fileName)),
+    (fileName) => !pathIsInside(input.repositoryRoot, path.resolve(fileName)),
   );
   if (externalConfig !== undefined) {
     throw new Error(`TypeScript config extends outside the repository: ${externalConfig}`);
@@ -66,7 +65,7 @@ const assertCacheBoundedSources = (repositoryRoot: string, program: ts.Program):
     .find(
       (sourceFile) =>
         !program.isSourceFileDefaultLibrary(sourceFile) &&
-        !pathIsInside(repositoryRoot, resolve(sourceFile.fileName)),
+        !pathIsInside(repositoryRoot, path.resolve(sourceFile.fileName)),
     );
   if (externalSource !== undefined) {
     throw new Error(`TypeScript dependency is outside the repository: ${externalSource.fileName}`);
@@ -80,7 +79,7 @@ export const createCanonicalValuesTypeScriptProgram = (input: ProgramInput): ts.
       ? null
       : parsedConfigAt({ configPath, repositoryRoot: input.repositoryRoot });
   const rootNames = uniqBy(
-    input.rootNames.map((fileName) => resolve(fileName)),
+    input.rootNames.map((fileName) => path.resolve(fileName)),
     (fileName) => fileName,
   );
   const compilerOptions = requiredOptions(parsedConfig?.options ?? {});
@@ -89,7 +88,7 @@ export const createCanonicalValuesTypeScriptProgram = (input: ProgramInput): ts.
     ...baseHost,
     getSourceFile: (...sourceFileArguments: Parameters<ts.CompilerHost["getSourceFile"]>) => {
       const [fileName, languageVersion] = sourceFileArguments;
-      const sourceText = input.sourceOverrides?.get(resolve(fileName));
+      const sourceText = input.sourceOverrides?.get(path.resolve(fileName));
       if (sourceText === undefined) return baseHost.getSourceFile(...sourceFileArguments);
       const scriptKind = fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
       return ts.createSourceFile(fileName, sourceText, languageVersion, true, scriptKind);

@@ -13,7 +13,7 @@ Disallow a fixture factory that stands on the test block spelling, so the name t
 - Suggestions: no
 - Options: no
 - Bundle: `testing`
-- Source: [`forbid-it-extend--use-test-extend.ts`](../../src/lint/oxlint/rules/testing/forbid-it-extend--use-test-extend.ts)
+- Source: [`forbid-it-extend--use-test-extend.ts`](../../src/features/dont-review-it/lint/oxlint/rules/testing/forbid-it-extend--use-test-extend.ts)
 
 <!-- END GENERATED rule-header -->
 

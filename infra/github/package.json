@@ -1,0 +1,25 @@
+{
+  "name": "@repo/infra-github",
+  "private": true,
+  "bin": {
+    "repo-github": "./src/features/github/cli.ts"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/features/github/index.ts"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@repo/cli": "workspace:*",
+    "@repo/config": "workspace:*",
+    "@repo/infra-cloudflare": "workspace:*",
+    "alchemy": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/vite-config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

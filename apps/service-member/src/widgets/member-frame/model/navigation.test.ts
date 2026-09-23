@@ -6,20 +6,20 @@ import { memberNavItems, titleForPath } from "./navigation.ts";
 describe("memberNavItems", () => {
   it("sends free members from 探す to upgrade", () => {
     expect.hasAssertions();
-    const search = memberNavItems(false, true, "member-1").find((item) => item.id === "search");
+    const search = memberNavItems(false, "member-1").find((item) => item.id === "search");
     expect(search?.to).toBe("/upgrade");
     expect(search?.paid).toBe(true);
   });
 
   it("keeps paid members on 探す", () => {
     expect.hasAssertions();
-    const search = memberNavItems(true, true, "member-1").find((item) => item.id === "search");
+    const search = memberNavItems(true, "member-1").find((item) => item.id === "search");
     expect(search?.to).toBe("/search");
   });
 
-  it("lists the primary destinations when the board flag is on", () => {
+  it("lists the primary destinations", () => {
     expect.hasAssertions();
-    expect(memberNavItems(false, true, "member-1").map((item) => item.id)).toStrictEqual([
+    expect(memberNavItems(false, "member-1").map((item) => item.id)).toStrictEqual([
       "home",
       "profile",
       "search",
@@ -27,23 +27,10 @@ describe("memberNavItems", () => {
       "messages",
       "notifications",
     ]);
-    expect(
-      memberNavItems(false, true, "member-1").find((item) => item.id === "profile"),
-    ).toMatchObject({
+    expect(memberNavItems(false, "member-1").find((item) => item.id === "profile")).toMatchObject({
       params: { id: "member-1" },
       to: "/users/$id",
     });
-  });
-
-  it("hides the board tab when the board flag is off", () => {
-    expect.hasAssertions();
-    expect(memberNavItems(false, false, "member-1").map((item) => item.id)).toStrictEqual([
-      "home",
-      "profile",
-      "search",
-      "messages",
-      "notifications",
-    ]);
   });
 });
 

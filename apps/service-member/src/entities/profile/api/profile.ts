@@ -1,4 +1,4 @@
-import { absent, apiData, apiDataOrNone } from "@repo/runtime/client";
+import { absent, apiData, apiDataOrNoneFor } from "@repo/runtime/client";
 import { queryOptions } from "@tanstack/react-query";
 import { notFound } from "@tanstack/react-router";
 
@@ -13,11 +13,11 @@ type ProfileDraft = typeof ProfileUpdate.Type;
 function loadProfile(): Promise<Profile> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.profile.get().then((response) => {
-      const profile = apiDataOrNone(ProfileView, response, absent.notFound);
-      if (profile === undefined) {
+      const profile = apiDataOrNoneFor(absent.notFound)(ProfileView, response);
+      if (profile == null) {
         throw notFound();
       }
-      return profile;
+      return profile as Profile;
     }),
   );
 }

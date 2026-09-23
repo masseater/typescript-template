@@ -1,716 +1,953 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path, Schema } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { dependencyTypeEntries } from "./dependency-types.ts";
 
-const FIXTURE_ROOT = mkdtempSync(join(tmpdir(), "dont-review-it-dependency-types-"));
-
-describe("dependencyTypeEntries", () => {
+layer(NodeServices.layer)("dependencyTypeEntries", (it) => {
   describe("a dependency that names its declarations through its export map", () => {
-    const it = test.extend("typedDependenciesOfTheExportMapPackage", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "export-map");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint", "dist"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { oxlint: "1.76.0" } }),
-        "utf8",
+      const typedDependenciesOfTheExportMapPackage = yield* Effect.gen(
+        function* typedDependenciesOfTheExportMapPackage() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "export-map");
+
+          yield* filesystem.makeDirectory(
+            paths.join(packageDirectory, "node_modules", "oxlint", "dist"),
+            { recursive: true },
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { oxlint: "1.76.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: { ".": { types: "./dist/index.d.ts", default: "./dist/index.js" } },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "dist", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({
-          exports: { ".": { types: "./dist/index.d.ts", default: "./dist/index.js" } },
-        }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "dist", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheExportMapPackage };
     });
 
-    it("becomes an entry", ({ typedDependenciesOfTheExportMapPackage }) => {
-      expect(typedDependenciesOfTheExportMapPackage).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "export-map",
-            "node_modules",
-            "oxlint",
-            "dist",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("becomes an entry", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheExportMapPackage, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheExportMapPackage).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "export-map",
+              "node_modules",
+              "oxlint",
+              "dist",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("an export map spelled as one path", () => {
-    const it = test.extend("typedDependenciesOfTheOnePathExportMap", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "export-map-as-one-path");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { oxlint: "1.76.0" } }),
-        "utf8",
+      const typedDependenciesOfTheOnePathExportMap = yield* Effect.gen(
+        function* typedDependenciesOfTheOnePathExportMap() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "export-map-as-one-path");
+
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { oxlint: "1.76.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ exports: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheOnePathExportMap };
     });
 
-    it("is read as that path", ({ typedDependenciesOfTheOnePathExportMap }) => {
-      expect(typedDependenciesOfTheOnePathExportMap).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "export-map-as-one-path",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("is read as that path", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheOnePathExportMap, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheOnePathExportMap).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "export-map-as-one-path",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("an export map that names only subpaths", () => {
-    const it = test.extend("typedDependenciesOfTheSubpathOnlyExportMap", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "export-map-of-subpaths");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { oxlint: "1.76.0" } }),
-        "utf8",
+      const typedDependenciesOfTheSubpathOnlyExportMap = yield* Effect.gen(
+        function* typedDependenciesOfTheSubpathOnlyExportMap() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "export-map-of-subpaths");
+
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { oxlint: "1.76.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: { "./plugins": "./plugins.d.ts" },
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ exports: { "./plugins": "./plugins.d.ts" }, types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheSubpathOnlyExportMap };
     });
 
-    it("hands back no root entry, so the declared types field decides", ({
-      typedDependenciesOfTheSubpathOnlyExportMap,
-    }) => {
-      expect(typedDependenciesOfTheSubpathOnlyExportMap).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "export-map-of-subpaths",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("hands back no root entry, so the declared types field decides", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheSubpathOnlyExportMap, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheSubpathOnlyExportMap).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "export-map-of-subpaths",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("an export map holding conditions that name nothing", () => {
-    const it = test.extend("typedDependenciesOfTheEmptyConditionExportMap", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "export-map-of-empty-conditions");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { oxlint: "1.76.0" } }),
-        "utf8",
+      const typedDependenciesOfTheEmptyConditionExportMap = yield* Effect.gen(
+        function* typedDependenciesOfTheEmptyConditionExportMap() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "export-map-of-empty-conditions");
+
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { oxlint: "1.76.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: { ".": { node: { import: {} } } },
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ exports: { ".": { node: { import: {} } } }, types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheEmptyConditionExportMap };
     });
 
-    it("hands back no entry, so the declared types field decides", ({
-      typedDependenciesOfTheEmptyConditionExportMap,
-    }) => {
-      expect(typedDependenciesOfTheEmptyConditionExportMap).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "export-map-of-empty-conditions",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("hands back no entry, so the declared types field decides", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheEmptyConditionExportMap, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheEmptyConditionExportMap).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "export-map-of-empty-conditions",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("an entry path that carries no suffix", () => {
-    const it = test.extend("typedDependenciesOfTheSuffixlessEntryPath", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "entry-path-without-a-suffix");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { oxlint: "1.76.0" } }),
-        "utf8",
+      const typedDependenciesOfTheSuffixlessEntryPath = yield* Effect.gen(
+        function* typedDependenciesOfTheSuffixlessEntryPath() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "entry-path-without-a-suffix");
+
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { oxlint: "1.76.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: { ".": { default: "./index" } },
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ exports: { ".": { default: "./index" } }, types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheSuffixlessEntryPath };
     });
 
-    it("names no declarations, so the declared types field decides", ({
-      typedDependenciesOfTheSuffixlessEntryPath,
-    }) => {
-      expect(typedDependenciesOfTheSuffixlessEntryPath).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "entry-path-without-a-suffix",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("names no declarations, so the declared types field decides", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheSuffixlessEntryPath, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheSuffixlessEntryPath).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "entry-path-without-a-suffix",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a dependency declared for development", () => {
-    const it = test.extend("typedDevelopmentDependencies", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "development-dependency");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "vite", "dist", "node"), {
-        recursive: true,
-      });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ devDependencies: { vite: "8.0.0" } }),
-        "utf8",
+      const typedDevelopmentDependencies = yield* Effect.gen(
+        function* typedDevelopmentDependencies() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "development-dependency");
+
+          yield* filesystem.makeDirectory(
+            paths.join(packageDirectory, "node_modules", "vite", "dist", "node"),
+            {
+              recursive: true,
+            },
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              devDependencies: { vite: "8.0.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "vite", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              types: "./dist/node/index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "vite", "dist", "node", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "vite", "package.json"),
-        JSON.stringify({ types: "./dist/node/index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "vite", "dist", "node", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDevelopmentDependencies };
     });
 
-    it("is reachable the same way", ({ typedDevelopmentDependencies }) => {
-      expect(typedDevelopmentDependencies).toStrictEqual([
-        {
-          packageName: "vite",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "development-dependency",
-            "node_modules",
-            "vite",
-            "dist",
-            "node",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("is reachable the same way", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDevelopmentDependencies, fixtureRoot } = yield* fixtures;
+        expect(typedDevelopmentDependencies).toStrictEqual([
+          {
+            packageName: "vite",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "development-dependency",
+              "node_modules",
+              "vite",
+              "dist",
+              "node",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a dependency declared as a peer", () => {
-    const it = test.extend("typedPeerDependencies", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "peer-dependency");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ peerDependencies: { oxlint: "*" } }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ typings: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      const typedPeerDependencies = yield* Effect.gen(function* typedPeerDependencies() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const packageDirectory = paths.join(fixtureRoot, "peer-dependency");
+
+        yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+          recursive: true,
+        });
+        yield* filesystem.writeFileString(
+          paths.join(packageDirectory, "package.json"),
+          yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+            peerDependencies: { oxlint: "*" },
+          }),
+        );
+        yield* filesystem.writeFileString(
+          paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+          yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+            typings: "./index.d.ts",
+          }),
+        );
+        yield* filesystem.writeFileString(
+          paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+          "export {};\n",
+        );
+        return dependencyTypeEntries(packageDirectory);
+      });
+      return { fixtureRoot, typedPeerDependencies };
     });
 
-    it("is reachable the same way", ({ typedPeerDependencies }) => {
-      expect(typedPeerDependencies).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "peer-dependency",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("is reachable the same way", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedPeerDependencies, fixtureRoot } = yield* fixtures;
+        expect(typedPeerDependencies).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "peer-dependency",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a dependency inside this repository", () => {
-    const it = test.extend("typedDependenciesBesideTheWorkspacePackage", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "repository-dependency");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "@mst", "lint-rule-authoring", "src"), {
-        recursive: true,
-      });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({
-          dependencies: {
-            "@repo/dont-review-it/lint-rule-authoring": "workspace:*",
-            oxlint: "1.76.0",
-          },
-        }),
-        "utf8",
+      const typedDependenciesBesideTheWorkspacePackage = yield* Effect.gen(
+        function* typedDependenciesBesideTheWorkspacePackage() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "repository-dependency");
+
+          yield* filesystem.makeDirectory(
+            paths.join(packageDirectory, "node_modules", "@mst", "lint-rule-authoring", "src"),
+            {
+              recursive: true,
+            },
+          );
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: {
+                "@repo/dont-review-it/lint-rule-authoring": "workspace:*",
+                oxlint: "1.76.0",
+              },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(
+              packageDirectory,
+              "node_modules",
+              "@mst",
+              "lint-rule-authoring",
+              "package.json",
+            ),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: { ".": "./src/index.ts" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(
+              packageDirectory,
+              "node_modules",
+              "@mst",
+              "lint-rule-authoring",
+              "src",
+              "index.ts",
+            ),
+            "export {};\n",
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "@mst", "lint-rule-authoring", "package.json"),
-        JSON.stringify({ exports: { ".": "./src/index.ts" } }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "@mst", "lint-rule-authoring", "src", "index.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesBesideTheWorkspacePackage };
     });
 
-    it("is left to the repository catalog", ({ typedDependenciesBesideTheWorkspacePackage }) => {
-      expect(typedDependenciesBesideTheWorkspacePackage).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "repository-dependency",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("is left to the repository catalog", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesBesideTheWorkspacePackage, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesBesideTheWorkspacePackage).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "repository-dependency",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a types condition nested under another condition", () => {
-    const it = test.extend("typedDependenciesOfTheNestedTypesCondition", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "nested-types-condition");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "nested"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { nested: "1.0.0" } }),
-        "utf8",
+      const typedDependenciesOfTheNestedTypesCondition = yield* Effect.gen(
+        function* typedDependenciesOfTheNestedTypesCondition() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "nested-types-condition");
+
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "nested"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { nested: "1.0.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "nested", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: { ".": { import: { types: "./index.d.mts", default: "./index.mjs" } } },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "nested", "index.d.mts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "nested", "package.json"),
-        JSON.stringify({
-          exports: { ".": { import: { types: "./index.d.mts", default: "./index.mjs" } } },
-        }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "nested", "index.d.mts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheNestedTypesCondition };
     });
 
-    it("is still found", ({ typedDependenciesOfTheNestedTypesCondition }) => {
-      expect(typedDependenciesOfTheNestedTypesCondition).toStrictEqual([
-        {
-          packageName: "nested",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "nested-types-condition",
-            "node_modules",
-            "nested",
-            "index.d.mts",
-          ),
-        },
-      ]);
-    });
+    it.effect("is still found", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheNestedTypesCondition, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheNestedTypesCondition).toStrictEqual([
+          {
+            packageName: "nested",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "nested-types-condition",
+              "node_modules",
+              "nested",
+              "index.d.mts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("an export map that names conditions without a subpath", () => {
-    const it = test.extend("typedDependenciesOfTheSubpathlessConditions", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "conditions-without-a-subpath");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "rootonly"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { rootonly: "1.0.0" } }),
-        "utf8",
+      const typedDependenciesOfTheSubpathlessConditions = yield* Effect.gen(
+        function* typedDependenciesOfTheSubpathlessConditions() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "conditions-without-a-subpath");
+
+          yield* filesystem.makeDirectory(
+            paths.join(packageDirectory, "node_modules", "rootonly"),
+            { recursive: true },
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { rootonly: "1.0.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "rootonly", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              exports: { types: "./index.d.ts", default: "./index.js" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "rootonly", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "rootonly", "package.json"),
-        JSON.stringify({ exports: { types: "./index.d.ts", default: "./index.js" } }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "rootonly", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheSubpathlessConditions };
     });
 
-    it("is read as the root entry", ({ typedDependenciesOfTheSubpathlessConditions }) => {
-      expect(typedDependenciesOfTheSubpathlessConditions).toStrictEqual([
-        {
-          packageName: "rootonly",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "conditions-without-a-subpath",
-            "node_modules",
-            "rootonly",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("is read as the root entry", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheSubpathlessConditions, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheSubpathlessConditions).toStrictEqual([
+          {
+            packageName: "rootonly",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "conditions-without-a-subpath",
+              "node_modules",
+              "rootonly",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a package that only names its runtime entry", () => {
-    const it = test.extend("typedDependenciesOfTheRuntimeEntryPackage", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "runtime-entry-beside-declarations");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "runtimeonly", "dist"), {
-        recursive: true,
-      });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { runtimeonly: "1.0.0" } }),
-        "utf8",
+      const typedDependenciesOfTheRuntimeEntryPackage = yield* Effect.gen(
+        function* typedDependenciesOfTheRuntimeEntryPackage() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "runtime-entry-beside-declarations");
+
+          yield* filesystem.makeDirectory(
+            paths.join(packageDirectory, "node_modules", "runtimeonly", "dist"),
+            {
+              recursive: true,
+            },
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { runtimeonly: "1.0.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "runtimeonly", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              main: "./dist/index.js",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "runtimeonly", "dist", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "runtimeonly", "package.json"),
-        JSON.stringify({ main: "./dist/index.js" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "runtimeonly", "dist", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheRuntimeEntryPackage };
     });
 
-    it("points at the declarations beside it", ({ typedDependenciesOfTheRuntimeEntryPackage }) => {
-      expect(typedDependenciesOfTheRuntimeEntryPackage).toStrictEqual([
-        {
-          packageName: "runtimeonly",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "runtime-entry-beside-declarations",
-            "node_modules",
-            "runtimeonly",
-            "dist",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("points at the declarations beside it", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfTheRuntimeEntryPackage, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfTheRuntimeEntryPackage).toStrictEqual([
+          {
+            packageName: "runtimeonly",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "runtime-entry-beside-declarations",
+              "node_modules",
+              "runtimeonly",
+              "dist",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a package that ships no type declarations", () => {
-    const it = test.extend("typedDependenciesOfThePackageWithoutDeclarations", ({}, {
-      onCleanup,
-    }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "runtime-entry-without-declarations");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "runtimeonly", "dist"), {
-        recursive: true,
-      });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { runtimeonly: "1.0.0" } }),
-        "utf8",
+      const typedDependenciesOfThePackageWithoutDeclarations = yield* Effect.gen(
+        function* typedDependenciesOfThePackageWithoutDeclarations() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "runtime-entry-without-declarations");
+
+          yield* filesystem.makeDirectory(
+            paths.join(packageDirectory, "node_modules", "runtimeonly", "dist"),
+            {
+              recursive: true,
+            },
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { runtimeonly: "1.0.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "runtimeonly", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              main: "./dist/index.js",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "runtimeonly", "dist", "index.js"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "runtimeonly", "package.json"),
-        JSON.stringify({ main: "./dist/index.js" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "runtimeonly", "dist", "index.js"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfThePackageWithoutDeclarations };
     });
 
-    it("is left out", ({ typedDependenciesOfThePackageWithoutDeclarations }) => {
-      expect(typedDependenciesOfThePackageWithoutDeclarations).toStrictEqual([]);
-    });
+    it.effect("is left out", () =>
+      Effect.gen(function* program() {
+        const { typedDependenciesOfThePackageWithoutDeclarations } = yield* fixtures;
+        expect(typedDependenciesOfThePackageWithoutDeclarations).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a dependency missing from the checkout", () => {
-    const it = test.extend("typedDependenciesBesideThePrunedDependency", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "pruned-dependency");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ dependencies: { oxlint: "1.76.0", pruned: "1.0.0" } }),
-        "utf8",
+      const typedDependenciesBesideThePrunedDependency = yield* Effect.gen(
+        function* typedDependenciesBesideThePrunedDependency() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "pruned-dependency");
+
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { oxlint: "1.76.0", pruned: "1.0.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesBesideThePrunedDependency };
     });
 
-    it("costs only that dependency", ({ typedDependenciesBesideThePrunedDependency }) => {
-      expect(typedDependenciesBesideThePrunedDependency).toStrictEqual([
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "pruned-dependency",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("costs only that dependency", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesBesideThePrunedDependency, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesBesideThePrunedDependency).toStrictEqual([
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "pruned-dependency",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("three dependencies installed out of order", () => {
-    const it = test.extend("typedDependenciesOfThreeInstalledPackages", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "three-dependencies");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(join(packageDirectory, "node_modules", "oxlint"), { recursive: true });
-      mkdirSync(join(packageDirectory, "node_modules", "@oxlint", "plugins"), { recursive: true });
-      mkdirSync(join(packageDirectory, "node_modules", "vite"), { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({
-          dependencies: { oxlint: "1.76.0" },
-          devDependencies: { "@oxlint/plugins": "1.76.0", vite: "8.0.0" },
-        }),
-        "utf8",
+      const typedDependenciesOfThreeInstalledPackages = yield* Effect.gen(
+        function* typedDependenciesOfThreeInstalledPackages() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "three-dependencies");
+
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "oxlint"), {
+            recursive: true,
+          });
+          yield* filesystem.makeDirectory(
+            paths.join(packageDirectory, "node_modules", "@oxlint", "plugins"),
+            { recursive: true },
+          );
+          yield* filesystem.makeDirectory(paths.join(packageDirectory, "node_modules", "vite"), {
+            recursive: true,
+          });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              dependencies: { oxlint: "1.76.0" },
+              devDependencies: { "@oxlint/plugins": "1.76.0", vite: "8.0.0" },
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
+            "export {};\n",
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "@oxlint", "plugins", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "@oxlint", "plugins", "index.d.ts"),
+            "export {};\n",
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "vite", "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+              types: "./index.d.ts",
+            }),
+          );
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "node_modules", "vite", "index.d.ts"),
+            "export {};\n",
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "package.json"),
-        JSON.stringify({ types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "oxlint", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "@oxlint", "plugins", "package.json"),
-        JSON.stringify({ types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "@oxlint", "plugins", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "vite", "package.json"),
-        JSON.stringify({ types: "./index.d.ts" }),
-        "utf8",
-      );
-      writeFileSync(
-        join(packageDirectory, "node_modules", "vite", "index.d.ts"),
-        "export {};\n",
-        "utf8",
-      );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfThreeInstalledPackages };
     });
 
-    it("come back sorted by package name", ({ typedDependenciesOfThreeInstalledPackages }) => {
-      expect(typedDependenciesOfThreeInstalledPackages).toStrictEqual([
-        {
-          packageName: "@oxlint/plugins",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "three-dependencies",
-            "node_modules",
-            "@oxlint",
-            "plugins",
-            "index.d.ts",
-          ),
-        },
-        {
-          packageName: "oxlint",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "three-dependencies",
-            "node_modules",
-            "oxlint",
-            "index.d.ts",
-          ),
-        },
-        {
-          packageName: "vite",
-          declarationsPath: join(
-            FIXTURE_ROOT,
-            "three-dependencies",
-            "node_modules",
-            "vite",
-            "index.d.ts",
-          ),
-        },
-      ]);
-    });
+    it.effect("come back sorted by package name", () =>
+      Effect.gen(function* program() {
+        const paths = yield* Path.Path;
+        const { typedDependenciesOfThreeInstalledPackages, fixtureRoot } = yield* fixtures;
+        expect(typedDependenciesOfThreeInstalledPackages).toStrictEqual([
+          {
+            packageName: "@oxlint/plugins",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "three-dependencies",
+              "node_modules",
+              "@oxlint",
+              "plugins",
+              "index.d.ts",
+            ),
+          },
+          {
+            packageName: "oxlint",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "three-dependencies",
+              "node_modules",
+              "oxlint",
+              "index.d.ts",
+            ),
+          },
+          {
+            packageName: "vite",
+            declarationsPath: paths.join(
+              fixtureRoot,
+              "three-dependencies",
+              "node_modules",
+              "vite",
+              "index.d.ts",
+            ),
+          },
+        ]);
+      }),
+    );
   });
 
   describe("a package that declares no dependencies", () => {
-    const it = test.extend("typedDependenciesOfTheLonePackage", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "no-dependencies");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(packageDirectory, { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ name: "alone" }),
-        "utf8",
+      const typedDependenciesOfTheLonePackage = yield* Effect.gen(
+        function* typedDependenciesOfTheLonePackage() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "no-dependencies");
+
+          yield* filesystem.makeDirectory(packageDirectory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name: "alone" }),
+          );
+          return dependencyTypeEntries(packageDirectory);
+        },
       );
-      return dependencyTypeEntries(packageDirectory);
+      return { fixtureRoot, typedDependenciesOfTheLonePackage };
     });
 
-    it("has nothing to offer", ({ typedDependenciesOfTheLonePackage }) => {
-      expect(typedDependenciesOfTheLonePackage).toStrictEqual([]);
-    });
+    it.effect("has nothing to offer", () =>
+      Effect.gen(function* program() {
+        const { typedDependenciesOfTheLonePackage } = yield* fixtures;
+        expect(typedDependenciesOfTheLonePackage).toStrictEqual([]);
+      }),
+    );
   });
 
   describe("a directory that holds no manifest", () => {
-    const it = test.extend("typedDependenciesOfTheManifestlessDirectory", ({}, { onCleanup }) => {
-      const packageDirectory = join(FIXTURE_ROOT, "no-manifest");
-      rmSync(packageDirectory, { recursive: true, force: true });
-      onCleanup(() => {
-        rmSync(packageDirectory, { recursive: true, force: true });
+    const fixtures = Effect.gen(function* fixtures() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const fixtureRoot = yield* filesystem.makeTempDirectoryScoped({
+        prefix: "dont-review-it-dependency-types-",
       });
-      mkdirSync(packageDirectory, { recursive: true });
-      writeFileSync(
-        join(packageDirectory, "package.json"),
-        JSON.stringify({ name: "alone" }),
-        "utf8",
+      const typedDependenciesOfTheManifestlessDirectory = yield* Effect.gen(
+        function* typedDependenciesOfTheManifestlessDirectory() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const packageDirectory = paths.join(fixtureRoot, "no-manifest");
+
+          yield* filesystem.makeDirectory(packageDirectory, { recursive: true });
+          yield* filesystem.writeFileString(
+            paths.join(packageDirectory, "package.json"),
+            yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({ name: "alone" }),
+          );
+          return dependencyTypeEntries(paths.join(packageDirectory, "src"));
+        },
       );
-      return dependencyTypeEntries(join(packageDirectory, "src"));
+      return { fixtureRoot, typedDependenciesOfTheManifestlessDirectory };
     });
 
-    it("has nothing to offer", ({ typedDependenciesOfTheManifestlessDirectory }) => {
-      expect(typedDependenciesOfTheManifestlessDirectory).toStrictEqual([]);
-    });
+    it.effect("has nothing to offer", () =>
+      Effect.gen(function* program() {
+        const { typedDependenciesOfTheManifestlessDirectory } = yield* fixtures;
+        expect(typedDependenciesOfTheManifestlessDirectory).toStrictEqual([]);
+      }),
+    );
   });
 });
