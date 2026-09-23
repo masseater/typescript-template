@@ -345,7 +345,7 @@ describe("lifecycle contents", () => {
     expect.hasAssertions();
     expect(dependencies(".", "precommit")).toContain("check:text");
     expect(commands(".", "check:text")).toStrictEqual([
-      'textlint "apps/internal-dashboard/content/docs/**/*.md"',
+      'textlint ".claude/**/*.md" "apps/internal-dashboard/content/docs/**/*.md"',
     ]);
     expect(reachable(".", ["prepr"])).toContain("check:text");
     expect(reachable(".", ["prepush"])).toEqual(
