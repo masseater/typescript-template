@@ -3,7 +3,6 @@ import { providers, state } from "alchemy/Cloudflare";
 
 import { monitorStacks } from "./monitors.ts";
 
-import type { Application } from "@repo/config";
 import type { MonitorStack } from "./monitors.ts";
 
 const application = ["database", "flagship"] as const;
@@ -36,6 +35,9 @@ const stackReferences = {
 
 type StackName = keyof typeof stackReferences;
 
+const packageStacks = [...applications, "core"] as const satisfies readonly StackName[];
+type PackageStack = (typeof packageStacks)[number];
+
 const traceDestinationStack = "observability" as const satisfies StackName;
 
 const dependenciesByName: Readonly<Partial<Record<StackName, readonly StackName[]>>> = {
@@ -43,7 +45,7 @@ const dependenciesByName: Readonly<Partial<Record<StackName, readonly StackName[
   "service-admin": [traceDestinationStack],
   "service-member": [traceDestinationStack],
   "internal-dashboard": [traceDestinationStack],
-} satisfies Readonly<Record<Application | "core", readonly StackName[]>>;
+} satisfies Readonly<Record<PackageStack, readonly StackName[]>>;
 
 function stackDependencies(stack: StackName): readonly StackName[] {
   return [...stackReferences[stack], ...(dependenciesByName[stack] ?? [])];
@@ -107,4 +109,4 @@ export {
   stackReferences,
   traceDestinationStack,
 };
-export type { StackName };
+export type { PackageStack, StackName };
