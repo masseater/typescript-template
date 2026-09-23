@@ -2,7 +2,9 @@ import {
   effectDiagnostics,
   effectTsgoNoEmit,
   lifecycle,
+  checkCode,
   modularBoundaries,
+  workspaceCheckImports,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -13,6 +15,8 @@ export default defineConfig({
         command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
         input: effectDiagnostics["check:effect"].input,
       },
+      ...checkCode,
+      ...workspaceCheckImports,
       ...modularBoundaries,
       ci: {
         cache: false,
@@ -25,7 +29,10 @@ export default defineConfig({
         ],
       },
       load: { cache: false, command: "./src/features/load/cli.ts" },
-      ...lifecycle({ prepush: ["check:effect", "check:modular"] }),
+      ...lifecycle({
+        precommit: ["check:code"],
+        prepush: ["check:effect", "check:imports", "check:modular"],
+      }),
     },
   },
   test: {
