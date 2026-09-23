@@ -346,7 +346,7 @@ describe("lifecycle contents", () => {
     expect(dependencies(".", "precommit")).toContain("check:text");
     expect(commands(".", "check:text")).toStrictEqual(['textlint "**/*.md"']);
     expect(reachable(".", ["prepr"])).toContain("check:text");
-    expect(reachable(".", ["prepush"])).toEqual(
+    expect(reachable(".", ["prepush"])).toStrictEqual(
       expect.arrayContaining(["check:effect", "knip", "check:canonical-literal-types"]),
     );
     expect(reachable(".", ["prepush"])).not.toContain("test");
@@ -448,7 +448,7 @@ describe("test ownership", () => {
     expect.hasAssertions();
     expect(toolsPackagesWithTests().length).toBeGreaterThan(0);
     expect(uncoveredToolTestPackages()).toStrictEqual([]);
-    expect(testProjectDirectories).toEqual(
+    expect(testProjectDirectories).toStrictEqual(
       expect.arrayContaining(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, ""))),
     );
   });
@@ -484,7 +484,7 @@ const MergifyConfig = Schema.Struct({
   ),
 });
 
-function parsedSource<S extends Schema.Top>(
+function parsedSource<S extends Schema.Top & { readonly DecodingServices: never }>(
   sources: Readonly<Record<string, string>>,
   file: string,
   schema: S,

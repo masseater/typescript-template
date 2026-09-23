@@ -82,7 +82,7 @@ const boundsOf = (points: readonly Point[]): Box => {
 };
 
 const outlineOf = (element: Element): Box => {
-  const outline = element.children.filter(isElement)[0];
+  const outline = element.children.find(isElement);
   if (outline === undefined) {
     throw new Error("a diagram shape has no outline");
   }

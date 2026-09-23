@@ -161,8 +161,10 @@ const SMALLEST_LABEL_HEIGHT = 28;
 const BREAKS_AFTER = new Set([" ", "・", "、", "，", ",", "/", "）", ")"]);
 const BREAKS_BEFORE = new Set(["（", "("]);
 
+const codePoints = (text: string): readonly string[] => Array.from(text);
+
 const wrapWords = (words: string, lines: number): readonly string[] => {
-  const characters = [...words];
+  const characters = codePoints(words);
   const target = characters.length / lines;
   const cuts = Array.from({ length: lines - 1 }, (_, index) => {
     const ideal = Math.round(target * (index + 1));
@@ -193,13 +195,13 @@ type LabelMetrics = Readonly<{ baseHeight: number; baseline: number; characterWi
 const metricsOf = (label: Label): LabelMetrics => ({
   baseHeight: Math.max(label.box.height, SMALLEST_LABEL_HEIGHT),
   baseline: Number(label.text.properties["y"]) - center(label.box).y,
-  characterWidth: label.box.width / [...(label.route.label ?? "")].length,
+  characterWidth: label.box.width / codePoints(label.route.label ?? "").length,
 });
 
 const setLines = (label: Label, metrics: LabelMetrics, count: number): void => {
   const lines = count === 1 ? [label.route.label ?? ""] : wrapWords(label.route.label ?? "", count);
   const width =
-    Math.max(...lines.map((line) => [...line].length)) *
+    Math.max(...lines.map((line) => codePoints(line).length)) *
       metrics.characterWidth *
       LABEL_WIDTH_ALLOWANCE +
     LABEL_WIDTH_PADDING;
@@ -334,7 +336,7 @@ const placeLabels = (
       if (labelMetrics === undefined) {
         throw new Error(`the label on ${label.route.from}->${label.route.to} was never measured`);
       }
-      const mostLines = Math.min(MOST_LINES, [...(label.route.label ?? "")].length);
+      const mostLines = Math.min(MOST_LINES, codePoints(label.route.label ?? "").length);
       const spotWith = (count: number): Box | undefined => {
         setLines(label, labelMetrics, count);
         return (
