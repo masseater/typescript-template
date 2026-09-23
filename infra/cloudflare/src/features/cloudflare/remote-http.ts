@@ -1,8 +1,7 @@
+import { RemoteFailure } from "@repo/db/migrations";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { Effect, Layer, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
-
-import { RemoteFailure } from "./remote-input.ts";
 
 import type { SQLiteExecuteMethod } from "drizzle-orm/sqlite-core";
 import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
