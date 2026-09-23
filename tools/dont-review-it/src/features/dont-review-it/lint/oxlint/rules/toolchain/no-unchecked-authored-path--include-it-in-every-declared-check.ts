@@ -1,6 +1,5 @@
-import { dirname, resolve } from "node:path";
-
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { nearestPackageDirectory } from "../../lib/canonical-values/source-files.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import {
@@ -70,7 +69,7 @@ export const noUncheckedAuthoredPath = createDontReviewItRule({
 
     return {
       Program(node: ESTree.Program) {
-        const fileDirectory = dirname(resolve(inspection.cwd, inspection.filename));
+        const fileDirectory = path.dirname(path.resolve(inspection.cwd, inspection.filename));
         const repositoryRoot = findWorkspaceRoot(fileDirectory);
         const held = coverageFindingsIn({
           repositoryRoot,

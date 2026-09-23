@@ -1,8 +1,7 @@
-import { dirname, relative, resolve } from "node:path";
-
 import { memoize } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
+import { path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "../../lib/canonical-values/workspace-root.ts";
 import { toPosixPath } from "../../lib/posix-path.ts";
 
@@ -41,7 +40,10 @@ export const createNoUnusedStyleClass = ({
         ImportDeclaration(node: ESTree.ImportDeclaration) {
           const repositoryRoot = repositoryRootOf();
           const styleSheet = toPosixPath(
-            relative(repositoryRoot, resolve(dirname(inspection.filename), node.source.value)),
+            path.relative(
+              repositoryRoot,
+              path.resolve(path.dirname(inspection.filename), node.source.value),
+            ),
           );
           const unused = loadIndex({ repositoryRoot }).unusedByStyleSheet.get(styleSheet);
           if (unused === undefined) return;
