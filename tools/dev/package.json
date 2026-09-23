@@ -2,20 +2,22 @@
   "name": "@repo/dev",
   "private": true,
   "bin": {
-    "dev-start": "./src/dev-start.ts",
-    "repo-dev": "./src/cli.ts",
-    "repo-dev-check-exported": "./src/observe/receiver-check.ts",
-    "repo-dev-observe": "./src/observe/cli.ts",
-    "repo-dev-prepare-browser": "./src/prepare-browser.ts",
-    "repo-dev-symbolicate": "./src/observe/symbolicate.ts",
-    "repo-dev-verify": "./src/observe/verify.ts"
+    "dev-start": "./src/features/dev/dev-start.ts",
+    "repo-dev": "./src/features/dev/cli.ts",
+    "repo-dev-check-exported": "./src/features/dev/observe/receiver-check.ts",
+    "repo-dev-observe": "./src/features/dev/observe/cli.ts",
+    "repo-dev-prepare-browser": "./src/features/dev/prepare-browser.ts",
+    "repo-dev-symbolicate": "./src/features/dev/observe/symbolicate.ts",
+    "repo-dev-verify": "./src/features/dev/observe/verify.ts"
   },
   "type": "module",
   "dependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/db-local": "workspace:*",
     "@repo/local": "workspace:*",
     "@repo/observability": "workspace:*",
     "@repo/vite-config": "workspace:*",
@@ -25,11 +27,9 @@
     "otpauth": "9.5.2",
     "playwright": "catalog:",
     "portless": "0.15.6",
-    "vite-plus": "catalog:",
-    "wrangler": "catalog:"
+    "vite-plus": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
     "@effect/vitest": "catalog:",
     "@types/node": "catalog:",
     "msw": "catalog:",

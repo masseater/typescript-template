@@ -1,7 +1,7 @@
 import { assert, it } from "@effect/vitest";
 import { query, schema } from "@repo/db";
 import { TestDatabase } from "@repo/db/testing";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { getProfile, updateProfile } from "./members.ts";
 
@@ -19,17 +19,18 @@ function failureTag<Value, Failure extends { readonly _tag: string }, Requiremen
 }
 
 function addUser(id: string): Effect.Effect<void, DatabaseFailure, Database> {
-  return query(async (database): Promise<void> => {
-    await database.insert(user).values({
-      createdAt: new Date(),
+  const now = DateTime.toDate(DateTime.nowUnsafe());
+  return query((database) =>
+    database.insert(user).values({
+      createdAt: now,
       email: `${id}@example.com`,
       emailVerified: true,
       id,
       name: id,
       role: "member",
-      updatedAt: new Date(),
-    });
-  });
+      updatedAt: now,
+    }),
+  );
 }
 
 it.effect("persists Unicode profiles", () =>

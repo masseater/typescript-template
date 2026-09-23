@@ -1,17 +1,15 @@
 {
   "name": "@repo/vite-config",
   "private": true,
-  "bin": {
-    "check-effect-typecheck": "./src/effect-typecheck.ts"
-  },
   "type": "module",
   "exports": {
-    ".": "./src/vite.ts",
-    "./private-path": "./src/private-path.ts",
-    "./source-maps": "./src/source-maps.ts"
+    ".": "./src/features/vite-config/index.ts",
+    "./private-path": "./src/features/vite-config/private-path.ts",
+    "./source-maps": "./src/features/vite-config/source-maps.ts"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "1.54.10",
+    "@effect/platform-node": "catalog:",
     "@effect/tsgo": "0.45.0",
     "@inlang/paraglide-js": "catalog:",
     "@repo/config": "workspace:*",
@@ -19,6 +17,7 @@
     "@tanstack/react-start": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "effect": "catalog:",
+    "elysia": "2.0.0-beta.16",
     "vite-plus": "catalog:"
   },
   "devDependencies": {

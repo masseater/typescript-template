@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AdminLayout } from "./-admin-layout.tsx";
+import { AdminLayout } from "#widgets/admin-frame/index.ts";
 
 const Route = createFileRoute("/_admin")({ component: AdminLayout });
 

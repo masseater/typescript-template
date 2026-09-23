@@ -7,10 +7,10 @@ import {
   startAuthorization,
   wikiAdministrator,
   wikiOrigin,
-} from "../../../../../libs/auth/src/testing.ts";
+} from "../../../../../libs/auth/src/features/auth/testing.ts";
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-import type { BrowserClient } from "../../../../../libs/auth/src/testing.ts";
+import type { BrowserClient } from "../../../../../libs/auth/src/features/auth/testing.ts";
 
 type AuthorizationFlow = {
   readonly clientId: string;
@@ -60,8 +60,8 @@ const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
     headers: { "content-type": "application/x-www-form-urlencoded" },
     method: "POST",
   });
-  const issued = yield* Effect.promise(async () => wiki.instance.handler(exchange));
-  const tokens = yield* Effect.promise(async (): Promise<unknown> => issued.json());
+  const issued = yield* Effect.promise(() => wiki.instance.handler(exchange));
+  const tokens = yield* Effect.promise(() => issued.json() as Promise<unknown>);
   return yield* Schema.decodeUnknownEffect(Tokens)(tokens);
 });
 

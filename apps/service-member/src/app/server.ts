@@ -1,7 +1,11 @@
-import { appServerEntry } from "@repo/runtime/worker";
+import { readJobs } from "@repo/config";
+import { Process, consumeJobs } from "@repo/runtime/jobs";
+import { appServerEntry, withQueue } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
+import { Effect } from "effect";
 
 import { paraglideMiddleware } from "#paraglide/server.js";
+import { UserInbox } from "#shared/inbox/index.ts";
 import { reporting, runtime } from "#shared/server-api/index.ts";
 
 const startHandler = {
@@ -10,4 +14,13 @@ const startHandler = {
   },
 };
 
-export default appServerEntry(runtime, startHandler, reporting);
+export { Process, UserInbox };
+
+export default withQueue(appServerEntry(runtime, startHandler, reporting), (batch, environment) =>
+  Effect.runPromise(
+    Effect.gen(function* consume() {
+      const jobs = yield* readJobs(environment);
+      yield* Effect.promise(() => consumeJobs(batch, jobs));
+    }).pipe(Effect.orDie),
+  ),
+);

@@ -3,13 +3,12 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/features/auth-ui/index.ts"
   },
   "dependencies": {
     "@better-auth/passkey": "catalog:",
     "@effect/atom-react": "catalog:",
     "@repo/config": "workspace:*",
-    "@repo/observability": "workspace:*",
     "@repo/ui": "workspace:*",
     "better-auth": "catalog:",
     "effect": "catalog:",

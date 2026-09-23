@@ -2,7 +2,7 @@ import { useSearch } from "@tanstack/react-router";
 import { Option } from "effect";
 
 import { decodeUsersSearch } from "#pages/users/model/users-search.ts";
-import { SearchFields } from "./search-fields.tsx";
+import { SearchFields } from "#widgets/member-search/index.ts";
 
 import type { ReactElement } from "react";
 

@@ -24,7 +24,7 @@ const embedBatch = Effect.fn("embedBatch")(function* embedBatch(
 ) {
   const output = yield* Effect.tryPromise({
     catch: () => new EmbeddingFailed({ reason: "unavailable" }),
-    try: async () => ai.run(embeddingModel, { text: [...text] }),
+    try: () => ai.run(embeddingModel, { text: [...text] }),
   });
   const { data } = yield* decodeOutput(output).pipe(
     Effect.mapError(() => new EmbeddingFailed({ reason: "invalid_output" })),

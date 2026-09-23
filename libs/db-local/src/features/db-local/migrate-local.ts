@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+import { reportFailed, runCli } from "@repo/cli";
+import { migrateD1 } from "@repo/db/migrations";
+import { Cause, Console, Effect, Schema } from "effect";
+
+import { localDatabasePlatform } from "./local-platform.ts";
+
+const failed = (failureCode: string): Readonly<Record<string, unknown>> => ({
+  action: "local_migration",
+  error: failureCode,
+  success: false,
+});
+
+runCli(
+  Effect.gen(function* program() {
+    const { env } = yield* localDatabasePlatform;
+    const applied = yield* migrateD1(env.DB);
+    yield* Console.log(
+      yield* Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))({
+        action: "local_migration",
+        applied,
+        success: true,
+      }),
+    );
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTag("RemoteFailure", (failure) => reportFailed(failed(failure.code))),
+  ),
+  (cause) => ({ ...failed("LOCAL_MIGRATION_FAILED"), cause: Cause.pretty(cause) }),
+);

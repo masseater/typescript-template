@@ -9,12 +9,13 @@ import { FlagList, FlagToggled } from "#shared/contracts/index.ts";
 
 import type { FlagEntry } from "#shared/contracts/index.ts";
 
-async function fetchFlags(): Promise<readonly FlagEntry[]> {
-  const { flags } = apiData(FlagList, await wikiClient().flags.get());
-  return flags;
+function fetchFlags(): Promise<readonly FlagEntry[]> {
+  return Promise.resolve(wikiClient()).then(({ api }) =>
+    api.flags.get().then((response) => apiData(FlagList, response).flags),
+  );
 }
 
-const flagsAtom = requestAtom(async () => fetchFlags());
+const flagsAtom = requestAtom(() => fetchFlags());
 
 const useOverrides = localState<Readonly<Record<string, FlagEntry>>>({});
 
@@ -33,15 +34,15 @@ function useFlagList(): Readonly<{
     reloadRemote();
   };
 
-  const toggle = async (key: FlagEntry["key"], enabled: boolean): Promise<string | undefined> => {
-    try {
-      const updated = apiData(FlagToggled, await wikiClient().flags.patch({ enabled, key }));
-      setOverrides((current) => ({ ...current, [updated.key]: updated }));
-      return undefined;
-    } catch (error) {
-      return errorMessage(error);
-    }
-  };
+  const toggle = (key: FlagEntry["key"], enabled: boolean): Promise<string | undefined> =>
+    Promise.resolve(wikiClient())
+      .then(({ api }) => api.flags.patch({ enabled, key }))
+      .then((response) => {
+        const updated = apiData(FlagToggled, response);
+        setOverrides((current) => ({ ...current, [updated.key]: updated }));
+        return undefined;
+      })
+      .catch((error: unknown) => errorMessage(error));
 
   const flags = AsyncResult.isSuccess(listing)
     ? listing.value.map((entry) => overrides[entry.key] ?? entry)

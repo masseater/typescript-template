@@ -7,9 +7,11 @@ import type { ReactElement } from "react";
 function ProfilePending(): ReactElement {
   return (
     <ProfileBody>
-      <div className="flex items-center gap-4">
-        <span className="size-20 shrink-0 rounded-full bg-muted" />
-        <span className="h-8 w-48 rounded-md bg-muted" />
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="h-24 bg-muted" />
+        <div className="px-5 pb-5">
+          <div className="-mt-10 size-20 rounded-full bg-muted" />
+        </div>
       </div>
       <StatusMessage variant={STATUS_VARIANT.pending}>
         プロフィールを読み込んでいます。

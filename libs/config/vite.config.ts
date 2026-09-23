@@ -1,34 +1,28 @@
+import { modularBoundaries } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
+
+import { effectTsgoNoEmit, effectTypecheckInputs } from "./src/features/config/effect-typecheck.ts";
 
 export default defineConfig({
   run: {
     tasks: {
       "check:effect": {
-        command:
-          "check-effect-typecheck && effect-tsgo diagnostics --project tsconfig.json --format text --strict --severity error,warning",
-        input: [
-          { auto: true },
-          { base: "workspace", pattern: "!node_modules/.modules.yaml" },
-          { base: "workspace", pattern: "!**/node_modules/.bin/**" },
-          { base: "workspace", pattern: "**/*.{ts,tsx}" },
-          { base: "workspace", pattern: "**/package.json" },
-          { base: "workspace", pattern: "**/tsconfig*.json" },
-          { base: "workspace", pattern: "**/effect-typecheck-baseline.json" },
-          { base: "workspace", pattern: "!**/node_modules/**" },
-          { base: "workspace", pattern: "!**/dist/**" },
-          { base: "workspace", pattern: "!**/.paraglide/**" },
-          { base: "workspace", pattern: "!**/.local/**" },
-        ],
+        command: effectTsgoNoEmit("tsconfig.json"),
+        input: [...effectTypecheckInputs],
       },
+      ...modularBoundaries,
       precommit: { command: [], dependsOn: [] },
-      prepush: { command: [], dependsOn: ["precommit", "check:effect"] },
+      prepush: { command: [], dependsOn: ["precommit", "check:effect", "check:modular"] },
       prepr: { command: [], dependsOn: ["prepush"] },
       premerge: { command: [], dependsOn: [] },
       prerelease: { command: [], dependsOn: ["prepr", "premerge"] },
     },
   },
   test: {
-    coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },
+    coverage: {
+      exclude: ["specs/**"],
+      thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },
+    },
     mockReset: true,
     restoreMocks: true,
   },

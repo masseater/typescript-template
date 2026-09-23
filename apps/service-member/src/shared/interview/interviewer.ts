@@ -6,7 +6,7 @@ import { Context, Effect, Layer, Schema } from "effect";
 
 import { fieldDefinitions, fieldKeys } from "./sheet.ts";
 import { UnderstandingFailed } from "./understanding-failed.ts";
-import { Understanding } from "./understanding.ts";
+import { Understanding, understandByRules } from "./understanding.ts";
 
 import type { ConfigurationInvalid } from "@repo/config";
 import type { InterviewState } from "./state.ts";
@@ -23,11 +23,16 @@ const modelOptions = {
   temperature: 0.3,
 };
 
+interface InterviewReading {
+  readonly source: "model" | "rules";
+  readonly understanding: UnderstandingData;
+}
+
 interface InterviewerShape {
   readonly understand: (
     state: InterviewState,
     utterance: string,
-  ) => Effect.Effect<UnderstandingData, UnderstandingFailed>;
+  ) => Effect.Effect<InterviewReading, UnderstandingFailed>;
 }
 
 const ModelOutput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(Understanding));
@@ -58,14 +63,13 @@ function request(state: InterviewState, utterance: string): string {
 }
 
 function complete(
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   access: ModelAccess,
   state: InterviewState,
   utterance: string,
 ): Effect.Effect<UnderstandingData, UnderstandingFailed> {
   return Effect.tryPromise({
     catch: (cause) => new UnderstandingFailed({ cause, reason: "model_failed" }),
-    try: async () =>
+    try: () =>
       chat({
         adapter: createWorkersAiChat(model, access),
         messages: [{ content: request(state, utterance), role: "user" }],
@@ -85,15 +89,22 @@ function complete(
 class Interviewer extends Context.Service<Interviewer, InterviewerShape>()(
   "#shared/interview/Interviewer",
 ) {
-  // oxlint-disable-next-line typescript/prefer-readonly-parameter-types
   public static layer(access?: ModelAccess): Layer.Layer<Interviewer> {
     return Layer.succeed(
       Interviewer,
       Interviewer.of({
         understand: (state, utterance) =>
           access === undefined
-            ? Effect.fail(new UnderstandingFailed({ reason: "unavailable" }))
-            : complete(access, state, utterance),
+            ? Effect.succeed({
+                source: "rules" as const,
+                understanding: understandByRules(state, utterance),
+              })
+            : complete(access, state, utterance).pipe(
+                Effect.map((understanding): InterviewReading => ({
+                  source: "model",
+                  understanding,
+                })),
+              ),
       }),
     );
   }

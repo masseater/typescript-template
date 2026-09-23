@@ -5,9 +5,10 @@ import { userClient } from "#shared/api/index.ts";
 
 import type { Session } from "#entities/session/model/session.ts";
 
-async function loadSession(): Promise<Session | undefined> {
-  const { api } = await userClient();
-  return apiDataOrNone(SessionView, await api.session.get());
+function loadSession(): Promise<Session | undefined> {
+  return Promise.resolve(userClient()).then(({ api }) =>
+    api.session.get().then((response) => apiDataOrNone(SessionView, response)),
+  );
 }
 
 export { loadSession };

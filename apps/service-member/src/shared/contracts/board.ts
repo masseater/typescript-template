@@ -12,17 +12,17 @@ const BoardAuthor = Schema.NullOr(Schema.Struct({ id: Schema.String, name: Schem
 
 const BoardThreadSummary = Schema.Struct({
   author: BoardAuthor,
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   id: Schema.String,
-  lastPostedAt: Schema.Number,
-  postCount: Schema.Number,
+  lastPostedAt: Schema.Finite,
+  postCount: Schema.Finite,
   title: Schema.String,
 });
 
 const BoardPostView = Schema.Struct({
   author: BoardAuthor,
   body: Schema.String,
-  createdAt: Schema.Number,
+  createdAt: Schema.Finite,
   id: Schema.String,
 });
 

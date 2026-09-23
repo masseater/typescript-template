@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { ROLE, type Role } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 import { TestClock } from "effect/testing";
 
 import { createBoardPost, createBoardThread, findBoardThread, listBoardThreads } from "./board.ts";
@@ -10,15 +10,15 @@ import { createBoardPost, createBoardThread, findBoardThread, listBoardThreads }
 import type { Database, DatabaseFailure } from "@repo/db";
 
 const { user } = schema;
-const recordedAt = new Date("2026-01-01T00:00:00.000Z");
+const recordedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-01T00:00:00.000Z"));
 
 const addUser = (added: {
   readonly userId: string;
   readonly role?: Role;
   readonly emailVerified?: boolean;
 }): Effect.Effect<void, DatabaseFailure, Database> =>
-  query(async (database): Promise<void> => {
-    await database.insert(user).values({
+  query((database) =>
+    database.insert(user).values({
       createdAt: recordedAt,
       email: `${added.userId}@example.com`,
       emailVerified: added.emailVerified ?? true,
@@ -26,8 +26,8 @@ const addUser = (added: {
       name: added.userId,
       role: added.role ?? ROLE.member,
       updatedAt: recordedAt,
-    });
-  });
+    }),
+  );
 
 const firstPage = { limit: 2, offset: 0 };
 const secondPage = { limit: 2, offset: 2 };
@@ -160,11 +160,9 @@ describe("threads and posts", () => {
       const threadId = yield* openThread("author", draft.title);
       yield* runStatement("DELETE FROM user WHERE id = ?", "author");
       const found = yield* findBoardThread("reader", threadId, wholePage);
-      // oxlint-disable-next-line unicorn/no-null
       assert.strictEqual(found.thread.author, null);
       assert.deepStrictEqual(
         found.posts.map((post) => [post.author, post.body]),
-        // oxlint-disable-next-line unicorn/no-null
         [[null, draft.body]],
       );
     }).pipe(Effect.provide(TestDatabase)),

@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
+import { httpStatus } from "@repo/config";
 import { deleteUser, listUsers, setUserRole } from "@repo/db/admin";
-import { httpStatus } from "@repo/observability";
 import { accountApi, unavailable } from "@repo/runtime/account";
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
@@ -53,7 +53,11 @@ const adminApi = createApi(apiRoot)
         Effect.gen(function* handleRequest() {
           const { session } = yield* verifySession(request.headers);
           const change = yield* readJsonBody(RoleChange, request);
-          return yield* setUserRole(session.id, change.id, change.role);
+          return yield* setUserRole({
+            role: change.role,
+            sessionId: session.id,
+            targetId: change.id,
+          });
         }),
       failures,
     ),
@@ -72,4 +76,5 @@ const adminApi = createApi(apiRoot)
     ),
   );
 
-export { adminApi };
+export { adminApi, adminApi as app };
+export default adminApi;

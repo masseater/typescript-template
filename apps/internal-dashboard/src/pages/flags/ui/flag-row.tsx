@@ -1,7 +1,23 @@
 import { CheckboxField, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
+import { Effect } from "effect";
 
 import type { FlagEntry } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
+
+function toggleFlag(
+  onToggle: (key: FlagEntry["key"], enabled: boolean) => Promise<string | undefined>,
+  key: FlagEntry["key"],
+  enabled: boolean,
+): Promise<void> {
+  return Effect.runPromise(
+    Effect.gen(function* toggleRow() {
+      const message = yield* Effect.promise(() => onToggle(key, enabled));
+      if (message !== undefined) {
+        throw new Error(message);
+      }
+    }),
+  );
+}
 
 function FlagRow({
   entry,
@@ -26,17 +42,12 @@ function FlagRow({
           label={entry.enabled ? "オン" : "オフ"}
           name={`flag-${entry.key}`}
           onCheckedChange={(checked) => {
-            action.run(async () => {
-              const message = await onToggle(entry.key, checked === true);
-              if (message !== undefined) {
-                throw new Error(message);
-              }
-            });
+            action.run(() => toggleFlag(onToggle, entry.key, checked === true));
           }}
         />
       </div>
       {action.error === undefined ? null : (
-        <StatusMessage variant={STATUS_VARIANT.error}>{action.error}</StatusMessage>
+        <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
       )}
     </div>
   );

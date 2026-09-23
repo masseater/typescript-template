@@ -1,6 +1,6 @@
 import { verifySession } from "@repo/auth";
+import { httpStatus } from "@repo/config";
 import { UserNotFound } from "@repo/db";
-import { httpStatus } from "@repo/observability";
 import { accountApi, unavailable } from "@repo/runtime/account";
 import { apiRoot, apiRoutes, createApi, readJsonBody, readSearchParams } from "@repo/runtime/http";
 import { Effect } from "effect";
@@ -19,6 +19,8 @@ import { boardApi } from "./board-api.ts";
 import { contactApi } from "./contact-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { interviewApi } from "./interview-api.ts";
+import { jobsApi } from "./jobs-api.ts";
+import { realtimeApi } from "./realtime-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { socialApi } from "./social-api.ts";
 
@@ -33,6 +35,8 @@ const userApi = createApi(apiRoot)
   .use(contactApi(api))
   .use(flagsApi(api))
   .use(interviewApi(api))
+  .use(jobsApi(api))
+  .use(realtimeApi(api))
   .use(socialApi(api))
   .get(
     "/profile",
@@ -42,7 +46,7 @@ const userApi = createApi(apiRoot)
         Effect.gen(function* handleRequest() {
           const { user } = yield* verifySession(request.headers);
           const profile = yield* getProfile(user.id);
-          if (profile === null) {
+          if (profile === undefined) {
             return yield* new UserNotFound();
           }
           return profile;
@@ -93,4 +97,5 @@ const userApi = createApi(apiRoot)
   )
   .use(boardApi(api));
 
-export { userApi };
+export { userApi, userApi as app };
+export default userApi;

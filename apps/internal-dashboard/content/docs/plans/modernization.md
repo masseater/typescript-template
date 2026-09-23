@@ -3,7 +3,7 @@ title: モダン化計画
 description: TanStack Start、Elysia、Effect を土台に、採用する技術と現在の構成から置き換えるものをまとめた計画です。
 ---
 
-TanStack Start、Elysia、Effect v4 を土台にし、Cloudflare 上で動かします。TanStack 系のライブラリは基本すべて採用し、alpha や beta の段階でも使います。SaaS には依存しません。
+TanStack Start、Elysia、Effect v4 をもとにし、Cloudflare 上で動かします。TanStack 系のライブラリは基本すべて採用し、alpha や beta の段階でも使います。SaaS には依存しません。
 
 優先度の ★5 は入れない理由がないもの、★4 は強く推奨するもの、★3 は要件が合えば入れるもの、★2 は様子を見ながら入れるものを表します。
 
@@ -25,21 +25,21 @@ TanStack Start、Elysia、Effect v4 を土台にし、Cloudflare 上で動かし
 | 前提 | Elysia | 外部に公開する HTTP API を担います。Cloudflare アダプタは experimental で、OpenAPI の型生成と静的ファイル配信は使えません | 導入済み |
 | 前提 | Effect v4 | エラー、依存注入、並行処理を型で扱います | 導入済み |
 | ★5 | React 19 と React Compiler | 手作業のメモ化をなくします | 導入済み |
-| ★5 | TypeScript 7 | 型検査を高速化します | 導入済み |
+| ★5 | TypeScript 7 | 型チェックを高速化します | 導入済み |
 | ★5 | Vite+（Oxlint、Oxfmt、Vitest） | lint、format、test、ビルドをまとめて担います | 導入済み |
 | ★5 | pnpm workspaces | モノレポを管理します | 導入済み |
 | ★5 | Effect Schema | スキーマを 1 つに揃えます | 導入済み |
 | ★5 | Better Auth | 認証を担います | 導入済み |
 | ★5 | Drizzle ORM v1 | D1 と Durable Objects の SQLite の両方に対応したドライバを持ちます | 導入済み |
-| ★4 | Varlock | 環境変数の契約を型付きで検査します | 採用しない。理由: 契約の正本を 1 つにできず、Effect Schema による検証と二重になります |
+| ★4 | Varlock | 環境変数の契約を型付きで確認します | 採用しない。理由: 契約の基準を 1 つにできず、Effect Schema による検証と二重になります |
 
 ORM は Prisma と Kysely も比べたうえで Drizzle にしました。Prisma 8 では SQLite が experimental で、Prisma 7 はバンドルが約 1.6MB あります。Kysely は Effect v4 で公式の連携が削除され、D1 と Durable Objects のドライバもサードパーティ製です。
 
-Varlock は採用しません。契約の正本を 1 つにできないからです。
+Varlock は採用しません。契約の基準を 1 つにできないからです。
 
-Worker が実行時に受け取るのは文字列だけではなく、D1、メール送信、静的ファイルの binding でもあります。Effect Schema はその両方を 1 つのスキーマで検証し、localhost 以外は HTTPS を要求する・Mailpit は手元の開発でだけ許す・Mailpit が無いならメール配送の binding を要る、という項目をまたぐ規則も同じ場所に持っています。デプロイ入力の側も同じで、origin の重複と予算の余裕を項目をまたぐ規則として検査し、秘密は Effect の `Redacted` で扱っています。Varlock の `.env.schema` が宣言できるのは文字列の項目だけで、binding も項目をまたぐ規則も表せません。つまり Varlock を足しても既存の検証は残り、契約が 2 か所に分かれます。
+Worker が実行時に受け取るのは文字列だけではなく、D1、メール送信、静的ファイルの binding でもあります。Effect Schema はその両方を 1 つのスキーマで検証し、localhost 以外は HTTPS を要求する・Mailpit は手元の開発でだけ許す・Mailpit が無いならメール配送の binding を要る、という項目をまたぐ規則も同じ場所に持っています。デプロイ入力の側も同じで、origin の重複と予算の余裕を項目をまたぐ規則として確認し、秘密は Effect の `Redacted` で扱っています。Varlock の `.env.schema` が宣言できるのは文字列の項目だけで、binding も項目をまたぐ規則も表せません。つまり Varlock を足しても既存の検証は残り、契約が 2 か所に分かれます。
 
-配送の経路も合いません。Varlock が Worker の実行時に読むのは、解決済みの環境変数をまとめて 1 つの秘密として配った binding で、これを作るのは wrangler を置き換える Varlock の CLI だけです。このリポジトリのデプロイは Alchemy v2 の宣言で、`plan` の確認と stacks の検証が binding を 1 件ずつ種別まで突き合わせています。手元の開発でも、Varlock の Vite プラグインは `.dev.vars` を見つけると例外を投げますが、`.dev.vars` は開発用の値の置き場としてすでに決まっていて、ローカルの D1 と workerd のテストも同じ経路を使います。
+配送の仕方も合いません。Varlock が Worker の実行時に読むのは、解決済みの環境変数をまとめて 1 つの秘密として配った binding で、これを作るのは wrangler を置き換える Varlock の CLI だけです。このリポジトリのデプロイは Alchemy v2 の宣言で、`plan` の確認と stacks の検証が binding を 1 件ずつ種別まで比べています。手元の開発でも、Varlock の Vite プラグインは `.dev.vars` を見つけると例外を投げますが、`.dev.vars` は開発用の値の置き場としてすでに決まっていて、ローカルの D1 と workerd のテストも同じ手順を使います。
 
 出力の伏せ字と応答の漏洩検知は Varlock だけが持つ機能で、これはまだありません。ただし何を秘密とみなすかの定義が `.env.schema` に移るため、上の重複を受け入れることが前提になります。この 2 つが要るようになったら、定義を Effect Schema 側に置いたまま別途用意します。
 
@@ -77,13 +77,13 @@ Worker が実行時に受け取るのは文字列だけではなく、D1、メ�
 
 user アプリは業務アプリではなく、Facebook のような SNS の画面を想定します。
 
-フロントを含むアプリは [Feature-Sliced Design](https://fsd.how/ja/docs/get-started/overview/) で構成し、層の境界を [steiger](https://github.com/feature-sliced/steiger) で検査します。TanStack Start のルートファイルは app 層の薄いアダプタにとどめ、画面は pages 層に置きます。
+フロントを含むアプリは [Feature-Sliced Design](https://fsd.how/ja/docs/get-started/overview/) で構成し、層の境界を [steiger](https://github.com/feature-sliced/steiger) で確認します。TanStack Start のルートファイルは app 層の薄いアダプタにとどめ、画面は pages 層に置きます。
 
-導入済みです。user・admin・wiki の 3 アプリが層に分かれ、steiger の検査も 3 アプリすべてに掛かっています。
+導入済みです。user・admin・wiki の 3 アプリが層に分かれ、steiger の確認も 3 アプリすべてに掛かっています。
 
 ### 見た目を SmartHR 風にする
 
-shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartHR 風に書き換えます。部品は `shared/ui` に置き、このリポジトリの中で直接カスタムします。
+shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartHR 風に書き換えます。コンポーネントは `shared/ui` に置き、このリポジトリの中で直接カスタムします。
 
 ```
 ┌───────────────────────────────────────┐
@@ -91,7 +91,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 └──────────────────┬────────────────────┘
                    │ import
 ┌──────────────────▼────────────────────┐
-│ shared/ui                             │  色・角丸・影・文字を部品が持つ
+│ shared/ui                             │  色・角丸・影・文字をコンポーネントが持つ
 └──────────────────┬────────────────────┘
                    │
 ┌──────────────────▼────────────────────┐
@@ -105,15 +105,15 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 
 1. style は Vega から始めます。SNS の画面ではコンパクトな Mira や Nova だと窮屈になり、Maia は角丸が大きすぎて SmartHR の見た目と合いません。
 2. smarthr-ui（MIT）のトークン値を `@theme` と shadcn/ui の CSS 変数に移植します。移植するのは色（`MAIN`、`GREY_*`、`DANGER`、`WARNING_YELLOW`）、角丸（4px / 6px / 8px）、影（`layer-0` から `layer-4`）、文字サイズと行間、フォーカスリングの色（`OUTLINE`）です。
-3. 余白の基準値 `--spacing` は変えません。SmartHR の余白は 8px 刻みなので既定の 4px 基準で表現でき、基準値を変えると shadcn/ui の部品の寸法が崩れます。
+3. 余白の基準値 `--spacing` は変えません。SmartHR の余白は 8px 刻みなので既定の 4px 基準で表現でき、基準値を変えると shadcn/ui のコンポーネントの寸法が崩れます。
 4. 和文フォントのフォールバック、アイコンセット、境界線と影の使い分けを揃えます。
 5. ブランド色（`BRAND`）とロゴは移植しません。
 
-状況は完了です。色・角丸・影・文字のトークンの移植と `shared/ui` の部品に加え、和文フォントのフォールバックも `libs/ui` の body に揃えています。
+状況は完了です。色・角丸・影・文字のトークンの移植と `shared/ui` のコンポーネントに加え、和文フォントのフォールバックも `libs/ui` の body に揃えています。
 
 ### 見た目のルールを lint で守らせる
 
-[@shadcn/lint](https://github.com/shadcn-ui/lint) を Oxlint の `jsPlugins` で読み込み、部品の場所は `components.json` の `aliases.ui` で示します。余白の上書きは許可し、色、角丸、影、文字を部品の外から変えることを禁止します。
+[@shadcn/lint](https://github.com/shadcn-ui/lint) を Oxlint の `jsPlugins` で読み込み、コンポーネントの場所は `components.json` の `aliases.ui` で示します。余白の上書きは許可し、色、角丸、影、文字をコンポーネントの外から変えることを禁止します。
 
 状況は導入済みです。どの規則をどこで緩めているかは `vite.config.ts` の `lint` が持ちます。
 
@@ -123,7 +123,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 | --- | --- | --- | --- |
 | ★5 | Paraglide JS | i18n を担います。TanStack Start の公式サンプルがあります | 未着手 |
 | ★5 | `@smarthr/wareki` | 和暦を変換します | 導入済み |
-| ★5 | Storybook 10、`@storybook/addon-mcp`、Vitest addon | AI が部品を参照、再利用、テストできるようにします | 導入済み |
+| ★5 | Storybook 10、`@storybook/addon-mcp`、Vitest addon | AI がコンポーネントを参照、再利用、テストできるようにします | 導入済み |
 | ★4 | Storybook a11y addon（axe） | 描画結果の a11y 違反を検出します | 導入済み |
 | ★3 | `temporal-polyfill` | Safari でも Temporal を使えるようにします | 導入済み |
 | ★2 | Motion | アニメーションを担います | 導入済み |
@@ -138,7 +138,7 @@ shadcn/ui を挙動と a11y の骨格として使い、見た目だけを SmartH
 
 | 優先度 | 採用するもの | 役割 | 状況 |
 | --- | --- | --- | --- |
-| ★5 | Vitest browser mode と Playwright | 実ブラウザでテストと E2E を実行します | 一部。Storybook の部品のテストだけが実ブラウザで走り、アプリ全体の E2E は残っています |
+| ★5 | Vitest browser mode と Playwright | 実ブラウザでテストと E2E を実行します | 一部。Storybook のコンポーネントのテストだけが実ブラウザで実行され、アプリ全体の E2E は残っています |
 | ★5 | MSW | 外部 HTTP だけを置き換えます | 導入済み |
 | ★5 | knip | 使われていない export や依存を検出します | 導入済み |
 | ★4 | Effect の OTLP 出力 | Effect のスパンとログを OpenTelemetry で送ります | 導入済み |

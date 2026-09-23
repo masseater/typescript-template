@@ -32,9 +32,7 @@ function OverviewPage(): ReactElement {
         <Heading as="h2" size="section">
           推移
         </Heading>
-        <StatusMessage variant={STATUS_VARIANT.pending}>
-          推移のグラフはまだありません。
-        </StatusMessage>
+        <StatusMessage variant={STATUS_VARIANT.empty}>推移のグラフはまだありません。</StatusMessage>
       </section>
       <a
         href="https://analytics.google.com/"
