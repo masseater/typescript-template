@@ -41,14 +41,15 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `CLOUDFLARE_API_TOKEN`: Cloudflare API トークン。
     - `TEMPLATE_APP_DOMAIN`: URL ではなくホスト名（`example.com`）。`workers.dev` は不可。origin は `https://{TEMPLATE_PREFIX}-member.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-admin.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-dashboard.{TEMPLATE_APP_DOMAIN}` になります。
     - `TEMPLATE_AUTH_SECRET`: 32 文字以上、異なる文字が 16 種以上、前後に空白を付けない。
+    - `TEMPLATE_FIXED_COST_USD`: 0 以上の数。
+    - `TEMPLATE_JPY_PER_USD`: 正の数。
     - `TEMPLATE_MAIL_FROM`: メールアドレス。`@` 以降は `{TEMPLATE_PREFIX}.` で始まること。
+    - `TEMPLATE_OBSERVABILITY_SAMPLING`: 0 以上 1 以下の数。
     - `TEMPLATE_PREFIX`: 先頭は英小文字、続きは英小文字・数字・ハイフン。全体で 3〜36 文字。
+    - `TEMPLATE_RESERVE_USD`: 0 以上の数。
   - 空でも適用は始まります。値があるときだけデプロイへ渡ります。
-    - `TEMPLATE_FIXED_COST_USD`: 未設定は `0`。
-    - `TEMPLATE_JPY_PER_USD`: 未設定は `150`。
-    - `TEMPLATE_RESERVE_USD`: 未設定は `0`。
     - `TEMPLATE_OTLP_ENDPOINT`: https の URL。
-    - `TEMPLATE_OTLP_ENABLED`: `TEMPLATE_OTLP_ENDPOINT` が無い状態で置くと失敗します。
+    - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。
     - `TEMPLATE_OTLP_AUTHORIZATION`: トレース送信の認可。
 - **検索エンジン設定**:
   - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/worker.ts`）。

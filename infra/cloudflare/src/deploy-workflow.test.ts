@@ -2,11 +2,7 @@ import { fileURLToPath } from "node:url";
 
 import { assert, it } from "@effect/vitest";
 import { applications } from "@repo/config";
-import {
-  budgetKeys,
-  deploymentKeys,
-  optionalDeploymentKeys,
-} from "@repo/observability/deployment-keys";
+import { deploymentKeys, optionalDeploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
 
 import { monitorStacks } from "./monitors.ts";
@@ -23,11 +19,7 @@ const viteConfig = fileURLToPath(new URL("../vite.config.ts", import.meta.url));
 const stackBuilds = ["core", ...applications, ...monitorStacks].map(
   (unit) => `@repo/${unit}#build`,
 );
-const documentedSecrets = [
-  ...deploymentKeys,
-  ...optionalDeploymentKeys,
-  ...budgetKeys.filter((key) => !deploymentKeys.some((required) => required === key)),
-];
+const documentedSecrets = [...deploymentKeys, ...optionalDeploymentKeys];
 
 function readText(file: string): Effect.Effect<string> {
   return Effect.gen(function* readFile() {
