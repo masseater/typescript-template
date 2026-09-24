@@ -119,7 +119,7 @@ layer(NodeServices.layer)("lintRuleDocProblems", (it) => {
             {
               file: DOC_PATH,
               message:
-                "A rule document must not lose its `examples` region. Delete the file and seed it again with `vp run guard:fix`.",
+                "A rule document must not lose its `examples` region. Delete the file and seed it again with `dont-review-it check --write`.",
             },
           ],
           scanned: 1,
@@ -149,7 +149,7 @@ layer(NodeServices.layer)("lintRuleDocProblems", (it) => {
             {
               file: DOC_PATH,
               message:
-                "A rule document must not lose its `frontmatter description` region. Delete the file and seed it again with `vp run guard:fix`.",
+                "A rule document must not lose its `frontmatter description` region. Delete the file and seed it again with `dont-review-it check --write`.",
             },
           ],
           scanned: 1,
@@ -179,7 +179,7 @@ layer(NodeServices.layer)("lintRuleDocProblems", (it) => {
             {
               file: DOC_PATH,
               message:
-                "The `frontmatter description` region must not fall behind the rule. Regenerate it with `vp run guard:fix`.",
+                "The `frontmatter description` region must not fall behind the rule. Regenerate it with `dont-review-it check --write`.",
             },
           ],
           scanned: 1,
@@ -212,7 +212,7 @@ layer(NodeServices.layer)("lintRuleDocProblems", (it) => {
             {
               file: DOC_PATH,
               message:
-                "The `messages` region must not fall behind the rule. Regenerate it with `vp run guard:fix`.",
+                "The `messages` region must not fall behind the rule. Regenerate it with `dont-review-it check --write`.",
             },
           ],
           scanned: 1,

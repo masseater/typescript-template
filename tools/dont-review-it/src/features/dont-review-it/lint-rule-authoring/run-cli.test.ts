@@ -5,11 +5,11 @@ import { describe, expect } from "vite-plus/test";
 
 import { runLintRuleAuthoring } from "./run-cli.ts";
 
-const MISSING_INDEX = `packages/example/docs/lint/index.md A workspace that declares lint rules must not go without \`packages/example/docs/lint/index.md\`. Generate it with \`vp run guard:fix\`.\n`;
+const MISSING_INDEX = `packages/example/docs/lint/index.md A workspace that declares lint rules must not go without \`packages/example/docs/lint/index.md\`. Generate it with \`dont-review-it check --write\`.\n`;
 
-const MISSING_DOC = `packages/example/docs/lint/no-thing--allow-it.md A rule must not go without its document. Seed it with \`vp run guard:fix\`, then write the sections it leaves for you.\n`;
+const MISSING_DOC = `packages/example/docs/lint/no-thing--allow-it.md A rule must not go without its document. Seed it with \`dont-review-it check --write\`, then write the sections it leaves for you.\n`;
 
-const MISSING_GUIDELINE_INDEX = `docs/lint-rules-by-guideline.md A repository whose rules name their grounds must not go without \`docs/lint-rules-by-guideline.md\`. Generate it with \`vp run guard:fix\`.\n`;
+const MISSING_GUIDELINE_INDEX = `docs/lint-rules-by-guideline.md A repository whose rules name their grounds must not go without \`docs/lint-rules-by-guideline.md\`. Generate it with \`dont-review-it check --write\`.\n`;
 
 const SEEDED_SECTIONS = [
   `packages/example/docs/lint/no-thing--allow-it.md A seeded section must not be left as it was written. Replace "State what this rule rejects, why the invariant behind it holds, and where the detection stops short.".`,
