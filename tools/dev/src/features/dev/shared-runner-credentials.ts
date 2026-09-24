@@ -1,6 +1,5 @@
-import { env as processEnvironment } from "node:process";
-
 import { appEnvKey, applicationOrigins, grants, mailpitOrigin } from "@repo/config";
+import { optionalSetting } from "@repo/config/process-environment";
 import { receiverOrigin } from "@repo/local";
 import { Crypto, Effect } from "effect";
 
@@ -62,6 +61,6 @@ function appVariables(
   };
 }
 
-const ciCredentials = (): boolean => processEnvironment["CI"] !== undefined;
+const ciCredentials = (): boolean => optionalSetting("CI") !== undefined;
 
 export { appVariables, ciCredentials, sharedRunnerCredentials };

@@ -1,9 +1,7 @@
-import { tmpdir } from "node:os";
-import { env as processEnvironment } from "node:process";
-
 import { assert, it } from "@effect/vitest";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
+import { vi } from "vite-plus/test";
 
 import { verifySecretsFile } from "./credentials.ts";
 import { secretsFile } from "./deployment.ts";
@@ -23,7 +21,6 @@ function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
   return Effect.gen(function* makeTemporary() {
     const filesystem = yield* FileSystem.FileSystem;
     const directory = yield* filesystem.makeTempDirectoryScoped({
-      directory: tmpdir(),
       prefix: "template-secrets-",
     });
     return yield* filesystem.realPath(directory);
@@ -116,21 +113,18 @@ it.effect("reports a missing file instead of deploying without it", () =>
 
 it.effect("resolves the same file the staged-diff check reads", () =>
   Effect.acquireUseRelease(
-    Effect.sync(() => processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"]),
+    Effect.sync(() => {
+      vi.stubEnv("TEMPLATE_CLOUDFLARE_ENV_FILE", undefined);
+    }),
     () =>
       Effect.sync(() => {
-        delete processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
         assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"] = "/elsewhere/cloudflare.env";
+        vi.stubEnv("TEMPLATE_CLOUDFLARE_ENV_FILE", "/elsewhere/cloudflare.env");
         assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
       }),
-    (previous) =>
+    () =>
       Effect.sync(() => {
-        delete processEnvironment["TEMPLATE_CLOUDFLARE_ENV_FILE"];
-        Object.assign(
-          processEnvironment,
-          previous === undefined ? {} : { TEMPLATE_CLOUDFLARE_ENV_FILE: previous },
-        );
+        vi.unstubAllEnvs();
       }),
   ),
 );

@@ -9,7 +9,9 @@ const nodePath = process.getBuiltinModule("path") as {
 };
 
 const nodeOs = process.getBuiltinModule("os") as {
+  readonly constants: { readonly signals: Readonly<Record<NodeJS.Signals, number>> };
   readonly homedir: () => string;
+  readonly tmpdir: () => string;
 };
 
 const nodeCrypto = process.getBuiltinModule("crypto") as {
@@ -35,6 +37,10 @@ const baseName = (location: string): string => nodePath.basename(location);
 const resolvePath = (...parts: readonly string[]): string => nodePath.resolve(...parts);
 
 const homeDirectory = (): string => nodeOs.homedir();
+
+const temporaryDirectory = (): string => nodeOs.tmpdir();
+
+const signalNumber = (signal: NodeJS.Signals): number => nodeOs.constants.signals[signal];
 
 const fileExists = (location: string): boolean => nodeFs.existsSync(location);
 
@@ -84,6 +90,8 @@ export {
   readFileString,
   removePath,
   resolvePath,
+  signalNumber,
+  temporaryDirectory,
   wallClockDate,
   writeFileString,
 };

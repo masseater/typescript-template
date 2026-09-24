@@ -1,14 +1,12 @@
-import { fileURLToPath } from "node:url";
-
 import { APPLICATION, wikiWorker } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 
-import { path } from "./platform.ts";
+import { fileUrlPath, path } from "./platform.ts";
 
 import type { MonitorStack } from "./monitors.ts";
 import type { PackageStack, StackName } from "./stacks.ts";
 
-const cloudflareSrc = fileURLToPath(new URL(".", import.meta.url));
+const cloudflareSrc = fileUrlPath(new URL(".", import.meta.url));
 
 const applicationEntrypoints = {
   [APPLICATION.admin]: path.join(repositoryRoot, "apps", APPLICATION.admin, "alchemy.run.ts"),

@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { createRequire } from "node:module";
-
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, cliStderr, markFailed, runCli } from "@repo/cli";
 import { Effect, Path, Schema } from "effect";
@@ -9,8 +7,6 @@ import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 import { capturedProcess } from "./captured-process.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { typecheckProjects } from "./typecheck-projects.ts";
-
-const require = createRequire(import.meta.url);
 
 class TypecheckUnstarted extends Schema.TaggedError<TypecheckUnstarted>()("TypecheckUnstarted", {
   cause: Schema.Defect(),
@@ -25,7 +21,9 @@ const typecheckWorkspaces = Effect.gen(function* typecheckWorkspaces() {
   const paths = yield* Path.Path;
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const effectTsgoCli = paths.join(
-    paths.dirname(require.resolve("@effect/tsgo/package.json")),
+    paths.dirname(
+      yield* paths.fromFileUrl(new URL(import.meta.resolve("@effect/tsgo/package.json"))),
+    ),
     "dist",
     "effect-tsgo.cjs",
   );

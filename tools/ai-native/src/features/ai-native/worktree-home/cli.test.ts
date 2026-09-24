@@ -1,7 +1,5 @@
-import { fileURLToPath } from "node:url";
-
 import { runHook } from "cc-hooks-ts";
-import { Effect } from "effect";
+import { Effect, Path } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
 import { joinPath } from "../host.ts";
@@ -11,7 +9,11 @@ import { hook } from "./hook.ts";
 
 vi.mock(import("cc-hooks-ts"), { spy: true });
 
-const CLI_PATH = fileURLToPath(new URL("./cli.ts", import.meta.url));
+const CLI_PATH = Effect.runSync(
+  Effect.flatMap(Path.Path, (path) => path.fromFileUrl(new URL("./cli.ts", import.meta.url))).pipe(
+    Effect.provide(Path.layer),
+  ),
+);
 
 const nodeFs = process.getBuiltinModule("fs") as {
   readonly mkdtempSync: (prefix: string) => string;

@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
 import { applicationOrigins, mailpitOrigin } from "@repo/config";
@@ -34,13 +32,13 @@ class LoadTestFailure extends Schema.TaggedError<LoadTestFailure>()("LoadTestFai
 
 type Failure = BinaryUnavailable | EnvironmentUnusable | LoadTestFailure;
 
-const scenarios = fileURLToPath(new URL("../../../scenarios/", import.meta.url));
-const { home, summaryFile } = Effect.runSync(
+const { home, scenarios, summaryFile } = Effect.runSync(
   Effect.gen(function* locateK6Home() {
     const paths = yield* Path.Path;
     const homeDirectory = paths.join(repositoryRoot, ".local/k6");
     return {
       home: homeDirectory,
+      scenarios: yield* paths.fromFileUrl(new URL("../../../scenarios/", import.meta.url)),
       summaryFile: paths.join(homeDirectory, "summary.json"),
     };
   }).pipe(Effect.provide(NodeServices.layer)),
