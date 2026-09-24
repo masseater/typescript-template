@@ -25,19 +25,6 @@ const copiedMigrations = Effect.gen(function* copyMigrations() {
   return folder;
 });
 
-const withInterruptedMigration = Effect.gen(function* addInterruptedMigration() {
-  const filesystem = yield* FileSystem.FileSystem;
-  const paths = yield* Path.Path;
-  const folder = yield* copiedMigrations;
-  const interrupted = paths.join(folder, "99999999999999_interrupted");
-  yield* filesystem.makeDirectory(interrupted);
-  yield* filesystem.writeFileString(
-    paths.join(interrupted, "migration.sql"),
-    "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
-  );
-  return folder;
-});
-
 describe("migrateD1", () => {
   describe("a first migration of an empty database", () => {
     const it = test
@@ -75,7 +62,15 @@ describe("migrateD1", () => {
     const it = test.extend("migrationFailure", () =>
       Effect.runPromise(
         Effect.gen(function* interrupt() {
-          const folder = yield* withInterruptedMigration;
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const folder = yield* copiedMigrations;
+          const interrupted = paths.join(folder, "99999999999999_interrupted");
+          yield* filesystem.makeDirectory(interrupted);
+          yield* filesystem.writeFileString(
+            paths.join(interrupted, "migration.sql"),
+            "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
+          );
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
           return yield* Effect.flip(migrateD1(binding, folder));
@@ -91,7 +86,15 @@ describe("migrateD1", () => {
     const it = test.extend("interruptedTables", () =>
       Effect.runPromise(
         Effect.gen(function* interrupt() {
-          const folder = yield* withInterruptedMigration;
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const folder = yield* copiedMigrations;
+          const interrupted = paths.join(folder, "99999999999999_interrupted");
+          yield* filesystem.makeDirectory(interrupted);
+          yield* filesystem.writeFileString(
+            paths.join(interrupted, "migration.sql"),
+            "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
+          );
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
           yield* Effect.exit(migrateD1(binding, folder));
