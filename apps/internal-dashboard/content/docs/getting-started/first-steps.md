@@ -53,12 +53,18 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。
     - `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID`: `G-` で始まる Google Analytics の測定 ID。
     - `TEMPLATE_OTLP_AUTHORIZATION`: トレース送信の認可。
-    - `TEMPLATE_WIKI_PUBLISH_APP_ID`・`TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY`・`TEMPLATE_WIKI_PUBLISH_REPOSITORY`: wiki の下書きを「公開」したときに PR を作る [GitHub App](https://docs.github.com/ja/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の App ID、秘密鍵（PEM）、`owner/repository`。App には Contents と Pull requests の書き込み権限を付け、このリポジトリにインストールします。秘密鍵は GitHub が配る PKCS#1 のままでも、PKCS#8 に変えたものでも読めます。3 つとも置くか、どれも置かないかのどちらかです。本番のデプロイだけに渡すので、staging では公開ボタンは出ません。staging の編集が main を経て本番へ出ないようにするためです。
+    - `TEMPLATE_WIKI_PUBLISH_APP_ID`・`TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY`・`TEMPLATE_WIKI_PUBLISH_REPOSITORY`: wiki の下書きを「公開」したときに PR を作る [GitHub App](https://docs.github.com/ja/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の App ID、秘密鍵（PEM）、`owner/repository`。手では置かず、下の `infra/github` の適用で作ります。3 つとも置くか、どれも置かないかのどちらかです。本番のデプロイだけに渡すので、staging では公開ボタンは出ません。staging の編集が main を経て本番へ出ないようにするためです。
 - 検索エンジン設定:
   - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/worker.ts`）。
   - 一般公開する際は、公開対象のパスについてこの設定を見直し、本番応答でヘッダーを確認してから公開します。
 - Alchemy によるインフラ適用:
   - `infra/cloudflare` でリソースの `plan` を確認し、Cloudflare アカウントへインフラをデプロイします。
+  - `infra/github` の `vp run plan` と `vp run deploy` は、手元の [GitHub CLI](https://cli.github.com/) のログインで main のルールと wiki 公開用の GitHub App を作ります。
+    - 初回の deploy は端末に `http://127.0.0.1:<port>/` を出して待ちます。ブラウザで開くと GitHub の App 作成画面へ進むので、作成を押します。App の名前は `{TEMPLATE_PREFIX} wiki publisher` で、権限は Contents と Pull requests の書き込みだけです。
+    - 作成の後はインストール画面へ移ります。このリポジトリを選んでインストールすると、deploy が App ID、秘密鍵、`owner/repository` を Environment `production` の secret に書き込みます。
+    - 作成画面で 15 分待っても作成されないときは、何も作らずに deploy が失敗します。もう一度 deploy します。
+    - インストールを 15 分待っても済まないときは、App と secret を残して deploy を終えます。インストールしてからもう一度 deploy すると、インストールを確かめて完了します。
+    - GitHub には App を消す API がないので、destroy はインストールを外すだけです。App は GitHub の Developer settings から消します。
 
 ## 4. 本番リリース前に DB を決める
 

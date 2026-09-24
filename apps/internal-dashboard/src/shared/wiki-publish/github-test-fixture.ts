@@ -1,5 +1,6 @@
-import { httpStatus } from "@repo/config";
-import { Effect, Encoding, Redacted, Result } from "effect";
+import { gitHubApiOrigin, httpStatus } from "@repo/config";
+import { gitHubAppKeyFixture } from "@repo/config/testing";
+import { Effect, Redacted } from "effect";
 import { HttpResponse, http } from "msw";
 
 import type { WikiPublishConfig } from "@repo/config";
@@ -9,7 +10,6 @@ type GitHubCall = Readonly<{ body: unknown; path: string }>;
 type Resolved = Parameters<HttpResponseResolver>[0];
 type GitHubRequest = Resolved["request"];
 
-const gitHubApi = "https://api.github.com";
 const appId = "4242";
 const owner = "example-owner";
 const repository = "example-wiki";
@@ -21,36 +21,7 @@ const createdTree = "7ree111111111111111111111111111111111111";
 const createdCommit = "c1abcde111111111111111111111111111111111";
 const pullRequestNumber = 7;
 const pullRequestUrl = `https://github.com/${owner}/${repository}/pull/${String(pullRequestNumber)}`;
-const rsaModulusLength = 2048;
-const pemLineLength = 64;
-const repositoryApi = `${gitHubApi}/repos/${owner}/${repository}`;
-
-const pem = (label: string, der: ArrayBuffer): string =>
-  `-----BEGIN ${label}-----\n${(Encoding.encodeBase64(new Uint8Array(der)).match(new RegExp(`.{1,${String(pemLineLength)}}`, "gu")) ?? []).join("\n")}\n-----END ${label}-----\n`;
-
-const decodeSegment = (segment: string): Uint8Array =>
-  Result.getOrElse(Encoding.decodeBase64Url(segment), () => new Uint8Array());
-
-const signedByApp = (request: GitHubRequest, publicKey: CryptoKey): Promise<boolean> => {
-  const [header = "", payload = "", signature = ""] = (request.headers.get("authorization") ?? "")
-    .replace(/^Bearer /u, "")
-    .split(".");
-  const claims: unknown = JSON.parse(new TextDecoder().decode(decodeSegment(payload)));
-  return crypto.subtle
-    .verify(
-      "RSASSA-PKCS1-v1_5",
-      publicKey,
-      new Uint8Array(decodeSegment(signature)),
-      new TextEncoder().encode(`${header}.${payload}`),
-    )
-    .then(
-      (verified) =>
-        verified &&
-        typeof claims === "object" &&
-        claims !== null &&
-        Reflect.get(claims, "iss") === appId,
-    );
-};
+const repositoryApi = `${gitHubApiOrigin}/repos/${owner}/${repository}`;
 
 const byInstallation = (request: GitHubRequest): boolean =>
   request.headers.get("authorization") === `Bearer ${installationToken}` &&
@@ -64,29 +35,11 @@ type FakeGitHubOptions = Readonly<{
   unavailableStep?: string;
 }>;
 
-const pkcs1Offset = 26;
-
 const fakeGitHub = Effect.fn("fakeGitHub")(function* fakeGitHub(
   publishedBlob: string | null,
   { keyFormat = "pkcs8", unavailableStep }: FakeGitHubOptions = {},
 ) {
-  const keys = yield* Effect.promise(() =>
-    crypto.subtle.generateKey(
-      {
-        hash: "SHA-256",
-        modulusLength: rsaModulusLength,
-        name: "RSASSA-PKCS1-v1_5",
-        publicExponent: Uint8Array.of(1, 0, 1),
-      },
-      true,
-      ["sign", "verify"],
-    ),
-  );
-  const pkcs8 = yield* Effect.promise(() => crypto.subtle.exportKey("pkcs8", keys.privateKey));
-  const privateKey =
-    keyFormat === "pkcs8"
-      ? pem("PRIVATE KEY", pkcs8)
-      : pem("RSA PRIVATE KEY", pkcs8.slice(pkcs1Offset));
+  const key = yield* gitHubAppKeyFixture(keyFormat);
   const calls: GitHubCall[] = [];
   const created =
     (path: string, response: JsonBodyType) =>
@@ -111,18 +64,20 @@ const fakeGitHub = Effect.fn("fakeGitHub")(function* fakeGitHub(
   let blobs = 0;
   const handlers = [
     http.get(`${repositoryApi}/installation`, ({ request }) =>
-      signedByApp(request, keys.publicKey).then((signed) =>
-        signed ? HttpResponse.json({ id: installationId }) : refused(),
-      ),
+      key
+        .signedBy(request.headers.get("authorization"), appId)
+        .then((signed) => (signed ? HttpResponse.json({ id: installationId }) : refused())),
     ),
     http.post(
-      `${gitHubApi}/app/installations/${String(installationId)}/access_tokens`,
+      `${gitHubApiOrigin}/app/installations/${String(installationId)}/access_tokens`,
       ({ request }) =>
-        signedByApp(request, keys.publicKey).then((signed) =>
-          signed
-            ? HttpResponse.json({ token: installationToken }, { status: httpStatus.created })
-            : refused(),
-        ),
+        key
+          .signedBy(request.headers.get("authorization"), appId)
+          .then((signed) =>
+            signed
+              ? HttpResponse.json({ token: installationToken }, { status: httpStatus.created })
+              : refused(),
+          ),
     ),
     http.get(
       repositoryApi,
@@ -166,7 +121,7 @@ const fakeGitHub = Effect.fn("fakeGitHub")(function* fakeGitHub(
   const config: WikiPublishConfig = {
     appId,
     owner,
-    privateKey: Redacted.make(privateKey),
+    privateKey: Redacted.make(key.privateKey),
     repository,
   };
   return { calls, config, handlers };

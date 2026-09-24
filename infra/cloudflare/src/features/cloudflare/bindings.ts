@@ -33,8 +33,10 @@ type SharedEnv = Readonly<{
 }>;
 
 type BillingEnv = Readonly<{
+  STRIPE_AUTOMATIC_TAX: string;
   STRIPE_PRICE_ID: Output<string>;
   STRIPE_SECRET_KEY: Redacted.Redacted;
+  STRIPE_TRIAL_PERIOD_DAYS: string;
   STRIPE_WEBHOOK_SECRET: Output<Redacted.Redacted>;
 }>;
 

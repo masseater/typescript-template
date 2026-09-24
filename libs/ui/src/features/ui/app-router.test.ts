@@ -16,10 +16,11 @@ describe("app router", () => {
           {
             headers: { [cspNonceHeader]: "request-nonce" },
             routerConfig: {
-              localizedUrls: {
-                deLocalizeUrl: (url: URL): URL =>
+              rewrite: {
+                input: ({ url }: Readonly<{ url: URL }>): URL =>
                   new URL(url.pathname.replace(/^\/en/u, ""), url.origin),
-                localizeUrl: (url: URL): URL => new URL(`/en${url.pathname}`, url.origin),
+                output: ({ url }: Readonly<{ url: URL }>): URL =>
+                  new URL(`/en${url.pathname}`, url.origin),
               },
               routerContext: { tenant: "example" },
             },
@@ -51,9 +52,7 @@ describe("app router", () => {
       ),
     ));
 
-  it("adds the context, the localized rewrite and the nonce only when given", ({
-    theRouterOptions,
-  }) => {
+  it("adds the context, the rewrite and the nonce only when given", ({ theRouterOptions }) => {
     expect.hasAssertions();
     expect(theRouterOptions).toStrictEqual([
       {

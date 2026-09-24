@@ -4,7 +4,13 @@ import {
   stripeWebhookEvents,
   subscriptionStatuses,
 } from "@repo/config";
-import { attachCheckout, markPaymentFailed, memberOfCustomer, recordSubscription } from "@repo/db";
+import {
+  attachCheckout,
+  markPaymentFailed,
+  markPaymentSettled,
+  memberOfCustomer,
+  recordSubscription,
+} from "@repo/db";
 import { Effect, Schema, DateTime } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
@@ -129,14 +135,27 @@ const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscriptio
   return yield* recordSubscription(eventRecord(event), record);
 });
 
-const failPayment = Effect.fn("failPayment")(function* failPayment(event: StripeEvent) {
+const invoiceSubscription = Effect.fn("invoiceSubscription")(function* invoiceSubscription(
+  event: StripeEvent,
+) {
   const invoice = yield* readObject(Invoice, event.data.object);
-  const subscriptionId =
-    invoice.subscription ?? invoice.parent?.subscription_details?.subscription ?? undefined;
+  return invoice.subscription ?? invoice.parent?.subscription_details?.subscription ?? undefined;
+});
+
+const failPayment = Effect.fn("failPayment")(function* failPayment(event: StripeEvent) {
+  const subscriptionId = yield* invoiceSubscription(event);
   if (subscriptionId === undefined) {
     return WEBHOOK_DISPOSITION.ignored;
   }
   return yield* markPaymentFailed(eventRecord(event), subscriptionId);
+});
+
+const settlePayment = Effect.fn("settlePayment")(function* settlePayment(event: StripeEvent) {
+  const subscriptionId = yield* invoiceSubscription(event);
+  if (subscriptionId === undefined) {
+    return WEBHOOK_DISPOSITION.ignored;
+  }
+  return yield* markPaymentSettled(eventRecord(event), subscriptionId);
 });
 
 const eventHandlers = {
@@ -144,6 +163,7 @@ const eventHandlers = {
   "customer.subscription.created": syncSubscription,
   "customer.subscription.deleted": syncSubscription,
   "customer.subscription.updated": syncSubscription,
+  "invoice.paid": settlePayment,
   "invoice.payment_failed": failPayment,
 } as const satisfies Record<StripeWebhookEvent, (event: StripeEvent) => unknown>;
 

@@ -7,7 +7,6 @@
     "@shadcn/lint",
     "@storybook/addon-mcp",
     "@stryker-mutator/vitest-runner",
-    "@textlint-ja/textlint-rule-preset-ai-writing",
     "@tanstack/intent",
     "agent-browser",
     "jiti",
@@ -15,12 +14,6 @@
     "playwright",
     "portless",
     "steiger",
-    "textlint",
-    "textlint-rule-ja-no-redundant-expression",
-    "textlint-rule-no-doubled-conjunction",
-    "textlint-rule-no-exclamation-question-mark",
-    "textlint-rule-no-mix-dearu-desumasu",
-    "textlint-rule-preset-ai-words-ja",
     "zod"
   ],
   "usedClassMembers": [

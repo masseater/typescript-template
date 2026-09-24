@@ -41,7 +41,6 @@ const rootOwnedPaths = [
   ".mergify.yml",
   ".textlint-ai-words.json",
   ".textlintignore",
-  ".textlintrc.json",
   ".vite-hooks",
   "AGENTS.md",
   "CLAUDE.md",
@@ -131,14 +130,13 @@ export default defineConfig({
         dependsOn: ["compile:paraglide"],
       },
       "check:text": {
-        command: 'textlint "**/*.md"',
+        command: "dont-review-it-text",
         env: [...telemetryEnv],
         input: [
           ...taskInput,
           { base: "workspace", pattern: "**/*.md" },
           { base: "workspace", pattern: ".textlint-ai-words.json" },
           { base: "workspace", pattern: ".textlintignore" },
-          { base: "workspace", pattern: ".textlintrc.json" },
         ],
       },
       ...lifecycle({

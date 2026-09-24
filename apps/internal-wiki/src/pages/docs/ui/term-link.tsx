@@ -4,7 +4,7 @@ import { localState } from "@repo/ui";
 import Link from "fumadocs-core/link";
 import { useId } from "react";
 
-import { findGlossaryTerm } from "#shared/content/index.ts";
+import { findGlossaryTerm } from "#shared/glossary-term/index.ts";
 import { useGlossaryTerms } from "./glossary-terms-provider.tsx";
 
 import type { ReactElement } from "react";
