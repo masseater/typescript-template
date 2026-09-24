@@ -27,7 +27,7 @@ const browser = Effect.fn("browser")(function* browser(app: App) {
   const socketDirectory = yield* refreshBrowserConfig();
   const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
-  const env = { ...process.env, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  const env = { AGENT_BROWSER_SOCKET_DIR: socketDirectory };
   yield* run(
     "agent-browser",
     [...args, BROWSER_AGENT_COMMAND.open, `${origin}${applicationReadyPaths[app]}`],
