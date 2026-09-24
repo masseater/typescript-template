@@ -19,6 +19,10 @@ Which lint rules of this repository declare each normative document as their gro
 | [no-receiver-mutation--derive-new-value](../tools/dont-review-it/docs/lint/no-receiver-mutation--derive-new-value.md) | Disallow calling a method that writes to a receiver which is not an array - a collection, a moment, a query string, a form, a sink, or a class of one's own whose body writes to `this` - so a changed value always appears as a newly derived binding |
 | [no-silent-catch--rethrow-or-handle](../tools/dont-review-it/docs/lint/no-silent-catch--rethrow-or-handle.md) | Disallow a catch clause whose body never carries the failure it bound out of the clause, so a failure that was caught reaches something able to act on it instead of ending where it was caught |
 
+## [.claude/skills/reviews/references/forbid-excessive-code-sharing.md](../.claude/skills/reviews/references/forbid-excessive-code-sharing.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
 ## [.claude/skills/reviews/references/frontend-components-and-state.md](../.claude/skills/reviews/references/frontend-components-and-state.md)
 
 | Rule | Description |

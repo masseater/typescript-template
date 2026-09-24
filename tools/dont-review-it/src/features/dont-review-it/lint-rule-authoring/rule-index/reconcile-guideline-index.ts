@@ -42,9 +42,9 @@ export const guidelineIndexProblems = ({
       repositoryRoot,
       workspaces,
     })).map(({ rule, workspace }) => ({ rule, workspaceDir: workspace.workspaceDir }));
-    const normativeDocuments = normativeDocumentsIn({
+    const normativeDocuments = yield* normativeDocumentsIn({
       repositoryRoot,
-      places: normativeDocumentPlacesIn(repositoryRoot),
+      places: yield* normativeDocumentPlacesIn(repositoryRoot),
       workspaceDirectories: workspaces.map((workspace) => workspace.workspaceDir),
     });
     if (normativeDocuments.length === 0) {

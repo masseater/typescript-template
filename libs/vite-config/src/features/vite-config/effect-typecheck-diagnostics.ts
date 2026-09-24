@@ -51,10 +51,10 @@ const parseDiagnosticLine = (line: string): readonly Diagnostic[] => {
 const parseTscOutput = (compilerTranscript: string): readonly Diagnostic[] =>
   compilerTranscript.split(/\r?\n/u).flatMap(parseDiagnosticLine);
 
-const portableDiagnostic = (diagnostic: Diagnostic, repositoryRootPath: string): Diagnostic => ({
-  file: withoutCheckoutPath(diagnostic.file, repositoryRootPath),
+const portableDiagnostic = (diagnostic: Diagnostic, roots: readonly string[]): Diagnostic => ({
+  file: withoutCheckoutPath(diagnostic.file, roots),
   code: diagnostic.code,
-  message: withoutCheckoutPath(diagnostic.message, repositoryRootPath),
+  message: withoutCheckoutPath(diagnostic.message, roots),
 });
 
 const fingerprintOf = (diagnostic: Diagnostic): string =>
