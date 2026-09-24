@@ -1,4 +1,9 @@
-import { stripeApiVersion, stripeWebhookEvents } from "@repo/config";
+import {
+  stripeApiVersion,
+  stripeAutomaticTax,
+  stripeTrialPeriodDays,
+  stripeWebhookEvents,
+} from "@repo/config";
 import { apiRoot } from "@repo/runtime/http";
 import * as Output from "alchemy/Output";
 import * as Stripe from "alchemy/Stripe";
@@ -26,8 +31,10 @@ const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
     url: `${origin}${apiRoot}/billing/webhook`,
   });
   return {
+    STRIPE_AUTOMATIC_TAX: String(stripeAutomaticTax),
     STRIPE_PRICE_ID: price.id,
     STRIPE_SECRET_KEY: secretKey,
+    STRIPE_TRIAL_PERIOD_DAYS: String(stripeTrialPeriodDays),
     STRIPE_WEBHOOK_SECRET: webhook.secret.pipe(
       Output.mapEffect((secret: Redacted.Redacted | undefined) =>
         secret === undefined

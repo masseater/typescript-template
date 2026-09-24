@@ -3,10 +3,11 @@ import {
   SUBSCRIPTION_STATUS,
   WEBHOOK_DISPOSITION,
   paidStatuses,
+  recoverableStatuses,
   type Plan,
   type SubscriptionStatus,
 } from "@repo/config";
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, inArray, lte } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { planSubscription, stripeEvent } from "./billing-schema.ts";
@@ -188,11 +189,30 @@ const markPaymentFailed = Effect.fn("markPaymentFailed")(function* markPaymentFa
   );
 });
 
+const markPaymentSettled = Effect.fn("markPaymentSettled")(function* markPaymentSettled(
+  webhookEvent: StripeEventRecord,
+  stripeSubscriptionId: string,
+) {
+  return yield* applyStripeEvent(webhookEvent, (database) =>
+    database
+      .update(planSubscription)
+      .set({ status: SUBSCRIPTION_STATUS.active, updatedAt: webhookEvent.createdAt })
+      .where(
+        and(
+          eq(planSubscription.stripeSubscriptionId, stripeSubscriptionId),
+          lte(planSubscription.updatedAt, webhookEvent.createdAt),
+          inArray(planSubscription.status, recoverableStatuses),
+        ),
+      ),
+  );
+});
+
 export {
   attachCheckout,
   findSubscription,
   isPaidMember,
   markPaymentFailed,
+  markPaymentSettled,
   memberOfCustomer,
   planOf,
   recordSubscription,
