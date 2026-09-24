@@ -24,7 +24,6 @@ import { noFixtureForwardSubject } from "../../lint/oxlint/rules/testing/no-fixt
 import { noFixtureOrderingAlias } from "../../lint/oxlint/rules/testing/no-fixture-ordering-alias--use-auto-action-fixture.ts";
 import { noHandmadeStandardIoDouble } from "../../lint/oxlint/rules/testing/no-handmade-standard-io-double--use-standard-io-test.ts";
 import { noLenientCoverageThreshold } from "../../lint/oxlint/rules/testing/no-lenient-coverage-threshold--demand-full-coverage.ts";
-import { noLintSuppressionInSpec } from "../../lint/oxlint/rules/testing/no-lint-suppression-in-spec--fix-the-violation.ts";
 import { noLocalFileSystemMock } from "../../lint/oxlint/rules/testing/no-local-file-system-mock--use-shared-fs.ts";
 import { noModuleScopeMockConfig } from "../../lint/oxlint/rules/testing/no-module-scope-mock-config--lift-into-fixture.ts";
 import { noModuleScopeMutableState } from "../../lint/oxlint/rules/testing/no-module-scope-mutable-state--lift-into-fixture.ts";
@@ -84,7 +83,6 @@ export const testingBundle: readonly WorkspaceLintRule[] = [
   noFixtureOrderingAlias,
   noHandmadeStandardIoDouble,
   noLenientCoverageThreshold,
-  noLintSuppressionInSpec,
   noLocalFileSystemMock,
   noModuleScopeMockConfig,
   noModuleScopeMutableState,

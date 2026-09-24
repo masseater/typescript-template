@@ -59,13 +59,11 @@ const carriesContent = ({
     );
 };
 
-export const suppressionDirectiveOf = (
-  comment: { readonly value: string },
-  additionalSpellings: readonly string[] = [],
-): SuppressionDirective | null => {
+export const suppressionDirectiveOf = (comment: {
+  readonly value: string;
+}): SuppressionDirective | null => {
   const spelling = firstToken(comment.value);
-  const coversWholeFile =
-    WHOLE_FILE_SPELLINGS.has(spelling) || additionalSpellings.includes(spelling);
+  const coversWholeFile = WHOLE_FILE_SPELLINGS.has(spelling);
   if (!coversWholeFile && !LINE_SCOPED_SPELLINGS.has(spelling)) return null;
 
   const written = comment.value.slice(comment.value.indexOf(spelling) + spelling.length);
@@ -79,23 +77,3 @@ export const suppressionDirectiveOf = (
     carriesGrounds: grounds !== null && carriesContent({ grounds, ruleNames }),
   };
 };
-
-export const coveredRulesOf = ({
-  directive,
-  targetRules,
-}: {
-  readonly directive: SuppressionDirective;
-  readonly targetRules: readonly string[];
-}): readonly string[] => {
-  if (directive.ruleNames.length === 0) return targetRules;
-  const named = new Set(directive.ruleNames.map(bareRuleNameOf));
-  return targetRules.filter((targetRule) => named.has(bareRuleNameOf(targetRule)));
-};
-
-export const namesRule = ({
-  directive,
-  ruleName,
-}: {
-  readonly directive: SuppressionDirective;
-  readonly ruleName: string;
-}): boolean => directive.ruleNames.some((named) => bareRuleNameOf(named) === ruleName);

@@ -15,12 +15,12 @@ import { forbidDeclaredCommandInvocation } from "./lint/oxlint/rules/governance/
 import { forbidGenericRestrictionRule } from "./lint/oxlint/rules/governance/forbid-generic-restriction-rule--use-the-declared-rule.ts";
 import { forbidRestrictedTargetRelay } from "./lint/oxlint/rules/governance/forbid-restricted-target-relay--delete-the-relay.ts";
 import { noBlanketSuppression } from "./lint/oxlint/rules/governance/no-blanket-suppression--name-and-record.ts";
-import { noInlineSuppressionOfProtectedRule } from "./lint/oxlint/rules/governance/no-inline-suppression-of-protected-rule--register-the-exception-in-configuration.ts";
 import { noPartialRuleSet } from "./lint/oxlint/rules/governance/no-partial-rule-set--enable-the-whole-set.ts";
 import { noRuleSuppression } from "./lint/oxlint/rules/governance/no-rule-suppression--fix-the-violation.ts";
-import { noSilentSuppression } from "./lint/oxlint/rules/governance/no-silent-suppression--fix-or-justify-inline.ts";
+import { noSilentSuppression } from "./lint/oxlint/rules/governance/no-silent-suppression--fix-or-register-the-deviation.ts";
 import { noUnregisteredRulePlugin } from "./lint/oxlint/rules/governance/no-unregistered-rule-plugin--enable-the-plugin.ts";
 import { noUnwrappedToolchainConfig } from "./lint/oxlint/rules/governance/no-unwrapped-toolchain-config--call-the-preset-for-the-block.ts";
+import { noWeakenedProtectedRule } from "./lint/oxlint/rules/governance/no-weakened-protected-rule--register-the-exception-in-configuration.ts";
 import { noArrayMutation } from "./lint/oxlint/rules/mutation-and-failure/no-array-mutation--derive-new-array.ts";
 import { createNoClassAsMutableCell } from "./lint/oxlint/rules/mutation-and-failure/no-class-as-mutable-cell--decide-in-an-iife.ts";
 import { noDiscardedFailure } from "./lint/oxlint/rules/mutation-and-failure/no-discarded-failure--receive-and-surface-it.ts";
@@ -64,7 +64,6 @@ import { noFixtureForwardSubject } from "./lint/oxlint/rules/testing/no-fixture-
 import { noFixtureOrderingAlias } from "./lint/oxlint/rules/testing/no-fixture-ordering-alias--use-auto-action-fixture.ts";
 import { noHandmadeStandardIoDouble } from "./lint/oxlint/rules/testing/no-handmade-standard-io-double--use-standard-io-test.ts";
 import { noLenientCoverageThreshold } from "./lint/oxlint/rules/testing/no-lenient-coverage-threshold--demand-full-coverage.ts";
-import { noLintSuppressionInSpec } from "./lint/oxlint/rules/testing/no-lint-suppression-in-spec--fix-the-violation.ts";
 import { noLocalFileSystemMock } from "./lint/oxlint/rules/testing/no-local-file-system-mock--use-shared-fs.ts";
 import { noModuleScopeMockConfig } from "./lint/oxlint/rules/testing/no-module-scope-mock-config--lift-into-fixture.ts";
 import { noModuleScopeMutableState } from "./lint/oxlint/rules/testing/no-module-scope-mutable-state--lift-into-fixture.ts";
@@ -214,9 +213,8 @@ const plugin: Plugin = {
     [noHardcodedProviderId.name]: noHardcodedProviderId,
     [noIdentityWrapper.name]: noIdentityWrapper,
     [noInterfaceDeclaration.name]: noInterfaceDeclaration,
-    [noInlineSuppressionOfProtectedRule.name]: noInlineSuppressionOfProtectedRule,
+    [noWeakenedProtectedRule.name]: noWeakenedProtectedRule,
     [noLenientCoverageThreshold.name]: noLenientCoverageThreshold,
-    [noLintSuppressionInSpec.name]: noLintSuppressionInSpec,
     [noLocalFileSystemMock.name]: noLocalFileSystemMock,
     [noLocalFiniteValueSet.name]: noLocalFiniteValueSet,
     [noLoggedAndContinuedFailure.name]: noLoggedAndContinuedFailure,

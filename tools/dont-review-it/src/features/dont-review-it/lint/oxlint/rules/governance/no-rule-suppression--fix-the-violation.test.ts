@@ -28,8 +28,6 @@ const fixtureDir = await Effect.gen(function* fixtureDirectory() {
 }).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
 const ignoringConfig = path.join(fixtureDir, CONFIG_FILE);
 
-const EVERY_RULE_REACHING_HERE = "every rule reaching this file (this gate among them)";
-
 const FIXTURE_DIRECTORIES: readonly string[] = [path.join(fixtureDir, "src/legacy")];
 
 const FIXTURE_FILES: ReadonlyArray<readonly [string, string]> = [
@@ -52,7 +50,11 @@ await Effect.gen(function* writeFixture() {
 describe("dont-review-it/no-rule-suppression--fix-the-violation", () => {
   testLintRule(noRuleSuppression, {
     valid: [
-      { name: "a spec file carrying no comment passes", code: DECLARATION, filename: SPEC_FILE },
+      {
+        name: "a spec file carrying no configuration passes",
+        code: DECLARATION,
+        filename: SPEC_FILE,
+      },
       {
         name: "options that spell out no target rule leave the gate rules in force",
         code: DECLARATION,
@@ -65,35 +67,9 @@ describe("dont-review-it/no-rule-suppression--fix-the-violation", () => {
         filename: ignoringConfig,
       },
       {
-        name: "a comment that opens with no suppression spelling passes",
-        code: `// this line holds the running total\n${DECLARATION}`,
+        name: "a suppression comment is left to the rule that rejects every suppression comment",
+        code: `// eslint-disable-next-line ${GATE_RULE}\n${DECLARATION}`,
         filename: SPEC_FILE,
-      },
-      {
-        name: "a suppression naming only a rule outside this gate is another rule's business",
-        documented: true,
-        code: `/* eslint-disable ${OUTSIDE_RULE} */\n${DECLARATION}`,
-        filename: SPEC_FILE,
-      },
-      {
-        name: "a line suppression naming only a rule outside this gate passes",
-        code: `// eslint-disable-next-line ${OUTSIDE_RULE}\n${DECLARATION}`,
-        filename: SPEC_FILE,
-      },
-      {
-        name: "the exemption comment one gate rule reads is no suppression directive",
-        code: `// mock-factory-exemption ${GATE_RULE} -- the runner needs a shim here\n${DECLARATION}`,
-        filename: SPEC_FILE,
-      },
-      {
-        name: "a type checker directive is no lint suppression",
-        code: `// @ts-nocheck the whole file is typed loosely\n${DECLARATION}`,
-        filename: SPEC_FILE,
-      },
-      {
-        name: "a blanket suppression outside the reach of this gate passes",
-        code: `/* eslint-disable */\n${DECLARATION}`,
-        filename: SOURCE_FILE,
       },
       {
         name: "a configuration holding a gate rule at error passes",
@@ -108,6 +84,7 @@ describe("dont-review-it/no-rule-suppression--fix-the-violation", () => {
       },
       {
         name: "a configuration turning a rule outside this gate off passes",
+        documented: true,
         code: `export default { lint: { rules: { "${OUTSIDE_RULE}": "off" } } };`,
         filename: CONFIG_FILE,
       },
@@ -133,91 +110,6 @@ describe("dont-review-it/no-rule-suppression--fix-the-violation", () => {
       },
     ],
     invalid: [
-      {
-        name: "a blanket suppression over a spec file is reported",
-        code: `/* eslint-disable */\n${DECLARATION}`,
-        filename: SPEC_FILE,
-        errors: [
-          {
-            messageId: "fileScopedSuppression",
-            data: { spelling: "eslint-disable", silenced: EVERY_RULE_REACHING_HERE },
-          },
-        ],
-      },
-      {
-        name: "a whole file suppression naming a gate rule is reported wherever it stands",
-        code: `/* oxlint-disable ${GATE_RULE} */\n${DECLARATION}`,
-        filename: SOURCE_FILE,
-        errors: [
-          {
-            messageId: "fileScopedSuppression",
-            data: { spelling: "oxlint-disable", silenced: `\`${GATE_RULE}\`` },
-          },
-        ],
-      },
-      {
-        name: "a next line suppression naming a gate rule is reported",
-        code: `// eslint-disable-next-line ${PREFIXED_GATE_RULE}\n${DECLARATION}`,
-        filename: SPEC_FILE,
-        errors: [
-          {
-            messageId: "lineScopedSuppression",
-            data: { spelling: "eslint-disable-next-line", silenced: `\`${GATE_RULE}\`` },
-          },
-        ],
-      },
-      {
-        name: "a line suppression naming this rule itself is reported",
-        code: `${DECLARATION} // oxlint-disable-line ${SELF_RULE}`,
-        filename: SPEC_FILE,
-        errors: [
-          {
-            messageId: "lineScopedSuppression",
-            data: { spelling: "oxlint-disable-line", silenced: `\`${SELF_RULE}\`` },
-          },
-        ],
-      },
-      {
-        name: "grounds written after the separator leave the report standing",
-        documented: true,
-        code: `// eslint-disable-next-line ${GATE_RULE} -- the shared setup lands later\n${DECLARATION}`,
-        filename: SPEC_FILE,
-        errors: [{ messageId: "lineScopedSuppression" }],
-      },
-      {
-        name: "a nameless line suppression over a spec file is reported",
-        code: `// eslint-disable-next-line\n${DECLARATION}`,
-        filename: SPEC_FILE,
-        errors: [
-          {
-            messageId: "lineScopedSuppression",
-            data: { spelling: "eslint-disable-next-line", silenced: EVERY_RULE_REACHING_HERE },
-          },
-        ],
-      },
-      {
-        name: "the closing end of a range naming a gate rule is reported",
-        code: `${DECLARATION}\n/* eslint-enable ${GATE_RULE} */`,
-        filename: SOURCE_FILE,
-        errors: [
-          {
-            messageId: "suppressionRangeEnd",
-            data: { spelling: "eslint-enable", silenced: `\`${GATE_RULE}\`` },
-          },
-        ],
-      },
-      {
-        name: "both ends of a range over a spec file are reported",
-        code: `/* oxlint-disable */\n${DECLARATION}\n/* oxlint-enable */`,
-        filename: SPEC_FILE,
-        errors: [
-          { messageId: "fileScopedSuppression" },
-          {
-            messageId: "suppressionRangeEnd",
-            data: { spelling: "oxlint-enable", silenced: EVERY_RULE_REACHING_HERE },
-          },
-        ],
-      },
       {
         name: "a configuration turning a gate rule off is reported",
         documented: true,
@@ -260,12 +152,6 @@ describe("dont-review-it/no-rule-suppression--fix-the-violation", () => {
         ],
       },
       {
-        name: "an entry standing beside a spread this rule cannot read is reported",
-        code: `export default { lint: { rules: { ...sharedRules, "${GATE_RULE}": "off" } } };`,
-        filename: CONFIG_FILE,
-        errors: [{ messageId: "weakenedRule", data: { ruleName: GATE_RULE, severity: "off" } }],
-      },
-      {
         name: "a severity assembled elsewhere is reported",
         code: `export default { lint: { rules: { "${GATE_RULE}": chosenSeverity } } };`,
         filename: CONFIG_FILE,
@@ -295,55 +181,30 @@ describe("dont-review-it/no-rule-suppression--fix-the-violation", () => {
         ],
       },
       {
-        name: "a rule name handed to the option joins the gate it cannot take rules out of",
-        code: `// eslint-disable-next-line no-spec-clock-stub--freeze-in-fixture\n${DECLARATION}`,
-        filename: SPEC_FILE,
+        name: "a rule name handed to the option joins the gate",
+        code: `export default { lint: { rules: { "no-spec-clock-stub--freeze-in-fixture": "off" } } };`,
+        filename: CONFIG_FILE,
         options: [{ targetRules: ["no-spec-clock-stub--freeze-in-fixture"] }],
         errors: [
           {
-            messageId: "lineScopedSuppression",
-            data: {
-              spelling: "eslint-disable-next-line",
-              silenced: "`no-spec-clock-stub--freeze-in-fixture`",
-            },
+            messageId: "weakenedRule",
+            data: { ruleName: "no-spec-clock-stub--freeze-in-fixture", severity: "off" },
           },
         ],
       },
       {
         name: "an empty option list leaves every rule of the gate in place",
-        code: `// eslint-disable-next-line ${GATE_RULE}\n${DECLARATION}`,
-        filename: SPEC_FILE,
+        code: `export default { lint: { rules: { "${GATE_RULE}": "off" } } };`,
+        filename: CONFIG_FILE,
         options: [{ targetRules: [] }],
-        errors: [
-          {
-            messageId: "lineScopedSuppression",
-            data: { spelling: "eslint-disable-next-line", silenced: `\`${GATE_RULE}\`` },
-          },
-        ],
+        errors: [{ messageId: "weakenedRule", data: { ruleName: GATE_RULE, severity: "off" } }],
       },
       {
-        name: "options that name no list of rules at all leave the gate carrying its own rules",
-        code: `/* oxlint-disable ${SELF_RULE} */\n${DECLARATION}`,
-        filename: SPEC_FILE,
+        name: "options that name no list of rules at all leave the gate carrying its own rule",
+        code: `export default { lint: { rules: { "${SELF_RULE}": "off" } } };`,
+        filename: CONFIG_FILE,
         options: [{}],
-        errors: [
-          {
-            messageId: "fileScopedSuppression",
-            data: { spelling: "oxlint-disable", silenced: `\`${SELF_RULE}\`` },
-          },
-        ],
-      },
-      {
-        name: "an option naming no rule list leaves every rule of the gate in place",
-        code: `// eslint-disable-next-line ${GATE_RULE}\n${DECLARATION}`,
-        filename: SPEC_FILE,
-        options: [{}],
-        errors: [
-          {
-            messageId: "lineScopedSuppression",
-            data: { spelling: "eslint-disable-next-line", silenced: `\`${GATE_RULE}\`` },
-          },
-        ],
+        errors: [{ messageId: "weakenedRule", data: { ruleName: SELF_RULE, severity: "off" } }],
       },
     ],
   });

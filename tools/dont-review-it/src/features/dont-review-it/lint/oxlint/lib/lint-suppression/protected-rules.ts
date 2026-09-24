@@ -27,7 +27,6 @@ export const PROTECTION_SCHEMA = {
       },
     },
     generatedPaths: { type: "array", items: { type: "string" } },
-    suppressionSpellings: { type: "array", items: { type: "string" } },
   },
   additionalProperties: false,
 } as const;
@@ -73,7 +72,6 @@ export type ProtectionSettings = {
   readonly addedRules: readonly string[];
   readonly deviations: readonly ProtectionDeviation[];
   readonly generatedPaths: readonly string[];
-  readonly suppressionSpellings: readonly string[];
 };
 
 export const protectionSettingsIn = (ruleOptions: Readonly<Options>): ProtectionSettings => {
@@ -82,28 +80,16 @@ export const protectionSettingsIn = (ruleOptions: Readonly<Options>): Protection
     addedRules: spelledTextsAt({ fields, key: "protectedRules" }),
     deviations: deviationsAt(fields),
     generatedPaths: spelledTextsAt({ fields, key: "generatedPaths" }),
-    suppressionSpellings: spelledTextsAt({ fields, key: "suppressionSpellings" }),
   };
 };
 
 const PROTECTED_RULES: readonly string[] = [
-  "forbid-javascript-source-file--author-in-typescript",
-  "forbid-target-file--delete-or-relocate",
-  "forbid-declared-module-import--use-declared-replacement",
-  "forbid-module-import-outside-owner--import-through-owner",
-  "forbid-unlisted-specifier-form--use-permitted-form",
-  "forbid-declared-export-reference--use-declared-replacement",
-  "no-retired-tool-in-manifest--use-designated-replacement",
-  "require-pinned-runtime-direct-execution--invoke-canonical-entry",
-  "no-shell-logic-outside-bootstrap--move-to-typescript-command",
-  "no-repository-root-script-directory--own-by-workspace-or-package",
-  "no-pre-install-external-dependency--use-builtin-or-relative",
   "forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier",
   "forbid-restricted-target-relay--delete-the-relay",
   "forbid-declared-command-invocation--use-designated-replacement",
   "forbid-tracked-path--untrack-and-ignore",
   "require-registered-file--restore-it-at-the-registered-path",
-  "no-inline-suppression-of-protected-rule--register-the-exception-in-configuration",
+  "no-weakened-protected-rule--register-the-exception-in-configuration",
   "forbid-generic-restriction-rule--use-the-declared-rule",
   "no-unchecked-authored-path--include-it-in-every-declared-check",
 ];
