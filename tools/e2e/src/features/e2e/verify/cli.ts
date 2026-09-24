@@ -28,7 +28,7 @@ const verifyCommand = Command.make(
       Effect.flatMap((report) => Console.log(JSON.stringify(report))),
     );
   }),
-).pipe(Command.run({ renderErrors: false, version: "0.0.0" }), Effect.provide(NodeServices.layer));
+).pipe(Command.run({ version: "0.0.0" }), Effect.provide(NodeServices.layer));
 
 runCli(verifyCommand, (cause) =>
   causeRecord("verify.failed", {
