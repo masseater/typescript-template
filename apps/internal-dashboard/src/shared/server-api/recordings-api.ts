@@ -2,6 +2,7 @@ import { verifySession } from "@repo/auth";
 import { RECORDING_FAILURE, httpStatus, jobsQueueBinding, readJobs } from "@repo/config";
 import { RequestRejected } from "@repo/observability";
 import { FileStore } from "@repo/runtime";
+import { sessionFailures } from "@repo/runtime/account";
 import { CreatedResource, IdentifierQuery } from "@repo/runtime/contracts";
 import {
   AppOrigin,
@@ -31,8 +32,8 @@ import {
 import type { AppServices } from "@repo/runtime";
 
 const failures = {
+  ...sessionFailures,
   ConfigurationInvalid: "unexpected",
-  DatabaseFailure: "unexpected",
   RecordingAudioUnsupported: {
     message: "音声か動画のファイルを選んでください。",
     status: httpStatus.unsupportedMediaType,
@@ -173,8 +174,8 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
   return createApi("")
     .get(
       "/recordings",
-      api.route(
-        RecordingList,
+      ...api.route(
+        { response: RecordingList },
         withRecordings((request) =>
           verifySession(request.headers).pipe(
             Effect.andThen(CoreRecords.use((core) => core.listRecordings({}))),
@@ -184,11 +185,14 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
         failures,
       ),
     )
-    .post("/recordings", api.route(CreatedResource, withRecordings(uploadRecording), failures))
+    .post(
+      "/recordings",
+      ...api.route({ response: CreatedResource }, withRecordings(uploadRecording), failures),
+    )
     .get(
       "/recording",
-      api.route(
-        RecordingView,
+      ...api.route(
+        { response: RecordingView },
         withRecordings((request) =>
           Effect.gen(function* view() {
             yield* verifySession(request.headers);
@@ -199,13 +203,22 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
         failures,
       ),
     )
-    .delete("/recording", api.route(CreatedResource, withRecordings(remove), failures))
-    .post("/recording/retry", api.route(CreatedResource, withRecordings(retry), failures))
-    .patch("/recording/speaker", api.route(CreatedResource, withRecordings(assign), failures))
+    .delete(
+      "/recording",
+      ...api.route({ response: CreatedResource }, withRecordings(remove), failures),
+    )
+    .post(
+      "/recording/retry",
+      ...api.route({ response: CreatedResource }, withRecordings(retry), failures),
+    )
+    .patch(
+      "/recording/speaker",
+      ...api.route({ response: CreatedResource }, withRecordings(assign), failures),
+    )
     .get(
       "/people",
-      api.route(
-        PeopleList,
+      ...api.route(
+        { response: PeopleList },
         withRecordings((request) =>
           verifySession(request.headers).pipe(
             Effect.andThen(CoreRecords.use((core) => core.listPeople({}))),
@@ -215,8 +228,14 @@ function recordingsApi(api: ApiRoutes<AppServices>) {
         failures,
       ),
     )
-    .post("/people", api.route(CreatedResource, withRecordings(register), failures))
-    .delete("/people", api.route(CreatedResource, withRecordings(forget), failures));
+    .post(
+      "/people",
+      ...api.route({ response: CreatedResource }, withRecordings(register), failures),
+    )
+    .delete(
+      "/people",
+      ...api.route({ response: CreatedResource }, withRecordings(forget), failures),
+    );
 }
 
 export { recordingsApi };

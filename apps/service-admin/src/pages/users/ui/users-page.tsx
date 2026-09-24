@@ -10,7 +10,7 @@ import type { ReactElement } from "react";
 
 function UsersPage(): ReactElement {
   const search = useUsersSearch();
-  const { listing, reload } = useUserList(search);
+  const { list, reload } = useUserList(search);
   return (
     <main className="flex flex-col gap-4 p-4">
       <Heading as="h1" size="page">
@@ -18,7 +18,7 @@ function UsersPage(): ReactElement {
       </Heading>
       <MembersQueueSummary />
       <UserFilters key={JSON.stringify(search)} search={search} />
-      <UserResults search={search} listing={listing} onReload={reload} />
+      <UserResults list={list} onReload={reload} search={search} />
     </main>
   );
 }

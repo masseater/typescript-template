@@ -3,6 +3,7 @@ import { RegistryProvider } from "@effect/atom-react";
 import a11y from "@storybook/addon-a11y";
 import vitest from "@storybook/addon-vitest";
 import { definePreview } from "@storybook/react-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterContextProvider, createRootRoute, createRouter } from "@tanstack/react-router";
 import { Effect } from "effect";
 import msw from "msw-storybook-addon";
@@ -24,6 +25,24 @@ const withRouter = (Story: () => ReactElement): ReactElement => {
   );
 };
 
+const withQueries = (
+  Story: () => ReactElement,
+  { loaded }: Readonly<{ loaded: Readonly<Record<string, unknown>> }>,
+): ReactElement => {
+  const { queryClient } = loaded;
+  return queryClient instanceof QueryClient ? (
+    <QueryClientProvider client={queryClient}>
+      <Story />
+    </QueryClientProvider>
+  ) : (
+    <Story />
+  );
+};
+
+const storyQueries = (): { readonly queryClient: QueryClient } => ({
+  queryClient: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+});
+
 const withProviders = (Story: () => ReactElement): ReactElement => {
   return (
     <BaseWebProvider>
@@ -40,7 +59,8 @@ const withProviders = (Story: () => ReactElement): ReactElement => {
 
 const preview = definePreview({
   addons: [a11y(), vitest(), msw()],
-  decorators: [withRouter, withProviders],
+  decorators: [withRouter, withQueries, withProviders],
+  loaders: [storyQueries],
   parameters: { a11y: { test: "error" }, layout: "padded" },
   tags: ["test"],
 });
