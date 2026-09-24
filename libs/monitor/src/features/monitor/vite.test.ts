@@ -6,6 +6,7 @@ import {
   modularBoundaries,
   paths,
   taskInput,
+  telemetryEnv,
   workspaceCheckImports,
 } from "@repo/vite-config";
 import { describe, expect, test } from "vite-plus/test";
@@ -39,7 +40,12 @@ describe("monitorWorkerVite", () => {
           ...checkCode,
           ...workspaceCheckImports,
           ...modularBoundaries,
-          build: { command: "vp pack", dependsOn: ["check:effect"], input: [...taskInput] },
+          build: {
+            command: "vp pack",
+            dependsOn: ["check:effect"],
+            input: [...taskInput],
+            env: [...telemetryEnv],
+          },
           ...lifecycle({
             precommit: ["check:code"],
             prepush: ["check:effect", "check:imports", "check:modular"],

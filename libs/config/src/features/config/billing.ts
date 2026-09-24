@@ -41,3 +41,12 @@ export const WEBHOOK_DISPOSITION = {
 
 export const priceIntervals = ["day", "week", "month", "year"] as const;
 export type PriceInterval = (typeof priceIntervals)[number];
+
+export const stripeWebhookEvents = [
+  "checkout.session.completed",
+  "customer.subscription.created",
+  "customer.subscription.deleted",
+  "customer.subscription.updated",
+  "invoice.payment_failed",
+] as const;
+export type StripeWebhookEvent = (typeof stripeWebhookEvents)[number];

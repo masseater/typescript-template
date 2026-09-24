@@ -1,5 +1,7 @@
 import { APPLICATION, applications } from "@repo/config";
 import { providers, state } from "alchemy/Cloudflare";
+import * as Stripe from "alchemy/Stripe";
+import { Layer } from "effect";
 
 import { monitorStacks } from "./monitors.ts";
 
@@ -100,7 +102,9 @@ function stackName(stack: StackName): string {
   return `template-${stack}`;
 }
 
-const stackOptions = { providers: providers(), state: state() };
+const stackProviders = providers().pipe(Layer.provideMerge(Stripe.providers()));
+
+const stackOptions = { providers: stackProviders, state: state() };
 
 export {
   applyOrderViolations,
@@ -110,6 +114,7 @@ export {
   stackName,
   stackNames,
   stackOptions,
+  stackProviders,
   stackReferences,
   traceDestinationStack,
 };
