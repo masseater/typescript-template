@@ -24,7 +24,11 @@ const openLockFile = (lockPath: string): Effect.Effect<LockedFile, Error> =>
     const descriptor = descriptorOf(file);
     if (descriptor === undefined) {
       yield* Scope.close(scope, Exit.void);
-      return yield* Effect.die(`the file system opened ${lockPath} without a descriptor`);
+      return yield* Effect.die(
+        new Error(
+          `the file opened at ${lockPath} exposes no numeric fd, and fs-native-extensions can only lock a descriptor`,
+        ),
+      );
     }
     return { descriptor, scope };
   });
