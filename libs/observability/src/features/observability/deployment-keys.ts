@@ -14,6 +14,9 @@ const deploymentKey = {
   googleAnalyticsMeasurementId: "TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
   prefix: "TEMPLATE_PREFIX",
   stripeSecretKey: "STRIPE_API_KEY",
+  wikiPublishAppId: "TEMPLATE_WIKI_PUBLISH_APP_ID",
+  wikiPublishPrivateKey: "TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY",
+  wikiPublishRepository: "TEMPLATE_WIKI_PUBLISH_REPOSITORY",
 } as const;
 const deploymentKeys = [
   deploymentKey.alertEmail,
@@ -33,6 +36,9 @@ const optionalDeploymentKeys = [
   deploymentKey.otlpAuthorization,
   deploymentKey.otlpEnabled,
   deploymentKey.otlpEndpoint,
+  deploymentKey.wikiPublishAppId,
+  deploymentKey.wikiPublishPrivateKey,
+  deploymentKey.wikiPublishRepository,
 ] as const;
 const privateDeploymentKeys: readonly string[] = [
   ...deploymentKeys.filter(

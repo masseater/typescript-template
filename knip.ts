@@ -18,9 +18,14 @@ const workspaces = {
       "@effect/tsgo",
       "@shadcn/lint",
       "@swc/core",
+      "@textlint-ja/textlint-rule-preset-ai-writing",
       "oxlint",
       "oxlint-tsgolint",
       "textlint",
+      "textlint-rule-ja-no-redundant-expression",
+      "textlint-rule-no-doubled-conjunction",
+      "textlint-rule-no-exclamation-question-mark",
+      "textlint-rule-no-mix-dearu-desumasu",
       "textlint-rule-preset-ai-words-ja",
     ],
     project: ["*.{js,ts}"],
@@ -250,7 +255,11 @@ const config = ({
       "apps/internal-dashboard": {
         ...app,
         entry: ["alchemy.run.ts!", ...application.entry],
-        project: ["src/**/*.{ts,tsx}!", "!src/shared/wiki/wiki-oauth-fixture.ts!"],
+        project: [
+          "src/**/*.{ts,tsx}!",
+          "!src/shared/wiki/wiki-oauth-fixture.ts!",
+          "!src/shared/wiki-publish/github-fixture.ts!",
+        ],
       },
       "apps/internal-wiki": {
         ...app,

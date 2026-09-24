@@ -225,3 +225,5 @@ export {
   wikiWorker,
 } from "./wiki.ts";
 export type { BuildTarget, WikiWorker } from "./wiki.ts";
+export { readWikiPublishConfig, wikiPublishKey } from "./wiki-publish.ts";
+export type { WikiPublishConfig } from "./wiki-publish.ts";
