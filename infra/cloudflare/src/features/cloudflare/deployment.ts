@@ -1,24 +1,22 @@
 import { homedir } from "node:os";
-import { env as processEnvironment } from "node:process";
+
+import { optionalSetting } from "@repo/config/process-environment";
 
 import { path } from "./platform.ts";
 
 const ENVIRONMENT_FILE_VARIABLE = "TEMPLATE_CLOUDFLARE_ENV_FILE";
 
-const environmentFile = (): string | undefined => {
-  const configured = processEnvironment[ENVIRONMENT_FILE_VARIABLE];
-  return configured === undefined || configured === "" ? undefined : configured;
+const nonEmptySetting = (variable: string): string | undefined => {
+  const configured = optionalSetting(variable);
+  return configured === "" ? undefined : configured;
 };
+
+const environmentFile = (): string | undefined => nonEmptySetting(ENVIRONMENT_FILE_VARIABLE);
 
 const secretsFileConfigured = (): boolean => environmentFile() !== undefined;
 
-const configurationHome = (project: string): string => {
-  const base = processEnvironment["XDG_CONFIG_HOME"];
-  return path.join(
-    base === undefined || base === "" ? path.join(homedir(), ".config") : base,
-    project,
-  );
-};
+const configurationHome = (project: string): string =>
+  path.join(nonEmptySetting("XDG_CONFIG_HOME") ?? path.join(homedir(), ".config"), project);
 
 const ENVIRONMENT_FILE_NAME = "cloudflare.env";
 

@@ -1,11 +1,10 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 
 import { attempt } from "es-toolkit";
 import * as ts from "typescript-6";
 
-import { path } from "../../../../platform/path.ts";
+import { filePathOf, path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 import {
   realPathOf,
@@ -130,7 +129,7 @@ const typescriptModuleLocation = (
 
 const fileUrlLocation = (query: ImportRouteQuery): ResolvedModuleLocation | null => {
   if (!query.specifier.startsWith("file:")) return null;
-  const [failure, filePath] = attempt(() => fileURLToPath(query.specifier));
+  const [failure, filePath] = attempt(() => filePathOf(new URL(query.specifier)));
   return failure === null && filePath !== null
     ? repositoryLocation(query, filePath)
     : { kind: "unresolved" };

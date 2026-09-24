@@ -6,6 +6,8 @@ const wikiDraft = sqliteTable("wiki_draft", {
   baseRevision: text("base_revision"),
   markdown: text("markdown").notNull(),
   path: text("path").primaryKey().notNull(),
+  publishedRevision: text("published_revision"),
+  publishedUrl: text("published_url"),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   updatedBy: text("updated_by").references(() => user.id, { onDelete: "set null" }),
   version: integer("version").notNull().default(1),

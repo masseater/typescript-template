@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { env as processEnvironment } from "node:process";
-
 import { runCli } from "@repo/cli";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect } from "effect";
@@ -13,7 +11,7 @@ const EVENT = "cloudflare.ci_env_rejected";
 
 runCli(
   Effect.gen(function* program() {
-    const environment = processEnvironment;
+    const environment = process.env;
     const preparation = yield* writeCiSecretsFile(environment);
     if (preparation.status === "unconfigured") {
       return yield* new PrepareCiEnvFailure({

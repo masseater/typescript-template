@@ -1,15 +1,13 @@
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { path } from "../../../../platform/path.ts";
+import { filePathOf, path } from "../../../../platform/path.ts";
 import { findWorkspaceRoot } from "./workspace-root.ts";
 
 const REPOSITORY_ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
+  path.dirname(filePathOf(new URL(import.meta.url))),
   "../../../../../../../../..",
 );
 

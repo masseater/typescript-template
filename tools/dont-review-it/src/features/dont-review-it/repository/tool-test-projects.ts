@@ -1,8 +1,9 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 
-const toolsDirectory = fileURLToPath(new URL("../../../../..", import.meta.url));
+import { filePathOf } from "../platform/path.ts";
+
+const toolsDirectory = filePathOf(new URL("../../../../..", import.meta.url));
 
 const dedicatedToolVitestProjects = [
   "./tools/ai-native",

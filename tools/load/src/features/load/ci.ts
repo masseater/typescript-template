@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, firstUserArgumentIndex, reportFailed, runCli } from "@repo/cli";
 import { repositoryRoot } from "@repo/config/repository-root";
@@ -37,11 +35,13 @@ const startPreview = (
 const runLoad = (
   app: (typeof loadCiArguments.Type)["app"],
   profile: (typeof loadCiArguments.Type)["profile"],
-): Effect.Effect<void, LoadCiFailure, ChildProcessSpawner.ChildProcessSpawner> => {
+): Effect.Effect<void, LoadCiFailure, ChildProcessSpawner.ChildProcessSpawner | Path.Path> => {
   return Effect.gen(function* measureLoad() {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const paths = yield* Path.Path;
+    const loadCli = yield* paths.fromFileUrl(new URL("./cli.ts", import.meta.url));
     const exitCode = yield* spawner.exitCode(
-      ChildProcess.make(fileURLToPath(new URL("./cli.ts", import.meta.url)), [app, profile], {
+      ChildProcess.make(loadCli, [app, profile], {
         cwd: repositoryRoot,
         stderr: "inherit",
         stdin: "inherit",

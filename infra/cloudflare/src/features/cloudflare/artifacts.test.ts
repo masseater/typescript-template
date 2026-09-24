@@ -1,5 +1,3 @@
-import { tmpdir } from "node:os";
-
 import { assert, it } from "@effect/vitest";
 import { SOURCE_MAP_MANIFEST, sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Schema } from "effect";
@@ -21,7 +19,6 @@ function temporaryRoot(): Effect.Effect<string, never, Scope.Scope> {
   return Effect.gen(function* makeTemporary() {
     const filesystem = yield* FileSystem.FileSystem;
     const directory = yield* filesystem.makeTempDirectoryScoped({
-      directory: tmpdir(),
       prefix: "template-artifacts-",
     });
     return yield* filesystem.realPath(directory);

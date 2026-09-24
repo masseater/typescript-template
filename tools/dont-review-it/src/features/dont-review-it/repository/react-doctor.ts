@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import { createRequire } from "node:module";
-
 import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type BuildTarget, BuildTargetName } from "@repo/config";
@@ -8,7 +6,7 @@ import { Console, Effect, Schema, type PlatformError } from "effect";
 import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
 import { LINT_SEVERITY } from "../lint-rule-authoring/lint-rule-severity.ts";
-import { path } from "../platform/path.ts";
+import { filePathOf, path } from "../platform/path.ts";
 import { capturedProcess } from "./captured-process.ts";
 import { REACT_DOCTOR_SKIP_DETAIL, skippedOnlyByTimeout } from "./react-doctor-timeout.ts";
 import { reactDoctorPassed } from "./react-doctor-verdict.ts";
@@ -50,9 +48,8 @@ const Rules = Schema.fromJsonString(
   ),
 );
 
-const require = createRequire(import.meta.url);
 const executable = path.join(
-  path.dirname(require.resolve("react-doctor")),
+  path.dirname(filePathOf(new URL(import.meta.resolve("react-doctor")))),
   "..",
   "bin",
   "react-doctor.js",

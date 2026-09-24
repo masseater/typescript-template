@@ -1,3 +1,5 @@
+import { NodeServices } from "@effect/platform-node";
+import { Effect } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { partsDirectory } from "./design-system-test-fixture.ts";
@@ -35,6 +37,22 @@ const storybookProjects = (): unknown[] => {
   return Array.isArray(projects) ? projects : [];
 };
 
+const [
+  storylessPartsReport,
+  storylessComponentsReport,
+  relaxations,
+  endpointReport,
+  vendoredWorkerReport,
+] = await Effect.runPromise(
+  Effect.all([
+    storylessParts(partsDirectory()),
+    storylessParts("libs/ui/src/features/ui"),
+    a11yRelaxations(),
+    storybookEndpointViolations(String(origins["../config/src/features/config/applications.ts"])),
+    vendoredWorkerViolations(),
+  ]).pipe(Effect.provide(NodeServices.layer)),
+);
+
 const acceptedA11yViolations = [
   {
     file: "libs/ui/src/features/ui/shared/ui/select-field.stories.tsx",
@@ -56,12 +74,12 @@ describe("part stories", () => {
 
   it("keeps a story next to every part", () => {
     expect.hasAssertions();
-    expect(storylessParts(partsDirectory())).toStrictEqual([]);
+    expect(storylessPartsReport).toStrictEqual([]);
   });
 
   it("reports a directory whose components have no stories", () => {
     expect.hasAssertions();
-    expect(storylessParts("libs/ui/src/features/ui")).not.toStrictEqual([]);
+    expect(storylessComponentsReport).not.toStrictEqual([]);
   });
 
   it("runs the stories as a test project of this repository", () => {
@@ -77,18 +95,16 @@ describe("part stories", () => {
 
   it("lets a story off only for the rules listed here", () => {
     expect.hasAssertions();
-    expect(a11yRelaxations()).toStrictEqual(acceptedA11yViolations);
+    expect(relaxations).toStrictEqual(acceptedA11yViolations);
   });
 
   it("points the agent configuration at the port this repository owns", () => {
     expect.hasAssertions();
-    expect(
-      storybookEndpointViolations(String(origins["../config/src/features/config/applications.ts"])),
-    ).toStrictEqual([]);
+    expect(endpointReport).toStrictEqual([]);
   });
 
   it("keeps the storybook service worker on the installed msw version", () => {
     expect.hasAssertions();
-    expect(vendoredWorkerViolations()).toStrictEqual([]);
+    expect(vendoredWorkerReport).toStrictEqual([]);
   });
 });

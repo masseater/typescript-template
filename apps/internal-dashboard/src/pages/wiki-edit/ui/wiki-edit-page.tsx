@@ -1,20 +1,13 @@
-import {
-  Button,
-  ButtonAnchor,
-  ConfirmDialog,
-  Field,
-  Page,
-  localState,
-  useAction,
-  useOptionalString,
-} from "@repo/ui";
+import { ConfirmDialog, Field, Page, localState, useAction, useOptionalString } from "@repo/ui";
 import { useRouter } from "@tanstack/react-router";
 import { Effect, Option } from "effect";
 import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 
-import { discardDraft, saveDraft } from "#pages/wiki-edit/api/wiki-draft.ts";
+import { discardDraft, publishDraft, saveDraft } from "#pages/wiki-edit/api/wiki-draft.ts";
+import { draftProgress } from "#pages/wiki-edit/model/draft-progress.ts";
 import { wikiPageHref, writeWikiDocument } from "#shared/wiki-document/index.ts";
-import { DraftNotices } from "./draft-notices.tsx";
+import { DraftActions } from "./draft-actions.tsx";
+import { DraftStatus } from "./draft-status.tsx";
 import { EditorToolbar } from "./editor-toolbar.tsx";
 import { wikiEditorComponents, wikiEditorPlugins } from "./wiki-editor-plugins.ts";
 
@@ -33,12 +26,13 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
   const router = useRouter();
   const saving = useAction();
   const discarding = useAction();
+  const publishing = useAction();
   const [titleInput, setTitle] = useOptionalString();
   const [descriptionInput, setDescription] = useOptionalString();
   const [confirmingDiscard, setConfirmingDiscard] = useConfirmingDiscard();
   const title = Option.getOrElse(titleInput, () => document.title);
   const description = Option.getOrElse(descriptionInput, () => document.description);
-  const version = source.draft?.version ?? 0;
+  const { publishable, publishedUrl, version } = draftProgress(source);
 
   const save = (): Promise<void> =>
     Effect.runPromise(writeWikiDocument({ description, title, value: editor.children }))
@@ -46,6 +40,9 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
         saveDraft({ baseRevision: source.baseRevision, markdown, path: source.path, version }),
       )
       .then(() => router.invalidate());
+
+  const publish = (): Promise<void> =>
+    publishDraft(source.path, version).then(() => router.invalidate());
 
   const discard = (): Promise<void> =>
     discardDraft(source.path, version).then(() => router.invalidate());
@@ -79,37 +76,27 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
             className="min-h-96 max-w-none rounded-md border border-border bg-card p-4 outline-none focus-visible:focus-indicator-outer"
           />
         </Plate>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            action={() => {
-              saving.run(save);
-            }}
-            disabled={saving.blocked}
-            type="button"
-            variant="primary"
-          >
-            下書きを保存
-          </Button>
-          {version === 0 ? null : (
-            <Button
-              disabled={discarding.blocked}
-              onClick={() => {
-                setConfirmingDiscard(true);
-              }}
-              type="button"
-              variant="danger"
-            >
-              下書きを捨てる
-            </Button>
-          )}
-          <ButtonAnchor href={wikiPageHref(source.path)} variant="secondary">
-            ページに戻る
-          </ButtonAnchor>
-        </div>
-        <DraftNotices
-          discardError={discarding.error}
-          drafted={version !== 0}
-          saveError={saving.error}
+        <DraftActions
+          backHref={wikiPageHref(source.path)}
+          discarding={discarding}
+          onDiscard={() => {
+            setConfirmingDiscard(true);
+          }}
+          onPublish={() => {
+            publishing.run(publish);
+          }}
+          onSave={() => {
+            saving.run(save);
+          }}
+          publishable={publishable}
+          publishing={publishing}
+          saving={saving}
+          version={version}
+        />
+        <DraftStatus
+          failures={[saving.error, publishing.error, discarding.error]}
+          publishedUrl={publishedUrl}
+          version={version}
         />
       </div>
       <ConfirmDialog

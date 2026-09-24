@@ -1,9 +1,7 @@
-import { tmpdir } from "node:os";
-import { env as processEnvironment } from "node:process";
-
 import { assert, it } from "@effect/vitest";
 import { deploymentKeys } from "@repo/observability/deployment-keys";
 import { Effect, FileSystem } from "effect";
+import { vi } from "vite-plus/test";
 
 import { verifiedSecrets } from "./credentials.ts";
 import { ENVIRONMENT_FILE_VARIABLE, secretsFile } from "./deployment.ts";
@@ -23,7 +21,6 @@ function temporaryDirectory(): Effect.Effect<string, never, Scope.Scope> {
   return Effect.gen(function* makeTemporary() {
     const filesystem = yield* FileSystem.FileSystem;
     const directory = yield* filesystem.makeTempDirectoryScoped({
-      directory: tmpdir(),
       prefix: "template-secrets-",
     });
     return yield* filesystem.realPath(directory);
@@ -38,25 +35,16 @@ function writeSecrets(filename: string, content: string, mode: number): Effect.E
   }).pipe(Effect.orDie, Effect.provide(layer));
 }
 
-function restoreEnvironmentFile(previous: string | undefined): Effect.Effect<void> {
-  return Effect.sync(() => {
-    delete processEnvironment[ENVIRONMENT_FILE_VARIABLE];
-    Object.assign(
-      processEnvironment,
-      previous === undefined ? {} : { [ENVIRONMENT_FILE_VARIABLE]: previous },
-    );
-  });
-}
-
 function verifySecretsFile(filename: string): ReturnType<typeof verifiedSecrets> {
   return Effect.acquireUseRelease(
     Effect.sync(() => {
-      const previous = processEnvironment[ENVIRONMENT_FILE_VARIABLE];
-      processEnvironment[ENVIRONMENT_FILE_VARIABLE] = filename;
-      return previous;
+      vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, filename);
     }),
     () => verifiedSecrets(),
-    restoreEnvironmentFile,
+    () =>
+      Effect.sync(() => {
+        vi.unstubAllEnvs();
+      }),
   );
 }
 
@@ -138,14 +126,18 @@ it.effect("reports a missing file instead of deploying without it", () =>
 
 it.effect("resolves the same file the staged-diff check reads", () =>
   Effect.acquireUseRelease(
-    Effect.sync(() => processEnvironment[ENVIRONMENT_FILE_VARIABLE]),
+    Effect.sync(() => {
+      vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, undefined);
+    }),
     () =>
       Effect.sync(() => {
-        delete processEnvironment[ENVIRONMENT_FILE_VARIABLE];
         assert.match(secretsFile("template"), /\/\.config\/template\/cloudflare\.env$/u);
-        processEnvironment[ENVIRONMENT_FILE_VARIABLE] = "/elsewhere/cloudflare.env";
+        vi.stubEnv(ENVIRONMENT_FILE_VARIABLE, "/elsewhere/cloudflare.env");
         assert.strictEqual(secretsFile("template"), "/elsewhere/cloudflare.env");
       }),
-    restoreEnvironmentFile,
+    () =>
+      Effect.sync(() => {
+        vi.unstubAllEnvs();
+      }),
   ),
 );

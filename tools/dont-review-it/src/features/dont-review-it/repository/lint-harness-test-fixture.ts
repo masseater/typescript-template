@@ -1,5 +1,4 @@
-import { AssertionError } from "node:assert";
-
+import { Schema } from "effect";
 import { RuleTester } from "vite-plus/lint/plugins-dev";
 
 import plugin from "./plugin.ts";
@@ -16,6 +15,12 @@ RuleTester.describe = runImmediately;
 RuleTester.it = runImmediately;
 const tester = new RuleTester({ cwd: "/project" });
 
+const CountMismatch = Schema.Struct({
+  code: Schema.Literal("ERR_ASSERTION"),
+  actual: Schema.Finite,
+});
+const isCountMismatch = Schema.is(CountMismatch);
+
 const reportCount = (
   ruleName: RuleName,
   probe: { readonly code: string; readonly filename: string },
@@ -28,7 +33,7 @@ const reportCount = (
     tester.run(ruleName, rule, { invalid: [], valid: [probe] });
     return 0;
   } catch (caught) {
-    if (caught instanceof AssertionError && typeof caught.actual === "number") {
+    if (isCountMismatch(caught)) {
       return caught.actual;
     }
     throw caught;

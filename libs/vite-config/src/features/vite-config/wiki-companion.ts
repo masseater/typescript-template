@@ -1,6 +1,4 @@
-import { createServer as createNetServer } from "node:net";
-
-import { NodeServices } from "@effect/platform-node";
+import { NodeServices, NodeSocketServer } from "@effect/platform-node";
 import {
   loopbackAddress,
   loopbackOrigin,
@@ -31,25 +29,16 @@ const wikiDevServices = [
   { binding: wikiApiBinding, entrypoint: wikiApiEntrypoint, service: wikiDevWorkerName },
 ];
 
-const probedPort = (
-  probe: Readonly<Pick<ReturnType<typeof createNetServer>, "address">>,
-): Effect.Effect<number> => {
-  const address = probe.address();
-  return typeof address === "object" && address !== null
-    ? Effect.succeed(address.port)
-    : Effect.die("WIKI_DEV_PORT_UNAVAILABLE");
-};
-
-const freePort: Effect.Effect<number> = Effect.callback<number>((resume) => {
-  const probe = createNetServer();
-  const release = (): void => {
-    const port = probedPort(probe);
-    probe.close(() => {
-      resume(port);
-    });
-  };
-  probe.listen(0, loopbackAddress, release);
-});
+const freePort: Effect.Effect<number> = Effect.scoped(
+  Effect.gen(function* probeFreePort() {
+    const probe = yield* NodeSocketServer.make({ host: loopbackAddress, port: 0 }).pipe(
+      Effect.orDie,
+    );
+    return probe.address._tag === "UnixPathAddress"
+      ? yield* Effect.die("WIKI_DEV_PORT_UNAVAILABLE")
+      : probe.address.port;
+  }),
+);
 
 type WikiRoots = Readonly<{ repositoryRoot: string; wikiRoot: string }>;
 

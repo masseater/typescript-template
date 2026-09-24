@@ -1,5 +1,3 @@
-import { fileURLToPath } from "node:url";
-
 import { NodeServices } from "@effect/platform-node";
 import { recommended } from "@effect/tsgo/oxlint-presets";
 import {
@@ -11,7 +9,7 @@ import {
 import { Effect, FileSystem } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { path } from "../platform/path.ts";
+import { filePathOf, path } from "../platform/path.ts";
 import { posixPath } from "../platform/path.ts";
 import { field } from "./dependencies-test-fixture.ts";
 import { repositoryRoot } from "./repository-root.ts";
@@ -79,7 +77,7 @@ const sharedProjects = parsedProjects.filter(
 const environment = { command: "serve", mode: "development" };
 
 const workspace = (file: string): string => {
-  const absolute = path.isAbsolute(file) ? file : fileURLToPath(new URL(file, import.meta.url));
+  const absolute = path.isAbsolute(file) ? file : filePathOf(new URL(file, import.meta.url));
   const directory = path.relative(repositoryRoot, path.dirname(absolute)).split(path.sep).join("/");
   return directory === "" ? "." : directory;
 };
@@ -115,7 +113,7 @@ const projectFlag = (command: string): string | undefined => {
 };
 
 const toRepositoryPath = (file: string): string => {
-  const absolute = path.isAbsolute(file) ? file : fileURLToPath(new URL(file, import.meta.url));
+  const absolute = path.isAbsolute(file) ? file : filePathOf(new URL(file, import.meta.url));
   return path.relative(repositoryRoot, absolute).split(path.sep).join("/");
 };
 
@@ -227,7 +225,7 @@ describe("effect diagnostics coverage", () => {
         expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
         const filesystem = yield* FileSystem.FileSystem;
         const source = yield* filesystem.readFileString(
-          fileURLToPath(new URL("./typecheck-workspaces.ts", import.meta.url)),
+          yield* path.fromFileUrl(new URL("./typecheck-workspaces.ts", import.meta.url)),
         );
         expect(source).toContain("@effect/tsgo/package.json");
         expect(source).toContain("get-exe-path");

@@ -9,3 +9,5 @@ export const posixPath: Path.Path = Effect.runSync(
 
 export const relativePosixPath = (from: string, to: string): string =>
   path.relative(from, to).split(path.sep).join(posixPath.sep);
+
+export const filePathOf = (url: URL): string => Effect.runSync(path.fromFileUrl(url));
