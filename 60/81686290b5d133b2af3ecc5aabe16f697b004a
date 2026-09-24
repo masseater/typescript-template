@@ -1,1 +1,6 @@
-親コミットの InvoiceRecord 非公開化に追従
+Revision history for #1554:
+
+rev 2 (content) 2026-09-24 09:45 UTC — 親コミットの InvoiceRecord 非公開化に追従
+rev 1 (initial) 2026-09-24 09:45 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1554,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"7b757f88c492b0e6caf32031ff3486985a536581","timestamp_iso":"2026-09-24T09:45:18Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"7b757f88c492b0e6caf32031ff3486985a536581","new_sha":"6081686290b5d133b2af3ecc5aabe16f697b004a","timestamp_iso":"2026-09-24T09:45:18Z","reason":"親コミットの InvoiceRecord 非公開化に追従","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/7b757f88c492b0e6caf32031ff3486985a536581...6081686290b5d133b2af3ecc5aabe16f697b004a"}]} -->
