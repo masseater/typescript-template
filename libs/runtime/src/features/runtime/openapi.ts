@@ -1,11 +1,10 @@
 import { httpStatus, scalarReferencePath, type Application } from "@repo/config";
 import { Option, Result, Schema, type JsonSchema } from "effect";
 
-import { ErrorBody } from "./contracts.ts";
+import { ErrorBody, type Decodable } from "./contracts.ts";
 import { declaredStatuses, type AnyFailureTable } from "./failures.ts";
 
 import type { DocumentDecoration } from "elysia/types";
-import type { Decodable } from "./http.ts";
 
 type QueryContract = {
   readonly fields: Schema.Struct.Fields;
