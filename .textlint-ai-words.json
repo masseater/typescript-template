@@ -115,6 +115,108 @@
           "surface_form": "。"
         }
       ]
+    },
+    {
+      "message": "\"起動口\" は entrypoint の直訳です。\"エントリポイント\" と書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "起動"
+        },
+        {
+          "pos": "名詞",
+          "surface_form": "口"
+        }
+      ]
+    },
+    {
+      "message": "\"担い手\" は owner の言い換えです。\"オーナー\" か \"担当\" と書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "担い手"
+        }
+      ]
+    },
+    {
+      "message": "\"解釈者\" は consumer の言い換えです。\"コンシューマー\" と書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "解釈"
+        },
+        {
+          "pos": "名詞",
+          "surface_form": "者"
+        }
+      ]
+    },
+    {
+      "message": "\"通しの層\" は E2E の言い換えです。\"E2E\" と書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "通し"
+        },
+        {
+          "surface_form": "の"
+        },
+        {
+          "pos": "名詞",
+          "surface_form": "層"
+        }
+      ]
+    },
+    {
+      "message": "\"最小の層\" は unit test の言い換えです。\"ユニットテスト\" と書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "最小"
+        },
+        {
+          "surface_form": "の"
+        },
+        {
+          "pos": "名詞",
+          "surface_form": "層"
+        }
+      ]
+    },
+    {
+      "message": "\"実行単位\" は job や workflow の言い換えです。\"ジョブ\" \"ワークフロー\" のように何を指すかを書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "実行"
+        },
+        {
+          "pos": "名詞",
+          "surface_form": "単位"
+        }
+      ]
+    },
+    {
+      "message": "\"区画\" は namespace の直訳です。\"ネームスペース\" と書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "区画"
+        }
+      ]
+    },
+    {
+      "message": "\"掲示先\" は AI 的な造語です。\"報告先\" と書いてください。",
+      "tokens": [
+        {
+          "pos": "名詞",
+          "surface_form": "掲示"
+        },
+        {
+          "pos": "名詞",
+          "surface_form": "先"
+        }
+      ]
     }
   ]
 }
