@@ -2305,6 +2305,9 @@ importers:
       react-doctor:
         specifier: 0.9.14
         version: 0.9.14(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.221.0(@opentelemetry/api@1.9.1))(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(oxlint-tsgolint@7.0.2001)(react@19.3.0)(supports-color@10.2.2)(vite-plus@1.0.0-rc.0(@opentelemetry/api@1.9.1)(@types/node@26.6.1)(@vitest/browser-playwright@5.0.1)(@vitest/coverage-v8@5.0.1)(@vitest/ui@5.0.1)(esbuild@0.28.2)(jiti@2.7.0)(msw@2.15.0(@types/node@26.6.1)(typescript@7.0.2))(tsx@4.23.13)(typescript@7.0.2)(yaml@2.9.1))
+      remark:
+        specifier: 'catalog:'
+        version: 15.0.1(supports-color@10.2.2)
       std-env:
         specifier: 4.2.0
         version: 4.2.0
@@ -2354,6 +2357,9 @@ importers:
       '@tanstack/intent':
         specifier: 'catalog:'
         version: 0.3.6
+      '@types/mdast':
+        specifier: 'catalog:'
+        version: 4.0.4
       '@types/node':
         specifier: 'catalog:'
         version: 26.6.1
