@@ -95,7 +95,7 @@ const workspaces = {
       "@repo/config!",
       `${bundledTelemetry.name}!`,
       ...Object.entries(bundledTelemetry.dependencies).flatMap(([dependency, version]) =>
-        version.startsWith("workspace:") || dependency === "effect" ? [] : [dependency],
+        version.startsWith("workspace:") ? [] : [dependency],
       ),
     ],
   },

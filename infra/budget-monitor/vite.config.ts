@@ -1,6 +1,6 @@
 import { monitorWorkerVite } from "@repo/monitor/vite";
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
-import { vitestSdkPath } from "@repo/telemetry/vitest-sdk-path";
+import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
 import { defineConfig } from "vite-plus";
 
 const budgetMonitorVite = monitorWorkerVite(import.meta.dirname);
@@ -17,7 +17,7 @@ export default defineConfig({
     experimental: {
       openTelemetry: {
         enabled: telemetryAsked,
-        sdkPath: vitestSdkPath,
+        sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
       },
     },
     ...budgetMonitorVite.test,
