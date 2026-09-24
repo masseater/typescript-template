@@ -1,12 +1,9 @@
-import { appendFile, cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { APPLICATION, AUTHENTICATION_METHOD } from "@repo/config";
 import { EmptyTestDatabase, TestBinding, deployMigrations, runStatement } from "@repo/db-local";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
-import { Effect } from "effect";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin, BootstrapUnavailable } from "./bootstrap-statement.ts";
@@ -20,6 +17,26 @@ import {
 } from "./remote-operations.ts";
 import { session, user } from "./schema.ts";
 import { getSessionSecurity } from "./security.ts";
+
+const copiedMigrations = Effect.gen(function* copyMigrations() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const folder = yield* filesystem.makeTempDirectoryScoped({ prefix: "template-migrations-" });
+  yield* filesystem.copy(migrationsFolder, folder);
+  return folder;
+});
+
+const withInterruptedMigration = Effect.gen(function* addInterruptedMigration() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const paths = yield* Path.Path;
+  const folder = yield* copiedMigrations;
+  const interrupted = paths.join(folder, "99999999999999_interrupted");
+  yield* filesystem.makeDirectory(interrupted);
+  yield* filesystem.writeFileString(
+    paths.join(interrupted, "migration.sql"),
+    "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
+  );
+  return folder;
+});
 
 describe("migrateD1", () => {
   describe("a first migration of an empty database", () => {
@@ -55,26 +72,15 @@ describe("migrateD1", () => {
   });
 
   describe("a migration whose second statement fails", () => {
-    const it = test.extend("migrationFailure", async ({}, { onCleanup }) => {
-      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
-      onCleanup(async () => {
-        await rm(folder, { force: true, recursive: true });
-      });
-      await cp(migrationsFolder, folder, { recursive: true });
-      const interrupted = path.join(folder, "99999999999999_interrupted");
-      await mkdir(interrupted);
-      await writeFile(
-        path.join(interrupted, "migration.sql"),
-        "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
-      );
-      return Effect.runPromise(
+    const it = test.extend("migrationFailure", () =>
+      Effect.runPromise(
         Effect.gen(function* interrupt() {
+          const folder = yield* withInterruptedMigration;
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
           return yield* Effect.flip(migrateD1(binding, folder));
-        }).pipe(Effect.provide(EmptyTestDatabase)),
-      );
-    });
+        }).pipe(Effect.scoped, Effect.provide([EmptyTestDatabase, NodeServices.layer])),
+      ));
 
     it("fails as a query failure", { timeout: 60_000 }, ({ migrationFailure }) => {
       expect(migrationFailure).toStrictEqual(new RemoteFailure({ code: "REMOTE_QUERY_FAILED" }));
@@ -82,20 +88,10 @@ describe("migrateD1", () => {
   });
 
   describe("the database after a migration whose second statement failed", () => {
-    const it = test.extend("interruptedTables", async ({}, { onCleanup }) => {
-      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
-      onCleanup(async () => {
-        await rm(folder, { force: true, recursive: true });
-      });
-      await cp(migrationsFolder, folder, { recursive: true });
-      const interrupted = path.join(folder, "99999999999999_interrupted");
-      await mkdir(interrupted);
-      await writeFile(
-        path.join(interrupted, "migration.sql"),
-        "CREATE TABLE interrupted_migration (id TEXT);\n--> statement-breakpoint\nINSERT INTO missing_migration_table VALUES (1);",
-      );
-      return Effect.runPromise(
+    const it = test.extend("interruptedTables", () =>
+      Effect.runPromise(
         Effect.gen(function* interrupt() {
+          const folder = yield* withInterruptedMigration;
           const binding = yield* TestBinding;
           yield* migrateD1(binding);
           yield* Effect.exit(migrateD1(binding, folder));
@@ -104,9 +100,8 @@ describe("migrateD1", () => {
             "interrupted_migration",
           );
           return listing.results;
-        }).pipe(Effect.provide(EmptyTestDatabase)),
-      );
-    });
+        }).pipe(Effect.scoped, Effect.provide([EmptyTestDatabase, NodeServices.layer])),
+      ));
 
     it("keeps nothing of the failed migration", { timeout: 60_000 }, ({ interruptedTables }) => {
       expect(interruptedTables).toStrictEqual([]);
@@ -114,27 +109,24 @@ describe("migrateD1", () => {
   });
 
   describe("migrations whose already applied history changed", () => {
-    const it = test.extend("migrationFailure", async ({}, { onCleanup }) => {
-      const folder = await mkdtemp(path.join(tmpdir(), "template-migrations-"));
-      onCleanup(async () => {
-        await rm(folder, { force: true, recursive: true });
-      });
-      await cp(migrationsFolder, folder, { recursive: true });
-      return Effect.runPromise(
+    const it = test.extend("migrationFailure", () =>
+      Effect.runPromise(
         Effect.gen(function* rewriteHistory() {
+          const filesystem = yield* FileSystem.FileSystem;
+          const paths = yield* Path.Path;
+          const folder = yield* copiedMigrations;
           const binding = yield* TestBinding;
           const [first] = yield* loadRemoteMigrations();
           yield* migrateD1(binding);
           if (first === undefined) {
             return new RemoteFailure({ code: "REMOTE_MIGRATIONS_INVALID" });
           }
-          yield* Effect.promise(async () =>
-            appendFile(path.join(folder, first.name, "migration.sql"), "\n"),
-          );
+          yield* filesystem.writeFileString(paths.join(folder, first.name, "migration.sql"), "\n", {
+            flag: "a",
+          });
           return yield* Effect.flip(migrateD1(binding, folder));
-        }).pipe(Effect.provide(EmptyTestDatabase)),
-      );
-    });
+        }).pipe(Effect.scoped, Effect.provide([EmptyTestDatabase, NodeServices.layer])),
+      ));
 
     it("are refused", { timeout: 60_000 }, ({ migrationFailure }) => {
       expect(migrationFailure).toStrictEqual(
