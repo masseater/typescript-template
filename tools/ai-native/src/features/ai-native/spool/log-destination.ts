@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 import { fileExists, joinPath, parentPath, resolvePath } from "../host.ts";
 
-const findSpoolRoot = (currentDir: string, fallbackDir: string): Effect.Effect<string> =>
+const findSpoolRoot = (currentDir: string, fallbackDir: string): Effect.Effect<string, Error> =>
   fileExists(joinPath(currentDir, "package.json")).pipe(
     Effect.flatMap((manifestFound) => {
       if (manifestFound) {
@@ -15,7 +15,7 @@ const findSpoolRoot = (currentDir: string, fallbackDir: string): Effect.Effect<s
     }),
   );
 
-export const defaultSpoolRoot = (startDir: string = process.cwd()): Effect.Effect<string> =>
+export const defaultSpoolRoot = (startDir: string = process.cwd()): Effect.Effect<string, Error> =>
   findSpoolRoot(resolvePath(startDir), resolvePath(startDir));
 
 export const timestampOf = (stampedInstant: Date): string =>

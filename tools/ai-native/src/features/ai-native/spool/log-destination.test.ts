@@ -69,6 +69,38 @@ describe("defaultSpoolRoot", () => {
       expect(spoolRootOfTheImplicitStart).toBe(joinPath(process.cwd(), ".spool"));
     });
   });
+
+  describe("a start directory whose manifest cannot be looked up", () => {
+    const it = test
+      .extend("fileInPlaceOfADirectory", ({}, { onCleanup }) => {
+        const madeDirectory = Effect.runPromise(
+          filesystem.makeTempDirectory({ prefix: "log-destination-unreadable-" }),
+        );
+        onCleanup(() =>
+          Effect.runPromise(Effect.promise(() => madeDirectory).pipe(Effect.flatMap(removePath))),
+        );
+        return Effect.runPromise(
+          Effect.gen(function* () {
+            const plainFile = joinPath(yield* Effect.promise(() => madeDirectory), "plain");
+            yield* writeFileString({ location: plainFile, written: "" });
+            return plainFile;
+          }),
+        );
+      })
+      .extend("theCodeOfTheLookupFailure", ({ fileInPlaceOfADirectory }) =>
+        Effect.runPromise(
+          Effect.flip(defaultSpoolRoot(joinPath(fileInPlaceOfADirectory, "a"))).pipe(
+            Effect.map((lookupFailure) =>
+              "code" in lookupFailure ? lookupFailure.code : undefined,
+            ),
+          ),
+        ),
+      );
+
+    it("fails with the error the file system raised", ({ theCodeOfTheLookupFailure }) => {
+      expect(theCodeOfTheLookupFailure).toBe("ENOTDIR");
+    });
+  });
 });
 
 describe("timestampOf", () => {

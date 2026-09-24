@@ -3,7 +3,7 @@ import { optionalSetting } from "@repo/ai-native-telemetry/optional-setting";
 import { Crypto, DateTime, Effect, FileSystem, Path, type PlatformError } from "effect";
 import { ChildProcessSpawner } from "effect/unstable/process";
 
-import { homeDirectory, signalNumber, temporaryDirectory } from "./host-facts.ts";
+import { homeDirectory, isSignalName, signalNumber, temporaryDirectory } from "./host-facts.ts";
 
 const [paths, filesystem, randomness, spawner] = Effect.runSync(
   Effect.all([
@@ -22,15 +22,15 @@ const baseName = (location: string): string => paths.basename(location);
 
 const resolvePath = (...parts: readonly string[]): string => paths.resolve(...parts);
 
-const fileExists = (location: string): Effect.Effect<boolean> =>
-  filesystem.exists(location).pipe(Effect.orElseSucceed(() => false));
-
 const nativeFailure = (failure: PlatformError.PlatformError): Error =>
   failure.reason.cause instanceof Error ? failure.reason.cause : failure;
 
 const onDisk = <A, R>(
   operation: Effect.Effect<A, PlatformError.PlatformError, R>,
 ): Effect.Effect<A, Error, R> => Effect.mapError(operation, nativeFailure);
+
+const fileExists = (location: string): Effect.Effect<boolean, Error> =>
+  onDisk(filesystem.exists(location));
 
 const makeDirectory = (location: string): Effect.Effect<void, Error> =>
   onDisk(filesystem.makeDirectory(location, { recursive: true }));
@@ -70,6 +70,7 @@ export {
   fileExists,
   filesystem,
   homeDirectory,
+  isSignalName,
   joinPath,
   makeDirectory,
   nativeFailure,
