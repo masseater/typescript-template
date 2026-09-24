@@ -1,6 +1,4 @@
-import { parseArgs } from "node:util";
-
-import { Effect, type FileSystem, Schema } from "effect";
+import { Effect, type FileSystem } from "effect";
 
 import { isDirectoryAt } from "../platform/file-system.ts";
 import { path } from "../platform/path.ts";
@@ -17,48 +15,14 @@ import { guidelineIndexProblems } from "./rule-index/reconcile-guideline-index.t
 import { lintRuleIndexProblems } from "./rule-index/reconcile-rule-index.ts";
 import { relatedGuidelineProblems } from "./rule-index/related-guidelines.ts";
 
-const USAGE = `Usage: lint-rule-authoring check [--write] [--repository-root <path>]
-
-Reconciles every workspace lint rule index (docs/lint/index.md), every rule
-document (docs/lint/<rule>.md), and the repository table of rules by normative
-document (docs/lint-rules-by-guideline.md) with the rule implementations found
-under the directories that the workspace manifests declare in their lintRules
-field. Also reports every rule that names no normative document as its grounds,
-or names one that is not there. Without --write it only reports what is missing,
-unmarked, stale, or still carrying the text a seeded document was written with;
-with --write it seeds the absent documents and regenerates every generated
-region. Exits non-zero when a problem remains.
-
-Options:
-  --write                   Write the regenerated documents instead of only reporting them.
-  --repository-root <path>  Root of the repository to scan. Defaults to the current working directory.
-`;
-
-class CommandLineRefused extends Schema.TaggedError<CommandLineRefused>()("CommandLineRefused", {
-  cause: Schema.Defect(),
-}) {
-  override get message(): string {
-    return this.cause instanceof Error ? this.cause.message : String(this.cause);
-  }
+interface LintRuleAuthoringCheck {
+  readonly repositoryRoot: string;
+  readonly write: boolean;
 }
 
-const dispatch = (argv: readonly string[]) =>
-  Effect.gen(function* dispatch() {
-    const parsedNode = yield* Effect.try({
-      try: () =>
-        parseArgs({
-          args: [...argv],
-          allowPositionals: true,
-          options: { "repository-root": { type: "string" }, write: { type: "boolean" } },
-        }),
-      catch: (refusal) => new CommandLineRefused({ cause: refusal }),
-    });
-    const [command] = parsedNode.positionals;
-    if (command !== "check") {
-      return { exitCode: EXIT_MISUSE, out: "", error: USAGE };
-    }
-
-    const repositoryRoot = path.resolve(parsedNode.values["repository-root"] ?? process.cwd());
+const check = (request: LintRuleAuthoringCheck) =>
+  Effect.gen(function* check() {
+    const repositoryRoot = path.resolve(request.repositoryRoot);
     if (!(yield* isDirectoryAt(repositoryRoot))) {
       return {
         exitCode: EXIT_MISUSE,
@@ -67,7 +31,7 @@ const dispatch = (argv: readonly string[]) =>
       };
     }
 
-    const write = parsedNode.values.write ?? false;
+    const { write } = request;
     const index = yield* lintRuleIndexProblems({ repositoryRoot, write });
     const docs = yield* lintRuleDocProblems({ repositoryRoot, write });
     const grounds = yield* relatedGuidelineProblems({ repositoryRoot });
@@ -86,6 +50,6 @@ const dispatch = (argv: readonly string[]) =>
   });
 
 export const runLintRuleAuthoring = (
-  argv: readonly string[],
+  request: LintRuleAuthoringCheck,
 ): Effect.Effect<CliResult, never, FileSystem.FileSystem> =>
-  dispatch(argv).pipe(Effect.catch((failure) => Effect.succeed(misuseOf(failure))));
+  check(request).pipe(Effect.catch((failure) => Effect.succeed(misuseOf(failure))));
