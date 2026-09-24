@@ -116,7 +116,6 @@ export type {
   ReadOnlyDashboardStaff,
   TrendQuery,
 } from "./dashboard-staff.ts";
-export { PaidPlanRequired } from "./paid-plan-required.ts";
 export {
   attachCheckout,
   findSubscription,

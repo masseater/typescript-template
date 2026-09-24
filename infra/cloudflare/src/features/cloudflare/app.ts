@@ -1,5 +1,6 @@
 import {
   APPLICATION,
+  coreEntrypoints,
   grants,
   jobsWorkflowClass,
   userInboxBinding,
@@ -10,7 +11,6 @@ import {
 } from "@repo/config";
 import { repositoryRoot } from "@repo/config/repository-root";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
-import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import {
   DurableObject,
   Email,

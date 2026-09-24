@@ -1058,9 +1058,6 @@ importers:
       '@repo/config':
         specifier: workspace:*
         version: link:../../libs/config
-      '@repo/core-api':
-        specifier: workspace:*
-        version: link:../../libs/core-api
       '@repo/db':
         specifier: workspace:*
         version: link:../../libs/db

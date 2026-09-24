@@ -7,6 +7,7 @@ import {
   aiUsageUnitAmount,
   appEnvKey,
   applications,
+  coreEntrypoints,
   grants,
   jobsQueueBinding,
   jobsWorkflowBinding,
@@ -24,7 +25,6 @@ import {
 import { repositoryRoot } from "@repo/config/repository-root";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
-import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import {
   budgetMonitorEnv,
   budgetMonitorWorker,

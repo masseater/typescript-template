@@ -27,7 +27,6 @@
     "@effect/platform-node": "catalog:",
     "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
-    "@repo/core-api": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/feature-flags": "workspace:*",
     "@repo/monitor": "workspace:*",
