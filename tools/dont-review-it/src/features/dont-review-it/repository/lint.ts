@@ -508,23 +508,6 @@ const authUiServerReadsAwaitingQuery = [
   "libs/auth-ui/src/features/auth-ui/use-session.ts",
 ];
 
-const plainSecretsAwaitingRedacted = [
-  "infra/budget-monitor/src/features/budget-monitor/config.ts",
-  "infra/error-monitor/src/features/error-monitor/config.ts",
-  "libs/config/src/features/config/environment.ts",
-];
-
-const behaviorSwitchesAwaitingRemoval = [
-  "infra/cloudflare/src/features/cloudflare/settings.ts",
-  "libs/config/src/features/config/environment.ts",
-];
-
-const testOnlyKeysAwaitingRemoval = [
-  "apps/internal-dashboard/src/shared/server-api/recordings-api.worker.test.ts",
-  "apps/internal-dashboard/src/shared/transcription/transcribe-job.worker.test.ts",
-  "libs/db/src/features/db/testing.ts",
-];
-
 const lintOptions = {
   bundles: "all",
   ignorePatterns: [...generatedFiles, ...awaitingPresetPackages, ...uiQualityInspectionFiles],
@@ -1057,26 +1040,6 @@ const lintOptions = {
       ],
       rules: {
         "no-bitwise": LINT_SEVERITY.OFF,
-      },
-    },
-    {
-      files: plainSecretsAwaitingRedacted,
-      rules: {
-        "dont-review-it/no-plain-secret-environment-key--wrap-it-in-redacted": LINT_SEVERITY.OFF,
-      },
-    },
-    {
-      files: behaviorSwitchesAwaitingRemoval,
-      rules: {
-        "dont-review-it/no-behavior-switch-environment-key--decide-from-the-value-or-a-feature-flag":
-          LINT_SEVERITY.OFF,
-      },
-    },
-    {
-      files: testOnlyKeysAwaitingRemoval,
-      rules: {
-        "dont-review-it/no-test-only-environment-key--use-real-dependencies-and-http-doubles":
-          LINT_SEVERITY.OFF,
       },
     },
     {
