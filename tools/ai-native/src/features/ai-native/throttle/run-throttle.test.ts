@@ -138,11 +138,14 @@ describe("runThrottle", () => {
         not nest throttle inside a command it wraps: the inner call counts
         as one more competitor and consumes a second slot.
 
+        When the command exits, throttle ends the rest of its process group before
+        it gives the slot back: SIGTERM first, then SIGKILL after the grace period.
+
         Options:
           --timeout <seconds>  Stop the command's whole process tree after this many
                                seconds. POSIX sends SIGTERM, then SIGKILL after a short
                                grace period; Windows uses taskkill /T /F immediately.
-                               0 never interrupts the command. Defaults to 0.
+                               0 never interrupts the command itself. Defaults to 0.
 
         Environment:
           MST_THROTTLE_LIMIT   Number of slots shared by every throttle on this host
