@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-const { parseArgs } = process.getBuiltinModule("util");
-
-import { causeRecord, runCli } from "@repo/cli";
+import { causeRecord, runCli, runCommand } from "@repo/cli";
 import { APPLICATION, applicationOrigins, applications, httpStatus } from "@repo/config";
-import { Clock, Console, Effect, Schema } from "effect";
+import { Clock, Console, Effect, Option, Schema } from "effect";
+import { Command, Flag } from "effect/unstable/cli";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
+import { layer } from "../platform.ts";
 import { explorerOrigin, requestTelemetry } from "./explorer.ts";
 
 interface Verified {
@@ -32,17 +32,11 @@ class VerificationFailure extends Schema.TaggedError<VerificationFailure>()("Ver
 const appTimeoutMilliseconds = 15_000;
 const correlationWindowMilliseconds = 45_000;
 const pollIntervalMilliseconds = 1000;
+const defaultService = "service-member-server";
 
 const VerifyInput = Schema.Struct({
   app: Schema.String,
   service: Schema.Literals(applications.map((application) => `${application}-server` as const)),
-});
-
-const { values } = parseArgs({
-  options: {
-    app: { type: "string" },
-    service: { default: "service-member-server", type: "string" },
-  },
 });
 
 function fail(reason: VerificationFailure["reason"]): VerificationFailure {
@@ -115,10 +109,13 @@ const requestApp = Effect.fn("requestApp")(function* requestApp(app: Readonly<UR
   return { requestId, status: response.status };
 });
 
-const verify = Effect.fn("verify")(function* verify() {
+const verify = Effect.fn("verify")(function* verify(parsed: {
+  readonly app: Option.Option<string>;
+  readonly service: string;
+}) {
   const input = yield* Schema.decodeUnknownEffect(VerifyInput)({
-    app: values.app,
-    service: values.service,
+    app: Option.getOrUndefined(parsed.app),
+    service: parsed.service,
   }).pipe(Effect.mapError(() => fail("arguments_invalid")));
   const app = yield* explorerOrigin(input.app);
   const { requestId, status } = yield* requestApp(app);
@@ -136,7 +133,30 @@ const verify = Effect.fn("verify")(function* verify() {
   };
 });
 
-runCli(verify().pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))), (cause) =>
+const verifyCommand = Command.make(
+  "verify",
+  {
+    app: Flag.String("app").pipe(
+      Flag.optional,
+      Flag.withDescription("Origin of the running local app to request"),
+    ),
+    service: Flag.String("service").pipe(
+      Flag.withDefault(defaultService),
+      Flag.withDescription(
+        `Service name expected on the correlated request log, default ${defaultService}`,
+      ),
+    ),
+  },
+  (parsed) => verify(parsed).pipe(Effect.flatMap((report) => Console.log(JSON.stringify(report)))),
+).pipe(
+  Command.withDescription(
+    "Request a local app and wait until Local Explorer holds its structured log and completed trace",
+  ),
+  runCommand({ version: "0.0.0" }),
+  Effect.provide(layer),
+);
+
+runCli(verifyCommand, (cause) =>
   causeRecord("observability.verification_failed", {
     cause,
     fields: {

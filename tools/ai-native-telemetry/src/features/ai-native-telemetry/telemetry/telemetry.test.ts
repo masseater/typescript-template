@@ -10,6 +10,7 @@ describe("the package surface", () => {
       ".": "./src/features/ai-native-telemetry/index.ts",
       "./optional-setting": "./src/features/ai-native-telemetry/telemetry/optional-setting.ts",
       "./vitest-sdk": "./src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
+      "./vitest-sdk-path": "./src/features/ai-native-telemetry/telemetry/vitest-sdk-path.ts",
       "./package.json": "./package.json",
     });
   });

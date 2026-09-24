@@ -1,4 +1,4 @@
-const { homedir, userInfo } = process.getBuiltinModule("os");
+import { homedir, userInfo } from "node:os";
 
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 import { describe, expect, it } from "vite-plus/test";

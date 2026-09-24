@@ -1,4 +1,4 @@
-import { Effect, Path } from "effect";
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { waitEmitterEvent } from "../emitter-wait.ts";
@@ -26,11 +26,7 @@ const nodeOs = process.getBuiltinModule("os") as {
   readonly tmpdir: () => string;
 };
 
-const CLI_PATH = Effect.runSync(
-  Effect.flatMap(Path.Path, (path) => path.fromFileUrl(new URL("./cli.ts", import.meta.url))).pipe(
-    Effect.provide(Path.layer),
-  ),
-);
+const CLI_PATH = joinPath(import.meta.dirname, "cli.ts");
 
 const LARGE_OUTPUT_SCRIPT =
   'const line = "x".repeat(99) + "\\n"; for (let i = 0; i < 50000; i += 1) process.stdout.write(line);';

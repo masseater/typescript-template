@@ -1,4 +1,4 @@
-const { SourceMap } = process.getBuiltinModule("module");
+import { SourceMap } from "node:module";
 
 import { sourceMapDirectories } from "@repo/vite-config/source-maps";
 import { Effect, FileSystem, Path, PlatformError, Schema } from "effect";
