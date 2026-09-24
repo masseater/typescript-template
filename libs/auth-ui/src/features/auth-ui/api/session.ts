@@ -5,11 +5,11 @@ import { Effect } from "effect";
 import { browserGet } from "../browser-http.ts";
 import { SessionView, decodeJson, type SessionView as SessionData } from "../protocol.ts";
 
-const requestSession = (endpoint: string): Effect.Effect<SessionData | undefined> =>
+const requestSession = (endpoint: string): Effect.Effect<SessionData | null> =>
   Effect.gen(function* readSession() {
     const served = yield* browserGet(endpoint, { cache: "no-store", credentials: "same-origin" });
     if (served.status === httpStatus.unauthorized) {
-      return undefined;
+      return null;
     }
     if (served.status < 200 || served.status >= 300) {
       return yield* Effect.die(
@@ -19,24 +19,28 @@ const requestSession = (endpoint: string): Effect.Effect<SessionData | undefined
     return decodeJson(SessionView, yield* served.json.pipe(Effect.orDie));
   });
 
-type SessionLoader = () => Promise<SessionData | undefined>;
-
 const sessionEndpoint = "/api/session";
 
-const loadBrowserSession: SessionLoader = (): Promise<SessionData | undefined> =>
+const loadBrowserSession = (): Promise<SessionData | null> =>
   Effect.runPromise(requestSession(sessionEndpoint));
 
 const sessionKey = ["auth", "session"] as const;
 
 const sessionOptions = queryOptions<
-  SessionData | undefined,
+  SessionData | null,
   Error,
-  SessionData | undefined,
+  SessionData | null,
   typeof sessionKey
 >({ queryKey: sessionKey, retry: false });
 
+type SessionLoader = () => Promise<SessionData | null | undefined>;
+
 const provideSessionLoader = (queries: QueryClient, load: SessionLoader): void => {
-  queries.setQueryDefaults(sessionKey, { queryFn: load, retry: false });
+  queries.setQueryDefaults(sessionKey, {
+    queryFn: () =>
+      Effect.runPromise(Effect.promise(load).pipe(Effect.map((session) => session ?? null))),
+    retry: false,
+  });
 };
 
 export { loadBrowserSession, provideSessionLoader, sessionOptions };

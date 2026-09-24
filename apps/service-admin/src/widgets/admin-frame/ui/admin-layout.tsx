@@ -1,4 +1,5 @@
-import { SessionGate, SessionUserProvider } from "@repo/auth-ui";
+import { SessionUserProvider } from "@repo/auth-ui";
+import { SessionGate } from "@repo/auth-ui/session-gate";
 import { ROLE } from "@repo/config";
 import { Outlet } from "@tanstack/react-router";
 

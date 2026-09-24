@@ -5,7 +5,7 @@
   "exports": {
     ".": "./src/features/auth-ui/index.ts",
     "./consent": "./src/features/auth-ui/oauth-consent.ts",
-    "./login-redirect": "./src/features/auth-ui/login-redirect.ts",
+    "./session-gate": "./src/features/auth-ui/session-gate.tsx",
     "./session": "./src/features/auth-ui/use-session.ts"
   },
   "dependencies": {

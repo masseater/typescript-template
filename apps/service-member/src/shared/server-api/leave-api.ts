@@ -22,6 +22,7 @@ const failures = {
     message: "退会できません。",
     status: httpStatus.forbidden,
   },
+  PhotoStorageFailed: "unexpected",
   RecoveryExpired: {
     message: "復旧できる期間が過ぎています。",
     status: httpStatus.badRequest,
@@ -31,7 +32,7 @@ const failures = {
     status: httpStatus.conflict,
   },
   UserNotFound: { message: "対象が見つかりません。", status: httpStatus.notFound },
-};
+} as const;
 
 const submitLeave = Effect.fn("leave.submit")(function* submitLeave(
   request: Request,

@@ -1,7 +1,7 @@
 import { ROLE, memberRetentionDays } from "@repo/config";
-import { logAt } from "@repo/observability";
+import { logAt, logCause } from "@repo/observability";
 import { and, desc, eq, gt, inArray, isNull, lte, type SQL } from "drizzle-orm";
-import { DateTime, Effect, Schema } from "effect";
+import { DateTime, Effect, Schema, type Cause } from "effect";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { query } from "./database.ts";
@@ -413,39 +413,72 @@ const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithd
   return purgeAt;
 });
 
-const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
+type PhotoRemover<Failure, Requirements> = (
   memberId: string,
-  leave: Readonly<{ immediate: boolean }>,
+) => Effect.Effect<void, Failure, Requirements>;
+
+const photoPurgeFailed =
+  (memberId: string): ((cause: Cause.Cause<unknown>) => Effect.Effect<void>) =>
+  (cause: Cause.Cause<unknown>): Effect.Effect<void> =>
+    logCause({ attributes: { memberId }, cause, eventName: "member_leave.photo_purge_failed" });
+
+const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember<Failure, Requirements>(
+  memberId: string,
+  leave: Readonly<{ immediate: boolean; removePhotos: PhotoRemover<Failure, Requirements> }>,
 ) {
   const member = yield* withdrawableMember(memberId);
-  yield* revokeUserSessions(memberId);
   if (leave.immediate) {
+    yield* leave.removePhotos(memberId);
+    yield* revokeUserSessions(memberId);
     yield* query((database) => database.delete(user).where(eq(user.id, memberId)));
     return { immediate: true as const };
   }
+  yield* revokeUserSessions(memberId);
   const purgeAt = yield* retainWithdrawn(member);
+  yield* leave
+    .removePhotos(memberId)
+    .pipe(Effect.tapCause(photoPurgeFailed(memberId)), Effect.ignore);
   return { immediate: false as const, purgeAt };
 });
 
+const releasePhotos = <Failure, Requirements>(
+  memberIds: readonly string[],
+  removePhotos: PhotoRemover<Failure, Requirements>,
+): Effect.Effect<readonly string[], never, Requirements> =>
+  Effect.forEach(memberIds, (memberId) =>
+    removePhotos(memberId).pipe(
+      Effect.as(memberId),
+      Effect.tapCause(photoPurgeFailed(memberId)),
+      Effect.orElseSucceed(() => undefined),
+    ),
+  ).pipe(Effect.map((released) => released.filter((memberId) => memberId !== undefined)));
+
 const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
-  function* purgeExpiredWithdrawnMembers(checkedAt: Date) {
+  function* purgeExpiredWithdrawnMembers<Failure, Requirements>(
+    checkedAt: Date,
+    removePhotos: PhotoRemover<Failure, Requirements>,
+  ) {
     const expired = yield* query((database) =>
       database
         .select({ memberId: leaveRequest.memberId })
         .from(leaveRequest)
         .where(and(lte(leaveRequest.purgeAt, checkedAt), isNull(leaveRequest.restoredAt))),
     );
-    const memberIds = expired.map((expiredLeave) => expiredLeave.memberId);
-    if (memberIds.length === 0) {
-      return { count: 0, memberIds: [] as readonly string[] };
+    const expiredIds = expired.map((expiredLeave) => expiredLeave.memberId);
+    const memberIds = yield* releasePhotos(expiredIds, removePhotos);
+    if (memberIds.length > 0) {
+      yield* query((database) =>
+        database.batch([
+          database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
+          database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
+        ]),
+      );
     }
-    yield* query((database) =>
-      database.batch([
-        database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
-        database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
-      ]),
-    );
-    return { count: memberIds.length, memberIds };
+    const released = new Set(memberIds);
+    return {
+      memberIds,
+      retainedMemberIds: expiredIds.filter((memberId) => !released.has(memberId)),
+    };
   },
 );
 
