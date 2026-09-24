@@ -14,6 +14,8 @@ type AssetFetcher = {
 };
 
 const minimumAuthSecretLength = 32;
+const trialDisabled = 0;
+const maximumTrialPeriodDays = 730;
 
 const AbsoluteUrl = Schema.String.check(
   Schema.makeFilter((candidate: string) => URL.canParse(candidate) || "Expected an absolute URL"),
@@ -106,10 +108,19 @@ const StripeSecretKey = Schema.String.check(
 );
 const StripeWebhookSecret = Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u));
 const StripePriceId = Schema.String.check(Schema.isPattern(/^price_[A-Za-z0-9]+$/u));
+const StripeTrialPeriodDays = Schema.String.check(
+  Schema.makeFilter(
+    (candidate: string) =>
+      (/^[0-9]+$/u.test(candidate) && Number(candidate) <= maximumTrialPeriodDays) ||
+      `Expected ${trialDisabled} for no trial, or up to ${maximumTrialPeriodDays} days`,
+  ),
+);
 const StripeScalars = Schema.Struct({
   APP_ORIGIN: Origin,
+  STRIPE_AUTOMATIC_TAX: Schema.Literals(["false", "true"]),
   STRIPE_PRICE_ID: StripePriceId,
   STRIPE_SECRET_KEY: StripeSecretKey,
+  STRIPE_TRIAL_PERIOD_DAYS: StripeTrialPeriodDays,
   STRIPE_WEBHOOK_SECRET: StripeWebhookSecret,
 });
 
@@ -260,9 +271,11 @@ const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfi
     return yield* invalid("Stripe live keys are restricted to deployed origins");
   }
   return {
+    automaticTax: scalars.STRIPE_AUTOMATIC_TAX === "true",
     mode: keyMode,
     priceId: scalars.STRIPE_PRICE_ID,
     secretKey: scalars.STRIPE_SECRET_KEY,
+    trialPeriodDays: Number(scalars.STRIPE_TRIAL_PERIOD_DAYS),
     webhookSecret: scalars.STRIPE_WEBHOOK_SECRET,
   };
 });
