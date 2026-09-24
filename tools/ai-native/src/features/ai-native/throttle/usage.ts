@@ -32,9 +32,15 @@ Exit codes:
      the timeout, or the wrapper could not get or release a slot
   2  throttle itself was called incorrectly`;
 
+const optionName = (argument: string): string => {
+  if (!argument.startsWith("--")) return argument.slice(0, 2);
+  const valueStart = argument.indexOf("=", 3);
+  return valueStart === -1 ? argument : argument.slice(0, valueStart);
+};
+
 const unexpectedArgument = (argument: string): Error =>
   argument.startsWith("-") && argument !== "-"
-    ? new Error(`Unknown option '${argument}'`)
+    ? new Error(`Unknown option '${optionName(argument)}'`)
     : new Error(
         `Unexpected argument '${argument}'. This command does not take positional arguments`,
       );
@@ -48,9 +54,9 @@ const separatedTimeout = (
   if (timeoutText === undefined) {
     return new Error(`Option '${TIMEOUT_FLAG} <value>' argument missing`);
   }
-  if (timeoutText.startsWith("-")) {
+  if (timeoutText.length > 1 && timeoutText.startsWith("-")) {
     return new Error(
-      `Option '${TIMEOUT_FLAG}' argument is ambiguous. To specify an option argument starting with a dash use '${TIMEOUT_FLAG}=-XYZ'.`,
+      `Option '${TIMEOUT_FLAG}' argument is ambiguous.\nDid you forget to specify the option argument for '${TIMEOUT_FLAG}'?\nTo specify an option argument starting with a dash use '${TIMEOUT_FLAG}=-XYZ'.`,
     );
   }
   return [timeoutText, after];

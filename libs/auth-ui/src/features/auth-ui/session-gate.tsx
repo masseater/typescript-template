@@ -9,12 +9,16 @@ import type { SessionView } from "./protocol.ts";
 
 const SessionGate = ({
   children,
+  reloadDocument = false,
   role,
+  securityExempt = true,
 }: Readonly<{
   children: (session: SessionView) => ReactElement;
+  reloadDocument?: boolean;
   role?: Role;
+  securityExempt?: boolean;
 }>): ReactElement | null => {
-  const { error, loading, session } = useSessionGate(role);
+  const { error, loading, session } = useSessionGate({ reloadDocument, role, securityExempt });
   if (loading) {
     return <SessionStatus variant={STATUS_VARIANT.pending}>{"読み込み中です。"}</SessionStatus>;
   }

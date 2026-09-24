@@ -1,7 +1,6 @@
-import { fileURLToPath } from "node:url";
-
 import { MergifyReporter } from "@mergifyio/vitest";
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
+import { sdkFilePath } from "@repo/telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   lifecycle,
@@ -41,7 +40,7 @@ export default defineConfig({
     experimental: {
       openTelemetry: {
         enabled: telemetryAsked,
-        sdkPath: fileURLToPath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
+        sdkPath: sdkFilePath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
       },
     },
     coverage: {

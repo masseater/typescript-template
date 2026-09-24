@@ -200,6 +200,31 @@ const forbiddenCode = [
     "process-boundary",
   ],
   [
+    "infra/cloudflare/src/features/cloudflare/probe.ts",
+    'export const util = process.getBuiltinModule("util");',
+    "process-boundary",
+  ],
+  [
+    "tools/dev/src/features/dev/probe.ts",
+    'const { getBuiltinModule } = globalThis.process; export const os = getBuiltinModule("os");',
+    "process-boundary",
+  ],
+  [
+    "tools/dev/src/features/dev/probe.ts",
+    'import { getBuiltinModule } from "node:process"; export const os = getBuiltinModule("os");',
+    "process-boundary",
+  ],
+  [
+    "libs/cli/src/features/cli/cli.ts",
+    'export const fs = process.getBuiltinModule("fs");',
+    "process-boundary",
+  ],
+  [
+    "libs/cli/src/features/cli/exit-code.ts",
+    'export const fs = process.getBuiltinModule("fs");',
+    "process-boundary",
+  ],
+  [
     "libs/observability/src/features/observability/server.ts",
     'export const send = () => fetch("http://collector", { redirect: "error" });',
     "worker-fetch",
@@ -409,6 +434,10 @@ const validBoundaries = [
     "export const code = (process: { readonly exitCode: number }) => process.exitCode;",
   ],
   ["libs/config/src/features/config/probe.ts", "export const value = import.meta.env;"],
+  [
+    "tools/dev/src/features/dev/probe.ts",
+    "export const load = (process: { readonly getBuiltinModule: () => number }) => process.getBuiltinModule();",
+  ],
   ["infra/cloudflare/src/features/cloudflare/probe.ts", "export const value = process.env;"],
   ["tools/dev/src/features/dev/observe/probe.ts", "export const value = process.env;"],
   ["libs/db/src/features/db/probe.ts", 'export * from "drizzle-orm";'],
@@ -425,6 +454,17 @@ const validBoundaries = [
   [
     "libs/observability/src/features/observability/severity.ts",
     'import { Effect } from "effect"; export const run = () => Effect.logError("boom");',
+  ],
+] as const;
+
+const builtinLoaderOnlyProbes = [
+  ['export const fs = process.getBuiltinModule("fs");', true],
+  ['const { getBuiltinModule } = process; export const os = getBuiltinModule("os");', true],
+  ["export const write = (line: string) => process.stdout.write(line);", false],
+  ["export const done = () => { process.exitCode = 0; };", false],
+  [
+    'import { NodeRuntime } from "@effect/platform-node"; export const start = () => NodeRuntime.runMain(0);',
+    false,
   ],
 ] as const;
 
@@ -452,6 +492,34 @@ describe("project lint rules on dependency boundaries", () => {
       );
     expect(severityAt("off")).toBeGreaterThan(severityAt("error"));
   });
+
+  it("keeps the builtin loader check on where the full process-boundary is off", () => {
+    expect.hasAssertions();
+    expect(lintOptions.overrides).toContainEqual(
+      expect.objectContaining({
+        files: expect.arrayContaining([
+          "apps/service-member/**",
+          "infra/cloudflare/**",
+          "tools/dev/**",
+        ]),
+        rules: { "project/process-boundary": ["error", { builtinLoaderOnly: true }] },
+      }),
+    );
+  });
+
+  it.for(builtinLoaderOnlyProbes)(
+    "limits the builtin-loader-only mode to process.getBuiltinModule: %s",
+    ([code, expected]) => {
+      expect.hasAssertions();
+      expect(
+        reported("process-boundary", {
+          code,
+          filename: "tools/dev/src/features/dev/probe.ts",
+          options: [{ builtinLoaderOnly: true }],
+        }),
+      ).toBe(expected);
+    },
+  );
 
   it.for(forbiddenCode)("rejects forbidden code in %s", ([name, code, rule]) => {
     expect.hasAssertions();
