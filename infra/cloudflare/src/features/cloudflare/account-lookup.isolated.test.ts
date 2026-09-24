@@ -3,7 +3,6 @@ import { httpStatus } from "@repo/config";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
-import { mockServer, pagedCollection, unpagedCollection } from "./account-fixture.ts";
 import {
   attachedService,
   dnsRecordNames,
@@ -11,6 +10,7 @@ import {
   secretsStoreCount,
   workerNames,
 } from "./account-lookup.ts";
+import { mockServer, pagedCollection, unpagedCollection } from "./account-test-fixture.ts";
 import {
   STATE_STORE_SCRIPT_NAME,
   deployTokenPermissions,
@@ -18,7 +18,7 @@ import {
 } from "./deploy-token.ts";
 import { encodeJson } from "./platform.ts";
 import { describeFailure } from "./secrets.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 const access = {
   accountId: verificationSettings.accountId,

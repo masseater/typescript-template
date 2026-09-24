@@ -2,8 +2,8 @@ import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
+import { TestDatabase, runStatement } from "./database-test-fixture.ts";
 import { countInterviewTurn, findInterview, startInterview, storeInterview } from "./interview.ts";
-import { TestDatabase, runStatement } from "./testing.ts";
 
 const LIMIT = 2;
 const TWICE_STORED = 2;

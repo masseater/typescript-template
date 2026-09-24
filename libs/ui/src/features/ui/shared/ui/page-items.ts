@@ -38,3 +38,4 @@ const searchAtPage = <Search extends Readonly<{ page?: number }> & object>(
 };
 
 export { pageItems, searchAtPage };
+export type { PageItem };

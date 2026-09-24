@@ -1,6 +1,7 @@
+import { maximumNameLength } from "@repo/runtime/contracts";
 import { Field, FormColumn } from "@repo/ui";
 
-import { maximumNameLength, maximumProfileLength } from "#shared/contracts/index.ts";
+import { maximumProfileLength } from "#shared/contracts/index.ts";
 import { fieldError } from "#shared/forms/index.ts";
 import { ProfileActions } from "./profile-actions.tsx";
 import { SocialLinksEditor } from "./social-links-editor.tsx";

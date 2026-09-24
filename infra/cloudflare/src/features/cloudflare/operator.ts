@@ -1,4 +1,4 @@
-export { layer as alchemist } from "./alchemist.ts";
+export { alchemistLayer as alchemist } from "./alchemist.ts";
 export { Confirmation } from "./config.ts";
 export { deploymentAccess } from "./deployment-access.ts";
 export { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";

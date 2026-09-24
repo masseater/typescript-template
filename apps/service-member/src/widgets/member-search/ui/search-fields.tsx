@@ -1,9 +1,9 @@
+import { maximumKeywordLength } from "@repo/config/paging";
 import { Button, Field } from "@repo/ui";
 import { useDebouncedCallback } from "@tanstack/react-pacer/debouncer";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 
-import { maximumKeywordLength } from "#shared/contracts/index.ts";
 import { useSearchDraft } from "../model/search-draft.ts";
 
 import type { ReactElement } from "react";

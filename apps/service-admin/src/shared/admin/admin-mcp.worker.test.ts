@@ -3,8 +3,14 @@ import {
   AuthApps,
   adminOperator,
   authTest,
+  callMcpTool,
+  exchangeOAuthCode,
+  grantOAuthAuthorization,
+  responseStatus,
   runWith,
+  sendMcp,
   startAdminAuthorization,
+  type FetchMcp,
 } from "@repo/auth/testing";
 import { APPLICATION, httpStatus } from "@repo/config";
 import { ADMIN_PERMISSION } from "@repo/config/identity";
@@ -18,17 +24,8 @@ import { Context, Effect, Layer, Schema } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { routes } from "#shared/telemetry/index.ts";
-import {
-  callTool,
-  exchangeCode,
-  grantAuthorization,
-  mcpChallenge,
-  mcpRequest,
-  responseStatus,
-} from "./admin-oauth-fixture.ts";
+import { mcpChallenge } from "./admin-oauth-test-fixture.ts";
 import { serveMcp } from "./mcp.ts";
-
-import type { FetchMcp } from "./admin-oauth-fixture.ts";
 
 const adminOrigin = "http://127.0.0.1:3002";
 const authSecret = "integration-test-secret-at-least-32-characters-long";
@@ -81,9 +78,16 @@ const authorizedTokens = Effect.fn("authorizedTokens")(function* authorizedToken
 ) {
   const flow = yield* startAdminAuthorization();
   const admin = yield* adminOperator("owner@example.com", permission);
-  const code = yield* grantAuthorization(admin, flow.oauthQuery);
-  return { tokens: yield* exchangeCode(flow, code) };
+  const code = yield* grantOAuthAuthorization(admin, { oauthQuery: flow.oauthQuery });
+  return { tokens: yield* exchangeOAuthCode(flow, code) };
 });
+
+const callTool = (
+  fetchMcp: FetchMcp,
+  token: string,
+  name: string,
+  args: Readonly<Record<string, unknown>> = {},
+) => callMcpTool({ fetchMcp, origin: adminOrigin, token }, { arguments: args, name });
 
 const parseGrantedBody = (granted: Response): Effect.Effect<unknown> =>
   Effect.gen(function* parseBody() {
@@ -199,11 +203,14 @@ describe("admin MCP authorization", () => {
       Effect.gen(function* program() {
         const app = adminMcpApp(auth);
         const { tokens } = yield* authorizedTokens(ADMIN_PERMISSION.operator);
-        const granted = yield* mcpRequest(app.fetchMcp, tokens.access_token, {
-          id: 0,
-          jsonrpc: "2.0",
-          method: "tools/list",
-        });
+        const granted = yield* sendMcp(
+          { fetchMcp: app.fetchMcp, origin: adminOrigin, token: tokens.access_token },
+          {
+            id: 0,
+            jsonrpc: "2.0",
+            method: "tools/list",
+          },
+        );
         yield* app.stop;
         const body = granted instanceof Response ? yield* parseGrantedBody(granted) : granted;
         return {

@@ -110,3 +110,4 @@ const scannedForeignFiles = memoize(readScan, { getCacheKey: keyOf });
 export const foreignFilesIn = (
   scan: SpecDirectoryScan,
 ): ReadonlyMap<string, readonly ForeignFile[]> => scannedForeignFiles(scan);
+export type { ForeignFile, SpecDirectoryConvention };

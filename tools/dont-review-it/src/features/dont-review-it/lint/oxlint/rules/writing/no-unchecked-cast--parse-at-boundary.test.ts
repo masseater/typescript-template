@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noUncheckedCast } from "./no-unchecked-cast--parse-at-boundary.ts";
 
 const ANY_ANNOTATION = [":", "any"].join(" ");

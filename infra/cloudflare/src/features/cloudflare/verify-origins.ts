@@ -1,13 +1,11 @@
 #!/usr/bin/env node
-import { runCli } from "@repo/cli";
 import { applications } from "@repo/config";
 import { HealthView } from "@repo/runtime";
 import { Console, Duration, Effect, Schema } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
-import { deploymentAccess } from "./deployment-access.ts";
+import { runDeploymentCommand } from "./deployment-access.ts";
 import { encodeJson } from "./platform.ts";
-import { causeRecord, reportCause } from "./secrets.ts";
 
 const EVENT = "cloudflare.origin_verify_rejected";
 
@@ -47,14 +45,8 @@ const probeOrigin = Effect.fn("probeOrigin")(function* probeOrigin(
   );
 });
 
-runCli(
-  Effect.gen(function* program() {
-    const { confidential, config } = yield* deploymentAccess();
-    yield* Effect.forEach(
-      applications,
-      (service) => probeOrigin(service, config.origins[service]),
-      { concurrency: 1 },
-    ).pipe(Effect.catchCause((cause) => reportCause(EVENT, cause, confidential)));
+runDeploymentCommand(EVENT, Effect.void, (_input, { config }) =>
+  Effect.forEach(applications, (service) => probeOrigin(service, config.origins[service]), {
+    concurrency: 1,
   }),
-  (cause) => causeRecord(EVENT, cause),
 );

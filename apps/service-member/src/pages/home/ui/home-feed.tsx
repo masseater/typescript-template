@@ -31,6 +31,23 @@ function presentFeed(
   }));
 }
 
+function homeState(
+  failure: string | undefined,
+  entries: readonly HomeEntry[] | undefined,
+  pending: boolean,
+): HomeFeedState {
+  if (failure !== undefined) {
+    return { message: failure, status: "failure" };
+  }
+  if (pending || entries === undefined) {
+    return { status: "pending" };
+  }
+  if (entries.length === 0) {
+    return { status: "empty" };
+  }
+  return { entries, status: "ready" };
+}
+
 function PersonLink({ entry }: Readonly<{ entry: HomeEntry }>): ReactElement {
   return (
     <TextLink to="/users/$id" params={{ id: entry.actorId }}>
@@ -91,5 +108,5 @@ function HomeFeed({ state }: Readonly<{ state: HomeFeedState }>): ReactElement {
   );
 }
 
-export { HomeFeed, presentFeed };
+export { HomeFeed, homeState, presentFeed };
 export type { HomeEntry, HomeFeedState };

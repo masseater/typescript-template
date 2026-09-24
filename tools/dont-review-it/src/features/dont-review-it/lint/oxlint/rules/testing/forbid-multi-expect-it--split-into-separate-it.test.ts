@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { forbidMultiExpectIt } from "./forbid-multi-expect-it--split-into-separate-it.ts";
 
 const SPEC_FILE = "report.test.ts";

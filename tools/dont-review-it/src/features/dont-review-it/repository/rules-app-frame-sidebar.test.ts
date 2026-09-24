@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported } from "./lint-harness.ts";
+import { reported } from "./lint-harness-test-fixture.ts";
 
 const probeFile = "apps/service-admin/src/widgets/admin-frame/ui/probe.tsx";
 

@@ -2,7 +2,7 @@ import { Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
 import { describe, expect, test } from "vite-plus/test";
 
-import { TestDatabase, runStatement } from "./testing.ts";
+import { TestDatabase, runStatement } from "./database-test-fixture.ts";
 import {
   discardWikiDraft,
   findWikiDraft,

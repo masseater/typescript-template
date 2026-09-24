@@ -65,8 +65,7 @@ const correlated = Effect.fn("correlated")(function* correlated(target: Verifica
     ({
       event,
     }: Readonly<{ event: Readonly<Record<string, unknown>> | "unparsable" | undefined }>) =>
-      event !== undefined &&
-      event !== "unparsable" &&
+      typeof event === "object" &&
       event["event"] === "http.server.request" &&
       event["service"] === target.service &&
       event["request_id"] === target.requestId,

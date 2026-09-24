@@ -4,16 +4,17 @@ const CONFIG_TYPE_NAME = "OxlintConfig";
 
 const RULE_RECORD_KEY = "rules";
 
+const indexesConfigRules = (node: ESTree.TSIndexedAccessType): boolean =>
+  node.objectType.type === "TSTypeReference" &&
+  node.objectType.typeName.type === "Identifier" &&
+  node.objectType.typeName.name === CONFIG_TYPE_NAME &&
+  node.indexType.type === "TSLiteralType" &&
+  node.indexType.literal.type === "Literal" &&
+  node.indexType.literal.value === RULE_RECORD_KEY;
+
 const readsRuleRecord = (node: ESTree.TSType): boolean => {
   if (node.type === "TSIndexedAccessType") {
-    return (
-      node.objectType.type === "TSTypeReference" &&
-      node.objectType.typeName.type === "Identifier" &&
-      node.objectType.typeName.name === CONFIG_TYPE_NAME &&
-      node.indexType.type === "TSLiteralType" &&
-      node.indexType.literal.type === "Literal" &&
-      node.indexType.literal.value === RULE_RECORD_KEY
-    );
+    return indexesConfigRules(node);
   }
 
   return node.type === "TSTypeReference"

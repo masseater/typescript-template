@@ -3,9 +3,9 @@ import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { bootstrapAdmin } from "./bootstrap-statement.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 import { query } from "./database.ts";
 import { user } from "./schema.ts";
-import { TestDatabase } from "./testing.ts";
 
 const recordedAt = new Date("2026-01-01T00:00:00.000Z");
 

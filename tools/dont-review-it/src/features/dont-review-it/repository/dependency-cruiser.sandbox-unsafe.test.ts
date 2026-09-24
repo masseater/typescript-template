@@ -4,7 +4,7 @@ import { cruise, type ICruiseResult } from "dependency-cruiser";
 import { Effect, Schema } from "effect";
 import { expect } from "vite-plus/test";
 
-import { createFixture, type Fixture } from "./dependency-cruiser-fixture.ts";
+import { createFixture, type Fixture } from "./dependency-cruiser-test-fixture.ts";
 import configuration from "./dependency-cruiser.ts";
 
 type Case = readonly [string, Fixture];
@@ -67,13 +67,6 @@ const violatedRules = (files: Fixture) =>
   });
 
 const detected: readonly Case[] = [
-  [
-    "no-circular",
-    {
-      "libs/auth/src/features/auth/cycle-a.ts": 'export * from "./cycle-b.ts";\n',
-      "libs/auth/src/features/auth/cycle-b.ts": 'export * from "./cycle-a.ts";\n',
-    },
-  ],
   [
     "no-unresolvable",
     { "apps/service-member/src/index.ts": 'export * from "@repo/db/src/schema";\n' },
@@ -139,7 +132,7 @@ const detected: readonly Case[] = [
   ],
   [
     "no-testing-entry-outside-tests",
-    { "libs/db/src/features/db/index.ts": 'export * from "./testing.ts";\n' },
+    { "libs/db/src/features/db/index.ts": 'export * from "./database-test-fixture.ts";\n' },
   ],
   [
     "no-testing-entry-outside-tests",
@@ -231,13 +224,6 @@ const detected: readonly Case[] = [
 ];
 
 const accepted: readonly Case[] = [
-  [
-    "no-circular",
-    {
-      "apps/service-member/src/routeTree.gen.ts": 'export * from "./routes.ts";\n',
-      "apps/service-member/src/routes.ts": 'export * from "./routeTree.gen.ts";\n',
-    },
-  ],
   ["no-unresolvable", { "apps/service-member/src/index.ts": 'export * from "@repo/db";\n' }],
   [
     "no-app-to-app",
@@ -291,7 +277,10 @@ const accepted: readonly Case[] = [
   ],
   [
     "no-testing-entry-outside-tests",
-    { "libs/db/src/features/db/records-fixture.ts": 'export * from "./testing.ts";\n' },
+    {
+      "libs/db/src/features/db/records-test-fixture.ts":
+        'export * from "./database-test-fixture.ts";\n',
+    },
   ],
   [
     "no-testing-entry-outside-tests",

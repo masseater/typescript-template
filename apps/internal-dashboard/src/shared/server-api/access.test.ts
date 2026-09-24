@@ -3,7 +3,7 @@ import { httpStatus } from "@repo/config";
 import { Option } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
-import { denied, sessionPresence } from "./access-decision.ts";
+import { decideAccess, denied, sessionPresence } from "./access-decision.ts";
 
 describe("wiki access after session verify", () => {
   it("keeps MFA enrollment as signed-in so denial sends to /security", () => {
@@ -24,11 +24,18 @@ describe("wiki access after session verify", () => {
     expect(response.headers.get("location")).toBe("/login");
   });
 
-  it("treats /security as allowed for a weak signed-in session", () => {
+  it("lets a weak signed-in session reach /security only", () => {
     expect.hasAssertions();
-    const current = sessionPresence({ strong: false });
-    const path = "/security";
-    const allowed = Option.isSome(current) && (current.value.strong || path === "/security");
-    expect(allowed).toBe(true);
+    const weak = sessionPresence({ strong: false });
+    expect(decideAccess("/security", weak)).toStrictEqual(Option.none());
+    const denial = decideAccess("/guides", weak);
+    expect(Option.getOrUndefined(denial)?.headers.get("location")).toBe("/security");
+  });
+
+  it("lets a strong session through and turns an anonymous API call away", () => {
+    expect.hasAssertions();
+    expect(decideAccess("/guides", sessionPresence({ strong: true }))).toStrictEqual(Option.none());
+    const denial = decideAccess("/api/search", Option.none());
+    expect(Option.getOrUndefined(denial)?.status).toBe(httpStatus.unauthorized);
   });
 });

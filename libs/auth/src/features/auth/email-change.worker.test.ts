@@ -3,7 +3,7 @@ import { runStatement } from "@repo/db/testing";
 import { Clock, Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import { requestEmailChange } from "./email-change.ts";
+import { requestEmailChange } from "./email-change-test-fixture.ts";
 import {
   authTest,
   bootstrapVerifiedAdmin,
@@ -17,9 +17,9 @@ import {
   runWith,
   signIn,
   signInAs,
-} from "./testing.ts";
+} from "./index-test-fixture.ts";
 
-import type { BrowserClient } from "./browser-client.ts";
+import type { BrowserClient } from "./browser-client-test-fixture.ts";
 
 const OLD_EMAIL = "old@example.com";
 const NEW_EMAIL = "new@example.com";

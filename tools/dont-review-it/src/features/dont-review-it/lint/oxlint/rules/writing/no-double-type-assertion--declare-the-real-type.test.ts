@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noDoubleTypeAssertion } from "./no-double-type-assertion--declare-the-real-type.ts";
 
 const THROUGH_UNKNOWN = ["as", "unknown"].join(" ");

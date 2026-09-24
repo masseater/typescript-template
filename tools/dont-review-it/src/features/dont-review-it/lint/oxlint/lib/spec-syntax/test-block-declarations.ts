@@ -18,16 +18,20 @@ const importedBlockNames = (
 
 const DERIVED_BUILDER_MEMBER = "extend";
 
-const boundRootName = (initializer: ESTree.Expression): string | null => {
+function derivedRootName(initializer: ESTree.Expression): string | null {
   const written = unwrapSubject(initializer);
-  if (written.type === "Identifier") return written.name;
   if (written.type !== "CallExpression") return null;
 
   const builder = unwrapSubject(written.callee);
   if (builder.type !== "MemberExpression") return null;
   if (staticMemberName(builder) !== DERIVED_BUILDER_MEMBER) return null;
   return boundRootName(builder.object);
-};
+}
+
+function boundRootName(initializer: ESTree.Expression): string | null {
+  const written = unwrapSubject(initializer);
+  return written.type === "Identifier" ? written.name : derivedRootName(written);
+}
 
 const settledNames = (
   reached: ReadonlySet<string>,
@@ -98,16 +102,6 @@ const importedNamesIn = (program: ESTree.Program): ReadonlySet<string> =>
       ),
     ),
   );
-
-const derivedRootName = (initializer: ESTree.Expression): string | null => {
-  const written = unwrapSubject(initializer);
-  if (written.type !== "CallExpression") return null;
-
-  const builder = unwrapSubject(written.callee);
-  if (builder.type !== "MemberExpression") return null;
-  if (staticMemberName(builder) !== DERIVED_BUILDER_MEMBER) return null;
-  return boundRootName(builder.object);
-};
 
 const namesDerivedFromImports = (program: ESTree.Program): readonly string[] => {
   const imported = importedNamesIn(program);

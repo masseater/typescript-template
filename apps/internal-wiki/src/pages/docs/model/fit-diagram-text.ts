@@ -38,24 +38,33 @@ const frameOf = (group: Element): DOMRect => {
   return outline.getBBox();
 };
 
+const fitShapeText = (group: Element): void => {
+  const box = frameOf(group);
+  for (const text of group.querySelectorAll("text > tspan, text:not(:has(tspan))")) {
+    if (text instanceof SVGTextContentElement) {
+      squeeze(text, box);
+    }
+  }
+};
+
+const fitFrameLabel = (frame: Element): void => {
+  const label = frame.nextElementSibling;
+  if (!(frame instanceof SVGGraphicsElement && label instanceof SVGTextElement)) {
+    return;
+  }
+  for (const line of label.querySelectorAll("tspan")) {
+    squeeze(line, frame.getBBox());
+  }
+};
+
 const fitDiagramText = (svg: SVGSVGElement): void => {
   for (const group of svg.querySelectorAll(
     ":scope > g.node, :scope > g.entity, :scope > g.edge-label",
   )) {
-    const box = frameOf(group);
-    for (const text of group.querySelectorAll("text > tspan, text:not(:has(tspan))")) {
-      if (text instanceof SVGTextContentElement) {
-        squeeze(text, box);
-      }
-    }
+    fitShapeText(group);
   }
   for (const frame of svg.querySelectorAll(":scope > rect[rx='2']")) {
-    const label = frame.nextElementSibling;
-    if (frame instanceof SVGGraphicsElement && label instanceof SVGTextElement) {
-      for (const line of label.querySelectorAll("tspan")) {
-        squeeze(line, frame.getBBox());
-      }
-    }
+    fitFrameLabel(frame);
   }
 };
 

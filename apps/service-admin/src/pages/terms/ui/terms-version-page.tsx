@@ -1,15 +1,5 @@
-import {
-  Button,
-  ButtonLink,
-  Page,
-  type RequestResult,
-  STATUS_VARIANT,
-  StatusMessage,
-  formatWarekiDate,
-  resultError,
-} from "@repo/ui";
+import { ButtonLink, Page, RequestContent, formatWarekiDate } from "@repo/ui";
 import { DateTime } from "effect";
-import { AsyncResult } from "effect/unstable/reactivity";
 
 import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
 import { useAgreementVersion } from "#pages/terms/model/agreement-versions.ts";
@@ -39,25 +29,8 @@ function PublishedBody({ version }: Readonly<{ version: VersionDetail }>): React
 
 function VersionContent({
   onReload,
-  state,
-}: Readonly<{ onReload: () => void; state: RequestResult<VersionDetail> }>): ReactElement {
-  const failure = resultError(state);
-  if (failure !== undefined) {
-    return (
-      <div className="flex flex-col items-start gap-2">
-        <StatusMessage variant={STATUS_VARIANT.failure}>
-          版を取得できませんでした。{failure}
-        </StatusMessage>
-        <Button type="button" onClick={onReload}>
-          再試行
-        </Button>
-      </div>
-    );
-  }
-  if (!AsyncResult.isSuccess(state) || state.waiting) {
-    return <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>;
-  }
-  const version = state.value;
+  version,
+}: Readonly<{ onReload: () => void; version: VersionDetail }>): ReactElement {
   return (
     <>
       <p className="text-sm text-muted-foreground">
@@ -81,7 +54,9 @@ function TermsVersionPage({ version }: Readonly<{ version: string }>): ReactElem
           一覧に戻る
         </ButtonLink>
       </div>
-      <VersionContent onReload={reload} state={state} />
+      <RequestContent failureTitle="版を取得できませんでした。" fetched={state} onRetry={reload}>
+        {(detail) => <VersionContent onReload={reload} version={detail} />}
+      </RequestContent>
     </Page>
   );
 }

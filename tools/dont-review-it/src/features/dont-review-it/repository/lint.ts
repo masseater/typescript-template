@@ -704,7 +704,6 @@ const lintOptions = {
         "libs/db/src/features/db/identity-schema.ts",
         "infra/budget-monitor/src/features/budget-monitor/decision.ts",
         "infra/error-monitor/src/features/error-monitor/telemetry.ts",
-        "libs/observability/src/features/observability/server-testing.ts",
         "tools/ai-native/src/features/ai-native/spool/run-spool.node.test.ts",
       ],
       rules: {
@@ -724,7 +723,7 @@ const lintOptions = {
       files: [
         "libs/monitor/src/features/monitor/monitor-base.ts",
         "libs/monitor/src/features/monitor/monitor-worker.ts",
-        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+        "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
       ],
       rules: {
         "dont-review-it/no-ambiguous-variable-name--rename-to-concrete-noun": LINT_SEVERITY.OFF,
@@ -762,7 +761,7 @@ const lintOptions = {
     },
     {
       files: [
-        "libs/db/src/features/db/records-fixture.ts",
+        "libs/db/src/features/db/records-test-fixture.ts",
         "libs/runtime/src/features/runtime/jobs.ts",
       ],
       rules: {
@@ -817,7 +816,7 @@ const lintOptions = {
         "libs/db/src/features/db/remote-operations.ts",
         "libs/observability/src/features/observability/annotations.ts",
         "libs/observability/src/features/observability/request.ts",
-        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+        "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
       ],
       rules: {
         "typescript/explicit-function-return-type": LINT_SEVERITY.OFF,
@@ -955,10 +954,10 @@ const lintOptions = {
       files: [
         "libs/auth/src/features/auth/auth-request.ts",
         "libs/auth/src/features/auth/auth-test-fixture.ts",
-        "libs/auth/src/features/auth/browser-client.ts",
-        "libs/auth/src/features/auth/email-change.ts",
+        "libs/auth/src/features/auth/browser-client-test-fixture.ts",
+        "libs/auth/src/features/auth/email-change-test-fixture.ts",
         "libs/auth/src/features/auth/email-change.worker.test.ts",
-        "libs/auth/src/features/auth/wiki-oauth-fixture.ts",
+        "libs/auth/src/features/auth/wiki-oauth-test-fixture.ts",
       ],
       rules: {
         "typescript/prefer-readonly-parameter-types": LINT_SEVERITY.OFF,
@@ -967,7 +966,7 @@ const lintOptions = {
     {
       files: [
         "libs/auth/src/features/auth/auth-request.ts",
-        "libs/auth/src/features/auth/browser-client.ts",
+        "libs/auth/src/features/auth/browser-client-test-fixture.ts",
         "libs/auth/src/features/auth/session.ts",
         "libs/auth/src/features/auth/session-token.ts",
       ],
@@ -1015,8 +1014,8 @@ const lintOptions = {
     },
     {
       files: [
-        "libs/db/src/features/db/testing.ts",
-        "libs/monitor/src/features/monitor/monitor-fixture.ts",
+        "libs/db/src/features/db/database-test-fixture.ts",
+        "libs/monitor/src/features/monitor/monitor-test-fixture.ts",
       ],
       rules: {
         "dont-review-it/no-explanatory-comment--delete-or-move-to-commit-message":
@@ -1047,9 +1046,7 @@ const lintOptions = {
     },
     {
       files: [
-        "infra/cloudflare/src/features/cloudflare/unix-permission-bits.ts",
-        "tools/dev/src/features/dev/unix-permission-bits.ts",
-        "apps/service-member/src/shared/photo/image-fixture.ts",
+        "apps/service-member/src/shared/photo/image-test-fixture.ts",
         "apps/service-member/src/shared/photo/image.ts",
       ],
       rules: {
@@ -1079,12 +1076,11 @@ const lintOptions = {
       {
         toolRequiredFileNames: [
           "alchemy.run.ts",
-          "cold-start-fixture.ts",
+          "cold-start-test-fixture.ts",
           "doctor.config.ts",
           "drizzle.config.ts",
-          "knip.ts",
           "main.ts",
-          "monitor-fixture.ts",
+          "monitor-test-fixture.ts",
           "plugin.ts",
           "preview.tsx",
           "server.ts",
@@ -1150,55 +1146,10 @@ const lintOptions = {
   },
 } satisfies Parameters<typeof dontReviewItPreset.lint>[0];
 
-const configuredLintRules: Readonly<Record<string, unknown>> = Object.assign(
-  {},
-  lintOptions.rules,
-  ...lintOptions.overrides
-    .filter((override) => override.files?.includes("libs/**") === true)
-    .map((override) => override.rules ?? {}),
-);
-
-const builtInPlugins: ReadonlySet<string> = new Set([
-  "eslint",
-  "import",
-  "jest",
-  "jsdoc",
-  "jsx-a11y",
-  "nextjs",
-  "node",
-  "oxc",
-  "promise",
-  "react",
-  "react-perf",
-  "typescript",
-  "unicorn",
-  "vitest",
-  "vue",
-]);
-
-const overridePluginMismatches = (overrides: typeof lintOptions.overrides): readonly string[] => {
-  return overrides.flatMap((override, index) => {
-    const plugins = override.plugins;
-    if (plugins === undefined) {
-      return [];
-    }
-    const enabled = new Set<string>(plugins);
-    return Object.keys(override.rules ?? {}).flatMap((rule) => {
-      const plugin = rule.includes("/") ? rule.slice(0, rule.indexOf("/")) : "eslint";
-      if (!builtInPlugins.has(plugin) || enabled.has(plugin)) {
-        return [];
-      }
-      return [`overrides[${String(index)}] ${rule} needs plugins to include ${plugin}`];
-    });
-  });
-};
-
 export {
   awaitingPresetPackages,
   softPresetPackages,
-  configuredLintRules,
   generatedFiles,
   lintOptions,
-  overridePluginMismatches,
   templateWorkspaces,
 };

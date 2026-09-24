@@ -2,7 +2,6 @@ import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { HttpResponse, http } from "msw";
 
-import { mockServer } from "./account-fixture.ts";
 import {
   blocked,
   inspectAccount,
@@ -10,6 +9,7 @@ import {
   preflightBlocked,
 } from "./account-inspection.ts";
 import { STATE_STORE_SOURCE } from "./account-read.ts";
+import { mockServer } from "./account-test-fixture.ts";
 import { STATE_STORE_SCRIPT_NAME } from "./deploy-token.ts";
 import {
   FORBIDDEN_STATUS,
@@ -25,7 +25,7 @@ import {
   sendingRecords,
   unverifiableToken,
   workers,
-} from "./inspection-fixture.ts";
+} from "./inspection-test-fixture.ts";
 
 it.effect("blocks when budget alert recipients are not verified destination addresses", () =>
   Effect.gen(function* program() {

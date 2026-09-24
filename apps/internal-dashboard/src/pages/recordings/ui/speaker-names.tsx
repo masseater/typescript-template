@@ -1,6 +1,6 @@
 import { Heading, SelectField } from "@repo/ui";
 
-import type { RecordingDetail } from "#pages/recordings/api/recordings.ts";
+import type { RecordingDetail } from "#pages/recordings/model/recording-state.ts";
 import type { ReactElement } from "react";
 
 const unassigned = "";

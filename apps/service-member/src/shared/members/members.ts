@@ -3,7 +3,7 @@ import {
   and,
   blockHides,
   containsKeyword,
-  count,
+  countRows,
   desc,
   eq,
   findInterview,
@@ -201,13 +201,11 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(
       .limit(page.limit)
       .offset(page.offset),
   );
-  const [total] = yield* query((database) =>
-    database.select({ count: count() }).from(user).where(listed),
-  );
+  const total = yield* countRows(user, () => listed);
   const presented = yield* Effect.forEach(members, (member) =>
     Effect.map(profilePresentation(member.id), (presentation) => shown(member, presentation)),
   );
-  return { members: presented, total: total?.count ?? 0 };
+  return { members: presented, total };
 });
 
 const getProfile = Effect.fn("getProfile")(function* getProfile(userId: string) {

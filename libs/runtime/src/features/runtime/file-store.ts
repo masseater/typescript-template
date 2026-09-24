@@ -1,8 +1,7 @@
 import { readStorage } from "@repo/config/storage";
-import { withSpan } from "@repo/observability";
 import { Context, Effect, Layer } from "effect";
 
-import { StorageFailed, storageUnavailable } from "./storage-failed.ts";
+import { StorageFailed, storageAttempt, storageUnavailable } from "./storage-failed.ts";
 
 import type { R2Bucket, ReadableStream as BucketStream } from "@cloudflare/workers-types";
 import type { ConfigurationInvalid } from "@repo/config";
@@ -28,15 +27,11 @@ type FileStoreShape = {
 type Bucket = Pick<R2Bucket, "delete" | "get" | "put">;
 const isBucketStream = (candidate: unknown): candidate is BucketStream =>
   candidate instanceof ReadableStream;
-const attempt = <Value>(
-  operation: string,
-  run: () => Promise<Value>,
-): Effect.Effect<Value, StorageFailed> => {
-  return Effect.tryPromise({
-    catch: (cause) => new StorageFailed({ cause, reason: "operation_failed" }),
-    try: run,
-  }).pipe(withSpan(`storage.files.${operation}`));
-};
+const attempt = storageAttempt("files");
+const uploadOptions = (
+  contentType: string | undefined,
+): { readonly httpMetadata: { readonly contentType: string } } | undefined =>
+  contentType === undefined ? undefined : { httpMetadata: { contentType } };
 const storeOf = (bucket: Bucket): FileStoreShape => {
   return {
     get: (fieldName) =>
@@ -64,27 +59,11 @@ const storeOf = (bucket: Bucket): FileStoreShape => {
         ),
       ),
     put: (fieldName, file) =>
-      attempt("put", () =>
-        bucket.put(
-          fieldName,
-          file.bytes,
-          file.contentType === undefined
-            ? undefined
-            : { httpMetadata: { contentType: file.contentType } },
-        ),
-      ),
+      attempt("put", () => bucket.put(fieldName, file.bytes, uploadOptions(file.contentType))),
     putStream: (fieldName, file) => {
       const { body } = file;
       return isBucketStream(body)
-        ? attempt("put", () =>
-            bucket.put(
-              fieldName,
-              body,
-              file.contentType === undefined
-                ? undefined
-                : { httpMetadata: { contentType: file.contentType } },
-            ),
-          )
+        ? attempt("put", () => bucket.put(fieldName, body, uploadOptions(file.contentType)))
         : Effect.fail(new StorageFailed({ reason: "operation_failed" }));
     },
     remove: (fieldNames) =>
@@ -112,4 +91,4 @@ class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runt
   }
 }
 export { FileStore };
-export type { StoredFile, StreamedFile };
+export type { Bucket, StoredFile, StreamedFile };

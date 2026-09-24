@@ -1,52 +1,30 @@
-import { loginPath } from "@repo/auth-ui/login-redirect";
 import { useSession } from "@repo/auth-ui/session";
-import { STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
+import { wikiAllowed, wikiRedirect } from "#widgets/wiki-frame/model/wiki-redirect.ts";
 import { WikiFrame } from "./wiki-frame.tsx";
+import { WikiGate } from "./wiki-gate.tsx";
 
 import type { ReactElement } from "react";
 
-const SECURITY = "/security";
-
-function WikiLayout(): ReactElement | null {
-  const { error, loading, session } = useSession();
+function WikiLayout(): ReactElement {
+  const state = useSession();
   const { href } = useLocation();
   const navigate = useNavigate();
-  const strong = session?.strong === true;
-  const allowed = session !== undefined && strong;
+  const target = wikiRedirect(state, href);
   useEffect(() => {
-    if (loading || error !== undefined || allowed) {
+    if (target === undefined) {
       return;
     }
-    void navigate({
-      href: session === undefined ? loginPath(href) : SECURITY,
-      reloadDocument: true,
-      replace: true,
-    });
-  }, [allowed, error, href, loading, navigate, session]);
-  if (loading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center p-4">
-        <StatusMessage variant={STATUS_VARIANT.pending}>{"読み込み中です。"}</StatusMessage>
-      </div>
-    );
-  }
-  if (error !== undefined) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center p-4">
-        <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>
-      </div>
-    );
-  }
-  if (!allowed || session === undefined) {
-    return null;
-  }
+    void navigate({ href: target, reloadDocument: true, replace: true });
+  }, [navigate, state.session, target]);
   return (
-    <WikiFrame>
-      <Outlet />
-    </WikiFrame>
+    <WikiGate allowed={wikiAllowed(state)} error={state.error} loading={state.loading}>
+      <WikiFrame>
+        <Outlet />
+      </WikiFrame>
+    </WikiGate>
   );
 }
 

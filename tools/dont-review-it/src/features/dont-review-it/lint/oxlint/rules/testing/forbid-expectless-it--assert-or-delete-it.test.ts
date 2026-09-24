@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { forbidExpectlessIt } from "./forbid-expectless-it--assert-or-delete-it.ts";
 
 const SPEC_FILE = "report.test.ts";

@@ -33,6 +33,12 @@ const QueryInput = Schema.Struct({
 
 type Query = typeof QueryInput.Type;
 
+type QueryScope = {
+  readonly app: string;
+  readonly input: Query;
+  readonly since: number;
+};
+
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
@@ -54,7 +60,7 @@ function required(value: string | undefined): Effect.Effect<string, QueryFailure
   return value === undefined ? Effect.fail(argumentsInvalid()) : Effect.succeed(value);
 }
 
-function queryLogs(app: string, input: Query, since: number): Effect.Effect<unknown, unknown> {
+function queryLogs({ app, input, since }: QueryScope): Effect.Effect<unknown, unknown> {
   const levelFilter = input.level === undefined ? "" : " AND level = ?";
   const params =
     input.level === undefined ? [since, input.limit] : [since, input.level, input.limit];
@@ -65,45 +71,50 @@ function queryLogs(app: string, input: Query, since: number): Effect.Effect<unkn
   ).pipe(Effect.map((rows) => rows.map((row) => withEvent(row))));
 }
 
+const commandQueries: Readonly<
+  Record<Query["command"], (scope: QueryScope) => Effect.Effect<unknown, unknown>>
+> = {
+  exported: ({ input }) =>
+    required(input.traceId).pipe(
+      Effect.flatMap((traceId) =>
+        exportedTelemetry(
+          { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
+          traceId,
+          input.minutes,
+        ),
+      ),
+    ),
+  logs: queryLogs,
+  request: ({ app, input }) =>
+    required(input.requestId).pipe(Effect.flatMap((requestId) => requestTelemetry(app, requestId))),
+  trace: ({ app, input }) =>
+    required(input.traceId).pipe(
+      Effect.flatMap((traceId) =>
+        queryExplorer(
+          app,
+          "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
+          [traceId],
+        ),
+      ),
+    ),
+  traces: ({ app, input, since }) =>
+    queryExplorer(
+      app,
+      "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
+      [since, input.limit],
+    ),
+};
+
 function runQuery(app: string, input: Query): Effect.Effect<unknown, unknown> {
-  return Effect.gen(function* runQueryProgram() {
-    const since = (yield* Clock.currentTimeMillis) - input.minutes * millisecondsPerMinute;
-    if (input.command === "request") {
-      return yield* required(input.requestId).pipe(
-        Effect.flatMap((requestId) => requestTelemetry(app, requestId)),
-      );
-    }
-    if (input.command === "exported") {
-      return yield* required(input.traceId).pipe(
-        Effect.flatMap((traceId) =>
-          exportedTelemetry(
-            { logs: receiverOrigin("logs"), traces: receiverOrigin("traces") },
-            traceId,
-            input.minutes,
-          ),
-        ),
-      );
-    }
-    if (input.command === "trace") {
-      return yield* required(input.traceId).pipe(
-        Effect.flatMap((traceId) =>
-          queryExplorer(
-            app,
-            "SELECT trace_id, span_id, parent_id, service, name, kind, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE trace_id = ? ORDER BY start_ms LIMIT 2000",
-            [traceId],
-          ),
-        ),
-      );
-    }
-    if (input.command === "traces") {
-      return yield* queryExplorer(
+  return Clock.currentTimeMillis.pipe(
+    Effect.flatMap((now) =>
+      commandQueries[input.command]({
         app,
-        "SELECT trace_id, service, name, start_ms, duration_ms, outcome, error, json(attributes) AS attributes FROM spans WHERE parent_id IS NULL AND start_ms >= ? ORDER BY start_ms DESC LIMIT ?",
-        [since, input.limit],
-      );
-    }
-    return yield* queryLogs(app, input, since);
-  });
+        input,
+        since: now - input.minutes * millisecondsPerMinute,
+      }),
+    ),
+  );
 }
 
 const help = Console.log(

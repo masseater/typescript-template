@@ -1,14 +1,13 @@
+import { AuditPage, TrendQuery } from "@repo/config/paging";
 import { dashboardStaff } from "@repo/db";
 import { Effect, Schema } from "effect";
-
-import { AuditPageQuery, TrendQuery } from "#shared/contracts/index.ts";
 
 import type { WikiServices } from "#shared/wiki/index.ts";
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { Context } from "effect";
 
 const EmptyInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(Schema.Struct({})));
-const AuditToolInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(AuditPageQuery));
+const AuditToolInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(AuditPage));
 const TrendToolInput = Schema.toStandardJSONSchemaV1(Schema.toStandardSchemaV1(TrendQuery));
 
 const JsonUnknown = Schema.fromJsonString(Schema.Unknown);

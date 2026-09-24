@@ -38,7 +38,7 @@ const ContentsAnswer = Schema.Struct({
 
 export type ComparedFile = typeof MovedFile.Type | typeof PlacedFile.Type;
 
-type GitHubFailure = GitHubRequestFailed | GitHubAnswerUnexpected;
+export type GitHubFailure = GitHubRequestFailed | GitHubAnswerUnexpected;
 
 export type GitHubApi = Readonly<{
   compare: (

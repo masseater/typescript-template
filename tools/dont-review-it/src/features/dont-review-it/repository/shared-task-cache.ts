@@ -44,3 +44,4 @@ const cleanSharedTaskCache = (
   });
 
 export { SharedTaskCacheUnset, cleanSharedTaskCache, readSharedTaskCache, sharedTaskCacheEnv };
+export type { SharedTaskCacheCleaned };

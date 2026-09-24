@@ -31,6 +31,11 @@ export const assertionEntryCallOf = (node: ESTree.Expression): ESTree.CallExpres
   return assertionEntryCallOf(written.object);
 };
 
+export const firstArgumentOf = (call: ESTree.CallExpression): ESTree.Expression | null => {
+  const [handed] = call.arguments;
+  return handed === undefined || handed.type === "SpreadElement" ? null : handed;
+};
+
 export const isAssertionChain = (node: ESTree.Expression): boolean =>
   assertionEntryCallOf(node) !== null;
 

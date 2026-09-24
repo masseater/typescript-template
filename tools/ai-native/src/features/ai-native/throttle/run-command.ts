@@ -258,3 +258,4 @@ export const runWithSlot = (input: {
       return reportRunEnd({ invocation: input.invocation, verdict, releaseFailure });
     }),
   );
+export type { CommandChild, RunCommandDependencies };

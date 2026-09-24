@@ -66,3 +66,4 @@ const shouldNotify = (
 };
 
 export { evaluateBudget, shouldNotify };
+export type { BudgetDecision };

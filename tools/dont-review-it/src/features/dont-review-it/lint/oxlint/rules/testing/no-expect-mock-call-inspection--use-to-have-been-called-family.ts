@@ -2,9 +2,8 @@ import { isNotNil } from "es-toolkit";
 
 import { createDontReviewItRule } from "../../../../create-rule.ts";
 import { resolveBinding } from "../../lib/resolved-bindings.ts";
-import { isAssertionEntryCall } from "../../lib/spec-syntax/assertion-entries.ts";
+import { assertionEntryCallOf } from "../../lib/spec-syntax/assertion-entries.ts";
 import { fixtureDeclarationsOf } from "../../lib/spec-syntax/fixture-declarations.ts";
-import { ASSERTION_CHAIN_MODIFIERS } from "../../lib/spec-syntax/matcher-vocabulary.ts";
 import { isSpecFile, specFileSuffixesFrom } from "../../lib/spec-syntax/spec-files.ts";
 import { staticMemberName, staticPropertyName } from "../../lib/spec-syntax/static-names.ts";
 import { unwrapSubject, type SpecFunction } from "../../lib/spec-syntax/subject-expressions.ts";
@@ -222,16 +221,6 @@ const mockReachOf = (node: ESTree.Expression, lookup: RecordLookup): MockReach =
   return binding === null ? NOTHING_REACHED : bindingReach(binding, lookup);
 };
 
-const assertionEntryOf = (node: ESTree.Expression): ESTree.CallExpression | null => {
-  const written = unwrapSubject(node);
-  if (written.type === "CallExpression") return isAssertionEntryCall(written) ? written : null;
-  if (written.type !== "MemberExpression") return null;
-
-  const member = staticMemberName(written);
-  if (member === null || !ASSERTION_CHAIN_MODIFIERS.has(member)) return null;
-  return assertionEntryOf(written.object);
-};
-
 const assertionOf = (
   call: ESTree.CallExpression,
 ): { readonly matcher: string; readonly subject: ESTree.Expression } | null => {
@@ -241,7 +230,7 @@ const assertionOf = (
   const matcher = staticMemberName(callee);
   if (matcher === null) return null;
 
-  const listed = assertionEntryOf(callee.object);
+  const listed = assertionEntryCallOf(callee.object);
   if (listed === null) return null;
 
   const [handed] = listed.arguments;

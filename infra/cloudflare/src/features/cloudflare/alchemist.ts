@@ -18,8 +18,8 @@ const updatingContext = Layer.effect(
   }),
 );
 
-function layer() {
+function alchemistLayer() {
   return updatingContext.pipe(Layer.provideMerge(alchemistRuntime()));
 }
 
-export { layer };
+export { alchemistLayer };

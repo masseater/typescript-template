@@ -169,3 +169,4 @@ function ciRunner(
 }
 
 export { ciRunner };
+export type { CiRunnerReport, ServiceReport };

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness.ts";
-import { configuredLintRules, lintOptions } from "./lint.ts";
+import { reportCount, reported, reportedRules, ruleNames } from "./lint-harness-test-fixture.ts";
+import { configuredLintRules } from "./lint-test-fixture.ts";
+import { lintOptions } from "./lint.ts";
 
 const forbiddenCode = [
   [
@@ -412,7 +413,7 @@ const validBoundaries = [
   ["tools/dev/src/features/dev/observe/probe.ts", "export const value = process.env;"],
   ["libs/db/src/features/db/probe.ts", 'export * from "drizzle-orm";'],
   ["libs/auth/src/features/auth/probe.test.ts", 'export * from "@repo/db/admin";'],
-  ["libs/auth/src/features/auth/probe-fixture.ts", 'export * from "@repo/db/testing";'],
+  ["libs/auth/src/features/auth/probe-test-fixture.ts", 'export * from "@repo/db/testing";'],
   [
     "libs/observability/src/features/observability/annotations.ts",
     'import { Effect } from "effect"; export const run = () => Effect.annotateCurrentSpan({ a: "b" });',

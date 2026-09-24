@@ -5,7 +5,7 @@ import { Effect, Redacted } from "effect";
 import { CONFIRMATION_LENGTH } from "./config.ts";
 import { acceptPlan, planConfirmation, planReport, plannedStack } from "./plan-confirmation.ts";
 import { encodeJson } from "./platform.ts";
-import { verificationSettings } from "./verification-fixture.ts";
+import { verificationSettings } from "./verification-settings.ts";
 
 import type { Plan } from "alchemy/Plan";
 import type { PlannedAction, PlannedBinding, PlannedResource } from "alchemy/Report";

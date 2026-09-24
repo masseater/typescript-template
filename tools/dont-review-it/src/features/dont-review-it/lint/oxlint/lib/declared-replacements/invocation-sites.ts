@@ -1,5 +1,6 @@
 import {
   astFieldsOf,
+  constBindingsIn,
   listedFieldsOf,
   nodeTypeOf,
   requestedSpecifierOf,
@@ -9,11 +10,6 @@ import { importRoutesIn, type ImportRoutes } from "../value-declarations/import-
 import { spawnFormMatching, SPAWN_TARGET_LINE, type SpawnForm } from "./spawn-forms.ts";
 
 import type { AstFields } from "../ast-node.ts";
-
-const declaredStatementOf = (statement: AstFields): AstFields =>
-  nodeTypeOf(statement) === "ExportNamedDeclaration"
-    ? (astFieldsOf(statement.declaration) ?? statement)
-    : statement;
 
 const requiredSpecifierOf = (bound: AstFields): string | null => {
   const requested = requestedSpecifierOf(bound);
@@ -68,14 +64,7 @@ const boundRoutesIn = (
   statement: AstFields,
   routes: ImportRoutes,
 ): readonly (readonly [string, string])[] => {
-  const declared = declaredStatementOf(statement);
-  if (nodeTypeOf(declared) !== "VariableDeclaration" || declared.kind !== "const") return [];
-
-  return listedFieldsOf(declared.declarations).flatMap((declarator) => {
-    const named = astFieldsOf(declarator.id);
-    const bound = astFieldsOf(declarator.init);
-    if (named === null || bound === null) return [];
-
+  return constBindingsIn(statement).flatMap(({ named, bound }) => {
     const specifier = requiredSpecifierOf(bound);
     if (specifier !== null) return takenRoutesOf({ named, specifier });
 

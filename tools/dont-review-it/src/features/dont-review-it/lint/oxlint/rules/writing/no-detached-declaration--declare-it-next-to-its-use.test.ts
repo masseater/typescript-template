@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noDetachedDeclaration } from "./no-detached-declaration--declare-it-next-to-its-use.ts";
 
 describe("dont-review-it/no-detached-declaration--declare-it-next-to-its-use", () => {

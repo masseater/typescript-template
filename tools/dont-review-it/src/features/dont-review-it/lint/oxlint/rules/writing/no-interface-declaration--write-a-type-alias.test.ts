@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noInterfaceDeclaration } from "./no-interface-declaration--write-a-type-alias.ts";
 
 describe("dont-review-it/no-interface-declaration--write-a-type-alias", () => {

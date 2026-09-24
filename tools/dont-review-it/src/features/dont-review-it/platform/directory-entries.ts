@@ -4,9 +4,9 @@ import { unlessMissing } from "./file-system.ts";
 import { isLinkLoop, isMissingPath, isNotALink } from "./path-failure.ts";
 import { path } from "./path.ts";
 
-type EntryKind = "directory" | "file" | "other";
+export type EntryKind = "directory" | "file" | "other";
 
-interface DirectoryEntry {
+export interface DirectoryEntry {
   readonly kind: EntryKind;
   readonly name: string;
 }
@@ -185,7 +185,7 @@ export const childDirectoryNamesIn = (
     return entries.map((entry) => entry.name);
   });
 
-type TreeWalk = {
+export type TreeWalk = {
   readonly prunedDirectoryNames: readonly string[];
   readonly keepsFileName: (fileName: string) => boolean;
 };
@@ -234,3 +234,4 @@ export const filesUnder = ({
     const found = yield* filesBelow(listing);
     return found.toSorted();
   });
+export type { DanglingSymlink, EscapingSymlink, SymlinkCycle };

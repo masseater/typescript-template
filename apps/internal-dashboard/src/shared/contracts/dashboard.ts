@@ -1,4 +1,4 @@
-import { auditActions, clientKinds, metricKeys, metricPeriods } from "@repo/config";
+import { auditActions, clientKinds, metricKeys } from "@repo/config";
 import { Schema } from "effect";
 
 const OverviewCard = Schema.Struct({
@@ -32,22 +32,8 @@ const StaffAuditPage = Schema.Struct({
   total: Schema.Finite,
 });
 
-const AuditPageQuery = Schema.Struct({
-  action: Schema.optionalKey(Schema.Literals(auditActions)),
-  actorId: Schema.optionalKey(Schema.String),
-  limit: Schema.Int.check(Schema.isBetween({ maximum: 100, minimum: 1 })),
-  offset: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  targetId: Schema.optionalKey(Schema.String),
-});
-
-const TrendQuery = Schema.Struct({
-  days: Schema.optionalKey(Schema.Int.check(Schema.isBetween({ maximum: 365, minimum: 1 }))),
-  metric: Schema.Literals(metricKeys),
-  period: Schema.Literals(metricPeriods),
-});
-
 type StaffAuditPageView = typeof StaffAuditPage.Type;
 type StaffOverviewView = typeof StaffOverview.Type;
 
-export { AuditPageQuery, MetricTrend, StaffAuditPage, StaffOverview, TrendQuery };
+export { MetricTrend, StaffAuditPage, StaffOverview };
 export type { StaffAuditPageView, StaffOverviewView };

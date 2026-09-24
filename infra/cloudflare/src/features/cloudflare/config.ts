@@ -253,4 +253,4 @@ export {
   workerObservability,
   workerSubdomain,
 };
-export type { DeploymentRequest, DeploymentTarget, SharedConfig };
+export type { DeploymentRequest, DeploymentTarget, SharedConfig, TraceDestination };

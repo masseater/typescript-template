@@ -250,4 +250,4 @@ export const sendNotificationEmail = (
   }).pipe(withSpan("email.notification"));
 };
 
-export type { MailSettings };
+export type { LinkedMail, MailBinding, MailSettings };

@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
-import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-fixture.ts";
+import { appEnvironment, fixtureAuthSecret, fixtureOrigin } from "./app-test-fixture.ts";
 import { readWorkerConfig } from "./bindings.ts";
 
 describe("readWorkerConfig", () => {

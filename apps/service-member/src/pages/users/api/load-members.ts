@@ -8,7 +8,6 @@ import { MemberList } from "#shared/contracts/index.ts";
 import type { UsersSearch } from "#pages/users/model/users-search.ts";
 
 type Members = typeof MemberList.Type;
-type Member = Members["members"][number];
 
 const firstPage = 1;
 
@@ -46,4 +45,3 @@ function membersOptions(search: UsersSearch) {
 }
 
 export { PaidPlanRequired, membersOptions };
-export type { Member };

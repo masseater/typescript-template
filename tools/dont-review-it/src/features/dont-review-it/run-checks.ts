@@ -418,3 +418,4 @@ export const runChecks = (
         : [],
     };
   }).pipe(Effect.mapError((unread) => new RepositoryUnreadable({ cause: unread })));
+export type { RepositoryUnreadable };

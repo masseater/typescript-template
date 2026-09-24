@@ -14,7 +14,7 @@ import {
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { DateTime, Effect, Predicate, Result } from "effect";
 
-import { emailChangePath } from "./email-change-path.ts";
+import { emailChangePath } from "./email-change.ts";
 import {
   deny,
   enrollmentPaths,
@@ -130,6 +130,15 @@ const registersLoopbackClient = function registersLoopbackClient(
   );
 };
 
+const normalizeOauthFields = function normalizeOauthFields(path: string, fields: object): void {
+  if ("oauth_query" in fields && !oauthQueryPaths.has(path)) {
+    deny("OAUTH_QUERY_NOT_ACCEPTED");
+  }
+  if (registersLoopbackClient(path, fields)) {
+    Object.assign(fields, { application_type: "native" });
+  }
+};
+
 const rejectUnsafeFields = function rejectUnsafeFields(
   hookRequest: Readonly<Pick<HookContext, "body" | "path">>,
 ): void {
@@ -138,12 +147,7 @@ const rejectUnsafeFields = function rejectUnsafeFields(
   if ("trustDevice" in fields && fields["trustDevice"] === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }
-  if ("oauth_query" in fields && !oauthQueryPaths.has(hookRequest.path)) {
-    deny("OAUTH_QUERY_NOT_ACCEPTED");
-  }
-  if (registersLoopbackClient(hookRequest.path, fields)) {
-    Object.assign(fields, { application_type: "native" });
-  }
+  normalizeOauthFields(hookRequest.path, fields);
   if (
     hookRequest.path === "/passkey/verify-registration" &&
     "createSession" in fields &&

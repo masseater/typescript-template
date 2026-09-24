@@ -231,3 +231,4 @@ export {
   signUp,
   updateProfile,
 };
+export type { Enrollment, Visit };

@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noTestContextEscape } from "./no-test-context-escape--destructure-fixtures-by-name.ts";
 
 describe("dont-review-it/no-test-context-escape--destructure-fixtures-by-name", () => {

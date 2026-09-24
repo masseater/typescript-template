@@ -1,8 +1,8 @@
 import { assert, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { mockServer } from "./account-fixture.ts";
-import { access, accountHandlers, config, sendingRecords } from "./inspection-fixture.ts";
+import { mockServer } from "./account-test-fixture.ts";
+import { access, accountHandlers, config, sendingRecords } from "./inspection-test-fixture.ts";
 import { describeCause } from "./secrets.ts";
 import { runDeployment } from "./stack-runner.ts";
 

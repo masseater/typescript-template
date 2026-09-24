@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { reported, reportedRules } from "./lint-harness.ts";
+import { reported, reportedRules } from "./lint-harness-test-fixture.ts";
 
 const githubTokenProbe = `export const token = "${["ghp_", "a".repeat(40)].join("")}";`;
 const awsAccessKeyProbe = `export const accessKey = "${["AKIA", "A".repeat(16)].join("")}";`;
@@ -38,7 +38,7 @@ const forbidden = [
   ],
   [
     "real-looking-uuid",
-    "libs/db/src/features/db/probe-fixture.ts",
+    "libs/db/src/features/db/probe-test-fixture.ts",
     'export const databaseId = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d";',
   ],
   [
@@ -51,45 +51,49 @@ const forbidden = [
     "tools/dev/src/features/dev/observe/probe.test.ts",
     'export const spanId = "0123456789abcdef";',
   ],
-  ["github-token", "infra/cloudflare/src/features/cloudflare/probe-fixture.ts", githubTokenProbe],
+  [
+    "github-token",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
+    githubTokenProbe,
+  ],
   [
     "aws-access-key",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     awsAccessKeyProbe,
   ],
   [
     "base64-secret",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const encoded = "VGhpc0lzQVJlYWxMb29raW5nQmFzZTY0U2VjcmV0MTIzNDU2";',
   ],
   [
     "real-looking-email",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const mail = "ops@private-host.net";',
   ],
   [
     "real-looking-secret",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const authSecret = "Pr0beZ9xQ2mL7bN4hJ6sD8gW1yC5e3";',
   ],
   [
     "real-looking-secret-through-a-name",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'const value = "Pr0beZ9xQ2mL7bN4hJ6sD8gW1yC5e3"; export const environment = { TEMPLATE_AUTH_SECRET: value };',
   ],
   [
     "authorization-header",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const headers = { authorization: "Bearer RealLookingTokenValue123" };',
   ],
   [
     "api-token-assignment",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'const access = { apiToken: "" }; access.apiToken = "RealLookingTokenValue123";',
   ],
   [
     "class-property-secret",
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export class Probe { apiKey = "RealLookingTokenValue123"; }',
   ],
   [
@@ -134,7 +138,7 @@ const allowed = [
   ],
   ["tools/dev/src/features/dev/observe/probe.test.ts", 'export const event = "application.error";'],
   [
-    "libs/db/src/features/db/probe-fixture.ts",
+    "libs/db/src/features/db/probe-test-fixture.ts",
     'export const databaseId = "22222222-2222-4222-8222-222222222222";',
   ],
   [
@@ -146,15 +150,15 @@ const allowed = [
     'export const spanId = "0000000000000000";',
   ],
   [
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const authSecret = "verification-test-secret-0123456789abcdef";',
   ],
   [
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const headers = { authorization: "Bearer stack-verification-not-a-real-token" };',
   ],
   [
-    "infra/cloudflare/src/features/cloudflare/probe-fixture.ts",
+    "infra/cloudflare/src/features/cloudflare/probe-test-fixture.ts",
     'export const mail = "billing@example.com";',
   ],
 ] as const;

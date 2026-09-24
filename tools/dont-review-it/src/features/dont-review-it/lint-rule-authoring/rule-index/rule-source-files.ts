@@ -18,7 +18,7 @@ const isRuleSourceFileName = (fileName: string): boolean =>
   !fileName.includes(TEST_FILE_MARKER) &&
   !fileName.endsWith(TYPE_DECLARATION_SUFFIX);
 
-type RuleSourceFiles = {
+export type RuleSourceFiles = {
   readonly sourcePaths: readonly string[];
   readonly absentDirectories: readonly string[];
 };

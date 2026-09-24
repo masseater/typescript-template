@@ -1,5 +1,11 @@
 import { Effect, Redacted, Schema } from "effect";
-import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
+import {
+  FetchHttpClient,
+  HttpBody,
+  HttpClient,
+  HttpClientResponse,
+  type HttpClientError,
+} from "effect/unstable/http";
 
 import {
   booleanForVariation,
@@ -45,16 +51,31 @@ class FlagshipWriteFailed extends Schema.TaggedError<FlagshipWriteFailed>()("Fla
 const asFlagshipFailure = (cause: unknown): FlagshipWriteFailed =>
   new FlagshipWriteFailed({ detail: String(cause) });
 
+const acceptedResponse = (
+  operation: "read" | "write",
+  sent: Effect.Effect<
+    HttpClientResponse.HttpClientResponse,
+    HttpClientError.HttpClientError,
+    HttpClient.HttpClient
+  >,
+): Effect.Effect<HttpClientResponse.HttpClientResponse, FlagshipWriteFailed> =>
+  sent.pipe(
+    Effect.provide(FetchHttpClient.layer),
+    Effect.mapError(asFlagshipFailure),
+    Effect.filterOrFail(
+      (httpResponse) => httpResponse.status >= 200 && httpResponse.status < 300,
+      (httpResponse) => new FlagshipWriteFailed({ detail: `${operation} ${httpResponse.status}` }),
+    ),
+  );
+
 const readFlag = Effect.fn("readFlag")(function* readFlag(
   config: FlagshipWriteConfig,
   flagKey: FlagKey,
 ) {
-  const httpResponse = yield* HttpClient.get(flagshipFlagUrl(config, flagKey), {
-    headers: authorization(config),
-  }).pipe(Effect.provide(FetchHttpClient.layer), Effect.mapError(asFlagshipFailure));
-  if (httpResponse.status < 200 || httpResponse.status >= 300) {
-    return yield* new FlagshipWriteFailed({ detail: `read ${httpResponse.status}` });
-  }
+  const httpResponse = yield* acceptedResponse(
+    "read",
+    HttpClient.get(flagshipFlagUrl(config, flagKey), { headers: authorization(config) }),
+  );
   const parsedPayload = yield* HttpClientResponse.schemaBodyJson(RemotePayload)(httpResponse).pipe(
     Effect.mapError(asFlagshipFailure),
   );
@@ -80,16 +101,13 @@ const writeFlag = Effect.fn("writeFlag")(function* writeFlag(change: {
     rules: [],
     variations: definition.variations,
   }).pipe(Effect.mapError(asFlagshipFailure));
-  const httpResponse = yield* HttpClient.put(flagshipFlagUrl(change.config, change.flagKey), {
-    body: requestBody,
-    headers: {
-      ...authorization(change.config),
-      "Content-Type": "application/json",
-    },
-  }).pipe(Effect.provide(FetchHttpClient.layer), Effect.mapError(asFlagshipFailure));
-  if (httpResponse.status < 200 || httpResponse.status >= 300) {
-    return yield* new FlagshipWriteFailed({ detail: `write ${httpResponse.status}` });
-  }
+  yield* acceptedResponse(
+    "write",
+    HttpClient.put(flagshipFlagUrl(change.config, change.flagKey), {
+      body: requestBody,
+      headers: { ...authorization(change.config), "Content-Type": "application/json" },
+    }),
+  );
   return {
     enabled: booleanForVariation(defaultVariation),
     flagKey: change.flagKey,

@@ -1,5 +1,5 @@
 import { MEMBER_MCP_SCOPE } from "@repo/config";
-import { Button, FormColumn, STATUS_VARIANT, StatusMessage, localState, useAction } from "@repo/ui";
+import { Button, FailureStatus, FormColumn, localState, useAction } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
 
 import { submitDecision } from "#pages/account/consent/api/consent.ts";
@@ -9,6 +9,39 @@ import { McpScopeFields, requestedToolScopes, useChosenScopes } from "./mcp-scop
 import type { ReactElement } from "react";
 const consentRoute = getRouteApi("/consent");
 const useDecided = localState(false);
+function DecisionButtons({
+  allowDisabled,
+  denyDisabled,
+  onDecide,
+}: Readonly<{
+  allowDisabled: boolean;
+  denyDisabled: boolean;
+  onDecide: (accept: boolean) => void;
+}>): ReactElement {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button
+        disabled={allowDisabled}
+        onClick={() => {
+          onDecide(true);
+        }}
+        type="button"
+        variant="primary"
+      >
+        許可する
+      </Button>
+      <Button
+        disabled={denyDisabled}
+        onClick={() => {
+          onDecide(false);
+        }}
+        type="button"
+      >
+        拒否する
+      </Button>
+    </div>
+  );
+}
 function ConsentActions({
   client,
 }: Readonly<{
@@ -34,30 +67,12 @@ function ConsentActions({
         {client} に {serviceName} で許す操作を選んでください。選んでいない操作は拒否されます。
       </p>
       <McpScopeFields requested={requested} />
-      <div className="flex flex-wrap gap-2">
-        <Button
-          disabled={disabled || selected.length === 0}
-          onClick={() => {
-            decide(true);
-          }}
-          type="button"
-          variant="primary"
-        >
-          許可する
-        </Button>
-        <Button
-          disabled={disabled}
-          onClick={() => {
-            decide(false);
-          }}
-          type="button"
-        >
-          拒否する
-        </Button>
-      </div>
-      {action.error !== undefined && (
-        <StatusMessage variant={STATUS_VARIANT.failure}>{action.error}</StatusMessage>
-      )}
+      <DecisionButtons
+        allowDisabled={disabled || selected.length === 0}
+        denyDisabled={disabled}
+        onDecide={decide}
+      />
+      <FailureStatus error={action.error} />
     </FormColumn>
   );
 }

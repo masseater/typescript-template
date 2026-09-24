@@ -14,7 +14,7 @@ import {
 
 import { clockOf, statusLabels } from "#pages/recordings/model/recording-labels.ts";
 
-import type { RecordingsOverview } from "#pages/recordings/api/recordings.ts";
+import type { RecordingsOverview } from "#pages/recordings/model/recording-state.ts";
 import type { ReactElement } from "react";
 
 function RecordingTable({

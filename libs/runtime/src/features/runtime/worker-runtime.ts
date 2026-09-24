@@ -66,4 +66,4 @@ const workerRuntime = <Services, Failure>(
   };
 };
 export { workerRuntime };
-export type { WorkerRuntime };
+export type { BuildFailure, WorkerRuntime };

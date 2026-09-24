@@ -108,3 +108,4 @@ export const signalProcessTree = (input: {
   }
   return combinedFailure(treeFailure, rootFailure);
 };
+export type { ProcessTreeDependencies, TaskkillExecutor };

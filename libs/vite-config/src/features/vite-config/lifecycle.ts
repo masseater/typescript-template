@@ -46,3 +46,4 @@ const lifecycle = (
 });
 
 export { lifecycle, lifecycleInherits, lifecycles };
+export type { Lifecycle, LifecycleTask };

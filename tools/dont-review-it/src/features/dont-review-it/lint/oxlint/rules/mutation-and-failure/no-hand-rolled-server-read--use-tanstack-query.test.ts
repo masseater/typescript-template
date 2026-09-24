@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noHandRolledServerRead } from "./no-hand-rolled-server-read--use-tanstack-query.ts";
 
 describe("dont-review-it/no-hand-rolled-server-read--use-tanstack-query", () => {

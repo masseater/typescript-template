@@ -98,3 +98,4 @@ const gitHubDelete = (call: GitHubCall): Effect.Effect<void, GitHubAppFailure> =
   });
 
 export { GitHubAppFailure, gitHubDelete, gitHubLookup, gitHubRequest };
+export type { GitHubCall };

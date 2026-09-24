@@ -1,6 +1,6 @@
-import { activeGoogleAnalyticsMeasurementId, readEnvironment, readJobs } from "@repo/config";
+import { activeGoogleAnalyticsMeasurementId, readEnvironment } from "@repo/config";
 import { purgeExpiredWithdrawnMembers } from "@repo/db";
-import { Process, consumeJobs } from "@repo/runtime/jobs";
+import { Process, consumeJobBatch } from "@repo/runtime/jobs";
 import { appServerEntry, withQueue } from "@repo/runtime/worker";
 import handler from "@tanstack/react-start/server-entry";
 import { env } from "cloudflare:workers";
@@ -31,13 +31,7 @@ export { Process, UserInbox };
 export default {
   ...withQueue(
     appServerEntry({ googleAnalytics, reporting, routeHandler: startHandler, runtime }),
-    (batch, environment) =>
-      Effect.runPromise(
-        Effect.gen(function* consume() {
-          const jobs = yield* readJobs(environment);
-          yield* Effect.promise(() => consumeJobs(batch, jobs));
-        }).pipe(Effect.orDie),
-      ),
+    consumeJobBatch,
   ),
   scheduled: (
     _controller: ScheduledController,

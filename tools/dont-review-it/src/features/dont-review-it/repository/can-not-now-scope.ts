@@ -26,8 +26,8 @@ export const Pull = Schema.Struct({
 });
 
 export type IssueRecord = typeof Issue.Type;
-type CommentRecord = typeof Comment.Type;
-type PullRecord = typeof Pull.Type;
+export type CommentRecord = typeof Comment.Type;
+export type PullRecord = typeof Pull.Type;
 
 const canNotNowHead = (issueNumber: number): string => `can-not-now/issue-${issueNumber}`;
 

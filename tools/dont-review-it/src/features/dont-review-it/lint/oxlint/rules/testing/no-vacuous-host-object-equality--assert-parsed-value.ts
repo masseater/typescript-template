@@ -3,7 +3,8 @@ import { ancestorsOf } from "../../lib/ast-node.ts";
 import { nodesOfType } from "../../lib/nodes-of-type.ts";
 import { resolveBinding, type ScopeLookup } from "../../lib/resolved-bindings.ts";
 import {
-  isAssertionEntryCall,
+  assertionEntryCallOf,
+  firstArgumentOf,
   isAssertionEntryReference,
 } from "../../lib/spec-syntax/assertion-entries.ts";
 import {
@@ -19,10 +20,7 @@ import {
   runtimeModulesFrom,
   type HostTypeLookup,
 } from "../../lib/spec-syntax/host-object-constructions.ts";
-import {
-  ASSERTION_CHAIN_MODIFIERS,
-  STRUCTURAL_MATCHERS,
-} from "../../lib/spec-syntax/matcher-vocabulary.ts";
+import { STRUCTURAL_MATCHERS } from "../../lib/spec-syntax/matcher-vocabulary.ts";
 import {
   entryKeysOf,
   snapshotMatcherSiteOf,
@@ -60,21 +58,6 @@ const parsedValueMatcherFrom = (ruleOptions: Readonly<Options>): string => {
     : DEFAULT_PARSED_VALUE_MATCHER;
 };
 
-const argumentAt = (call: ESTree.CallExpression, index: number): ESTree.Expression | null => {
-  const handed = call.arguments[index];
-  return handed === undefined || handed.type === "SpreadElement" ? null : handed;
-};
-
-const assertionRootOf = (node: ESTree.Expression): ESTree.CallExpression | null => {
-  const written = unwrapSubject(node);
-  if (written.type === "CallExpression") return isAssertionEntryCall(written) ? written : null;
-  if (written.type !== "MemberExpression") return null;
-
-  const member = staticMemberName(written);
-  if (member === null || !ASSERTION_CHAIN_MODIFIERS.has(member)) return null;
-  return assertionRootOf(written.object);
-};
-
 const assertionAt = (
   call: ESTree.CallExpression,
 ): { readonly matcher: string; readonly subject: ComparedSide } | null => {
@@ -84,8 +67,8 @@ const assertionAt = (
   const matcher = staticMemberName(callee);
   if (matcher === null) return null;
 
-  const root = assertionRootOf(callee.object);
-  return root === null ? null : { matcher, subject: argumentAt(root, 0) };
+  const root = assertionEntryCallOf(callee.object);
+  return root === null ? null : { matcher, subject: firstArgumentOf(root) };
 };
 
 const PARTIAL_SHAPE_ASYMMETRIC_MATCHER = "objectContaining";
@@ -116,19 +99,19 @@ const comparedByMatcher = (
   if (STRUCTURAL_MATCHERS.has(matched.matcher)) {
     return {
       left: matched.subject,
-      right: argumentAt(call, 0),
+      right: firstArgumentOf(call),
       messageId: STRUCTURAL_EQUALITY_MESSAGE,
     };
   }
   if (PARTIAL_SHAPE_MATCHERS.has(matched.matcher)) {
-    return { left: argumentAt(call, 0), right: null, messageId: PARTIAL_SHAPE_MESSAGE };
+    return { left: firstArgumentOf(call), right: null, messageId: PARTIAL_SHAPE_MESSAGE };
   }
   return null;
 };
 
 const comparisonSiteOf = (call: ESTree.CallExpression): ComparisonSite | null => {
   if (isAsymmetricPartialShape(call)) {
-    return { left: argumentAt(call, 0), right: null, messageId: PARTIAL_SHAPE_MESSAGE };
+    return { left: firstArgumentOf(call), right: null, messageId: PARTIAL_SHAPE_MESSAGE };
   }
   const matched = assertionAt(call);
   return matched === null ? null : comparedByMatcher(call, matched);
@@ -299,7 +282,7 @@ const vacuousIn = (input: {
 };
 
 const namedFileRecordOf = (call: ESTree.CallExpression, filename: string): readonly string[] => {
-  const written = argumentAt(call, 0);
+  const written = firstArgumentOf(call);
   const named = written === null ? null : staticSpelling(written);
   const fileRecord = named === null ? null : fileRecordOf(filename, named);
   return fileRecord === null ? [] : [fileRecord];

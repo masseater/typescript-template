@@ -1,9 +1,9 @@
 import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
+import { TestDatabase } from "./database-test-fixture.ts";
 import { refreshMetricSnapshots } from "./metric-snapshot.ts";
-import { addUser } from "./records-fixture.ts";
-import { TestDatabase } from "./testing.ts";
+import { addUser } from "./records-test-fixture.ts";
 
 describe("refreshMetricSnapshots", () => {
   const it = test.extend("refreshedSnapshots", () =>

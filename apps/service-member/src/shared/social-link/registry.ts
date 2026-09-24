@@ -57,4 +57,4 @@ function classifySocialUrl(raw: string): ClassifiedSocialUrl {
 }
 
 export { classifySocialUrl };
-export type { ClassifiedSocialUrl };
+export type { ClassifiedSocialUrl, SocialNetwork };

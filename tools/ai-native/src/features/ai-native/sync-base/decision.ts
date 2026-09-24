@@ -49,3 +49,4 @@ export const decisionOf = (inquiry: DecisionInquiry): SyncBaseDecision | undefin
   const instruction = instructionOf(openPullRequestOf(inquiry.cwd, inquiry.run));
   return instruction === undefined ? undefined : decisionFor(hookEvent, instruction);
 };
+export type { SyncBaseEvent };

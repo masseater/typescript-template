@@ -1,12 +1,10 @@
 import { RECORDING_FAILURE } from "@repo/config";
 import { withSpan } from "@repo/observability";
-import { readWorkerConfig } from "@repo/runtime/bindings";
 import { Context, Effect, Layer, Schema } from "effect";
 
 import { TranscriptionOutput, transcriptOf } from "./transcript.ts";
 import { TranscriptionFailed } from "./transcription-failed.ts";
 
-import type { ConfigurationInvalid } from "@repo/config";
 import type { StreamedFile } from "@repo/runtime";
 import type { Transcript } from "./transcript.ts";
 
@@ -64,12 +62,7 @@ class Transcriber extends Context.Service<Transcriber, TranscriberShape>()(
       }),
     );
   }
-
-  public static fromEnvironment(env: unknown): Layer.Layer<Transcriber, ConfigurationInvalid> {
-    return Layer.unwrap(
-      Effect.map(readWorkerConfig(env), (config) => Transcriber.layer(config.AI)),
-    );
-  }
 }
 
 export { Transcriber, transcriptionModel };
+export type { WorkerModel };

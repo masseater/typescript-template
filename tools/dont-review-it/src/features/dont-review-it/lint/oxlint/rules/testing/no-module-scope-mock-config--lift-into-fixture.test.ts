@@ -1,6 +1,6 @@
 import { describe } from "vite-plus/test";
 
-import { testLintRule } from "../../../../lint-rule-authoring/index.ts";
+import { testLintRule } from "../../../../lint-rule-authoring/rule-tester-test-fixture.ts";
 import { noModuleScopeMockConfig } from "./no-module-scope-mock-config--lift-into-fixture.ts";
 
 const SPEC_FILENAME = "mailer.test.ts";

@@ -265,3 +265,4 @@ function symbolicate(
 }
 
 export { symbolicate };
+export type { App, Frame, SourceMapFailure, Symbolication };

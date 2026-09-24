@@ -55,3 +55,4 @@ class Embedder extends Context.Service<Embedder, EmbedderShape>()(
 ) {}
 
 export { Embedder, embedWith };
+export type { EmbedderShape, WorkerModel };
