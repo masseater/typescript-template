@@ -23,16 +23,22 @@ import { originRepository, repositorySlug } from "./repository.ts";
 import type { ProgressEvent } from "alchemy/Alchemist";
 
 const commandRejectedEvent = "github.command_rejected";
-const entrypoint = new URL("../../../alchemy.run.ts", import.meta.url);
 
 class GitHubCommandFailure extends Schema.TaggedError<GitHubCommandFailure>()(
   "GitHubCommandFailure",
   { code: Schema.Literals(["command_invalid"]) },
 ) {}
 
+const ApplyUnit = Schema.Literals(["github", "wiki-publisher"]);
+
 const Command = Schema.Union([
-  Schema.Tuple([Schema.Literal("plan")]),
-  Schema.Tuple([Schema.Literal("deploy"), Schema.Literal("--confirm-plan"), Confirmation]),
+  Schema.Tuple([Schema.Literal("plan"), ApplyUnit]),
+  Schema.Tuple([
+    Schema.Literal("deploy"),
+    ApplyUnit,
+    Schema.Literal("--confirm-plan"),
+    Confirmation,
+  ]),
 ]);
 
 const write = (report: Readonly<Record<string, unknown>>): Effect.Effect<void> =>
@@ -53,12 +59,12 @@ const reportProgress = (progress: ProgressEvent): Effect.Effect<void> => {
   return Effect.void;
 };
 
-const planRuleset = Effect.fn("planRuleset")(function* planRuleset(
-  deployment: Readonly<{ envFile: string; stage: string }>,
+const planStack = Effect.fn("planGitHubStack")(function* planStack(
+  deployment: Readonly<{ envFile: string; stage: string; unit: typeof ApplyUnit.Type }>,
 ) {
   const paths = yield* Path.Path;
   const snapshot = yield* planDeployment({
-    entrypoint: yield* paths.fromFileUrl(entrypoint),
+    entrypoint: paths.join(repositoryRoot, "infra", deployment.unit, "alchemy.run.ts"),
     envFile: deployment.envFile,
     stage: deployment.stage,
   });
@@ -75,7 +81,11 @@ runCli(
     ).pipe(Effect.mapError(() => new GitHubCommandFailure({ code: "command_invalid" })));
     const { config, confidential, secrets } = yield* deploymentAccess();
     yield* Effect.gen(function* run() {
-      const planning = yield* planRuleset({ envFile: secrets.filename, stage: config.prefix });
+      const planning = yield* planStack({
+        envFile: secrets.filename,
+        stage: config.prefix,
+        unit: parsedCommand[1],
+      });
       const plan = planReport(planning.planned);
       if (parsedCommand[0] === "plan") {
         yield* write({ confirmation: planning.confirmation, event: "github.planned", plan });
@@ -83,7 +93,7 @@ runCli(
       }
       yield* write({ event: "github.planned", plan });
       yield* acceptPlan(planning.planned, {
-        confirmation: parsedCommand[2],
+        confirmation: parsedCommand[3],
         subject: planning.slug,
       });
       yield* applyDeployment(planning.snapshot, reportProgress);

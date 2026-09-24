@@ -1,8 +1,5 @@
 import { wikiPublishPermissions } from "@repo/config";
-
-import { type RepositoryAddress, repositorySlug } from "./repository.ts";
-
-import type { AppDefinition } from "./app-registration.ts";
+import { type AppDefinition, type RepositoryAddress, repositorySlug } from "@repo/infra-github";
 
 const productionEnvironment = "production";
 
