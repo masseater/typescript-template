@@ -40,6 +40,8 @@ const checkoutUrl = "https://checkout.stripe.com/c/pay/cs_test_session";
 const portalUrl = "https://billing.stripe.com/p/session/test_portal";
 const customerId = "cus_test_member";
 const subscriptionId = "sub_test_member";
+const trialPeriodDays = 14;
+const checkoutForms: URLSearchParams[] = [];
 const millisecondsPerSecond = 1000;
 const monthInSeconds = 30 * 24 * 60 * 60;
 const hexRadix = 16;
@@ -53,8 +55,10 @@ function billingApp() {
   const environment = appEnvironment({
     APP_ORIGIN: origin,
     AUTH_SECRET: authTestSecret,
+    STRIPE_AUTOMATIC_TAX: "true",
     STRIPE_PRICE_ID: priceId,
     STRIPE_SECRET_KEY: "sk_test_placeholder",
+    STRIPE_TRIAL_PERIOD_DAYS: String(trialPeriodDays),
     STRIPE_WEBHOOK_SECRET: webhookSecret,
   });
   const runtime = workerRuntime(() => {
@@ -184,17 +188,31 @@ function subscriptionEvent(
   };
 }
 
+function invoiceEvent(
+  type: "invoice.paid" | "invoice.payment_failed",
+  id: string,
+  offsetSeconds: number,
+): Record<string, unknown> {
+  return {
+    created: nowSeconds() + offsetSeconds,
+    data: { object: { subscription: subscriptionId } },
+    id,
+    type,
+  };
+}
+
 const stripeHandlers = [
   http.post(`${stripeApi}/checkout/sessions`, ({ request }) =>
-    request
-      .formData()
-      .then((form) =>
-        request.headers.get("stripe-version") === stripeApiVersion &&
+    request.formData().then((form) => {
+      checkoutForms.push(
+        new URLSearchParams([...form].map(([key, value]) => [key, String(value)])),
+      );
+      return request.headers.get("stripe-version") === stripeApiVersion &&
         form.get("mode") === "subscription" &&
         form.get("line_items[0][price]") === priceId
-          ? HttpResponse.json({ url: checkoutUrl })
-          : HttpResponse.json({ error: { message: "unexpected checkout form" } }, { status: 400 }),
-      ),
+        ? HttpResponse.json({ url: checkoutUrl })
+        : HttpResponse.json({ error: { message: "unexpected checkout form" } }, { status: 400 });
+    }),
   ),
   http.post(`${stripeApi}/billing_portal/sessions`, ({ request }) =>
     request
@@ -278,6 +296,80 @@ describe("billing api", () => {
         status: SUBSCRIPTION_STATUS.active,
       });
       expect(result.repeated).toBe(httpStatus.conflict);
+    }));
+
+  it("asks Stripe to calculate tax, collect a tax ID and start a trial when checkout begins", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        checkoutForms.length = 0;
+        yield* call(app, client, "/billing/checkout", {});
+        yield* deliver(app, checkoutCompleted(id));
+        yield* deliver(
+          app,
+          subscriptionEvent("customer.subscription.deleted", "canceled", "evt_gone"),
+        );
+        yield* call(app, client, "/billing/checkout", {});
+        return checkoutForms.map((form) => Object.fromEntries(form));
+      }),
+    ).then(([first, second]) => {
+      expect(first).toMatchObject({
+        "automatic_tax[enabled]": "true",
+        customer_email: "member@example.com",
+        "subscription_data[trial_period_days]": String(trialPeriodDays),
+        "subscription_data[trial_settings][end_behavior][missing_payment_method]": "cancel",
+        "tax_id_collection[enabled]": "true",
+      });
+      expect(first).not.toHaveProperty("customer_update[address]");
+      expect(second).toMatchObject({
+        "automatic_tax[enabled]": "true",
+        customer: customerId,
+        "customer_update[address]": "auto",
+        "customer_update[name]": "auto",
+      });
+      expect(second).not.toHaveProperty("customer_email");
+    }));
+
+  it("restores a lapsed subscription once Stripe reports the invoice as paid", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(app, checkoutCompleted(id));
+        const failed = yield* json(
+          yield* deliver(app, invoiceEvent("invoice.payment_failed", "evt_unpaid", 1)),
+        );
+        const lapsed = yield* call(app, client, "/members?page=1");
+        const lapsedPlan = yield* json(yield* call(app, client, "/billing/plan"));
+        const settled = yield* json(
+          yield* deliver(app, invoiceEvent("invoice.paid", "evt_settled", 2)),
+        );
+        const restored = yield* call(app, client, "/members?page=1");
+        const restoredPlan = yield* json(yield* call(app, client, "/billing/plan"));
+        return {
+          failed,
+          lapsed: lapsed.status,
+          lapsedPlan,
+          restored: restored.status,
+          restoredPlan,
+          settled,
+        };
+      }),
+    ).then((result) => {
+      expect(result.failed).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+      expect(result.lapsed).toBe(httpStatus.paymentRequired);
+      expect(result.lapsedPlan).toMatchObject({ status: SUBSCRIPTION_STATUS.pastDue });
+      expect(result.settled).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+      expect(result.restored).toBe(httpStatus.ok);
+      expect(result.restoredPlan).toMatchObject({
+        plan: PLAN.paid,
+        status: SUBSCRIPTION_STATUS.active,
+      });
     }));
 
   it("treats a replayed event as a no-op and drops the member back to free when the subscription ends", ({

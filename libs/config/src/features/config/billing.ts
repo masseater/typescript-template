@@ -30,6 +30,11 @@ export const paidStatuses: readonly SubscriptionStatus[] = [
   SUBSCRIPTION_STATUS.trialing,
 ];
 
+export const recoverableStatuses: readonly SubscriptionStatus[] = [
+  SUBSCRIPTION_STATUS.pastDue,
+  SUBSCRIPTION_STATUS.unpaid,
+];
+
 /** @canonical-values config.webhook-outcome */
 export const webhookOutcomes = ["applied", "duplicate", "ignored"] as const;
 export type WebhookOutcome = (typeof webhookOutcomes)[number];
@@ -38,6 +43,9 @@ export const WEBHOOK_DISPOSITION = {
   duplicate: webhookOutcomes[1],
   ignored: webhookOutcomes[2],
 } as const satisfies Record<string, WebhookOutcome>;
+
+export const stripeAutomaticTax = true;
+export const stripeTrialPeriodDays = 14;
 
 export const priceIntervals = ["day", "week", "month", "year"] as const;
 export type PriceInterval = (typeof priceIntervals)[number];
@@ -49,6 +57,7 @@ export const stripeWebhookEvents = [
   "customer.subscription.created",
   "customer.subscription.deleted",
   "customer.subscription.updated",
+  "invoice.paid",
   "invoice.payment_failed",
 ] as const;
 export type StripeWebhookEvent = (typeof stripeWebhookEvents)[number];
