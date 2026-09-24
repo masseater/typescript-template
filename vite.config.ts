@@ -35,6 +35,7 @@ const rootOwnedPaths = [
   ".gitignore",
   ".mcp.json",
   ".mergify.yml",
+  ".textlint-ai-words.json",
   ".textlintrc.json",
   ".vite-hooks",
   "AGENTS.md",
@@ -133,6 +134,7 @@ export default defineConfig({
         input: [
           ...taskInput,
           { base: "workspace", pattern: "**/*.md" },
+          { base: "workspace", pattern: ".textlint-ai-words.json" },
           { base: "workspace", pattern: ".textlintrc.json" },
         ],
       },
