@@ -199,9 +199,6 @@ function accountHandlers(options: AccountState): Parameters<typeof mockServer> {
     unpagedCollection(`${account}/workers/domains`, ({ request }) =>
       domainPage(options.domains ?? [], request.url),
     ),
-    http.get(`${account}/workers/subdomain`, () =>
-      HttpResponse.json({ result: { subdomain: "example-subdomain" } }),
-    ),
     unpagedCollection(`${zone}/dns_records`, ({ request }) =>
       dnsPage(options.records ?? [], request.url),
     ),
