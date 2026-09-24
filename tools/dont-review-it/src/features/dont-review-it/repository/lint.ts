@@ -632,7 +632,17 @@ const lintOptions = {
               },
               {
                 from: "package",
-                name: ["Codec", "Effect", "Exit", "ManagedRuntime", "Queue", "Ref"],
+                name: [
+                  "Codec",
+                  "Deferred",
+                  "Duration",
+                  "Effect",
+                  "Exit",
+                  "ManagedRuntime",
+                  "Queue",
+                  "Redacted",
+                  "Ref",
+                ],
                 package: "effect",
               },
               {
@@ -896,7 +906,10 @@ const lintOptions = {
       rules: {
         "new-cap": [
           LINT_SEVERITY.ERROR,
-          { capIsNewExceptionPattern: "^(?:Schema|GitHub)\\.", capIsNewExceptions: ["Stack"] },
+          {
+            capIsNewExceptionPattern: "^(?:Schema|GitHub)\\.",
+            capIsNewExceptions: ["GitHubApp", "Resource", "Stack"],
+          },
         ],
       },
     },

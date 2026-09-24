@@ -38,15 +38,20 @@ const Command = Schema.Union([
 const write = (report: Readonly<Record<string, unknown>>): Effect.Effect<void> =>
   encodeJson(report).pipe(Effect.flatMap(Console.info), Effect.orDie);
 
-const reportProgress = (progress: ProgressEvent): Effect.Effect<void> =>
-  progress._tag === "apply.resource.status"
-    ? write({
-        event: "github.resource",
-        id: progress.id,
-        status: progress.status,
-        type: progress.type,
-      })
-    : Effect.void;
+const reportProgress = (progress: ProgressEvent): Effect.Effect<void> => {
+  if (progress._tag === "apply.resource.status") {
+    return write({
+      event: "github.resource",
+      id: progress.id,
+      status: progress.status,
+      type: progress.type,
+    });
+  }
+  if (progress._tag === "apply.resource.note") {
+    return write({ event: "github.note", id: progress.id, message: progress.message });
+  }
+  return Effect.void;
+};
 
 const planRuleset = Effect.fn("planRuleset")(function* planRuleset(
   deployment: Readonly<{ envFile: string; stage: string }>,
