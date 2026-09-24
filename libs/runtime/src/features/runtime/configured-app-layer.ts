@@ -44,7 +44,7 @@ const configuredAppLayer = (
     mail: asked.appConfig,
   }).pipe(Layer.provideMerge(database));
   const otlp =
-    asked.appConfig.OTLP_ENDPOINT === undefined || asked.appConfig.OTLP_ENABLED === "false"
+    asked.appConfig.OTLP_ENDPOINT === undefined
       ? undefined
       : {
           authorization: asked.appConfig.OTLP_AUTHORIZATION,

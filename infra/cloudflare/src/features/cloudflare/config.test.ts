@@ -142,7 +142,6 @@ it.effect("the destination and the Worker derive their signal URLs from one base
       assert.deepStrictEqual(
         traceDestination({ ...settings, otlp: { ...settings.otlp, endpoint: base } }),
         {
-          enabled: true,
           name: `${settings.prefix}-traces`,
           url: "https://otlp.example.com/v1/traces",
         },
@@ -150,19 +149,6 @@ it.effect("the destination and the Worker derive their signal URLs from one base
       assert.strictEqual(otlpSignalUrl(base, "traces"), "https://otlp.example.com/v1/traces");
       assert.strictEqual(otlpSignalUrl(base, "logs"), "https://otlp.example.com/v1/logs");
     }
-  }),
-);
-
-it.effect("a disabled OTLP destination keeps the Worker declaration and the resource", () =>
-  Effect.sync(() => {
-    const disabled = { ...settings, otlp: { ...settings.otlp, enabled: false } };
-    assert.deepStrictEqual(traceDestination(disabled)?.enabled, false);
-    assert.deepStrictEqual(workerObservability(disabled).traces, {
-      destinations: [`${settings.prefix}-traces`],
-      enabled: true,
-      headSamplingRate: observabilitySampling,
-      persist: true,
-    });
   }),
 );
 

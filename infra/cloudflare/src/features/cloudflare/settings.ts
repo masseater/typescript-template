@@ -11,7 +11,6 @@ import {
   Positive,
   Prefix,
   Recipients,
-  checkOtlpSettings,
   checkSharedConfig,
   deriveOrigins,
 } from "./config.ts";
@@ -31,10 +30,9 @@ const budget = Config.all({
   ),
 });
 
-const otlpDestination = Config.all({
-  enabled: optional(Config.Boolean(deploymentKey.otlpEnabled)),
-  endpoint: optional(Config.schema(HttpsUrl, deploymentKey.otlpEndpoint)),
-});
+const otlpDestination = optional(Config.schema(HttpsUrl, deploymentKey.otlpEndpoint)).pipe(
+  Config.map((endpoint) => (endpoint === undefined ? undefined : { endpoint })),
+);
 
 const googleAnalyticsMeasurementId = optional(
   Config.schema(GoogleAnalyticsMeasurementId, deploymentKey.googleAnalyticsMeasurementId),
@@ -51,11 +49,7 @@ const settings = Config.all({
   zoneId: Config.schema(CloudflareId, deploymentKey.cloudflareZoneId),
 }).pipe(
   Effect.flatMap(({ appDomain, ...config }) =>
-    checkOtlpSettings(config.otlp).pipe(
-      Effect.flatMap((otlp) =>
-        checkSharedConfig({ ...config, origins: deriveOrigins(config.prefix, appDomain), otlp }),
-      ),
-    ),
+    checkSharedConfig({ ...config, origins: deriveOrigins(config.prefix, appDomain) }),
   ),
 );
 

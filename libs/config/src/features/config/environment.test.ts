@@ -122,19 +122,18 @@ describe("readEnvironment", () => {
       "Mailpit is restricted to local development",
     ],
     [
-      "Mailpit and an OTLP switch that are both invalid",
-      { APP_ORIGIN: "https://app.example.test", APP_RELEASE: "1.2.3", OTLP_ENABLED: "true" },
+      "Mailpit and an OTLP endpoint that are both invalid",
+      {
+        APP_ORIGIN: "https://app.example.test",
+        APP_RELEASE: "1.2.3",
+        OTLP_ENDPOINT: "http://collector.example.test",
+      },
       "Mailpit is restricted to local development",
     ],
     [
-      "an OTLP switch turned on without an endpoint",
-      { OTLP_ENABLED: "true" },
-      "OTLP_ENABLED needs OTLP_ENDPOINT",
-    ],
-    [
-      "an OTLP switch turned off without an endpoint",
-      { OTLP_ENABLED: "false" },
-      "OTLP_ENABLED needs OTLP_ENDPOINT",
+      "an OTLP endpoint over plain HTTP outside localhost",
+      { OTLP_ENDPOINT: "http://collector.example.test" },
+      "HTTPS is required outside localhost",
     ],
     [
       "a release carrying an email address",
@@ -171,12 +170,11 @@ describe("readEnvironment", () => {
   });
 });
 
-describe("an OTLP switch beside an endpoint", () => {
+describe("an OTLP endpoint", () => {
   const it = test.extend("otlpEnvironment", () =>
     Effect.runPromise(
       readEnvironment({
         ...localBindings,
-        OTLP_ENABLED: "true",
         OTLP_ENDPOINT: localBindings.MAILPIT_URL,
       }).pipe(
         Effect.map((environment) => ({
@@ -191,7 +189,6 @@ describe("an OTLP switch beside an endpoint", () => {
       ...localBindings,
       APP_RELEASE: "local",
       MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
-      OTLP_ENABLED: "true",
       OTLP_ENDPOINT: localBindings.MAILPIT_URL,
       local: true,
     });

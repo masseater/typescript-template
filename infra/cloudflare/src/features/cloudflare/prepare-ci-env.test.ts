@@ -149,7 +149,7 @@ it.effect("refuses retired per-app origin secrets when TEMPLATE_APP_DOMAIN is ab
       TEMPLATE_SERVICE_ADMIN_ORIGIN: "https://template-verify-admin.example.com",
       TEMPLATE_SERVICE_MEMBER_ORIGIN: "https://template-verify-member.example.com",
     }).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "ci_env_retired_origins");
+    assert.strictEqual(failure.code, "ci_env_retired_keys");
     assert.deepStrictEqual(
       [...failure.keys],
       [
@@ -159,6 +159,22 @@ it.effect("refuses retired per-app origin secrets when TEMPLATE_APP_DOMAIN is ab
         "TEMPLATE_INTERNAL_DASHBOARD_ORIGIN",
       ],
     );
+  }).pipe(Effect.scoped),
+);
+
+it.effect("refuses the retired OTLP switch", () =>
+  Effect.gen(function* program() {
+    const directory = yield* temporaryDirectory();
+    const required = Object.fromEntries(
+      deploymentKeys.map((key) => [key, verificationEnvironment[key] ?? "value"] as const),
+    );
+    const failure = yield* writeCiSecretsFile({
+      ...required,
+      RUNNER_TEMP: path.join(directory, "runner"),
+      TEMPLATE_OTLP_ENABLED: "true",
+    }).pipe(Effect.flip);
+    assert.strictEqual(failure.code, "ci_env_retired_keys");
+    assert.deepStrictEqual([...failure.keys], ["TEMPLATE_OTLP_ENABLED"]);
   }).pipe(Effect.scoped),
 );
 
@@ -173,7 +189,7 @@ it.effect("refuses retired per-app origin secrets even when TEMPLATE_APP_DOMAIN 
       RUNNER_TEMP: path.join(directory, "runner"),
       TEMPLATE_SERVICE_MEMBER_ORIGIN: "https://template-verify-member.example.com",
     }).pipe(Effect.flip);
-    assert.strictEqual(failure.code, "ci_env_retired_origins");
+    assert.strictEqual(failure.code, "ci_env_retired_keys");
     assert.deepStrictEqual([...failure.keys], ["TEMPLATE_SERVICE_MEMBER_ORIGIN"]);
   }).pipe(Effect.scoped),
 );

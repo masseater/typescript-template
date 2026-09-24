@@ -150,44 +150,25 @@ it.effect("accepts a sender address on the subdomain named by the prefix", () =>
   }),
 );
 
-it.effect("refuses an OTLP switch that has no endpoint to switch", () =>
-  Effect.forEach(["true", "false"], (enabled) =>
-    Effect.gen(function* program() {
-      const failure = yield* Effect.provideService(
-        deploymentSettings,
-        ConfigProvider,
-        environment({ TEMPLATE_OTLP_ENABLED: enabled, TEMPLATE_OTLP_ENDPOINT: undefined }),
-      ).pipe(Effect.flip);
-      assert.deepStrictEqual(describeFailure(failure, []), {
-        code: "otlp_enabled_without_endpoint",
-        keys: ["TEMPLATE_OTLP_ENABLED", "TEMPLATE_OTLP_ENDPOINT"],
-      });
-    }),
-  ),
-);
-
-it.effect("leaves OTLP unconfigured when neither the endpoint nor the switch is given", () =>
+it.effect("leaves OTLP unconfigured without an endpoint", () =>
   Effect.gen(function* program() {
     const config = yield* Effect.provideService(
       deploymentSettings,
       ConfigProvider,
-      environment({ TEMPLATE_OTLP_ENABLED: undefined, TEMPLATE_OTLP_ENDPOINT: undefined }),
+      environment({ TEMPLATE_OTLP_ENDPOINT: undefined }),
     );
     assert.isUndefined(config.otlp);
   }),
 );
 
-it.effect("an endpoint without the switch is refused", () =>
+it.effect("sends traces wherever the endpoint points once it is given", () =>
   Effect.gen(function* program() {
-    const failure = yield* Effect.provideService(
+    const config = yield* Effect.provideService(
       deploymentSettings,
       ConfigProvider,
-      environment({ TEMPLATE_OTLP_ENABLED: undefined }),
-    ).pipe(Effect.flip);
-    assert.deepStrictEqual(describeFailure(failure, []), {
-      code: "otlp_endpoint_without_enabled",
-      keys: ["TEMPLATE_OTLP_ENABLED", "TEMPLATE_OTLP_ENDPOINT"],
-    });
+      environment({}),
+    );
+    assert.deepStrictEqual(config.otlp, { endpoint: settings.otlp.endpoint });
   }),
 );
 

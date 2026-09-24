@@ -50,7 +50,6 @@ const appEnvKey = {
   mailpitUrl: "MAILPIT_URL",
   opsEmail: "OPS_EMAIL",
   otlpAuthorization: "OTLP_AUTHORIZATION",
-  otlpEnabled: "OTLP_ENABLED",
   otlpEndpoint: "OTLP_ENDPOINT",
 } as const;
 
@@ -66,7 +65,6 @@ const Scalars = Schema.Struct({
   [appEnvKey.mailpitUrl]: Schema.optionalKey(Origin),
   [appEnvKey.opsEmail]: Email,
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmptySecret),
-  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
 });
 
@@ -168,15 +166,9 @@ const requireSecureOrigin = (origin: string): Effect.Effect<void, ConfigurationI
 };
 
 const enforceOtlpOrigin = (
-  scalars: EnvironmentScalars,
-): Effect.Effect<void, ConfigurationInvalid> => {
-  if (scalars.OTLP_ENDPOINT === undefined) {
-    return scalars.OTLP_ENABLED === undefined
-      ? Effect.void
-      : Effect.fail(invalid("OTLP_ENABLED needs OTLP_ENDPOINT"));
-  }
-  return requireSecureOrigin(scalars.OTLP_ENDPOINT);
-};
+  endpoint: string | undefined,
+): Effect.Effect<void, ConfigurationInvalid> =>
+  endpoint === undefined ? Effect.void : requireSecureOrigin(endpoint);
 
 const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(input: unknown) {
   const scalars = yield* decode(Scalars, input);
@@ -184,7 +176,7 @@ const readEnvironment = Effect.fn("readEnvironment")(function* readEnvironment(i
   const local = isLocalDevelopmentOrigin(scalars.APP_ORIGIN);
   yield* refuseMissingRelease(scalars, local);
   yield* refuseInvalidMailpit(scalars, local);
-  yield* enforceOtlpOrigin(scalars);
+  yield* enforceOtlpOrigin(scalars.OTLP_ENDPOINT);
   return {
     ...scalars,
     APP_RELEASE: scalars.APP_RELEASE ?? "local",
@@ -209,7 +201,6 @@ type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 const SiteEnvironment = Schema.Struct({
   [appEnvKey.appRelease]: Release,
   [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmptySecret),
-  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
   [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
   AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
   ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
@@ -219,13 +210,7 @@ const readSiteEnvironment = Effect.fn("readSiteEnvironment")(function* readSiteE
   input: unknown,
 ) {
   const environment = yield* decode(SiteEnvironment, input);
-  if (environment.OTLP_ENDPOINT === undefined) {
-    if (environment.OTLP_ENABLED !== undefined) {
-      return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
-    }
-  } else {
-    yield* requireSecureOrigin(environment.OTLP_ENDPOINT);
-  }
+  yield* enforceOtlpOrigin(environment.OTLP_ENDPOINT);
   return environment;
 });
 

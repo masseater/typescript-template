@@ -49,8 +49,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `TEMPLATE_PREFIX`: 先頭は英小文字、続きは英小文字・数字・ハイフン。全体で 3〜36 文字。
     - `STRIPE_API_KEY`: [Stripe](https://stripe.com/) の sandbox のシークレットキー（`sk_test_` か `rk_test_` で始まる）。本番環境の鍵（`sk_live_`）は適用前の設定検証で拒みます。有料プランの Product と Price、Webhook の送り先と署名シークレットは、この鍵で Alchemy が sandbox に作り、利用者アプリの Worker に渡します。staging と本番環境には別々の sandbox の鍵を置きます。
   - 空でも適用は始まります。値があるときだけデプロイへ渡ります。
-    - `TEMPLATE_OTLP_ENDPOINT`: https の URL。
-    - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。
+    - `TEMPLATE_OTLP_ENDPOINT`: https の URL。置いたときだけトレースとログをここへ送ります。
     - `TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID`: `G-` で始まる Google Analytics の測定 ID。
     - `TEMPLATE_OTLP_AUTHORIZATION`: トレース送信の認可。
     - `TEMPLATE_WIKI_PUBLISH_APP_ID`・`TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY`・`TEMPLATE_WIKI_PUBLISH_REPOSITORY`: wiki の下書きを「公開」したときに PR を作る [GitHub App](https://docs.github.com/ja/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の App ID、秘密鍵（PEM）、`owner/repository`。App には Contents と Pull requests の書き込み権限を付け、このリポジトリにインストールします。秘密鍵は GitHub が配る PKCS#1 のままでも、PKCS#8 に変えたものでも読めます。3 つとも置くか、どれも置かないかのどちらかです。本番のデプロイだけに渡すので、staging では公開ボタンは出ません。staging の編集が main を経て本番へ出ないようにするためです。

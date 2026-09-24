@@ -30,7 +30,6 @@ type SharedEnv = Readonly<{
   GOOGLE_ANALYTICS_MEASUREMENT_ID?: string;
   OPS_EMAIL: string;
   OTLP_AUTHORIZATION?: Redacted.Redacted;
-  OTLP_ENABLED?: string;
   OTLP_ENDPOINT?: string;
 }>;
 
