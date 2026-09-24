@@ -25,6 +25,7 @@ description: このリポジトリのコードレビュー指針。作業を完�
 18. `./references/no-silent-fallback.md`
 19. `./references/agents-md.md`
 20. `./references/verification-bypass.md`
+21. `./references/shared-code-and-abstractions.md`
 
 以下は、その修正を行わないことを正当化する理由として認めない。かかる時間は度外視し、リポジトリ全体を俯瞰して、コード品質を向上させるための改善点を見つけることに全力を注ぐこと。
 
