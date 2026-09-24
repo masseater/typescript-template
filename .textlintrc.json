@@ -1,5 +1,16 @@
 {
   "rules": {
+    "@textlint-ja/preset-ai-writing": {
+      "ai-tech-writing-guideline": false,
+      "no-ai-hype-expressions": false
+    },
+    "ja-no-redundant-expression": {
+      "dictOptions": {
+        "dict6": {
+          "disabled": true
+        }
+      }
+    },
     "preset-ai-words-ja": {
       "no-ai-words": {
         "dictionaryPath": "./.textlint-ai-words.json"
