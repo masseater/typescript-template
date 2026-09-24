@@ -4,8 +4,6 @@ import {
   ConfirmDialog,
   Field,
   Page,
-  STATUS_VARIANT,
-  StatusMessage,
   localState,
   useAction,
   useOptionalString,
@@ -16,6 +14,7 @@ import { Plate, PlateContent, usePlateEditor } from "platejs/react";
 
 import { discardDraft, publishDraft, saveDraft } from "#pages/wiki-edit/api/wiki-draft.ts";
 import { wikiPageHref, writeWikiDocument } from "#shared/wiki-document/index.ts";
+import { DraftStatus } from "./draft-status.tsx";
 import { EditorToolbar } from "./editor-toolbar.tsx";
 import { wikiEditorComponents, wikiEditorPlugins } from "./wiki-editor-plugins.ts";
 
@@ -41,6 +40,8 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
   const title = Option.getOrElse(titleInput, () => document.title);
   const description = Option.getOrElse(descriptionInput, () => document.description);
   const version = source.draft?.version ?? 0;
+  const publishable = source.publishable && version > 0;
+  const busy = saving.blocked || publishing.blocked;
 
   const save = (): Promise<void> =>
     Effect.runPromise(writeWikiDocument({ description, title, value: editor.children }))
@@ -89,18 +90,18 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
             action={() => {
               saving.run(save);
             }}
-            disabled={saving.blocked || publishing.blocked}
+            disabled={busy}
             type="button"
-            variant={source.publishable && version > 0 ? "secondary" : "primary"}
+            variant={publishable ? "secondary" : "primary"}
           >
             下書きを保存
           </Button>
-          {source.publishable && version > 0 ? (
+          {publishable ? (
             <Button
               action={() => {
                 publishing.run(publish);
               }}
-              disabled={saving.blocked || publishing.blocked}
+              disabled={busy}
               type="button"
               variant="primary"
             >
@@ -109,7 +110,7 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
           ) : null}
           {version === 0 ? null : (
             <Button
-              disabled={discarding.blocked || saving.blocked || publishing.blocked}
+              disabled={discarding.blocked || busy}
               onClick={() => {
                 setConfirmingDiscard(true);
               }}
@@ -123,31 +124,11 @@ function WikiEditPage({ data }: Readonly<{ data: WikiEditorData }>): ReactElemen
             ページに戻る
           </ButtonAnchor>
         </div>
-        {version === 0 || source.draft?.publishedUrl != null ? null : (
-          <StatusMessage variant={STATUS_VARIANT.info}>
-            下書きとして保存されています。公開されたページはまだ変わっていません。
-          </StatusMessage>
-        )}
-        {source.draft?.publishedUrl == null ? null : (
-          <StatusMessage variant={STATUS_VARIANT.success}>
-            <span className="flex flex-wrap items-center gap-2">
-              公開の PR
-              を作りました。マージされてデプロイされるとページに反映され、この下書きは消えます。
-              <ButtonAnchor href={source.draft.publishedUrl} variant="secondary">
-                PR を開く
-              </ButtonAnchor>
-            </span>
-          </StatusMessage>
-        )}
-        {saving.error === undefined ? null : (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{saving.error}</StatusMessage>
-        )}
-        {publishing.error === undefined ? null : (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{publishing.error}</StatusMessage>
-        )}
-        {discarding.error === undefined ? null : (
-          <StatusMessage variant={STATUS_VARIANT.failure}>{discarding.error}</StatusMessage>
-        )}
+        <DraftStatus
+          failures={[saving.error, publishing.error, discarding.error]}
+          publishedUrl={source.draft?.publishedUrl ?? null}
+          version={version}
+        />
       </div>
       <ConfirmDialog
         confirmLabel="捨てる"
