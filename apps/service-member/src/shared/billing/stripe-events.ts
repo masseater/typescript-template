@@ -112,7 +112,7 @@ const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscriptio
 ) {
   const subscription = yield* readObject(Subscription, event.data.object);
   const memberId =
-    subscription.metadata?.["member_id"] ?? (yield* memberOfCustomer(subscription.customer));
+    (yield* memberOfCustomer(subscription.customer)) ?? subscription.metadata?.["member_id"];
   if (memberId === undefined) {
     return WEBHOOK_DISPOSITION.ignored;
   }

@@ -9,7 +9,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
 
 import { memberPageSize } from "#shared/contracts/index.ts";
-import { baselineProfileLayout } from "#shared/profile-layout/default.ts";
 import { ResultList } from "./result-list.tsx";
 
 import type { MemberView } from "#shared/contracts/index.ts";
@@ -23,7 +22,7 @@ function member(index: number): Member {
     name: `利用者 ${String(index)}`,
     photos: { company: null, face: null },
     profile: "本屋めぐりをしています。",
-    profileLayout: baselineProfileLayout,
+    profileLayout: { blocks: [] },
     sheet: {},
     socialLinks: [],
   };

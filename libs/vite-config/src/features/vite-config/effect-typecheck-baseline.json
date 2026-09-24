@@ -7,42 +7,6 @@
         "code": "TS377112",
         "message": "This input is already assignable to the schema's Encoded type. Use `decodeEffect` to preserve compile-time type checking instead of discarding the input type through `decodeUnknownEffect`. effect(preferTypedSchemaDecoder)",
         "count": 2
-      },
-      {
-        "file": "src/features/config/responds.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `crypto` module, the corresponding Effect API is `Crypto` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/config/responds.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 2
-      },
-      {
-        "file": "src/features/config/responds.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `http` module, the corresponding Effect API is `HttpClient` from `effect/unstable/http`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/config/responds.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/config/responds.test.ts",
-        "code": "TS377080",
-        "message": "This code constructs `new Promise(...)`, prefer Effect APIs such as `Effect.async`, `Effect.promise`, or `Effect.tryPromise` instead of manual Promise construction. effect(newPromise)",
-        "count": 3
-      },
-      {
-        "file": "src/features/config/responds.test.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 3
       }
     ],
     "libs/db": [
@@ -77,36 +41,6 @@
         "count": 4
       },
       {
-        "file": "src/features/db/local.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/db/local.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/db/local.ts",
-        "code": "TS377081",
-        "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 1
-      },
-      {
-        "file": "src/features/db/remote-operations.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/db/remote-operations.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
         "file": "src/features/db/remote-operations.test.ts",
         "code": "TS377066",
         "message": "This code uses `Date.now()`, time access is represented through `Clock` from Effect. effect(globalDate)",
@@ -122,7 +56,7 @@
         "file": "src/features/db/remote-operations.test.ts",
         "code": "TS377081",
         "message": "This code declares an async function, consider representing this async control flow with Effect values and `Effect.gen`. effect(asyncFunction)",
-        "count": 20
+        "count": 13
       },
       {
         "file": "src/features/db/remote-operations.ts",
@@ -182,60 +116,6 @@
         "file": "src/features/vite-config/effect-typecheck-baseline.ts",
         "code": "TS377130",
         "message": "`Schema.decodeSync` executes synchronously. Use `Schema.decodeEffect` to compose this operation through Effect without throwing. effect(schemaSync)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-compiler.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-compiler.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-compiler.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-path.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-path.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
         "count": 1
       }
     ],

@@ -1,7 +1,5 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import path from "node:path";
-
 import { repositoryRoot } from "@repo/config/repository-root";
+import { Effect, type PlatformError } from "effect";
 
 import {
   parseBaseline,
@@ -19,10 +17,11 @@ import {
   snapshotOf,
   type Diagnostic,
 } from "./effect-typecheck-diagnostics.ts";
-import { workspaceOf } from "./effect-typecheck-path.ts";
+import { checkoutRoots, workspaceOf, type OutsideRepository } from "./effect-typecheck-path.ts";
+import { filesystem, paths } from "./host.ts";
 
 const snapshotArgument = "--write";
-const baselinePath = path.join(import.meta.dirname, "effect-typecheck-baseline.json");
+const baselinePath = paths.join(import.meta.dirname, "effect-typecheck-baseline.json");
 
 const unknownArguments = (gateArguments: readonly string[]): readonly string[] =>
   gateArguments.filter((argument) => argument !== snapshotArgument);
@@ -40,20 +39,13 @@ const rejectedArguments = (gateArguments: readonly string[]): GateRun | undefine
   return { exitStatus: 1, transcript: `Unknown option ${rejected.join(", ")}.\n` };
 };
 
-type GateIo = {
-  readonly cwd: string;
-  readonly repositoryRoot: string;
-  readonly gateArguments: readonly string[];
-  readonly baselinePath: string;
-  readonly compile: () => CompilerResult;
-  readonly readText: (file: string) => string;
-  readonly writeText: (file: string, baselineText: string) => void;
-};
+type GateFailure = PlatformError.PlatformError | OutsideRepository;
 
-const parsedDiagnostics = (asked: GateIo, compiled: CompilerResult): readonly Diagnostic[] =>
-  parseTscOutput(compiled.output).map((diagnostic) =>
-    portableDiagnostic(diagnostic, asked.repositoryRoot),
-  );
+const parsedDiagnostics = (
+  compiled: CompilerResult,
+  roots: readonly string[],
+): readonly Diagnostic[] =>
+  parseTscOutput(compiled.output).map((diagnostic) => portableDiagnostic(diagnostic, roots));
 
 const missingCompilerDiagnostics = (
   gate: Readonly<{
@@ -71,85 +63,97 @@ const missingCompilerDiagnostics = (
   return undefined;
 };
 
-const loadBaseline = (asked: GateIo): ReturnType<typeof portableBaseline> =>
-  portableBaseline(parseBaseline(asked.readText(asked.baselinePath)), asked.repositoryRoot);
+type GateIo = {
+  readonly cwd: string;
+  readonly repositoryRoot: string;
+  readonly gateArguments: readonly string[];
+  readonly baselinePath: string;
+  readonly compile: Effect.Effect<CompilerResult>;
+  readonly readText: (file: string) => Effect.Effect<string, PlatformError.PlatformError>;
+  readonly writeText: (
+    file: string,
+    baselineText: string,
+  ) => Effect.Effect<void, PlatformError.PlatformError>;
+};
 
-const snapshotBaseline = (
-  gate: Readonly<{
-    asked: GateIo;
-    workspace: string;
-    diagnostics: readonly Diagnostic[];
-    compilerTranscript: string;
-  }>,
-): GateRun => {
+type CheckedGate = Readonly<{
+  asked: GateIo;
+  roots: readonly string[];
+  diagnostics: readonly Diagnostic[];
+  compilerTranscript: string;
+}>;
+
+const loadBaseline = (
+  gate: CheckedGate,
+): Effect.Effect<ReturnType<typeof portableBaseline>, PlatformError.PlatformError> =>
+  Effect.map(gate.asked.readText(gate.asked.baselinePath), (baselineText) =>
+    portableBaseline(parseBaseline(baselineText), gate.roots),
+  );
+
+const snapshotBaseline = Effect.fn("snapshotBaseline")(function* snapshotBaseline(
+  gate: CheckedGate,
+  workspace: string,
+) {
   const alwaysFail = alwaysFailing(gate.diagnostics);
   if (alwaysFail.length > 0) {
-    return {
+    const refused: GateRun = {
       exitStatus: 1,
       transcript: `${gate.compilerTranscript}${formatReport({ ok: false, alwaysFail, unexpected: [], leftover: [] })}`,
     };
+    return refused;
   }
-  const baseline = loadBaseline(gate.asked);
-  gate.asked.writeText(
+  const baseline = yield* loadBaseline(gate);
+  yield* gate.asked.writeText(
     gate.asked.baselinePath,
     serializeBaseline({
       version: 1,
-      workspaces: { ...baseline.workspaces, [gate.workspace]: snapshotOf(gate.diagnostics) },
+      workspaces: { ...baseline.workspaces, [workspace]: snapshotOf(gate.diagnostics) },
     }),
   );
-  return { exitStatus: 0, transcript: gate.compilerTranscript };
-};
+  const written: GateRun = { exitStatus: 0, transcript: gate.compilerTranscript };
+  return written;
+});
 
-const compareBaseline = (
-  gate: Readonly<{
-    asked: GateIo;
-    workspace: string;
-    diagnostics: readonly Diagnostic[];
-    compilerTranscript: string;
-  }>,
-): GateRun => {
+const compareBaseline = Effect.fn("compareBaseline")(function* compareBaseline(
+  gate: CheckedGate,
+  workspace: string,
+) {
   const verdict = evaluateTypecheck({
     diagnostics: gate.diagnostics,
-    snapshotted: rowsForWorkspace(loadBaseline(gate.asked), gate.workspace),
+    snapshotted: rowsForWorkspace(yield* loadBaseline(gate), workspace),
   });
-  if (!verdict.ok) {
-    return { exitStatus: 1, transcript: `${gate.compilerTranscript}${formatReport(verdict)}` };
-  }
-  return { exitStatus: 0, transcript: gate.compilerTranscript };
-};
+  const compared: GateRun = verdict.ok
+    ? { exitStatus: 0, transcript: gate.compilerTranscript }
+    : { exitStatus: 1, transcript: `${gate.compilerTranscript}${formatReport(verdict)}` };
+  return compared;
+});
 
-const workspaceVerdict = (
-  gate: Readonly<{
-    asked: GateIo;
-    diagnostics: readonly Diagnostic[];
-    compilerTranscript: string;
-  }>,
-): GateRun => {
-  const workspace = workspaceOf(gate.asked.cwd, gate.asked.repositoryRoot);
-  if (gate.asked.gateArguments.includes(snapshotArgument)) {
-    return snapshotBaseline({ ...gate, workspace });
-  }
-  return compareBaseline({ ...gate, workspace });
-};
+const workspaceVerdict = (gate: CheckedGate): Effect.Effect<GateRun, GateFailure> =>
+  Effect.flatMap(workspaceOf(gate.asked.cwd, gate.asked.repositoryRoot), (workspace) =>
+    gate.asked.gateArguments.includes(snapshotArgument)
+      ? snapshotBaseline(gate, workspace)
+      : compareBaseline(gate, workspace),
+  );
 
 const printedOutput = (compilerTranscript: string): string =>
   compilerTranscript.endsWith("\n") ? compilerTranscript : `${compilerTranscript}\n`;
 
-const verdictOf = (asked: GateIo): GateRun => {
-  const compiled = asked.compile();
+const verdictOf = Effect.fn("verdictOf")(function* verdictOf(asked: GateIo) {
+  const compiled = yield* asked.compile;
+  const roots = yield* checkoutRoots(asked.repositoryRoot);
   const compilerTranscript = printedOutput(compiled.output);
-  const diagnostics = parsedDiagnostics(asked, compiled);
+  const diagnostics = parsedDiagnostics(compiled, roots);
   const silent = missingCompilerDiagnostics({ compiled, diagnostics, compilerTranscript });
   if (silent !== undefined) {
     return silent;
   }
-  return workspaceVerdict({ asked, diagnostics, compilerTranscript });
-};
+  return yield* workspaceVerdict({ asked, roots, diagnostics, compilerTranscript });
+});
 
-const runEffectTypecheck = (asked: GateIo): GateRun => {
+const runEffectTypecheck = (asked: GateIo): Effect.Effect<GateRun, GateFailure> => {
   const rejected = rejectedArguments(asked.gateArguments);
   if (rejected !== undefined) {
-    return rejected;
+    return Effect.succeed(rejected);
   }
   return verdictOf(asked);
 };
@@ -161,11 +165,9 @@ const defaultGate = (
   repositoryRoot,
   gateArguments: asked.gateArguments,
   baselinePath,
-  compile: () => compileWorkspace({ cwd: asked.cwd }),
-  readText: (file) => readFileSync(file, "utf-8"),
-  writeText: (file, baselineText) => {
-    writeFileSync(file, baselineText);
-  },
+  compile: compileWorkspace({ cwd: asked.cwd }),
+  readText: (file) => filesystem.readFileString(file),
+  writeText: (file, baselineText) => filesystem.writeFileString(file, baselineText),
 });
 
 const runTypecheckGate = (
@@ -178,7 +180,7 @@ const runTypecheckGate = (
     compilerTranscript?: string;
     status?: number;
   }>,
-): GateRun => {
+): Effect.Effect<GateRun, GateFailure> => {
   const cwd = asked.cwd ?? "/repo";
   const gateArguments = asked.gateArguments ?? [];
   if (
@@ -193,13 +195,13 @@ const runTypecheckGate = (
       repositoryRoot: asked.repositoryRootPath ?? "/repo",
       gateArguments,
       baselinePath: asked.baselinePath ?? "baseline.json",
-      compile: () => ({
+      compile: Effect.sync(() => ({
         output: asked.compilerTranscript ?? "",
         status: asked.status ?? 0,
-      }),
+      })),
       readText: () =>
-        asked.baselineText ?? `${JSON.stringify({ version: 1, workspaces: {} }, null, 2)}\n`,
-      writeText: () => undefined,
+        Effect.sync(() => asked.baselineText ?? serializeBaseline({ version: 1, workspaces: {} })),
+      writeText: () => Effect.void,
     });
   }
   return runEffectTypecheck(defaultGate({ cwd, gateArguments }));

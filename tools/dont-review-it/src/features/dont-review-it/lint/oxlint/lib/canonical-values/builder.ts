@@ -4,6 +4,7 @@ import { measureStage } from "../../../../lint-rule-authoring/index.ts";
 import { path } from "../../../../platform/path.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { readAnnotatedSources, type AnnotatedSource } from "./annotated-sources.ts";
+import { underCatalogBuildLock } from "./catalog-build-lock.ts";
 import { cacheInputFingerprint, readCachedEntries, writeCachedEntries } from "./catalog-cache.ts";
 import { buildCatalog, type CanonicalValuesCatalog } from "./catalog.ts";
 import { publicPackageName } from "./export-specifier-index.ts";
@@ -193,7 +194,13 @@ const buildCatalogFor = (input: CanonicalValuesRepositoryInput): CanonicalValues
 
   const cached = readCachedEntries(repositoryRoot, fingerprint);
   if (cached !== null) return buildCatalog(cached, { packageNames, sourceScope });
-  return buildAndCacheCatalog({ fingerprint, repositoryFiles, repositoryRoot, sourceScope });
+  return underCatalogBuildLock(repositoryRoot, () => {
+    const builtWhileWaiting = readCachedEntries(repositoryRoot, fingerprint);
+    if (builtWhileWaiting !== null) {
+      return buildCatalog(builtWhileWaiting, { packageNames, sourceScope });
+    }
+    return buildAndCacheCatalog({ fingerprint, repositoryFiles, repositoryRoot, sourceScope });
+  });
 };
 
 const buildCanonicalValuesCatalog = ({

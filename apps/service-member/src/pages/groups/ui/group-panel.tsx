@@ -1,6 +1,7 @@
 import {
   Button,
   ButtonLink,
+  FailureStatus,
   Field,
   FormColumn,
   Heading,
@@ -9,7 +10,6 @@ import {
   TextLink,
 } from "@repo/ui";
 
-import { ActionFailure } from "#shared/ui/index.ts";
 import { GroupBody } from "./group-body.tsx";
 
 import type { GroupView } from "#shared/contracts/index.ts";
@@ -135,7 +135,7 @@ function RenameSection({
         <Button type="submit" variant="primary" disabled={rename.blocked}>
           保存する
         </Button>
-        <ActionFailure error={rename.error} />
+        <FailureStatus error={rename.error} />
       </FormColumn>
     </form>
   );
@@ -212,9 +212,9 @@ function GroupPanel({
           <RenameSection onNameChange={onNameChange} onRename={onRename} rename={rename} />
         )}
         <GroupMembers members={group.members} />
-        <ActionFailure error={join.error} />
-        <ActionFailure error={leave.error} />
-        <ActionFailure error={copyInvite.error} />
+        <FailureStatus error={join.error} />
+        <FailureStatus error={leave.error} />
+        <FailureStatus error={copyInvite.error} />
       </div>
     </GroupBody>
   );
