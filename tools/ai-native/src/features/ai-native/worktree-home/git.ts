@@ -4,13 +4,16 @@ import { runCaptured } from "../child-process.ts";
 
 export type GitRunner = (
   gitLaunch: Readonly<{ cwd: string; handed: readonly string[] }>,
-) => Effect.Effect<Readonly<{ status: number | null; stderr: string; stdout: string }>>;
+) => Effect.Effect<
+  Readonly<{ error?: Error; status: number | null; stderr: string; stdout: string }>
+>;
 
 export const runGit: GitRunner = (gitLaunch) =>
   runCaptured({ executable: "git", handed: gitLaunch.handed, cwd: gitLaunch.cwd });
 
 export class WorktreeHomeFailure extends Data.TaggedError("WorktreeHomeFailure")<{
   readonly message: string;
+  readonly cause?: Error;
 }> {}
 
 export const gitOutput = (
@@ -24,6 +27,7 @@ export const gitOutput = (
         : Effect.fail(
             new WorktreeHomeFailure({
               message: `worktree-home: git ${gitLaunch.handed.join(" ")} failed in ${gitLaunch.cwd}: ${gitExit.stderr.trim()}`,
+              ...(gitExit.error === undefined ? {} : { cause: gitExit.error }),
             }),
           ),
     ),

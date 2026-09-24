@@ -1,4 +1,4 @@
-import { Effect, Stream, type FileSystem, type Scope } from "effect";
+import { Effect, Result, Stream, type FileSystem, type PlatformError, type Scope } from "effect";
 import { ChildProcess } from "effect/unstable/process";
 
 import { childEndOf, type ChildEnd } from "../child-process.ts";
@@ -45,7 +45,7 @@ type ResolvedDeps = {
   now: () => Date;
   monotonicNow: () => number;
   uniqueSuffix: () => string;
-  spoolRoot: Effect.Effect<string>;
+  spoolRoot: Effect.Effect<string, Error>;
 };
 
 const resolveDeps = (deps: SpoolDeps): ResolvedDeps => ({
@@ -110,6 +110,19 @@ const recordPart =
           }),
         )
       : Effect.succeed(observed(recording, part));
+
+const recordArrival =
+  (file: FileSystem.File) =>
+  (
+    recording: Recording,
+    arrival: Result.Result<Uint8Array, PlatformError.PlatformError>,
+  ): Effect.Effect<Recording> =>
+    Result.isSuccess(arrival)
+      ? recordPart(file)(recording, arrival.success)
+      : Effect.succeed({
+          ...recording,
+          failure: recording.failure ?? nativeFailure(arrival.failure),
+        });
 
 const sizeSummaryOf = (recording: Recording): { bytes: number; lineCount: number } => ({
   bytes: recording.bytes,
@@ -198,15 +211,9 @@ const recordRun = (input: {
     const startedAt = input.deps.monotonicNow();
     const handle = yield* spawner.spawn(recordedCommand(input.command));
     const recording = yield* Stream.merge(
-      stripEscapes(handle.stdout),
-      stripEscapes(handle.stderr),
-    ).pipe(
-      Stream.runFoldEffect(() => freshRecording(headerFailure), recordPart(input.file)),
-      Effect.match({
-        onFailure: (streamFailure) => freshRecording(nativeFailure(streamFailure)),
-        onSuccess: (recorded) => recorded,
-      }),
-    );
+      Stream.result(stripEscapes(handle.stdout)),
+      Stream.result(stripEscapes(handle.stderr)),
+    ).pipe(Stream.runFoldEffect(() => freshRecording(headerFailure), recordArrival(input.file)));
     const end = yield* childEndOf(handle);
     return {
       kind: "completed" as const,
@@ -250,9 +257,13 @@ const recordedRunOf = (input: {
     ),
   );
 
-const runEscaped = (command: Command, deps: ResolvedDeps): Effect.Effect<number> =>
+const runEscapedUnder = (input: {
+  command: Command;
+  deps: ResolvedDeps;
+  rootDir: string;
+}): Effect.Effect<number> =>
   Effect.gen(function* runRecorded() {
-    const rootDir = yield* deps.spoolRoot;
+    const { command, deps, rootDir } = input;
     const filePath = joinPath(
       rootDir,
       recordNameOf({
@@ -276,6 +287,20 @@ const runEscaped = (command: Command, deps: ResolvedDeps): Effect.Effect<number>
         return 127;
     }
   });
+
+const runEscaped = (command: Command, deps: ResolvedDeps): Effect.Effect<number> =>
+  deps.spoolRoot.pipe(
+    Effect.matchEffect({
+      onFailure: (reason) =>
+        Effect.sync(() => {
+          deps.stderr.write(
+            recordFailureSummary(command.join(" "), { filePath: ".spool", reason }),
+          );
+          return 1;
+        }),
+      onSuccess: (rootDir) => runEscapedUnder({ command, deps, rootDir }),
+    }),
+  );
 
 const usageText = [
   "usage: spool -- <command> [args...]",

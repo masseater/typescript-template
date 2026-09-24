@@ -1,7 +1,7 @@
 import { Effect, Stream, type PlatformError } from "effect";
 import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
-import { nativeFailure, spawner } from "./host.ts";
+import { isSignalName, nativeFailure, spawner } from "./host.ts";
 
 type CapturedExit = {
   readonly error?: Error;
@@ -32,18 +32,29 @@ const printedText = (
 ): Effect.Effect<string, PlatformError.PlatformError> =>
   Stream.mkString(Stream.decodeText(printed));
 
-const SIGNAL_SPELLING = /'(SIG[A-Z0-9]+)'/u;
+const SIGNAL_SPELLING = /'(SIG[A-Z0-9]+)'$/u;
 
-const signalOf = (failure: PlatformError.PlatformError): NodeJS.Signals | null =>
-  (SIGNAL_SPELLING.exec(nativeFailure(failure).message)?.[1] as NodeJS.Signals | undefined) ?? null;
+type ChildEnd =
+  | { readonly code: number; readonly signal: null }
+  | { readonly code: null; readonly signal: NodeJS.Signals };
 
-type ChildEnd = { readonly code: number | null; readonly signal: NodeJS.Signals | null };
+const signalEndOf = (failure: PlatformError.PlatformError): Effect.Effect<ChildEnd> => {
+  const spelled =
+    failure.reason.method === "exitCode" && failure.reason.cause instanceof Error
+      ? SIGNAL_SPELLING.exec(failure.reason.cause.message)?.[1]
+      : undefined;
+  return spelled !== undefined && isSignalName(spelled)
+    ? Effect.succeed({ code: null, signal: spelled })
+    : Effect.die(
+        new Error("the child ended in a way no exit code or signal names", { cause: failure }),
+      );
+};
 
 const childEndOf = (handle: ChildProcessSpawner.ChildProcessHandle): Effect.Effect<ChildEnd> =>
   handle.exitCode.pipe(
-    Effect.match({
-      onFailure: (failure): ChildEnd => ({ code: null, signal: signalOf(failure) }),
-      onSuccess: (code): ChildEnd => ({ code: Number(code), signal: null }),
+    Effect.matchEffect({
+      onFailure: signalEndOf,
+      onSuccess: (code) => Effect.succeed<ChildEnd>({ code: Number(code), signal: null }),
     }),
   );
 
