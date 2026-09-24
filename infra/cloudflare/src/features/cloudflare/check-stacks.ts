@@ -17,6 +17,7 @@ import {
   wikiPagesBinding,
   wikiWorker,
 } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { workerCompatibility } from "@repo/config/worker";
 import { coreEntrypoints } from "@repo/core-api/entrypoints";
@@ -31,7 +32,7 @@ import {
 import { deploymentKey } from "@repo/observability/deployment-keys";
 import { Cause, Console, Effect, Schema } from "effect";
 
-import { loadArtifacts, repositoryRoot } from "./artifacts.ts";
+import { loadArtifacts } from "./artifacts.ts";
 import { hstsSetting, observabilitySampling } from "./config.ts";
 import { assertCoreNotPublic } from "./core-guard.ts";
 import {

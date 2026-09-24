@@ -1,9 +1,8 @@
 import { ForbiddenNotice, useSessionUser } from "@repo/auth-ui";
 import { ADMIN_PERMISSION, grantsAdminLevel } from "@repo/config";
-import { Button, localState } from "@repo/ui";
+import { Button, Page, localState } from "@repo/ui";
 
 import { useAdminList } from "#pages/admins/model/admin-list.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { AdminsTable } from "./admins-table.tsx";
 import { InviteAdminForm } from "./invite-admin-form.tsx";
 
@@ -37,9 +36,9 @@ function AdminsBoard(): ReactElement {
 function AdminsPage(): ReactElement {
   const { permission } = useSessionUser();
   return (
-    <OpsPage title="管理者">
+    <Page title="管理者">
       {grantsAdminLevel(permission, ADMIN_PERMISSION.owner) ? <AdminsBoard /> : <ForbiddenNotice />}
-    </OpsPage>
+    </Page>
   );
 }
 

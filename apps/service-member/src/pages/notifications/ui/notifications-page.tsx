@@ -1,27 +1,25 @@
-import { Button, Heading, STATUS_VARIANT, StatusMessage, useAction } from "@repo/ui";
+import {
+  Button,
+  Heading,
+  STATUS_VARIANT,
+  StatusMessage,
+  useAction,
+  formatWarekiDateTime,
+} from "@repo/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import { DateTime } from "effect";
 
 import {
   markAllNotificationsRead,
   markNotificationRead,
 } from "#pages/notifications/api/notifications.ts";
 
-import type { NotificationList } from "#shared/contracts/index.ts";
+import type { NotificationEntry } from "#shared/contracts/index.ts";
 import type { ReactElement } from "react";
-
-type NotificationItem = (typeof NotificationList.Type)["items"][number];
-
-const updatedAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 function NotificationsPage({
   initialItems,
 }: Readonly<{
-  initialItems: readonly NotificationItem[];
+  initialItems: readonly NotificationEntry[];
 }>): ReactElement {
   const navigate = useNavigate();
   const router = useRouter();
@@ -32,7 +30,7 @@ function NotificationsPage({
       markAllNotificationsRead().then(() => router.invalidate().then(() => undefined)),
     );
   };
-  const openItem = (item: NotificationItem): void => {
+  const openItem = (item: NotificationEntry): void => {
     openAction.run(() => {
       const mark = item.read
         ? Promise.resolve()
@@ -73,7 +71,7 @@ function NotificationsPage({
               >
                 <p className="text-sm leading-normal">{item.label}</p>
                 <p className="text-xs leading-normal text-muted-foreground">
-                  {updatedAtLabel.format(DateTime.toDate(DateTime.makeUnsafe(item.createdAt)))}
+                  {formatWarekiDateTime(item.createdAt)}
                 </p>
               </button>
             </li>

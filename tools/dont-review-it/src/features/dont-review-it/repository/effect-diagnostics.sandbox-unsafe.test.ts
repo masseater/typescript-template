@@ -92,7 +92,7 @@ const namedTask = (config: unknown, name: string): unknown => {
 
 const diagnosticsTask = (config: unknown): unknown => namedTask(config, "check:effect");
 
-const baselinedCommand = awaitingEffectDiagnostics["check:effect"].command;
+const baselinedCommand = awaitingEffectDiagnostics(repositoryRoot)["check:effect"].command;
 
 const compilerCommand = (command: string): string =>
   command === baselinedCommand ? effectTsgoNoEmit("tsconfig.json") : command;
@@ -127,9 +127,9 @@ const diagnosed = Object.entries(configs)
 const projectWorkspaces = Object.keys(projects)
   .map((file) => workspace(file))
   .toSorted();
-const declarations = Object.values(configs)
-  .map((config) => diagnosticsTask(config))
-  .filter((task) => task !== undefined);
+const declarations = Object.entries(configs)
+  .map(([file, config]) => ({ directory: workspace(file), task: diagnosticsTask(config) }))
+  .filter((declaration) => declaration.task !== undefined);
 
 const effectCheckedProjects = [
   ...new Set(
@@ -159,19 +159,20 @@ describe("effect diagnostics coverage", () => {
   it("every workspace typechecks only through effect-tsgo", () => {
     expect.assertions(3);
     expect(
-      declarations.flatMap((task) =>
+      declarations.flatMap(({ task }) =>
         commandLines(task).filter((command) => !command.includes("effect-tsgo get-exe-path")),
       ),
     ).toStrictEqual([]);
-    expect(declarations.map((task) => field(task, "input"))).toStrictEqual(
-      declarations.map((task) =>
-        field(task, "command") === baselinedCommand
-          ? (awaitingEffectDiagnostics["check:effect"].input as unknown)
-          : (effectDiagnostics["check:effect"].input as unknown),
-      ),
+    expect(declarations.map(({ task }) => field(task, "input"))).toStrictEqual(
+      declarations.map(({ directory, task }) => {
+        const packageRoot = path.join(repositoryRoot, directory);
+        return field(task, "command") === baselinedCommand
+          ? (awaitingEffectDiagnostics(packageRoot)["check:effect"].input as unknown)
+          : (effectDiagnostics(packageRoot)["check:effect"].input as unknown);
+      }),
     );
     expect(
-      declarations.flatMap((task) => {
+      declarations.flatMap(({ task }) => {
         const dependsOn = field(task, "dependsOn");
         if (dependsOn === undefined) {
           return [];
@@ -206,8 +207,12 @@ describe("effect diagnostics coverage", () => {
 
   it("typechecks with effect-tsgo before the bundle and before every push", () => {
     expect.assertions(3);
-    expect(effectDiagnostics["check:effect"].command).toBe(effectTsgoNoEmit("tsconfig.json"));
-    expect(appRun.tasks.build.dependsOn).toStrictEqual(expect.arrayContaining(["check:effect"]));
+    expect(effectDiagnostics(repositoryRoot)["check:effect"].command).toBe(
+      effectTsgoNoEmit("tsconfig.json"),
+    );
+    expect(
+      appRun(path.join(repositoryRoot, "apps", "service-member")).tasks.build.dependsOn,
+    ).toStrictEqual(expect.arrayContaining(["check:effect"]));
     expect(
       configuredDirectories.filter(
         (directory) => !reachable(directory, ["prepush"]).includes("check:effect"),

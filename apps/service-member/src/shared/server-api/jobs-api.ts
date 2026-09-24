@@ -1,6 +1,7 @@
 import { verifySession } from "@repo/auth";
 import { JobPayload, readJobs, httpStatus } from "@repo/config";
 import { sessionFailures } from "@repo/runtime/account";
+import { CreatedResource } from "@repo/runtime/contracts";
 import { createApi, readJsonBody } from "@repo/runtime/http";
 import { enqueueJob, jobStatus } from "@repo/runtime/jobs";
 import { env } from "cloudflare:workers";
@@ -11,9 +12,7 @@ import type { ApiRoutes } from "@repo/runtime/http";
 
 const JobCreate = Schema.Struct({});
 
-const JobAccepted = Schema.Struct({
-  id: Schema.String,
-});
+const JobAccepted = CreatedResource;
 
 const JobStatusView = Schema.Struct({
   id: Schema.String,

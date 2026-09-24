@@ -10,7 +10,7 @@ import { type Journey, type JourneyFailure } from "./journey-failure.ts";
 import { type JourneyRole, roleApplications } from "./journey-roles.ts";
 import { type IsolatedDatabase, startIsolatedDatabase } from "./local-database.ts";
 import { type MailSink, startMailSink } from "./mail.ts";
-import { freePort, loopbackOrigin } from "./ports.ts";
+import { browserOrigin, freePort } from "./ports.ts";
 
 type Collect = (disposer: Effect.Effect<void, JourneyFailure>) => void;
 
@@ -28,7 +28,7 @@ const configureOne = (pending: {
 }): Journey<ConfiguredApplication> =>
   Effect.gen(function* configureApplication() {
     const port = yield* freePort();
-    const origin = loopbackOrigin(port);
+    const origin = browserOrigin(port);
     pending.collect(
       yield* replaceDevVars(pending.application, {
         appOrigin: origin,

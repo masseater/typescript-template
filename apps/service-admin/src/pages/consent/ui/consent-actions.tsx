@@ -1,27 +1,12 @@
+import { encodeConsentBody, postConsent } from "@repo/auth-ui/consent";
 import { decodeJson } from "@repo/runtime/client";
+import { Redirect } from "@repo/runtime/contracts";
 import { Button, FormColumn } from "@repo/ui";
-import { Schema } from "effect";
 import { useState } from "react";
 
 import { serviceName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
-
-const Redirect = Schema.Struct({ url: Schema.String });
-const ConsentBody = Schema.Struct({
-  accept: Schema.Boolean,
-  oauth_query: Schema.String,
-});
-const encodeConsentBody = Schema.encodePromise(Schema.fromJsonString(ConsentBody));
-
-function postConsent(fetchImpl: typeof fetch, body: string): Promise<Response> {
-  return fetchImpl("/api/auth/oauth2/consent", {
-    body,
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-}
 
 function submitDecision(accept: boolean): Promise<void> {
   return encodeConsentBody({

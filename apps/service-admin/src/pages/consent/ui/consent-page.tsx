@@ -1,7 +1,7 @@
+import { OAuthClientView } from "@repo/auth-ui/consent";
 import { decodeJson } from "@repo/runtime/client";
 import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
-import { Schema } from "effect";
 import { useEffect, useState } from "react";
 
 import { serviceName } from "#shared/config/index.ts";
@@ -10,7 +10,6 @@ import { ConsentActions } from "./consent-actions.tsx";
 import type { ReactElement } from "react";
 
 const consentRoute = getRouteApi("/consent");
-const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 
 function getPublicClient(fetchImpl: typeof fetch, clientId: string): Promise<Response> {
   return fetchImpl(
@@ -30,7 +29,7 @@ function loadClientName(clientId: string): Promise<string | undefined> {
     }
     return response
       .json()
-      .then((payload) => decodeJson(ClientView, payload).client_name ?? clientId);
+      .then((payload) => decodeJson(OAuthClientView, payload).client_name ?? clientId);
   });
 }
 

@@ -1,6 +1,9 @@
 import { APPLICATION, applications, type Application } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { describe, expect, test } from "vite-plus/test";
 
+import { paths } from "./host.ts";
+import { localizedApps } from "./paraglide-options.ts";
 import {
   appConfig,
   appRun,
@@ -14,6 +17,7 @@ import {
   sliceBoundaries,
   taskInput,
   workspaceCheckImports,
+  workspaceParaglideCompile,
 } from "./vite.ts";
 
 import type { ConfigEnv, PluginOption } from "vite-plus";
@@ -58,15 +62,18 @@ describe("lifecycle", () => {
   });
 });
 
+const libraryRoot = paths.join(repositoryRoot, "libs/db-local");
+const applicationRoot = paths.join(repositoryRoot, "apps/service-admin");
+
 describe("effectRun", () => {
-  const it = test.extend("effectWorkspaceRun", () => effectRun);
+  const it = test.extend("effectWorkspaceRun", () => effectRun(libraryRoot));
 
   it("lints the workspace before commit and checks types, imports and budgets before push", ({
     effectWorkspaceRun,
   }) => {
     expect(effectWorkspaceRun).toStrictEqual({
       tasks: {
-        ...effectDiagnostics,
+        ...effectDiagnostics(libraryRoot),
         ...checkCode,
         ...workspaceCheckImports,
         ...modularBoundaries,
@@ -80,18 +87,19 @@ describe("effectRun", () => {
 });
 
 describe("appRun", () => {
-  const it = test.extend("applicationRun", () => appRun);
+  const it = test.extend("applicationRun", () => appRun(applicationRoot));
 
   it("type-checks, builds, and starts before the stages that ship an app", ({ applicationRun }) => {
     expect(applicationRun).toStrictEqual({
       tasks: {
-        ...awaitingEffectDiagnostics,
+        ...awaitingEffectDiagnostics(applicationRoot),
         ...checkCode,
         ...workspaceCheckImports,
         "check:client": {
           command: "quality-check-client",
           input: [
             ...taskInput,
+            "!node_modules",
             "!**/dist/**",
             "!**/node_modules/.cache/**",
             { base: "workspace", pattern: "!.local" },
@@ -111,6 +119,8 @@ describe("appRun", () => {
           dependsOn: ["@repo/dev#setup", "check:effect"],
           input: [
             ...taskInput,
+            "!.",
+            "!node_modules",
             "!.wrangler",
             "!.wrangler/**",
             "!dist",
@@ -140,16 +150,19 @@ describe("appRun", () => {
 });
 
 describe("paraglideAppRun", () => {
-  const it = test.extend("localizedApplicationRun", () => paraglideAppRun);
+  const it = test
+    .extend("localizedApplicationRun", () => paraglideAppRun(applicationRoot))
+    .extend("applicationRun", () => appRun(applicationRoot));
 
   it("compiles message catalogs before typecheck and the workspace checks", ({
+    applicationRun,
     localizedApplicationRun,
   }) => {
     expect(localizedApplicationRun).toStrictEqual({
       tasks: {
-        ...appRun.tasks,
+        ...applicationRun.tasks,
         "check:effect": {
-          ...awaitingEffectDiagnostics["check:effect"],
+          ...awaitingEffectDiagnostics(applicationRoot)["check:effect"],
           dependsOn: ["typescript-template#compile:paraglide"],
         },
         "check:code": {
@@ -161,14 +174,74 @@ describe("paraglideAppRun", () => {
           dependsOn: ["typescript-template#compile:paraglide"],
         },
         "check:client": {
-          ...appRun.tasks["check:client"],
+          ...applicationRun.tasks["check:client"],
           dependsOn: ["typescript-template#compile:paraglide"],
         },
         "check:react": {
-          ...appRun.tasks["check:react"],
+          ...applicationRun.tasks["check:react"],
           dependsOn: ["typescript-template#compile:paraglide"],
         },
       },
+    });
+  });
+});
+
+describe("sliceBoundaries", () => {
+  const it = test.extend("sliceChecks", () => sliceBoundaries);
+
+  it("leaves local state and compiled message catalogs out of the slice checks", ({
+    sliceChecks,
+  }) => {
+    expect(sliceChecks).toStrictEqual({
+      check: {
+        command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
+        input: [
+          ...taskInput,
+          { base: "workspace", pattern: "!.local" },
+          { base: "workspace", pattern: "!.local/**" },
+          ...localizedApps.map((app) => ({
+            base: "workspace",
+            pattern: `!apps/${app}/.paraglide/**`,
+          })),
+        ],
+      },
+    });
+  });
+});
+
+describe("workspaceParaglideCompile", () => {
+  const it = test.extend("paraglideCompile", () => workspaceParaglideCompile);
+
+  it("reads each localized application's catalogs and settings, not the listings the build and compile write into", ({
+    paraglideCompile,
+  }) => {
+    expect(paraglideCompile).toStrictEqual({
+      command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+      input: [
+        ...taskInput,
+        ...localizedApps.flatMap((app) =>
+          [
+            `apps/${app}/messages/**`,
+            `apps/${app}/project.inlang/settings.json`,
+            `!apps/${app}`,
+            `!apps/${app}/project.inlang`,
+            `!apps/${app}/.paraglide/**`,
+            ...inlangState.map((pattern) => pattern.replace("!", `!apps/${app}/`)),
+          ].map((pattern) => ({ base: "workspace", pattern })),
+        ),
+        {
+          base: "workspace",
+          pattern: "libs/vite-config/src/features/vite-config/paraglide-options.ts",
+        },
+        {
+          base: "workspace",
+          pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+        },
+      ],
+      output: localizedApps.map((app) => ({
+        base: "workspace",
+        pattern: `apps/${app}/.paraglide/**`,
+      })),
     });
   });
 });

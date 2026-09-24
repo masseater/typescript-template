@@ -1,23 +1,11 @@
-import { REPORT_REASON, REPORT_STATUS } from "@repo/config";
-import { NavigationLink, STATUS_VARIANT, StatusMessage } from "@repo/ui";
+import { REPORT_STATUS } from "@repo/config";
+import { NavigationLink, Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 
-import { OpsPage } from "#widgets/ops-page/index.ts";
+import { reasonLabel, statusLabel } from "#pages/reports/model/report-labels.ts";
 
 import type { ReportSummary } from "#pages/reports/api/load-reports.ts";
 import type { ReportStatus } from "@repo/config";
 import type { ReactElement } from "react";
-
-const reasonLabel = {
-  [REPORT_REASON.harassment]: "迷惑行為",
-  [REPORT_REASON.other]: "その他",
-  [REPORT_REASON.spam]: "スパム",
-} as const;
-
-const statusLabel = {
-  [REPORT_STATUS.actioned]: "処置済み",
-  [REPORT_STATUS.dismissed]: "却下",
-  [REPORT_STATUS.open]: "未対応",
-} as const;
 
 const statusFilters = [
   REPORT_STATUS.open,
@@ -33,7 +21,7 @@ function ReportsPage({
   status: ReportStatus | undefined;
 }>): ReactElement {
   return (
-    <OpsPage title="通報">
+    <Page title="通報">
       <div className="flex flex-wrap gap-2">
         <NavigationLink search={{}} to="/reports">
           すべて
@@ -60,7 +48,7 @@ function ReportsPage({
           ))}
         </ul>
       )}
-    </OpsPage>
+    </Page>
   );
 }
 

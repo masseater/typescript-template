@@ -102,6 +102,8 @@ export {
   NotificationPreferences,
   NotificationUnread,
 } from "./notifications.ts";
+export type { NotificationEntry } from "./notifications.ts";
 export { FeedItem, HomeFeed, OnboardingAdvance, OnboardingStep, OnboardingView } from "./social.ts";
+export type { OnboardingTarget } from "./social.ts";
 export { InquiryCreate, InquiryList, InquiryReply, InquiryThread } from "./support.ts";
 export { maximumBodyLength, maximumSubjectLength } from "./support-limits.ts";

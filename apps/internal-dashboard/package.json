@@ -6,9 +6,8 @@
     "#*": "./src/*"
   },
   "dependencies": {
-    "@better-auth/oauth-provider": "1.7.5",
     "@effect/atom-react": "catalog:",
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/server": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",
@@ -25,12 +24,11 @@
     "@tanstack/react-start": "catalog:",
     "alchemy": "catalog:",
     "better-auth": "catalog:",
-    "better-call": "1.4.0",
     "effect": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "zod": "4.6.5"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",

@@ -1,8 +1,8 @@
+import { modeAllowsGroupOrOther } from "@repo/cli";
 import { Effect, FileSystem, Path, PlatformError, Result } from "effect";
 
 import { failure } from "./failure.ts";
 import { isAlreadyExists, urlPath, withFileSystem } from "./platform.ts";
-import { modeAllowsGroupOrOther } from "./unix-permission-bits.ts";
 
 type FileLocation = Readonly<URL>;
 

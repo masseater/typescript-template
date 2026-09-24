@@ -1,8 +1,8 @@
 import { Email, adminPermissions } from "@repo/config";
-import { Identifier } from "@repo/runtime/contracts";
+import { Identifier, InvitationIssued } from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
-import { AccountState } from "./users.ts";
+import { AccountState, MemberStateChange, MemberStateChanged } from "./users.ts";
 
 const AdminPermission = Schema.Literals(adminPermissions);
 
@@ -19,7 +19,7 @@ const AdminList = Schema.Array(AdminSummary);
 
 const AdminInvitation = Schema.Struct({ email: Email, permission: AdminPermission });
 
-const AdminInvited = Schema.Struct({ email: Schema.String, expiresAt: Schema.DateFromString });
+const AdminInvited = InvitationIssued;
 
 const AdminPermissionChange = Schema.Struct({ id: Identifier, permission: AdminPermission });
 
@@ -28,9 +28,9 @@ const AdminPermissionChanged = Schema.Struct({
   permission: Schema.optional(AdminPermission),
 });
 
-const AdminStateChange = Schema.Struct({ accountState: AccountState, id: Identifier });
+const AdminStateChange = MemberStateChange;
 
-const AdminStateChanged = Schema.Struct({ accountState: AccountState, id: Schema.String });
+const AdminStateChanged = MemberStateChanged;
 
 export {
   AdminInvitation,

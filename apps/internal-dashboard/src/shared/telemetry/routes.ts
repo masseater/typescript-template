@@ -21,6 +21,8 @@ export const routes = {
   "/invite/*": "invite-page",
   "/login": "login",
   "/mcp": "mcp",
+  "/recordings": "recordings",
+  "/recordings/*": "recording",
   "/security": "security",
   "/staff": "staff-page",
   "/wiki": "wiki",

@@ -3,23 +3,18 @@ import {
   Field,
   FormColumn,
   Heading,
+  Page,
   STATUS_VARIANT,
   StatusMessage,
   resultError,
+  formatWarekiDateTime,
 } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useAuditList } from "#pages/audit/model/audit-list.ts";
 import { DataTable } from "#shared/ui/data-table.tsx";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReactElement } from "react";
-
-const createdAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 function AuditPage(): ReactElement {
   const {
@@ -36,7 +31,7 @@ function AuditPage(): ReactElement {
   const page = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
   return (
-    <OpsPage title="監査ログ">
+    <Page title="監査ログ">
       <form onSubmit={handleSubmit}>
         <FormColumn>
           <Field
@@ -73,7 +68,7 @@ function AuditPage(): ReactElement {
             label="監査ログ一覧"
             rows={page.events.map((event) => (
               <tr key={event.id} className="border-b border-border">
-                <td className="p-2">{createdAtLabel.format(event.createdAt)}</td>
+                <td className="p-2">{formatWarekiDateTime(event.createdAt.getTime())}</td>
                 <td className="p-2">{event.action}</td>
                 <td className="p-2">{event.actorId}</td>
                 <td className="p-2">{event.targetId}</td>
@@ -82,7 +77,7 @@ function AuditPage(): ReactElement {
           />
         </section>
       )}
-    </OpsPage>
+    </Page>
   );
 }
 

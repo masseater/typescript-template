@@ -1,15 +1,15 @@
 import {
   Button,
   ButtonLink,
+  Page,
+  type RequestResult,
   STATUS_VARIANT,
   StatusMessage,
-  type RequestResult,
   resultError,
 } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { useAgreementVersions } from "#pages/terms/model/agreement-versions.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { AgreementDraftForm } from "./agreement-draft-form.tsx";
 import { AgreementVersionTable } from "./agreement-version-table.tsx";
 
@@ -45,7 +45,7 @@ function VersionResults({
 function TermsPage({ drafting }: Readonly<{ drafting: boolean }>): ReactElement {
   const { reload, state } = useAgreementVersions();
   return (
-    <OpsPage title="規約">
+    <Page title="規約">
       <div>
         {drafting ? (
           <ButtonLink search={{}} to="/terms">
@@ -59,7 +59,7 @@ function TermsPage({ drafting }: Readonly<{ drafting: boolean }>): ReactElement 
       </div>
       {drafting && <AgreementDraftForm />}
       <VersionResults onReload={reload} state={state} />
-    </OpsPage>
+    </Page>
   );
 }
 

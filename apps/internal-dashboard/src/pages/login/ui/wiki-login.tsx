@@ -1,14 +1,13 @@
 import { browserHttp, LoginPage } from "@repo/auth-ui";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
-import { Effect, Schema } from "effect";
+import { Redirect } from "@repo/runtime/contracts";
+import { Effect } from "effect";
 import { HttpBody, HttpClient } from "effect/unstable/http";
 
 import { serviceName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
-
-const Redirect = Schema.Struct({ url: Schema.String });
 
 function requestContinuation(oauthQuery: string) {
   return Effect.gen(function* continueOAuth() {

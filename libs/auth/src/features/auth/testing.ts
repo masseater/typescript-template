@@ -29,6 +29,15 @@ export {
 export { BrowserClient, origins } from "./browser-client.ts";
 export { requestEmailChange } from "./email-change.ts";
 export { mailSubjects } from "./email.ts";
+export {
+  McpJson,
+  McpTokens,
+  callMcpTool,
+  decodeOAuthRedirect,
+  responseStatus,
+  sendMcp,
+} from "./mcp-client-fixture.ts";
+export type { FetchMcp } from "./mcp-client-fixture.ts";
 export { MockNetwork } from "./mock-network-fixture.ts";
 export { clearMailbox, hasMail, mailRecipients, receivedLink } from "./mail-fixture.ts";
 export { signedSessionCookie } from "./auth-test-fixture.ts";

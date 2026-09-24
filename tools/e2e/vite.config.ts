@@ -1,4 +1,7 @@
+import { fileURLToPath } from "node:url";
+
 import { MergifyReporter } from "@mergifyio/vitest";
+import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import {
   effectDiagnostics,
   lifecycle,
@@ -18,7 +21,7 @@ const applicationChecks = Object.values(roleApplications).flatMap((application) 
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...effectDiagnostics(import.meta.dirname),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,
@@ -35,6 +38,12 @@ export default defineConfig({
     },
   },
   test: {
+    experimental: {
+      openTelemetry: {
+        enabled: telemetryAsked,
+        sdkPath: fileURLToPath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
+      },
+    },
     coverage: {
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },

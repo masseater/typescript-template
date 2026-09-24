@@ -5,9 +5,9 @@ import { serviceName } from "#shared/config/index.ts";
 import { memberHasPaidPlan, memberNavItems, titleForPath } from "../model/navigation.ts";
 import { AccountMenu } from "./account-menu.tsx";
 
+import type { NavBadges } from "#shared/contracts/index.ts";
 import type { SessionView } from "@repo/auth-ui";
 import type { ReactElement, ReactNode, ReactPortal } from "react";
-import type { NavBadges } from "../model/navigation.ts";
 
 const collapsedMemberMark = "ユーザー";
 

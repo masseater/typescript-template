@@ -6,6 +6,7 @@ import {
   StatusMessage,
   TextLink,
   resultError,
+  formatWarekiDateTime,
 } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
@@ -16,12 +17,6 @@ import { InquiryMemberSummary } from "./inquiry-member-summary.tsx";
 import { InquiryReplyForm } from "./inquiry-reply-form.tsx";
 
 import type { ReactElement } from "react";
-
-const createdAtLabel = new Intl.DateTimeFormat("ja", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "UTC",
-});
 
 function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): ReactElement {
   const listing = useInquiryList();
@@ -92,7 +87,7 @@ function InquiryDetailPage({ inquiryId }: Readonly<{ inquiryId: string }>): Reac
               </p>
               <p className="text-base leading-normal whitespace-pre-wrap">{message.body}</p>
               <p className="text-xs leading-normal text-muted-foreground">
-                {createdAtLabel.format(message.createdAt)}
+                {formatWarekiDateTime(message.createdAt.getTime())}
               </p>
             </li>
           ))}

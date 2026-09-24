@@ -1,3 +1,6 @@
+import { fileURLToPath } from "node:url";
+
+import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import {
   effectDiagnostics,
   effectTsgoNoEmit,
@@ -13,7 +16,7 @@ export default defineConfig({
     tasks: {
       "check:effect": {
         command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
-        input: effectDiagnostics["check:effect"].input,
+        input: effectDiagnostics(import.meta.dirname)["check:effect"].input,
       },
       ...checkCode,
       ...workspaceCheckImports,
@@ -36,6 +39,12 @@ export default defineConfig({
     },
   },
   test: {
+    experimental: {
+      openTelemetry: {
+        enabled: telemetryAsked,
+        sdkPath: fileURLToPath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
+      },
+    },
     coverage: {
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },

@@ -1,4 +1,4 @@
-import { type InquiryStatus } from "@repo/config";
+import { INQUIRY_STATUS, type InquiryStatus } from "@repo/config";
 import { asc, count, desc, eq, gte, sql } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
@@ -26,30 +26,26 @@ type StaffInquirySummary = Readonly<{
 
 type StaffInquiryThread = StaffInquirySummary & Readonly<{ messages: readonly InquiryMessage[] }>;
 
-type InquiryStatusCount = Readonly<{
-  answered: number;
-  closed: number;
-  open: number;
-}>;
-
-type InquiryDailyTrend = Readonly<{
-  answered: number;
-  closed: number;
-  day: string;
-  open: number;
-}>;
+type InquiryStatusCount = Readonly<Record<InquiryStatus, number>>;
+type InquiryDailyTrend = InquiryStatusCount & Readonly<{ day: string }>;
 
 type InquiryStaffCounts = Readonly<{
   byStatus: InquiryStatusCount;
   trend: readonly InquiryDailyTrend[];
 }>;
 
+const noInquiries: InquiryStatusCount = {
+  [INQUIRY_STATUS.answered]: 0,
+  [INQUIRY_STATUS.closed]: 0,
+  [INQUIRY_STATUS.open]: 0,
+};
+
 const statusTally = (
   statusCounts: readonly Readonly<{ count: number; status: InquiryStatus }>[],
 ): InquiryStatusCount =>
   statusCounts.reduce<InquiryStatusCount>(
     (tally, statusCount) => ({ ...tally, [statusCount.status]: statusCount.count }),
-    { answered: 0, closed: 0, open: 0 },
+    noInquiries,
   );
 
 const dailyTrend = (
@@ -58,7 +54,7 @@ const dailyTrend = (
   [...Map.groupBy(dailyCounts, (dailyCount) => dailyCount.day)].map(([day, dayCounts]) =>
     dayCounts.reduce<InquiryDailyTrend>(
       (daily, dayCount) => ({ ...daily, [dayCount.status]: dayCount.count }),
-      { answered: 0, closed: 0, day, open: 0 },
+      { ...noInquiries, day },
     ),
   );
 

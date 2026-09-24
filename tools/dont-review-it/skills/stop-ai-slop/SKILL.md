@@ -21,7 +21,7 @@ Only facts that are decidable from the two revisions are in scope. The commit me
 
 ## requires
 
-- **A resolvable comparison.** The range comes from `MERGE_HEAD` while a merge is in progress, and otherwise from the merge base of `origin/main` and `HEAD`. A checkout holding only the merge of a pull request is read through the GitHub API when `GITHUB_REPOSITORY` and `GITHUB_TOKEN` are set. With none of these there is nothing to compare, so run it where the integration branch is fetched.
+- **A resolvable comparison.** The range comes from `MERGE_HEAD` while a merge is in progress, and otherwise from the merge base of `origin/main` and `HEAD`. A checkout holding the merge of a pull request together with its parents compares the merge against its first parent, so a depth-one pull request checkout only needs `git fetch --depth=2 origin <merge>`. Without the parents it falls back to the GitHub API when `GITHUB_REPOSITORY` and `GITHUB_TOKEN` are set, and refuses an answer that lists no files, reaches the 300-file limit of the compare endpoint, or leaves out the diff of a changed text file. With none of these there is nothing to compare, so run it where the integration branch or the merge parents are fetched.
 - **Git readable from the process.** A failure to read the parser, git, a revision, or a source is reported as a usage error and stops the run; an unreadable change is never counted as a clean one.
 
 ## Setup
@@ -149,6 +149,7 @@ dont-review-it check-repository   the only entry; runs every registered check in
 
 default range, merge in progress    merge-base(HEAD, MERGE_HEAD) .. the staged tree
 default range, otherwise            merge-base(origin/main, HEAD) .. HEAD
+pull request merge with parents     first parent .. HEAD
 exit                                non-zero as soon as one problem is reported
 ```
 

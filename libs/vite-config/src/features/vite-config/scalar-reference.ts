@@ -65,4 +65,4 @@ const scalarReference = (): Plugin => ({
   name: "template-scalar-reference",
 });
 
-export { readScalarReference, scalarReference };
+export { scalarReference };

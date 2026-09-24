@@ -13,16 +13,13 @@ import {
 } from "@repo/ui";
 import { Option } from "effect";
 
-import { adminPermissionOptions } from "#pages/admins/model/admin-labels.ts";
+import { adminPermissionOptions, isAdminPermission } from "#pages/admins/model/admin-labels.ts";
 import { adminClient } from "#shared/api/index.ts";
-import { AdminInvited, AdminPermission } from "#shared/contracts/index.ts";
+import { AdminInvited } from "#shared/contracts/index.ts";
 
 import type { ReactElement, SyntheticEvent } from "react";
 
 const usePermission = localState<string>(ADMIN_PERMISSION.viewer);
-
-const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
-  AdminPermission.literals.some((permission) => permission === value);
 
 function InviteAdminForm({ onInvited }: Readonly<{ onInvited: () => void }>): ReactElement {
   const action = useAction();

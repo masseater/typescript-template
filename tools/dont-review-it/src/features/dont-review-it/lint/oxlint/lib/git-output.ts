@@ -9,6 +9,7 @@ import { isEnvironmentFailure } from "./path-failure.ts";
 export type GitEnvironment = {
   readonly cwd: string;
   readonly env: NodeJS.ProcessEnv;
+  readonly input?: string;
 };
 
 const answeredWithoutValue = (failure: unknown): boolean =>
@@ -29,7 +30,8 @@ export const gitOutput = (
       cwd: environment.cwd,
       encoding: "utf8",
       env: repositoryAgnosticEnv,
-      stdio: ["ignore", "pipe", "ignore"],
+      input: environment.input,
+      stdio: [environment.input === undefined ? "ignore" : "pipe", "pipe", "ignore"],
     }),
   );
   if (unaskableGit === null) return gitStdout.trim();

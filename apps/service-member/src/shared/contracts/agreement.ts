@@ -30,9 +30,11 @@ const AgreementAcceptance = Schema.Struct({
   ).check(Schema.isLengthBetween(1, agreementKinds.length)),
 });
 
-const AgreementWithdrawal = Schema.Struct({ kind: AgreementKind });
+const AgreementKindQuery = Schema.Struct({ kind: AgreementKind });
 
-const PublishedAgreementQuery = Schema.Struct({ kind: AgreementKind });
+const AgreementWithdrawal = AgreementKindQuery;
+
+const PublishedAgreementQuery = AgreementKindQuery;
 
 const PublishedAgreementView = Schema.Struct({
   body: Schema.String,

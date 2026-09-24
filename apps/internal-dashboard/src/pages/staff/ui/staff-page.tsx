@@ -1,9 +1,8 @@
 import { ForbiddenNotice, useSessionUser } from "@repo/auth-ui";
 import { STAFF_PERMISSION, grantsStaffLevel } from "@repo/config";
-import { Button, localState } from "@repo/ui";
+import { Button, Page, localState } from "@repo/ui";
 
 import { useStaffList } from "#pages/staff/model/staff-list.ts";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 import { InviteStaffForm } from "./invite-staff-form.tsx";
 import { StaffTable } from "./staff-table.tsx";
 
@@ -37,9 +36,9 @@ function StaffBoard(): ReactElement {
 function StaffPage(): ReactElement {
   const { permission } = useSessionUser();
   return (
-    <OpsPage title="メンバー">
+    <Page title="メンバー">
       {grantsStaffLevel(permission, STAFF_PERMISSION.editor) ? <StaffBoard /> : <ForbiddenNotice />}
-    </OpsPage>
+    </Page>
   );
 }
 

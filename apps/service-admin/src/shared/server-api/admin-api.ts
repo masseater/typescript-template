@@ -1,4 +1,4 @@
-import { mailInvite, verifySession } from "@repo/auth";
+import { mailInvite, verifiedSessionId } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import {
   deleteUser,
@@ -40,13 +40,8 @@ const failures = {
   },
 };
 
-const sessionOf = Effect.fn("sessionOf")(function* sessionOf(request: Request) {
-  const { session } = yield* verifySession(request.headers);
-  return session.id;
-});
-
 const listMembers = Effect.fn("listMembers")(function* listMembers(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const page = yield* readSearchParams(UserListQuery, request);
   return yield* listUsers(sessionId, page);
 });
@@ -54,7 +49,7 @@ const listMembers = Effect.fn("listMembers")(function* listMembers(request: Requ
 const changeMemberState = Effect.fn("changeMemberState")(function* changeMemberState(
   request: Request,
 ) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const change = yield* readJsonBody(MemberStateChange, request);
   return yield* setMemberState({
     accountState: change.accountState,
@@ -64,7 +59,7 @@ const changeMemberState = Effect.fn("changeMemberState")(function* changeMemberS
 });
 
 const removeMember = Effect.fn("removeMember")(function* removeMember(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const deletion = yield* readJsonBody(UserDeletion, request);
   return yield* deleteUser({ sessionId, targetId: deletion.id });
 });
@@ -72,13 +67,13 @@ const removeMember = Effect.fn("removeMember")(function* removeMember(request: R
 const listAdministrators = Effect.fn("listAdministrators")(function* listAdministrators(
   request: Request,
 ) {
-  return yield* listAdmins(yield* sessionOf(request));
+  return yield* listAdmins(yield* verifiedSessionId(request));
 });
 
 const inviteAdministrator = Effect.fn("inviteAdministrator")(function* inviteAdministrator(
   request: Request,
 ) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const invitation = yield* readJsonBody(AdminInvitation, request);
   const issued = yield* inviteAdmin({ ...invitation, sessionId });
   yield* mailInvite(issued);
@@ -88,7 +83,7 @@ const inviteAdministrator = Effect.fn("inviteAdministrator")(function* inviteAdm
 const changeAdminPermission = Effect.fn("changeAdminPermission")(function* changeAdminPermission(
   request: Request,
 ) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const change = yield* readJsonBody(AdminPermissionChange, request);
   return yield* setAdminPermission({
     adminId: change.id,
@@ -100,7 +95,7 @@ const changeAdminPermission = Effect.fn("changeAdminPermission")(function* chang
 const changeAdminState = Effect.fn("changeAdminState")(function* changeAdminState(
   request: Request,
 ) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const change = yield* readJsonBody(AdminStateChange, request);
   return yield* setAdminState({
     accountState: change.accountState,

@@ -3,9 +3,9 @@ import { apiData } from "@repo/runtime/client";
 import { userClient } from "#shared/api/index.ts";
 import { FollowMember, NotificationList } from "#shared/contracts/index.ts";
 
-type NotificationItem = (typeof NotificationList.Type)["items"][number];
+import type { NotificationEntry } from "#shared/contracts/index.ts";
 
-function loadNotifications(): Promise<readonly NotificationItem[]> {
+function loadNotifications(): Promise<readonly NotificationEntry[]> {
   return Promise.resolve(userClient()).then(({ api }) =>
     api.notifications.get().then((response) => apiData(NotificationList, response).items),
   );

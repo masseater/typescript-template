@@ -386,6 +386,33 @@ erDiagram
     text key UK
     integer last_request
   }
+  recording {
+    integer byte_size
+    integer completed_at "nullable"
+    text content_type
+    integer created_at
+    integer duration_ms "nullable"
+    text failure "nullable"
+    text id PK
+    text job_id UK
+    text object_key
+    text owner_id FK "nullable"
+    text status
+    text title
+  }
+  recording_segment {
+    integer end_ms
+    integer position PK
+    text recording_id PK, FK
+    integer speaker_label
+    integer start_ms
+    text text
+  }
+  recording_speaker {
+    integer label PK
+    text person_id FK "nullable"
+    text recording_id PK, FK
+  }
   session {
     text audience
     integer authenticated_at "nullable"
@@ -399,6 +426,12 @@ erDiagram
     integer updated_at
     text user_agent "nullable"
     text user_id FK
+  }
+  speaker_person {
+    text consent_recorded_by FK "nullable"
+    integer consented_at
+    text id PK
+    text name
   }
   stripe_event {
     text id PK
@@ -504,6 +537,11 @@ erDiagram
   user ||--o{ oauth_refresh_token : "user_id"
   user ||--o{ passkey : "user_id"
   user ||--o| plan_subscription : "member_id"
+  user |o--o{ recording : "owner_id"
+  recording ||--o{ recording_segment : "recording_id"
+  speaker_person |o--o{ recording_speaker : "person_id"
+  recording ||--o{ recording_speaker : "recording_id"
   user ||--o{ session : "user_id"
+  user |o--o{ speaker_person : "consent_recorded_by"
   user ||--o| two_factor : "user_id"
 ```

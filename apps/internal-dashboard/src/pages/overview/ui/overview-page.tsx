@@ -1,10 +1,9 @@
-import { Heading, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
+import { Heading, Page, STATUS_VARIANT, StatusMessage, resultError } from "@repo/ui";
 import { AsyncResult } from "effect/unstable/reactivity";
 
 import { metricLabel } from "#pages/overview/model/metric-label.ts";
 import { useOverview } from "#pages/overview/model/overview.ts";
 import { DataTable } from "#shared/ui/data-table.tsx";
-import { OpsPage } from "#widgets/ops-page/index.ts";
 
 import type { ReactElement } from "react";
 
@@ -14,7 +13,7 @@ function OverviewPage(): ReactElement {
   const overview = AsyncResult.isSuccess(listing) ? listing.value : undefined;
 
   return (
-    <OpsPage title="概要">
+    <Page title="概要">
       {overview === undefined && error === undefined && (
         <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
       )}
@@ -68,7 +67,7 @@ function OverviewPage(): ReactElement {
       >
         Google Analytics を開く
       </a>
-    </OpsPage>
+    </Page>
   );
 }
 

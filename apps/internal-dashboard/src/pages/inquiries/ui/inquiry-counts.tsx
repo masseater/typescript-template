@@ -1,3 +1,4 @@
+import { INQUIRY_STATUS } from "@repo/config";
 import { Heading } from "@repo/ui";
 
 import type { StaffInquiryCountsView } from "#shared/contracts/index.ts";
@@ -10,19 +11,19 @@ function InquiryCounts({ counts }: Readonly<{ counts: StaffInquiryCountsView }>)
         <article className="rounded-lg border border-border bg-card p-3">
           <p className="text-sm leading-tight text-muted-foreground">受付</p>
           <Heading as="h2" size="section">
-            {counts.byStatus.open}
+            {counts.byStatus[INQUIRY_STATUS.open]}
           </Heading>
         </article>
         <article className="rounded-lg border border-border bg-card p-3">
           <p className="text-sm leading-tight text-muted-foreground">対応中</p>
           <Heading as="h2" size="section">
-            {counts.byStatus.answered}
+            {counts.byStatus[INQUIRY_STATUS.answered]}
           </Heading>
         </article>
         <article className="rounded-lg border border-border bg-card p-3">
           <p className="text-sm leading-tight text-muted-foreground">完了</p>
           <Heading as="h2" size="section">
-            {counts.byStatus.closed}
+            {counts.byStatus[INQUIRY_STATUS.closed]}
           </Heading>
         </article>
       </section>
@@ -44,9 +45,9 @@ function InquiryCounts({ counts }: Readonly<{ counts: StaffInquiryCountsView }>)
               {counts.trend.map((row) => (
                 <tr key={row.day} className="border-b border-border">
                   <td className="p-2">{row.day}</td>
-                  <td className="p-2">{row.open}</td>
-                  <td className="p-2">{row.answered}</td>
-                  <td className="p-2">{row.closed}</td>
+                  <td className="p-2">{row[INQUIRY_STATUS.open]}</td>
+                  <td className="p-2">{row[INQUIRY_STATUS.answered]}</td>
+                  <td className="p-2">{row[INQUIRY_STATUS.closed]}</td>
                 </tr>
               ))}
             </tbody>

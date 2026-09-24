@@ -46,18 +46,25 @@ jobs:
             vite-task-${{ runner.os }}-${{ runner.arch }}-pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.base.sha }}-${{ matrix.shard }}-
             vite-task-${{ runner.os }}-${{ runner.arch }}-main-${{ github.event.pull_request.base.sha }}
             vite-task-${{ runner.os }}-${{ runner.arch }}-main-
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR_FILES_PATH: ${{ runner.temp }}/pr-files.txt
+        run: gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[].filename, (.[].previous_filename // empty)' > "$PR_FILES_PATH"
       - id: affected
         env:
           CHECK_SHARD: ${{ matrix.shard }}
-          GH_TOKEN: ${{ github.token }}
           PR_FILES_PATH: ${{ runner.temp }}/pr-files.txt
-        run: gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --jq '.[] | .filename, .previous_filename // empty' > "$PR_FILES_PATH" && vp run --filter @repo/dont-review-it pr-affected
+        run: vp run --filter @repo/dont-review-it pr-affected
+      - if: steps.affected.outputs.root == 'true'
+        run: git fetch --no-tags --depth=2 origin ${{ github.sha }}
       - if: steps.affected.outputs.root == 'true'
         run: vp run -w prepr
       - if: steps.affected.outputs.filters != ''
         env:
           AFFECTED_FILTERS: ${{ steps.affected.outputs.filters }}
         run: vp run --fail-if-no-match $AFFECTED_FILTERS prepr
+      - if: steps.affected.outputs.paths != ''
+        run: vp run compile:paraglide
       - if: steps.affected.outputs.paths != ''
         env:
           AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
@@ -125,9 +132,8 @@ jobs:
     runs-on: *runner
     timeout-minutes: 5
     steps:
-      - run: |
-          test "${{ needs.merge-queue-packages.result }}" = "success"
-          test "${{ needs.merge-queue-unit.result }}" = "success"
+      - run: test "${{ needs.merge-queue-packages.result }}" = "success"
+      - run: test "${{ needs.merge-queue-unit.result }}" = "success"
 
   e2e:
     if: startsWith(github.head_ref, 'mergify/merge-queue/')

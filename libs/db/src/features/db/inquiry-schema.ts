@@ -27,7 +27,10 @@ const inquiry = sqliteTable(
     index("inquiry_member_id_idx").on(table.memberId),
     index("inquiry_status_idx").on(table.status),
     index("inquiry_updated_at_idx").on(table.updatedAt),
-    check("inquiry_status", sql`${table.status} IN ('open', 'answered', 'closed')`),
+    check(
+      "inquiry_status",
+      sql`${table.status} IN ('inquiry_open', 'inquiry_answered', 'inquiry_closed')`,
+    ),
   ],
 );
 

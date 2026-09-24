@@ -1,6 +1,6 @@
 import { useAtom } from "@effect/atom-react";
 import { apiData } from "@repo/runtime/client";
-import { localState, request, resultError, useToast } from "@repo/ui";
+import { request, resultError, useToast, optionalState } from "@repo/ui";
 import { Effect, Exit, Option } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
@@ -10,7 +10,7 @@ import {
   AdminPermissionChanged,
   AdminStateChanged,
 } from "#shared/contracts/index.ts";
-import { adminPermissionLabels, adminStateLabels } from "./admin-labels.ts";
+import { adminPermissionLabels, adminStateLabels, isAdminPermission } from "./admin-labels.ts";
 
 import type { ListedAdmin } from "./admin-list.ts";
 
@@ -51,10 +51,7 @@ function perform(admin: ListedAdmin, operation: RowOperation): Effect.Effect<str
   });
 }
 
-const isAdminPermission = (value: string): value is typeof AdminPermission.Type =>
-  AdminPermission.literals.some((permission) => permission === value);
-
-const useRowConfirming = localState(Option.none<RowOperation>());
+const useRowConfirming = optionalState<RowOperation>();
 
 const changeAtom = Atom.family((adminId: string) => {
   void adminId;

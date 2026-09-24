@@ -1,15 +1,9 @@
-import { agreementPolicies, type AgreementKind } from "@repo/config";
+import { agreementKindLabels, agreementPolicies, type AgreementKind } from "@repo/config";
 
 import type { AgreementsView, PendingAgreement } from "#shared/contracts/index.ts";
 
 type Agreements = typeof AgreementsView.Type;
 type Pending = typeof PendingAgreement.Type;
-
-const agreementKindLabels: Readonly<Record<AgreementKind, string>> = {
-  interview_history: "AI インタビューの履歴の利用",
-  privacy: "プライバシーポリシー",
-  terms: "利用規約",
-};
 
 const agreementKindPaths = {
   interview_history: "/settings/agreements",

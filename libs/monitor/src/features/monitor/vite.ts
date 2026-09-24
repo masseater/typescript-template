@@ -4,6 +4,7 @@ import {
   checkCode,
   modularBoundaries,
   workspaceCheckImports,
+  paths,
   taskInput,
 } from "@repo/vite-config";
 
@@ -11,7 +12,7 @@ import type { UserConfig } from "vite-plus";
 import type { PackUserConfig } from "vite-plus/pack";
 
 const monitorWorkerVite = (
-  feature: string,
+  packageRoot: string,
 ): {
   readonly pack: PackUserConfig;
   readonly run: NonNullable<UserConfig["run"]>;
@@ -23,7 +24,7 @@ const monitorWorkerVite = (
       onlyBundle: ["effect", "@repo/monitor"],
     },
     dts: false,
-    entry: { index: `src/features/${feature}/worker.ts` },
+    entry: { index: `src/features/${paths.basename(packageRoot)}/worker.ts` },
     format: "esm",
     outExtensions: (): { readonly js: ".js" } => ({ js: ".js" }),
     platform: "browser",
@@ -31,7 +32,7 @@ const monitorWorkerVite = (
   },
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...effectDiagnostics(packageRoot),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

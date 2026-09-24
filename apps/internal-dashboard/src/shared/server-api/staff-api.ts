@@ -1,4 +1,4 @@
-import { mailInvite, verifySession } from "@repo/auth";
+import { mailInvite, verifiedSessionId } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { inviteStaff, listStaff, removeStaff, setStaffPermission } from "@repo/db/staff";
 import { inviteApi, privileged } from "@repo/runtime/account";
@@ -26,17 +26,12 @@ const failures = {
   },
 };
 
-const sessionOf = Effect.fn("sessionOf")(function* sessionOf(request: Request) {
-  const { session } = yield* verifySession(request.headers);
-  return session.id;
-});
-
 const listMembers = Effect.fn("listMembers")(function* listMembers(request: Request) {
-  return yield* listStaff(yield* sessionOf(request));
+  return yield* listStaff(yield* verifiedSessionId(request));
 });
 
 const inviteMember = Effect.fn("inviteMember")(function* inviteMember(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const invitation = yield* readJsonBody(StaffInvitation, request);
   const issued = yield* inviteStaff({ ...invitation, sessionId });
   yield* mailInvite(issued);
@@ -46,7 +41,7 @@ const inviteMember = Effect.fn("inviteMember")(function* inviteMember(request: R
 const changeMemberPermission = Effect.fn("changeMemberPermission")(function* changeMemberPermission(
   request: Request,
 ) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const change = yield* readJsonBody(StaffPermissionChange, request);
   return yield* setStaffPermission({
     permission: change.permission,
@@ -56,7 +51,7 @@ const changeMemberPermission = Effect.fn("changeMemberPermission")(function* cha
 });
 
 const removeMember = Effect.fn("removeMember")(function* removeMember(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const removal = yield* readJsonBody(StaffRemoval, request);
   return yield* removeStaff(sessionId, removal.id);
 });

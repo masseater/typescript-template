@@ -33,11 +33,17 @@ import {
 } from "vite-plus";
 
 import { devBoundary } from "./dev-boundary.ts";
-import { awaitingEffectDiagnostics, effectDiagnostics, effectTsgoNoEmit } from "./effect-tsgo.ts";
+import {
+  awaitingEffectDiagnostics,
+  effectDiagnostics,
+  effectTsgoNoEmit,
+  type EffectDiagnosticsTask,
+} from "./effect-tsgo.ts";
 import { elysiaAot, elysiaWorkerdJit } from "./elysia-aot.ts";
 import { withoutEnvFileLoader } from "./env-file-loader.ts";
 import { paths } from "./host.ts";
 import { lifecycle, lifecycleInherits, lifecycles } from "./lifecycle.ts";
+import { localizedApps } from "./paraglide-options.ts";
 import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { previewDevVars } from "./preview-dev-vars.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
@@ -103,10 +109,6 @@ const generatedDirectories = [
 const withoutGenerated = (...directories: readonly string[]): string[] =>
   directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
 
-const withoutLocalState = [
-  { base: "workspace", pattern: "!.local" },
-  { base: "workspace", pattern: "!.local/**" },
-] as const;
 type RunConfig = NonNullable<UserConfig["run"]>;
 type Tasks = NonNullable<RunConfig["tasks"]>;
 
@@ -124,10 +126,22 @@ const testRun = {
   },
 } satisfies Tasks;
 
+const withoutLocalState = [
+  { base: "workspace", pattern: "!.local" },
+  { base: "workspace", pattern: "!.local/**" },
+] as const;
+
 const sliceBoundaries = {
   check: {
     command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
-    input: [...taskInput],
+    input: [
+      ...taskInput,
+      ...withoutLocalState,
+      ...localizedApps.map((app) => ({
+        base: "workspace" as const,
+        pattern: `!apps/${app}/.paraglide/**`,
+      })),
+    ],
   },
 } satisfies Tasks;
 
@@ -147,31 +161,34 @@ const modularBoundaries = {
   "check:modular": { command: "quality-check-modular", input: [...taskInput] },
 } satisfies Tasks;
 
-const effectRun = {
-  tasks: {
-    ...effectDiagnostics,
-    ...checkCode,
-    ...workspaceCheckImports,
-    ...modularBoundaries,
-    ...lifecycle({
-      precommit: ["check:code"],
-      prepush: ["check:effect", "check:imports", "check:modular"],
-    }),
-  },
-} satisfies RunConfig;
+const effectRunTasks = {
+  ...checkCode,
+  ...workspaceCheckImports,
+  ...modularBoundaries,
+  ...lifecycle({
+    precommit: ["check:code"],
+    prepush: ["check:effect", "check:imports", "check:modular"],
+  }),
+} satisfies Tasks;
 
-const awaitingEffectRun = {
-  tasks: {
-    ...effectRun.tasks,
-    ...awaitingEffectDiagnostics,
-  },
-} satisfies RunConfig;
+const effectRun = (
+  packageRoot: string,
+): { tasks: typeof effectRunTasks & EffectDiagnosticsTask } => ({
+  tasks: { ...effectDiagnostics(packageRoot), ...effectRunTasks },
+});
+
+const awaitingEffectRun = (
+  packageRoot: string,
+): { tasks: typeof effectRunTasks & EffectDiagnosticsTask } => ({
+  tasks: { ...awaitingEffectDiagnostics(packageRoot), ...effectRunTasks },
+});
 
 const appChecks = {
   "check:client": {
     command: "quality-check-client",
     input: [
       ...taskInput,
+      "!node_modules",
       "!**/dist/**",
       "!**/node_modules/.cache/**",
       ...withoutLocalState,
@@ -186,53 +203,64 @@ const appChecks = {
   },
 } satisfies Tasks;
 
-const appRun = {
-  tasks: {
-    ...awaitingEffectDiagnostics,
-    ...checkCode,
-    ...workspaceCheckImports,
-    ...appChecks,
-    check: sliceBoundaries.check,
-    build: {
-      command: "vp build",
-      dependsOn: ["@repo/dev#setup", "check:effect"],
-      input: [
-        ...taskInput,
-        ...withoutGenerated(".wrangler", "dist"),
-        ...withoutLocalState,
-        ...withoutInlangState,
-      ],
-      output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
-    },
-    "check:dev": {
-      cache: false,
-      command: "../../tools/dev/src/features/dev/dev-start.ts",
-      dependsOn: ["@repo/dev#setup"],
-    },
-    dev: { cache: false, command: "vp dev" },
-    preview: { cache: false, command: "vp preview" },
-    ...lifecycle({
-      precommit: ["check:code"],
-      prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
-      prepr: ["build"],
-      premerge: ["build", "check:dev"],
-    }),
+const appTasks = {
+  ...checkCode,
+  ...workspaceCheckImports,
+  ...appChecks,
+  check: sliceBoundaries.check,
+  build: {
+    command: "vp build",
+    dependsOn: ["@repo/dev#setup", "check:effect"],
+    input: [
+      ...taskInput,
+      "!.",
+      "!node_modules",
+      ...withoutGenerated(".wrangler", "dist"),
+      ...withoutLocalState,
+      ...withoutInlangState,
+    ],
+    output: [{ auto: true }, { base: "workspace", pattern: ".local/source-maps/**" }],
   },
-} satisfies RunConfig;
+  "check:dev": {
+    cache: false,
+    command: "../../tools/dev/src/features/dev/dev-start.ts",
+    dependsOn: ["@repo/dev#setup"],
+  },
+  dev: { cache: false, command: "vp dev" },
+  preview: { cache: false, command: "vp preview" },
+  ...lifecycle({
+    precommit: ["check:code"],
+    prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+    prepr: ["build"],
+    premerge: ["build", "check:dev"],
+  }),
+} satisfies Tasks;
 
-const paraglideAppRun = {
+const appRun = (packageRoot: string): { tasks: typeof appTasks & EffectDiagnosticsTask } => ({
+  tasks: { ...awaitingEffectDiagnostics(packageRoot), ...appTasks },
+});
+
+const paraglideCompileDependency = ["typescript-template#compile:paraglide"];
+
+const paraglideAppTasks = {
+  ...appTasks,
+  ...Object.fromEntries(
+    (["check:code", "check:imports", "check:client", "check:react"] as const).map((gatedTask) => [
+      gatedTask,
+      { ...appTasks[gatedTask], dependsOn: paraglideCompileDependency },
+    ]),
+  ),
+} satisfies Tasks;
+
+const paraglideAppRun = (packageRoot: string): RunConfig => ({
   tasks: {
-    ...appRun.tasks,
-    ...Object.fromEntries(
-      (["check:effect", "check:code", "check:imports", "check:client", "check:react"] as const).map(
-        (gatedTask) => [
-          gatedTask,
-          { ...appRun.tasks[gatedTask], dependsOn: ["typescript-template#compile:paraglide"] },
-        ],
-      ),
-    ),
+    ...paraglideAppTasks,
+    "check:effect": {
+      ...awaitingEffectDiagnostics(packageRoot)["check:effect"],
+      dependsOn: paraglideCompileDependency,
+    },
   },
-} satisfies RunConfig;
+});
 
 const toolTest: NonNullable<UserConfig["test"]> = {
   mockReset: true,
@@ -342,7 +370,7 @@ const appConfig = (
       ]),
     ],
     preview: appServer(app),
-    run: appRun,
+    run: appRun(appRoot),
     server: appServer(app),
   });
 };
@@ -358,27 +386,28 @@ const wikiContentInput = {
   pattern: `apps/${wikiHost}/content/docs/**`,
 } as const;
 
-const wikiRun = {
-  tasks: {
-    ...effectDiagnostics,
-    ...checkCode,
-    ...workspaceCheckImports,
-    ...appChecks,
-    check: sliceBoundaries.check,
-    build: {
-      ...appRun.tasks.build,
-      input: [...appRun.tasks.build.input, wikiContentInput],
-    },
-    dev: appRun.tasks.dev,
-    preview: appRun.tasks.preview,
-    ...lifecycle({
-      precommit: ["check:code"],
-      prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
-      prepr: ["build"],
-      premerge: ["build"],
-    }),
+const wikiTasks = {
+  ...checkCode,
+  ...workspaceCheckImports,
+  ...appChecks,
+  check: sliceBoundaries.check,
+  build: {
+    ...appTasks.build,
+    input: [...appTasks.build.input, wikiContentInput],
   },
-} satisfies RunConfig;
+  dev: appTasks.dev,
+  preview: appTasks.preview,
+  ...lifecycle({
+    precommit: ["check:code"],
+    prepush: ["check:effect", "check", "check:imports", "check:client", "check:react"],
+    prepr: ["build"],
+    premerge: ["build"],
+  }),
+} satisfies Tasks;
+
+const wikiRun = (packageRoot: string): RunConfig => ({
+  tasks: { ...effectDiagnostics(packageRoot), ...wikiTasks },
+});
 
 const WIKI_PORT = 3004;
 
@@ -426,7 +455,7 @@ const wikiConfig = (
       ]),
     ],
     preview: wikiServer,
-    run: wikiRun,
+    run: wikiRun(wikiRoot),
     server: wikiServer,
   });
 };
@@ -466,9 +495,6 @@ export {
   workspaceCheckImports,
 };
 export { paths } from "./host.ts";
-export { readScalarReference, scalarReference } from "./scalar-reference.ts";
 export { paraglideAppPlugin, paraglideCompileOptions, paraglideStrategy } from "./paraglide.ts";
-export { failOnBrokenSourceMaps, privateSourceMaps };
 export { runTypecheckGate } from "./effect-typecheck.ts";
-export type { Tasks };
-export { devBoundary };
+export { devBoundary, failOnBrokenSourceMaps, privateSourceMaps, type Tasks };

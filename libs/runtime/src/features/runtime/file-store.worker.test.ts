@@ -31,6 +31,34 @@ describe("FileStore", () => {
     });
   });
 
+  describe("a file streamed into R2", () => {
+    const it = test.extend("streamedFile", ({}, { onCleanup }) =>
+      Effect.runPromise(
+        Effect.gen(function* streamedFileProgram() {
+          const store = yield* FileStore;
+          const fileName = `files/${crypto.randomUUID()}.bin`;
+          const { body } = new Response(new Uint8Array([6, 7, 8]));
+          if (body === null) {
+            return yield* Effect.die(new Error("response body is missing"));
+          }
+          yield* store.putStream(fileName, { body, contentType: "audio/mp4" });
+          const storeServices = yield* Effect.context();
+          onCleanup(() => Effect.runPromiseWith(storeServices)(store.remove([fileName])));
+          const opened = yield* store.open(fileName);
+          const stored = yield* store.get(fileName);
+          return { bytes: stored?.bytes, contentType: opened?.contentType, size: opened?.size };
+        }).pipe(Effect.provide(FileStore.fromEnvironment(env))),
+      ));
+
+    it("keeps the streamed bytes and reports their size", ({ streamedFile }) => {
+      expect(streamedFile).toStrictEqual({
+        bytes: new Uint8Array([6, 7, 8]),
+        contentType: "audio/mp4",
+        size: 3,
+      });
+    });
+  });
+
   describe("a file removed from R2", () => {
     const it = test.extend("removedFile", () =>
       Effect.runPromise(

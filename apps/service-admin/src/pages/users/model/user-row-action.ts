@@ -1,6 +1,6 @@
 import { useAtom } from "@effect/atom-react";
 import { apiData } from "@repo/runtime/client";
-import { localState, request, resultError, useToast } from "@repo/ui";
+import { request, resultError, useToast, optionalState } from "@repo/ui";
 import { Effect, Exit, Option } from "effect";
 import { AsyncResult, Atom } from "effect/unstable/reactivity";
 
@@ -37,7 +37,7 @@ function perform(user: ListedUser, operation: RowOperation): Effect.Effect<strin
   });
 }
 
-const useRowConfirming = localState(Option.none<RowOperation>());
+const useRowConfirming = optionalState<RowOperation>();
 
 const changeAtom = Atom.family((userId: string) => {
   void userId;

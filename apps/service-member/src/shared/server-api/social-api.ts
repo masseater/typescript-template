@@ -90,7 +90,7 @@ function socialApi(api: ApiRoutes<AppServices | OpsMail>) {
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
             const { step } = yield* readJsonBody(OnboardingAdvance, request);
-            if ((yield* stepOf(user.id)) === "agreement" && step !== "agreement") {
+            if ((yield* stepOf(user.id)) === "agreement") {
               yield* requireSignupAgreements(user.id);
             }
             yield* advanceOnboarding(user.id, step);

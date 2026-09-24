@@ -1,5 +1,6 @@
 import { priceIntervals, readStripeConfig } from "@repo/config";
 import { withSpan } from "@repo/observability";
+import { Redirect } from "@repo/runtime/contracts";
 import { Context, Effect, Layer, Schema } from "effect";
 
 import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
@@ -7,6 +8,7 @@ import { StripeFailure } from "./stripe-failure.ts";
 import { verifyStripeSignature } from "./stripe-signature.ts";
 
 import type { ConfigurationInvalid, PriceInterval, StripeConfig } from "@repo/config";
+import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeSignatureInvalid } from "./stripe-signature-invalid.ts";
 
 const stripeApi = "https://api.stripe.com/v1";
@@ -19,8 +21,6 @@ const StripeEvent = Schema.Struct({
   type: Schema.String,
 });
 type StripeEvent = typeof StripeEvent.Type;
-
-const HostedSession = Schema.Struct({ url: Schema.String });
 
 const RecurringPrice = Schema.Struct({
   currency: Schema.String,
@@ -59,8 +59,6 @@ interface StripeShape {
     signature: string | null,
   ) => Effect.Effect<StripeEvent, StripeSignatureInvalid | StripeEventUnreadable>;
 }
-
-type Decodable = Schema.Top & { readonly DecodingServices: never };
 
 function decodeStripe<Contract extends Decodable>(
   schema: Contract,
@@ -131,7 +129,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
   return {
     createCheckoutSession: (input) =>
       send("/checkout/sessions", checkoutForm(config.priceId, input)).pipe(
-        Effect.flatMap((body) => decodeStripe(HostedSession, body)),
+        Effect.flatMap((body) => decodeStripe(Redirect, body)),
         Effect.map((session) => session.url),
       ),
     createPortalSession: (input) =>
@@ -139,7 +137,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
         "/billing_portal/sessions",
         new URLSearchParams({ customer: input.customerId, return_url: input.returnUrl }),
       ).pipe(
-        Effect.flatMap((body) => decodeStripe(HostedSession, body)),
+        Effect.flatMap((body) => decodeStripe(Redirect, body)),
         Effect.map((session) => session.url),
       ),
     offer: send(`/prices/${config.priceId}`).pipe(

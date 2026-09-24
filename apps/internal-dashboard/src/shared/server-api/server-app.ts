@@ -7,6 +7,7 @@ import { dashboardApi } from "./dashboard-api.ts";
 import { flagsApi } from "./flags-api.ts";
 import { inquiryApi } from "./inquiry-api.ts";
 import { serveMcp } from "./mcp.ts";
+import { recordingsApi } from "./recordings-api.ts";
 import { reporting, runtime } from "./runtime.ts";
 import { staffApi } from "./staff-api.ts";
 
@@ -20,7 +21,8 @@ const wikiApi = createApi("")
       .use(staffApi(api))
       .use(flagsApi(api))
       .use(inquiryApi(api))
-      .use(dashboardApi(api)),
+      .use(dashboardApi(api))
+      .use(recordingsApi(api)),
   )
   .all("/mcp", ...api.raw(serveMcp, unavailable))
   .all("/.well-known/oauth-*", ...api.raw(handleAuthRequest, unavailable));

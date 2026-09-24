@@ -237,6 +237,17 @@ const readWikiBindings = (
 
 type SiteConfig = Effect.Success<ReturnType<typeof readSiteEnvironment>>;
 
+const coreBinding = "CORE";
+
+const CoreBindings = Schema.Struct({
+  [coreBinding]: bindingWith<ServiceFetcher>("Fetcher", ["fetch"]),
+});
+
+const readCore = Effect.fn("readCore")(function* readCore(input: unknown) {
+  const { CORE } = yield* decode(CoreBindings, input);
+  return CORE;
+});
+
 const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   const { AI } = yield* decode(AiBindings, input);
   return AI;
@@ -270,6 +281,7 @@ export {
   minimumAuthSecretLength,
   readAi,
   readConfig,
+  readCore,
   readEnvironment,
   readSiteEnvironment,
   readStripeConfig,

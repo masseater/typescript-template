@@ -4,6 +4,8 @@ export { findWikiReader } from "@repo/db";
 export { AdminMfaRequired } from "./admin-mfa-required.ts";
 export { AdminRequired } from "./admin-required.ts";
 export { Auth } from "./auth.ts";
+export { mcpAuthorizer, mcpJsonRpcError, mcpUnauthorized } from "./mcp-resource.ts";
+export type { McpResourcePolicy, McpTokenSubject } from "./mcp-resource.ts";
 export { AuthFailure } from "./auth-failure.ts";
 export { EmailDeliveryFailed } from "./email-delivery-failed.ts";
 export { EmailVerificationFailed } from "./email-verification-failed.ts";
@@ -29,5 +31,5 @@ export {
   verifySessionOrApiKey,
   verifySessionWriter,
 } from "./member-api-key.ts";
-export { verifySession } from "./session.ts";
+export { verifiedSessionId, verifySession } from "./session.ts";
 export type { AuthOptions, BetterAuthInstance } from "./create-auth.ts";

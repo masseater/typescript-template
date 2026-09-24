@@ -1,3 +1,5 @@
+import bundledTelemetry from "./libs/telemetry/package.json" with { type: "json" };
+
 import type { KnipConfig, KnipConfiguration } from "knip";
 
 const load = {
@@ -82,7 +84,16 @@ const workspaces = {
     entry: [...modularFeaturePublicApi],
     ignoreDependencies: ["@tanstack/intent"],
   },
-  "tools/ai-native-telemetry": { ignoreDependencies: ["@tanstack/intent"] },
+  "tools/ai-native-telemetry": {
+    ignoreDependencies: [
+      "@tanstack/intent",
+      "@repo/config!",
+      `${bundledTelemetry.name}!`,
+      ...Object.entries(bundledTelemetry.dependencies).flatMap(([dependency, version]) =>
+        version.startsWith("workspace:") ? [] : [dependency],
+      ),
+    ],
+  },
   "tools/dont-review-it": {
     entry: [
       "src/features/dont-review-it/repository/dependency-cruiser.ts",
@@ -92,7 +103,15 @@ const workspaces = {
       "src/features/dont-review-it/repository/lint.ts!",
       "src/features/dont-review-it/repository/plugin.ts!",
     ],
-    ignoreDependencies: ["@tanstack/intent", "@repo/config!", "@repo/observability!", "effect!"],
+    ignoreDependencies: [
+      "@tanstack/intent",
+      "@repo/cli!",
+      "@repo/config!",
+      "@repo/infra-cloudflare!",
+      "@repo/observability!",
+      "@repo/vite-config!",
+      "effect!",
+    ],
     project: [
       "src/features/dont-review-it/repository/**/*.{ts,mjs}",
       "src/**/*.{ts,mjs}!",
@@ -172,10 +191,16 @@ const config = ({
     ignoreIssues: {
       "apps/internal-dashboard/src/shared/server-api/flags-api.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/mcp.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/recordings-api.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/server-api/recordings-api.worker.test.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/runtime.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/server-app.ts": ["exports"],
       "apps/internal-dashboard/src/shared/server-api/staff-api.worker.test.ts": ["unlisted"],
       "apps/internal-dashboard/src/shared/server-api/wiki-gateway.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/transcription/process.ts": ["unlisted"],
+      "apps/internal-dashboard/src/shared/transcription/transcribe-job.worker.test.ts": [
+        "unlisted",
+      ],
       "apps/internal-dashboard/src/shared/wiki/wiki-layer.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/admin-api.worker.test.ts": ["unlisted"],
       "apps/service-admin/src/shared/server-api/runtime.ts": ["unlisted"],

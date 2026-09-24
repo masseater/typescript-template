@@ -42,7 +42,7 @@ describe("alchemy stacks", () => {
       "service-admin",
       "service-member",
     ]);
-    expect(violationsWhenLast("storage")).toStrictEqual(["service-member"]);
+    expect(violationsWhenLast("storage")).toStrictEqual(["internal-dashboard", "service-member"]);
     expect(violationsWhenLast("flagship")).toStrictEqual([
       "internal-dashboard",
       "service-admin",
@@ -53,7 +53,6 @@ describe("alchemy stacks", () => {
       "service-admin",
       "service-member",
     ]);
-    expect(violationsWhenLast("storage")).toStrictEqual(["service-member"]);
 
     expect(violationsWhenLast(traceDestinationStack)).toStrictEqual([
       "core",

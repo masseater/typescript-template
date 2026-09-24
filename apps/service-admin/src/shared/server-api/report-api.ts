@@ -1,4 +1,4 @@
-import { verifySession } from "@repo/auth";
+import { verifiedSessionId } from "@repo/auth";
 import { httpStatus } from "@repo/config";
 import { dismissReport, listReports, readReport, suspendTarget, warnTarget } from "@repo/db/admin";
 import { privileged } from "@repo/runtime/account";
@@ -30,13 +30,8 @@ const failures = {
   },
 };
 
-const sessionOf = Effect.fn("reports.session")(function* sessionOf(request: Request) {
-  const { session } = yield* verifySession(request.headers);
-  return session.id;
-});
-
 const listPage = Effect.fn("reports.list")(function* listPage(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const query = yield* readSearchParams(ReportListQuery, request);
   const list = yield* listReports(sessionId, {
     limit: reportPageSize,
@@ -47,34 +42,34 @@ const listPage = Effect.fn("reports.list")(function* listPage(request: Request) 
 });
 
 const detail = Effect.fn("reports.detail")(function* detail(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readSearchParams(ReportQuery, request);
   return yield* readReport(sessionId, id);
 });
 
 const suspend = Effect.fn("reports.suspend")(function* suspend(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readJsonBody(ReportAction, request);
   yield* suspendTarget({ reportId: id, sessionId, suspended: true });
   return { ok: true as const };
 });
 
 const unsuspend = Effect.fn("reports.unsuspend")(function* unsuspend(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readJsonBody(ReportAction, request);
   yield* suspendTarget({ reportId: id, sessionId, suspended: false });
   return { ok: true as const };
 });
 
 const warn = Effect.fn("reports.warn")(function* warn(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readJsonBody(ReportAction, request);
   yield* warnTarget(sessionId, id);
   return { ok: true as const };
 });
 
 const dismiss = Effect.fn("reports.dismiss")(function* dismiss(request: Request) {
-  const sessionId = yield* sessionOf(request);
+  const sessionId = yield* verifiedSessionId(request);
   const { id } = yield* readJsonBody(ReportAction, request);
   yield* dismissReport(sessionId, id);
   return { ok: true as const };
