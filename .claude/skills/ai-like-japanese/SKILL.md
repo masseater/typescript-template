@@ -1,6 +1,15 @@
-# プロダクトの日本語に残る AI 的な書き方
+---
+name: ai-like-japanese
+description: UI 文言、エラーメッセージ、wiki、ドキュメント、コミットログ、PR 本文の日本語を書く・直す・レビューするときに読む。無生物主語、「A ではなく B」、数合わせの並列、前置き、根拠のない評価、重ねた謝罪など、AI が書いたような文を見つけて直す。
+license: MIT
+metadata:
+  upstream:
+    - https://github.com/iKora128/stop-ai-slop-jp
+    - https://github.com/blader/humanizer
+    - https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing
+---
 
-UI 文言、エラーメッセージ、wiki、ドキュメント、コミットログ、PR 本文の日本語を読んで判断する。
+# プロダクトの日本語に残る AI 的な書き方
 
 ## 主語と動作
 
