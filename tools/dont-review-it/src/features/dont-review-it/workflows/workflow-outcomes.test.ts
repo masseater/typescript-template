@@ -1,8 +1,7 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
 import { defaultWorkflowChecksConfig } from "./config.ts";
 import { workflowOutcomesOf } from "./workflow-outcomes.ts";
@@ -19,68 +18,97 @@ jobs:
       - run: vp run guard
 `;
 
-describe("workflowOutcomesOf", () => {
+layer(NodeServices.layer)("workflowOutcomesOf", (it) => {
   describe("a repository holding a workflow definition beside a renovate configuration", () => {
-    const it = test.extend("outcomesOfGatedRepositoryOnRenovate", () => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-workflow-outcomes-"));
-      const workflowFile = join(repositoryRoot, WORKFLOW_PATH);
-      mkdirSync(dirname(workflowFile), { recursive: true });
-      writeFileSync(workflowFile, GATED_WORKFLOW);
-      writeFileSync(join(repositoryRoot, "renovate.json"), "{}\n");
-      return workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig });
-    });
+    const outcomesOfGatedRepositoryOnRenovateFixture = Effect.gen(
+      function* outcomesOfGatedRepositoryOnRenovate() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+          prefix: "dont-review-it-workflow-outcomes-",
+        });
+        const workflowFile = paths.join(repositoryRoot, WORKFLOW_PATH);
+        yield* filesystem.makeDirectory(paths.dirname(workflowFile), { recursive: true });
+        yield* filesystem.writeFileString(workflowFile, GATED_WORKFLOW);
+        yield* filesystem.writeFileString(paths.join(repositoryRoot, "renovate.json"), "{}\n");
+        return yield* workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig });
+      },
+    );
 
-    it("counts the definition it read", ({ outcomesOfGatedRepositoryOnRenovate }) => {
-      expect(outcomesOfGatedRepositoryOnRenovate).toStrictEqual({
-        definitions: { problems: [], scanned: 1 },
-        updates: { problems: [], scanned: 1 },
-      });
-    });
+    it.effect("counts the definition it read", () =>
+      Effect.gen(function* program() {
+        const outcomesOfGatedRepositoryOnRenovate =
+          yield* outcomesOfGatedRepositoryOnRenovateFixture;
+        expect(outcomesOfGatedRepositoryOnRenovate).toStrictEqual({
+          definitions: { problems: [], scanned: 1 },
+          updates: { problems: [], scanned: 1 },
+        });
+      }),
+    );
   });
 
   describe("a repository holding a workflow definition with no update mechanism", () => {
-    const it = test.extend("outcomesOfGatedRepositoryWithoutMechanism", () => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-workflow-outcomes-"));
-      const workflowFile = join(repositoryRoot, WORKFLOW_PATH);
-      mkdirSync(dirname(workflowFile), { recursive: true });
-      writeFileSync(workflowFile, GATED_WORKFLOW);
-      return workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig });
-    });
+    const outcomesOfGatedRepositoryWithoutMechanismFixture = Effect.gen(
+      function* outcomesOfGatedRepositoryWithoutMechanism() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+          prefix: "dont-review-it-workflow-outcomes-",
+        });
+        const workflowFile = paths.join(repositoryRoot, WORKFLOW_PATH);
+        yield* filesystem.makeDirectory(paths.dirname(workflowFile), { recursive: true });
+        yield* filesystem.writeFileString(workflowFile, GATED_WORKFLOW);
+        return yield* workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig });
+      },
+    );
 
-    it("looks for the update mechanism once a definition exists", ({
-      outcomesOfGatedRepositoryWithoutMechanism,
-    }) => {
-      expect(outcomesOfGatedRepositoryWithoutMechanism).toStrictEqual({
-        definitions: { problems: [], scanned: 1 },
-        updates: {
-          problems: [
-            {
-              file: ".github/workflows",
-              line: null,
-              message:
-                "A repository that pins its action references must not leave the pins without something that raises them, because a pin holds an action at the version it had on the day it was written and nothing afterwards notices that the version aged. Which pin is current cannot be settled by reading this repository, so what is required here is the mechanism rather than the answer. Add a Renovate configuration, or a Dependabot configuration whose `updates` cover the `github-actions` ecosystem, so every pinned commit SHA is raised in a pull request that a person reviews.",
-            },
-          ],
-          scanned: 0,
-        },
-      });
-    });
+    it.effect("looks for the update mechanism once a definition exists", () =>
+      Effect.gen(function* program() {
+        const outcomesOfGatedRepositoryWithoutMechanism =
+          yield* outcomesOfGatedRepositoryWithoutMechanismFixture;
+        expect(outcomesOfGatedRepositoryWithoutMechanism).toStrictEqual({
+          definitions: { problems: [], scanned: 1 },
+          updates: {
+            problems: [
+              {
+                file: ".github/workflows",
+                line: null,
+                message:
+                  "A repository that pins its action references must not leave the pins without something that raises them, because a pin holds an action at the version it had on the day it was written and nothing afterwards notices that the version aged. Which pin is current cannot be settled by reading this repository, so what is required here is the mechanism rather than the answer. Add a Renovate configuration, or a Dependabot configuration whose `updates` cover the `github-actions` ecosystem, so every pinned commit SHA is raised in a pull request that a person reviews.",
+              },
+            ],
+            scanned: 0,
+          },
+        });
+      }),
+    );
   });
 
   describe("a repository holding no workflow definition", () => {
-    const it = test.extend("outcomesOfRepositoryWithoutDefinition", () => {
-      const repositoryRoot = mkdtempSync(join(tmpdir(), "dont-review-it-workflow-outcomes-"));
-      writeFileSync(join(repositoryRoot, "package.json"), `{"name": "solo"}`);
-      return workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig });
-    });
+    const outcomesOfRepositoryWithoutDefinitionFixture = Effect.gen(
+      function* outcomesOfRepositoryWithoutDefinition() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({
+          prefix: "dont-review-it-workflow-outcomes-",
+        });
+        yield* filesystem.writeFileString(
+          paths.join(repositoryRoot, "package.json"),
+          `{"name": "solo"}`,
+        );
+        return yield* workflowOutcomesOf({ repositoryRoot, config: defaultWorkflowChecksConfig });
+      },
+    );
 
-    it("leaves the update mechanism unasked for when no definition exists", ({
-      outcomesOfRepositoryWithoutDefinition,
-    }) => {
-      expect(outcomesOfRepositoryWithoutDefinition).toStrictEqual({
-        definitions: { problems: [], scanned: 0 },
-        updates: { problems: [], scanned: 0 },
-      });
-    });
+    it.effect("leaves the update mechanism unasked for when no definition exists", () =>
+      Effect.gen(function* program() {
+        const outcomesOfRepositoryWithoutDefinition =
+          yield* outcomesOfRepositoryWithoutDefinitionFixture;
+        expect(outcomesOfRepositoryWithoutDefinition).toStrictEqual({
+          definitions: { problems: [], scanned: 0 },
+          updates: { problems: [], scanned: 0 },
+        });
+      }),
+    );
   });
 });

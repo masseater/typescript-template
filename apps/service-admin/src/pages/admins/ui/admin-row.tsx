@@ -1,32 +1,27 @@
 import { useSessionUser } from "@repo/auth-ui";
-import {
-  Button,
-  OperationConfirm,
-  SelectField,
-  TableCell,
-  TableRow,
-  type Confirmation,
-} from "@repo/ui";
+import { ACCOUNT_STATE } from "@repo/config";
+import { Button, ConfirmDialog, SelectField, TableCell, TableRow } from "@repo/ui";
 
 import {
   adminPermissionLabels,
   adminPermissionOptions,
   adminStateChangeLabels,
   adminStateLabels,
-  nextAdminStates,
 } from "#pages/admins/model/admin-labels.ts";
 import { useAdminRowAction, type RowOperation } from "#pages/admins/model/admin-row-action.ts";
 
 import type { ListedAdmin } from "#pages/admins/model/admin-list.ts";
 import type { ReactElement } from "react";
 
-function confirmation(admin: ListedAdmin, operation: RowOperation): Confirmation {
+function confirmation(
+  admin: ListedAdmin,
+  operation: RowOperation,
+): Readonly<{ confirmLabel: string; description: string; title: string }> {
   if (operation.kind === "permission") {
     return {
       confirmLabel: "変更する",
       description: `${admin.email} の権限を「${adminPermissionLabels[operation.permission]}」にします。`,
       title: "権限を変更しますか？",
-      variant: "primary",
     };
   }
   const change = adminStateChangeLabels[admin.accountState];
@@ -34,7 +29,6 @@ function confirmation(admin: ListedAdmin, operation: RowOperation): Confirmation
     confirmLabel: change,
     description: `${admin.email} を${adminStateLabels[operation.accountState]}にします。`,
     title: `${change}か？`,
-    variant: "danger",
   };
 }
 
@@ -45,6 +39,8 @@ function AdminRow({
   const { id: selfId } = useSessionUser();
   const action = useAdminRowAction(admin, onChanged);
   const self = admin.id === selfId;
+  const nextState =
+    admin.accountState === ACCOUNT_STATE.active ? ACCOUNT_STATE.suspended : ACCOUNT_STATE.active;
   return (
     <TableRow>
       <TableCell>{admin.name}</TableCell>
@@ -66,18 +62,28 @@ function AdminRow({
             type="button"
             disabled={action.pending}
             onClick={() => {
-              action.handleStateChange(nextAdminStates[admin.accountState]);
+              action.handleStateChange(nextState);
             }}
           >
             {adminStateChangeLabels[admin.accountState]}
           </Button>
         )}
-        <OperationConfirm
-          confirming={action.confirming}
-          describe={(operation) => confirmation(admin, operation)}
-          onConfirm={action.handleConfirm}
-          onOpenChange={action.handleOpenChange}
-        />
+        {action.confirming === undefined
+          ? null
+          : (() => {
+              const confirmed = confirmation(admin, action.confirming);
+              return (
+                <ConfirmDialog
+                  open
+                  confirmLabel={confirmed.confirmLabel}
+                  description={confirmed.description}
+                  title={confirmed.title}
+                  onOpenChange={action.handleOpenChange}
+                  variant={action.confirming.kind === "state" ? "danger" : "primary"}
+                  onConfirm={action.handleConfirm}
+                />
+              );
+            })()}
       </TableCell>
     </TableRow>
   );

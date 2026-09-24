@@ -18,7 +18,9 @@
     "./deployment": "./src/features/cloudflare/deployment.ts",
     "./lint-overrides": "./src/features/cloudflare/lint-overrides.ts",
     "./monitor": "./src/features/cloudflare/monitor.ts",
-    "./stacks": "./src/features/cloudflare/stacks.ts"
+    "./operator": "./src/features/cloudflare/operator.ts",
+    "./stacks": "./src/features/cloudflare/stacks.ts",
+    "./wiki-program": "./src/features/cloudflare/wiki-program.ts"
   },
   "dependencies": {
     "@effect/platform-node": "catalog:",

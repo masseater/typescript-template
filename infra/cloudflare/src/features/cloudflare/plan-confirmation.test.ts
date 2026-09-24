@@ -132,18 +132,18 @@ it.effect("binds the confirmation to the account, the stage, the props and the b
 it.effect("applies only when the confirmation names the plan that was just computed", () =>
   Effect.gen(function* program() {
     const confirmation = token(created);
-    assert.isUndefined(yield* acceptPlan(created, { accountId, confirmation }));
+    assert.isUndefined(yield* acceptPlan(created, { confirmation, subject: accountId }));
     const wrong = ["", "0".repeat(CONFIRMATION_LENGTH), confirmation.toUpperCase()];
     for (const confirmed of wrong) {
       const failure = yield* acceptPlan(created, {
-        accountId,
         confirmation: confirmed,
+        subject: accountId,
       }).pipe(Effect.flip);
       assert.strictEqual(failure.code, "plan_confirmation_mismatch");
     }
     const elsewhere = yield* acceptPlan(created, {
-      accountId: otherAccountId,
       confirmation,
+      subject: otherAccountId,
     }).pipe(Effect.flip);
     assert.strictEqual(elsewhere.code, "plan_confirmation_mismatch");
   }),
@@ -166,8 +166,8 @@ it.effect("refuses a plan that removes, replaces, adopts or drops a binding", ()
     ] as const;
     for (const [target, code] of refusals) {
       const failure = yield* acceptPlan(target, {
-        accountId,
         confirmation: token(target),
+        subject: accountId,
       }).pipe(Effect.flip);
       assert.strictEqual(failure.code, code);
       assert.isAbove(failure.keys.length, 0);
@@ -193,7 +193,9 @@ it.effect("lets a plan adopt Cloudflare zone settings that always exist", () =>
         resourceType: "Cloudflare.Zone.Setting",
       },
     ]);
-    assert.isUndefined(yield* acceptPlan(settings, { accountId, confirmation: token(settings) }));
+    assert.isUndefined(
+      yield* acceptPlan(settings, { confirmation: token(settings), subject: accountId }),
+    );
   }),
 );
 
@@ -252,8 +254,8 @@ it.effect("refuses a resource the plan deletes outright", () =>
   Effect.gen(function* program() {
     const removal = planned([resource("delete", "Worker")]);
     const failure = yield* acceptPlan(removal, {
-      accountId,
       confirmation: token(removal),
+      subject: accountId,
     }).pipe(Effect.flip);
     assert.strictEqual(failure.code, "plan_removes_resources");
   }),

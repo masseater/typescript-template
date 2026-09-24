@@ -1,5 +1,5 @@
 /** @canonical-values config.group-join-policy */
-export const groupJoinPolicies = ["invite", "open"] as const;
+export const groupJoinPolicies = ["invite_only", "open_join"] as const;
 export type GroupJoinPolicy = (typeof groupJoinPolicies)[number];
 export const GROUP_JOIN_POLICY = {
   invite: groupJoinPolicies[0],

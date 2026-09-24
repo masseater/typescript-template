@@ -12,6 +12,7 @@ import { eq } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 import { query, type Database } from "./database.ts";
+import { withdrawnMember } from "./member-leave-schema.ts";
 import {
   auditEvent,
   oauthAccessToken,
@@ -38,6 +39,9 @@ export const addUser = (added: {
   readonly permission?: AccountPermission;
   readonly accountState?: AccountState;
   readonly emailVerified?: boolean;
+  readonly email?: string;
+  readonly name?: string;
+  readonly profile?: string;
   readonly searchable?: boolean;
   readonly visibility?: ProfileVisibility;
 }): Effect.Effect<void, DatabaseFailure, Database> => {
@@ -48,11 +52,12 @@ export const addUser = (added: {
       .values({
         ...(added.accountState === undefined ? {} : { accountState: added.accountState }),
         createdAt: recordedAt,
-        email: `${added.userId}@example.com`,
+        email: added.email ?? `${added.userId}@example.com`,
         emailVerified: added.emailVerified ?? true,
         id: added.userId,
-        name: added.userId,
+        name: added.name ?? added.userId,
         permission: added.permission ?? topPermission[role],
+        ...(added.profile === undefined ? {} : { profile: added.profile }),
         role,
         updatedAt: recordedAt,
         ...(added.searchable === undefined ? {} : { searchable: added.searchable }),
@@ -65,7 +70,7 @@ export const addUser = (added: {
 export const auditActionsOf = Effect.fn("auditActionsOf")(function* auditActionsOf(
   targetId: string,
 ) {
-  const events = yield* query((database) =>
+  const auditTrail = yield* query((database) =>
     database
       .select({
         action: auditEvent.action,
@@ -77,7 +82,7 @@ export const auditActionsOf = Effect.fn("auditActionsOf")(function* auditActions
       .where(eq(auditEvent.targetId, targetId))
       .orderBy(auditEvent.createdAt),
   );
-  return events;
+  return auditTrail;
 });
 
 const SESSION_LIFETIME_MS = 60_000;
@@ -162,4 +167,38 @@ export const oauthGrantCounts = Effect.fn("oauthGrantCounts")(function* oauthGra
     database.select().from(oauthConsent).where(eq(oauthConsent.userId, userId)),
   );
   return { access: access.length, consent: consent.length, refresh: refresh.length };
+});
+
+export const profileFieldsOf = Effect.fn("profileFieldsOf")(function* profileFieldsOf(
+  userId: string,
+) {
+  const [listedProfile] = yield* query((database) =>
+    database
+      .select({ id: user.id, name: user.name, profile: user.profile })
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1),
+  );
+  return listedProfile;
+});
+
+export const withdrawnSnapshotCount = Effect.fn("withdrawnSnapshotCount")(
+  function* withdrawnSnapshotCount(memberId: string) {
+    const snapshots = yield* query((database) =>
+      database
+        .select({ memberId: withdrawnMember.memberId })
+        .from(withdrawnMember)
+        .where(eq(withdrawnMember.memberId, memberId)),
+    );
+    return snapshots.length;
+  },
+);
+
+export const liveSessionCount = Effect.fn("liveSessionCount")(function* liveSessionCount(
+  userId: string,
+) {
+  const sessions = yield* query((database) =>
+    database.select({ id: session.id }).from(session).where(eq(session.userId, userId)),
+  );
+  return sessions.length;
 });

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { pageItems } from "./page-items.ts";
+import { pageItems, searchAtPage } from "./page-items.ts";
 
 describe("pagination items without gaps", () => {
   const it = test
@@ -105,5 +105,19 @@ describe("pagination gap boundaries", () => {
       { kind: "page", page: 9 },
       { kind: "page", page: 10 },
     ]);
+  });
+});
+
+describe("a search moved to another page", () => {
+  const it = test
+    .extend("theSearchOnTheFirstPage", () => searchAtPage({ keyword: "sato", page: 3 }, 1))
+    .extend("theSearchOnTheFourthPage", () => searchAtPage({ keyword: "sato" }, 4));
+
+  it("drops the page number on the first page", ({ theSearchOnTheFirstPage }) => {
+    expect(theSearchOnTheFirstPage).toStrictEqual({ keyword: "sato" });
+  });
+
+  it("keeps the filters and carries the later page number", ({ theSearchOnTheFourthPage }) => {
+    expect(theSearchOnTheFourthPage).toStrictEqual({ keyword: "sato", page: 4 });
   });
 });

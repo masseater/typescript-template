@@ -1,16 +1,31 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { repositoryRoot } from "./repository-root.ts";
 
 const configFiles = [".fallowrc.json", ".fallowrc.production.json"] as const;
 
-const configOf = (file: string): Readonly<Record<string, unknown>> =>
-  JSON.parse(readFileSync(path.join(repositoryRoot, file), "utf8")) as Readonly<
-    Record<string, unknown>
-  >;
+const FallowConfig = Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown));
+
+const configs = await Effect.runPromise(
+  Effect.gen(function* fallowConfigs() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const entries = yield* Effect.forEach(configFiles, (file) =>
+      Effect.map(
+        Effect.flatMap(
+          filesystem.readFileString(paths.join(repositoryRoot, file)),
+          Schema.decodeEffect(FallowConfig),
+        ),
+        (config) => [file, config] as const,
+      ),
+    );
+    return new Map<string, Readonly<Record<string, unknown>>>(entries);
+  }).pipe(Effect.provide(NodeServices.layer)),
+);
+
+const configOf = (file: string): Readonly<Record<string, unknown>> => configs.get(file) ?? {};
 
 const stringsIn = (value: unknown): readonly string[] => {
   if (typeof value === "string") {

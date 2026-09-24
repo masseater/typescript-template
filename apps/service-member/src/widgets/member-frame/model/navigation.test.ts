@@ -17,7 +17,7 @@ describe("memberNavItems", () => {
     expect(search?.to).toBe("/search");
   });
 
-  it("lists the primary destinations including the board", () => {
+  it("lists the primary destinations", () => {
     expect.hasAssertions();
     expect(memberNavItems(false, "member-1").map((item) => item.id)).toStrictEqual([
       "home",

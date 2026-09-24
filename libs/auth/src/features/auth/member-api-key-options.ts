@@ -5,7 +5,7 @@ import {
   memberApiKeyReadPermissions,
 } from "@repo/config";
 
-const memberApiKeyPlugin = () =>
+const memberApiKeyPlugin = (): ReturnType<typeof apiKey> =>
   apiKey({
     enableSessionForAPIKeys: false,
     permissions: { defaultPermissions: memberApiKeyReadPermissions },

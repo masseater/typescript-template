@@ -29,4 +29,6 @@ const freePort = (): Effect.Effect<number, JourneyFailure> =>
 
 const loopbackOrigin = (port: number): string => `http://${loopback}:${port}`;
 
-export { freePort, loopback, loopbackOrigin };
+const browserOrigin = (port: number): string => `http://localhost:${port}`;
+
+export { browserOrigin, freePort, loopback, loopbackOrigin };

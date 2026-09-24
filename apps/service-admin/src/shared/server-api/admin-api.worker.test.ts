@@ -81,7 +81,7 @@ const seedAccounts = Effect.gen(function* seedAccounts() {
 
 function adminApp() {
   const runtime = workerRuntime(() =>
-    Layer.orDie(appLayer({ env: appEnvironment(), audience: APPLICATION.admin, routes })),
+    Layer.orDie(appLayer({ audience: APPLICATION.admin, env: appEnvironment(), routes })),
   );
   const app = createApi(apiRoot).use(adminRoutes(apiRoutes(runtime, reporting)));
   const cookieOf = (actor: Actor): Effect.Effect<string> =>

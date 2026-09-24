@@ -41,7 +41,6 @@ export {
 } from "./security.ts";
 export {
   canViewProfile,
-  clearPhotoKeys,
   photoKeysOf,
   profileListed,
   profileVisibleTo,
@@ -88,7 +87,6 @@ export {
   listMemberInquiries,
   replyAsAdmin,
   replyAsMember,
-  requireInquiryResponder,
 } from "./inquiry.ts";
 export type {
   AdminInquirySummary,
@@ -111,10 +109,12 @@ export {
 export { dashboardStaff, refreshMetricSnapshots } from "./dashboard-staff.ts";
 export type {
   AuditEventView,
+  AuditPage,
   MetricTrendPoint,
   OverviewCard,
   OverviewMetrics,
   ReadOnlyDashboardStaff,
+  TrendQuery,
 } from "./dashboard-staff.ts";
 export { PaidPlanRequired } from "./paid-plan-required.ts";
 export {
@@ -146,5 +146,23 @@ export {
   suspendTarget,
   warnTarget,
 } from "./trust-admin.ts";
-export { countRows } from "./count-rows.ts";
 export { clockDate } from "./clock-date.ts";
+export {
+  RecordingNotFound,
+  RecordingNotRetryable,
+  SpeakerPersonNotFound,
+  assignSpeaker,
+  beginTranscription,
+  createRecording,
+  deleteRecording,
+  failRecording,
+  findRecording,
+  listPeople,
+  listRecordings,
+  registerPerson,
+  removePerson,
+  retryRecording,
+  storeTranscript,
+} from "./recordings.ts";
+export { WikiDraftConflict, discardWikiDraft, findWikiDraft, saveWikiDraft } from "./wiki-draft.ts";
+export { countRows } from "./count-rows.ts";

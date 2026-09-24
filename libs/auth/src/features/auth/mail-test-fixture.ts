@@ -1,9 +1,9 @@
-import { setupNetwork } from "@msw/cloudflare";
 import { mailpitOrigin, mailpitSendPath, httpStatus } from "@repo/config";
 import { Context, Effect, Layer, Ref, Schema } from "effect";
 import { HttpResponse, http } from "msw";
 
 import { mailSubjects } from "./email.ts";
+import { MockNetwork, mockNetwork } from "./mock-network-test-fixture.ts";
 
 type Delivery = {
   readonly link: string;
@@ -55,28 +55,6 @@ const receiveMail = (deliveries: Mailbox["Service"]) => {
     );
 };
 
-type Network = ReturnType<typeof setupNetwork>;
-
-class MockNetwork extends Context.Service<MockNetwork, Network>()("@repo/auth/MockNetwork") {}
-
-const startNetwork = (): Network => {
-  const network = setupNetwork();
-  network.configure({ onUnhandledFrame: "error" });
-  network.enable();
-  return network;
-};
-
-const stopNetwork = (network: Readonly<Network>): Effect.Effect<void> => {
-  return Effect.sync(() => {
-    network.disable();
-  });
-};
-
-const mockNetwork = Layer.effect(
-  MockNetwork,
-  Effect.acquireRelease(Effect.sync(startNetwork), stopNetwork),
-);
-
 const mailServer = Layer.effect(
   Mailbox,
   Effect.gen(function* startMailServer() {
@@ -116,7 +94,7 @@ const hasMail = Effect.fn("hasMail")(function* hasMail(email: string) {
 });
 
 export {
-  MockNetwork,
+  Mailbox,
   clearMailbox,
   hasMail,
   mailConfig,

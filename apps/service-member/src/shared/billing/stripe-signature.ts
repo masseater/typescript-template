@@ -28,7 +28,7 @@ function sameDigest(expected: string, candidate: string): boolean {
   if (expected.length !== candidate.length) {
     return false;
   }
-  const difference = [...expected].reduce(
+  const difference = Array.from(expected).reduce(
     (accumulated, character, index) =>
       accumulated | (character.charCodeAt(0) ^ candidate.charCodeAt(index)),
     0,

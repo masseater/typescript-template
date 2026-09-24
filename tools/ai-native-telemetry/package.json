@@ -12,7 +12,8 @@
     "directory": "tools/ai-native-telemetry"
   },
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "type": "module",
   "sideEffects": false,
@@ -42,22 +43,24 @@
   },
   "dependencies": {
     "@opentelemetry/api": "catalog:",
-    "@opentelemetry/api-logs": "0.221.0",
-    "@opentelemetry/context-async-hooks": "2.10.0",
+    "@opentelemetry/api-logs": "catalog:",
+    "@opentelemetry/context-async-hooks": "catalog:",
     "@opentelemetry/core": "catalog:",
-    "@opentelemetry/exporter-logs-otlp-http": "0.221.0",
+    "@opentelemetry/exporter-logs-otlp-http": "catalog:",
     "@opentelemetry/exporter-metrics-otlp-http": "catalog:",
-    "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
-    "@opentelemetry/propagator-env-carrier": "0.221.0",
-    "@opentelemetry/resources": "2.10.0",
-    "@opentelemetry/sdk-logs": "0.221.0",
+    "@opentelemetry/exporter-trace-otlp-http": "catalog:",
+    "@opentelemetry/propagator-env-carrier": "catalog:",
+    "@opentelemetry/resources": "catalog:",
+    "@opentelemetry/sdk-logs": "catalog:",
     "@opentelemetry/sdk-metrics": "catalog:",
-    "@opentelemetry/sdk-trace": "2.10.0",
-    "@opentelemetry/semantic-conventions": "1.43.0",
+    "@opentelemetry/sdk-trace": "catalog:",
+    "@opentelemetry/semantic-conventions": "catalog:",
     "effect": "catalog:",
     "es-toolkit": "catalog:"
   },
   "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@tanstack/intent": "catalog:",
     "@types/node": "catalog:",

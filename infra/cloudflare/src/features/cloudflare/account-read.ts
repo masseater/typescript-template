@@ -5,12 +5,20 @@ import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 
 import { CloudflareFailure } from "./config.ts";
 
+import type { Record } from "effect";
 import type { HttpClientResponse } from "effect/unstable/http";
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const MISSING_REASON = `status_${httpStatus.notFound}`;
 const DECODE_REASON = "decode_failed";
 const UNDECLARED_MEDIA_TYPE = "media_type_undeclared";
+
+const IdentifiedResults = Schema.Struct({
+  result: Schema.Array(Schema.Struct({ id: Schema.String })),
+});
+const NamedResults = Schema.Struct({
+  result: Schema.Array(Schema.Struct({ name: Schema.String })),
+});
 
 interface AccountAccess {
   readonly accountId: string;
@@ -21,7 +29,7 @@ type Unreadable = Readonly<{ unreadable: readonly string[] }>;
 
 const cloudflareEndpoint = Symbol("cloudflareEndpoint");
 
-type Query = Readonly<Record<string, string>>;
+type Query = Record.ReadonlyRecord<string, string>;
 type Endpoint = Readonly<{ marker: typeof cloudflareEndpoint; path: string; shape: string }>;
 type Collection = Readonly<{ filter?: Query; pageSize?: number; source: Endpoint }>;
 
@@ -254,6 +262,8 @@ const readPages = Effect.fn("readPages")(function* readPages<Shape, Encoded>(
 });
 
 export {
+  IdentifiedResults,
+  NamedResults,
   STATE_STORE_SOURCE,
   endpoint,
   isUnreadable,

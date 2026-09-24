@@ -1,6 +1,7 @@
 import { isRecord } from "../dependency-catalog/record-fields.ts";
 import { repositoryRelative } from "./repository-path-test-fixture.ts";
 import { replacementFor, replacementMessage } from "./retired-packages.ts";
+import { dependencyFields } from "./workspace-layout.ts";
 
 interface WorkspaceManifest {
   readonly area: string;
@@ -11,12 +12,13 @@ interface WorkspaceManifest {
 const field = (declared: unknown, propertyName: string): unknown =>
   isRecord(declared) ? Object.getOwnPropertyDescriptor(declared, propertyName)?.value : undefined;
 
-const dependencyFields = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-] as const;
+const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
+  "../../../../../../package.json",
+  {
+    eager: true,
+    import: "default",
+  },
+);
 
 const manifestModules: Readonly<Record<string, unknown>> = import.meta.glob(
   "../../../../../../{apps,libs,infra,tools}/*/package.json",
@@ -139,6 +141,7 @@ export {
   field,
   libraryMixedSurfaceViolations,
   retiredDependencyViolations,
+  rootManifests,
   rootOnlyDependencyViolations,
   rootOnlyPackages,
   workspaceManifests,

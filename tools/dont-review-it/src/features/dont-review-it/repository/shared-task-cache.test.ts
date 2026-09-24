@@ -1,9 +1,9 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { ConfigProvider, Effect, FileSystem, Path } from "effect";
+import { describe, expect } from "vite-plus/test";
 
-import { describe, expect, it } from "vite-plus/test";
-
+import { pathExists } from "../platform/file-system.ts";
 import {
   SharedTaskCacheUnset,
   cleanSharedTaskCache,
@@ -11,53 +11,75 @@ import {
   sharedTaskCacheEnv,
 } from "./shared-task-cache.ts";
 
-describe("shared task cache", () => {
-  it("rejects a missing shared cache path", () => {
-    expect.hasAssertions();
-    expect(() => readSharedTaskCache({})).toThrow(SharedTaskCacheUnset);
-    expect(() => readSharedTaskCache({ [sharedTaskCacheEnv]: "   " })).toThrow(
-      SharedTaskCacheUnset,
+const readUnder = (env: Record<string, string>) =>
+  readSharedTaskCache.pipe(
+    Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
+    Effect.flip,
+  );
+
+const cacheRoot = Effect.gen(function* cacheRoot() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const paths = yield* Path.Path;
+  const root = yield* filesystem.makeTempDirectoryScoped({ prefix: "shared-task-cache-" });
+  return paths.join(root, "cache");
+});
+
+layer(NodeServices.layer)("shared task cache", (it) => {
+  describe("a missing shared cache path", () => {
+    it.effect("is refused", () =>
+      Effect.gen(function* program() {
+        expect(yield* readUnder({})).toBeInstanceOf(SharedTaskCacheUnset);
+        expect(yield* readUnder({ [sharedTaskCacheEnv]: "   " })).toBeInstanceOf(
+          SharedTaskCacheUnset,
+        );
+      }),
     );
   });
 
-  it("reads the configured shared cache path", () => {
-    expect.hasAssertions();
-    expect(readSharedTaskCache({ [sharedTaskCacheEnv]: "/tmp/task-cache" })).toBe(
-      "/tmp/task-cache",
+  describe("a configured shared cache path", () => {
+    it.effect("is read", () =>
+      Effect.gen(function* program() {
+        const configured = yield* readSharedTaskCache.pipe(
+          Effect.provide(
+            ConfigProvider.layer(
+              ConfigProvider.fromEnv({ env: { [sharedTaskCacheEnv]: "/tmp/task-cache" } }),
+            ),
+          ),
+        );
+        expect(configured).toBe("/tmp/task-cache");
+      }),
     );
   });
 
-  it("replaces an existing cache directory with an empty one", async () => {
-    expect.hasAssertions();
-    const root = await mkdtemp(path.join(tmpdir(), "shared-task-cache-"));
-    const cache = path.join(root, "cache");
-    await mkdir(cache);
-    await writeFile(path.join(cache, "stale"), "old");
-    try {
-      const result = await cleanSharedTaskCache(cache, "run-1");
-      expect(result).toStrictEqual({
-        event: "quality.shared_task_cache_cleaned",
-        ok: true,
-        path: cache,
-      });
-      await expect(readFile(path.join(cache, "stale"), "utf8")).rejects.toThrow(
-        /ENOENT|no such file/u,
-      );
-    } finally {
-      await rm(root, { force: true, recursive: true });
-    }
+  describe("an existing cache directory", () => {
+    it.effect("is replaced with an empty one", () =>
+      Effect.gen(function* program() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const cache = yield* cacheRoot;
+        yield* filesystem.makeDirectory(cache);
+        yield* filesystem.writeFileString(paths.join(cache, "stale"), "old");
+        const result = yield* cleanSharedTaskCache(cache, "run-1");
+        expect(result).toStrictEqual({
+          event: "quality.shared_task_cache_cleaned",
+          ok: true,
+          path: cache,
+        });
+        expect(yield* pathExists(paths.join(cache, "stale"))).toBe(false);
+      }),
+    );
   });
 
-  it("creates the cache directory when it is missing", async () => {
-    expect.hasAssertions();
-    const root = await mkdtemp(path.join(tmpdir(), "shared-task-cache-"));
-    const cache = path.join(root, "cache");
-    try {
-      await cleanSharedTaskCache(cache, "run-2");
-      await writeFile(path.join(cache, "ready"), "ok");
-      await expect(readFile(path.join(cache, "ready"), "utf8")).resolves.toBe("ok");
-    } finally {
-      await rm(root, { force: true, recursive: true });
-    }
+  describe("a missing cache directory", () => {
+    it.effect("is created", () =>
+      Effect.gen(function* program() {
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const cache = yield* cacheRoot;
+        yield* cleanSharedTaskCache(cache, "run-2");
+        yield* filesystem.writeFileString(paths.join(cache, "ready"), "ok");
+        expect(yield* filesystem.readFileString(paths.join(cache, "ready"))).toBe("ok");
+      }),
+    );
   });
 });

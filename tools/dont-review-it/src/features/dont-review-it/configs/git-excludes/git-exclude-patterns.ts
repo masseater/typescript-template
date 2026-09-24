@@ -1,8 +1,8 @@
 import { homedir } from "node:os";
-import { join } from "node:path";
 
 import { readTextFile } from "../../lint/oxlint/lib/canonical-values/source-files.ts";
 import { gitOutput, type GitEnvironment } from "../../lint/oxlint/lib/git-output.ts";
+import { path } from "../../platform/path.ts";
 import { ignoreFilePatterns } from "./ignore-file-patterns.ts";
 
 const configHomeOf = (environment: GitEnvironment): string => {
@@ -10,7 +10,7 @@ const configHomeOf = (environment: GitEnvironment): string => {
   if (configHome !== undefined && configHome !== "") return configHome;
 
   const home = environment.env.HOME;
-  return join(home === undefined || home === "" ? homedir() : home, ".config");
+  return path.join(home === undefined || home === "" ? homedir() : home, ".config");
 };
 
 const globalExcludeFile = (environment: GitEnvironment): string => {
@@ -20,7 +20,7 @@ const globalExcludeFile = (environment: GitEnvironment): string => {
   );
   if (configured !== null && configured !== "") return configured;
 
-  return join(configHomeOf(environment), "git", "ignore");
+  return path.join(configHomeOf(environment), "git", "ignore");
 };
 
 /** @canonical-values dont-review-it.git-info-directory */
@@ -42,8 +42,8 @@ const repositoryExcludeFiles = (environment: GitEnvironment): readonly string[] 
   if (repositoryRoot === undefined || gitCommonDirectory === undefined) return [];
 
   return [
-    join(gitCommonDirectory, GIT_DIRECTORY_SEGMENT.info, GIT_DIRECTORY_SEGMENT.exclude),
-    join(repositoryRoot, ".gitignore"),
+    path.join(gitCommonDirectory, GIT_DIRECTORY_SEGMENT.info, GIT_DIRECTORY_SEGMENT.exclude),
+    path.join(repositoryRoot, ".gitignore"),
   ];
 };
 

@@ -1,21 +1,29 @@
-import { adminScopes, mcpAuthorization, mcpSession } from "@repo/auth";
-import { Effect } from "effect";
+import { adminScopes, mcpAuthorizer, mcpJsonRpcError, mcpUnauthorized } from "@repo/auth";
+import { httpStatus } from "@repo/config";
+import { createInsufficientScopeError } from "better-auth/oauth2";
+import { Effect, Option } from "effect";
 
-import type { McpSession, McpTokenClaims } from "@repo/auth";
+type AdminMcpActor = Readonly<{ sessionId: string; userId: string }>;
 
-type AdminMcpActor = McpSession;
+const requiredScopes = ["admin:read"];
 
-const adminReadScope = "admin:read";
-
-function actorFor(claims: McpTokenClaims): Effect.Effect<AdminMcpActor | Response> {
-  return Effect.succeed(mcpSession(claims, "ADMIN_SESSION_REQUIRED"));
-}
-
-const authorizeMcpRequest = mcpAuthorization({
-  actor: actorFor,
-  challengeScopes: [adminReadScope],
-  recognizedScopes: adminScopes,
-  toolScopes: [adminReadScope],
+const authorizeMcpRequest = mcpAuthorizer({
+  actorOf: (subject) => {
+    const { sid, sub } = subject;
+    return Effect.succeed(
+      typeof sub === "string" && typeof sid === "string"
+        ? ({ sessionId: sid, userId: sub } satisfies AdminMcpActor)
+        : mcpJsonRpcError({ message: "ADMIN_SESSION_REQUIRED", status: httpStatus.forbidden }),
+    );
+  },
+  challengeScopes: requiredScopes,
+  scopeError: (granted) => {
+    if (!adminScopes.some((registered) => granted.has(registered))) {
+      return Option.some(mcpUnauthorized("ACCESS_TOKEN_INVALID"));
+    }
+    const missing = requiredScopes.filter((required) => !granted.has(required));
+    return missing.length > 0 ? Option.some(createInsufficientScopeError(missing)) : Option.none();
+  },
 });
 
 export { authorizeMcpRequest };

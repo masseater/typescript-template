@@ -56,7 +56,7 @@ export const listStaff = Effect.fn("listStaff")(function* listStaff(sessionId: s
       .where(
         and(
           eq(user.role, ROLE.staff),
-          liveStaff(database, sessionId, checkedAt, STAFF_PERMISSION.editor),
+          liveStaff(database, { checkedAt, required: STAFF_PERMISSION.editor, sessionId }),
         ),
       )
       .orderBy(desc(user.createdAt), user.id),
@@ -88,13 +88,16 @@ export const setStaffPermission = Effect.fn("setStaffPermission")(
     const actor = yield* requireStaff(sessionId, STAFF_PERMISSION.editor);
     const updatedAt = DateTime.toDate(yield* DateTime.now);
     const [, changedStaff] = yield* query((database) => {
-      const live = liveStaff(database, sessionId, updatedAt, STAFF_PERMISSION.editor);
+      const live = liveStaff(database, {
+        checkedAt: updatedAt,
+        required: STAFF_PERMISSION.editor,
+        sessionId,
+      });
       const audit = database.run(
-        auditWhenTargeted(
-          database,
-          { ...staffActor(actor, AUDIT_ACTION.staffPermissionChanged), targetId: staffId },
-          live,
-        ),
+        auditWhenTargeted(database, {
+          actorIsLive: live,
+          entry: { ...staffActor(actor, AUDIT_ACTION.staffPermissionChanged), targetId: staffId },
+        }),
       );
       const transition = database
         .update(user)
@@ -121,13 +124,12 @@ export const removeStaff = Effect.fn("removeStaff")(function* removeStaff(
   }
   const checkedAt = DateTime.toDate(yield* DateTime.now);
   const [, removedStaff] = yield* query((database) => {
-    const live = liveStaff(database, sessionId, checkedAt, STAFF_PERMISSION.editor);
+    const live = liveStaff(database, { checkedAt, required: STAFF_PERMISSION.editor, sessionId });
     const audit = database.run(
-      auditWhenTargeted(
-        database,
-        { ...staffActor(actor, AUDIT_ACTION.staffRemoved), targetId: staffId },
-        live,
-      ),
+      auditWhenTargeted(database, {
+        actorIsLive: live,
+        entry: { ...staffActor(actor, AUDIT_ACTION.staffRemoved), targetId: staffId },
+      }),
     );
     const removal = database
       .delete(user)

@@ -17,7 +17,7 @@ import {
   sessionBeforeEnrollment,
   signInAgainAfterTotp,
   signInAs,
-  startWikiAuthorization,
+  startAuthorization,
 } from "./index-test-fixture.ts";
 
 describe("request hooks", () => {
@@ -188,7 +188,7 @@ describe("request hooks", () => {
     const it = authTest.extend("continued", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* continueWeakly() {
-          const flow = yield* startWikiAuthorization();
+          const flow = yield* startAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
           const weak = yield* signInAs(APPLICATION.wiki, "owner@example.com");
           return yield* weak.json("/oauth2/continue", {
@@ -211,7 +211,7 @@ describe("request hooks", () => {
     const it = authTest.extend("smuggled", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* smuggle() {
-          const flow = yield* startWikiAuthorization();
+          const flow = yield* startAuthorization();
           yield* bootstrapVerifiedStaff("owner@example.com");
           const client = yield* clientOf(APPLICATION.wiki);
           return yield* client.json("/sign-in/email", {

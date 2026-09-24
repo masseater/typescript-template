@@ -26,12 +26,13 @@
     "@repo/observability": "workspace:*",
     "effect": "catalog:",
     "effect-cf": "0.47.0",
-    "elysia": "2.0.0-beta.16"
+    "elysia": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "catalog:",
     "@effect/vitest": "catalog:",
     "@msw/cloudflare": "catalog:",
+    "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "msw": "catalog:",
     "typescript": "catalog:",

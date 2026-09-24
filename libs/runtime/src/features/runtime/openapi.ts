@@ -1,20 +1,14 @@
-import { scalarReferencePath, type Application } from "@repo/config";
-import { httpStatus } from "@repo/config";
-import { Result, Schema } from "effect";
+import { httpStatus, scalarReferencePath, type Application } from "@repo/config";
+import { Option, Result, Schema, type JsonSchema } from "effect";
 
 import { ErrorBody, type Decodable } from "./contracts.ts";
-import { declaredStatuses } from "./failures.ts";
+import { declaredStatuses, type AnyFailureTable } from "./failures.ts";
 
-import type { JsonSchema } from "effect";
 import type { DocumentDecoration } from "elysia/types";
-import type { AnyFailureTable } from "./failures.ts";
 
-interface RouteDetail {
-  readonly detail: DocumentDecoration;
-}
-interface QueryContract {
+type QueryContract = {
   readonly fields: Schema.Struct.Fields;
-}
+};
 type RouteSpec<Input extends Decodable, Value, Encoded> = {
   readonly response: Schema.Codec<Value, Encoded>;
 } & (
@@ -23,19 +17,10 @@ type RouteSpec<Input extends Decodable, Value, Encoded> = {
   | { readonly body?: never; readonly query?: never }
 );
 type Parameters = NonNullable<DocumentDecoration["parameters"]>;
-type ParameterSchema = NonNullable<Extract<Parameters[number], { name: string }>["schema"]>;
+type RouteDetail = { readonly detail: DocumentDecoration };
 type Guard = (context: { readonly request: Request }) => Promise<Response | undefined>;
-interface Content {
-  content: { "application/json": { schema: JsonSchema.JsonSchema } };
-}
-interface DocumentedRoute {
-  readonly hooks?: { readonly detail?: DocumentDecoration };
-  readonly method: string;
-  readonly path: string;
-}
 
 const inlined = { referencePolicy: (): undefined => undefined } as const;
-const hidden: RouteDetail = { detail: { hide: true } };
 const docsPath = "/docs";
 const failureDescription = "失敗したときの本文";
 const successDescription = "成功したときの本文";
@@ -62,90 +47,121 @@ const ObjectSchema = Schema.Struct({
   properties: Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Unknown)),
   required: Schema.optionalKey(Schema.Array(Schema.String)),
 });
-const skippedMethods = new Set(["ALL", "HEAD", "OPTIONS"]);
+const DocumentedRoute = Schema.Struct({
+  hooks: Schema.optionalKey(
+    Schema.Struct({
+      detail: Schema.optionalKey(
+        Schema.Struct({
+          hide: Schema.optionalKey(Schema.Boolean),
+          parameters: Schema.optionalKey(Schema.Unknown),
+          requestBody: Schema.optionalKey(Schema.Unknown),
+          responses: Schema.optionalKey(Schema.Unknown),
+        }),
+      ),
+    }),
+  ),
+  method: Schema.String,
+  path: Schema.String,
+});
+const readRoute = Schema.decodeUnknownOption(DocumentedRoute);
+const hidden: RouteDetail = { detail: { hide: true } };
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function jsonSchema(contract: Decodable): JsonSchema.JsonSchema {
-  return Schema.toJsonSchemaDocument(contract, inlined).schema;
-}
+const jsonSchema = (contract: Decodable): JsonSchema.JsonSchema =>
+  Schema.toJsonSchemaDocument(contract, inlined).schema;
 
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function jsonContent(contract: Decodable): Content {
-  return { content: { "application/json": { schema: jsonSchema(contract) } } };
-}
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-function queryParameters(contract: Decodable & QueryContract): Parameters {
+const queryParameters = (contract: Decodable & QueryContract): Parameters => {
   const { properties, required } = Result.getOrThrow(
     Schema.decodeUnknownResult(ObjectSchema)(jsonSchema(contract)),
   );
-  const names = new Set(required);
-  return Object.entries(properties).map(([name, property]) => ({
+  const requiredFields = new Set(required);
+  return Object.entries(properties).map(([fieldName, property]) => ({
     in: "query",
-    name,
-    required: names.has(name),
-    schema: property as ParameterSchema,
+    name: fieldName,
+    required: requiredFields.has(fieldName),
+    schema: property as NonNullable<Extract<Parameters[number], { name: string }>["schema"]>,
   }));
-}
+};
 
-function failureResponses(failures: AnyFailureTable): DocumentDecoration["responses"] {
-  const body = { ...jsonContent(ErrorBody), description: failureDescription };
-  return Object.fromEntries(declaredStatuses(failures).map((status) => [status, body]));
-}
+const jsonContent = (
+  contract: Decodable,
+): { content: { "application/json": { schema: JsonSchema.JsonSchema } } } => ({
+  content: { "application/json": { schema: jsonSchema(contract) } },
+});
 
-function routeDetail<Input extends Decodable, Value, Encoded>(
+const failureResponses = (failures: AnyFailureTable): DocumentDecoration["responses"] => {
+  const failureContent = { ...jsonContent(ErrorBody), description: failureDescription };
+  return Object.fromEntries(
+    declaredStatuses(failures).map((failureStatus) => [failureStatus, failureContent]),
+  );
+};
+
+const routeDetail = <Input extends Decodable, Value, Encoded>(
   spec: RouteSpec<Input, Value, Encoded>,
   failures: AnyFailureTable,
-): RouteDetail {
-  const { body, query, response } = spec;
-  const detail: DocumentDecoration = {
+): RouteDetail => ({
+  detail: {
+    ...(spec.body === undefined
+      ? {}
+      : { requestBody: { ...jsonContent(spec.body), required: true } }),
+    ...(spec.query === undefined ? {} : { parameters: queryParameters(spec.query) }),
     responses: {
       ...failureResponses(failures),
-      [httpStatus.ok]: { ...jsonContent(response), description: successDescription },
+      [httpStatus.ok]: { ...jsonContent(spec.response), description: successDescription },
     },
-  };
-  if (body !== undefined) {
-    detail.requestBody = { ...jsonContent(body), required: true };
-  }
-  if (query !== undefined) {
-    detail.parameters = queryParameters(query);
-  }
-  return { detail };
-}
+  },
+});
 
-function openApiDocument(
-  routes: readonly DocumentedRoute[],
+const operationOf = (
+  detail: NonNullable<NonNullable<typeof DocumentedRoute.Type.hooks>["detail"]> | undefined,
+): Readonly<Record<string, unknown>> => ({
+  ...(detail?.parameters === undefined ? {} : { parameters: detail.parameters }),
+  ...(detail?.requestBody === undefined ? {} : { requestBody: detail.requestBody }),
+  responses: detail?.responses ?? {},
+});
+
+const skippedMethods = new Set(["ALL", "HEAD", "OPTIONS"]);
+
+const documentedOperation = (
+  served: unknown,
+): readonly [string, string, Readonly<Record<string, unknown>>] | undefined => {
+  const route = Option.getOrUndefined(readRoute(served));
+  if (
+    route === undefined ||
+    route.hooks?.detail?.hide === true ||
+    skippedMethods.has(route.method.toUpperCase())
+  ) {
+    return undefined;
+  }
+  return [route.path, route.method.toLowerCase(), operationOf(route.hooks?.detail)];
+};
+
+const openApiDocument = (
+  routes: readonly unknown[],
   audience: Application,
 ): {
   readonly info: { readonly description: string; readonly title: string; readonly version: string };
   readonly openapi: "3.0.3";
-  readonly paths: Readonly<Record<string, Readonly<Record<string, DocumentDecoration>>>>;
-} {
-  const paths: Record<string, Record<string, DocumentDecoration>> = {};
-  for (const route of routes) {
-    const detail = route.hooks?.detail;
-    if (detail?.hide === true || skippedMethods.has(route.method.toUpperCase())) {
-      continue;
-    }
-    const method = route.method.toLowerCase();
-    const methods = paths[route.path] ?? {};
-    methods[method] = {
-      ...(detail?.parameters === undefined ? {} : { parameters: detail.parameters }),
-      ...(detail?.requestBody === undefined ? {} : { requestBody: detail.requestBody }),
-      responses: detail?.responses ?? {},
-    };
-    paths[route.path] = methods;
-  }
-  return {
-    info: { description: `${audience} の HTTP API`, title: audience, version: "1" },
-    openapi: "3.0.3",
-    paths,
-  };
-}
+  readonly paths: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+} => ({
+  info: { description: `${audience} の HTTP API`, title: audience, version: "1" },
+  openapi: "3.0.3",
+  paths: routes
+    .map(documentedOperation)
+    .reduce<Readonly<Record<string, Readonly<Record<string, unknown>>>>>(
+      (documented, operation) =>
+        operation === undefined
+          ? documented
+          : {
+              ...documented,
+              [operation[0]]: { ...documented[operation[0]], [operation[1]]: operation[2] },
+            },
+      {},
+    ),
+});
 
-function referencePage(audience: Application): Response {
-  const configuration = JSON.stringify(referenceConfiguration);
-  const body = `<!doctype html>
+const referencePage = (audience: Application): Response =>
+  new Response(
+    `<!doctype html>
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
@@ -153,18 +169,18 @@ function referencePage(audience: Application): Response {
     <title>${audience}</title>
   </head>
   <body>
-    <script id="api-reference" type="application/json" data-configuration='${configuration}'></script>
+    <script id="api-reference" type="application/json" data-configuration='${JSON.stringify(referenceConfiguration)}'></script>
     <script src="${scalarReferencePath}"></script>
   </body>
 </html>
-`;
-  return new Response(body, {
-    headers: {
-      "content-security-policy": referencePolicy,
-      "content-type": "text/html; charset=utf-8",
+`,
+    {
+      headers: {
+        "content-security-policy": referencePolicy,
+        "content-type": "text/html; charset=utf-8",
+      },
     },
-  });
-}
+  );
 
 export { docsPath, hidden, openApiDocument, referencePage, routeDetail };
 export type { DocumentedRoute, Guard, QueryContract, RouteDetail, RouteSpec };

@@ -120,11 +120,6 @@ const deliverLink = ({
   }).pipe(withSpan(template.span));
 };
 
-const notificationMailSubjects = {
-  board: "掲示板の更新があります",
-  conversationMessage: "新しいメッセージがあります",
-} as const;
-
 /** @internal */
 export { mailSubjects, notificationMailSubjects };
 
@@ -184,19 +179,6 @@ export const sendEmailChangeNotice = (
     },
   });
 
-export const sendContactEmail = (
-  settings: MailSettings,
-  outbound: Readonly<{
-    readonly to: string;
-    readonly submission: Readonly<{ email: string; message: string; name: string }>;
-  }>,
-): Effect.Effect<void, EmailDeliveryFailed> =>
-  deliver(settings, {
-    subject: mailSubjects.contact,
-    text: `名前: ${outbound.submission.name}\nメール: ${outbound.submission.email}\n\n${outbound.submission.message}`,
-    to: outbound.to,
-  }).pipe(withSpan("email.contact"));
-
 export const sendEmailChangeCompleted = (
   settings: MailSettings,
   notice: LinkedMail,
@@ -213,7 +195,7 @@ export const sendEmailChangeCompleted = (
 
 export const sendInviteEmail = (
   settings: MailSettings,
-  invitation: LinkedMail,
+  invitation: { readonly email: string; readonly url: string },
 ): Effect.Effect<void, EmailDeliveryFailed> => {
   if (URL.parse(invitation.url)?.origin !== settings.APP_ORIGIN) {
     return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
@@ -225,6 +207,24 @@ export const sendInviteEmail = (
   }).pipe(withSpan("email.invite"));
 };
 
+export const sendContactEmail = (
+  settings: MailSettings,
+  outbound: Readonly<{
+    readonly to: string;
+    readonly submission: Readonly<{ email: string; message: string; name: string }>;
+  }>,
+): Effect.Effect<void, EmailDeliveryFailed> =>
+  deliver(settings, {
+    subject: mailSubjects.contact,
+    text: `名前: ${outbound.submission.name}\nメール: ${outbound.submission.email}\n\n${outbound.submission.message}`,
+    to: outbound.to,
+  }).pipe(withSpan("email.contact"));
+
+const notificationMailSubjects = {
+  board: "掲示板の更新があります",
+  conversationMessage: "新しいメッセージがあります",
+} as const;
+
 export const sendNotificationEmail = (
   settings: MailSettings,
   outbound: Readonly<{
@@ -235,8 +235,8 @@ export const sendNotificationEmail = (
     readonly to: string;
   }>,
 ): Effect.Effect<void, EmailDeliveryFailed> => {
-  const notificationUrl = new URL(outbound.href, settings.APP_ORIGIN).href;
-  if (URL.parse(notificationUrl)?.origin !== settings.APP_ORIGIN) {
+  const url = new URL(outbound.href, settings.APP_ORIGIN).href;
+  if (URL.parse(url)?.origin !== settings.APP_ORIGIN) {
     return Effect.fail(new EmailDeliveryFailed({ reason: "origin_mismatch" }));
   }
   const subject =
@@ -245,9 +245,9 @@ export const sendNotificationEmail = (
       : notificationMailSubjects.board;
   return deliver(settings, {
     subject,
-    text: `${subject}\n\n${notificationUrl}`,
+    text: `${subject}\n\n${url}`,
     to: outbound.to,
   }).pipe(withSpan("email.notification"));
 };
 
-export type { LinkedMail, MailBinding, MailSettings };
+export type { MailSettings };

@@ -11,50 +11,48 @@ import { Cause, Effect, Option, Schema } from "effect";
 import { jsonResponse } from "./responses.ts";
 
 import type { InputInvalid } from "./input-invalid.ts";
+
 type Tagged = {
   readonly _tag: string;
 };
-type SettledStatus =
+type HttpStatus = (typeof httpStatus)[keyof typeof httpStatus];
+type FailureStatus = Exclude<
+  HttpStatus,
   | typeof httpStatus.accepted
   | typeof httpStatus.found
   | typeof httpStatus.noContent
-  | typeof httpStatus.ok;
-type HttpStatus = (typeof httpStatus)[keyof typeof httpStatus];
-type FailureStatus = Exclude<HttpStatus, SettledStatus>;
+  | typeof httpStatus.ok
+>;
 type Failure<Status extends FailureStatus = FailureStatus> = {
   readonly status: Status;
   readonly message: string;
   readonly details?: Readonly<Record<string, unknown>>;
 };
-const mapped = Symbol("FailureMapping");
-type FailureMapping<Caught> = {
-  readonly [mapped]: true;
+const mappingMarker = Symbol("FailureMapping");
+type FailureMapping<CaughtError> = {
+  readonly [mappingMarker]: true;
   readonly statuses: readonly FailureStatus[];
-  readonly failureOf: {
-    bivarianceHack(caughtError: Caught): Failure;
-  }["bivarianceHack"];
+  readonly failureOf: { bivarianceHack(caughtError: CaughtError): Failure }["bivarianceHack"];
 };
-type FailureEntry<Caught> =
-  | Failure
-  | "unexpected"
-  | FailureMapping<Caught>
-  | {
-      bivarianceHack(caughtError: Caught): Failure;
-    }["bivarianceHack"];
 type FailureTable<Failures extends Tagged> = {
-  readonly [Tag in Failures["_tag"]]: FailureEntry<Extract<Failures, { readonly _tag: Tag }>>;
+  readonly [Tag in Failures["_tag"]]:
+    | Failure
+    | "unexpected"
+    | FailureMapping<Extract<Failures, { readonly _tag: Tag }>>
+    | {
+        bivarianceHack(caughtError: Extract<Failures, { readonly _tag: Tag }>): Failure;
+      }["bivarianceHack"];
 };
-type ExactFailureTable<_Failures extends Tagged, Table> = Table;
+type InputFailure = InputInvalid | RequestRejected;
 type AnyFailureEntry =
   | Failure
   | "unexpected"
-  | FailureMapping<any>
-  | ((caughtError: any) => Failure);
+  | FailureMapping<never>
+  | ((caughtError: never) => Failure);
 type AnyFailureTable = Readonly<Record<string, AnyFailureEntry>>;
-type InputKind = "body" | "none" | "query";
-type FailureBody = Readonly<Record<string, unknown>> & {
-  readonly error: string;
-};
+type ExactFailureTable<Failures extends Tagged> = FailureTable<Exclude<Failures, InputFailure>> &
+  AnyFailureTable;
+
 const invalidInput = "入力内容を確認してください。";
 const forbidden = "この操作は許可されていません。";
 const unexpectedMessage = "処理に失敗しました。リクエスト ID でログを確認してください。";
@@ -75,98 +73,114 @@ const FailureShape = Schema.Struct({
 const TaggedShape = Schema.Struct({ _tag: Schema.String });
 const isFailure = Schema.is(FailureShape);
 const isTagged = Schema.is(TaggedShape);
-const failureBy = <const Statuses extends readonly FailureStatus[], Caught>(
-  statuses: Statuses,
-  failureOf: (caughtError: Caught) => Failure<Statuses[number]>,
-): FailureMapping<Caught> => {
-  return { [mapped]: true, failureOf, statuses };
-};
+
+const failureBy = <const Statuses extends readonly FailureStatus[], CaughtError>(
+  answerStatuses: Statuses,
+  failureOf: (caughtError: CaughtError) => Failure<Statuses[number]>,
+): FailureMapping<CaughtError> => ({
+  [mappingMarker]: true,
+  failureOf,
+  statuses: answerStatuses,
+});
+
 const queryFailures: FailureTable<InputInvalid> = {
   InputInvalid: { message: invalidInput, status: httpStatus.badRequest },
 };
-const rejectionStatuses = Object.values(rejectionStatus);
-const bodyFailures: FailureTable<InputInvalid | RequestRejected> = {
+
+const bodyFailures: FailureTable<InputFailure> = {
   ...queryFailures,
-  RequestRejected: failureBy<typeof rejectionStatuses, RequestRejected>(
-    rejectionStatuses,
-    (rejection) => ({
-      message: rejection.reason === "invalid_json" ? invalidInput : forbidden,
-      status: rejectionStatus[rejection.reason],
+  RequestRejected: failureBy(
+    Object.values(rejectionStatus),
+    ({ reason }: Readonly<{ reason: RequestRejected["reason"] }>) => ({
+      message: reason === "invalid_json" ? invalidInput : forbidden,
+      status: rejectionStatus[reason],
     }),
   ),
 };
-const inputFailures: Readonly<Record<InputKind, AnyFailureTable>> = {
+
+const inputFailures = {
   body: bodyFailures,
   none: {},
   query: queryFailures,
-};
-const entryStatuses = (mapEntry: AnyFailureEntry): readonly FailureStatus[] => {
-  if (mapEntry === "unexpected") {
+} as const satisfies Readonly<Record<string, AnyFailureTable>>;
+type InputKind = keyof typeof inputFailures;
+
+const answerStatusesOf = (tableEntry: AnyFailureEntry): readonly FailureStatus[] => {
+  if (tableEntry === "unexpected") {
     return [httpStatus.internalServerError];
   }
-  if (typeof mapEntry === "function") {
+  if (typeof tableEntry === "function") {
     return [];
   }
-  return mapped in mapEntry ? mapEntry.statuses : [mapEntry.status];
+  return mappingMarker in tableEntry ? tableEntry.statuses : [tableEntry.status];
 };
+
 const declaredStatuses = (table: AnyFailureTable): readonly FailureStatus[] => {
-  const statuses = new Set([
-    ...Object.values(table).flatMap(entryStatuses),
+  const answerStatuses = new Set([
+    ...Object.values(table).flatMap(answerStatusesOf),
     httpStatus.internalServerError,
     httpStatus.serviceUnavailable,
   ]);
-  return [...statuses].toSorted((left, right) => left - right);
+  return [...answerStatuses].toSorted((left, right) => left - right);
 };
-const resolvedFailure = (resolved: unknown): Failure | undefined => {
+
+const resolvedFailure = (
+  tableEntry: FailureMapping<never> | ((caughtError: never) => Failure),
+  caughtError: Tagged,
+): Failure | undefined => {
+  const resolved: unknown =
+    typeof tableEntry === "function"
+      ? Reflect.apply(tableEntry, undefined, [caughtError])
+      : Reflect.apply(tableEntry.failureOf, undefined, [caughtError]);
   return isFailure(resolved) ? resolved : undefined;
 };
-const failureOf = (table: AnyFailureTable, caughtError: unknown): Failure | undefined => {
+
+const toFailure = (table: AnyFailureTable, caughtError: unknown): Failure | undefined => {
   if (!isTagged(caughtError) || !Object.hasOwn(table, caughtError._tag)) {
     return undefined;
   }
-  const mapEntry = table[caughtError._tag];
-  if (mapEntry === undefined || mapEntry === "unexpected") {
+  const tableEntry = table[caughtError._tag];
+  if (tableEntry === undefined || tableEntry === "unexpected") {
     return undefined;
   }
-  if (typeof mapEntry === "function") {
-    return resolvedFailure(Reflect.apply(mapEntry, undefined, [caughtError]));
+  if (typeof tableEntry === "function" || mappingMarker in tableEntry) {
+    return resolvedFailure(tableEntry, caughtError);
   }
-  if (mapped in mapEntry) {
-    return resolvedFailure(Reflect.apply(mapEntry.failureOf, mapEntry, [caughtError]));
-  }
-  return mapEntry;
+  return tableEntry;
 };
+
 const reportedFailure = (
   table: AnyFailureTable,
   cause: Readonly<Cause.Cause<unknown>>,
 ): Effect.Effect<Failure> => {
   const caughtError = Cause.findErrorOption(cause);
-  const failure = Option.isSome(caughtError) ? failureOf(table, caughtError.value) : undefined;
+  const failure = Option.isSome(caughtError) ? toFailure(table, caughtError.value) : undefined;
   if (failure !== undefined) {
     return Effect.succeed(failure);
   }
   const unexpected = { message: unexpectedMessage, status: httpStatus.internalServerError };
   return reportFailure(cause).pipe(Effect.as(unexpected));
 };
-const failureBody = (failure: Failure): FailureBody => {
-  return { ...failure.details, error: failure.message };
-};
+type FailureBody = NonNullable<Failure["details"]> & { readonly error: string };
+const failureBody = (failure: Failure): FailureBody => ({
+  ...failure.details,
+  error: failure.message,
+});
 const failureResponse = (
   table: AnyFailureTable,
   cause: Readonly<Cause.Cause<unknown>>,
-): Effect.Effect<Response> => {
-  return reportedFailure(table, cause).pipe(
+): Effect.Effect<Response> =>
+  reportedFailure(table, cause).pipe(
     Effect.map((failure) => jsonResponse(failureBody(failure), failure.status)),
   );
-};
 const runtimeUnavailable = (
   cause: Readonly<Cause.Cause<unknown>>,
   reporting: Reporting,
-): Effect.Effect<Failure> => {
-  return reportUnavailable(cause, reporting).pipe(
+): Effect.Effect<Failure> =>
+  reportUnavailable(cause, reporting).pipe(
     Effect.as({ message: unexpectedMessage, status: httpStatus.serviceUnavailable }),
   );
-};
+
 export {
   declaredStatuses,
   failureBody,
@@ -177,17 +191,13 @@ export {
   runtimeUnavailable,
 };
 export type {
-  AnyFailureEntry,
   AnyFailureTable,
   ExactFailureTable,
   Failure,
   FailureBody,
-  FailureEntry,
   FailureMapping,
   FailureStatus,
   FailureTable,
-  HttpStatus,
   InputKind,
-  SettledStatus,
   Tagged,
 };

@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, subscriptionStatuses } from "@repo/config";
+import { SUBSCRIPTION_STATUS, WEBHOOK_DISPOSITION, subscriptionStatuses } from "@repo/config";
 import { attachCheckout, markPaymentFailed, memberOfCustomer, recordSubscription } from "@repo/db";
 import { Effect, Schema, DateTime } from "effect";
 
@@ -6,6 +6,7 @@ import { StripeEventUnreadable } from "./stripe-event-unreadable.ts";
 
 import type { WebhookOutcome } from "@repo/config";
 import type { StripeEventRecord, SubscriptionRecord } from "@repo/db";
+import type { Decodable } from "@repo/runtime/contracts";
 import type { StripeEvent } from "./stripe.ts";
 
 const millisecondsPerSecond = 1000;
@@ -50,8 +51,6 @@ const Invoice = Schema.Struct({
   subscription: Schema.optionalKey(Schema.NullOr(Schema.String)),
 });
 
-type Decodable = Schema.Top & { readonly DecodingServices: never };
-
 function readObject<Contract extends Decodable>(
   schema: Contract,
   object: unknown,
@@ -88,7 +87,7 @@ const completeCheckout = Effect.fn("completeCheckout")(function* completeCheckou
     session.subscription === null ||
     memberId === undefined
   ) {
-    return WEBHOOK_OUTCOME.ignored;
+    return WEBHOOK_DISPOSITION.ignored;
   }
   const record: SubscriptionRecord = {
     cancelAtPeriodEnd: false,
@@ -110,7 +109,7 @@ const syncSubscription = Effect.fn("syncSubscription")(function* syncSubscriptio
   const memberId =
     subscription.metadata?.["member_id"] ?? (yield* memberOfCustomer(subscription.customer));
   if (memberId === undefined) {
-    return WEBHOOK_OUTCOME.ignored;
+    return WEBHOOK_DISPOSITION.ignored;
   }
   const record: SubscriptionRecord = {
     cancelAtPeriodEnd: subscription.cancel_at_period_end,
@@ -130,7 +129,7 @@ const failPayment = Effect.fn("failPayment")(function* failPayment(event: Stripe
   const subscriptionId =
     invoice.subscription ?? invoice.parent?.subscription_details?.subscription ?? undefined;
   if (subscriptionId === undefined) {
-    return WEBHOOK_OUTCOME.ignored;
+    return WEBHOOK_DISPOSITION.ignored;
   }
   return yield* markPaymentFailed(eventRecord(event), subscriptionId);
 });
@@ -151,7 +150,7 @@ const handleStripeEvent = Effect.fn("handleStripeEvent")(function* handleStripeE
       return yield* failPayment(event);
     }
     default: {
-      return WEBHOOK_OUTCOME.ignored satisfies WebhookOutcome;
+      return WEBHOOK_DISPOSITION.ignored satisfies WebhookOutcome;
     }
   }
 });

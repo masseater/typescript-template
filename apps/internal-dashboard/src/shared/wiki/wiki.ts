@@ -5,10 +5,8 @@ import {
   configuredFeatureFlagsLayer,
 } from "@repo/feature-flags";
 import { configuredAppLayer } from "@repo/runtime";
-import { readWorkerConfig } from "@repo/runtime/bindings";
+import { readAppStorage, readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
-
-import { Embedder, embedWith } from "./embedder.ts";
 
 import type { AuthFailure } from "@repo/auth";
 import type { ConfigurationInvalid } from "@repo/config";
@@ -18,7 +16,7 @@ import type { AppServices } from "@repo/runtime";
 
 const wikiService = APPLICATION.wiki;
 
-type WikiServices = AppServices | Embedder | FeatureFlags | FlagEditorAccess;
+type WikiServices = AppServices | FeatureFlags | FlagEditorAccess;
 
 const staffFlagEditors = Layer.succeed(FlagEditorAccess, {
   assertEditor: (user) =>
@@ -35,14 +33,10 @@ function wikiLayer(
     readWorkerConfig(env).pipe(
       Effect.flatMap((config) =>
         Effect.gen(function* wikiServices() {
-          const embedder = Embedder.of({
-            available: config.AI !== undefined,
-            embed: embedWith(config.AI),
-          });
           const flags = yield* configuredFeatureFlagsLayer(config);
+          const storage = yield* readAppStorage(env, wikiService);
           return Layer.mergeAll(
-            Layer.succeed(Embedder, embedder),
-            configuredAppLayer({ appConfig: config, audience: wikiService, routes }),
+            configuredAppLayer({ appConfig: config, audience: wikiService, routes, storage }),
             flags,
             staffFlagEditors,
           );

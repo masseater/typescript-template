@@ -13,8 +13,6 @@ import {
 
 import type { ConversationSearch } from "#pages/messages/index.ts";
 
-type ConversationParams = Readonly<{ id: string }>;
-
 function requireConversationSearch(raw: unknown): ConversationSearch {
   try {
     return normalizeConversationSearch(raw);
@@ -37,7 +35,7 @@ const Route = createFileRoute("/_member/messages/$id")({
     search,
   }: Readonly<{
     location: Readonly<{ searchStr: string }>;
-    params: ConversationParams;
+    params: Readonly<{ id: string }>;
     search: ConversationSearch;
   }>) => {
     if (location.searchStr !== defaultStringifySearch(search)) {
@@ -47,7 +45,7 @@ const Route = createFileRoute("/_member/messages/$id")({
   loader: ({
     deps,
     params,
-  }: Readonly<{ deps: Readonly<{ page: number }>; params: ConversationParams }>) =>
+  }: Readonly<{ deps: Readonly<{ page: number }>; params: Readonly<{ id: string }> }>) =>
     loadConversation(params.id, deps.page),
   component: ConversationRoute,
   errorComponent: ConversationFailed,

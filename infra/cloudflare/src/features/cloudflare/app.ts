@@ -4,7 +4,11 @@ import {
   jobsWorkflowClass,
   userInboxBinding,
   userInboxClassName,
+  wikiApiBinding,
+  wikiApiEntrypoint,
+  wikiPagesBinding,
 } from "@repo/config";
+import { repositoryRoot } from "@repo/config/repository-root";
 import { cacheNamespaceBinding, fileBucketBinding } from "@repo/config/storage";
 import { coreEntrypoints } from "@repo/core-api/entrypoints";
 import {
@@ -18,7 +22,7 @@ import {
 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
-import { loadArtifacts, repositoryRoot, workerModuleGlobs } from "./artifacts.ts";
+import { loadArtifacts, workerModuleGlobs } from "./artifacts.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
@@ -27,10 +31,11 @@ import { memberLeavePurgeCron } from "./member-leave-purge.ts";
 import { authSecret, otlpAuthorization, settings, stripeSettings } from "./settings.ts";
 import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
+import { wikiWorkerRef } from "./wiki-program.ts";
 
 import type { Application } from "@repo/config";
 import type { Redacted } from "effect";
-import type { BillingEnv, CapabilityEnv, DeclaredEnv, SharedEnv } from "./bindings.ts";
+import type { BillingEnv, DeclaredEnv, SharedEnv } from "./bindings.ts";
 import type { SharedConfig } from "./config.ts";
 
 function appEnv(
@@ -61,52 +66,13 @@ function appEnv(
   });
 }
 
-function analyticsEnv(
-  target: Application,
-  config: SharedConfig,
-): Pick<SharedEnv, "GOOGLE_ANALYTICS_MEASUREMENT_ID"> {
-  if (target !== APPLICATION.user || config.googleAnalyticsMeasurementId === undefined) {
-    return {};
-  }
-  return { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId };
-}
-
-function otlpEnv(
-  config: SharedConfig,
-  authorization: Redacted.Redacted | undefined,
-): Pick<SharedEnv, "OTLP_AUTHORIZATION" | "OTLP_ENABLED" | "OTLP_ENDPOINT"> {
-  if (config.otlp === undefined) {
-    return {};
-  }
+const wikiBindings = Effect.fn("wikiBindings")(function* wikiBindings() {
+  const wiki = yield* wikiWorkerRef();
   return {
-    OTLP_ENABLED: String(config.otlp.enabled),
-    OTLP_ENDPOINT: config.otlp.endpoint,
-    ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
-  };
-}
-
-const wikiEnv = Effect.fn("wikiEnv")(function* wikiEnv(target: Application, shared: DeclaredEnv) {
-  if (target !== APPLICATION.wiki) {
-    return shared;
-  }
-  return {
-    ...shared,
-    FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
-    FLAGSHIP_APP_ID: shared.FLAGS.appId,
+    [wikiApiBinding]: WorkerEntrypoint(wiki, wikiApiEntrypoint),
+    [wikiPagesBinding]: WorkerEntrypoint(wiki),
   };
 });
-
-function jobsEnv(jobsQueue: Queues.Queue | undefined): Partial<CapabilityEnv["jobs"]> {
-  if (jobsQueue === undefined) {
-    return {};
-  }
-  return {
-    JOBS: jobsQueue,
-    PROCESS: Workflow<{ jobId: string }>("Process", {
-      className: jobsWorkflowClass,
-    }),
-  };
-}
 
 const applicationProgram = Effect.fn("applicationProgram")(function* applicationProgram(
   target: Application,
@@ -137,12 +103,37 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
       FLAGSHIP_ACCOUNT_ID: config.accountId,
       FLAGS: flags,
       OPS_EMAIL: config.budget.recipients[0] ?? config.mailFrom,
-      ...analyticsEnv(target, config),
-      ...otlpEnv(config, authorization),
+      ...(target === APPLICATION.user && config.googleAnalyticsMeasurementId !== undefined
+        ? { GOOGLE_ANALYTICS_MEASUREMENT_ID: config.googleAnalyticsMeasurementId }
+        : {}),
+      ...(config.otlp === undefined
+        ? {}
+        : {
+            OTLP_ENABLED: String(config.otlp.enabled),
+            OTLP_ENDPOINT: config.otlp.endpoint,
+            ...(authorization === undefined ? {} : { OTLP_AUTHORIZATION: authorization }),
+          }),
     },
     billing,
   );
-  const env = { ...(yield* wikiEnv(target, shared)), ...jobsEnv(jobsQueue) };
+  const env = {
+    ...(target === APPLICATION.wiki
+      ? {
+          ...shared,
+          FLAGSHIP_API_TOKEN: (yield* accountTokenRef("FlagshipWrite")).value,
+          FLAGSHIP_APP_ID: flags.appId,
+          ...(yield* wikiBindings()),
+        }
+      : shared),
+    ...(jobsQueue === undefined
+      ? {}
+      : {
+          JOBS: jobsQueue,
+          PROCESS: Workflow<{ jobId: string }>("Process", {
+            className: jobsWorkflowClass,
+          }),
+        }),
+  };
   const worker = yield* Worker("Worker", {
     assets: { directory: artifacts.clientDirectory, runWorkerFirst: true },
     bundle: false,

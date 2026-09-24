@@ -2,7 +2,7 @@ import { NodeServices } from "@effect/platform-node";
 import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
-import { journeyRoles } from "./journey-roles-test-fixture.ts";
+import { journeyRoles } from "./journey-roles.ts";
 import { journeyTest } from "./journey-test-fixture.ts";
 import {
   runDocumentJourney,

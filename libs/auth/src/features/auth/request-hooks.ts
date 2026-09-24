@@ -130,15 +130,6 @@ const registersLoopbackClient = function registersLoopbackClient(
   );
 };
 
-const normalizeOauthFields = function normalizeOauthFields(path: string, fields: object): void {
-  if ("oauth_query" in fields && !oauthQueryPaths.has(path)) {
-    deny("OAUTH_QUERY_NOT_ACCEPTED");
-  }
-  if (registersLoopbackClient(path, fields)) {
-    Object.assign(fields, { application_type: "native" });
-  }
-};
-
 const rejectUnsafeFields = function rejectUnsafeFields(
   hookRequest: Readonly<Pick<HookContext, "body" | "path">>,
 ): void {
@@ -147,7 +138,12 @@ const rejectUnsafeFields = function rejectUnsafeFields(
   if ("trustDevice" in fields && fields["trustDevice"] === true) {
     deny("TRUSTED_DEVICE_DISABLED");
   }
-  normalizeOauthFields(hookRequest.path, fields);
+  if ("oauth_query" in fields && !oauthQueryPaths.has(hookRequest.path)) {
+    deny("OAUTH_QUERY_NOT_ACCEPTED");
+  }
+  if (registersLoopbackClient(hookRequest.path, fields)) {
+    Object.assign(fields, { application_type: "native" });
+  }
   if (
     hookRequest.path === "/passkey/verify-registration" &&
     "createSession" in fields &&
@@ -299,12 +295,23 @@ const notifyEmailChangeCompleted = Effect.fn("notifyEmailChangeCompleted")(
     onEmailChangeCompleted: (email: string) => Promise<void>,
   ) {
     const token = queryToken(scope.hookContext);
-    const previous = token === undefined ? undefined : emailChangePrevious(token);
-    if (previous !== undefined) {
-      yield* Effect.promise(() => onEmailChangeCompleted(previous));
+    const previousEmail = token === undefined ? undefined : emailChangePrevious(token);
+    if (previousEmail !== undefined) {
+      yield* Effect.promise(() => onEmailChangeCompleted(previousEmail));
     }
   },
 );
+
+const settleFactorChange = Effect.fn("settleFactorChange")(function* settleFactorChange(
+  scope: HookScope,
+) {
+  if (scope.hookContext.path === "/two-factor/verify-totp") {
+    yield* markTotpSessionStrong(scope);
+  }
+  if (sessionRevokingPaths.has(scope.hookContext.path)) {
+    yield* revokeSessionsAfterFactorChange(scope);
+  }
+});
 
 const createRequestHooks = function createRequestHooks({
   audience,
@@ -325,12 +332,7 @@ const createRequestHooks = function createRequestHooks({
             return;
           }
           const scope = { audience, hookContext, run };
-          if (hookContext.path === "/two-factor/verify-totp") {
-            yield* markTotpSessionStrong(scope);
-          }
-          if (sessionRevokingPaths.has(hookContext.path)) {
-            yield* revokeSessionsAfterFactorChange(scope);
-          }
+          yield* settleFactorChange(scope);
           if (hookContext.path === emailChangePath) {
             yield* notifyEmailChange(scope, onEmailChangeRequested);
           }

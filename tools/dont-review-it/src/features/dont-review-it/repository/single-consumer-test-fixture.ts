@@ -1,13 +1,17 @@
-import { readdirSync, readFileSync } from "node:fs";
-import path from "node:path";
+import { Effect, FileSystem, Path } from "effect";
 
+import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
+import { path } from "../platform/path.ts";
+import { posixPath } from "../platform/path.ts";
 import {
   declaredDependencies,
   field,
+  rootManifests,
   workspaceManifests,
   type WorkspaceManifest,
 } from "./dependencies-test-fixture.ts";
 import { repositoryRoot } from "./repository-root.ts";
+import { commands, taskNames } from "./tasks-test-fixture.ts";
 
 const areas = new Set(["apps", "libs", "infra", "tools"]);
 
@@ -39,14 +43,6 @@ const scriptExtensions = new Set([
 ]);
 
 const callPrefixes = ["import.meta.resolve(", "require.resolve(", "import(", "require("] as const;
-
-const rootManifests: Readonly<Record<string, unknown>> = import.meta.glob(
-  "../../../../../../package.json",
-  {
-    eager: true,
-    import: "default",
-  },
-);
 
 interface Finding {
   readonly id: string;
@@ -256,7 +252,7 @@ const moduleSpecifiers = (filename: string, text: string): readonly string[] => 
   if (filename.endsWith(".json")) {
     return extendsSpecifiers(text);
   }
-  return scriptExtensions.has(path.posix.extname(filename)) ? codeSpecifiers(text) : [];
+  return scriptExtensions.has(posixPath.extname(filename)) ? codeSpecifiers(text) : [];
 };
 
 const skippedDirectory = (name: string): boolean => name.startsWith(".") || skippedNames.has(name);
@@ -264,42 +260,52 @@ const skippedDirectory = (name: string): boolean => name.startsWith(".") || skip
 const relativeFile = (root: string, absolute: string): string =>
   path.relative(root, absolute).split(path.sep).join("/");
 
-const listedSources = (directory: string, root: string): SourceText[] =>
-  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (skippedDirectory(entry.name)) {
-      return [];
-    }
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return listedSources(absolute, root);
-    }
-    if (entry.name === "package.json" || !sourceExtensions.has(path.extname(entry.name))) {
-      return [];
-    }
-    return [{ file: relativeFile(root, absolute), text: readFileSync(absolute, "utf8") }];
+const listedSources = (directory: string, root: string): TreeScan<SourceText[]> =>
+  Effect.gen(function* scanSources() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const entries = yield* directoryEntries(directory);
+    const listed = yield* Effect.forEach(entries, (entry): TreeScan<SourceText[]> => {
+      if (skippedDirectory(entry.name)) {
+        return Effect.succeed([]);
+      }
+      const absolute = paths.join(directory, entry.name);
+      if (entry.kind === "directory") {
+        return listedSources(absolute, root);
+      }
+      if (entry.name === "package.json" || !sourceExtensions.has(paths.extname(entry.name))) {
+        return Effect.succeed([]);
+      }
+      return Effect.map(filesystem.readFileString(absolute), (text) => [
+        { file: relativeFile(root, absolute), text },
+      ]);
+    });
+    return listed.flat();
   });
 
-const repositorySources = (root: string): readonly SourceText[] => {
-  const nested = ["apps", "libs", "infra", "tools"].flatMap((area) =>
-    listedSources(path.join(root, area), root),
-  );
-  const top = readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
-    if (
-      entry.isDirectory() ||
-      entry.name === "package.json" ||
-      !sourceExtensions.has(path.extname(entry.name))
-    ) {
-      return [];
-    }
-    return [
-      {
-        file: entry.name,
-        text: readFileSync(path.join(root, entry.name), "utf8"),
-      },
-    ];
+const repositorySources = (root: string): TreeScan<readonly SourceText[]> =>
+  Effect.gen(function* repositorySources() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const nested = yield* Effect.forEach(["apps", "libs", "infra", "tools"], (area) =>
+      listedSources(paths.join(root, area), root),
+    );
+    const topEntries = yield* directoryEntries(root);
+    const top = yield* Effect.forEach(
+      topEntries.filter(
+        (entry) =>
+          entry.kind !== "directory" &&
+          entry.name !== "package.json" &&
+          sourceExtensions.has(paths.extname(entry.name)),
+      ),
+      (entry) =>
+        Effect.map(filesystem.readFileString(paths.join(root, entry.name)), (text) => ({
+          file: entry.name,
+          text,
+        })),
+    );
+    return [...nested.flat(), ...top];
   });
-  return [...nested, ...top];
-};
 
 const workspaceOf = (file: string): string => {
   const [area, name] = file.split("/");
@@ -309,7 +315,7 @@ const workspaceOf = (file: string): string => {
 };
 
 const directoryOf = (file: string): string => {
-  const directory = path.posix.dirname(file);
+  const directory = posixPath.dirname(file);
   return directory === "." || directory === "" ? "root" : directory;
 };
 
@@ -397,11 +403,46 @@ const exportKeys = (manifest: unknown): readonly string[] => {
     : [];
 };
 
+const declaredBins = (manifest: unknown): readonly string[] => {
+  const bin = field(manifest, "bin");
+  if (typeof bin === "string") {
+    const name = field(manifest, "name");
+    return typeof name === "string" ? [name.replace(/^@[^/]+\//u, "")] : [];
+  }
+  return typeof bin === "object" && bin !== null && !Array.isArray(bin) ? Object.keys(bin) : [];
+};
+
+const rootScriptCommands = (workspaces: readonly WorkspaceManifest[]): readonly string[] =>
+  workspaces
+    .filter((workspace) => directoryOf(workspace.file) === "root")
+    .flatMap((workspace) => {
+      const scripts = field(workspace.manifest, "scripts");
+      return typeof scripts === "object" && scripts !== null && !Array.isArray(scripts)
+        ? Object.values(scripts).filter((command): command is string => typeof command === "string")
+        : [];
+    });
+
+const invokedWords = (rootCommands: readonly string[]): ReadonlySet<string> =>
+  new Set(rootCommands.flatMap((command) => command.split(/[\s;&|()]+/u)));
+
+const runOnlyByRoot = (input: {
+  readonly manifest: unknown;
+  readonly consumers: readonly string[];
+  readonly imported: readonly string[];
+  readonly invoked: ReadonlySet<string>;
+}): boolean =>
+  input.consumers.length === 1 &&
+  input.consumers[0] === "root" &&
+  !input.imported.includes("root") &&
+  declaredBins(input.manifest).some((bin) => input.invoked.has(bin));
+
 const singleConsumerFindings = (
   workspaces: readonly WorkspaceManifest[],
   sources: readonly SourceText[],
+  rootTaskCommands: readonly string[] = [],
 ): readonly Finding[] => {
   const index = specifierIndex(sources);
+  const invoked = invokedWords([...rootScriptCommands(workspaces), ...rootTaskCommands]);
   return workspaces
     .flatMap((workspace): readonly Finding[] => {
       const name = field(workspace.manifest, "name");
@@ -420,7 +461,11 @@ const singleConsumerFindings = (
       }
       const consumers = [...new Set([...dependencies, ...imported])].sort();
       const packageFinding =
-        consumers.length < 2
+        consumers.length < 2 &&
+        !(
+          workspace.area === "tools" &&
+          runOnlyByRoot({ manifest: workspace.manifest, consumers, imported, invoked })
+        )
           ? [
               {
                 id: `package:${name}`,
@@ -464,8 +509,15 @@ const repositoryWorkspaces = (): readonly WorkspaceManifest[] => [
   })),
 ];
 
-const repositorySingleConsumerFindings = (): readonly Finding[] =>
-  singleConsumerFindings(repositoryWorkspaces(), repositorySources(repositoryRoot));
+const repositorySingleConsumerFindings: TreeScan<readonly Finding[]> = Effect.map(
+  repositorySources(repositoryRoot),
+  (sources) =>
+    singleConsumerFindings(
+      repositoryWorkspaces(),
+      sources,
+      taskNames(".").flatMap((name) => commands(".", name)),
+    ),
+);
 
 export { moduleSpecifiers, repositorySingleConsumerFindings, singleConsumerFindings };
 export type { Finding, SourceText };

@@ -1,7 +1,7 @@
-import { readdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { Effect, type FileSystem } from "effect";
 
-import { readUnlessMissing } from "../repository-checks/index.ts";
+import { filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
+import { path } from "../platform/path.ts";
 
 import type { IntentSkillsConfig } from "./config.ts";
 import type { PublishedManifest } from "./manifest.ts";
@@ -12,7 +12,7 @@ export const skillsDirectoryOf = ({
 }: {
   readonly manifest: PublishedManifest;
   readonly config: IntentSkillsConfig;
-}): string => join(dirname(manifest.file.absolutePath), config.skillsDirectory);
+}): string => path.join(path.dirname(manifest.file.absolutePath), config.skillsDirectory);
 
 export const listSkillFiles = ({
   directory,
@@ -20,14 +20,9 @@ export const listSkillFiles = ({
 }: {
   readonly directory: string;
   readonly config: IntentSkillsConfig;
-}): readonly string[] => {
-  const listedEntries =
-    readUnlessMissing(() => readdirSync(directory, { withFileTypes: true })) ?? [];
-  return listedEntries.flatMap((listed) =>
-    listed.isDirectory()
-      ? listSkillFiles({ directory: join(directory, listed.name), config })
-      : listed.isFile() && listed.name === config.skillFileName
-        ? [join(directory, listed.name)]
-        : [],
-  );
-};
+}): Effect.Effect<readonly string[], TreeFailure, FileSystem.FileSystem> =>
+  filesUnder({
+    directory,
+    prunedDirectoryNames: [],
+    keepsFileName: (fileName) => fileName === config.skillFileName,
+  }).pipe(Effect.map((skillFiles) => skillFiles ?? []));

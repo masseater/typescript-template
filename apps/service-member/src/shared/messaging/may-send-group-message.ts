@@ -4,7 +4,7 @@ const maySendGroupMessage = Effect.fn("maySendGroupMessage")(function* maySendGr
   _senderId: string,
   _conversationId: string,
 ) {
-  return true;
+  return yield* Effect.succeed(true);
 });
 
 export { maySendGroupMessage };

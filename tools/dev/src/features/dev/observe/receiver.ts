@@ -4,6 +4,8 @@ import { flushTelemetry, observeRequest, Telemetry, TraceId } from "@repo/observ
 import { Cause, Context, Effect, Exit, Layer, Ref, Schema, Scope } from "effect";
 import { HttpServer, HttpServerRequest, HttpServerResponse } from "effect/unstable/http";
 
+import { describeError } from "../failure.ts";
+
 const spanName = "http.server.request";
 const isTraceId = Schema.is(TraceId);
 
@@ -71,10 +73,6 @@ const TraceData = Schema.Struct({
   ),
 });
 
-function describe(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function signalOf(url: string | undefined): "logs" | "traces" | undefined {
   const path = url?.split("?")[0];
   if (path === "/v1/logs") {
@@ -101,7 +99,7 @@ const capture = (
       return HttpServerResponse.empty({ status: httpStatus.notFound });
     }
     const raw = yield* incoming.text.pipe(
-      Effect.mapError((error) => new ReceiverCheckFailure({ reason: describe(error) })),
+      Effect.mapError((error) => new ReceiverCheckFailure({ reason: describeError(error) })),
     );
     const parsed = yield* Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(raw).pipe(
       Effect.mapError(() => new ReceiverCheckFailure({ reason: "response_invalid" })),
@@ -120,7 +118,7 @@ const openReceiver = Effect.gen(function* openReceiverProgram() {
   const scope = yield* Scope.make();
   const built = yield* Layer.build(NodeHttpServer.layerTest).pipe(
     Scope.provide(scope),
-    Effect.mapError((error) => new ReceiverCheckFailure({ reason: describe(error) })),
+    Effect.mapError((error) => new ReceiverCheckFailure({ reason: describeError(error) })),
   );
   const server = Context.get(built, HttpServer.HttpServer);
   const inbox = yield* Ref.make<Inbox>({ failure: undefined, logs: [], traces: [] });

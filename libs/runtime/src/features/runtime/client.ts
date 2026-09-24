@@ -2,9 +2,10 @@ import { treaty } from "@elysia/eden";
 import { httpStatus } from "@repo/config";
 import { Result, Schema } from "effect";
 
-import { ErrorBody, type Decodable } from "./contracts.ts";
+import { ErrorBody } from "./contracts.ts";
 
 import type { AnyElysia } from "elysia";
+import type { Decodable } from "./contracts.ts";
 type ApiReply = {
   readonly data: unknown;
   readonly error: {

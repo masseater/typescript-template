@@ -84,5 +84,24 @@ const shardDirectories = (
     .toSorted();
 };
 
-export { affectedTests, shardDirectories };
+const hookFilters = (
+  files: readonly string[],
+  packages: readonly WorkspacePackage[],
+): readonly string[] => {
+  if (files.length === 0) {
+    return [];
+  }
+  const affected = affectedTests(files, packages);
+  if (affected.kind === "all") {
+    return ["-r"];
+  }
+  return [
+    "-w",
+    ...packages
+      .filter((workspace) => affected.directories.includes(workspace.directory))
+      .flatMap((workspace) => ["--filter", workspace.name]),
+  ];
+};
+
+export { affectedTests, hookFilters, shardDirectories };
 export type { AffectedTests, WorkspacePackage };

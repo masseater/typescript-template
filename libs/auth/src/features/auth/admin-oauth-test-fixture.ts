@@ -11,9 +11,10 @@ import {
   signInAs,
 } from "./auth-test-fixture.ts";
 import { origins } from "./browser-client-test-fixture.ts";
-import { startOAuthAuthorization } from "./oauth-authorization-test-fixture.ts";
+import { startClientAuthorization } from "./oauth-client-test-fixture.ts";
 
 const adminOrigin = origins[APPLICATION.admin];
+const adminRedirectUri = "http://127.0.0.1:43124/callback";
 
 const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
   email: string,
@@ -30,12 +31,13 @@ const adminOperator = Effect.fn("adminOperator")(function* adminOperator(
   return client;
 });
 
-const startAdminAuthorization = () =>
-  startOAuthAuthorization({
+const startAuthorization = Effect.fn("startAuthorization")(function* startAuthorization() {
+  return yield* startClientAuthorization({
     application: APPLICATION.admin,
     clientName: "Test admin MCP client",
-    redirectUri: "http://127.0.0.1:43124/callback",
+    redirectUri: adminRedirectUri,
     scope: "admin:read offline_access",
   });
+});
 
-export { adminOperator, adminOrigin, startAdminAuthorization };
+export { adminOperator, adminOrigin, adminRedirectUri, startAuthorization };

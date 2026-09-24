@@ -31,42 +31,47 @@ const weeklyBucket = (instant: Date): string => {
 const bucketFor = (period: MetricPeriod, instant: Date): string =>
   period === METRIC_PERIOD.daily ? dailyBucket(instant) : weeklyBucket(instant);
 
-type SnapshotValue = Readonly<{
-  clientKind: ClientKind;
-  metric: MetricKey;
-  value: number;
-}>;
-
 const memberCount = Effect.fn("memberCount")(function* memberCountProgram() {
-  const [row] = yield* query((database) =>
+  const [memberTally] = yield* query((database) =>
     database.select({ count: count() }).from(user).where(eq(user.role, ROLE.member)),
   );
-  return row?.count ?? 0;
+  return memberTally?.count ?? 0;
 });
 
+const clientKindTotals = (
+  sessionCounts: readonly Readonly<{ count: number; userAgent: string | null }>[],
+): { clientKind: ClientKind; value: number }[] => {
+  const sessionCountsByKind = Map.groupBy(sessionCounts, (sessionCount) =>
+    clientKindOf(sessionCount.userAgent),
+  );
+  return clientKinds.map((clientKind) => ({
+    clientKind,
+    value: (sessionCountsByKind.get(clientKind) ?? []).reduce(
+      (sessionTotal, sessionCount) => sessionTotal + sessionCount.count,
+      0,
+    ),
+  }));
+};
+
 const wikiSessionCounts = Effect.fn("wikiSessionCounts")(function* wikiSessionCountsProgram() {
-  const rows = yield* query((database) =>
+  const sessionCounts = yield* query((database) =>
     database
       .select({ count: count(), userAgent: session.userAgent })
       .from(session)
       .where(eq(session.audience, APPLICATION.wiki))
       .groupBy(session.userAgent),
   );
-  const totals = new Map<ClientKind, number>();
-  for (const kind of clientKinds) {
-    totals.set(kind, 0);
-  }
-  for (const row of rows) {
-    const kind = clientKindOf(row.userAgent);
-    totals.set(kind, (totals.get(kind) ?? 0) + row.count);
-  }
-  return [...totals.entries()].map(([clientKind, value]) => ({ clientKind, value }));
+  return clientKindTotals(sessionCounts);
 });
 
 const currentSnapshotValues = Effect.fn("currentSnapshotValues")(function* currentSnapshotValues() {
   const members = yield* memberCount();
   const wikiSessions = yield* wikiSessionCounts();
-  const values: SnapshotValue[] = [
+  const snapshotValues: Readonly<{
+    clientKind: ClientKind;
+    metric: MetricKey;
+    value: number;
+  }>[] = [
     { clientKind: AGGREGATE_CLIENT_KIND, metric: METRIC_KEY.memberCount, value: members },
     { clientKind: AGGREGATE_CLIENT_KIND, metric: METRIC_KEY.messageCount, value: 0 },
     { clientKind: AGGREGATE_CLIENT_KIND, metric: METRIC_KEY.paidMemberCount, value: 0 },
@@ -76,30 +81,30 @@ const currentSnapshotValues = Effect.fn("currentSnapshotValues")(function* curre
       value,
     })),
   ];
-  return values;
+  return snapshotValues;
 });
 
 const refreshMetricSnapshots = Effect.fn("refreshMetricSnapshots")(
   function* refreshMetricSnapshots() {
     const computedAt = DateTime.toDate(yield* DateTime.now);
-    const values = yield* currentSnapshotValues();
+    const snapshotValues = yield* currentSnapshotValues();
     for (const period of metricPeriods) {
       const bucket = bucketFor(period, computedAt);
-      for (const entry of values) {
+      for (const snapshotValue of snapshotValues) {
         yield* query((database) =>
           database
             .insert(metricSnapshot)
             .values({
               bucket,
-              clientKind: entry.clientKind,
+              clientKind: snapshotValue.clientKind,
               computedAt,
               id: crypto.randomUUID(),
-              metric: entry.metric,
+              metric: snapshotValue.metric,
               period,
-              value: entry.value,
+              value: snapshotValue.value,
             })
             .onConflictDoUpdate({
-              set: { computedAt, value: entry.value },
+              set: { computedAt, value: snapshotValue.value },
               target: [
                 metricSnapshot.metric,
                 metricSnapshot.period,
@@ -110,7 +115,7 @@ const refreshMetricSnapshots = Effect.fn("refreshMetricSnapshots")(
         );
       }
     }
-    return { computedAt, metricCount: values.length * metricPeriods.length };
+    return { computedAt, metricCount: snapshotValues.length * metricPeriods.length };
   },
 );
 

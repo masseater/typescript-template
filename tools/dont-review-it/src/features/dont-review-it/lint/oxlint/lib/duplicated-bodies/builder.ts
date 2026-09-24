@@ -7,15 +7,11 @@ import {
   type ScannedFile,
 } from "../canonical-values/source-files.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
-import {
-  buildBodyIndex,
-  EMPTY_BODY_INDEX,
-  type BodyIndex,
-  type IndexedFile,
-} from "./body-index.ts";
+import { buildBodyIndex, EMPTY_BODY_INDEX, type BodyIndex } from "./body-index.ts";
 import { declarationsIn } from "./declarations.ts";
+import { separatedByPrivateBindings, type ReferencingFile } from "./private-bindings.ts";
 
-const indexedFileAt = (file: ScannedFile): IndexedFile | null => {
+const indexedFileAt = (file: ScannedFile): ReferencingFile | null => {
   const source = readTextFile(file.absolutePath);
   if (source === null) return null;
 
@@ -24,6 +20,7 @@ const indexedFileAt = (file: ScannedFile): IndexedFile | null => {
     line: declaration.line,
     fingerprint: declaration.structure,
     nodeCount: declaration.nodeCount,
+    references: declaration.references,
   }));
   return declarationFingerprints.length === 0
     ? null
@@ -40,7 +37,12 @@ export const buildRepositoryBodyIndex = ({
   const scanned = declarationSources.filter((file) => !isOutOfScopeSource(file.relativePath));
   if (scanned.length === 0) return EMPTY_BODY_INDEX;
 
-  return buildBodyIndex(scanned.map(indexedFileAt).filter((file) => file !== null));
+  return buildBodyIndex(
+    separatedByPrivateBindings({
+      repositoryRoot: root,
+      files: scanned.map(indexedFileAt).filter((file) => file !== null),
+    }),
+  );
 };
 
 const bodyIndexUnder = memoize((repositoryRoot: string): BodyIndex =>

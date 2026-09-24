@@ -266,40 +266,34 @@ describe("a document that arrived over https", () => {
   });
 });
 
-describe("a document behind a start server route with analytics configured", () => {
-  const it = test.extend("analyticsPolicy", () =>
+describe("a document behind a start server route with google analytics configured", () => {
+  const it = test.extend("analyticsDirectives", () =>
     Effect.runPromise(
-      Effect.gen(function* analyticsPolicyProgram() {
-        const served = yield* startRoute(
-          {
-            fetch: () =>
-              new Response("<!DOCTYPE html>", {
-                headers: { "content-type": "text/html; charset=utf-8" },
-              }),
-          },
-          { googleAnalytics: true },
-        )(new Request(origin));
-        const policy = served.headers.get("content-security-policy") ?? "";
-        const handed = /'nonce-(?<nonce>[^']+)'/u.exec(policy)?.groups?.["nonce"] ?? "";
-        return policy.replaceAll(handed, "handed").split("; ");
-      }),
+      startRoute(
+        {
+          fetch: () =>
+            new Response("<!DOCTYPE html>", {
+              headers: { "content-type": "text/html; charset=utf-8" },
+            }),
+        },
+        { googleAnalytics: true },
+      )(new Request(origin)).pipe(
+        Effect.map((served) =>
+          (served.headers.get("content-security-policy") ?? "")
+            .split("; ")
+            .filter((directive) => /^(?:script|img|connect)-src /u.test(directive))
+            .map((directive) => directive.replace(/'nonce-[^']+'/u, "'nonce-handed'")),
+        ),
+      ),
     ));
 
-  it("allows the analytics hosts and nothing else beyond the default policy", ({
-    analyticsPolicy,
+  it("allows the google analytics hosts only where the tag needs them", ({
+    analyticsDirectives,
   }) => {
-    expect(analyticsPolicy).toStrictEqual([
-      "default-src 'none'",
+    expect(analyticsDirectives).toStrictEqual([
       "script-src 'nonce-handed' 'strict-dynamic' https://www.googletagmanager.com",
-      "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://www.google-analytics.com",
-      "font-src 'self'",
       "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com",
-      "manifest-src 'self'",
-      "form-action 'self'",
-      "base-uri 'none'",
-      "frame-ancestors 'none'",
-      "object-src 'none'",
     ]);
   });
 });

@@ -1,5 +1,5 @@
 import { NodeServices } from "@effect/platform-node";
-import { isSystemError } from "@repo/cli";
+import { isNotFound, isSystemError } from "@repo/cli";
 import { Effect, FileSystem, Path, PlatformError } from "effect";
 
 import { failure } from "./failure.ts";
@@ -10,12 +10,8 @@ type DevServices = NodeServices.NodeServices;
 
 const layer = NodeServices.layer;
 
-function isNotFound(error: PlatformError.PlatformError): boolean {
-  return isSystemError(error.reason, "NotFound");
-}
-
 function isAlreadyExists(error: PlatformError.PlatformError): boolean {
-  return isSystemError(error.reason, "AlreadyExists");
+  return isSystemError(error, "AlreadyExists");
 }
 
 function mapFileError(): LocalCommandFailure {

@@ -1,9 +1,17 @@
-import { NavigationLink, Table, TableBody, formatWarekiDate } from "@repo/ui";
+import {
+  NavigationLink,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  formatWarekiDate,
+} from "@repo/ui";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { DateTime } from "effect";
 
 import { agreementKindLabels, stateLabel } from "#pages/terms/model/agreement-labels.ts";
-import { FlexTableHeader, FlexTableRows } from "#shared/ui/flex-table.tsx";
 
 import type { VersionList } from "#pages/terms/model/agreement-versions.ts";
 import type { ReactElement } from "react";
@@ -63,9 +71,27 @@ function AgreementVersionTable({
   });
   return (
     <Table>
-      <FlexTableHeader table={table} />
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <TableHead key={header.id}>
+                {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
       <TableBody>
-        <FlexTableRows table={table} />
+        {table.getRowModel().rows.map((versionRow) => (
+          <TableRow key={versionRow.id}>
+            {versionRow.getAllCells().map((versionCell) => (
+              <TableCell key={versionCell.id}>
+                <table.FlexRender cell={versionCell} />
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
       </TableBody>
     </Table>
   );

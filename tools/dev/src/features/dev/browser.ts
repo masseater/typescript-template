@@ -1,12 +1,14 @@
-import { exitWith, markFailed } from "@repo/cli";
+import { env as processEnvironment } from "node:process";
+
+import { exitWith, markFailed } from "@repo/cli/exit-code";
 import { applicationReadyPaths } from "@repo/config";
 import { Effect } from "effect";
 import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-import { agent, configuredOrigin, sessionArguments, sessionName } from "./agent-session.ts";
 import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
+import { configuredOrigin, sessionArguments, sessionName } from "./browser-session.ts";
 import { failure } from "./failure.ts";
-import { readCredentials, refreshBrowserConfig, root } from "./local-environment.ts";
+import { readCredentials, refreshBrowserConfig, root, run } from "./local-environment.ts";
 
 import type { App } from "./local-environment.ts";
 
@@ -25,11 +27,18 @@ type ChildExit =
 const browser = Effect.fn("browser")(function* browser(app: App) {
   const credentials = yield* readCredentials();
   const socketDirectory = yield* refreshBrowserConfig();
+  const args = yield* sessionArguments(app, credentials);
   const origin = configuredOrigin(app, credentials);
-  yield* agent(app, credentials, socketDirectory, [
-    BROWSER_AGENT_COMMAND.open,
-    `${origin}${applicationReadyPaths[app]}`,
-  ]);
+  const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  yield* run(
+    "agent-browser",
+    [...args, BROWSER_AGENT_COMMAND.open, `${origin}${applicationReadyPaths[app]}`],
+    {
+      cwd: root,
+      env,
+    },
+  );
+
   const report: BrowserReport = {
     event: "local.browser_opened",
     ok: true,

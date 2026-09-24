@@ -25,7 +25,7 @@ const privateHeaders = {
 const jsonResponse = (decoded: unknown, httpStatusCode: number = httpStatus.ok): Response => {
   return Response.json(decoded, { headers: privateHeaders, status: httpStatusCode });
 };
-const documentPolicy = (nonce: string, googleAnalytics: boolean): string => {
+const documentPolicy = (nonce: string, googleAnalytics = false): string => {
   return [
     "default-src 'none'",
     googleAnalytics
@@ -44,15 +44,17 @@ const documentPolicy = (nonce: string, googleAnalytics: boolean): string => {
     ...isolationDirectives,
   ].join("; ");
 };
-const contentSecurityPolicy = (asked: {
-  readonly httpResponse: Response;
-  readonly nonce?: string;
-  readonly googleAnalytics?: boolean;
-}): string => {
+const contentSecurityPolicy = (
+  asked: Readonly<{
+    httpResponse: Response;
+    nonce: string | undefined;
+    googleAnalytics: boolean;
+  }>,
+): string => {
   const rendersDocument =
     asked.httpResponse.headers.get("content-type")?.startsWith("text/html") === true;
   return rendersDocument && asked.nonce !== undefined
-    ? documentPolicy(asked.nonce, asked.googleAnalytics === true)
+    ? documentPolicy(asked.nonce, asked.googleAnalytics)
     : dataPolicy;
 };
 const secureResponse = (asked: {
@@ -67,7 +69,14 @@ const secureResponse = (asked: {
   secured.headers.set("referrer-policy", "no-referrer");
   secured.headers.set("x-frame-options", "DENY");
   secured.headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()");
-  secured.headers.set("content-security-policy", contentSecurityPolicy(asked));
+  secured.headers.set(
+    "content-security-policy",
+    contentSecurityPolicy({
+      googleAnalytics: asked.googleAnalytics ?? false,
+      httpResponse: asked.httpResponse,
+      nonce: asked.nonce,
+    }),
+  );
   if (new URL(asked.httpRequest.url).protocol === "https:") {
     secured.headers.set("strict-transport-security", strictTransportSecurity);
   }

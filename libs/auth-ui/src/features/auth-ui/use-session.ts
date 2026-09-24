@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { sessionOptions } from "./api/session.ts";
+import { loadBrowserSession, provideSessionLoader, sessionOptions } from "./api/session.ts";
 
 import type { SessionView as SessionData } from "./protocol.ts";
 
@@ -17,4 +17,4 @@ const useSession = (): {
   };
 };
 
-export { useSession };
+export { loadBrowserSession, provideSessionLoader, useSession };

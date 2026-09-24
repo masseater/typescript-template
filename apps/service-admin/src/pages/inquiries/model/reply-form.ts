@@ -1,4 +1,4 @@
-import { useTextSubmission } from "@repo/ui";
+import { localState, useAction } from "@repo/ui";
 
 import { closeInquiry, replyToInquiry } from "#pages/inquiries/api/inquiries.ts";
 
@@ -13,22 +13,34 @@ interface ReplyForm {
   readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
 }
 
+const useBody = localState("");
+
 function useReplyForm(inquiryId: string, onChanged: () => void): ReplyForm {
-  const reply = useTextSubmission((body) => replyToInquiry({ body, id: inquiryId }), onChanged);
+  const [body, setBody] = useBody();
+  const action = useAction();
+  function handleSubmit(event: Readonly<{ preventDefault: () => void }>): void {
+    event.preventDefault();
+    action.run(() =>
+      replyToInquiry({ body, id: inquiryId }).then(() => {
+        setBody("");
+        onChanged();
+      }),
+    );
+  }
   function handleClose(): void {
-    reply.action.run(() =>
+    action.run(() =>
       closeInquiry(inquiryId).then(() => {
         onChanged();
       }),
     );
   }
   return {
-    blocked: reply.action.blocked,
-    body: reply.text,
-    error: reply.action.error,
-    handleBodyChange: reply.handleTextChange,
+    blocked: action.blocked,
+    body,
+    error: action.error,
+    handleBodyChange: setBody,
     handleClose,
-    handleSubmit: reply.handleSubmit,
+    handleSubmit,
   };
 }
 

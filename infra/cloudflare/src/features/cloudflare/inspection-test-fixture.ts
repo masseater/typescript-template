@@ -119,9 +119,7 @@ const tokenHandlers = [
       result: {
         policies: [
           {
-            permission_groups: deployTokenPermissions.map((required) => ({
-              id: required.satisfiedBy[0].id,
-            })),
+            permission_groups: deployTokenPermissions.map((required) => required.satisfiedBy[0]),
           },
         ],
       },

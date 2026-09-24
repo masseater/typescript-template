@@ -3,8 +3,11 @@ import { Effect, Predicate, Schema } from "effect";
 import { loopbackHosts, mailpitSendPath } from "./applications.ts";
 import { ConfigurationInvalid } from "./configuration-invalid.ts";
 import { GoogleAnalyticsMeasurementId } from "./google-analytics-measurement-id.ts";
+import { wikiApiBinding, wikiPagesBinding } from "./wiki.ts";
 
 import type { Ai, D1Database, Flagship, SendEmail } from "@cloudflare/workers-types";
+
+type ServiceFetcher = { readonly fetch: typeof fetch };
 
 type AssetFetcher = {
   readonly fetch: (request: Request) => Promise<Response>;
@@ -200,6 +203,51 @@ const readConfig = Effect.fn("readConfig")(function* readConfig(input: unknown) 
 
 type AppConfig = Effect.Success<ReturnType<typeof readConfig>>;
 
+const SiteEnvironment = Schema.Struct({
+  [appEnvKey.appRelease]: Release,
+  [appEnvKey.otlpAuthorization]: Schema.optionalKey(NonEmpty),
+  [appEnvKey.otlpEnabled]: Schema.optionalKey(Schema.Literals(["false", "true"])),
+  [appEnvKey.otlpEndpoint]: Schema.optionalKey(AbsoluteUrl),
+  AI: Schema.optionalKey(bindingWith<Ai>("Ai", ["run"])),
+  ASSETS: bindingWith<AssetFetcher>("Fetcher", ["fetch"]),
+});
+
+const readSiteEnvironment = Effect.fn("readSiteEnvironment")(function* readSiteEnvironment(
+  input: unknown,
+) {
+  const environment = yield* decode(SiteEnvironment, input);
+  if (environment.OTLP_ENDPOINT === undefined) {
+    if (environment.OTLP_ENABLED !== undefined) {
+      return yield* invalid("OTLP_ENABLED needs OTLP_ENDPOINT");
+    }
+  } else {
+    yield* requireSecureOrigin(environment.OTLP_ENDPOINT);
+  }
+  return environment;
+});
+
+const WikiBindings = Schema.Struct({
+  [wikiPagesBinding]: bindingWith<ServiceFetcher>("Fetcher", ["fetch"]),
+  [wikiApiBinding]: bindingWith<ServiceFetcher>("Fetcher", ["fetch"]),
+});
+
+const readWikiBindings = (
+  input: unknown,
+): Effect.Effect<typeof WikiBindings.Type, ConfigurationInvalid> => decode(WikiBindings, input);
+
+type SiteConfig = Effect.Success<ReturnType<typeof readSiteEnvironment>>;
+
+const coreBinding = "CORE";
+
+const CoreBindings = Schema.Struct({
+  [coreBinding]: bindingWith<ServiceFetcher>("Fetcher", ["fetch"]),
+});
+
+const readCore = Effect.fn("readCore")(function* readCore(input: unknown) {
+  const { CORE } = yield* decode(CoreBindings, input);
+  return CORE;
+});
+
 const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
   const { AI } = yield* decode(AiBindings, input);
   return AI;
@@ -207,12 +255,12 @@ const readAi = Effect.fn("readAi")(function* readAi(input: unknown) {
 
 const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfig(input: unknown) {
   const scalars = yield* decode(StripeScalars, input);
-  const mode = stripeKeyMode(scalars.STRIPE_SECRET_KEY);
-  if (mode === "live" && isLocalDevelopmentOrigin(scalars.APP_ORIGIN)) {
+  const keyMode = stripeKeyMode(scalars.STRIPE_SECRET_KEY);
+  if (keyMode === "live" && isLocalDevelopmentOrigin(scalars.APP_ORIGIN)) {
     return yield* invalid("Stripe live keys are restricted to deployed origins");
   }
   return {
-    mode,
+    mode: keyMode,
     priceId: scalars.STRIPE_PRICE_ID,
     secretKey: scalars.STRIPE_SECRET_KEY,
     webhookSecret: scalars.STRIPE_WEBHOOK_SECRET,
@@ -233,8 +281,11 @@ export {
   minimumAuthSecretLength,
   readAi,
   readConfig,
+  readCore,
   readEnvironment,
+  readSiteEnvironment,
   readStripeConfig,
+  readWikiBindings,
   stripeKeyModes,
 };
-export type { AppConfig, AssetFetcher, StripeConfig, StripeKeyMode };
+export type { AppConfig, AssetFetcher, ServiceFetcher, SiteConfig, StripeConfig, StripeKeyMode };

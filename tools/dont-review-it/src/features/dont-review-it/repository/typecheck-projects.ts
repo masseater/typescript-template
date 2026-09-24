@@ -1,7 +1,8 @@
-import { existsSync, readdirSync } from "node:fs";
-import path from "node:path";
+import { Effect, type FileSystem, Path } from "effect";
 
-const workspaceGroups = ["apps", "libs", "infra", "tools"] as const;
+import { directoryEntries, type TreeFailure } from "../platform/directory-entries.ts";
+import { pathExists } from "../platform/file-system.ts";
+import { workspaceRoots } from "./workspace-layout.ts";
 
 const skippedDirectoryNames = new Set([
   ".git",
@@ -13,26 +14,45 @@ const skippedDirectoryNames = new Set([
   "node_modules",
 ]);
 
-const tsconfigFilesUnder = (root: string, directory: string): readonly string[] => {
-  const entries = readdirSync(path.join(root, directory), { withFileTypes: true });
-  return entries.flatMap((entry) => {
-    const relative = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return skippedDirectoryNames.has(entry.name) ? [] : tsconfigFilesUnder(root, relative);
-    }
-    return entry.isFile() && entry.name === "tsconfig.json"
-      ? [relative.split(path.sep).join("/")]
-      : [];
-  });
-};
+type ProjectDiscovery<Discovered> = Effect.Effect<
+  Discovered,
+  TreeFailure,
+  FileSystem.FileSystem | Path.Path
+>;
 
-const typecheckProjects = (root: string): readonly string[] => {
-  const nested = workspaceGroups.flatMap((group) =>
-    existsSync(path.join(root, group)) ? tsconfigFilesUnder(root, group) : [],
-  );
-  return ["tsconfig.json", ...nested]
-    .filter((project) => existsSync(path.join(root, project)))
-    .toSorted();
-};
+const tsconfigFilesUnder = (root: string, directory: string): ProjectDiscovery<readonly string[]> =>
+  Effect.gen(function* listTsconfigFiles() {
+    const paths = yield* Path.Path;
+    const entries = yield* directoryEntries(paths.join(root, directory));
+    const nested = yield* Effect.forEach(entries, (entry) => {
+      const relative = paths.join(directory, entry.name);
+      if (entry.kind === "directory") {
+        return skippedDirectoryNames.has(entry.name)
+          ? Effect.succeed([])
+          : tsconfigFilesUnder(root, relative);
+      }
+      return Effect.succeed(
+        entry.kind === "file" && entry.name === "tsconfig.json"
+          ? [relative.split(paths.sep).join("/")]
+          : [],
+      );
+    });
+    return nested.flat();
+  });
+
+const typecheckProjects = (root: string): ProjectDiscovery<readonly string[]> =>
+  Effect.gen(function* typecheckProjects() {
+    const paths = yield* Path.Path;
+    const nested = yield* Effect.forEach(workspaceRoots, (group) =>
+      Effect.flatMap(pathExists(paths.join(root, group)), (present) =>
+        present ? tsconfigFilesUnder(root, group) : Effect.succeed([]),
+      ),
+    );
+    const candidates = ["tsconfig.json", ...nested.flat()];
+    const present = yield* Effect.filter(candidates, (project) =>
+      pathExists(paths.join(root, project)),
+    );
+    return present.toSorted();
+  });
 
 export { typecheckProjects };

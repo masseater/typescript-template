@@ -1,76 +1,136 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
-
+import { NodeServices } from "@effect/platform-node";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
-import { type Cause, Console, Effect } from "effect";
+import { architectureKindOf, modularBudgets } from "@repo/config";
+import { Console, Effect, FileSystem, Path, Schema } from "effect";
 
-import {
-  featureFindings,
-  isModularWorkspace,
-  isPublicApiIndex,
-  layerBudgetFindings,
-} from "./modular-budgets.ts";
-import { collectSourceFiles } from "./source-files.ts";
+import { directoryEntries, type TreeScan } from "../platform/directory-entries.ts";
+import { pathExists } from "../platform/file-system.ts";
 
-const lineCount = (file: string): Effect.Effect<number, Cause.UnknownError> =>
+const sourceSuffix = /\.[cm]?[jt]sx?$/u;
+
+class NotAModularPackage extends Schema.TaggedError<NotAModularPackage>()("NotAModularPackage", {
+  cwd: Schema.String,
+}) {
+  public override get message(): string {
+    return `modular budgets require a modular package cwd: ${this.cwd}`;
+  }
+}
+
+const collectFiles = (directory: string): TreeScan<readonly string[]> =>
+  Effect.gen(function* listFiles() {
+    const paths = yield* Path.Path;
+    const entries = yield* directoryEntries(directory);
+    const nested = yield* Effect.forEach(
+      entries,
+      (entry): TreeScan<readonly string[]> => {
+        const entryPath = paths.join(directory, entry.name);
+        if (entry.kind === "directory") {
+          return collectFiles(entryPath);
+        }
+        if (entry.kind === "file" && sourceSuffix.test(entry.name)) {
+          return Effect.succeed([entryPath]);
+        }
+        return Effect.succeed([]);
+      },
+      { concurrency: "unbounded" },
+    );
+    return nested.flat();
+  });
+
+const lineCount = (file: string): TreeScan<number> =>
   Effect.gen(function* countLines() {
-    const source = yield* Effect.tryPromise(() => readFile(file, "utf8"));
+    const filesystem = yield* FileSystem.FileSystem;
+    const source = yield* filesystem.readFileString(file);
     if (source.length === 0) {
       return 0;
     }
     return source.split(/\r?\n/u).length - (source.endsWith("\n") ? 1 : 0);
   });
 
-const directoryLines = (directory: string): Effect.Effect<number, Cause.UnknownError> =>
+const directoryLines = (directory: string): TreeScan<number> =>
   Effect.gen(function* sum() {
-    const files = yield* collectSourceFiles(directory);
+    const files = yield* collectFiles(directory);
     const counts = yield* Effect.forEach(files, lineCount, { concurrency: "unbounded" });
     return counts.reduce((total, count) => total + count, 0);
   });
 
-const layerLines = (directory: string): Effect.Effect<number, Cause.UnknownError> =>
-  existsSync(directory) ? directoryLines(directory) : Effect.succeed(0);
+const whenPresent = <Scanned>(
+  directory: string,
+  absent: Scanned,
+  scan: (present: string) => TreeScan<Scanned>,
+): TreeScan<Scanned> =>
+  Effect.gen(function* whenPresent() {
+    return (yield* pathExists(directory)) ? yield* scan(directory) : absent;
+  });
 
-const budgetFindings = (srcRoot: string): Effect.Effect<readonly string[], Cause.UnknownError> =>
+const budgetFindings = (srcRoot: string): TreeScan<readonly string[]> =>
   Effect.gen(function* scan() {
-    const [app, shared] = yield* Effect.forEach(["app", "shared"], (layer) =>
-      layerLines(join(srcRoot, layer)),
+    const filesystem = yield* FileSystem.FileSystem;
+    const paths = yield* Path.Path;
+    const findings: string[] = [];
+    const appLines = yield* whenPresent(paths.join(srcRoot, "app"), 0, directoryLines);
+    if (appLines > modularBudgets.app) {
+      findings.push(
+        `app: ${appLines} lines exceeds ${modularBudgets.app}. Move composition out into features/<name>.`,
+      );
+    }
+    const sharedLines = yield* whenPresent(paths.join(srcRoot, "shared"), 0, directoryLines);
+    if (sharedLines > modularBudgets.shared) {
+      findings.push(
+        `shared: ${sharedLines} lines exceeds ${modularBudgets.shared}. Extract a features/<name> slice.`,
+      );
+    }
+    const featureEntries = yield* whenPresent(
+      paths.join(srcRoot, "features"),
+      [],
+      directoryEntries,
     );
-    const featuresRoot = join(srcRoot, "features");
-    const entries = existsSync(featuresRoot)
-      ? yield* Effect.tryPromise(() => readdir(featuresRoot, { withFileTypes: true }))
-      : [];
-    const features = yield* Effect.forEach(entries, (entry) =>
-      Effect.tryPromise(async () => {
-        const names = entry.isDirectory() ? await readdir(join(featuresRoot, entry.name)) : [];
-        return {
-          directory: entry.isDirectory(),
-          name: entry.name,
-          publicApi: names.some(isPublicApiIndex),
-        };
-      }),
-    );
-    return [
-      ...layerBudgetFindings({ app: app ?? 0, shared: shared ?? 0 }),
-      ...featureFindings(features),
-    ].toSorted();
+    for (const entry of featureEntries) {
+      if (entry.kind !== "directory") {
+        findings.push(`features/${entry.name}: place slice code in a directory, not a loose file.`);
+        continue;
+      }
+      const sliceRoot = paths.join(srcRoot, "features", entry.name);
+      const hasPublicApi = (yield* filesystem.readDirectory(sliceRoot)).some((name) =>
+        /^index\.[cm]?[jt]sx?$/u.test(name),
+      );
+      if (!hasPublicApi) {
+        findings.push(
+          `features/${entry.name}: missing public API index (features/${entry.name}/index.ts).`,
+        );
+      }
+    }
+    return findings.toSorted();
   });
 
 const program = Effect.gen(function* main() {
+  const paths = yield* Path.Path;
   const cwd = process.cwd().replaceAll("\\", "/");
-  if (!isModularWorkspace(cwd)) {
-    return yield* Effect.fail(new Error(`modular budgets require a modular package cwd: ${cwd}`));
+  const workspacePath = ["apps", "libs", "tools", "infra"]
+    .map((area) => {
+      const marker = `/${area}/`;
+      const index = cwd.lastIndexOf(marker);
+      if (index < 0) {
+        return undefined;
+      }
+      const rest = cwd.slice(index + 1);
+      const [root, name] = rest.split("/");
+      return root !== undefined && name !== undefined ? `${root}/${name}` : undefined;
+    })
+    .find((value) => value !== undefined);
+  if (workspacePath === undefined || architectureKindOf(workspacePath) !== "modular") {
+    return yield* new NotAModularPackage({ cwd });
   }
-  const target = process.argv[2] ?? "src";
-  const srcRoot = join(process.cwd(), target);
+  const srcRoot = paths.join(process.cwd(), process.argv[2] ?? "src");
   const findings = yield* budgetFindings(srcRoot);
   if (findings.length > 0) {
     yield* Console.error(findings.join("\n"));
     return yield* markFailed;
   }
-  yield* Console.log(`modular-budgets: ok (${target})`);
+  yield* Console.log(`modular-budgets: ok (${paths.relative(process.cwd(), srcRoot) || "."})`);
 });
 
-runCli(program, (cause) => causeRecord("quality.modular_budgets_failed", { cause }));
+runCli(program.pipe(Effect.provide(NodeServices.layer)), (cause) =>
+  causeRecord("quality.modular_budgets_failed", { cause }),
+);

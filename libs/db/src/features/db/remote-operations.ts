@@ -50,6 +50,7 @@ const MigrationFile = Schema.Struct({
 const MigrationFiles = Schema.Array(MigrationFile).check(Schema.isMinLength(1));
 type Migration = typeof MigrationFile.Type;
 
+const RowCells = Schema.Array(Schema.Array(Schema.Unknown));
 const TableNameRows = Schema.Array(Schema.Tuple([Schema.String]));
 const HistoryRows = Schema.Array(Schema.Tuple([Schema.String, Schema.String]));
 const BootstrappedRow = Schema.Tuple([
@@ -218,7 +219,11 @@ const bootstrapDatabase = <Result>(
     yield* deployedMigrations(input.database, yield* loadRemoteMigrations());
     const bootstrappedRows = yield* queryValues(
       input.database,
-      bootstrapStatement(input.email, BOOTSTRAP_KIND.admin, yield* Clock.currentTimeMillis),
+      bootstrapStatement({
+        bootstrapKind: BOOTSTRAP_KIND.admin,
+        email: input.email,
+        updatedAt: yield* Clock.currentTimeMillis,
+      }),
     ).pipe(Effect.flatMap(decodeBootstrappedRows));
     const [bootstrappedAdministrator] = bootstrappedRows;
     if (bootstrappedRows.length !== 1 || bootstrappedAdministrator === undefined) {
@@ -235,6 +240,7 @@ const bootstrapDatabase = <Result>(
 };
 
 export {
+  RowCells,
   RemoteFailure,
   bootstrapDatabase,
   fail,

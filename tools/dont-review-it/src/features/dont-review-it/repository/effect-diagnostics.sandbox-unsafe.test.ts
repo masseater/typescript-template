@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { NodeServices } from "@effect/platform-node";
 import { recommended } from "@effect/tsgo/oxlint-presets";
 import {
   appRun,
@@ -9,8 +8,11 @@ import {
   effectDiagnostics,
   effectTsgoNoEmit,
 } from "@repo/vite-config";
+import { Effect, FileSystem } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { path } from "../platform/path.ts";
+import { posixPath } from "../platform/path.ts";
 import { field } from "./dependencies-test-fixture.ts";
 import { repositoryRoot } from "./repository-root.ts";
 import { commands, configuredDirectories, reachable } from "./tasks-test-fixture.ts";
@@ -90,7 +92,7 @@ const namedTask = (config: unknown, name: string): unknown => {
 
 const diagnosticsTask = (config: unknown): unknown => namedTask(config, "check:effect");
 
-const baselinedCommand = awaitingEffectDiagnostics["check:effect"].command;
+const baselinedCommand = awaitingEffectDiagnostics(repositoryRoot)["check:effect"].command;
 
 const compilerCommand = (command: string): string =>
   command === baselinedCommand ? effectTsgoNoEmit("tsconfig.json") : command;
@@ -125,9 +127,9 @@ const diagnosed = Object.entries(configs)
 const projectWorkspaces = Object.keys(projects)
   .map((file) => workspace(file))
   .toSorted();
-const declarations = Object.values(configs)
-  .map((config) => diagnosticsTask(config))
-  .filter((task) => task !== undefined);
+const declarations = Object.entries(configs)
+  .map(([file, config]) => ({ directory: workspace(file), task: diagnosticsTask(config) }))
+  .filter((declaration) => declaration.task !== undefined);
 
 const effectCheckedProjects = [
   ...new Set(
@@ -141,7 +143,7 @@ const effectCheckedProjects = [
         return [
           packageDirectory === "."
             ? project
-            : path.posix.normalize(path.posix.join(packageDirectory, project)),
+            : posixPath.normalize(posixPath.join(packageDirectory, project)),
         ];
       });
     }),
@@ -157,19 +159,20 @@ describe("effect diagnostics coverage", () => {
   it("every workspace typechecks only through effect-tsgo", () => {
     expect.assertions(3);
     expect(
-      declarations.flatMap((task) =>
+      declarations.flatMap(({ task }) =>
         commandLines(task).filter((command) => !command.includes("effect-tsgo get-exe-path")),
       ),
     ).toStrictEqual([]);
-    expect(declarations.map((task) => field(task, "input"))).toStrictEqual(
-      declarations.map((task) =>
-        field(task, "command") === baselinedCommand
-          ? (awaitingEffectDiagnostics["check:effect"].input as unknown)
-          : (effectDiagnostics["check:effect"].input as unknown),
-      ),
+    expect(declarations.map(({ task }) => field(task, "input"))).toStrictEqual(
+      declarations.map(({ directory, task }) => {
+        const packageRoot = path.join(repositoryRoot, directory);
+        return field(task, "command") === baselinedCommand
+          ? (awaitingEffectDiagnostics(packageRoot)["check:effect"].input as unknown)
+          : (effectDiagnostics(packageRoot)["check:effect"].input as unknown);
+      }),
     );
     expect(
-      declarations.flatMap((task) => {
+      declarations.flatMap(({ task }) => {
         const dependsOn = field(task, "dependsOn");
         if (dependsOn === undefined) {
           return [];
@@ -183,27 +186,33 @@ describe("effect diagnostics coverage", () => {
     ).toStrictEqual([]);
   });
 
-  it("every TypeScript project is covered by an effect-tsgo check", () => {
-    expect.assertions(2);
-    expect(typecheckProjects(repositoryRoot)).toStrictEqual(
-      [
-        "tsconfig.json",
-        ...[...Object.keys(projects), ...Object.keys(nestedProjects)].map(toRepositoryPath),
-      ]
-        .filter((project, index, all) => all.indexOf(project) === index)
-        .toSorted(),
-    );
-    expect(
-      typecheckProjects(repositoryRoot).filter(
-        (project) => !effectCheckedProjects.includes(project),
-      ),
-    ).toStrictEqual([]);
-  });
+  it("every TypeScript project is covered by an effect-tsgo check", () =>
+    Effect.runPromise(
+      Effect.gen(function* everyProjectCovered() {
+        expect.assertions(2);
+        const typechecked = yield* typecheckProjects(repositoryRoot);
+        expect(typechecked).toStrictEqual(
+          [
+            "tsconfig.json",
+            ...[...Object.keys(projects), ...Object.keys(nestedProjects)].map(toRepositoryPath),
+          ]
+            .filter((project, index, all) => all.indexOf(project) === index)
+            .toSorted(),
+        );
+        expect(
+          typechecked.filter((project) => !effectCheckedProjects.includes(project)),
+        ).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 
   it("typechecks with effect-tsgo before the bundle and before every push", () => {
     expect.assertions(3);
-    expect(effectDiagnostics["check:effect"].command).toBe(effectTsgoNoEmit("tsconfig.json"));
-    expect(appRun.tasks.build.dependsOn).toStrictEqual(expect.arrayContaining(["check:effect"]));
+    expect(effectDiagnostics(repositoryRoot)["check:effect"].command).toBe(
+      effectTsgoNoEmit("tsconfig.json"),
+    );
+    expect(
+      appRun(path.join(repositoryRoot, "apps", "service-member")).tasks.build.dependsOn,
+    ).toStrictEqual(expect.arrayContaining(["check:effect"]));
     expect(
       configuredDirectories.filter(
         (directory) => !reachable(directory, ["prepush"]).includes("check:effect"),
@@ -211,14 +220,20 @@ describe("effect diagnostics coverage", () => {
     ).toStrictEqual([]);
   });
 
-  it("repository typecheck uses effect-tsgo instead of stock tsc", () => {
-    expect.assertions(4);
-    expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
-    const source = readFileSync(new URL("./typecheck-workspaces.ts", import.meta.url), "utf8");
-    expect(source).toContain("@effect/tsgo/package.json");
-    expect(source).toContain("get-exe-path");
-    expect(source).not.toContain("typescript/package.json");
-  });
+  it("repository typecheck uses effect-tsgo instead of stock tsc", () =>
+    Effect.runPromise(
+      Effect.gen(function* typecheckThroughEffectTsgo() {
+        expect.assertions(4);
+        expect(commands(".", "check:types")).toStrictEqual(["dont-review-it-typecheck"]);
+        const filesystem = yield* FileSystem.FileSystem;
+        const source = yield* filesystem.readFileString(
+          fileURLToPath(new URL("./typecheck-workspaces.ts", import.meta.url)),
+        );
+        expect(source).toContain("@effect/tsgo/package.json");
+        expect(source).toContain("get-exe-path");
+        expect(source).not.toContain("typescript/package.json");
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 
   it("keeps Effect language-service diagnostics on and failing tsc", () => {
     expect.assertions(4);

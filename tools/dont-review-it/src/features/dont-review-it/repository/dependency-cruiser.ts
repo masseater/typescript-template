@@ -29,7 +29,7 @@ const clientReachableModule = String.raw`^(?:${anyOf(clientReachableModules)})$`
 const nodeRuntimePackage = String.raw`(?:^|/)node_modules/(?:${anyOf(nodeRuntimePackages)})/`;
 const workerRuntimeModule = String.raw`^(?:${anyOf(workerRuntimeModules)})$`;
 
-const configuration: IConfiguration = {
+const configuration = {
   forbidden: [
     {
       comment:
@@ -136,6 +136,13 @@ const configuration: IConfiguration = {
       to: { path: testPattern },
     },
     {
+      comment: "wiki は共有 DB を持ちません。ローカル開発用の D1 定義だけを参照してください。",
+      from: { path: "^apps/internal-wiki/" },
+      name: "no-wiki-to-database",
+      severity: "error",
+      to: { path: "^libs/db/", pathNot: String.raw`^libs/db/src/features/db/local\.ts$` },
+    },
+    {
       comment:
         "ブラウザへ配る部品からサーバー専用のパッケージへ到達しています。型だけが要るときも、サーバー専用のパッケージに到達しないモジュール（@repo/runtime/client など）から取ってください。到達するかどうかは経路の長さによらず、型としての参照も辺として数えます。",
       from: { path: "^libs/(?:ui|auth-ui)/src/", pathNot: testModule },
@@ -184,6 +191,6 @@ const configuration: IConfiguration = {
     exclude: { path: [String.raw`^(?:apps|libs|infra|tools)/[^/]+/(?:\.(?!storybook)|dist/)`] },
     parser: "swc",
   },
-};
+} satisfies IConfiguration;
 
 export default configuration;

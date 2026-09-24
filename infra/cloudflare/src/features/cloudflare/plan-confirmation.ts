@@ -151,9 +151,9 @@ function planReport(planned: PlannedStack): PlanReport {
   };
 }
 
-function planConfirmation(planned: PlannedStack, accountId: string): string {
+function planConfirmation(planned: PlannedStack, subject: string): string {
   return digest({
-    account: digest(accountId),
+    subject: digest(subject),
     rows: planRows(planned),
     stack: planned.stack.name,
     stage: digest(planned.stack.stage),
@@ -219,7 +219,7 @@ function plannedStack(
 
 const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
   planned: PlannedStack,
-  approval: { readonly accountId: string; readonly confirmation: string },
+  approval: { readonly confirmation: string; readonly subject: string },
 ) {
   const refusals = refusedRows(planned);
   const code = refusals[0]?.code;
@@ -229,7 +229,7 @@ const acceptPlan = Effect.fn("acceptPlan")(function* acceptPlan(
       keys: refusals.filter((row) => row.code === code).map((row) => row.id),
     });
   }
-  if (planConfirmation(planned, approval.accountId) !== approval.confirmation) {
+  if (planConfirmation(planned, approval.subject) !== approval.confirmation) {
     return yield* new CloudflareFailure({
       code: "plan_confirmation_mismatch",
       keys: [planned.stack.name],

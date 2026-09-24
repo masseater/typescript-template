@@ -1,4 +1,5 @@
 import { plans, priceIntervals, subscriptionStatuses, webhookOutcomes } from "@repo/config";
+import { Redirect } from "@repo/runtime/contracts";
 import { Option, Schema } from "effect";
 
 const PlanView = Schema.Struct({
@@ -15,7 +16,7 @@ const OfferView = Schema.Struct({
   unitAmount: Schema.Finite,
 });
 
-const HostedPage = Schema.Struct({ url: Schema.String });
+const HostedPage = Redirect;
 
 const WebhookReceipt = Schema.Struct({ outcome: Schema.Literals(webhookOutcomes) });
 

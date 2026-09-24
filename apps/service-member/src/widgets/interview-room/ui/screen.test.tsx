@@ -1,3 +1,4 @@
+import { RegistryProvider } from "@effect/atom-react";
 import { AppProviders } from "@repo/ui/shell";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vite-plus/test";
@@ -33,20 +34,22 @@ function renderScreen(
 ): string {
   const screen: ReactElement = (
     <AppProviders fieldValidationMessages={fieldValidationMessages("ja")}>
-      <InterviewScreen
-        busy={false}
-        failure={extra?.failure}
-        heard={extra?.heard}
-        onConsent={noop}
-        onFinish={noop}
-        onRestart={noop}
-        onRetry={noop}
-        onSave={noop}
-        onSay={noop}
-        turnFailed={extra?.turnFailed ?? false}
-        typing={extra?.typing ?? false}
-        view={view}
-      />
+      <RegistryProvider>
+        <InterviewScreen
+          busy={false}
+          failure={extra?.failure}
+          heard={extra?.heard}
+          onConsent={noop}
+          onFinish={noop}
+          onRestart={noop}
+          onRetry={noop}
+          onSave={noop}
+          onSay={noop}
+          turnFailed={extra?.turnFailed ?? false}
+          typing={extra?.typing ?? false}
+          view={view}
+        />
+      </RegistryProvider>
     </AppProviders>
   );
   return renderToStaticMarkup(screen);

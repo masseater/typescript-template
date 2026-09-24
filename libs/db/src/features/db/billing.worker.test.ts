@@ -1,8 +1,9 @@
-import { assert, it } from "@effect/vitest";
 import { SUBSCRIPTION_STATUS } from "@repo/config";
 import { DateTime, Effect, Layer } from "effect";
 import { TestClock } from "effect/testing";
+import { describe, expect, test } from "vite-plus/test";
 
+import { stripeEvent } from "./billing-schema.ts";
 import {
   attachCheckout,
   findSubscription,
@@ -12,213 +13,313 @@ import {
   planOf,
   recordSubscription,
   requirePaid,
+  type StripeEventRecord,
+  type SubscriptionRecord,
 } from "./billing.ts";
-import { TestDatabase, runStatement } from "./database-test-fixture.ts";
-
-const services = Layer.merge(TestDatabase, TestClock.layer());
-
-function addMember(id: string): Effect.Effect<unknown, unknown> {
-  return runStatement(
-    "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)",
-    id,
-    id,
-    `${id}@example.com`,
-  );
-}
-
-const countEvents = Effect.map(
-  runStatement("SELECT count(*) AS count FROM stripe_event"),
-  (result) => {
-    const row = result.results[0];
-    if (typeof row !== "object" || row === null || !("count" in row)) {
-      return undefined;
-    }
-    return row.count;
-  },
-);
+import { query } from "./database.ts";
+import { addUser } from "./records-test-fixture.ts";
+import { TestDatabase } from "./database-test-fixture.ts";
 
 const monthLater = DateTime.toDate(DateTime.makeUnsafe("2026-10-20T00:00:00.000Z"));
 
-function active(
-  memberId: string,
-  overrides: Partial<Parameters<typeof recordSubscription>[1]> = {},
-) {
-  return {
-    cancelAtPeriodEnd: false,
-    currentPeriodEnd: monthLater,
-    memberId,
-    status: SUBSCRIPTION_STATUS.active,
-    stripeCustomerId: `cus_${memberId}`,
-    stripeSubscriptionId: `sub_${memberId}`,
-    ...overrides,
-  };
-}
+const aliceSubscription: SubscriptionRecord = {
+  cancelAtPeriodEnd: false,
+  currentPeriodEnd: monthLater,
+  memberId: "alice",
+  status: SUBSCRIPTION_STATUS.active,
+  stripeCustomerId: "cus_alice",
+  stripeSubscriptionId: "sub_alice",
+};
 
-function event(id: string, createdAt: string, type = "customer.subscription.updated") {
-  return { createdAt: DateTime.toDate(DateTime.makeUnsafe(createdAt)), id, type };
-}
+const firstUpdate: StripeEventRecord = {
+  createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
+  id: "evt_1",
+  type: "customer.subscription.updated",
+};
 
-it.effect("a member without a subscription is free and is refused paid features", () =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    assert.deepStrictEqual(yield* planOf("alice"), {
-      cancelAtPeriodEnd: false,
-      currentPeriodEnd: undefined,
-      plan: "free",
-      status: undefined,
+const laterDeletion: StripeEventRecord = {
+  createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-21T00:00:00.000Z")),
+  id: "evt_2",
+  type: "customer.subscription.deleted",
+};
+
+describe("a member without a subscription", () => {
+  const it = test.extend("freeAccess", () =>
+    Effect.runPromise(
+      Effect.gen(function* withoutSubscription() {
+        yield* addUser({ userId: "alice" });
+        const plan = yield* planOf("alice");
+        const paid = yield* isPaidMember("alice");
+        const refused = yield* requirePaid("alice").pipe(Effect.flip);
+        return { paid, plan, refusedTag: refused._tag };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
+
+  it("is free and is refused paid features", ({ freeAccess }) => {
+    expect(freeAccess).toStrictEqual({
+      paid: false,
+      plan: {
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: undefined,
+        plan: "free",
+        status: undefined,
+      },
+      refusedTag: "PaidPlanRequired",
     });
-    assert.isFalse(yield* isPaidMember("alice"));
-    const refused = yield* requirePaid("alice").pipe(Effect.flip);
-    assert.strictEqual(refused._tag, "PaidPlanRequired");
-  }).pipe(Effect.provide(services)),
-);
+  });
+});
 
-it.effect("an active subscription inside its period makes the member paid", () =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    yield* TestClock.setTime(
-      DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
-    );
-    const outcome = yield* recordSubscription(
-      event("evt_1", "2026-09-20T00:00:00.000Z"),
-      active("alice"),
-    );
-    assert.strictEqual(outcome, "applied");
-    assert.deepStrictEqual(yield* planOf("alice"), {
-      cancelAtPeriodEnd: false,
-      currentPeriodEnd: monthLater,
-      plan: "paid",
-      status: "active",
+describe("an active subscription inside its period", () => {
+  const it = test.extend("paidAccess", () =>
+    Effect.runPromise(
+      Effect.gen(function* activeSubscription() {
+        yield* addUser({ userId: "alice" });
+        yield* TestClock.setTime(
+          DateTime.toEpochMillis(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
+        );
+        const disposition = yield* recordSubscription(firstUpdate, aliceSubscription);
+        const plan = yield* planOf("alice");
+        yield* requirePaid("alice");
+        const customerMember = yield* memberOfCustomer("cus_alice");
+        return { customerMember, disposition, plan };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
+
+  it("makes the member paid", ({ paidAccess }) => {
+    expect(paidAccess).toStrictEqual({
+      customerMember: "alice",
+      disposition: "applied",
+      plan: {
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: monthLater,
+        plan: "paid",
+        status: "active",
+      },
     });
-    yield* requirePaid("alice");
-    assert.strictEqual(yield* memberOfCustomer("cus_alice"), "alice");
-  }).pipe(Effect.provide(services)),
-);
+  });
+});
 
-it.effect("a subscription past its period end no longer entitles the member", () =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    yield* recordSubscription(event("evt_1", "2026-09-20T00:00:00.000Z"), active("alice"));
-    yield* TestClock.setTime(monthLater.getTime());
-    assert.isFalse(yield* isPaidMember("alice"));
-    yield* TestClock.setTime(monthLater.getTime() - 1);
-    assert.isTrue(yield* isPaidMember("alice"));
-  }).pipe(Effect.provide(services)),
-);
+describe("a subscription past its period end", () => {
+  const it = test.extend("entitlementAroundPeriodEnd", () =>
+    Effect.runPromise(
+      Effect.gen(function* pastPeriodEnd() {
+        yield* addUser({ userId: "alice" });
+        yield* recordSubscription(firstUpdate, aliceSubscription);
+        yield* TestClock.setTime(monthLater.getTime());
+        const atPeriodEnd = yield* isPaidMember("alice");
+        yield* TestClock.setTime(monthLater.getTime() - 1);
+        const beforePeriodEnd = yield* isPaidMember("alice");
+        return { atPeriodEnd, beforePeriodEnd };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
 
-it.effect.each([
+  it("no longer entitles the member", ({ entitlementAroundPeriodEnd }) => {
+    expect(entitlementAroundPeriodEnd).toStrictEqual({
+      atPeriodEnd: false,
+      beforePeriodEnd: true,
+    });
+  });
+});
+
+describe.for([
   SUBSCRIPTION_STATUS.canceled,
   SUBSCRIPTION_STATUS.incomplete,
   SUBSCRIPTION_STATUS.incompleteExpired,
   SUBSCRIPTION_STATUS.pastDue,
   SUBSCRIPTION_STATUS.paused,
   SUBSCRIPTION_STATUS.unpaid,
-])("a subscription in the %s state is free", (status) =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    yield* recordSubscription(
-      event("evt_1", "2026-09-20T00:00:00.000Z"),
-      active("alice", { status }),
-    );
-    assert.strictEqual((yield* planOf("alice")).plan, "free");
-    assert.strictEqual((yield* planOf("alice")).status, status);
-  }).pipe(Effect.provide(services)),
-);
+])("a subscription in the %s state", (subscriptionStatus) => {
+  const it = test.extend("unpaidPlan", () =>
+    Effect.runPromise(
+      Effect.gen(function* unpaidSubscription() {
+        yield* addUser({ userId: "alice" });
+        yield* recordSubscription(firstUpdate, {
+          ...aliceSubscription,
+          status: subscriptionStatus,
+        });
+        const plan = yield* planOf("alice");
+        return { plan: plan.plan, subscriptionStatus: plan.status };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
 
-it.effect("a trialing subscription entitles the member", () =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    yield* recordSubscription(
-      event("evt_1", "2026-09-20T00:00:00.000Z"),
-      active("alice", { status: SUBSCRIPTION_STATUS.trialing }),
-    );
-    assert.isTrue(yield* isPaidMember("alice"));
-  }).pipe(Effect.provide(services)),
-);
+  it("is free", ({ unpaidPlan }) => {
+    expect(unpaidPlan).toStrictEqual({ plan: "free", subscriptionStatus });
+  });
+});
 
-it.effect("the same event applied twice leaves the subscription and the event log unchanged", () =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    const first = event("evt_1", "2026-09-20T00:00:00.000Z");
-    yield* recordSubscription(first, active("alice"));
-    const cancelled = yield* recordSubscription(
-      event("evt_2", "2026-09-21T00:00:00.000Z", "customer.subscription.deleted"),
-      active("alice", { status: SUBSCRIPTION_STATUS.canceled }),
-    );
-    assert.strictEqual(cancelled, "applied");
-    const replayed = yield* recordSubscription(first, active("alice"));
-    assert.strictEqual(replayed, "duplicate");
-    assert.strictEqual((yield* findSubscription("alice"))?.status, "canceled");
-    assert.strictEqual(yield* countEvents, 2);
-  }).pipe(Effect.provide(services)),
-);
+describe("a trialing subscription", () => {
+  const it = test.extend("trialingPaid", () =>
+    Effect.runPromise(
+      Effect.gen(function* trialingSubscription() {
+        yield* addUser({ userId: "alice" });
+        yield* recordSubscription(firstUpdate, {
+          ...aliceSubscription,
+          status: SUBSCRIPTION_STATUS.trialing,
+        });
+        return yield* isPaidMember("alice");
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
 
-it.effect("an older event that arrives late cannot revert a newer subscription state", () =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    yield* recordSubscription(
-      event("evt_2", "2026-09-21T00:00:00.000Z", "customer.subscription.deleted"),
-      active("alice", { status: SUBSCRIPTION_STATUS.canceled }),
-    );
-    const late = yield* recordSubscription(
-      event("evt_1", "2026-09-20T00:00:00.000Z"),
-      active("alice"),
-    );
-    assert.strictEqual(late, "applied");
-    assert.strictEqual((yield* findSubscription("alice"))?.status, "canceled");
-    assert.strictEqual(yield* countEvents, 2);
-  }).pipe(Effect.provide(services)),
-);
+  it("entitles the member", ({ trialingPaid }) => {
+    expect(trialingPaid).toBe(true);
+  });
+});
 
-it.effect(
-  "a completed checkout attaches the customer only until a subscription event knows more",
-  () =>
-    Effect.gen(function* program() {
-      yield* addMember("alice");
-      const attached = yield* attachCheckout(
-        event("evt_checkout", "2026-09-20T00:00:00.000Z", "checkout.session.completed"),
-        active("alice", { currentPeriodEnd: undefined }),
-      );
-      assert.strictEqual(attached, "applied");
-      assert.deepStrictEqual(yield* findSubscription("alice"), {
+describe("the same event applied twice", () => {
+  const it = test.extend("replayedEvent", () =>
+    Effect.runPromise(
+      Effect.gen(function* replay() {
+        yield* addUser({ userId: "alice" });
+        yield* recordSubscription(firstUpdate, aliceSubscription);
+        const cancelled = yield* recordSubscription(laterDeletion, {
+          ...aliceSubscription,
+          status: SUBSCRIPTION_STATUS.canceled,
+        });
+        const replayed = yield* recordSubscription(firstUpdate, aliceSubscription);
+        const stored = yield* findSubscription("alice");
+        const storedEvents = yield* query((database) =>
+          database.select({ id: stripeEvent.id }).from(stripeEvent).orderBy(stripeEvent.id),
+        );
+        return {
+          cancelled,
+          replayed,
+          storedEventCount: storedEvents.length,
+          storedStatus: stored?.status,
+        };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
+
+  it("leaves the subscription and the event log unchanged", ({ replayedEvent }) => {
+    expect(replayedEvent).toStrictEqual({
+      cancelled: "applied",
+      replayed: "duplicate",
+      storedEventCount: 2,
+      storedStatus: "canceled",
+    });
+  });
+});
+
+describe("an older event that arrives late", () => {
+  const it = test.extend("lateEvent", () =>
+    Effect.runPromise(
+      Effect.gen(function* arriveLate() {
+        yield* addUser({ userId: "alice" });
+        yield* recordSubscription(laterDeletion, {
+          ...aliceSubscription,
+          status: SUBSCRIPTION_STATUS.canceled,
+        });
+        const late = yield* recordSubscription(firstUpdate, aliceSubscription);
+        const stored = yield* findSubscription("alice");
+        const storedEvents = yield* query((database) =>
+          database.select({ id: stripeEvent.id }).from(stripeEvent).orderBy(stripeEvent.id),
+        );
+        return { late, storedEventCount: storedEvents.length, storedStatus: stored?.status };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
+
+  it("cannot revert a newer subscription state", ({ lateEvent }) => {
+    expect(lateEvent).toStrictEqual({
+      late: "applied",
+      storedEventCount: 2,
+      storedStatus: "canceled",
+    });
+  });
+});
+
+describe("a completed checkout", () => {
+  const it = test.extend("checkoutAttachment", () =>
+    Effect.runPromise(
+      Effect.gen(function* completeCheckout() {
+        yield* addUser({ userId: "alice" });
+        const attached = yield* attachCheckout(
+          {
+            createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:00.000Z")),
+            id: "evt_checkout",
+            type: "checkout.session.completed",
+          },
+          { ...aliceSubscription, currentPeriodEnd: undefined },
+        );
+        const afterCheckout = yield* findSubscription("alice");
+        const paidAfterCheckout = yield* isPaidMember("alice");
+        yield* recordSubscription(
+          {
+            createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:01.000Z")),
+            id: "evt_sub",
+            type: "customer.subscription.updated",
+          },
+          { ...aliceSubscription, cancelAtPeriodEnd: true },
+        );
+        const attachedAgain = yield* attachCheckout(
+          {
+            createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-20T00:00:02.000Z")),
+            id: "evt_checkout_2",
+            type: "checkout.session.completed",
+          },
+          { ...aliceSubscription, currentPeriodEnd: undefined },
+        );
+        const afterSubscriptionEvent = yield* findSubscription("alice");
+        return {
+          afterCheckout,
+          afterSubscriptionEvent,
+          attached,
+          attachedAgain,
+          paidAfterCheckout,
+        };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
+
+  it("attaches the customer only until a subscription event knows more", ({
+    checkoutAttachment,
+  }) => {
+    expect(checkoutAttachment).toStrictEqual({
+      afterCheckout: {
         cancelAtPeriodEnd: false,
         currentPeriodEnd: undefined,
         memberId: "alice",
         status: "active",
         stripeCustomerId: "cus_alice",
         stripeSubscriptionId: "sub_alice",
-      });
-      assert.isTrue(yield* isPaidMember("alice"));
-      yield* recordSubscription(
-        event("evt_sub", "2026-09-20T00:00:01.000Z"),
-        active("alice", { cancelAtPeriodEnd: true }),
-      );
-      const again = yield* attachCheckout(
-        event("evt_checkout_2", "2026-09-20T00:00:02.000Z", "checkout.session.completed"),
-        active("alice", { currentPeriodEnd: undefined }),
-      );
-      assert.strictEqual(again, "applied");
-      assert.deepStrictEqual(yield* findSubscription("alice"), {
+      },
+      afterSubscriptionEvent: {
         cancelAtPeriodEnd: true,
         currentPeriodEnd: monthLater,
         memberId: "alice",
         status: "active",
         stripeCustomerId: "cus_alice",
         stripeSubscriptionId: "sub_alice",
-      });
-    }).pipe(Effect.provide(services)),
-);
+      },
+      attached: "applied",
+      attachedAgain: "applied",
+      paidAfterCheckout: true,
+    });
+  });
+});
 
-it.effect("a failed payment moves the subscription to past_due and the member back to free", () =>
-  Effect.gen(function* program() {
-    yield* addMember("alice");
-    yield* recordSubscription(event("evt_1", "2026-09-20T00:00:00.000Z"), active("alice"));
-    const failed = yield* markPaymentFailed(
-      event("evt_2", "2026-09-21T00:00:00.000Z", "invoice.payment_failed"),
-      "sub_alice",
-    );
-    assert.strictEqual(failed, "applied");
-    assert.strictEqual((yield* findSubscription("alice"))?.status, "past_due");
-    assert.isFalse(yield* isPaidMember("alice"));
-  }).pipe(Effect.provide(services)),
-);
+describe("a failed payment", () => {
+  const it = test.extend("failedPayment", () =>
+    Effect.runPromise(
+      Effect.gen(function* failPayment() {
+        yield* addUser({ userId: "alice" });
+        yield* recordSubscription(firstUpdate, aliceSubscription);
+        const failed = yield* markPaymentFailed(
+          {
+            createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-09-21T00:00:00.000Z")),
+            id: "evt_2",
+            type: "invoice.payment_failed",
+          },
+          "sub_alice",
+        );
+        const stored = yield* findSubscription("alice");
+        const paid = yield* isPaidMember("alice");
+        return { failed, paid, storedStatus: stored?.status };
+      }).pipe(Effect.provide(Layer.merge(TestDatabase, TestClock.layer()))),
+    ));
+
+  it("moves the subscription to past_due and the member back to free", ({ failedPayment }) => {
+    expect(failedPayment).toStrictEqual({
+      failed: "applied",
+      paid: false,
+      storedStatus: "past_due",
+    });
+  });
+});

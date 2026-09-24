@@ -15,7 +15,7 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   run: {
     tasks: {
-      ...effectDiagnostics,
+      ...effectDiagnostics(import.meta.dirname),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,
@@ -52,6 +52,6 @@ export default defineConfig({
       "src/features/ai-native-telemetry/telemetry/telemetry.ts",
       "src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
     ],
-    dts: { generator: "tsgo" },
+    dts: { generator: "oxc" },
   },
 });

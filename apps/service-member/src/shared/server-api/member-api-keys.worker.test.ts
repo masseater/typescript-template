@@ -71,20 +71,16 @@ function request(
     method?: string;
   }> = {},
 ): Promise<Response> {
-  const withBody =
-    init.body === undefined
-      ? Promise.resolve({} as RequestInit)
-      : encodeBody(init.body).then((body): RequestInit => ({
-          body,
-          headers: { "content-type": "application/json" },
-        }));
-  return withBody.then((bodyInit) =>
+  const encodedBody = init.body === undefined ? Promise.resolve(undefined) : encodeBody(init.body);
+  const contentType: Readonly<Record<string, string>> =
+    init.body === undefined ? {} : { "content-type": "application/json" };
+  return encodedBody.then((body) =>
     app.fetch(
       new Request(`${fixtureOrigin}${apiRoot}${path}`, {
-        ...bodyInit,
+        ...(body === undefined ? {} : { body }),
         headers: {
           origin: fixtureOrigin,
-          ...bodyInit.headers,
+          ...contentType,
           ...init.headers,
         },
         method: init.method ?? "GET",
@@ -95,7 +91,7 @@ function request(
 
 it.effect("lets API keys read allowed resources and rejects writes", () => {
   const environment = appEnvironment();
-  const base = Layer.orDie(appLayer({ env: environment, audience: APPLICATION.user, routes }));
+  const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
   const services = Layer.mergeAll(
     base,
     Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),

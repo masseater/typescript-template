@@ -21,7 +21,7 @@ function ReportsPage({
   status: ReportStatus | undefined;
 }>): ReactElement {
   return (
-    <Page layout="full" title="通報">
+    <Page title="通報">
       <div className="flex flex-wrap gap-2">
         <NavigationLink search={{}} to="/reports">
           すべて

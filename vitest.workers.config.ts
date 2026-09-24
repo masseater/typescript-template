@@ -2,6 +2,8 @@ import { fileURLToPath } from "node:url";
 
 import { cloudflareTest } from "@cloudflare/vitest-plugin";
 import {
+  APPLICATION,
+  coreEntrypoints,
   jobsQueueBinding,
   jobsQueueName,
   jobsWorkflowBinding,
@@ -35,6 +37,7 @@ export default defineProject({
     elysiaWorkerdJit(),
     cloudflareTest({
       additionalExports: {
+        [coreEntrypoints[APPLICATION.wiki]]: "WorkerEntrypoint",
         [jobsWorkflowClass]: "WorkflowEntrypoint",
         [mailRecorder]: "WorkerEntrypoint",
       },
@@ -60,7 +63,10 @@ export default defineProject({
         },
         queueProducers: { [jobsQueueBinding]: jobsQueueName },
         r2Buckets: { [localFileBucket.binding]: localFileBucket.bucket_name },
-        serviceBindings: { EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker } },
+        serviceBindings: {
+          CORE: { entrypoint: coreEntrypoints[APPLICATION.wiki], name: kCurrentWorker },
+          EMAIL: { entrypoint: mailRecorder, name: kCurrentWorker },
+        },
         workflows: {
           [jobsWorkflowBinding]: {
             className: jobsWorkflowClass,

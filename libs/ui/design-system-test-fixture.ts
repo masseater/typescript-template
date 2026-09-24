@@ -1,11 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import { repositoryRoot } from "@repo/config/repository-root";
+import { repositoryFile } from "@repo/config/repository-root";
 import { project } from "@shadcn/lint";
-
-const fromRepo = (file: string): string =>
-  path.isAbsolute(file) ? file : path.join(repositoryRoot, file);
 
 const designTokens: Readonly<Record<string, string>> = {
   "--danger": "#b01d3a",
@@ -313,7 +310,7 @@ const colorSchemeProbe = (css: string, scheme: ColorSchemeName): ColorSchemeProb
 };
 
 const read = (file: string): string => {
-  return readFileSync(fromRepo(file), "utf-8");
+  return readFileSync(repositoryFile(file), "utf-8");
 };
 
 const designSystemProbe = "libs/ui/src/features/ui/shared/ui/button.tsx";
@@ -393,7 +390,7 @@ const scannedDirectories = (file: string, css: string): string[] => {
 
 const isDirectory = (target: string): boolean => {
   try {
-    return statSync(fromRepo(target)).isDirectory();
+    return statSync(repositoryFile(target)).isDirectory();
   } catch {
     return false;
   }

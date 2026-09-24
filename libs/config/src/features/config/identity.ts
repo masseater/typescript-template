@@ -10,7 +10,6 @@ export const ACCOUNT_STATE = { active: accountStates[0], suspended: accountState
 
 /** @canonical-values config.admin-permission */
 export const adminPermissions = ["viewer", "operator", "owner"] as const;
-export type AdminPermission = (typeof adminPermissions)[number];
 export const ADMIN_PERMISSION = {
   viewer: adminPermissions[0],
   operator: adminPermissions[1],
@@ -19,23 +18,25 @@ export const ADMIN_PERMISSION = {
 
 /** @canonical-values config.staff-permission */
 export const staffPermissions = ["viewer", "editor"] as const;
-export type StaffPermission = (typeof staffPermissions)[number];
 export const STAFF_PERMISSION = {
   viewer: staffPermissions[0],
   editor: staffPermissions[1],
 } as const;
 
+/** @canonical-values config.account-permission */
 export const accountPermissions = [...adminPermissions, STAFF_PERMISSION.editor] as const;
 export type AccountPermission = (typeof accountPermissions)[number];
 
 const levelIndex = (levels: readonly string[], held: string | null | undefined): number =>
   levels.findIndex((level) => level === held);
 
+export type AdminPermission = (typeof adminPermissions)[number];
 export const grantsAdminLevel = (
   held: string | null | undefined,
   required: AdminPermission,
 ): boolean => levelIndex(adminPermissions, held) >= adminPermissions.indexOf(required);
 
+export type StaffPermission = (typeof staffPermissions)[number];
 export const grantsStaffLevel = (
   held: string | null | undefined,
   required: StaffPermission,

@@ -1,17 +1,26 @@
 import { accountStates } from "@repo/config";
-import { UserKeyword, adminPageSize, maximumAdminPageSize, pageNumber } from "@repo/config/paging";
-import { Identifier } from "@repo/runtime/contracts";
-import { Schema } from "effect";
+import { adminPageSize, maximumAdminPageSize } from "@repo/config/paging";
+import {
+  Identifier,
+  IdentifierQuery,
+  SearchKeyword,
+  UserKeyword,
+  laterPage,
+  maximumKeywordLength,
+  pageNumber,
+} from "@repo/runtime/contracts";
+import { Schema, Struct } from "effect";
 
 const AccountState = Schema.Literals(accountStates);
+
 const BooleanText = Schema.Literals(["true", "false"]).transform([true, false]);
 
 const UserListQuery = Schema.Struct({
   accountState: Schema.optionalKey(AccountState),
   emailVerified: Schema.optionalKey(BooleanText),
   keyword: Schema.optionalKey(UserKeyword),
-  limit: pageNumber(adminPageSize, 1, maximumAdminPageSize),
-  offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
+  limit: pageNumber({ fallback: adminPageSize, maximum: maximumAdminPageSize, minimum: 1 }),
+  offset: pageNumber({ fallback: 0, maximum: Number.MAX_SAFE_INTEGER, minimum: 0 }),
 });
 
 const UserSummary = Schema.Struct({
@@ -30,17 +39,20 @@ const MemberStateChange = Schema.Struct({ accountState: AccountState, id: Identi
 
 const MemberStateChanged = Schema.Struct({ accountState: AccountState, id: Schema.String });
 
-const UserDeletion = Schema.Struct({ id: Identifier });
+const UserDeletion = IdentifierQuery;
 
-const UserDeleted = Schema.Struct({ id: Schema.String });
+const UserDeleted = Schema.Struct(Struct.pick(UserSummary.fields, ["id"]));
 
 export {
   AccountState,
   BooleanText,
   MemberStateChange,
   MemberStateChanged,
+  SearchKeyword,
   UserDeleted,
   UserDeletion,
   UserList,
   UserListQuery,
+  laterPage,
+  maximumKeywordLength,
 };

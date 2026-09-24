@@ -178,9 +178,9 @@ describe("an OTLP switch beside an endpoint", () => {
 
 const stripeBindings = {
   APP_ORIGIN: "http://localhost:3001",
-  STRIPE_PRICE_ID: "price_placeholderNotReal",
-  STRIPE_SECRET_KEY: "sk_test_placeholderNotAReal",
-  STRIPE_WEBHOOK_SECRET: "whsec_placeholderNotReal",
+  STRIPE_PRICE_ID: "price_placeholder",
+  STRIPE_SECRET_KEY: "sk_test_placeholder",
+  STRIPE_WEBHOOK_SECRET: "whsec_placeholder",
 };
 
 describe("readStripeConfig", () => {
@@ -191,9 +191,9 @@ describe("readStripeConfig", () => {
     it("is read as a test-mode configuration", ({ stripeConfig }) => {
       expect(stripeConfig).toStrictEqual({
         mode: "test",
-        priceId: "price_placeholderNotReal",
-        secretKey: "sk_test_placeholderNotAReal",
-        webhookSecret: "whsec_placeholderNotReal",
+        priceId: "price_placeholder",
+        secretKey: "sk_test_placeholder",
+        webhookSecret: "whsec_placeholder",
       });
     });
   });
@@ -204,34 +204,39 @@ describe("readStripeConfig", () => {
         readStripeConfig({
           ...stripeBindings,
           APP_ORIGIN: "https://member.example.test",
-          STRIPE_SECRET_KEY: "rk_live_placeholderNotAReal",
+          STRIPE_SECRET_KEY: "rk_live_placeholder",
         }),
       ));
 
     it("is read as a live-mode configuration", ({ stripeConfig }) => {
-      expect(stripeConfig.mode).toBe("live");
+      expect(stripeConfig).toStrictEqual({
+        mode: "live",
+        priceId: "price_placeholder",
+        secretKey: "rk_live_placeholder",
+        webhookSecret: "whsec_placeholder",
+      });
     });
   });
 
   describe.for([
     [
       "a live key on a local origin",
-      { STRIPE_SECRET_KEY: "sk_live_placeholderNotAReal" },
+      { STRIPE_SECRET_KEY: "sk_live_placeholder" },
       "Stripe live keys are restricted to deployed origins",
     ],
     [
       "a secret key without a mode",
-      { STRIPE_SECRET_KEY: "sk_placeholderNotAReal" },
+      { STRIPE_SECRET_KEY: "sk_placeholder" },
       'Expected a string matching the RegExp ^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$\n  at ["STRIPE_SECRET_KEY"]',
     ],
     [
       "a webhook secret without the whsec prefix",
-      { STRIPE_WEBHOOK_SECRET: "placeholderNotReal" },
+      { STRIPE_WEBHOOK_SECRET: "placeholder" },
       'Expected a string matching the RegExp ^whsec_[A-Za-z0-9]+$\n  at ["STRIPE_WEBHOOK_SECRET"]',
     ],
     [
       "a price id without the price prefix",
-      { STRIPE_PRICE_ID: "prod_placeholderNotReal" },
+      { STRIPE_PRICE_ID: "prod_placeholder" },
       'Expected a string matching the RegExp ^price_[A-Za-z0-9]+$\n  at ["STRIPE_PRICE_ID"]',
     ],
   ] as const)("%s", ([, overridden, expectedReason]) => {
@@ -293,8 +298,11 @@ describe("an analytics measurement id on localhost", () => {
   it("still marks the environment local and keeps the id available to the reader", ({
     localAnalyticsEnvironment,
   }) => {
-    expect(localAnalyticsEnvironment).toMatchObject({
+    expect(localAnalyticsEnvironment).toStrictEqual({
+      ...localBindings,
+      APP_RELEASE: "local",
       GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-LOCALMEASURE",
+      MAILPIT_SEND_URL: "http://127.0.0.1:8025/api/v1/send",
       local: true,
     });
   });

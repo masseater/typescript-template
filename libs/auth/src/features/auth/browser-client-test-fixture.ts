@@ -135,4 +135,3 @@ class BrowserClient {
 }
 
 export { BrowserClient, origins };
-export type { JsonReply };

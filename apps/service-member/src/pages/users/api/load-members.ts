@@ -1,7 +1,6 @@
-import { httpStatus } from "@repo/config";
+import { PaidPlanRequired, httpStatus } from "@repo/config";
 import { apiData } from "@repo/runtime/client";
 import { infiniteQueryOptions } from "@tanstack/react-query";
-import { Schema } from "effect";
 
 import { userClient } from "#shared/api/index.ts";
 import { MemberList } from "#shared/contracts/index.ts";
@@ -11,8 +10,6 @@ import type { UsersSearch } from "#pages/users/model/users-search.ts";
 type Members = typeof MemberList.Type;
 
 const firstPage = 1;
-
-class PaidPlanRequired extends Schema.TaggedError<PaidPlanRequired>()("PaidPlanRequired", {}) {}
 
 function loadMembers(search: UsersSearch, page: number): Promise<Members> {
   const query = {

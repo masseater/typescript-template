@@ -13,8 +13,6 @@ import {
 
 import type { GroupsSearch } from "#pages/groups/index.ts";
 
-type GroupParams = Readonly<{ id: string }>;
-
 function requireGroupsSearch(raw: unknown): GroupsSearch {
   try {
     return normalizeGroupsSearch(raw);
@@ -35,14 +33,14 @@ const Route = createFileRoute("/_member/groups/$id")({
     search,
   }: Readonly<{
     location: Readonly<{ searchStr: string }>;
-    params: GroupParams;
+    params: Readonly<{ id: string }>;
     search: GroupsSearch;
   }>) => {
     if (location.searchStr !== defaultStringifySearch(search)) {
       throw redirect({ params, replace: true, search, to: "/groups/$id" });
     }
   },
-  loader: ({ deps, params }: Readonly<{ deps: GroupsSearch; params: GroupParams }>) =>
+  loader: ({ deps, params }: Readonly<{ deps: GroupsSearch; params: Readonly<{ id: string }> }>) =>
     loadGroup(params.id, deps.invite),
   component: GroupRoute,
   errorComponent: GroupFailed,

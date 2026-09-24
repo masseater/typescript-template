@@ -1,102 +1,98 @@
-import { assert, it } from "@effect/vitest";
 import { APPLICATION, ROLE, memberApiKeyReadPermissions } from "@repo/config";
 import { query, schema } from "@repo/db";
 import { DateTime, Effect } from "effect";
+import { describe, expect } from "vite-plus/test";
 
-import { AuthApps, registerVerified, signInAs, withAuth } from "./index-test-fixture.ts";
+import { AuthApps, authTest, registerVerified, runWith, signInAs } from "./index-test-fixture.ts";
 
 const { apikey, user } = schema;
 
 const listedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z"));
 
-const addListedMember = (memberId: string, emailVerified = true) =>
-  query((database) =>
-    database
-      .insert(user)
-      .values({
-        createdAt: listedAt,
-        email: `${memberId}@example.com`,
-        emailVerified,
-        id: memberId,
-        name: memberId,
-        role: ROLE.member,
-        updatedAt: listedAt,
-      })
-      .then(() => undefined),
+describe("an api key issued to a member", () => {
+  const it = authTest.extend("issuedKey", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* issueKey() {
+        yield* query((database) =>
+          database.insert(user).values({
+            createdAt: listedAt,
+            email: "listed@example.com",
+            emailVerified: true,
+            id: "listed",
+            name: "listed",
+            role: ROLE.member,
+            updatedAt: listedAt,
+          }),
+        );
+        yield* registerVerified("owner@example.com");
+        yield* signInAs(APPLICATION.user, "owner@example.com");
+        const accounts = yield* query((database) =>
+          database.select({ email: user.email, id: user.id }).from(user),
+        );
+        const owner = accounts.find((account) => account.email === "owner@example.com");
+        if (owner === undefined) {
+          return yield* Effect.die("owner missing");
+        }
+        const { api } = (yield* AuthApps)[APPLICATION.user].instance;
+        const createApiKey = yield* Effect.fromNullishOr(api.createApiKey).pipe(Effect.orDie);
+        const issued = yield* Effect.promise(() =>
+          createApiKey({ body: { name: "integration", userId: owner.id } }),
+        );
+        const storedKeys = yield* query((database) => database.select().from(apikey));
+        const stored = storedKeys.find((storedKey) => storedKey.id === issued.id);
+        return {
+          hashedAtRest: stored?.key !== issued.key,
+          ownedByMember: stored?.referenceId === owner.id,
+          plaintextReturned: issued.key.length > 0,
+        };
+      }),
+    ),
   );
 
-const ownerOf = (email: string) =>
-  Effect.gen(function* findOwner() {
-    const owner = (yield* query((database) =>
-      database.select({ email: user.email, id: user.id }).from(user),
-    )).find((row) => row.email === email);
-    if (owner === undefined) {
-      return yield* Effect.die("owner missing");
-    }
-    return owner.id;
+  it("stores a hash and returns plaintext once", ({ issuedKey }) => {
+    expect(issuedKey).toStrictEqual({
+      hashedAtRest: true,
+      ownedByMember: true,
+      plaintextReturned: true,
+    });
   });
+});
 
-it.effect("stores a hash and returns plaintext once", () =>
-  withAuth(
-    Effect.gen(function* issueKey() {
-      yield* addListedMember("listed");
-      yield* registerVerified("owner@example.com");
-      yield* signInAs(APPLICATION.user, "owner@example.com");
-      const ownerId = yield* ownerOf("owner@example.com");
-      const authService = (yield* AuthApps)[APPLICATION.user];
-      const created = yield* Effect.promise(() =>
-        (
-          authService.instance.api as unknown as {
-            createApiKey: (input: unknown) => Promise<{ id: string; key: string }>;
-          }
-        ).createApiKey({
-          body: { name: "integration", userId: ownerId },
-        }),
-      );
-      const stored = (yield* query((database) => database.select().from(apikey))).find(
-        (row) => row.id === created.id,
-      );
-      assert.isDefined(created.key);
-      assert.notStrictEqual(created.key, stored?.key);
-      assert.strictEqual(stored?.referenceId, ownerId);
-    }),
-  ),
-);
+describe("an api key revoked by its member", () => {
+  const it = authTest.extend("keyValidity", ({ auth }) =>
+    runWith(auth, () =>
+      Effect.gen(function* revokeKey() {
+        yield* registerVerified("reader@example.com");
+        yield* signInAs(APPLICATION.user, "reader@example.com");
+        const accounts = yield* query((database) =>
+          database.select({ email: user.email, id: user.id }).from(user),
+        );
+        const reader = accounts.find((account) => account.email === "reader@example.com");
+        if (reader === undefined) {
+          return yield* Effect.die("reader missing");
+        }
+        const { api } = (yield* AuthApps)[APPLICATION.user].instance;
+        const createApiKey = yield* Effect.fromNullishOr(api.createApiKey).pipe(Effect.orDie);
+        const updateApiKey = yield* Effect.fromNullishOr(api.updateApiKey).pipe(Effect.orDie);
+        const verifyApiKey = yield* Effect.fromNullishOr(api.verifyApiKey).pipe(Effect.orDie);
+        const issued = yield* Effect.promise(() =>
+          createApiKey({ body: { name: "read-only", userId: reader.id } }),
+        );
+        const beforeRevocation = yield* Effect.promise(() =>
+          verifyApiKey({ body: { key: issued.key, permissions: memberApiKeyReadPermissions } }),
+        );
+        yield* Effect.promise(() =>
+          updateApiKey({ body: { enabled: false, keyId: issued.id, userId: reader.id } }),
+        );
+        const afterRevocation = yield* Effect.promise(() =>
+          verifyApiKey({ body: { key: issued.key, permissions: memberApiKeyReadPermissions } }),
+        );
+        return { afterRevocation: afterRevocation.valid, beforeRevocation: beforeRevocation.valid };
+      }),
+    ),
+  );
 
-it.effect("rejects revoked keys on verification", () =>
-  withAuth(
-    Effect.gen(function* revokeKey() {
-      yield* registerVerified("reader@example.com");
-      yield* signInAs(APPLICATION.user, "reader@example.com");
-      const ownerId = yield* ownerOf("reader@example.com");
-      const authService = (yield* AuthApps)[APPLICATION.user];
-      const api = authService.instance.api as unknown as {
-        createApiKey: (input: unknown) => Promise<{ id: string; key: string }>;
-        updateApiKey: (input: unknown) => Promise<{ id: string }>;
-        verifyApiKey: (input: unknown) => Promise<{ valid: boolean }>;
-      };
-      const created = yield* Effect.promise(() =>
-        api.createApiKey({
-          body: { name: "read-only", userId: ownerId },
-        }),
-      );
-      const verified = yield* Effect.promise(() =>
-        api.verifyApiKey({
-          body: { key: created.key, permissions: memberApiKeyReadPermissions },
-        }),
-      );
-      yield* Effect.promise(() =>
-        api.updateApiKey({
-          body: { enabled: false, keyId: created.id, userId: ownerId },
-        }),
-      );
-      const revoked = yield* Effect.promise(() =>
-        api.verifyApiKey({
-          body: { key: created.key, permissions: memberApiKeyReadPermissions },
-        }),
-      );
-      assert.strictEqual(verified.valid, true);
-      assert.strictEqual(revoked.valid, false);
-    }),
-  ),
-);
+  it("verifies until it is revoked", ({ keyValidity }) => {
+    expect(keyValidity).toStrictEqual({ afterRevocation: false, beforeRevocation: true });
+  });
+});

@@ -1,19 +1,24 @@
-import { findWikiReader, mcpAuthorization, mcpForbidden } from "@repo/auth";
-import { Effect } from "effect";
+import { findWikiReader, mcpAuthorizer, mcpJsonRpcError } from "@repo/auth";
+import { httpStatus } from "@repo/config";
+import { createInsufficientScopeError } from "better-auth/oauth2";
+import { Effect, Option } from "effect";
 
-import type { McpTokenClaims } from "@repo/auth";
+const requiredScopes = ["wiki:read"];
 
-const wikiReadScope = "wiki:read";
-
-const readerFor = Effect.fn("readerFor")(function* readerFor({ sub }: McpTokenClaims) {
-  const reader = sub === undefined ? undefined : yield* findWikiReader(sub);
-  return reader ? { userId: reader.id } : mcpForbidden("WIKI_READER_REQUIRED");
-});
-
-const authorizeMcpRequest = mcpAuthorization({
-  actor: readerFor,
-  challengeScopes: [wikiReadScope],
-  toolScopes: [wikiReadScope],
+const authorizeMcpRequest = mcpAuthorizer({
+  actorOf: (subject) =>
+    Effect.gen(function* readerFor() {
+      const { sub } = subject;
+      const reader = sub === undefined ? undefined : yield* findWikiReader(sub);
+      return reader
+        ? { userId: reader.id }
+        : mcpJsonRpcError({ message: "WIKI_READER_REQUIRED", status: httpStatus.forbidden });
+    }),
+  challengeScopes: requiredScopes,
+  scopeError: (granted) => {
+    const missing = requiredScopes.filter((required) => !granted.has(required));
+    return missing.length > 0 ? Option.some(createInsufficientScopeError(missing)) : Option.none();
+  },
 });
 
 export { authorizeMcpRequest };

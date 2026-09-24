@@ -77,7 +77,7 @@ function supportApi(api: ApiRoutes<AppServices>) {
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
             const { body, id } = yield* readJsonBody(InquiryReply, request);
-            return presentThread(yield* replyAsMember(user.id, id, body));
+            return presentThread(yield* replyAsMember({ body, inquiryId: id, memberId: user.id }));
           }),
         failures,
       ),

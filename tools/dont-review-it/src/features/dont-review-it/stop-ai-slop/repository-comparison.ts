@@ -1,9 +1,14 @@
-import { extname } from "node:path";
+import { Effect, Schema } from "effect";
+import { attempt, uniqBy, zip } from "es-toolkit";
 
-import { attempt } from "es-toolkit";
-
+import { posixPath } from "../platform/path.ts";
+import { failingWhenThrown } from "./expected-throw.ts";
 import { runGitBuffer, runGitText } from "./git-text.ts";
-import { parseRepositoryChanges, type RepositoryChange } from "./repository-diff.ts";
+import {
+  DiffUnreadable,
+  parseRepositoryChanges,
+  type RepositoryChange,
+} from "./repository-diff.ts";
 
 export type CompareRevisionsOptions = Readonly<{
   repositoryRoot: string;
@@ -64,14 +69,36 @@ export type RepositoryComparison = Readonly<{
   files: readonly ComparisonFile[];
 }>;
 
-const resolveRevisionObject = async (repositoryRoot: string, revision: string): Promise<string> => {
-  return (
-    await runGitText({
-      repositoryRoot,
-      args: ["rev-parse", "--verify", "--end-of-options", `${revision}^{tree}`],
-    })
-  ).trim();
-};
+export class UndecodableSource extends Schema.TaggedError<UndecodableSource>()(
+  "UndecodableSource",
+  { message: Schema.String, cause: Schema.Defect() },
+) {}
+
+export class BlobUnreadable extends Schema.TaggedError<BlobUnreadable>()("BlobUnreadable", {
+  message: Schema.String,
+}) {}
+
+type Side = "base" | "head";
+
+export type SourceRequest = Readonly<{ side: Side; sourcePath: string }>;
+
+export type SourceReader<E, R> = (
+  requests: readonly SourceRequest[],
+) => Effect.Effect<readonly Uint8Array[], E, R>;
+
+const SOURCE_EXTENSIONS: readonly string[] = [
+  ".cjs",
+  ".cts",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".mts",
+  ".ts",
+  ".tsx",
+];
+
+const isSource = (sourcePath: string): boolean =>
+  SOURCE_EXTENSIONS.includes(posixPath.extname(sourcePath).toLowerCase());
 
 const utf8SourceOf = (sourceBytes: Uint8Array): string | null => {
   const [undecodable, decoded] = attempt<string, Error>(() =>
@@ -80,123 +107,103 @@ const utf8SourceOf = (sourceBytes: Uint8Array): string | null => {
   return undecodable === null ? decoded : null;
 };
 
-export const decodedSource = (path: string, sourceBytes: Uint8Array): string => {
-  const decoded = utf8SourceOf(sourceBytes);
-  if (decoded === null) {
-    throw new Error(`Source blob does not decode as UTF-8: ${path}`);
-  }
+const decodedSource = (
+  { side, sourcePath }: SourceRequest,
+  sourceBytes: Uint8Array,
+): Effect.Effect<string | null, UndecodableSource> =>
+  side === "base"
+    ? Effect.succeed(utf8SourceOf(sourceBytes))
+    : Effect.try({
+        try: () => new TextDecoder("utf-8", { fatal: true }).decode(sourceBytes),
+        catch: (cause) =>
+          new UndecodableSource({
+            message: `Source blob does not decode as UTF-8: ${sourcePath}`,
+            cause,
+          }),
+      });
 
-  return decoded;
-};
+const requestKey = ({ side, sourcePath }: SourceRequest): string => `${side}\0${sourcePath}`;
 
-export const decodedPreviousSource = (sourceBytes: Uint8Array): string | null =>
-  utf8SourceOf(sourceBytes);
+const sourceRequestsOf = (change: RepositoryChange): readonly SourceRequest[] => [
+  ...(change.beforePath !== null && isSource(change.beforePath)
+    ? [{ side: "base" as const, sourcePath: change.beforePath }]
+    : []),
+  ...(change.afterPath !== null && isSource(change.afterPath)
+    ? [{ side: "head" as const, sourcePath: change.afterPath }]
+    : []),
+];
 
-export type SideSources = Readonly<{
-  base: (path: string) => Promise<string | null>;
-  head: (path: string) => Promise<string | null>;
-}>;
-
-const sourceExtensions = [".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"];
-
-const readSource = async ({
-  sources,
-  side,
-  path,
-}: Readonly<{
-  sources: SideSources;
-  side: keyof SideSources;
-  path: string;
-}>): Promise<string | null> =>
-  sourceExtensions.includes(extname(path).toLowerCase()) ? sources[side](path) : null;
-
-type FileConversionInput<File extends RepositoryChange> = Readonly<{
-  context: Readonly<{ sources: SideSources }>;
-  file: File;
-}>;
-
-const toAddedComparisonFile = async ({
-  context,
-  file,
-}: FileConversionInput<
-  Extract<RepositoryChange, { kind: "added" }>
->): Promise<AddedComparisonFile> => {
-  return {
-    ...file,
-    beforeSource: null,
-    afterSource: await readSource({
-      sources: context.sources,
-      side: "head",
-      path: file.afterPath,
-    }),
-    firstAddedLine: file.addedLines[0] ?? null,
-  };
-};
-
-const toDeletedComparisonFile = async ({
-  context,
-  file,
-}: FileConversionInput<
-  Extract<RepositoryChange, { kind: "deleted" }>
->): Promise<DeletedComparisonFile> => {
-  return {
-    ...file,
-    beforeSource: await readSource({
-      sources: context.sources,
-      side: "base",
-      path: file.beforePath,
-    }),
-    afterSource: null,
-    firstAddedLine: null,
-  };
-};
-
-const toTwoSidedComparisonFile = async ({
-  context,
-  file,
-}: FileConversionInput<Extract<RepositoryChange, { kind: "changed" | "renamed" }>>): Promise<
-  ChangedComparisonFile | RenamedComparisonFile
-> => {
-  const [beforeSource, afterSource] = await Promise.all([
-    readSource({ sources: context.sources, side: "base", path: file.beforePath }),
-    readSource({ sources: context.sources, side: "head", path: file.afterPath }),
-  ]);
-  return {
-    ...file,
-    beforeSource,
-    afterSource,
-    firstAddedLine: file.addedLines[0] ?? null,
-  };
-};
-
-const toComparisonFile = ({
-  context,
-  file,
-}: FileConversionInput<RepositoryChange>): Promise<ComparisonFile> => {
-  switch (file.kind) {
+const comparisonFileFor = (
+  change: RepositoryChange,
+  sourceAt: (side: Side, sourcePath: string) => string | null,
+): ComparisonFile => {
+  switch (change.kind) {
     case "added":
-      return toAddedComparisonFile({ context, file });
+      return {
+        ...change,
+        beforeSource: null,
+        afterSource: sourceAt("head", change.afterPath),
+        firstAddedLine: change.addedLines[0] ?? null,
+      };
     case "deleted":
-      return toDeletedComparisonFile({ context, file });
+      return {
+        ...change,
+        beforeSource: sourceAt("base", change.beforePath),
+        afterSource: null,
+        firstAddedLine: null,
+      };
     case "changed":
     case "renamed":
-      return toTwoSidedComparisonFile({ context, file });
+      return {
+        ...change,
+        beforeSource: sourceAt("base", change.beforePath),
+        afterSource: sourceAt("head", change.afterPath),
+        firstAddedLine: change.addedLines[0] ?? null,
+      };
   }
 };
 
-export const comparisonFrom = async ({
+export const comparisonFrom = <E, R>({
   inventoryOutput,
   diff,
-  sources,
+  readSources,
 }: Readonly<{
   inventoryOutput: string;
   diff: string;
-  sources: SideSources;
-}>): Promise<readonly ComparisonFile[]> =>
-  Promise.all(
-    parseRepositoryChanges({ inventoryOutput, diff }).map((file) =>
-      toComparisonFile({ context: { sources }, file }),
-    ),
+  readSources: SourceReader<E, R>;
+}>): Effect.Effect<readonly ComparisonFile[], E | DiffUnreadable | UndecodableSource, R> =>
+  Effect.gen(function* comparisonFrom() {
+    const changes = yield* failingWhenThrown(
+      () => parseRepositoryChanges({ inventoryOutput, diff }),
+      Schema.is(DiffUnreadable),
+    );
+    const requests = uniqBy(changes.flatMap(sourceRequestsOf), requestKey);
+    const blobs = yield* readSources(requests);
+    const sources = new Map(
+      yield* Effect.forEach(zip(requests, blobs), ([request, sourceBytes]) =>
+        Effect.map(
+          decodedSource(request, sourceBytes),
+          (source) => [requestKey(request), source] as const,
+        ),
+      ),
+    );
+    const sourceAt = (side: Side, sourcePath: string): string | null => {
+      if (!isSource(sourcePath)) return null;
+      const request = { side, sourcePath };
+      const source = sources.get(requestKey(request));
+      if (source === undefined) throw new Error(`No source was read for ${side}:${sourcePath}`);
+      return source;
+    };
+    return changes.map((change) => comparisonFileFor(change, sourceAt));
+  });
+
+const resolveRevisionObject = (repositoryRoot: string, revision: string) =>
+  Effect.map(
+    runGitText({
+      repositoryRoot,
+      args: ["rev-parse", "--verify", "--end-of-options", `${revision}^{tree}`],
+    }),
+    (answered) => answered.trim(),
   );
 
 const diffArguments = ({
@@ -213,7 +220,8 @@ const diffArguments = ({
   "-c",
   "diff.renameLimit=0",
   "diff",
-  "--default-prefix",
+  "--src-prefix=a/",
+  "--dst-prefix=b/",
   "--find-renames",
   "--no-ext-diff",
   "--no-color",
@@ -224,47 +232,141 @@ const diffArguments = ({
   "--",
 ];
 
-export const compareRevisions = async ({
+type RawInventory = Readonly<{
+  inventoryOutput: string;
+  objectAt: ReadonlyMap<string, string>;
+}>;
+
+const RAW_RECORD_HEADER =
+  /^:\d{6} \d{6} ([\da-f]{40}(?:[\da-f]{24})?) ([\da-f]{40}(?:[\da-f]{24})?) ([A-Z]\d{0,3})$/u;
+
+const rawInventoryOf = (rawOutput: string): Effect.Effect<RawInventory, DiffUnreadable> =>
+  Effect.suspend(() => {
+    const fields = rawOutput.split("\0");
+    const unreadableRecord = new DiffUnreadable({ message: "Invalid NUL-delimited Git raw diff" });
+    if (fields.pop() !== "") return Effect.fail(unreadableRecord);
+    const records: string[] = [];
+    const objectAt = new Map<string, string>();
+    let index = 0;
+    while (index < fields.length) {
+      const [, beforeObject, afterObject, status] =
+        RAW_RECORD_HEADER.exec(fields[index] ?? "") ?? [];
+      const pathCount = status?.startsWith("R") === true ? 2 : 1;
+      const recordPaths = fields.slice(index + 1, index + 1 + pathCount);
+      const [beforePath, afterPath = beforePath] = recordPaths;
+      if (
+        status === undefined ||
+        beforeObject === undefined ||
+        afterObject === undefined ||
+        beforePath === undefined ||
+        afterPath === undefined ||
+        recordPaths.length !== pathCount
+      ) {
+        return Effect.fail(unreadableRecord);
+      }
+      objectAt.set(requestKey({ side: "base", sourcePath: beforePath }), beforeObject);
+      objectAt.set(requestKey({ side: "head", sourcePath: afterPath }), afterObject);
+      records.push([status, ...recordPaths, ""].join("\0"));
+      index += 1 + pathCount;
+    }
+    return Effect.succeed({ inventoryOutput: records.join(""), objectAt });
+  });
+
+type RequestedBlob = Readonly<{ objectName: string; blobObject: string }>;
+
+const LINE_FEED = 10;
+
+const batchedBlobs = (
+  output: Uint8Array,
+  requestedBlobs: readonly RequestedBlob[],
+): Effect.Effect<readonly Uint8Array[], BlobUnreadable> =>
+  Effect.suspend(() => {
+    const blobs: Uint8Array[] = [];
+    const headerDecoder = new TextDecoder("utf-8");
+    let offset = 0;
+    for (const { objectName, blobObject } of requestedBlobs) {
+      const headerEnd = output.indexOf(LINE_FEED, offset);
+      const [answeredObject, type, size] =
+        headerEnd === -1 ? [] : headerDecoder.decode(output.subarray(offset, headerEnd)).split(" ");
+      const length = Number(size);
+      const contentEnd = headerEnd + 1 + length;
+      if (
+        answeredObject !== blobObject ||
+        type !== "blob" ||
+        !Number.isSafeInteger(length) ||
+        output[contentEnd] !== LINE_FEED
+      ) {
+        return Effect.fail(new BlobUnreadable({ message: `Git holds no blob at ${objectName}` }));
+      }
+      blobs.push(output.subarray(headerEnd + 1, contentEnd));
+      offset = contentEnd + 1;
+    }
+    return Effect.succeed(blobs);
+  });
+
+export const compareRevisions = Effect.fn("compareRevisions")(function* compareRevisions({
   repositoryRoot,
   baseRevision,
   headRevision,
-}: CompareRevisionsOptions): Promise<RepositoryComparison> => {
-  const [baseObject, headObject] = await Promise.all([
-    resolveRevisionObject(repositoryRoot, baseRevision),
-    resolveRevisionObject(repositoryRoot, headRevision),
-  ]);
-  const [inventoryOutput, diff] = await Promise.all([
-    runGitText({
-      repositoryRoot,
-      args: diffArguments({ baseObject, headObject, presentation: ["--name-status", "-z"] }),
-    }),
-    runGitText({
-      repositoryRoot,
-      args: diffArguments({ baseObject, headObject, presentation: ["--unified=0"] }),
-    }),
-  ]);
-  const blobAt =
-    (revision: string, decode: (path: string, sourceBytes: Uint8Array) => string | null) =>
-    async (path: string) =>
-      decode(
-        path,
-        await runGitBuffer({ repositoryRoot, args: ["cat-file", "blob", `${revision}:${path}`] }),
-      );
+}: CompareRevisionsOptions) {
+  const [baseObject, headObject] = yield* Effect.all(
+    [
+      resolveRevisionObject(repositoryRoot, baseRevision),
+      resolveRevisionObject(repositoryRoot, headRevision),
+    ],
+    { concurrency: "unbounded" },
+  );
+  const [rawOutput, diff] = yield* Effect.all(
+    [
+      runGitText({
+        repositoryRoot,
+        args: diffArguments({
+          baseObject,
+          headObject,
+          presentation: ["--raw", "--no-abbrev", "-z"],
+        }),
+      }),
+      runGitText({
+        repositoryRoot,
+        args: diffArguments({ baseObject, headObject, presentation: ["--unified=0"] }),
+      }),
+    ],
+    { concurrency: "unbounded" },
+  );
+  const { inventoryOutput, objectAt } = yield* rawInventoryOf(rawOutput);
+  const requestedBlobOf = (
+    request: SourceRequest,
+  ): Effect.Effect<RequestedBlob, BlobUnreadable> => {
+    const objectName = `${request.side === "base" ? baseObject : headObject}:${request.sourcePath}`;
+    const blobObject = objectAt.get(requestKey(request));
+    return blobObject === undefined
+      ? Effect.fail(new BlobUnreadable({ message: `Git diff lists no object at ${objectName}` }))
+      : Effect.succeed({ objectName, blobObject });
+  };
+  const readBlobs = (requests: readonly SourceRequest[]) => {
+    if (requests.length === 0) return Effect.succeed([]);
+    return Effect.flatMap(Effect.forEach(requests, requestedBlobOf), (requestedBlobs) =>
+      Effect.flatMap(
+        runGitBuffer({
+          repositoryRoot,
+          args: ["cat-file", "--batch"],
+          input: new TextEncoder().encode(
+            requestedBlobs.map(({ blobObject }) => `${blobObject}\n`).join(""),
+          ),
+        }),
+        (output) => batchedBlobs(output, requestedBlobs),
+      ),
+    );
+  };
 
-  return {
+  const comparison: RepositoryComparison = {
     repositoryRoot,
     baseRevision,
     headRevision,
-    files: await comparisonFrom({
-      inventoryOutput,
-      diff,
-      sources: {
-        base: blobAt(baseObject, (_path, sourceBytes) => decodedPreviousSource(sourceBytes)),
-        head: blobAt(headObject, decodedSource),
-      },
-    }),
+    files: yield* comparisonFrom({ inventoryOutput, diff, readSources: readBlobs }),
   };
-};
+  return comparison;
+});
 export type {
   AddedComparisonFile,
   ChangedComparisonFile,

@@ -1,75 +1,28 @@
 #!/usr/bin/env node
-import { appendFileSync, readFileSync, readdirSync } from "node:fs";
-import path from "node:path";
+import { NodeServices } from "@effect/platform-node";
+import { causeRecord, runCli } from "@repo/cli";
+import { Config, Effect, FileSystem, Schema } from "effect";
 
-import { affectedTests, shardDirectories, type WorkspacePackage } from "./pr-affected-scope.ts";
-import { repositoryRoot } from "./repository-root.ts";
+import { affectedTests, shardDirectories } from "./pr-affected-scope.ts";
 import { prCheckShardCount } from "./test-runtime.ts";
+import { workspacePackages } from "./workspace-packages.ts";
 
-const workspaceRoots = ["apps", "libs", "infra", "tools"] as const;
-
-const required = (name: "CHECK_SHARD" | "GITHUB_OUTPUT" | "PR_FILES_PATH"): string => {
-  const value = process.env[name];
-  if (value === undefined || value === "") {
-    throw new Error(`${name} is required`);
+class NotAWorkspaceFilter extends Schema.TaggedError<NotAWorkspaceFilter>()("NotAWorkspaceFilter", {
+  directory: Schema.String,
+}) {
+  public override get message(): string {
+    return `${this.directory} is not a workspace filter`;
   }
-  return value;
-};
+}
 
-const dependencyFields = [
-  "dependencies",
-  "devDependencies",
-  "peerDependencies",
-  "optionalDependencies",
-] as const;
-
-type PackageManifest = Readonly<{
-  dependencies?: Readonly<Record<string, string>>;
-  devDependencies?: Readonly<Record<string, string>>;
-  name?: string;
-  optionalDependencies?: Readonly<Record<string, string>>;
-  peerDependencies?: Readonly<Record<string, string>>;
-}>;
-
-const dependencyNames = (manifest: PackageManifest): readonly string[] =>
-  dependencyFields.flatMap((field) => {
-    const declared = manifest[field];
-    if (declared === undefined) {
-      return [];
-    }
-    return Object.entries(declared).flatMap(([name, version]) =>
-      version.startsWith("workspace:") ? [name] : [],
-    );
-  });
-
-const workspacePackages = (): readonly WorkspacePackage[] =>
-  workspaceRoots.flatMap((root) =>
-    readdirSync(path.join(repositoryRoot, root), { withFileTypes: true }).flatMap((entry) => {
-      if (!entry.isDirectory()) {
-        return [];
-      }
-      const manifest = JSON.parse(
-        readFileSync(path.join(repositoryRoot, root, entry.name, "package.json"), "utf8"),
-      ) as PackageManifest;
-      if (manifest.name === undefined) {
-        throw new Error(`${root}/${entry.name} is missing a package name`);
-      }
-      return [
-        {
-          dependencies: dependencyNames(manifest),
-          directory: `${root}/${entry.name}`,
-          name: manifest.name,
-        },
-      ];
-    }),
-  );
-
-const outputLines = (): string => {
-  const files = readFileSync(required("PR_FILES_PATH"), "utf8")
+const outputLines = Effect.gen(function* outputLines() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const prFilesPath = yield* Config.String("PR_FILES_PATH");
+  const files = (yield* filesystem.readFileString(prFilesPath))
     .split("\n")
     .filter((line) => line !== "");
-  const shard = Number(required("CHECK_SHARD"));
-  const packages = workspacePackages();
+  const shard = Number(yield* Config.String("CHECK_SHARD"));
+  const packages = yield* workspacePackages;
   const affected = affectedTests(files, packages);
   const directories = shardDirectories(
     affected.kind === "all"
@@ -78,16 +31,16 @@ const outputLines = (): string => {
     shard,
     prCheckShardCount,
   );
-  const names = directories.map((directory) => {
+  const names = yield* Effect.forEach(directories, (directory) => {
     const workspace = packages.find((item) => item.directory === directory);
     if (
       workspace === undefined ||
       !/^(?:apps|libs|infra|tools)\/[\w-]+$/u.test(directory) ||
       !/^@repo\/[\w-]+$/u.test(workspace.name)
     ) {
-      throw new Error(`${directory} is not a workspace filter`);
+      return Effect.fail(new NotAWorkspaceFilter({ directory }));
     }
-    return workspace.name;
+    return Effect.succeed(workspace.name);
   });
   return [
     `root=${String(shard === 1)}`,
@@ -95,6 +48,13 @@ const outputLines = (): string => {
     `paths=${affected.kind === "all" ? "" : directories.join(" ")}`,
     "",
   ].join("\n");
-};
+});
 
-appendFileSync(required("GITHUB_OUTPUT"), outputLines());
+runCli(
+  Effect.gen(function* prAffected() {
+    const filesystem = yield* FileSystem.FileSystem;
+    const githubOutput = yield* Config.String("GITHUB_OUTPUT");
+    yield* filesystem.writeFileString(githubOutput, yield* outputLines, { flag: "a" });
+  }).pipe(Effect.provide(NodeServices.layer)),
+  (cause) => causeRecord("quality.pr_affected_failed", { cause }),
+);

@@ -1,67 +1,59 @@
 import { browserHttp } from "@repo/auth-ui";
+import { OAuthClientView } from "@repo/auth-ui/consent";
 import { httpStatus } from "@repo/config";
 import { decodeJson } from "@repo/runtime/client";
+import { Redirect } from "@repo/runtime/contracts";
 import { queryOptions } from "@tanstack/react-query";
-import { Effect, Schema } from "effect";
+import { Effect } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
 
-const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
-const Redirect = Schema.Struct({ url: Schema.String });
-
-function clientNameOf(
-  clientId: string,
-  response: HttpClientResponse.HttpClientResponse,
-): Effect.Effect<string> {
-  return Effect.gen(function* readName() {
+function loadClientName(clientId: string): Effect.Effect<string | undefined> {
+  return Effect.gen(function* loadName() {
+    const response = yield* HttpClient.get(
+      `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
+    ).pipe(
+      Effect.provide(browserHttp),
+      Effect.provideService(FetchHttpClient.RequestInit, {
+        cache: "no-store",
+        credentials: "same-origin",
+      }),
+    );
     if (response.status === httpStatus.unauthorized) {
       globalThis.location.assign(`/login${globalThis.location.search}`);
-      return yield* Effect.die(new Error("ログインが必要です。"));
+      return undefined;
     }
     if (response.status < 200 || response.status >= 300) {
-      return yield* Effect.die(new Error("クライアントの情報を取得できませんでした。"));
+      return yield* Effect.die("クライアントの情報を取得できませんでした。");
     }
-    return (yield* HttpClientResponse.schemaBodyJson(ClientView)(response)).client_name ?? clientId;
+    return (
+      (yield* HttpClientResponse.schemaBodyJson(OAuthClientView)(response)).client_name ?? clientId
+    );
   }).pipe(Effect.orDie);
-}
-
-function loadClientName(clientId: string): Effect.Effect<string> {
-  return HttpClient.get(
-    `/api/auth/oauth2/public-client?${new URLSearchParams({ client_id: clientId }).toString()}`,
-  ).pipe(
-    Effect.provide(browserHttp),
-    Effect.provideService(FetchHttpClient.RequestInit, {
-      cache: "no-store",
-      credentials: "same-origin",
-    }),
-    Effect.flatMap((response) => clientNameOf(clientId, response)),
-    Effect.orDie,
-  );
 }
 
 function clientNameOptions(clientId: string) {
   return queryOptions({
-    queryFn: () => Effect.runPromise(loadClientName(clientId)),
+    queryFn: () =>
+      Effect.runPromise(loadClientName(clientId).pipe(Effect.map((name) => name ?? null))),
     queryKey: ["oauth-client-name", clientId] as const,
     retry: false,
   });
 }
 
-function submitDecision(accept: boolean): Promise<void> {
-  return Effect.runPromise(
-    Effect.gen(function* sendDecision() {
-      const requestBody = yield* HttpBody.json({
-        accept,
-        oauth_query: globalThis.location.search.slice(1),
-      });
-      const response = yield* HttpClient.post("/api/auth/oauth2/consent", {
-        body: requestBody,
-      }).pipe(Effect.provide(browserHttp));
-      if (response.status < 200 || response.status >= 300) {
-        return yield* Effect.die(new Error("連携の許可を処理できませんでした。"));
-      }
-      globalThis.location.assign(decodeJson(Redirect, yield* response.json).url);
-    }).pipe(Effect.orDie),
-  );
+function submitDecision(accept: boolean): Effect.Effect<void> {
+  return Effect.gen(function* sendDecision() {
+    const requestBody = yield* HttpBody.json({
+      accept,
+      oauth_query: globalThis.location.search.slice(1),
+    });
+    const response = yield* HttpClient.post("/api/auth/oauth2/consent", {
+      body: requestBody,
+    }).pipe(Effect.provide(browserHttp));
+    if (response.status < 200 || response.status >= 300) {
+      return yield* Effect.die("連携の許可を処理できませんでした。");
+    }
+    globalThis.location.assign(decodeJson(Redirect, yield* response.json).url);
+  }).pipe(Effect.orDie);
 }
 
-export { clientNameOf, clientNameOptions, submitDecision };
+export { clientNameOptions, submitDecision };

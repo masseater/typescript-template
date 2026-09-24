@@ -60,11 +60,11 @@ function trustApi(api: ApiRoutes<AppServices>) {
           Effect.gen(function* handle() {
             const { user } = yield* verifySession(request.headers);
             const report = yield* readJsonBody(ReportCreate, request);
-            return yield* fileReport(
-              user.id,
-              { id: report.subjectId, kind: report.subjectKind },
-              report.reason,
-            );
+            return yield* fileReport({
+              reason: report.reason,
+              reporterId: user.id,
+              subject: { id: report.subjectId, kind: report.subjectKind },
+            });
           }),
         failures,
       ),

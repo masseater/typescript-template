@@ -1,11 +1,22 @@
 import { Email, memberRetentionDays, photoSlots, profileVisibilities } from "@repo/config";
-import { Identifier, UserKeyword, pageNumber } from "@repo/config/paging";
+import {
+  Acknowledged,
+  Identifier,
+  IdentifierQuery,
+  SearchKeyword,
+  UserKeyword,
+  laterPage,
+  maximumKeywordLength,
+  maximumNameLength,
+  maximumPasswordLength,
+  minimumPasswordLength,
+  pageNumber,
+} from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 import { Sheet } from "#shared/interview/sheet.ts";
 import { ProfileLayout } from "#shared/profile-layout/schema.ts";
 
-const maximumNameLength = 100;
 const maximumProfileLength = 2000;
 const maximumSocialLinkLength = 2048;
 const maximumSocialLinks = 10;
@@ -13,8 +24,6 @@ const maximumMemberPage = 1_000_000;
 const memberPageSize = 24;
 const maximumContactNameLength = 100;
 const maximumContactMessageLength = 4000;
-const minimumPasswordLength = 12;
-const maximumPasswordLength = 128;
 
 const MemberName = Schema.Trim.check(Schema.isLengthBetween(1, maximumNameLength));
 
@@ -64,7 +73,7 @@ const PhotoQuery = Schema.Struct({ slot: PhotoSlot });
 
 const PhotoView = Schema.Struct({ slot: PhotoSlot, version: PhotoVersion });
 
-const MemberQuery = Schema.Struct({ id: Identifier });
+const MemberQuery = IdentifierQuery;
 
 const MemberPhotoQuery = Schema.Struct({
   id: Identifier,
@@ -87,7 +96,7 @@ const MemberView = Schema.Struct({
 
 const MemberListQuery = Schema.Struct({
   keyword: Schema.optionalKey(UserKeyword),
-  page: pageNumber(1, 1, maximumMemberPage),
+  page: pageNumber({ fallback: 1, maximum: maximumMemberPage, minimum: 1 }),
 });
 
 const MemberList = Schema.Struct({
@@ -102,11 +111,11 @@ const ContactSubmission = Schema.Struct({
   name: Schema.Trim.check(Schema.isLengthBetween(1, maximumContactNameLength)),
 });
 
-const ContactAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+const ContactAccepted = Acknowledged;
 
 const LeaveRequest = Schema.Struct({ immediate: Schema.Boolean });
 
-const LeaveAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+const LeaveAccepted = Acknowledged;
 
 const RecoveryOfferAvailable = Schema.Struct({
   available: Schema.Literal(true),
@@ -119,17 +128,21 @@ const RecoveryOfferUnavailable = Schema.Struct({
 
 const RecoveryOfferView = Schema.Union([RecoveryOfferAvailable, RecoveryOfferUnavailable]);
 
-const RecoveryAccepted = Schema.Struct({ ok: Schema.Literal(true) });
+const RecoveryAccepted = Acknowledged;
+
+const MemberReference = Schema.Struct({ id: Schema.String, name: Schema.String });
 
 export {
   ContactAccepted,
   ContactSubmission,
+  Identifier,
   LeaveAccepted,
   LeaveRequest,
   MemberList,
   MemberListQuery,
   MemberPhotoQuery,
   MemberQuery,
+  MemberReference,
   MemberView,
   PhotoQuery,
   PhotoView,
@@ -137,10 +150,13 @@ export {
   ProfileView,
   RecoveryAccepted,
   RecoveryOfferView,
+  SearchKeyword,
   SignUpSubmission,
   VisibilityView,
+  laterPage,
   maximumContactMessageLength,
   maximumContactNameLength,
+  maximumKeywordLength,
   maximumMemberPage,
   maximumNameLength,
   maximumPasswordLength,
@@ -148,4 +164,5 @@ export {
   maximumSocialLinks,
   memberPageSize,
   memberRetentionDays,
+  pageNumber,
 };

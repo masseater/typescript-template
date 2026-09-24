@@ -42,7 +42,7 @@ describe("alchemy stacks", () => {
       "service-admin",
       "service-member",
     ]);
-    expect(violationsWhenLast("storage")).toStrictEqual(["service-member"]);
+    expect(violationsWhenLast("storage")).toStrictEqual(["internal-dashboard", "service-member"]);
     expect(violationsWhenLast("flagship")).toStrictEqual([
       "internal-dashboard",
       "service-admin",
@@ -53,14 +53,15 @@ describe("alchemy stacks", () => {
       "service-admin",
       "service-member",
     ]);
-    expect(violationsWhenLast("storage")).toStrictEqual(["service-member"]);
 
     expect(violationsWhenLast(traceDestinationStack)).toStrictEqual([
       "core",
       "internal-dashboard",
+      "internal-wiki",
       "service-admin",
       "service-member",
     ]);
+    expect(violationsWhenLast("internal-wiki")).toStrictEqual(["internal-dashboard"]);
   });
 
   it("points application stacks at apps alchemy entrypoints", () => {

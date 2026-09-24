@@ -20,7 +20,7 @@ function ConsentClient({ clientId }: Readonly<{ clientId: string }>): ReactEleme
       </div>
     );
   }
-  if (clientName.data === undefined) {
+  if (clientName.data === undefined || clientName.data === null) {
     return <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>;
   }
   return <ConsentActions client={clientName.data} />;

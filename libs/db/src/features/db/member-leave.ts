@@ -1,17 +1,19 @@
 import { ROLE, memberRetentionDays } from "@repo/config";
-import { and, desc, eq, gt, inArray, isNull, lte } from "drizzle-orm";
+import { logAt } from "@repo/observability";
+import { and, desc, eq, gt, inArray, isNull, lte, type SQL } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
 import { query } from "./database.ts";
 import { interview } from "./interview-schema.ts";
 import { leaveRequest, withdrawnMember } from "./member-leave-schema.ts";
+import { MemberLeaveUnavailable } from "./member-leave-unavailable.ts";
 import { follow, memberOnboarding, onboardingSteps } from "./member-social-schema.ts";
+import { RecoveryExpired } from "./recovery-expired.ts";
+import { RecoveryUnavailable } from "./recovery-unavailable.ts";
 import { user } from "./schema.ts";
 import { revokeUserSessions } from "./security.ts";
 import { UserNotFound } from "./user-not-found.ts";
-
-import type { SQLiteSelect } from "drizzle-orm/sqlite-core";
 
 const retentionMilliseconds = memberRetentionDays * 24 * 60 * 60 * 1000;
 
@@ -44,19 +46,7 @@ const MemberSnapshot = Schema.Struct({
   ),
 });
 
-class MemberLeaveUnavailable extends Schema.TaggedError<MemberLeaveUnavailable>()(
-  "MemberLeaveUnavailable",
-  {},
-) {}
-
-class RecoveryExpired extends Schema.TaggedError<RecoveryExpired>()("RecoveryExpired", {}) {}
-
-class RecoveryUnavailable extends Schema.TaggedError<RecoveryUnavailable>()(
-  "RecoveryUnavailable",
-  {},
-) {}
-
-const pendingRecovery = (email: string, checkedAt: Date) =>
+const pendingRecovery = (email: string, checkedAt: Date): SQL | undefined =>
   and(
     eq(withdrawnMember.email, email),
     gt(leaveRequest.purgeAt, checkedAt),
@@ -97,12 +87,12 @@ const loadSnapshot = Effect.fn("loadMemberSnapshot")(function* loadSnapshot(memb
       .where(eq(agreementAcceptance.userId, memberId)),
   );
   const snapshot: typeof MemberSnapshot.Type = {
-    agreements: agreements.map((row) => ({
-      acceptedAt: row.acceptedAt.getTime(),
-      versionId: row.versionId,
+    agreements: agreements.map((acceptance) => ({
+      acceptedAt: acceptance.acceptedAt.getTime(),
+      versionId: acceptance.versionId,
     })),
-    followers: followers.map((row) => row.followerId),
-    following: following.map((row) => row.followeeId),
+    followers: followers.map((followedBy) => followedBy.followerId),
+    following: following.map((followed) => followed.followeeId),
     ...(onboarding === undefined
       ? {}
       : { onboarding: { step: onboarding.step, updatedAt: onboarding.updatedAt.getTime() } }),
@@ -122,64 +112,70 @@ const loadSnapshot = Effect.fn("loadMemberSnapshot")(function* loadSnapshot(memb
   return snapshot;
 });
 
-const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnapshot(
+const restoreOnboarding = Effect.fn("restoreMemberOnboarding")(function* restoreOnboarding(
   memberId: string,
-  snapshot: typeof MemberSnapshot.Type,
+  onboarding: NonNullable<(typeof MemberSnapshot.Type)["onboarding"]>,
 ) {
-  const now = DateTime.toDate(yield* DateTime.now);
-  const onboarding = snapshot.onboarding;
-  if (onboarding !== undefined) {
-    const onboardingUpdatedAt = DateTime.toDate(DateTime.makeUnsafe(onboarding.updatedAt));
-    yield* query((database) =>
-      database
-        .insert(memberOnboarding)
-        .values({
-          step: onboarding.step,
-          updatedAt: onboardingUpdatedAt,
-          userId: memberId,
-        })
-        .onConflictDoUpdate({
-          set: { step: onboarding.step, updatedAt: onboardingUpdatedAt },
-          target: memberOnboarding.userId,
-        }),
-    );
-  }
-  const savedInterview = snapshot.interview;
-  if (savedInterview !== undefined) {
-    const interviewUpdatedAt = DateTime.toDate(DateTime.makeUnsafe(savedInterview.updatedAt));
-    yield* query((database) =>
-      database
-        .insert(interview)
-        .values({
+  const onboardingUpdatedAt = DateTime.toDate(DateTime.makeUnsafe(onboarding.updatedAt));
+  yield* query((database) =>
+    database
+      .insert(memberOnboarding)
+      .values({
+        step: onboarding.step,
+        updatedAt: onboardingUpdatedAt,
+        userId: memberId,
+      })
+      .onConflictDoUpdate({
+        set: { step: onboarding.step, updatedAt: onboardingUpdatedAt },
+        target: memberOnboarding.userId,
+      }),
+  );
+});
+
+const restoreInterview = Effect.fn("restoreMemberInterview")(function* restoreInterview(
+  memberId: string,
+  savedInterview: NonNullable<(typeof MemberSnapshot.Type)["interview"]>,
+) {
+  const interviewUpdatedAt = DateTime.toDate(DateTime.makeUnsafe(savedInterview.updatedAt));
+  yield* query((database) =>
+    database
+      .insert(interview)
+      .values({
+        day: savedInterview.day,
+        savedSheet: savedInterview.savedSheet,
+        state: savedInterview.state,
+        turns: savedInterview.turns,
+        updatedAt: interviewUpdatedAt,
+        userId: memberId,
+        version: savedInterview.version,
+      })
+      .onConflictDoUpdate({
+        set: {
           day: savedInterview.day,
           savedSheet: savedInterview.savedSheet,
           state: savedInterview.state,
           turns: savedInterview.turns,
           updatedAt: interviewUpdatedAt,
-          userId: memberId,
           version: savedInterview.version,
-        })
-        .onConflictDoUpdate({
-          set: {
-            day: savedInterview.day,
-            savedSheet: savedInterview.savedSheet,
-            state: savedInterview.state,
-            turns: savedInterview.turns,
-            updatedAt: interviewUpdatedAt,
-            version: savedInterview.version,
-          },
-          target: interview.userId,
-        }),
-    );
-  }
+        },
+        target: interview.userId,
+      }),
+  );
+});
+
+const restoreFollows = Effect.fn("restoreMemberFollows")(function* restoreFollows(
+  memberId: string,
+  snapshot: typeof MemberSnapshot.Type,
+) {
+  const followedAt = DateTime.toDate(yield* DateTime.now);
   const followRows = [
     ...snapshot.following.map((followeeId) => ({
-      createdAt: now,
+      createdAt: followedAt,
       followeeId,
       followerId: memberId,
     })),
     ...snapshot.followers.map((followerId) => ({
-      createdAt: now,
+      createdAt: followedAt,
       followeeId: memberId,
       followerId,
     })),
@@ -187,24 +183,29 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
   if (followRows.length > 0) {
     yield* query((database) => database.insert(follow).values(followRows).onConflictDoNothing());
   }
-  const keptAgreements = snapshot.agreements ?? [];
+});
+
+const restoreAgreements = Effect.fn("restoreMemberAgreements")(function* restoreAgreements(
+  memberId: string,
+  keptAgreements: NonNullable<(typeof MemberSnapshot.Type)["agreements"]>,
+) {
   if (keptAgreements.length === 0) {
     return;
   }
-  const versionIds = keptAgreements.map((row) => row.versionId);
+  const versionIds = keptAgreements.map((acceptance) => acceptance.versionId);
   const surviving = yield* query((database) =>
     database
       .select({ id: agreementVersion.id })
       .from(agreementVersion)
       .where(inArray(agreementVersion.id, versionIds)),
   );
-  const liveVersions = new Set(surviving.map((row) => row.id));
+  const liveVersions = new Set(surviving.map((version) => version.id));
   const acceptanceRows = keptAgreements
-    .filter((row) => liveVersions.has(row.versionId))
-    .map((row) => ({
-      acceptedAt: DateTime.toDate(DateTime.makeUnsafe(row.acceptedAt)),
+    .filter((acceptance) => liveVersions.has(acceptance.versionId))
+    .map((acceptance) => ({
+      acceptedAt: DateTime.toDate(DateTime.makeUnsafe(acceptance.acceptedAt)),
       userId: memberId,
-      versionId: row.versionId,
+      versionId: acceptance.versionId,
     }));
   if (acceptanceRows.length > 0) {
     yield* query((database) =>
@@ -213,41 +214,19 @@ const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnap
   }
 });
 
-const leaveOfWithdrawn = eq(leaveRequest.memberId, withdrawnMember.memberId);
-
-const latestPendingRecovery = <Pending extends SQLiteSelect>(
-  pending: Pending,
-  recovery: Readonly<{ checkedAt: Date; email: string }>,
-) =>
-  pending
-    .where(pendingRecovery(recovery.email, recovery.checkedAt))
-    .orderBy(desc(withdrawnMember.withdrawnAt))
-    .limit(1);
-
-const requireRecovering = Effect.fn("requireRecovering")(function* requireRecovering(
+const restoreSnapshot = Effect.fn("restoreMemberSnapshot")(function* restoreSnapshot(
   memberId: string,
+  snapshot: typeof MemberSnapshot.Type,
 ) {
-  const checkedAt = DateTime.toDate(yield* DateTime.now);
-  const [member] = yield* query((database) =>
-    database
-      .select({ email: user.email, emailVerified: user.emailVerified, role: user.role })
-      .from(user)
-      .where(eq(user.id, memberId))
-      .limit(1),
-  );
-  if (member === undefined) {
-    return yield* new UserNotFound();
+  if (snapshot.onboarding !== undefined) {
+    yield* restoreOnboarding(memberId, snapshot.onboarding);
   }
-  if (!member.emailVerified || member.role !== ROLE.member) {
-    return yield* new RecoveryUnavailable();
+  if (snapshot.interview !== undefined) {
+    yield* restoreInterview(memberId, snapshot.interview);
   }
-  return { checkedAt, email: member.email };
+  yield* restoreFollows(memberId, snapshot);
+  yield* restoreAgreements(memberId, snapshot.agreements ?? []);
 });
-
-const requireFound = <Row>(rows: readonly Row[]): Effect.Effect<Row, RecoveryExpired> => {
-  const [row] = rows;
-  return row === undefined ? Effect.fail(new RecoveryExpired()) : Effect.succeed(row);
-};
 
 const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryOffer(
   memberId: string,
@@ -264,14 +243,13 @@ const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryO
     return { available: false as const };
   }
   const [pending] = yield* query((database) =>
-    latestPendingRecovery(
-      database
-        .select({ name: withdrawnMember.name })
-        .from(withdrawnMember)
-        .innerJoin(leaveRequest, leaveOfWithdrawn)
-        .$dynamic(),
-      { checkedAt, email: member.email },
-    ),
+    database
+      .select({ name: withdrawnMember.name })
+      .from(withdrawnMember)
+      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
+      .where(pendingRecovery(member.email, checkedAt))
+      .orderBy(desc(withdrawnMember.withdrawnAt))
+      .limit(1),
   );
   if (pending === undefined) {
     return { available: false as const };
@@ -279,23 +257,47 @@ const findRecoveryOffer = Effect.fn("findRecoveryOffer")(function* findRecoveryO
   return { available: true as const, previousName: pending.name };
 });
 
-const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
-  const recovery = yield* requireRecovering(memberId);
-  const { withdrawn } = yield* query((database) =>
-    latestPendingRecovery(
-      database
-        .select({ leave: leaveRequest, withdrawn: withdrawnMember })
-        .from(withdrawnMember)
-        .innerJoin(leaveRequest, leaveOfWithdrawn)
-        .$dynamic(),
-      recovery,
+const recoverableEmail = Effect.fn("recoverableEmail")(function* recoverableEmail(
+  memberId: string,
+) {
+  const [member] = yield* query((database) =>
+    database
+      .select({ email: user.email, emailVerified: user.emailVerified, role: user.role })
+      .from(user)
+      .where(eq(user.id, memberId))
+      .limit(1),
+  );
+  if (member === undefined) {
+    return yield* new UserNotFound();
+  }
+  if (!member.emailVerified || member.role !== ROLE.member) {
+    return yield* new RecoveryUnavailable();
+  }
+  return member.email;
+});
+
+const decodeSnapshot = (
+  withdrawn: typeof withdrawnMember.$inferSelect,
+): Effect.Effect<typeof MemberSnapshot.Type, RecoveryUnavailable> =>
+  Schema.decodeUnknownEffect(MemberSnapshot)(withdrawn.snapshot).pipe(
+    Effect.tapError(() =>
+      logAt("Info", {
+        attributes: { memberId: withdrawn.memberId },
+        eventName: "member_leave.snapshot_invalid",
+      }),
     ),
-  ).pipe(Effect.flatMap(requireFound));
-  const snapshot = yield* Schema.decodeUnknownEffect(MemberSnapshot)(withdrawn.snapshot).pipe(
-    Effect.tapError(() => Effect.log(`member_leave.snapshot_invalid member=${withdrawn.memberId}`)),
     Effect.mapError(() => new RecoveryUnavailable()),
   );
-  const restoredAt = DateTime.toDate(yield* DateTime.now);
+
+const restoreWithdrawn = Effect.fn("restoreWithdrawnMember")(function* restoreWithdrawn(
+  memberId: string,
+  restoration: {
+    readonly restoredAt: Date;
+    readonly snapshot: typeof MemberSnapshot.Type;
+    readonly withdrawn: typeof withdrawnMember.$inferSelect;
+  },
+) {
+  const { restoredAt, withdrawn } = restoration;
   yield* query((database) =>
     database
       .update(user)
@@ -306,36 +308,56 @@ const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memb
         socialLinks: withdrawn.socialLinks,
         updatedAt: restoredAt,
       })
-      .where(eq(user.id, memberId))
-      .then(() => undefined),
+      .where(eq(user.id, memberId)),
   );
-  yield* restoreSnapshot(memberId, snapshot);
+  yield* restoreSnapshot(memberId, restoration.snapshot);
   yield* query((database) =>
-    database
-      .batch([
-        database
-          .update(leaveRequest)
-          .set({ restoredAt })
-          .where(eq(leaveRequest.memberId, withdrawn.memberId)),
-        database.delete(withdrawnMember).where(eq(withdrawnMember.memberId, withdrawn.memberId)),
-      ])
-      .then(() => undefined),
+    database.batch([
+      database
+        .update(leaveRequest)
+        .set({ restoredAt })
+        .where(eq(leaveRequest.memberId, withdrawn.memberId)),
+      database.delete(withdrawnMember).where(eq(withdrawnMember.memberId, withdrawn.memberId)),
+    ]),
   );
+});
+
+const acceptRecovery = Effect.fn("acceptRecovery")(function* acceptRecovery(memberId: string) {
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
+  const email = yield* recoverableEmail(memberId);
+  const [pending] = yield* query((database) =>
+    database
+      .select({ leave: leaveRequest, withdrawn: withdrawnMember })
+      .from(withdrawnMember)
+      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
+      .where(pendingRecovery(email, checkedAt))
+      .orderBy(desc(withdrawnMember.withdrawnAt))
+      .limit(1),
+  );
+  if (pending === undefined) {
+    return yield* new RecoveryExpired();
+  }
+  const snapshot = yield* decodeSnapshot(pending.withdrawn);
+  const restoredAt = DateTime.toDate(yield* DateTime.now);
+  yield* restoreWithdrawn(memberId, { restoredAt, snapshot, withdrawn: pending.withdrawn });
   return { memberId, restoredAt };
 });
 
 const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(memberId: string) {
-  const recovery = yield* requireRecovering(memberId);
-  const pending = yield* query((database) =>
-    latestPendingRecovery(
-      database
-        .select({ memberId: withdrawnMember.memberId })
-        .from(withdrawnMember)
-        .innerJoin(leaveRequest, leaveOfWithdrawn)
-        .$dynamic(),
-      recovery,
-    ),
-  ).pipe(Effect.flatMap(requireFound));
+  const checkedAt = DateTime.toDate(yield* DateTime.now);
+  const email = yield* recoverableEmail(memberId);
+  const [pending] = yield* query((database) =>
+    database
+      .select({ memberId: withdrawnMember.memberId })
+      .from(withdrawnMember)
+      .innerJoin(leaveRequest, eq(leaveRequest.memberId, withdrawnMember.memberId))
+      .where(pendingRecovery(email, checkedAt))
+      .orderBy(desc(withdrawnMember.withdrawnAt))
+      .limit(1),
+  );
+  if (pending === undefined) {
+    return yield* new RecoveryExpired();
+  }
   const declinedAt = DateTime.toDate(yield* DateTime.now);
   yield* query((database) =>
     database
@@ -346,9 +368,8 @@ const declineRecovery = Effect.fn("declineRecovery")(function* declineRecovery(m
   return { declinedAt };
 });
 
-const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
+const withdrawableMember = Effect.fn("withdrawableMember")(function* withdrawableMember(
   memberId: string,
-  options: Readonly<{ immediate: boolean }>,
 ) {
   const [member] = yield* query((database) =>
     database.select().from(user).where(eq(user.id, memberId)).limit(1),
@@ -359,42 +380,56 @@ const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
   if (member.role !== ROLE.member) {
     return yield* new MemberLeaveUnavailable();
   }
-  yield* revokeUserSessions(memberId);
-  if (options.immediate) {
-    yield* query((database) => database.delete(user).where(eq(user.id, memberId)));
-    return { immediate: true as const };
-  }
+  return member;
+});
+
+const retainWithdrawn = Effect.fn("retainWithdrawnMember")(function* retainWithdrawn(
+  member: typeof user.$inferSelect,
+) {
+  const memberId = member.id;
   const withdrawnAt = DateTime.toDate(yield* DateTime.now);
   const purgeAt = DateTime.toDate(
     DateTime.makeUnsafe(withdrawnAt.getTime() + retentionMilliseconds),
   );
   const snapshot = yield* loadSnapshot(memberId);
   yield* query((database) =>
-    database
-      .batch([
-        database.insert(withdrawnMember).values({
-          createdAt: member.createdAt,
-          email: member.email,
-          emailVerified: member.emailVerified,
-          image: member.image,
-          memberId,
-          name: member.name,
-          profile: member.profile,
-          securityVersion: member.securityVersion,
-          snapshot,
-          socialLinks: member.socialLinks,
-          twoFactorEnabled: member.twoFactorEnabled,
-          withdrawnAt,
-        }),
-        database.insert(leaveRequest).values({
-          memberId,
-          purgeAt,
-          requestedAt: withdrawnAt,
-        }),
-        database.delete(user).where(eq(user.id, memberId)),
-      ])
-      .then(() => undefined),
+    database.batch([
+      database.insert(withdrawnMember).values({
+        createdAt: member.createdAt,
+        email: member.email,
+        emailVerified: member.emailVerified,
+        image: member.image,
+        memberId,
+        name: member.name,
+        profile: member.profile,
+        securityVersion: member.securityVersion,
+        snapshot,
+        socialLinks: member.socialLinks,
+        twoFactorEnabled: member.twoFactorEnabled,
+        withdrawnAt,
+      }),
+      database.insert(leaveRequest).values({
+        memberId,
+        purgeAt,
+        requestedAt: withdrawnAt,
+      }),
+      database.delete(user).where(eq(user.id, memberId)),
+    ]),
   );
+  return purgeAt;
+});
+
+const withdrawMember = Effect.fn("withdrawMember")(function* withdrawMember(
+  memberId: string,
+  leave: Readonly<{ immediate: boolean }>,
+) {
+  const member = yield* withdrawableMember(memberId);
+  yield* revokeUserSessions(memberId);
+  if (leave.immediate) {
+    yield* query((database) => database.delete(user).where(eq(user.id, memberId)));
+    return { immediate: true as const };
+  }
+  const purgeAt = yield* retainWithdrawn(member);
   return { immediate: false as const, purgeAt };
 });
 
@@ -406,17 +441,15 @@ const purgeExpiredWithdrawnMembers = Effect.fn("purgeExpiredWithdrawnMembers")(
         .from(leaveRequest)
         .where(and(lte(leaveRequest.purgeAt, checkedAt), isNull(leaveRequest.restoredAt))),
     );
-    const memberIds = expired.map((row) => row.memberId);
+    const memberIds = expired.map((expiredLeave) => expiredLeave.memberId);
     if (memberIds.length === 0) {
       return { count: 0, memberIds: [] as readonly string[] };
     }
     yield* query((database) =>
-      database
-        .batch([
-          database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
-          database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
-        ])
-        .then(() => undefined),
+      database.batch([
+        database.delete(leaveRequest).where(inArray(leaveRequest.memberId, memberIds)),
+        database.delete(withdrawnMember).where(inArray(withdrawnMember.memberId, memberIds)),
+      ]),
     );
     return { count: memberIds.length, memberIds };
   },

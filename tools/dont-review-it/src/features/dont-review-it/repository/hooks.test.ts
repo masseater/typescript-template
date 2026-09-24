@@ -1,12 +1,12 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { NodeServices } from "@effect/platform-node";
 import { lifecycleInherits, lifecycles } from "@repo/vite-config";
-import { Schema } from "effect";
+import { Effect, FileSystem, Path, Schema } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
+import { directoryEntries, filesUnder, type TreeFailure } from "../platform/directory-entries.ts";
 import { frozenOnDemandGateEntries, onDemandGateEntries } from "./on-demand-checks-test-fixture.ts";
 import {
   commands,
@@ -58,7 +58,14 @@ function misplacedHooks(): string[] {
   return hookStages
     .filter(
       ([stage, source]) =>
-        !lifecycles.some((name) => name === stage) || source !== `vp run -r ${stage}\n`,
+        !lifecycles.some((name) => name === stage) ||
+        source !==
+          [
+            `scope="$(node tools/dont-review-it/src/features/dont-review-it/repository/hook-scope.ts ${stage})" || scope="-r"`,
+            '[ -n "$scope" ] || exit 0',
+            `vp run --concurrency-limit ${stage === "prepush" ? "1" : "2"} $scope ${stage}`,
+            "",
+          ].join("\n"),
     )
     .map(([stage]) => stage);
 }
@@ -185,75 +192,79 @@ function unmatchedProjectNames(): string[] {
 
 const toolsRoot = fileURLToPath(new URL("../../../../../../tools", import.meta.url));
 
-function collectTestPackages(directory: string, packageName: string): string[] {
-  const found: string[] = [];
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      found.push(...collectTestPackages(path, packageName));
-      continue;
-    }
-    if (/\.test\.tsx?$/u.test(entry.name)) {
-      found.push(packageName);
-    }
-  }
-  return found;
-}
+type TreeScan<Scanned> = Effect.Effect<Scanned, TreeFailure, FileSystem.FileSystem | Path.Path>;
 
-function toolsPackagesWithTests(): string[] {
-  return [
-    ...new Set(
-      readdirSync(toolsRoot, { withFileTypes: true }).flatMap((entry) =>
-        entry.isDirectory()
-          ? collectTestPackages(join(toolsRoot, entry.name), `tools/${entry.name}`)
-          : [],
-      ),
-    ),
-  ].toSorted();
-}
+const collectTestPackages = (directory: string, packageName: string): TreeScan<string[]> =>
+  Effect.map(
+    filesUnder({
+      directory,
+      prunedDirectoryNames: ["node_modules"],
+      keepsFileName: (fileName) => /\.test\.tsx?$/u.test(fileName),
+    }),
+    (testFiles) => ((testFiles ?? []).length > 0 ? [packageName] : []),
+  );
 
-function uncoveredToolTestPackages(): string[] {
+const toolsPackagesWithTests: TreeScan<string[]> = Effect.gen(function* toolsPackagesWithTests() {
+  const paths = yield* Path.Path;
+  const entries = yield* directoryEntries(toolsRoot);
+  const found = yield* Effect.forEach(
+    entries.filter((entry) => entry.kind === "directory"),
+    (entry) => collectTestPackages(paths.join(toolsRoot, entry.name), `tools/${entry.name}`),
+  );
+  return [...new Set(found.flat())].toSorted();
+});
+
+const uncoveredToolTestPackages = (packagesWithTests: readonly string[]): string[] => {
   const dedicated = new Set(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, "")));
   const rootOwned = new Set(
     rootNodeToolTestIncludes.map((pattern) => pattern.replace(/\/\*\*\/\*\.test\.tsx?$/u, "")),
   );
-  return toolsPackagesWithTests().filter(
+  return packagesWithTests.filter(
     (directory) =>
       !dedicated.has(directory) &&
       !rootOwned.has(directory) &&
       !reachesTest(directory, ["prepr", "premerge"]),
   );
-}
+};
+
+const repositoryRoot = fileURLToPath(new URL("../../../../../..", import.meta.url));
+
+const CursorEnvironment = Schema.fromJsonString(Schema.Unknown);
 
 describe("cloud agent environment", () => {
-  it("installs dependencies and reconnects pre-push through the agent hook dispatcher", () => {
-    expect.hasAssertions();
-    const root = fileURLToPath(new URL("../../../../../..", import.meta.url));
-    const environment = JSON.parse(
-      readFileSync(join(root, ".cursor/environment.json"), "utf8"),
-    ) as {
-      install: string;
-      start: string;
-    };
-    expect(environment).toStrictEqual({
-      install: "bash .cursor/install.sh",
-      start: "bash .cursor/start.sh",
-    });
-    const install = readFileSync(join(root, ".cursor/install.sh"), "utf8");
-    const start = readFileSync(join(root, ".cursor/start.sh"), "utf8");
-    expect(install).toContain("mise.run");
-    expect(install).toContain("mise install");
-    expect(install).toContain("seed-mergify-auth.sh");
-    expect(install).toContain("vp install");
-    expect(start).toContain("seed-mergify-auth.sh");
-    expect(start).toContain("materialize:env");
-    expect(start).toContain("pre-push");
-    expect(start).toContain(".cursor-original-hooks-path");
-  });
+  it("installs dependencies and reconnects pre-push through the agent hook dispatcher", () =>
+    Effect.runPromise(
+      Effect.gen(function* cloudAgentEnvironment() {
+        expect.hasAssertions();
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const environment = yield* Schema.decodeEffect(CursorEnvironment)(
+          yield* filesystem.readFileString(paths.join(repositoryRoot, ".cursor/environment.json")),
+        );
+        expect(environment).toStrictEqual({
+          install: "bash .cursor/install.sh",
+          start: "bash .cursor/start.sh",
+        });
+        const install = yield* filesystem.readFileString(
+          paths.join(repositoryRoot, ".cursor/install.sh"),
+        );
+        const start = yield* filesystem.readFileString(
+          paths.join(repositoryRoot, ".cursor/start.sh"),
+        );
+        expect(install).toContain("mise.run");
+        expect(install).toContain("mise install");
+        expect(install).toContain("seed-mergify-auth.sh");
+        expect(install).toContain("vp install");
+        expect(start).toContain("seed-mergify-auth.sh");
+        expect(start).toContain("materialize:env");
+        expect(start).toContain("pre-push");
+        expect(start).toContain(".cursor-original-hooks-path");
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 });
 
 describe("lifecycle entry points", () => {
-  it("each hook runs its lifecycle task in every workspace", () => {
+  it("each hook runs its lifecycle task in the workspaces its change reaches", () => {
     expect.hasAssertions();
     expect(hookStages.length).toBeGreaterThan(0);
     expect(misplacedHooks()).toStrictEqual([]);
@@ -280,8 +291,10 @@ describe("lifecycle entry points", () => {
   it("runs the repository check once inside prepr and the unit suite on the merge queue", () => {
     expect.hasAssertions();
     expect(workflowRuns("../../../../../../.github/workflows/check.yml")).toStrictEqual([
+      "vp run --filter @repo/dont-review-it pr-affected",
       "vp run -w prepr",
       "vp run --fail-if-no-match $AFFECTED_FILTERS prepr",
+      "vp run compile:paraglide",
       "vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS",
       "vp run -r premerge",
       "vp run compile:paraglide",
@@ -319,6 +332,7 @@ describe("lifecycle contents", () => {
   it("replays every release gate task from the cache but the ones still tied to run time state", () => {
     expect.hasAssertions();
     expect(uncachedGateTasks()).toStrictEqual([
+      ".#check:repository",
       ".#mutation",
       ".#test:dev-server",
       ".#test:storybook",
@@ -369,7 +383,12 @@ describe("lifecycle contents", () => {
           reachable(directory, ["prepush"]).includes(name),
         ),
       ),
-    ).toStrictEqual(["apps/internal-dashboard", "apps/service-admin", "apps/service-member"]);
+    ).toStrictEqual([
+      "apps/internal-dashboard",
+      "apps/internal-wiki",
+      "apps/service-admin",
+      "apps/service-member",
+    ]);
     expect(
       configuredDirectories.flatMap((directory) =>
         taskNames(directory).includes("check:effect")
@@ -383,6 +402,7 @@ describe("lifecycle contents", () => {
       ),
     ).toStrictEqual([
       "apps/internal-dashboard",
+      "apps/internal-wiki",
       "apps/service-admin",
       "apps/service-member",
       "libs/db",
@@ -395,22 +415,30 @@ describe("lifecycle contents", () => {
     );
   });
 
-  it("leaves every root entry outside the workspaces to the root check:code", () => {
-    expect.hasAssertions();
-    const repositoryRoot = join(toolsRoot, "..");
-    const ignored = new Set([
-      ".git",
-      ...readFileSync(join(repositoryRoot, ".gitignore"), "utf8")
-        .split("\n")
-        .filter((line) => /^[\w.-]+\/?$/u.test(line))
-        .map((line) => line.replace(/\/$/u, "")),
-      ...workspaceDirectories.map((directory) => directory.split("/")[0]),
-    ]);
-    const checked = new Set(commands(".", "check:code").flatMap((command) => command.split(" ")));
-    expect(
-      readdirSync(repositoryRoot).filter((entry) => !ignored.has(entry) && !checked.has(entry)),
-    ).toStrictEqual([]);
-  });
+  it("leaves every root entry outside the workspaces to the root check:code", () =>
+    Effect.runPromise(
+      Effect.gen(function* rootEntriesChecked() {
+        expect.hasAssertions();
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const ignored = new Set([
+          ".git",
+          ...(yield* filesystem.readFileString(paths.join(repositoryRoot, ".gitignore")))
+            .split("\n")
+            .filter((line) => /^[\w.-]+\/?$/u.test(line))
+            .map((line) => line.replace(/\/$/u, "")),
+          ...workspaceDirectories.map((directory) => directory.split("/")[0]),
+        ]);
+        const checked = new Set(
+          commands(".", "check:code").flatMap((command) => command.split(" ")),
+        );
+        expect(
+          (yield* filesystem.readDirectory(repositoryRoot)).filter(
+            (entry) => !ignored.has(entry) && !checked.has(entry),
+          ),
+        ).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 
   it("type-checks a package before that package's bundle", () => {
     expect.hasAssertions();
@@ -446,14 +474,20 @@ describe("test ownership", () => {
     expect(unmatchedProjectNames()).toStrictEqual([]);
   });
 
-  it("keeps every tools package with tests on a vitest project or pull request gate", () => {
-    expect.hasAssertions();
-    expect(toolsPackagesWithTests().length).toBeGreaterThan(0);
-    expect(uncoveredToolTestPackages()).toStrictEqual([]);
-    expect(testProjectDirectories).toStrictEqual(
-      expect.arrayContaining(dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, ""))),
-    );
-  });
+  it("keeps every tools package with tests on a vitest project or pull request gate", () =>
+    Effect.runPromise(
+      Effect.gen(function* toolTestsOwned() {
+        expect.hasAssertions();
+        const packagesWithTests = yield* toolsPackagesWithTests;
+        expect(packagesWithTests.length).toBeGreaterThan(0);
+        expect(uncoveredToolTestPackages(packagesWithTests)).toStrictEqual([]);
+        expect(testProjectDirectories).toStrictEqual(
+          expect.arrayContaining(
+            dedicatedToolVitestProjects.map((path) => path.replace(/^\.\//u, "")),
+          ),
+        );
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 });
 
 describe("on-demand gate escapes", () => {
@@ -486,24 +520,27 @@ const MergifyConfig = Schema.Struct({
   ),
 });
 
-function parsedSource<S extends Schema.Top & { readonly DecodingServices: never }>(
+class SourceMissing extends Schema.TaggedError<SourceMissing>()("SourceMissing", {
+  file: Schema.String,
+}) {}
+
+const parsedSource = <S extends Schema.ConstraintDecoder<unknown>>(
   sources: Readonly<Record<string, string>>,
   file: string,
   schema: S,
-): S["Type"] {
+): Effect.Effect<S["Type"], SourceMissing | Schema.SchemaError> => {
   const source = sources[file];
   if (source === undefined) {
-    throw new Error(`${file} is missing`);
+    return Effect.fail(new SourceMissing({ file }));
   }
-  return Schema.decodeUnknownSync(schema)(parse(source));
-}
+  return Schema.decodeUnknownEffect(schema)(parse(source));
+};
+
+const checkWorkflow = await Effect.runPromise(
+  parsedSource(workflows, "../../../../../../.github/workflows/check.yml", CheckWorkflow),
+);
 
 describe("mergify ci insights", () => {
-  const checkWorkflow = parsedSource(
-    workflows,
-    "../../../../../../.github/workflows/check.yml",
-    CheckWorkflow,
-  );
   const jobs = Object.entries(checkWorkflow.jobs);
 
   it("hands MERGIFY_TOKEN to every job that runs vp, at the job level", () => {
@@ -526,17 +563,24 @@ describe("mergify ci insights", () => {
     ).toStrictEqual([]);
   });
 
-  it("gates the merge queue only on checks the workflow defines", () => {
-    expect.hasAssertions();
-    const config = parsedSource(mergifyConfigs, "../../../../../../.mergify.yml", MergifyConfig);
-    const gates = config.queue_rules
-      .flatMap((rule) => [...rule.merge_conditions, ...rule.queue_conditions])
-      .flatMap((condition) =>
-        typeof condition === "string" && condition.startsWith("check-success = ")
-          ? [condition.slice("check-success = ".length)]
-          : [],
-      );
-    expect(gates.length).toBeGreaterThan(0);
-    expect(gates.filter((gate) => checkWorkflow.jobs[gate] === undefined)).toStrictEqual([]);
-  });
+  it("gates the merge queue only on checks the workflow defines", () =>
+    Effect.runPromise(
+      Effect.gen(function* mergeQueueGates() {
+        expect.hasAssertions();
+        const config = yield* parsedSource(
+          mergifyConfigs,
+          "../../../../../../.mergify.yml",
+          MergifyConfig,
+        );
+        const gates = config.queue_rules
+          .flatMap((rule) => [...rule.merge_conditions, ...rule.queue_conditions])
+          .flatMap((condition) =>
+            typeof condition === "string" && condition.startsWith("check-success = ")
+              ? [condition.slice("check-success = ".length)]
+              : [],
+          );
+        expect(gates.length).toBeGreaterThan(0);
+        expect(gates.filter((gate) => checkWorkflow.jobs[gate] === undefined)).toStrictEqual([]);
+      }),
+    ));
 });

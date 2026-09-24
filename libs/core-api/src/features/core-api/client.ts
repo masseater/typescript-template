@@ -7,24 +7,26 @@ import type * as Scope from "effect/Scope";
 import type { RpcClientError } from "effect/unstable/rpc/RpcClientError";
 import type * as RpcGroup from "effect/unstable/rpc/RpcGroup";
 
-const coreRpcUrl = "http://core";
+const rpcUrl = "http://rpc";
 
-const bindingFetch = (core: Fetcher): typeof fetch => core.fetch.bind(core);
+type BindingFetcher = { readonly fetch: typeof fetch };
 
-const coreProtocol = (core: Fetcher): Layer.Layer<RpcClient.Protocol> =>
-  RpcClient.layerProtocolHttp({ url: coreRpcUrl }).pipe(
+const bindingFetch = (core: BindingFetcher): typeof fetch => core.fetch.bind(core);
+
+const bindingProtocol = (core: BindingFetcher): Layer.Layer<RpcClient.Protocol> =>
+  RpcClient.layerProtocolHttp({ url: rpcUrl }).pipe(
     Layer.provide(RpcSerialization.layerJson),
-    Layer.provide(FetchHttpClient.layer),
+    Layer.provide(Layer.fresh(FetchHttpClient.layer)),
     Layer.provide(Layer.succeed(FetchHttpClient.Fetch, bindingFetch(core))),
   );
 
-const makeCoreClient = <Rpcs extends Rpc.Any>(
+const makeRpcClient = <Rpcs extends Rpc.Any>(
   rpcContract: RpcGroup.RpcGroup<Rpcs>,
-  core: Fetcher,
+  core: BindingFetcher,
 ): Effect.Effect<
   RpcClient.RpcClient<Rpcs, RpcClientError>,
   never,
   Scope.Scope | Rpc.MiddlewareClient<Rpcs>
-> => RpcClient.make(rpcContract).pipe(Effect.provide(coreProtocol(core)));
+> => RpcClient.make(rpcContract).pipe(Effect.provide(bindingProtocol(core)));
 
-export { makeCoreClient };
+export { makeRpcClient };

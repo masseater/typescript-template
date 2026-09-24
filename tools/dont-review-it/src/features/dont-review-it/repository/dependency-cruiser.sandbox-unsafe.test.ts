@@ -1,17 +1,18 @@
-import { rm } from "node:fs/promises";
-
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
 import { cruise, type ICruiseResult } from "dependency-cruiser";
-import { describe, expect, it } from "vite-plus/test";
+import { Effect, Schema } from "effect";
+import { expect } from "vite-plus/test";
 
 import { createFixture, type Fixture } from "./dependency-cruiser-test-fixture.ts";
 import configuration from "./dependency-cruiser.ts";
 
 type Case = readonly [string, Fixture];
 
-const forbidden = configuration.forbidden ?? [];
+const { forbidden } = configuration;
 const configuredRules = new Set<string>();
 for (const rule of forbidden) {
-  configuredRules.add(rule.name ?? "");
+  configuredRules.add(rule.name);
 }
 
 const reportedRules = (
@@ -24,37 +25,46 @@ const reportedRules = (
   return [...reported].toSorted();
 };
 
-const cruiseModules = async (
+class CruiseReportedText extends Schema.TaggedError<CruiseReportedText>()(
+  "CruiseReportedText",
+  {},
+) {}
+
+class CruiseFailed extends Schema.TaggedError<CruiseFailed>()("CruiseFailed", {
+  cause: Schema.Defect(),
+}) {}
+
+const cruiseModules = (
   directories: readonly string[],
   baseDir?: string,
-): Promise<ICruiseResult> => {
-  const { output } = await cruise(
-    [...directories],
-    {
-      ...configuration.options,
-      ...(baseDir === undefined ? {} : { baseDir }),
-      ruleSet: { forbidden },
-      validate: true,
-    },
-    configuration.options?.enhancedResolveOptions,
-  );
-  if (typeof output === "string") {
-    throw new TypeError(
-      "dependency-cruiser reported a formatted string instead of a cruise result",
-    );
-  }
-  return output;
-};
+): Effect.Effect<ICruiseResult, CruiseFailed | CruiseReportedText> =>
+  Effect.gen(function* cruiseModules() {
+    const { output } = yield* Effect.tryPromise({
+      catch: (cause) => new CruiseFailed({ cause }),
+      try: () =>
+        cruise(
+          [...directories],
+          {
+            ...configuration.options,
+            ...(baseDir === undefined ? {} : { baseDir }),
+            ruleSet: { forbidden },
+            validate: true,
+          },
+          configuration.options.enhancedResolveOptions,
+        ),
+    });
+    if (typeof output === "string") {
+      return yield* new CruiseReportedText();
+    }
+    return output;
+  });
 
-const violatedRules = async (files: Fixture): Promise<readonly string[]> => {
-  const root = await createFixture(files);
-  try {
-    const { summary } = await cruiseModules(["apps", "libs", "tools"], root);
+const violatedRules = (files: Fixture) =>
+  Effect.gen(function* violatedRules() {
+    const root = yield* createFixture(files);
+    const { summary } = yield* cruiseModules(["apps", "libs", "tools"], root);
     return reportedRules(summary.violations);
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
-};
+  });
 
 const detected: readonly Case[] = [
   [
@@ -153,6 +163,11 @@ const detected: readonly Case[] = [
       "libs/auth/src/features/auth/helper.test.ts": "export const helper = 1;\n",
       "libs/auth/src/features/auth/index.ts": 'export * from "./helper.test.ts";\n',
     },
+  ],
+  ["no-wiki-to-database", { "apps/internal-wiki/src/index.ts": 'export * from "@repo/db";\n' }],
+  [
+    "no-wiki-to-database",
+    { "apps/internal-wiki/src/index.ts": 'export type { Db } from "@repo/db";\n' },
   ],
   [
     "no-deployment-config-in-shipped-code",
@@ -293,6 +308,10 @@ const accepted: readonly Case[] = [
     },
   ],
   [
+    "no-wiki-to-database",
+    { "apps/internal-wiki/src/index.ts": 'export * from "@repo/db/local";\n' },
+  ],
+  [
     "no-browser-to-server",
     {
       "libs/runtime/src/features/runtime/index.ts": 'export * from "@repo/db";\n',
@@ -330,8 +349,8 @@ interface RepositoryCruise {
   readonly violations: readonly string[];
 }
 
-const cruiseRepository = async (): Promise<RepositoryCruise> => {
-  const { modules, summary } = await cruiseModules(["apps", "libs", "infra", "tools"]);
+const cruiseRepository = Effect.gen(function* cruiseRepository() {
+  const { modules, summary } = yield* cruiseModules(["apps", "libs", "infra", "tools"]);
   const sources = new Set<string>();
   for (const module of modules) {
     sources.add(module.source);
@@ -340,9 +359,9 @@ const cruiseRepository = async (): Promise<RepositoryCruise> => {
     scanned: scannedModules.filter((module) => sources.has(module)),
     violations: reportedRules(summary.violations),
   };
-};
+});
 
-describe("dependency-cruiser rules on package boundaries", () => {
+layer(NodeServices.layer)("dependency-cruiser rules on package boundaries", (it) => {
   it("every rule has a case that reports it and a case that must stay silent", () => {
     expect.hasAssertions();
     expect({
@@ -354,21 +373,25 @@ describe("dependency-cruiser rules on package boundaries", () => {
     });
   });
 
-  it.for(detected)("reports %s", async ([rule, files]) => {
-    expect.hasAssertions();
-    await expect(violatedRules(files)).resolves.toStrictEqual([rule]);
-  });
+  it.effect.each(detected)("reports %s", ([rule, files]) =>
+    Effect.gen(function* program() {
+      expect(yield* violatedRules(files)).toStrictEqual([rule]);
+    }),
+  );
 
-  it.for(accepted)("stays silent about %s", async ([, files]) => {
-    expect.hasAssertions();
-    await expect(violatedRules(files)).resolves.toStrictEqual([]);
-  });
+  it.effect.each(accepted)("stays silent about %s", ([, files]) =>
+    Effect.gen(function* program() {
+      expect(yield* violatedRules(files)).toStrictEqual([]);
+    }),
+  );
 
-  it("reaches this repository and finds nothing forbidden in it", async () => {
-    expect.hasAssertions();
-    await expect(cruiseRepository()).resolves.toStrictEqual({
-      scanned: scannedModules,
-      violations: [],
-    });
-  }, 120_000);
+  it.effect(
+    "reaches this repository and finds nothing forbidden in it",
+    () =>
+      Effect.gen(function* program() {
+        const cruised: RepositoryCruise = yield* cruiseRepository;
+        expect(cruised).toStrictEqual({ scanned: scannedModules, violations: [] });
+      }),
+    120_000,
+  );
 });

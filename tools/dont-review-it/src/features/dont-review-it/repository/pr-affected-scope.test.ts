@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { affectedTests, shardDirectories, type WorkspacePackage } from "./pr-affected-scope.ts";
+import {
+  affectedTests,
+  hookFilters,
+  shardDirectories,
+  type WorkspacePackage,
+} from "./pr-affected-scope.ts";
 import { workspaceDirectories } from "./tasks-test-fixture.ts";
 import { prCheckShardCount } from "./test-runtime.ts";
 
@@ -89,5 +94,27 @@ describe("pull request check shards", () => {
     expect(() => shardDirectories(workspaces, prCheckShardCount + 1, prCheckShardCount)).toThrow(
       "is not a shard",
     );
+  });
+});
+
+describe("hook filters", () => {
+  it("runs nothing when the change touches no file", () => {
+    expect(hookFilters([], packages)).toStrictEqual([]);
+  });
+
+  it("runs the root and filters to the changed package and the packages that depend on it", () => {
+    expect(hookFilters(["libs/ui/src/features/ui/button.tsx"], packages)).toStrictEqual([
+      "-w",
+      "--filter",
+      "@repo/ui",
+      "--filter",
+      "@repo/service-member",
+    ]);
+  });
+
+  it("walks every workspace when a changed file is outside the workspaces", () => {
+    expect(
+      hookFilters(["libs/cli/src/features/cli/cli.ts", ".vite-hooks/pre-push"], packages),
+    ).toStrictEqual(["-r"]);
   });
 });

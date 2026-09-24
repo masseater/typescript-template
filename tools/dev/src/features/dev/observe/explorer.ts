@@ -1,4 +1,5 @@
 import { loopbackHostSet } from "@repo/config";
+import { RowCells } from "@repo/db/migrations";
 import { RequestId } from "@repo/observability";
 import { Effect, Predicate, Result, Schema } from "effect";
 import { FetchHttpClient, HttpBody, HttpClient, HttpClientResponse } from "effect/unstable/http";
@@ -23,8 +24,7 @@ class ExplorerFailure extends Schema.TaggedError<ExplorerFailure>()("ExplorerFai
 
 const explorerTimeoutMilliseconds = 15_000;
 const Columns = Schema.Array(Schema.String);
-const Rows = Schema.Array(Schema.Array(Schema.Unknown));
-const QueryResult = Schema.Struct({ columns: Columns, rows: Rows });
+const QueryResult = Schema.Struct({ columns: Columns, rows: RowCells });
 const QueryResponse = Schema.Struct({ result: QueryResult, success: Schema.Literal(true) });
 
 function originInvalid(): ExplorerFailure {

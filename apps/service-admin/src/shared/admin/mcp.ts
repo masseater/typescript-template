@@ -13,13 +13,13 @@ import {
   setAdminState,
   setMemberState,
 } from "@repo/db/admin";
-import { mcpEndpoint, toolRunner } from "@repo/runtime/mcp";
-import { Effect, Schema } from "effect";
+import { AppOrigin, secureResponse } from "@repo/runtime/http";
+import { Effect, Predicate, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
 import type { AdminPermission } from "@repo/config/identity";
-import type { RunApp } from "@repo/runtime/mcp";
+import type { AppServices } from "@repo/runtime";
 import type { AdminMcpActor } from "./authorize-mcp.ts";
 
 const mcpVersion = "1.0.0";
@@ -63,18 +63,54 @@ const AdminPermissionChange = Schema.toStandardJSONSchemaV1(
   ),
 );
 
-const failureCodes: ReadonlyMap<string, string> = new Map([
-  ["InviteRejected", "invite_rejected"],
-  ["LastAdminRequired", "last_admin_required"],
-  ["PermissionRequired", "permission_required"],
-  ["TargetUnavailable", "target_unavailable"],
-]);
+const toolFailure = (
+  message: string,
+): { content: [{ type: "text"; text: string }]; isError: true } => ({
+  content: [{ text: message, type: "text" }],
+  isError: true,
+});
 
-function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
+const runTool =
+  (runAdmin: <Value>(program: Effect.Effect<Value, unknown, AppServices>) => Promise<Value>) =>
+  <Value>(
+    program: Effect.Effect<Value, unknown, AppServices>,
+  ): Promise<{ content: [{ type: "text"; text: string }]; isError?: true }> =>
+    runAdmin(
+      program.pipe(
+        Effect.flatMap((value) =>
+          Schema.encodeEffect(Schema.fromJsonString(Schema.Unknown))(value).pipe(
+            Effect.map((text): { content: [{ type: "text"; text: string }] } => ({
+              content: [{ text, type: "text" }],
+            })),
+            Effect.orDie,
+          ),
+        ),
+      ),
+    ).catch((failure: unknown): { content: [{ type: "text"; text: string }]; isError: true } => {
+      const failureTag = Predicate.hasProperty(failure, "_tag") ? failure._tag : undefined;
+      if (failureTag === "PermissionRequired") {
+        return toolFailure("permission_required");
+      }
+      if (failureTag === "TargetUnavailable") {
+        return toolFailure("target_unavailable");
+      }
+      if (failureTag === "LastAdminRequired") {
+        return toolFailure("last_admin_required");
+      }
+      if (failureTag === "InviteRejected") {
+        return toolFailure("invite_rejected");
+      }
+      return toolFailure("operation_failed");
+    });
+
+function createServer(
+  actor: AdminMcpActor,
+  runAdmin: <Value>(program: Effect.Effect<Value, unknown, AppServices>) => Promise<Value>,
+): McpServer {
   const server = new McpServer({ name: APPLICATION.admin, version: mcpVersion });
   const { sessionId } = actor;
   const channel = AUDIT_CHANNEL.mcp;
-  const run = toolRunner(runAdmin, failureCodes);
+  const run = runTool(runAdmin);
 
   server.registerTool(
     "search_members",
@@ -143,7 +179,7 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
       description: "Permanently delete a member account. Requires operator permission or higher.",
       inputSchema: MemberId,
     },
-    ({ memberId }) => run(deleteUser(sessionId, memberId, channel)),
+    ({ memberId }) => run(deleteUser({ channel, sessionId, targetId: memberId })),
   );
 
   server.registerTool(
@@ -226,8 +262,19 @@ function createServer(actor: AdminMcpActor, runAdmin: RunApp): McpServer {
   return server;
 }
 
-const serveMcp = mcpEndpoint(authorizeMcpRequest, (actor, runAdmin) =>
-  createMcpHandler(() => createServer(actor, runAdmin)),
-);
+const serveMcp = Effect.fn("serveMcp")(function* serveMcp(request: Request) {
+  const origin = yield* AppOrigin;
+  const authorized = yield* authorizeMcpRequest(request, origin);
+  if (authorized instanceof Response) {
+    return authorized;
+  }
+  const context = yield* Effect.context<AppServices>();
+  const runAdmin = <Value, Failure>(
+    program: Effect.Effect<Value, Failure, AppServices>,
+  ): Promise<Value> => Effect.runPromiseWith(context)(program);
+  const handler = createMcpHandler(() => createServer(authorized, runAdmin));
+  const response = yield* Effect.promise(() => handler.fetch(request));
+  return secureResponse({ httpRequest: request, httpResponse: response });
+});
 
 export { serveMcp };

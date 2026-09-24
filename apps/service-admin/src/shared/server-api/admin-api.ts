@@ -61,7 +61,7 @@ const changeMemberState = Effect.fn("changeMemberState")(function* changeMemberS
 const removeMember = Effect.fn("removeMember")(function* removeMember(request: Request) {
   const sessionId = yield* verifiedSessionId(request);
   const deletion = yield* readJsonBody(UserDeletion, request);
-  return yield* deleteUser(sessionId, deletion.id);
+  return yield* deleteUser({ sessionId, targetId: deletion.id });
 });
 
 const listAdministrators = Effect.fn("listAdministrators")(function* listAdministrators(

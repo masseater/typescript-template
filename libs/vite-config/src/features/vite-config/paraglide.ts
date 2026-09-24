@@ -1,10 +1,6 @@
-import { fileURLToPath } from "node:url";
-
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
-import { repositoryRoot } from "@repo/config/repository-root";
 
-import { paths } from "./host.ts";
-import { paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.ts";
+import { localizedApps, paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.ts";
 import { taskInput } from "./task-input.ts";
 
 import type { PluginOption, UserConfig } from "vite-plus";
@@ -21,30 +17,33 @@ const withoutInlangState = [
   "!project.inlang/.lix/**",
 ] as const;
 
-const repositoryPath = (href: string): string =>
-  paths.relative(repositoryRoot, fileURLToPath(href)).replaceAll("\\", "/");
-
-const compileWorkspaceScript = repositoryPath(
-  new URL("./compile-workspace-paraglide.ts", import.meta.url).href,
-);
-
 const workspaceParaglideCompile = {
-  command: `./${compileWorkspaceScript}`,
+  command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
   input: [
     ...taskInput,
-    { base: "workspace", pattern: "apps/*/messages/**" },
-    { base: "workspace", pattern: "apps/*/project.inlang/settings.json" },
-    ...withoutInlangState.map((pattern) => ({
-      base: "workspace" as const,
-      pattern: pattern.replace("!", "!apps/*/"),
-    })),
+    ...localizedApps.flatMap((app) =>
+      [
+        `apps/${app}/messages/**`,
+        `apps/${app}/project.inlang/settings.json`,
+        `!apps/${app}`,
+        `!apps/${app}/project.inlang`,
+        `!apps/${app}/.paraglide/**`,
+        ...withoutInlangState.map((pattern) => pattern.replace("!", `!apps/${app}/`)),
+      ].map((pattern) => ({ base: "workspace" as const, pattern })),
+    ),
     {
       base: "workspace",
-      pattern: repositoryPath(new URL("./paraglide-options.ts", import.meta.url).href),
+      pattern: "libs/vite-config/src/features/vite-config/paraglide-options.ts",
     },
-    { base: "workspace", pattern: compileWorkspaceScript },
+    {
+      base: "workspace",
+      pattern: "libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+    },
   ],
-  output: [{ base: "workspace", pattern: "apps/*/.paraglide/**" }],
+  output: localizedApps.map((app) => ({
+    base: "workspace" as const,
+    pattern: `apps/${app}/.paraglide/**`,
+  })),
 } satisfies NonNullable<NonNullable<NonNullable<UserConfig["run"]>["tasks"]>[string]>;
 
 export {

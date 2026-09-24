@@ -1,7 +1,8 @@
 import { NodeRuntime } from "@effect/platform-node";
-import { Cause, Console, Effect, PlatformError } from "effect";
+import { Cause, Console, Effect } from "effect";
 
-const failedExitCode = 1;
+import { markFailed } from "./exit-code.ts";
+
 const firstUserArgumentIndex = 2;
 
 type WriteTarget = Readonly<{ write: (line: string) => unknown }>;
@@ -27,13 +28,6 @@ const causeRecord = (
   ...failure.fields,
 });
 
-const exitWith = (code: number): Effect.Effect<void> =>
-  Effect.sync(() => {
-    process.exitCode = code;
-  });
-
-const markFailed = exitWith(failedExitCode);
-
 const reportFailed = (failureRecord: Readonly<Record<string, unknown>>): Effect.Effect<void> =>
   Console.error(JSON.stringify(failureRecord)).pipe(Effect.andThen(markFailed));
 
@@ -52,18 +46,5 @@ const runCli = <Failure>(
   );
 };
 
-const isSystemError = (reason: unknown, tag: PlatformError.SystemErrorTag): boolean =>
-  reason instanceof PlatformError.SystemError && reason._tag === tag;
-
-export {
-  causeRecord,
-  cliStderr,
-  cliStdout,
-  exitWith,
-  firstUserArgumentIndex,
-  isSystemError,
-  markFailed,
-  reportFailed,
-  runCli,
-};
+export { causeRecord, cliStderr, cliStdout, firstUserArgumentIndex, reportFailed, runCli };
 export type { WriteTarget };

@@ -1,6 +1,7 @@
+import { ACCOUNT_STATE } from "@repo/config";
 import { ConfirmDialog } from "@repo/ui";
 
-import { rowConfirmation } from "#pages/users/model/user-labels.ts";
+import { nextAccountStates, stateChangeLabels } from "#pages/users/model/user-labels.ts";
 import { useUserRowAction } from "#pages/users/model/user-row-action.ts";
 import { RowActionMenu } from "./row-action-menu.tsx";
 
@@ -12,7 +13,9 @@ function UserRowActions({
   user,
 }: Readonly<{ onChanged: () => void; user: ListedUser }>): ReactElement {
   const action = useUserRowAction(user, onChanged);
-  const confirmation = rowConfirmation(action.confirming === "delete", user);
+  const deleting = action.confirming === "delete";
+  const stateChange = stateChangeLabels[user.accountState];
+  const suspending = nextAccountStates[user.accountState] === ACCOUNT_STATE.suspended;
   return (
     <>
       <RowActionMenu
@@ -24,10 +27,16 @@ function UserRowActions({
       <ConfirmDialog
         open={action.confirming !== undefined}
         onOpenChange={action.handleOpenChange}
-        title={confirmation.title}
-        description={confirmation.description}
-        confirmLabel={confirmation.confirmLabel}
-        variant={confirmation.variant}
+        title={deleting ? "ユーザーを削除しますか？" : `${stateChange}か？`}
+        description={
+          deleting
+            ? `${user.email} を削除します。この操作は取り消せません。`
+            : suspending
+              ? `${user.email} の利用を停止します。停止中はログインできず、他の利用者から見えなくなります。`
+              : `${user.email} の停止を解除します。再びログインでき、他の利用者から見えるようになります。`
+        }
+        confirmLabel={deleting ? "削除する" : stateChange}
+        variant={deleting || suspending ? "danger" : "primary"}
         onConfirm={action.handleConfirm}
       />
     </>

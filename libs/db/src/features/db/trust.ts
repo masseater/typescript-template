@@ -1,6 +1,13 @@
-import { ACCOUNT_STATE, REPORT_STATUS, REPORT_SUBJECT, ROLE } from "@repo/config";
-import { and, eq, or, sql, type SQL } from "drizzle-orm";
-import { Effect, Schema } from "effect";
+import {
+  ACCOUNT_STATE,
+  REPORT_STATUS,
+  REPORT_SUBJECT,
+  ROLE,
+  type ReportReason,
+  type ReportSubject,
+} from "@repo/config";
+import { and, eq, or, sql, type Column, type SQL } from "drizzle-orm";
+import { Effect } from "effect";
 
 import { boardPost } from "./board-schema.ts";
 import { clockDate } from "./clock-date.ts";
@@ -14,30 +21,13 @@ import {
   directMessage,
 } from "./messaging-schema.ts";
 import { memberBlock, memberReport } from "./trust-schema.ts";
+import { TrustSubjectNotFound } from "./trust-subject-not-found.ts";
+import { TrustTargetUnavailable } from "./trust-target-unavailable.ts";
 
-import type { ReportReason, ReportSubject } from "@repo/config";
+const blockBetween = (viewerId: string, memberColumn: Column): SQL =>
+  sql`exists (select 1 from ${memberBlock} where (${memberBlock.blockerId} = ${viewerId} and ${memberBlock.blockedId} = ${memberColumn}) or (${memberBlock.blockedId} = ${viewerId} and ${memberBlock.blockerId} = ${memberColumn}))`;
 
-class TrustSubjectNotFound extends Schema.TaggedError<TrustSubjectNotFound>()(
-  "TrustSubjectNotFound",
-  {},
-) {}
-
-class TrustTargetUnavailable extends Schema.TaggedError<TrustTargetUnavailable>()(
-  "TrustTargetUnavailable",
-  {},
-) {}
-
-const activeMember = and(
-  eq(user.role, ROLE.member),
-  eq(user.emailVerified, true),
-  eq(user.accountState, ACCOUNT_STATE.active),
-);
-
-function blockBetween(viewerId: string, memberId: SQL): SQL {
-  return sql`exists (select 1 from ${memberBlock} where (${memberBlock.blockerId} = ${viewerId} and ${memberBlock.blockedId} = ${memberId}) or (${memberBlock.blockedId} = ${viewerId} and ${memberBlock.blockerId} = ${memberId}))`;
-}
-
-const blockHides = (viewerId: string): SQL => blockBetween(viewerId, sql`${user.id}`);
+const blockHides = (viewerId: string): SQL => blockBetween(viewerId, user.id);
 
 const viewerBlockedTarget = (viewerId: string): SQL =>
   sql`exists (select 1 from ${memberBlock} where ${memberBlock.blockerId} = ${viewerId} and ${memberBlock.blockedId} = ${user.id})`;
@@ -46,7 +36,7 @@ const pairBlocked = Effect.fn("pairBlocked")(function* pairBlocked(
   leftId: string,
   rightId: string,
 ) {
-  const [row] = yield* query((database) =>
+  const [block] = yield* query((database) =>
     database
       .select({ blockerId: memberBlock.blockerId })
       .from(memberBlock)
@@ -58,8 +48,14 @@ const pairBlocked = Effect.fn("pairBlocked")(function* pairBlocked(
       )
       .limit(1),
   );
-  return row !== undefined;
+  return block !== undefined;
 });
+
+const activeMember = and(
+  eq(user.role, ROLE.member),
+  eq(user.emailVerified, true),
+  eq(user.accountState, ACCOUNT_STATE.active),
+);
 
 const requireActiveMember = Effect.fn("requireActiveMember")(function* requireActiveMember(
   memberId: string,
@@ -84,21 +80,21 @@ const blockMember = Effect.fn("blockMember")(function* blockMember(
     return yield* new TrustTargetUnavailable();
   }
   yield* requireActiveMember(blockerId);
-  const [target] = yield* query((database) =>
+  const [blockedMember] = yield* query((database) =>
     database
       .select({ id: user.id })
       .from(user)
       .where(and(eq(user.id, blockedId), eq(user.role, ROLE.member)))
       .limit(1),
   );
-  if (target === undefined) {
+  if (blockedMember === undefined) {
     return yield* new TrustTargetUnavailable();
   }
-  const now = yield* clockDate;
+  const blockedAt = yield* clockDate;
   yield* query((database) =>
     database
       .insert(memberBlock)
-      .values({ blockedId, blockerId, createdAt: now })
+      .values({ blockedId, blockerId, createdAt: blockedAt })
       .onConflictDoNothing(),
   );
   yield* query((database) =>
@@ -125,20 +121,23 @@ const unblockMember = Effect.fn("unblockMember")(function* unblockMember(
   );
 });
 
-interface ReportSnapshot {
-  readonly body: string;
-  readonly kind: ReportSubject;
-  readonly targetMemberId: string | null;
-}
+type ReportSnapshot = Readonly<{
+  body: string;
+  kind: ReportSubject;
+  targetMemberId: string | null;
+}>;
 
-const messageSnapshot = Effect.fn("messageSnapshot")(function* messageSnapshot(
-  reporterId: string,
-  messageId: string,
-  kind: typeof REPORT_SUBJECT.message | typeof REPORT_SUBJECT.groupMessage,
-) {
+const messageSnapshot = Effect.fn("messageSnapshot")(function* messageSnapshot(reported: {
+  readonly messageId: string;
+  readonly reporterId: string;
+  readonly subjectKind: typeof REPORT_SUBJECT.message | typeof REPORT_SUBJECT.groupMessage;
+}) {
+  const { messageId, reporterId, subjectKind } = reported;
   const conversationKind =
-    kind === REPORT_SUBJECT.groupMessage ? CONVERSATION_KIND.group : CONVERSATION_KIND.direct;
-  const [row] = yield* query((database) =>
+    subjectKind === REPORT_SUBJECT.groupMessage
+      ? CONVERSATION_KIND.group
+      : CONVERSATION_KIND.direct;
+  const [reportedMessage] = yield* query((database) =>
     database
       .select({
         body: directMessage.body,
@@ -156,16 +155,19 @@ const messageSnapshot = Effect.fn("messageSnapshot")(function* messageSnapshot(
       .where(and(eq(directMessage.id, messageId), eq(conversation.kind, conversationKind)))
       .limit(1),
   );
-  if (row === undefined || row.senderId === reporterId) {
+  if (reportedMessage === undefined || reportedMessage.senderId === reporterId) {
     return yield* new TrustSubjectNotFound();
   }
-  if (row.senderId !== null && (yield* pairBlocked(reporterId, row.senderId))) {
+  if (
+    reportedMessage.senderId !== null &&
+    (yield* pairBlocked(reporterId, reportedMessage.senderId))
+  ) {
     return yield* new TrustSubjectNotFound();
   }
   return {
-    body: row.body,
-    kind,
-    targetMemberId: row.senderId,
+    body: reportedMessage.body,
+    kind: subjectKind,
+    targetMemberId: reportedMessage.senderId,
   } satisfies ReportSnapshot;
 });
 
@@ -173,45 +175,48 @@ const boardSnapshot = Effect.fn("boardSnapshot")(function* boardSnapshot(
   reporterId: string,
   postId: string,
 ) {
-  const [row] = yield* query((database) =>
+  const [reportedPost] = yield* query((database) =>
     database
       .select({ authorId: boardPost.authorId, body: boardPost.body })
       .from(boardPost)
       .where(eq(boardPost.id, postId))
       .limit(1),
   );
-  if (row === undefined || row.authorId === reporterId) {
+  if (reportedPost === undefined || reportedPost.authorId === reporterId) {
     return yield* new TrustSubjectNotFound();
   }
-  if (row.authorId !== null && (yield* pairBlocked(reporterId, row.authorId))) {
+  if (reportedPost.authorId !== null && (yield* pairBlocked(reporterId, reportedPost.authorId))) {
     return yield* new TrustSubjectNotFound();
   }
   return {
-    body: row.body,
+    body: reportedPost.body,
     kind: REPORT_SUBJECT.boardPost,
-    targetMemberId: row.authorId,
+    targetMemberId: reportedPost.authorId,
   } satisfies ReportSnapshot;
 });
 
-const fileReport = Effect.fn("fileReport")(function* fileReport(
-  reporterId: string,
-  subject: { readonly id: string; readonly kind: ReportSubject },
-  reason: ReportReason,
-) {
+const fileReport = Effect.fn("fileReport")(function* fileReport({
+  reason,
+  reporterId,
+  subject,
+}: {
+  readonly reason: ReportReason;
+  readonly reporterId: string;
+  readonly subject: { readonly id: string; readonly kind: ReportSubject };
+}) {
   yield* requireActiveMember(reporterId);
   const snapshot =
     subject.kind === REPORT_SUBJECT.boardPost
       ? yield* boardSnapshot(reporterId, subject.id)
-      : yield* messageSnapshot(reporterId, subject.id, subject.kind);
-  const now = yield* clockDate;
-  const id = crypto.randomUUID();
-  const inserted = yield* query((database) =>
+      : yield* messageSnapshot({ messageId: subject.id, reporterId, subjectKind: subject.kind });
+  const filedAt = yield* clockDate;
+  const [filed] = yield* query((database) =>
     database
       .insert(memberReport)
       .values({
         body: snapshot.body,
-        createdAt: now,
-        id,
+        createdAt: filedAt,
+        id: crypto.randomUUID(),
         reason,
         reporterId,
         status: REPORT_STATUS.open,
@@ -222,7 +227,6 @@ const fileReport = Effect.fn("fileReport")(function* fileReport(
       .onConflictDoNothing()
       .returning({ id: memberReport.id }),
   );
-  const filed = inserted[0];
   if (filed !== undefined) {
     return filed;
   }

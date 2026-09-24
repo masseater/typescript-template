@@ -1,29 +1,35 @@
-import { PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, paidStatuses } from "@repo/config";
+import {
+  PLAN,
+  SUBSCRIPTION_STATUS,
+  WEBHOOK_DISPOSITION,
+  paidStatuses,
+  type Plan,
+  type SubscriptionStatus,
+} from "@repo/config";
 import { and, eq, lte } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { planSubscription, stripeEvent } from "./billing-schema.ts";
 import { clockDate } from "./clock-date.ts";
-import { query } from "./database.ts";
+import { query, type DrizzleDatabase } from "./database.ts";
 import { PaidPlanRequired } from "./paid-plan-required.ts";
 
-import type { Plan, SubscriptionStatus } from "@repo/config";
 import type { BatchItem } from "drizzle-orm/batch";
-import type { DrizzleDatabase } from "./database.ts";
 
-interface StripeEventRecord {
-  readonly createdAt: Date;
-  readonly id: string;
-  readonly type: string;
-}
+type StripeEventRecord = Readonly<{
+  createdAt: Date;
+  id: string;
+  type: string;
+}>;
 
-
-interface PlanView {
-  readonly cancelAtPeriodEnd: boolean;
-  readonly currentPeriodEnd: Date | undefined;
-  readonly plan: Plan;
-  readonly status: SubscriptionStatus | undefined;
-}
+type SubscriptionRecord = Readonly<{
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: Date | undefined;
+  memberId: string;
+  status: SubscriptionStatus;
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+}>;
 
 const subscriptionColumns = {
   cancelAtPeriodEnd: planSubscription.cancelAtPeriodEnd,
@@ -34,61 +40,54 @@ const subscriptionColumns = {
   stripeSubscriptionId: planSubscription.stripeSubscriptionId,
 };
 
-interface SubscriptionRecord {
-  readonly cancelAtPeriodEnd: boolean;
-  readonly currentPeriodEnd: Date | undefined;
-  readonly memberId: string;
-  readonly status: SubscriptionStatus;
-  readonly stripeCustomerId: string;
-  readonly stripeSubscriptionId: string;
-}
-
 const findSubscription = Effect.fn("findSubscription")(function* findSubscription(
   memberId: string,
 ) {
-  const [row] = yield* query((database) =>
+  const [subscriptionRow] = yield* query((database) =>
     database
       .select(subscriptionColumns)
       .from(planSubscription)
       .where(eq(planSubscription.memberId, memberId))
       .limit(1),
   );
-  return row === undefined
+  return subscriptionRow === undefined
     ? undefined
     : ({
-        ...row,
-        currentPeriodEnd: row.currentPeriodEnd ?? undefined,
+        ...subscriptionRow,
+        currentPeriodEnd: subscriptionRow.currentPeriodEnd ?? undefined,
       } satisfies SubscriptionRecord);
 });
 
 const memberOfCustomer = Effect.fn("memberOfCustomer")(function* memberOfCustomer(
   stripeCustomerId: string,
 ) {
-  const [row] = yield* query((database) =>
+  const [customerSubscription] = yield* query((database) =>
     database
       .select({ memberId: planSubscription.memberId })
       .from(planSubscription)
       .where(eq(planSubscription.stripeCustomerId, stripeCustomerId))
       .limit(1),
   );
-  return row?.memberId;
+  return customerSubscription?.memberId;
 });
 
-function entitles(subscription: SubscriptionRecord | undefined, now: Date): boolean {
-  return (
-    subscription !== undefined &&
-    paidStatuses.includes(subscription.status) &&
-    (subscription.currentPeriodEnd === undefined || subscription.currentPeriodEnd > now)
-  );
-}
+const entitles = (subscription: SubscriptionRecord | undefined, checkedAt: Date): boolean =>
+  subscription !== undefined &&
+  paidStatuses.includes(subscription.status) &&
+  (subscription.currentPeriodEnd === undefined || subscription.currentPeriodEnd > checkedAt);
 
 const planOf = Effect.fn("planOf")(function* planOf(memberId: string) {
   const subscription = yield* findSubscription(memberId);
-  const now = yield* clockDate;
-  const view: PlanView = {
+  const checkedAt = yield* clockDate;
+  const view: Readonly<{
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: Date | undefined;
+    plan: Plan;
+    status: SubscriptionStatus | undefined;
+  }> = {
     cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
     currentPeriodEnd: subscription?.currentPeriodEnd,
-    plan: entitles(subscription, now) ? PLAN.paid : PLAN.free,
+    plan: entitles(subscription, checkedAt) ? PLAN.paid : PLAN.free,
     status: subscription?.status,
   };
   return view;
@@ -105,85 +104,85 @@ const requirePaid = Effect.fn("requirePaid")(function* requirePaid(memberId: str
 });
 
 const applyStripeEvent = Effect.fn("applyStripeEvent")(function* applyStripeEvent(
-  event: StripeEventRecord,
+  webhookEvent: StripeEventRecord,
   write: (database: DrizzleDatabase) => BatchItem<"sqlite">,
 ) {
   const [seen] = yield* query((database) =>
     database
       .select({ id: stripeEvent.id })
       .from(stripeEvent)
-      .where(eq(stripeEvent.id, event.id))
+      .where(eq(stripeEvent.id, webhookEvent.id))
       .limit(1),
   );
   if (seen !== undefined) {
-    return WEBHOOK_OUTCOME.duplicate;
+    return WEBHOOK_DISPOSITION.duplicate;
   }
   const receivedAt = yield* clockDate;
   yield* query((database) =>
     database.batch([
-      database.insert(stripeEvent).values({ id: event.id, receivedAt, type: event.type }),
+      database
+        .insert(stripeEvent)
+        .values({ id: webhookEvent.id, receivedAt, type: webhookEvent.type }),
       write(database),
     ]),
   );
-  return WEBHOOK_OUTCOME.applied;
+  return WEBHOOK_DISPOSITION.applied;
 });
 
-function subscriptionValues(
-  record: SubscriptionRecord,
+const subscriptionValues = (
+  subscription: SubscriptionRecord,
   updatedAt: Date,
-): typeof planSubscription.$inferInsert {
-  return {
-    cancelAtPeriodEnd: record.cancelAtPeriodEnd,
-    currentPeriodEnd: record.currentPeriodEnd === undefined ? null : record.currentPeriodEnd,
-    memberId: record.memberId,
-    status: record.status,
-    stripeCustomerId: record.stripeCustomerId,
-    stripeSubscriptionId: record.stripeSubscriptionId,
-    updatedAt,
-  };
-}
+): typeof planSubscription.$inferInsert => ({
+  cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+  currentPeriodEnd: subscription.currentPeriodEnd ?? null,
+  memberId: subscription.memberId,
+  status: subscription.status,
+  stripeCustomerId: subscription.stripeCustomerId,
+  stripeSubscriptionId: subscription.stripeSubscriptionId,
+  updatedAt,
+});
 
 const recordSubscription = Effect.fn("recordSubscription")(function* recordSubscription(
-  event: StripeEventRecord,
-  record: SubscriptionRecord,
+  webhookEvent: StripeEventRecord,
+  subscription: SubscriptionRecord,
 ) {
-  const values = subscriptionValues(record, event.createdAt);
-  return yield* applyStripeEvent(event, (database) =>
+  const subscriptionUpsert = subscriptionValues(subscription, webhookEvent.createdAt);
+  return yield* applyStripeEvent(webhookEvent, (database) =>
     database
       .insert(planSubscription)
-      .values(values)
+      .values(subscriptionUpsert)
       .onConflictDoUpdate({
-        set: values,
-        setWhere: lte(planSubscription.updatedAt, event.createdAt),
+        set: subscriptionUpsert,
+        setWhere: lte(planSubscription.updatedAt, webhookEvent.createdAt),
         target: planSubscription.memberId,
       }),
   );
 });
 
 const attachCheckout = Effect.fn("attachCheckout")(function* attachCheckout(
-  event: StripeEventRecord,
-  record: SubscriptionRecord,
+  webhookEvent: StripeEventRecord,
+  subscription: SubscriptionRecord,
 ) {
-  return yield* applyStripeEvent(event, (database) =>
+  return yield* applyStripeEvent(webhookEvent, (database) =>
     database
       .insert(planSubscription)
-      .values(subscriptionValues(record, event.createdAt))
+      .values(subscriptionValues(subscription, webhookEvent.createdAt))
       .onConflictDoNothing(),
   );
 });
 
 const markPaymentFailed = Effect.fn("markPaymentFailed")(function* markPaymentFailed(
-  event: StripeEventRecord,
+  webhookEvent: StripeEventRecord,
   stripeSubscriptionId: string,
 ) {
-  return yield* applyStripeEvent(event, (database) =>
+  return yield* applyStripeEvent(webhookEvent, (database) =>
     database
       .update(planSubscription)
-      .set({ status: SUBSCRIPTION_STATUS.pastDue, updatedAt: event.createdAt })
+      .set({ status: SUBSCRIPTION_STATUS.pastDue, updatedAt: webhookEvent.createdAt })
       .where(
         and(
           eq(planSubscription.stripeSubscriptionId, stripeSubscriptionId),
-          lte(planSubscription.updatedAt, event.createdAt),
+          lte(planSubscription.updatedAt, webhookEvent.createdAt),
         ),
       ),
   );

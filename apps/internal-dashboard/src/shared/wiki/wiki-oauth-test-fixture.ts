@@ -1,8 +1,75 @@
-import { authorizeMcpAs } from "@repo/auth/testing";
+import { Auth } from "@repo/auth";
+import {
+  AuthApps,
+  McpTokens,
+  decodeOAuthRedirect,
+  redirectUri,
+  responseStatus,
+  startAuthorization,
+  wikiOrigin,
+  wikiStaff,
+} from "@repo/auth/testing";
 import { APPLICATION } from "@repo/config";
+import { Effect, Schema } from "effect";
 
 import { authorizeMcpRequest } from "./authorize-mcp.ts";
 
-const mcpRequest = (token?: string) => authorizeMcpAs(APPLICATION.wiki, authorizeMcpRequest, token);
+import type { AuthorizationFlow, BrowserClient } from "@repo/auth/testing";
 
-export { mcpRequest };
+const grantAuthorization = Effect.fn("grantAuthorization")(function* grantAuthorization(
+  wiki: BrowserClient,
+  oauthQuery: string,
+) {
+  const continued = yield* wiki.json("/oauth2/continue", {
+    oauth_query: oauthQuery,
+    postLogin: true,
+  });
+  const consentPage = new URL((yield* decodeOAuthRedirect(continued.body)).url, wikiOrigin);
+  const consented = yield* wiki.json("/oauth2/consent", {
+    accept: true,
+    oauth_query: consentPage.search.slice(1),
+  });
+  const callbackUrl = new URL((yield* decodeOAuthRedirect(consented.body)).url);
+  return callbackUrl.searchParams.get("code") ?? "";
+});
+
+const exchangeCode = Effect.fn("exchangeCode")(function* exchangeCode(
+  flow: AuthorizationFlow,
+  code: string,
+) {
+  const wiki = (yield* AuthApps)[APPLICATION.wiki];
+  const exchange = new Request(`${wikiOrigin}/api/auth/oauth2/token`, {
+    body: new URLSearchParams({
+      client_id: flow.clientId,
+      code,
+      code_verifier: flow.verifier,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+      resource: `${wikiOrigin}/mcp`,
+    }),
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    method: "POST",
+  });
+  const issued = yield* Effect.promise(() => wiki.instance.handler(exchange));
+  const tokens = yield* Effect.promise(() => issued.json() as Promise<unknown>);
+  return yield* Schema.decodeUnknownEffect(McpTokens)(tokens);
+});
+
+const mcpRequest = Effect.fn("mcpRequest")(function* mcpRequest(token?: string) {
+  const wiki = (yield* AuthApps)[APPLICATION.wiki];
+  const incoming = new Request(`${wikiOrigin}/mcp`, {
+    headers: token === undefined ? {} : { authorization: `Bearer ${token}` },
+    method: "POST",
+  });
+  return yield* authorizeMcpRequest(incoming, wikiOrigin).pipe(Effect.provideService(Auth, wiki));
+});
+
+export {
+  exchangeCode,
+  grantAuthorization,
+  mcpRequest,
+  responseStatus,
+  startAuthorization,
+  wikiStaff,
+  wikiOrigin,
+};

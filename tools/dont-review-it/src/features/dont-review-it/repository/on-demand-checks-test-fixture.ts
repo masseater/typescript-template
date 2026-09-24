@@ -7,7 +7,6 @@ const onDemandGateEntries = new Set([
 ]);
 
 const frozenOnDemandGateEntries = [
-  ".: check:repository",
   ".: check:types",
   "tools/dev: verify",
   "tools/e2e: verify",

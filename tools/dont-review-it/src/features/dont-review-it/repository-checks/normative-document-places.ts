@@ -1,9 +1,10 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { isPlainObject } from "es-toolkit";
 
-import { readUnlessMissing } from "./path-failure.ts";
+import { readUnlessMissing } from "../platform/path-failure.ts";
+import { path } from "../platform/path.ts";
 
 export type NormativeDocumentPlaces = {
   readonly fileName: string;
@@ -18,7 +19,7 @@ const WITHOUT_A_DECLARATION: NormativeDocumentPlaces = {
 const declaredIn = (repositoryRoot: string): Record<string, unknown> | null => {
   const MANIFEST_FILE = "package.json";
   const manifestText = readUnlessMissing(() =>
-    readFileSync(join(repositoryRoot, MANIFEST_FILE), "utf8"),
+    readFileSync(path.join(repositoryRoot, MANIFEST_FILE), "utf8"),
   );
 
   const manifest: unknown = manifestText === null ? null : JSON.parse(manifestText);
@@ -54,7 +55,7 @@ const documentsDirectlyIn = ({
   readonly directory: string;
 }): readonly string[] => {
   const listedEntries = readUnlessMissing(() =>
-    readdirSync(join(repositoryRoot, directory), { withFileTypes: true }),
+    readdirSync(path.join(repositoryRoot, directory), { withFileTypes: true }),
   );
 
   return (listedEntries ?? [])
@@ -75,6 +76,9 @@ export const normativeDocumentsIn = ({
   readonly workspaceDirectories: readonly string[];
 }): readonly string[] =>
   places.directories
-    .flatMap((directory) => [directory, ...workspaceDirectories.map((one) => join(one, directory))])
+    .flatMap((directory) => [
+      directory,
+      ...workspaceDirectories.map((one) => path.join(one, directory)),
+    ])
     .flatMap((directory) => documentsDirectlyIn({ repositoryRoot, directory }))
     .toSorted();

@@ -12,8 +12,9 @@ import {
 
 import { attempt, partition, sortBy, uniqBy } from "es-toolkit";
 
+import { readUnlessMissing } from "../../../../platform/path-failure.ts";
 import { path } from "../../../../platform/path.ts";
-import { readUnlessMissing } from "../../../../repository-checks/index.ts";
+import { generatedSourcePaths } from "../generated-source.ts";
 import { readGitSourceScope, type GitSourceScope } from "../git-ignored-source.ts";
 import { isOutOfScopeSource } from "../out-of-scope-source.ts";
 import { pathIsInside } from "../path-is-inside.ts";
@@ -195,9 +196,15 @@ const scannedDirectoryEntry = (input: ScanDirectoryInput, directoryEntry: Dirent
   }
   if (directoryEntry.isSymbolicLink()) return scannedSymbolicLink(input, directoryEntry);
   if (directoryEntry.isDirectory()) {
-    return scannedFilesUnder({ ...input, directory: absolutePath });
+    return input.sourceScope.isIgnored(absolutePath)
+      ? EMPTY_SCANNED_FILES
+      : scannedFilesUnder({ ...input, directory: absolutePath });
   }
-  if (!directoryEntry.isFile() || !input.includesFileName(directoryEntry.name)) {
+  if (
+    !directoryEntry.isFile() ||
+    !input.includesFileName(directoryEntry.name) ||
+    input.sourceScope.isIgnored(absolutePath)
+  ) {
     return EMPTY_SCANNED_FILES;
   }
   return scannedRegularFile(input, absolutePath);
@@ -327,11 +334,13 @@ export const listRepositoryFiles = (
     sourceScope,
     ancestry: new Set([realRoot]),
   });
-  const cacheInputs = sortBy(
-    scannedRepository.files.filter((file) => !sourceScope.isIgnored(file.absolutePath)),
-    ["relativePath"],
-  );
-  const scanned = cacheInputs.filter(isScannedSourcePath);
+  const cacheInputs = sortBy(scannedRepository.files, ["relativePath"]);
+  const sourcePaths = cacheInputs.filter(isScannedSourcePath);
+  const generated = generatedSourcePaths({
+    repositoryRoot,
+    relativePaths: sourcePaths.map((file) => file.relativePath),
+  });
+  const scanned = sourcePaths.filter((file) => !generated.has(file.relativePath));
   const [manifests, otherScannedFiles] = partition(scanned, isManifest);
   const commentSources = uniquePhysicalFiles(otherScannedFiles.filter(isCommentSource));
 

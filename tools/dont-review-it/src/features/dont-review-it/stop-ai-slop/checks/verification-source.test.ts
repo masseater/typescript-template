@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { absenceVerificationsIn, valueExportsIn } from "./verification-source.ts";
+import { absenceVerificationsIn, SourceUnparsable, valueExportsIn } from "./verification-source.ts";
 
 describe("absenceVerificationsIn", () => {
   describe("file assertions missing the exact imported call and repository path shape", () => {
@@ -123,9 +123,9 @@ import { expect } from "vite-plus/test";
       throw new Error("absenceVerificationsIn accepted a source the parser cannot read");
     });
 
-    it("throws an error qualified by the file it came from", ({ unparsableSourceFailure }) => {
+    it("throws a refusal qualified by the file it came from", ({ unparsableSourceFailure }) => {
       expect(unparsableSourceFailure).toStrictEqual(
-        new Error("src/broken.test.ts: Expected `}` but found `EOF`"),
+        new SourceUnparsable({ message: "src/broken.test.ts: Expected `}` but found `EOF`" }),
       );
     });
   });

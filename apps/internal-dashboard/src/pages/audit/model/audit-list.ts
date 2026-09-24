@@ -7,9 +7,19 @@ import { Atom } from "effect/unstable/reactivity";
 import { loadAuditPage } from "#pages/audit/api/audit.ts";
 
 import type { AuditPageQuery, StaffAuditPageView } from "#shared/contracts/index.ts";
-import type { AuditFilter, AuditFilterForm } from "./audit-filter.ts";
+import type { SubmitEventHandler } from "react";
 
-interface AuditList extends AuditFilterForm {
+interface AuditFilter {
+  readonly action: string;
+  readonly actorId: string;
+  readonly targetId: string;
+}
+
+interface AuditList extends AuditFilter {
+  readonly handleActionChange: (action: string) => void;
+  readonly handleActorIdChange: (actorId: string) => void;
+  readonly handleSubmit: SubmitEventHandler<HTMLFormElement>;
+  readonly handleTargetIdChange: (targetId: string) => void;
   readonly listing: RequestResult<StaffAuditPageView>;
 }
 

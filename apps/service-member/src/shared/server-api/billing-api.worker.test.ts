@@ -7,7 +7,13 @@ import {
   runWith,
   signInAs,
 } from "@repo/auth/testing";
-import { APPLICATION, PLAN, SUBSCRIPTION_STATUS, WEBHOOK_OUTCOME, httpStatus } from "@repo/config";
+import {
+  APPLICATION,
+  PLAN,
+  SUBSCRIPTION_STATUS,
+  WEBHOOK_DISPOSITION,
+  httpStatus,
+} from "@repo/config";
 import { recordingSink } from "@repo/observability/testing";
 import { appLayer } from "@repo/runtime/bindings";
 import { apiRoot, apiRoutes } from "@repo/runtime/http";
@@ -51,7 +57,7 @@ function billingApp() {
     STRIPE_WEBHOOK_SECRET: webhookSecret,
   });
   const runtime = workerRuntime(() => {
-    const base = Layer.orDie(appLayer({ env: environment, audience: APPLICATION.user, routes }));
+    const base = Layer.orDie(appLayer({ audience: APPLICATION.user, env: environment, routes }));
     return Layer.mergeAll(
       base,
       Layer.orDie(memberRequirementLayer(environment)).pipe(Layer.provide(base)),
@@ -226,156 +232,154 @@ const member = Effect.fn("member")(function* member(app: App) {
 });
 
 describe("billing api", () => {
-  authTest(
-    "keeps a free member out of the member list and lets them in once Stripe confirms the checkout",
-    ({ auth }) =>
-      runWith(auth, () =>
-        Effect.gen(function* program() {
-          (yield* MockNetwork).use(...stripeHandlers);
-          const app = billingApp();
-          const { client, id } = yield* member(app);
-          const refused = yield* call(app, client, "/members?page=1");
-          const freePlan = yield* json(yield* call(app, client, "/billing/plan"));
-          const started = yield* call(app, client, "/billing/checkout", {});
-          const checkout = yield* json(started);
-          const applied = yield* deliver(app, checkoutCompleted(id));
-          const outcome = yield* json(applied);
-          const admitted = yield* call(app, client, "/members?page=1");
-          const paidPlan = yield* json(yield* call(app, client, "/billing/plan"));
-          const repeated = yield* call(app, client, "/billing/checkout", {});
-          return {
-            admitted: admitted.status,
-            checkout,
-            freePlan,
-            outcome,
-            paidPlan,
-            refused: refused.status,
-            repeated: repeated.status,
-            started: started.status,
-          };
-        }),
-      ).then((result) => {
-        expect(result.refused).toBe(httpStatus.paymentRequired);
-        expect(result.freePlan).toStrictEqual({ cancelAtPeriodEnd: false, plan: PLAN.free });
-        expect(result.started).toBe(httpStatus.ok);
-        expect(result.checkout).toStrictEqual({ url: checkoutUrl });
-        expect(result.outcome).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
-        expect(result.admitted).toBe(httpStatus.ok);
-        expect(result.paidPlan).toStrictEqual({
-          cancelAtPeriodEnd: false,
-          plan: PLAN.paid,
-          status: SUBSCRIPTION_STATUS.active,
-        });
-        expect(result.repeated).toBe(httpStatus.conflict);
-      }),
-  );
+  const it = authTest;
 
-  authTest(
-    "treats a replayed event as a no-op and drops the member back to free when the subscription ends",
-    ({ auth }) =>
-      runWith(auth, () =>
-        Effect.gen(function* program() {
-          (yield* MockNetwork).use(...stripeHandlers);
-          const app = billingApp();
-          const { client, id } = yield* member(app);
-          yield* deliver(app, checkoutCompleted(id));
-          const replayed = yield* json(yield* deliver(app, checkoutCompleted(id)));
-          const stillPaid = yield* call(app, client, "/members?page=1");
-          const portal = yield* json(yield* call(app, client, "/billing/portal", {}));
-          const deleted = yield* json(
-            yield* deliver(
-              app,
-              subscriptionEvent("customer.subscription.deleted", "canceled", "evt_deleted"),
+  it("keeps a free member out of the member list and lets them in once Stripe confirms the checkout", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        const refused = yield* call(app, client, "/members?page=1");
+        const freePlan = yield* json(yield* call(app, client, "/billing/plan"));
+        const started = yield* call(app, client, "/billing/checkout", {});
+        const checkout = yield* json(started);
+        const applied = yield* deliver(app, checkoutCompleted(id));
+        const outcome = yield* json(applied);
+        const admitted = yield* call(app, client, "/members?page=1");
+        const paidPlan = yield* json(yield* call(app, client, "/billing/plan"));
+        const repeated = yield* call(app, client, "/billing/checkout", {});
+        return {
+          admitted: admitted.status,
+          checkout,
+          freePlan,
+          outcome,
+          paidPlan,
+          refused: refused.status,
+          repeated: repeated.status,
+          started: started.status,
+        };
+      }),
+    ).then((result) => {
+      expect(result.refused).toBe(httpStatus.paymentRequired);
+      expect(result.freePlan).toStrictEqual({ cancelAtPeriodEnd: false, plan: PLAN.free });
+      expect(result.started).toBe(httpStatus.ok);
+      expect(result.checkout).toStrictEqual({ url: checkoutUrl });
+      expect(result.outcome).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+      expect(result.admitted).toBe(httpStatus.ok);
+      expect(result.paidPlan).toStrictEqual({
+        cancelAtPeriodEnd: false,
+        plan: PLAN.paid,
+        status: SUBSCRIPTION_STATUS.active,
+      });
+      expect(result.repeated).toBe(httpStatus.conflict);
+    }));
+
+  it("treats a replayed event as a no-op and drops the member back to free when the subscription ends", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        yield* deliver(app, checkoutCompleted(id));
+        const replayed = yield* json(yield* deliver(app, checkoutCompleted(id)));
+        const stillPaid = yield* call(app, client, "/members?page=1");
+        const portal = yield* json(yield* call(app, client, "/billing/portal", {}));
+        const deleted = yield* json(
+          yield* deliver(
+            app,
+            subscriptionEvent("customer.subscription.deleted", "canceled", "evt_deleted"),
+          ),
+        );
+        const refusedAgain = yield* call(app, client, "/members?page=1");
+        const lapsedPlan = yield* json(yield* call(app, client, "/billing/plan"));
+        return {
+          deleted,
+          lapsedPlan,
+          portal,
+          refusedAgain: refusedAgain.status,
+          replayed,
+          stillPaid: stillPaid.status,
+        };
+      }),
+    ).then((result) => {
+      expect(result.replayed).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.duplicate });
+      expect(result.stillPaid).toBe(httpStatus.ok);
+      expect(result.portal).toStrictEqual({ url: portalUrl });
+      expect(result.deleted).toStrictEqual({ outcome: WEBHOOK_DISPOSITION.applied });
+      expect(result.refusedAgain).toBe(httpStatus.paymentRequired);
+      expect(result.lapsedPlan).toMatchObject({
+        plan: PLAN.free,
+        status: SUBSCRIPTION_STATUS.canceled,
+      });
+    }));
+
+  it("rejects webhooks whose signature is wrong, stale or missing without touching the plan", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client, id } = yield* member(app);
+        const forged = yield* deliver(app, checkoutCompleted(id), { secret: "whsec_forged" });
+        const stale = yield* deliver(app, checkoutCompleted(id), {
+          timestamp: nowSeconds() - 2 * 60 * 60,
+        });
+        const payload = yield* Schema.encodeEffect(JsonUnknown)(checkoutCompleted(id));
+        const unsigned = yield* Effect.promise(() =>
+          Promise.resolve(
+            app.fetch(
+              new Request(`${origin}${apiRoot}/billing/webhook`, {
+                body: payload,
+                headers: { "content-type": "application/json" },
+                method: "POST",
+              }),
             ),
-          );
-          const refusedAgain = yield* call(app, client, "/members?page=1");
-          const lapsedPlan = yield* json(yield* call(app, client, "/billing/plan"));
-          return {
-            deleted,
-            lapsedPlan,
-            portal,
-            refusedAgain: refusedAgain.status,
-            replayed,
-            stillPaid: stillPaid.status,
-          };
-        }),
-      ).then((result) => {
-        expect(result.replayed).toStrictEqual({ outcome: WEBHOOK_OUTCOME.duplicate });
-        expect(result.stillPaid).toBe(httpStatus.ok);
-        expect(result.portal).toStrictEqual({ url: portalUrl });
-        expect(result.deleted).toStrictEqual({ outcome: WEBHOOK_OUTCOME.applied });
-        expect(result.refusedAgain).toBe(httpStatus.paymentRequired);
-        expect(result.lapsedPlan).toMatchObject({
-          plan: PLAN.free,
-          status: SUBSCRIPTION_STATUS.canceled,
-        });
+          ),
+        );
+        const stillRefused = yield* call(app, client, "/members?page=1");
+        return {
+          forged: forged.status,
+          stale: stale.status,
+          stillRefused: stillRefused.status,
+          unsigned: unsigned.status,
+        };
       }),
-  );
+    ).then((result) => {
+      expect(result.forged).toBe(httpStatus.badRequest);
+      expect(result.stale).toBe(httpStatus.badRequest);
+      expect(result.unsigned).toBe(httpStatus.badRequest);
+      expect(result.stillRefused).toBe(httpStatus.paymentRequired);
+    }));
 
-  authTest(
-    "rejects webhooks whose signature is wrong, stale or missing without touching the plan",
-    ({ auth }) =>
-      runWith(auth, () =>
-        Effect.gen(function* program() {
-          (yield* MockNetwork).use(...stripeHandlers);
-          const app = billingApp();
-          const { client, id } = yield* member(app);
-          const forged = yield* deliver(app, checkoutCompleted(id), { secret: "whsec_forged" });
-          const stale = yield* deliver(app, checkoutCompleted(id), {
-            timestamp: nowSeconds() - 2 * 60 * 60,
-          });
-          const payload = yield* Schema.encodeEffect(JsonUnknown)(checkoutCompleted(id));
-          const unsigned = yield* Effect.promise(() =>
-            Promise.resolve(
-              app.fetch(
-                new Request(`${origin}${apiRoot}/billing/webhook`, {
-                  body: payload,
-                  headers: { "content-type": "application/json" },
-                  method: "POST",
-                }),
-              ),
-            ),
-          );
-          const stillRefused = yield* call(app, client, "/members?page=1");
-          return {
-            forged: forged.status,
-            stale: stale.status,
-            stillRefused: stillRefused.status,
-            unsigned: unsigned.status,
-          };
-        }),
-      ).then((result) => {
-        expect(result.forged).toBe(httpStatus.badRequest);
-        expect(result.stale).toBe(httpStatus.badRequest);
-        expect(result.unsigned).toBe(httpStatus.badRequest);
-        expect(result.stillRefused).toBe(httpStatus.paymentRequired);
+  it("refuses the portal to a member who never checked out and the offer to a visitor", ({
+    auth,
+  }) =>
+    runWith(auth, () =>
+      Effect.gen(function* program() {
+        (yield* MockNetwork).use(...stripeHandlers);
+        const app = billingApp();
+        const { client } = yield* member(app);
+        const portal = yield* call(app, client, "/billing/portal", {});
+        const offer = yield* json(yield* call(app, client, "/billing/offer"));
+        const visitor = yield* Effect.promise(() =>
+          Promise.resolve(app.fetch(new Request(`${origin}${apiRoot}/billing/offer`))),
+        );
+        return { offer, portal: portal.status, visitor: visitor.status };
       }),
-  );
-
-  authTest(
-    "refuses the portal to a member who never checked out and the offer to a visitor",
-    ({ auth }) =>
-      runWith(auth, () =>
-        Effect.gen(function* program() {
-          (yield* MockNetwork).use(...stripeHandlers);
-          const app = billingApp();
-          const { client } = yield* member(app);
-          const portal = yield* call(app, client, "/billing/portal", {});
-          const offer = yield* json(yield* call(app, client, "/billing/offer"));
-          const visitor = yield* Effect.promise(() =>
-            Promise.resolve(app.fetch(new Request(`${origin}${apiRoot}/billing/offer`))),
-          );
-          return { offer, portal: portal.status, visitor: visitor.status };
-        }),
-      ).then((result) => {
-        expect(result.portal).toBe(httpStatus.paymentRequired);
-        expect(result.offer).toStrictEqual({
-          currency: "jpy",
-          interval: "month",
-          intervalCount: 1,
-          unitAmount: 980,
-        });
-        expect(result.visitor).toBe(httpStatus.unauthorized);
-      }),
-  );
+    ).then((result) => {
+      expect(result.portal).toBe(httpStatus.paymentRequired);
+      expect(result.offer).toStrictEqual({
+        currency: "jpy",
+        interval: "month",
+        intervalCount: 1,
+        unitAmount: 980,
+      });
+      expect(result.visitor).toBe(httpStatus.unauthorized);
+    }));
 });

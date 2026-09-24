@@ -3,6 +3,7 @@ import { layer } from "@effect/vitest";
 import { Effect, FileSystem, Path } from "effect";
 import { describe, expect } from "vite-plus/test";
 
+import { readGitSourceScope } from "../git-ignored-source.ts";
 import { gitOutput } from "../git-output.ts";
 import { listRepositoryFiles, nearestPackageDirectory } from "./source-files.ts";
 
@@ -964,6 +965,100 @@ layer(NodeServices.layer)("listRepositoryFiles", (it) => {
           markupSources: [],
           problems: [],
           styleSheets: [],
+        });
+      }),
+    );
+  });
+
+  describe("a directory git ignores as a whole", () => {
+    const fixture = Effect.gen(function* pathsAskedAboutAnIgnoredDirectory() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
+
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "generated", "nested"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, ".gitignore"),
+        "generated/\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "generated/nested/bundle.ts"),
+        "export const bundle = 1;\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "entry.ts"),
+        "export const entry = 1;\n",
+      );
+      const gitScope = readGitSourceScope(repositoryRoot);
+      const askedPaths: string[] = [];
+      const repositoryFiles = listRepositoryFiles(repositoryRoot, {
+        isIgnored(sourcePath) {
+          askedPaths.push(pathService.relative(repositoryRoot, sourcePath));
+          return gitScope.isIgnored(sourcePath);
+        },
+      });
+      return { askedPaths, repositoryFiles };
+    });
+
+    it.effect("is not walked into", () =>
+      Effect.gen(function* program() {
+        const { askedPaths } = yield* fixture;
+        expect(askedPaths.filter((askedPath) => askedPath.startsWith("generated/"))).toStrictEqual(
+          [],
+        );
+      }),
+    );
+
+    it.effect("leaves the sources beside it listed", () =>
+      Effect.gen(function* program() {
+        const { repositoryFiles } = yield* fixture;
+        expect(repositoryFiles.cacheInputs.map((file) => file.relativePath)).toStrictEqual([
+          "entry.ts",
+        ]);
+      }),
+    );
+  });
+
+  describe("a source the attributes file marks as generated", () => {
+    const fixture = Effect.gen(function* repositoryFilesBesideAGeneratedSource() {
+      const filesystem = yield* FileSystem.FileSystem;
+      const pathService = yield* Path.Path;
+      const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "source-files-" });
+
+      gitOutput(["init", "--quiet"], { cwd: repositoryRoot, env: process.env });
+      yield* filesystem.makeDirectory(pathService.join(repositoryRoot, "src/app"), {
+        recursive: true,
+      });
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, ".gitattributes"),
+        "**/routeTree.gen.ts linguist-generated\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/app/routeTree.gen.ts"),
+        "/* eslint-disable */\nexport const routeTree = 1;\n",
+      );
+      yield* filesystem.writeFileString(
+        pathService.join(repositoryRoot, "src/app/router.ts"),
+        "export const router = 1;\n",
+      );
+      const listed = listRepositoryFiles(repositoryRoot);
+      return {
+        cacheInputs: listed.cacheInputs.map((file) => file.relativePath),
+        commentSources: listed.commentSources.map((file) => file.relativePath),
+        declarationSources: listed.declarationSources.map((file) => file.relativePath),
+      };
+    });
+
+    it.effect("stays a cache input but enters no source collection", () =>
+      Effect.gen(function* program() {
+        const repositoryFilesBesideAGeneratedSource = yield* fixture;
+        expect(repositoryFilesBesideAGeneratedSource).toStrictEqual({
+          cacheInputs: ["src/app/routeTree.gen.ts", "src/app/router.ts"],
+          commentSources: ["src/app/router.ts"],
+          declarationSources: ["src/app/router.ts"],
         });
       }),
     );

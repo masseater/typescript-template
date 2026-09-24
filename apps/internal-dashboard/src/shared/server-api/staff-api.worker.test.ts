@@ -13,6 +13,7 @@ import { Effect, Layer, Schema } from "effect";
 import { StaffList } from "#shared/contracts/index.ts";
 import { routes } from "#shared/telemetry/index.ts";
 import { wikiLayer, wikiService } from "#shared/wiki/index.ts";
+import { flagsApi } from "./flags-api.ts";
 import { staffApi } from "./staff-api.ts";
 
 type Actor = "admin" | "editor" | "viewer" | "weak-editor";
@@ -71,7 +72,7 @@ function wikiApp() {
   Object.assign(env, appEnvironment());
   const runtime = workerRuntime(() => Layer.orDie(wikiLayer(appEnvironment(), routes)));
   const routesFor = apiRoutes(runtime, reporting);
-  const app = createApi(apiRoot).use(staffApi(routesFor));
+  const app = createApi(apiRoot).use(staffApi(routesFor)).use(flagsApi(routesFor));
   const cookieOf = (actor: Actor): Effect.Effect<string> =>
     Effect.promise(() => runtime.runPromise(signedSessionCookie(tokenOf(actor))));
   const send = (call: Call, cookie?: string): Effect.Effect<Response> =>

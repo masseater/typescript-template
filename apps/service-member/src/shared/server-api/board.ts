@@ -1,31 +1,14 @@
-import { ROLE } from "@repo/config";
-import {
-  and,
-  blockBetween,
-  countRows,
-  desc,
-  eq,
-  isNull,
-  not,
-  or,
-  query,
-  schema,
-  sql,
-} from "@repo/db";
-import { DateTime, Effect } from "effect";
+import { and, blockBetween, count, desc, eq, isNull, not, or, query, schema, sql } from "@repo/db";
+import { Effect } from "effect";
 
 import { withdrawnAuthorName } from "#shared/contracts/board.ts";
 import { BoardMemberRequired } from "./board-member-required.ts";
 import { BoardThreadNotFound } from "./board-thread-not-found.ts";
+import { clockDate, verifiedMember } from "./verified-member.ts";
 
-import type { DrizzleDatabase } from "@repo/db";
+import type { MemberReference, OffsetPage } from "./verified-member.ts";
 
 const { boardPost, boardThread, user, withdrawnMember } = schema;
-
-interface BoardAuthor {
-  readonly id: string;
-  readonly name: string;
-}
 
 interface WithdrawnAuthor {
   readonly name: typeof withdrawnAuthorName;
@@ -33,7 +16,7 @@ interface WithdrawnAuthor {
 }
 
 interface BoardThreadSummary {
-  readonly author: BoardAuthor | WithdrawnAuthor | null;
+  readonly author: MemberReference | WithdrawnAuthor | null;
   readonly createdAt: number;
   readonly id: string;
   readonly lastPostedAt: number;
@@ -42,18 +25,12 @@ interface BoardThreadSummary {
 }
 
 interface BoardPostView {
-  readonly author: BoardAuthor | WithdrawnAuthor | null;
+  readonly author: MemberReference | WithdrawnAuthor | null;
   readonly body: string;
   readonly createdAt: number;
   readonly id: string;
 }
 
-interface Page {
-  readonly limit: number;
-  readonly offset: number;
-}
-
-const boardMember = and(eq(user.role, ROLE.member), eq(user.emailVerified, true));
 const authorColumns = { authorName: user.name, withdrawnId: withdrawnMember.memberId };
 const threadColumns = {
   ...authorColumns,
@@ -71,13 +48,12 @@ const postColumns = {
   id: boardPost.id,
   storedAuthorId: boardPost.authorId,
 };
-const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 function shownAuthor(row: {
   readonly authorName: string | null;
   readonly storedAuthorId: string | null;
   readonly withdrawnId: string | null;
-}): BoardAuthor | WithdrawnAuthor | null {
+}): MemberReference | WithdrawnAuthor | null {
   if (row.storedAuthorId !== null && row.authorName !== null) {
     return { id: row.storedAuthorId, name: row.authorName };
   }
@@ -127,7 +103,7 @@ const requireBoardMember = Effect.fn("requireBoardMember")(function* requireBoar
     database
       .select({ id: user.id })
       .from(user)
-      .where(and(eq(user.id, userId), boardMember))
+      .where(and(eq(user.id, userId), verifiedMember))
       .limit(1),
   );
   if (member === undefined) {
@@ -135,42 +111,46 @@ const requireBoardMember = Effect.fn("requireBoardMember")(function* requireBoar
   }
 });
 
-const boardThreads = (database: DrizzleDatabase) =>
-  database
-    .select(threadColumns)
-    .from(boardThread)
-    .leftJoin(user, and(eq(user.id, boardThread.authorId), boardMember))
-    .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
-    .$dynamic();
-
 const listBoardThreads = Effect.fn("listBoardThreads")(function* listBoardThreads(
   viewerId: string,
-  page: Page,
+  page: OffsetPage,
 ) {
   yield* requireBoardMember(viewerId);
   const visible = or(
     isNull(boardThread.authorId),
-    not(blockBetween(viewerId, sql`${boardThread.authorId}`)),
+    not(blockBetween(viewerId, boardThread.authorId)),
   );
   const threads = yield* query((database) =>
-    boardThreads(database)
+    database
+      .select(threadColumns)
+      .from(boardThread)
+      .leftJoin(user, and(eq(user.id, boardThread.authorId), verifiedMember))
+      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
       .where(visible)
       .orderBy(desc(boardThread.lastPostedAt), desc(boardThread.id))
       .limit(page.limit)
       .offset(page.offset),
   );
-  const total = yield* countRows(boardThread, () => visible);
-  return { threads: threads.map(shownThread), total };
+  const [total] = yield* query((database) =>
+    database.select({ count: count() }).from(boardThread).where(visible),
+  );
+  return { threads: threads.map(shownThread), total: total?.count ?? 0 };
 });
 
 const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
   viewerId: string,
   threadId: string,
-  page: Page,
+  page: OffsetPage,
 ) {
   yield* requireBoardMember(viewerId);
   const [thread] = yield* query((database) =>
-    boardThreads(database).where(eq(boardThread.id, threadId)).limit(1),
+    database
+      .select(threadColumns)
+      .from(boardThread)
+      .leftJoin(user, and(eq(user.id, boardThread.authorId), verifiedMember))
+      .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardThread.authorId))
+      .where(eq(boardThread.id, threadId))
+      .limit(1),
   );
   if (thread === undefined) {
     return yield* new BoardThreadNotFound();
@@ -179,12 +159,12 @@ const findBoardThread = Effect.fn("findBoardThread")(function* findBoardThread(
     database
       .select(postColumns)
       .from(boardPost)
-      .leftJoin(user, and(eq(user.id, boardPost.authorId), boardMember))
+      .leftJoin(user, and(eq(user.id, boardPost.authorId), verifiedMember))
       .leftJoin(withdrawnMember, eq(withdrawnMember.memberId, boardPost.authorId))
       .where(
         and(
           eq(boardPost.threadId, threadId),
-          or(isNull(boardPost.authorId), not(blockBetween(viewerId, sql`${boardPost.authorId}`))),
+          or(isNull(boardPost.authorId), not(blockBetween(viewerId, boardPost.authorId))),
         ),
       )
       .orderBy(boardPost.createdAt, boardPost.id)

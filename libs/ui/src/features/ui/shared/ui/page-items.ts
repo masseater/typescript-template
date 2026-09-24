@@ -1,4 +1,4 @@
-import { range } from "es-toolkit";
+import { omit, range } from "es-toolkit";
 
 const MAX_PAGES_WITHOUT_GAPS = 7;
 const pagesKeptBesideAnEdge = 2;
@@ -29,5 +29,13 @@ const pageItems = ({ current, last }: Readonly<{ current: number; last: number }
   ];
 };
 
-export { pageItems };
+const searchAtPage = <Search extends Readonly<{ page?: number }> & object>(
+  search: Search,
+  page: number,
+): Omit<Search, "page"> & Readonly<{ page?: number }> => {
+  const filters = omit(search, ["page"]);
+  return page <= 1 ? filters : { ...filters, page };
+};
+
+export { pageItems, searchAtPage };
 export type { PageItem };

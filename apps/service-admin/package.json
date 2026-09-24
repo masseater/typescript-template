@@ -10,7 +10,7 @@
   "dependencies": {
     "@effect/atom-react": "catalog:",
     "@inlang/paraglide-js": "catalog:",
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/server": "catalog:",
     "@repo/auth": "workspace:*",
     "@repo/auth-ui": "workspace:*",
     "@repo/config": "workspace:*",

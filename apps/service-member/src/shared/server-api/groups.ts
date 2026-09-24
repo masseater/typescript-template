@@ -15,7 +15,9 @@ import { mayCreateGroup } from "#shared/messaging/index.ts";
 import { GroupInviteExpired } from "./group-invite-expired.ts";
 import { GroupLimitReached } from "./group-limit-reached.ts";
 import { GroupNotFound } from "./group-not-found.ts";
-import { requireMessagingMember } from "./messaging-member.ts";
+import { clockDate, requireMessagingMember } from "./verified-member.ts";
+
+import type { MemberReference } from "./verified-member.ts";
 
 const { conversation, conversationParticipant, groupInvite, groupMembership, memberGroup, user } =
   schema;
@@ -25,11 +27,6 @@ const maximumGroupMembers = 100;
 const maximumGroupsOwned = 20;
 const maximumGroupsJoined = 50;
 const inviteTtlMillis = 7 * 24 * 60 * 60 * 1000;
-
-interface GroupOwner {
-  readonly id: string;
-  readonly name: string;
-}
 
 interface GroupMemberView {
   readonly id: string;
@@ -47,10 +44,8 @@ interface GroupView {
   readonly memberCount: number;
   readonly members: readonly GroupMemberView[];
   readonly name: string;
-  readonly owner: GroupOwner;
+  readonly owner: MemberReference;
 }
-
-const clockDate = Effect.map(DateTime.now, DateTime.toDate);
 
 function trimGroupName(name: string): string {
   const trimmed = name.trim();

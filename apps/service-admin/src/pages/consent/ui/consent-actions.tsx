@@ -1,10 +1,28 @@
-import { submitConsent } from "@repo/auth-ui";
+import { encodeConsentBody, postConsent } from "@repo/auth-ui/consent";
+import { decodeJson } from "@repo/runtime/client";
+import { Redirect } from "@repo/runtime/contracts";
 import { Button, FormColumn } from "@repo/ui";
 import { useState } from "react";
 
 import { serviceName } from "#shared/config/index.ts";
 
 import type { ReactElement } from "react";
+
+function submitDecision(accept: boolean): Promise<void> {
+  return encodeConsentBody({
+    accept,
+    oauth_query: globalThis.location.search.slice(1),
+  }).then((body) =>
+    postConsent(fetch, body).then((response) => {
+      if (!response.ok) {
+        throw new Error("連携の許可を処理できませんでした。");
+      }
+      return response.json().then((payload) => {
+        globalThis.location.assign(decodeJson(Redirect, payload).url);
+      });
+    }),
+  );
+}
 
 function ConsentActions({
   client,
@@ -14,7 +32,7 @@ function ConsentActions({
   function decide(accept: boolean): void {
     setPending(true);
     onError("");
-    void submitConsent({ accept }).catch((error: unknown) => {
+    void submitDecision(accept).catch((error: unknown) => {
       onError(error instanceof Error ? error.message : String(error));
       setPending(false);
     });

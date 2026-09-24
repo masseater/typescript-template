@@ -1,8 +1,10 @@
 import { loadCanonicalValuesCatalogSnapshot } from "./lint/oxlint/lib/canonical-values/builder.ts";
+import { findWorkspaceRoot } from "./lint/oxlint/lib/canonical-values/workspace-root.ts";
 import { loadCatalogEntries } from "./lint/oxlint/lib/dependency-catalog/catalog-entries.ts";
 import { loadWorkspaceDependencies } from "./lint/oxlint/lib/dependency-catalog/workspace-manifests.ts";
 import { loadRepositoryBodyIndex } from "./lint/oxlint/lib/duplicated-bodies/builder.ts";
 import { replacedModuleAt } from "./lint/oxlint/lib/external-io-boundary.ts";
+import { warmGitSourceScope } from "./lint/oxlint/lib/git-ignored-source.ts";
 import { createLibraryVocabularyLoader } from "./lint/oxlint/lib/library-vocabulary/harvester.ts";
 import { openTypeScriptApi } from "./lint/oxlint/lib/library-vocabulary/open-api.ts";
 import { loadRepositoryCellClassIndex } from "./lint/oxlint/lib/mutable-cell-classes/builder.ts";
@@ -85,6 +87,7 @@ import { noVacuousHostObjectEquality } from "./lint/oxlint/rules/testing/no-vacu
 import { noVacuousTestRun } from "./lint/oxlint/rules/testing/no-vacuous-test-run--let-the-empty-run-fail.ts";
 import { noViMockFactoryBehavior } from "./lint/oxlint/rules/testing/no-vi-mock-factory-behavior--use-spy-true-and-fixture.ts";
 import { noVitestContextExpect } from "./lint/oxlint/rules/testing/no-vitest-context-expect--import-expect-from-vitest.ts";
+import { noWholeDataImportSubject } from "./lint/oxlint/rules/testing/no-whole-data-import-subject--assert-the-contract-member.ts";
 import { requireItOnlyExpect } from "./lint/oxlint/rules/testing/require-it-only-expect--move-setup-into-fixture.ts";
 import { requireMockTypeParameter } from "./lint/oxlint/rules/testing/require-mock-type-parameter--annotate-vi-fn.ts";
 import { requireSpecDirectoryOutsideCoverage } from "./lint/oxlint/rules/testing/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.ts";
@@ -123,6 +126,8 @@ import { createNoUnusedStyleClass } from "./lint/oxlint/rules/writing/no-unused-
 import { requireReExportOnlyFiles } from "./lint/oxlint/rules/writing/require-re-export-only-files--move-declaration-to-owning-module.ts";
 
 import type { Plugin } from "@oxlint/plugins";
+
+warmGitSourceScope(findWorkspaceRoot(process.cwd()));
 
 export const noLocalFiniteValueSet = createNoLocalFiniteValueSet({
   loadCatalog: loadCanonicalValuesCatalogSnapshot,
@@ -258,6 +263,7 @@ const plugin: Plugin = {
     [noViMockFactoryBehavior.name]: noViMockFactoryBehavior,
     [noVersionRange.name]: noVersionRange,
     [noVitestContextExpect.name]: noVitestContextExpect,
+    [noWholeDataImportSubject.name]: noWholeDataImportSubject,
     [requireCatalogEntry.name]: requireCatalogEntry,
     [requireItOnlyExpect.name]: requireItOnlyExpect,
     [requireMockTypeParameter.name]: requireMockTypeParameter,

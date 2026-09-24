@@ -1,11 +1,10 @@
-import { type Dirent, readdirSync } from "node:fs";
-import { join } from "node:path";
-
-import { applications, architectureKindOf } from "@repo/config";
+import { NodeServices } from "@effect/platform-node";
+import { architectureKindOf, buildTargets } from "@repo/config";
+import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
+import { directoryEntries } from "../platform/directory-entries.ts";
 import { reported } from "./lint-harness-test-fixture.ts";
-import { isPublicApiIndex } from "./modular-budgets.ts";
 import { commands, workspaceDirectories } from "./tasks-test-fixture.ts";
 
 const source = "export const value = 1;\n";
@@ -24,18 +23,18 @@ describe("architecture coverage", () => {
     expect(kinds.every((entry) => entry.kind === "fsd" || entry.kind === "modular")).toBe(true);
     expect(
       kinds.filter((entry) => entry.kind === "fsd").map((entry) => entry.directory),
-    ).toStrictEqual(applications.map((app) => `apps/${app}`).toSorted());
+    ).toStrictEqual(buildTargets.map((app) => `apps/${app}`).toSorted());
   });
 });
 
 describe("steiger coverage", () => {
   it("runs the layer check in every FSD application", () => {
     expect.hasAssertions();
-    const checks = applications
+    const checks = buildTargets
       .map((app) => `apps/${app}: ${commands(`apps/${app}`, "check").join(" ")}`)
       .toSorted();
     expect(checks).toStrictEqual(
-      applications
+      buildTargets
         .map(
           (app) => `apps/${app}: steiger src --fail-on-warnings && quality-check-thin-app-routes`,
         )
@@ -57,34 +56,40 @@ describe("modular coverage", () => {
     expect(modularPackages.length).toBeGreaterThan(0);
   });
 
-  it("requires a public API index on every modular feature slice", () => {
-    expect.hasAssertions();
-    const modularPackages = packagesWithSrc.filter(
-      (directory) => architectureKindOf(directory) === "modular",
-    );
-    const missing: string[] = [];
-    for (const directory of modularPackages) {
-      const featuresRoot = join(directory, "src/features");
-      let slices: Dirent[];
-      try {
-        slices = readdirSync(featuresRoot, { withFileTypes: true });
-      } catch {
-        missing.push(`${directory}/src/features`);
-        continue;
-      }
-      for (const slice of slices) {
-        if (!slice.isDirectory()) {
-          missing.push(`${directory}/src/features/${slice.name}`);
-          continue;
-        }
-        const names = readdirSync(join(featuresRoot, slice.name));
-        if (!names.some(isPublicApiIndex)) {
-          missing.push(`${directory}/src/features/${slice.name}/index.ts`);
-        }
-      }
-    }
-    expect(missing).toStrictEqual([]);
-  });
+  it("requires a public API index on every modular feature slice", () =>
+    Effect.runPromise(
+      Effect.gen(function* publicApiIndexRequired() {
+        expect.hasAssertions();
+        const filesystem = yield* FileSystem.FileSystem;
+        const paths = yield* Path.Path;
+        const modularPackages = packagesWithSrc.filter(
+          (directory) => architectureKindOf(directory) === "modular",
+        );
+        const missing = yield* Effect.forEach(modularPackages, (directory) =>
+          Effect.gen(function* missingIndexes() {
+            const featuresRoot = paths.join(directory, "src/features");
+            const slices = yield* directoryEntries(featuresRoot).pipe(Effect.option);
+            if (slices._tag === "None") {
+              return [`${directory}/src/features`];
+            }
+            const perSlice = yield* Effect.forEach(slices.value, (slice) => {
+              if (slice.kind !== "directory") {
+                return Effect.succeed([`${directory}/src/features/${slice.name}`]);
+              }
+              return Effect.map(
+                filesystem.readDirectory(paths.join(featuresRoot, slice.name)),
+                (names) =>
+                  names.some((name) => /^index\.[cm]?[jt]sx?$/u.test(name))
+                    ? []
+                    : [`${directory}/src/features/${slice.name}/index.ts`],
+              );
+            });
+            return perSlice.flat();
+          }),
+        );
+        expect(missing.flat()).toStrictEqual([]);
+      }).pipe(Effect.provide(NodeServices.layer)),
+    ));
 });
 
 describe("feature-sliced layers", () => {

@@ -12,6 +12,14 @@ type FieldValidationMessages = Readonly<
   Record<(typeof fieldValidationMessageKinds)[number], string>
 >;
 
+const japaneseFieldValidationMessages = {
+  patternMismatch: "指定された形式で入力してください。",
+  tooLong: "文字数が多すぎます。",
+  tooShort: "文字数が足りません。",
+  typeMismatch: "正しい形式で入力してください。",
+  valueMissing: "入力してください。",
+} as const satisfies FieldValidationMessages;
+
 const localizedFieldValidationMessages = <Locale>(
   catalog: Readonly<
     Record<
@@ -45,6 +53,7 @@ const useFieldValidationMessages = (): FieldValidationMessages => {
 export {
   FieldValidationMessageContext,
   fieldValidationMessageKinds,
+  japaneseFieldValidationMessages,
   localizedFieldValidationMessages,
   useFieldValidationMessages,
 };

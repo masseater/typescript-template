@@ -59,38 +59,29 @@ interface FailedEvent {
 type ElysiaHandler = (context: ElysiaContext) => Promise<Response>;
 type Failed = ReturnType<typeof status<FailureStatus, FailureBody>>;
 type EventStream<Encoded> = AsyncGenerator<Encoded, void>;
-interface ApiRoutes<Requirements> {
-  readonly events: <
-    Value,
-    Encoded extends ServerSentEvent,
-    Failures extends Tagged,
-    const Table extends AnyFailureTable,
-  >(
+interface SiteRoutes<Requirements> {
+  readonly events: <Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Requirements>, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: ExactFailureTable<Failures>,
   ) => readonly [
     RouteDetail,
     (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>,
   ];
-  readonly guard: <Failures extends Tagged, const Table extends AnyFailureTable>(
+  readonly guard: <Failures extends Tagged>(
     check: Handler<unknown, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: ExactFailureTable<Failures>,
   ) => Guard;
-  readonly raw: <Failures extends Tagged, const Table extends AnyFailureTable>(
+  readonly raw: <Failures extends Tagged>(
     handler: Handler<Response, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: ExactFailureTable<Failures>,
   ) => readonly [RouteDetail, ElysiaHandler];
-  readonly route: <
-    Input extends Decodable,
-    Value,
-    Encoded,
-    Failures extends Tagged,
-    const Table extends AnyFailureTable,
-  >(
+}
+interface ApiRoutes<Requirements> extends SiteRoutes<Requirements> {
+  readonly route: <Input extends Decodable, Value, Encoded, Failures extends Tagged>(
     spec: RouteSpec<Input, Value, Encoded>,
     handler: InputHandler<Input["Type"], Value, Failures, Requirements>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: ExactFailureTable<Failures>,
   ) => readonly [RouteDetail, (context: ElysiaContext) => Promise<Encoded | Failed>];
 }
 
@@ -110,9 +101,14 @@ function decodeInput<Contract extends Decodable>(
 function readJsonBody<Contract extends Decodable>(
   schema: Contract,
   request: Request,
+  limit?: number,
 ): Effect.Effect<Contract["Type"], RequestRejected | InputInvalid, AppOrigin> {
   return Effect.gen(function* readJsonBodyProgram() {
-    const input = yield* readJson({ expectedOrigin: yield* AppOrigin, incoming: request });
+    const input = yield* readJson({
+      expectedOrigin: yield* AppOrigin,
+      incoming: request,
+      ...(limit === undefined ? {} : { limit }),
+    });
     return yield* decodeInput(schema, input);
   });
 }
@@ -340,12 +336,8 @@ function openStream<Value, Encoded extends ServerSentEvent, Failures extends Tag
 
 const streamHeaders = { "cache-control": "no-store", "content-encoding": "identity" };
 
-function apiRoutes<Requirements>(
-  runtime: WorkerRuntime<AppOrigin | Requirements, unknown>,
-  reporting: Reporting,
-): ApiRoutes<AppOrigin | Requirements> {
-  type Services = AppOrigin | Requirements;
-  function settle<Value>(
+function settler<Services>(runtime: WorkerRuntime<Services, unknown>) {
+  return function settle<Value>(
     context: ElysiaContext,
     program: (request: Request) => Effect.Effect<Value, never, Services>,
     unavailable: (cause: Readonly<Cause.Cause<unknown>>) => Effect.Effect<Value>,
@@ -353,54 +345,36 @@ function apiRoutes<Requirements>(
     return Promise.resolve(runtime.runPromiseExit(program(context.request))).then((exit) =>
       Exit.isSuccess(exit) ? exit.value : Effect.runPromise(unavailable(exit.cause)),
     );
-  }
-  function guard<Failures extends Tagged, const Table extends AnyFailureTable>(
+  };
+}
+
+function siteRoutes<Services>(
+  runtime: WorkerRuntime<Services, unknown>,
+  reporting: Reporting,
+): SiteRoutes<Services> {
+  const settle = settler(runtime);
+  function guard<Failures extends Tagged>(
     check: Handler<unknown, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: ExactFailureTable<Failures>,
   ): Guard {
-    const program = respondGuard(check, failures);
+    const program = respondGuard(check, { ...inputFailures.body, ...failures });
     return (context) => settle(context, program, (cause) => unavailableResponse(cause, reporting));
   }
-  function raw<Failures extends Tagged, const Table extends AnyFailureTable>(
+  function raw<Failures extends Tagged>(
     handler: Handler<Response, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: ExactFailureTable<Failures>,
   ): readonly [RouteDetail, ElysiaHandler] {
-    const program = respondRaw(handler, failures);
+    const program = respondRaw(handler, { ...inputFailures.body, ...failures });
     return [
       hidden,
       (context): Promise<Response> =>
         settle(context, program, (cause) => unavailableResponse(cause, reporting)),
     ];
   }
-  function route<
-    Input extends Decodable,
-    Value,
-    Encoded,
-    Failures extends Tagged,
-    const Table extends AnyFailureTable,
-  >(
-    spec: RouteSpec<Input, Value, Encoded>,
-    handler: InputHandler<Input["Type"], Value, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
-  ): readonly [RouteDetail, (context: ElysiaContext) => Promise<Encoded | Failed>] {
-    const documented: AnyFailureTable = { ...inputFailures[inputKind(spec)], ...failures };
-    const table: AnyFailureTable = { ...inputFailures.body, ...failures };
-    const program = respondValue(spec.response, withInput(spec, handler), table);
-    return [
-      routeDetail(spec, documented),
-      (context): Promise<Encoded | Failed> =>
-        settle(context, program, (cause) => unavailableStatus(cause, reporting)),
-    ];
-  }
-  function events<
-    Value,
-    Encoded extends ServerSentEvent,
-    Failures extends Tagged,
-    const Table extends AnyFailureTable,
-  >(
+  function events<Value, Encoded extends ServerSentEvent, Failures extends Tagged>(
     event: Schema.Codec<Value, Encoded>,
     handler: Handler<Stream.Stream<Value, never, Services>, Failures, Services>,
-    failures: ExactFailureTable<Failures, Table>,
+    failures: ExactFailureTable<Failures>,
   ): readonly [
     RouteDetail,
     (context: ElysiaStreamContext) => Promise<EventStream<Encoded | FailedEvent> | Failed>,
@@ -418,7 +392,30 @@ function apiRoutes<Requirements>(
         }),
     ];
   }
-  return { events, guard, raw, route };
+  return { events, guard, raw };
+}
+
+function apiRoutes<Requirements>(
+  runtime: WorkerRuntime<AppOrigin | Requirements, unknown>,
+  reporting: Reporting,
+): ApiRoutes<AppOrigin | Requirements> {
+  type Services = AppOrigin | Requirements;
+  const settle = settler(runtime);
+  function route<Input extends Decodable, Value, Encoded, Failures extends Tagged>(
+    spec: RouteSpec<Input, Value, Encoded>,
+    handler: InputHandler<Input["Type"], Value, Failures, Services>,
+    failures: ExactFailureTable<Failures>,
+  ): readonly [RouteDetail, (context: ElysiaContext) => Promise<Encoded | Failed>] {
+    const documented: AnyFailureTable = { ...inputFailures[inputKind(spec)], ...failures };
+    const table: AnyFailureTable = { ...inputFailures.body, ...failures };
+    const program = respondValue(spec.response, withInput(spec, handler), table);
+    return [
+      routeDetail(spec, documented),
+      (context): Promise<Encoded | Failed> =>
+        settle(context, program, (cause) => unavailableStatus(cause, reporting)),
+    ];
+  }
+  return { ...siteRoutes(runtime, reporting), route };
 }
 
 export { AppOrigin } from "./app-origin.ts";
@@ -426,17 +423,15 @@ export { Assets } from "./assets.ts";
 export { InputInvalid } from "./input-invalid.ts";
 export { jsonResponse, secureResponse } from "./responses.ts";
 export { failureBy } from "./failures.ts";
-export { apiDocs, apiRoot, apiRoutes, createApi, elysiaServer, readJsonBody, readSearchParams };
-export type {
-  ApiRoutes,
-  ElysiaContext,
-  ElysiaHandler,
-  ElysiaStreamContext,
-  EventStream,
-  Failed,
-  FailedEvent,
-  Handler,
-  InputHandler,
-  ServerSentEvent,
+export {
+  apiDocs,
+  apiRoot,
+  apiRoutes,
+  createApi,
+  elysiaServer,
+  readJsonBody,
+  readSearchParams,
+  siteRoutes,
 };
+export type { ApiRoutes, Decodable, ElysiaContext, SiteRoutes };
 export type { Failure, FailureTable } from "./failures.ts";

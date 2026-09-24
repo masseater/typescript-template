@@ -1,6 +1,7 @@
 import { httpStatus } from "@repo/config";
 import { jsonResponse } from "@repo/runtime/http";
-import { createCsrfMiddleware, createMiddleware, createStart } from "@tanstack/react-start";
+import { serverFunctionCsrf } from "@repo/ui/shell";
+import { createMiddleware, createStart } from "@tanstack/react-start";
 import { Effect, Option } from "effect";
 
 import { guardAccess, runtime } from "#shared/server-api/index.ts";
@@ -20,10 +21,6 @@ const guard = createMiddleware().server(({ next, request }) =>
   ),
 );
 
-const csrf = createCsrfMiddleware({
-  filter: (context) => context.handlerType === "serverFn",
-});
-
-const startInstance = createStart(() => ({ requestMiddleware: [csrf, guard] }));
+const startInstance = createStart(() => ({ requestMiddleware: [serverFunctionCsrf, guard] }));
 
 export { startInstance };

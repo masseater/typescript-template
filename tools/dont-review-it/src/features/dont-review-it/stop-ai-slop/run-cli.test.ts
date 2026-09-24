@@ -1,37 +1,89 @@
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-
-import { describe, expect, test, vi } from "vite-plus/test";
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
+import { Config, ConfigProvider, Effect, FileSystem, Path, Schema, Stream } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
+import { describe, expect } from "vite-plus/test";
 
 import { gitExecutablePath } from "../repository-checks/index.ts";
-import { runStopAiSlop } from "./run-cli.ts";
+import { stopAiSlop } from "./run-cli.ts";
 
-const GIT_ENVIRONMENT = {
-  GIT_AUTHOR_EMAIL: "stop-ai-slop@example.test",
-  GIT_AUTHOR_NAME: "Stop AI Slop",
-  GIT_COMMITTER_EMAIL: "stop-ai-slop@example.test",
-  GIT_COMMITTER_NAME: "Stop AI Slop",
-  GIT_CONFIG_GLOBAL: "/dev/null",
-  GIT_CONFIG_SYSTEM: "/dev/null",
-  PATH: process.env.PATH,
-};
+class GitFixtureRefused extends Schema.TaggedError<GitFixtureRefused>()("GitFixtureRefused", {
+  command: Schema.String,
+  exitCode: Schema.Finite,
+  stderr: Schema.String,
+}) {}
 
-const USAGE_TEXT = `Usage: stop-ai-slop check [--base <revision> --head <revision>] [--repository-root <path>]
+const git = Effect.fn("git")(function* git(
+  repositoryRoot: string,
+  gitArguments: readonly string[],
+) {
+  const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+  const handle = yield* spawner.spawn(
+    ChildProcess.make("git", [...gitArguments], {
+      cwd: repositoryRoot,
+      env: {
+        GIT_AUTHOR_EMAIL: "stop-ai-slop@example.test",
+        GIT_AUTHOR_NAME: "Stop AI Slop",
+        GIT_COMMITTER_EMAIL: "stop-ai-slop@example.test",
+        GIT_COMMITTER_NAME: "Stop AI Slop",
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_CONFIG_SYSTEM: "/dev/null",
+        HOME: repositoryRoot,
+        PATH: yield* Config.String("PATH"),
+      },
+      stdin: "ignore",
+    }),
+  );
+  const [answered, refusal, exitCode] = yield* Effect.all(
+    [
+      Stream.mkString(Stream.decodeText(handle.stdout)),
+      Stream.mkString(Stream.decodeText(handle.stderr)),
+      handle.exitCode,
+    ],
+    { concurrency: "unbounded" },
+  );
+  return exitCode === 0
+    ? answered
+    : yield* new GitFixtureRefused({ command: gitArguments.join(" "), exitCode, stderr: refusal });
+}, Effect.scoped);
 
-Commands:
-  check   Run every registered check in definition order.
+const writeSource = Effect.fn("writeSource")(function* writeSource(
+  repositoryRoot: string,
+  relativePath: string,
+  sourceText: string,
+) {
+  const filesystem = yield* FileSystem.FileSystem;
+  const paths = yield* Path.Path;
+  const absolutePath = paths.join(repositoryRoot, relativePath);
+  yield* filesystem.makeDirectory(paths.dirname(absolutePath), { recursive: true });
+  yield* filesystem.writeFileString(absolutePath, sourceText);
+});
 
-Options:
-  --base <revision>         Git revision before the change. Requires --head.
-  --head <revision>         Git revision after the change. Requires --base.
-  --repository-root <path>  Root of the Git repository. Defaults to the current working directory.
+const commitSnapshot = Effect.fn("commitSnapshot")(function* commitSnapshot(
+  repositoryRoot: string,
+) {
+  yield* git(repositoryRoot, ["add", "--all"]);
+  yield* git(repositoryRoot, ["commit", "--quiet", "--message", "snapshot"]);
+});
 
-Without --base and --head the change on its way into the integration branch is compared:
-the staged merge result when a merge is in progress, and the history since it left
-origin/main otherwise.
-`;
+const newRepository = Effect.gen(function* newRepository() {
+  const filesystem = yield* FileSystem.FileSystem;
+  const repositoryRoot = yield* filesystem.makeTempDirectoryScoped({ prefix: "stop-ai-slop-" });
+  yield* git(repositoryRoot, ["init", "--quiet", "--initial-branch=main"]);
+  return repositoryRoot;
+});
+
+const withEnvironmentOf = (variables: Readonly<Record<string, string>>) =>
+  Effect.gen(function* withEnvironmentOf() {
+    return ConfigProvider.fromEnv({ env: { PATH: yield* Config.String("PATH"), ...variables } });
+  });
+
+const answerWithout = (repositoryRoot: string, variables: Readonly<Record<string, string>>) =>
+  Effect.flatMap(withEnvironmentOf(variables), (provider) =>
+    stopAiSlop({ repositoryRoot }).pipe(
+      Effect.provideService(ConfigProvider.ConfigProvider, provider),
+    ),
+  );
 
 const REMOVAL_PROBLEM_LINE =
   'src/legacy-api.test.ts:4 no-removal-verification: Do not assert that removed export "legacyMode" from "src/legacy.ts" remains absent; remove the assertion.\n';
@@ -39,377 +91,211 @@ const REMOVAL_PROBLEM_LINE =
 const REMOVAL_VERIFYING_SPEC =
   'import * as legacy from "./legacy.ts";\nimport { expect } from "vite-plus/test";\n\nexpect(legacy).not.toHaveProperty("legacyMode");\n';
 
-describe("runStopAiSlop", () => {
-  describe("an argument list naming no command at all", () => {
-    const it = test.extend("commandlessRefusal", async () => runStopAiSlop([]));
+const GUESSWORK_REFUSAL =
+  "Do not leave the compared change to guesswork: this checkout holds neither origin/main nor the parents of a pull request merge, and no GitHub API to read the merge through. Fetch the integration branch or the merge with its parents before checking.\n";
 
-    it("refuses the run and writes the usage text", ({ commandlessRefusal }) => {
-      expect(commandlessRefusal).toStrictEqual({ exitCode: 2, out: "", error: USAGE_TEXT });
-    });
-  });
+const repositoryChangingCurrent = Effect.gen(function* repositoryChangingCurrent() {
+  const repositoryRoot = yield* newRepository;
+  yield* writeSource(repositoryRoot, "src/current.ts", "export const current = true;\n");
+  yield* commitSnapshot(repositoryRoot);
+  yield* writeSource(repositoryRoot, "src/current.ts", "export const current = false;\n");
+  yield* commitSnapshot(repositoryRoot);
+  return repositoryRoot;
+});
 
-  describe("an argument list naming a command the runner does not carry", () => {
-    const it = test.extend("unknownCommandRefusal", async () => runStopAiSlop(["scan"]));
+const repositoryWithABranchBehindTheRemoval = Effect.gen(
+  function* repositoryWithABranchBehindTheRemoval() {
+    const repositoryRoot = yield* newRepository;
+    yield* writeSource(
+      repositoryRoot,
+      "src/legacy.ts",
+      "export const current = true;\nexport const legacyMode = true;\n",
+    );
+    yield* commitSnapshot(repositoryRoot);
+    yield* git(repositoryRoot, ["branch", "branch-point"]);
+    yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = false;\n");
+    yield* commitSnapshot(repositoryRoot);
+    yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "main"]);
+    yield* git(repositoryRoot, ["checkout", "--quiet", "-b", "feature", "branch-point"]);
+    yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = true;\n");
+    yield* writeSource(repositoryRoot, "src/legacy-api.test.ts", REMOVAL_VERIFYING_SPEC);
+    yield* commitSnapshot(repositoryRoot);
+    return repositoryRoot;
+  },
+);
 
-    it("refuses the run and writes the usage text", ({ unknownCommandRefusal }) => {
-      expect(unknownCommandRefusal).toStrictEqual({ exitCode: 2, out: "", error: USAGE_TEXT });
-    });
-  });
-
-  describe("a check command carrying a positional beside its own name", () => {
-    const it = test.extend("extraPositionalRefusal", async () => runStopAiSlop(["check", "extra"]));
-
-    it("refuses the run and writes the usage text", ({ extraPositionalRefusal }) => {
-      expect(extraPositionalRefusal).toStrictEqual({ exitCode: 2, out: "", error: USAGE_TEXT });
-    });
-  });
-
-  describe("a check command carrying an option the runner does not declare", () => {
-    const it = test.extend("unknownOptionRefusal", async () =>
-      runStopAiSlop(["check", "--unknown"]));
-
-    it("refuses the run and writes the usage text", ({ unknownOptionRefusal }) => {
-      expect(unknownOptionRefusal).toStrictEqual({ exitCode: 2, out: "", error: USAGE_TEXT });
-    });
-  });
-
-  describe("a check command whose base is empty", () => {
-    const it = test.extend("emptyBaseRefusal", async () => runStopAiSlop(["check", "--base", ""]));
-
-    it("refuses the run and writes the usage text", ({ emptyBaseRefusal }) => {
-      expect(emptyBaseRefusal).toStrictEqual({ exitCode: 2, out: "", error: USAGE_TEXT });
-    });
-  });
-
-  describe("a check command naming a base without naming a head", () => {
-    const it = test.extend("headlessBaseRefusal", async () =>
-      runStopAiSlop(["check", "--base", "base"]));
-
-    it("refuses the run and writes the usage text", ({ headlessBaseRefusal }) => {
-      expect(headlessBaseRefusal).toStrictEqual({ exitCode: 2, out: "", error: USAGE_TEXT });
-    });
-  });
-
-  describe("a check command naming a base whose head is empty", () => {
-    const it = test.extend("emptyHeadRefusal", async () =>
-      runStopAiSlop(["check", "--base", "base", "--head", ""]));
-
-    it("refuses the run and writes the usage text", ({ emptyHeadRefusal }) => {
-      expect(emptyHeadRefusal).toStrictEqual({ exitCode: 2, out: "", error: USAGE_TEXT });
-    });
-  });
-
+layer(NodeServices.layer)("stopAiSlop", (it) => {
   describe("a head every registered check passes", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: createdRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: createdRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(createdRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/current.ts", "export const current = false;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return createdRoot;
-      })
-      .extend("passingCheck", async ({ repositoryRoot }) =>
-        runStopAiSlop([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "HEAD~1",
-          "--head",
-          "HEAD",
-        ]),
-      );
-
-    it("stays silent and reports success", ({ passingCheck }) => {
-      expect(passingCheck).toStrictEqual({ exitCode: 0, out: "", error: "" });
+    const passingCheck = Effect.gen(function* passingCheck() {
+      const repositoryRoot = yield* repositoryChangingCurrent;
+      yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "HEAD~1"]);
+      return yield* answerWithout(repositoryRoot, {});
     });
+
+    it.effect("stays silent and reports success", () =>
+      Effect.gen(function* program() {
+        expect(yield* passingCheck).toStrictEqual({ exitCode: 0, out: "", error: "" });
+      }),
+    );
   });
 
-  describe("a run naming no repository root", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: createdRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: createdRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(createdRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/current.ts", "export const current = false;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return createdRoot;
-      })
-      .extend("workingDirectoryCheck", async ({ repositoryRoot }) => {
-        vi.spyOn(process, "cwd").mockReturnValue(repositoryRoot);
-        return runStopAiSlop(["check", "--base", "HEAD~1", "--head", "HEAD"]);
-      });
+  describe("a checkout that holds neither the integration branch nor a merge", () => {
+    const unresolvedCheck = Effect.flatMap(repositoryChangingCurrent, (repositoryRoot) =>
+      answerWithout(repositoryRoot, {}),
+    );
 
-    it("reads the repository at the current working directory", ({ workingDirectoryCheck }) => {
-      expect(workingDirectoryCheck).toStrictEqual({ exitCode: 0, out: "", error: "" });
+    it.effect("refuses the run and names the missing comparison", () =>
+      Effect.gen(function* program() {
+        expect(yield* unresolvedCheck).toStrictEqual({
+          exitCode: 2,
+          out: "",
+          error: GUESSWORK_REFUSAL,
+        });
+      }),
+    );
+  });
+
+  describe("a pull request merge checked with an empty token", () => {
+    const emptyTokenCheck = Effect.gen(function* emptyTokenCheck() {
+      const repositoryRoot = yield* repositoryChangingCurrent;
+      yield* git(repositoryRoot, ["checkout", "--quiet", "-b", "feature", "HEAD~1"]);
+      yield* writeSource(repositoryRoot, "src/feature.ts", "export const feature = true;\n");
+      yield* commitSnapshot(repositoryRoot);
+      yield* git(repositoryRoot, ["checkout", "--quiet", "main"]);
+      yield* git(repositoryRoot, ["merge", "--quiet", "--no-ff", "--no-edit", "feature"]);
+      const mergeCommit = (yield* git(repositoryRoot, ["rev-parse", "HEAD"])).trim();
+      const checkoutRoot = yield* newRepository;
+      yield* git(checkoutRoot, ["remote", "add", "origin", `file://${repositoryRoot}`]);
+      yield* git(checkoutRoot, [
+        "fetch",
+        "--quiet",
+        "--no-tags",
+        "--depth=1",
+        "origin",
+        mergeCommit,
+      ]);
+      yield* git(checkoutRoot, ["checkout", "--quiet", "--detach", mergeCommit]);
+      return yield* answerWithout(checkoutRoot, {
+        GITHUB_REPOSITORY: "owner/name",
+        GITHUB_TOKEN: "",
+      });
     });
+
+    it.effect("asks nothing of the API and names the missing comparison", () =>
+      Effect.gen(function* program() {
+        expect(yield* emptyTokenCheck).toStrictEqual({
+          exitCode: 2,
+          out: "",
+          error: GUESSWORK_REFUSAL,
+        });
+      }),
+    );
   });
 
   describe("a feature branch that left the integration branch before a removal landed", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
+    const branchRevisions = Effect.gen(function* branchRevisions() {
+      const repositoryRoot = yield* repositoryWithABranchBehindTheRemoval;
+      return {
+        mergeBaseRevision: yield* git(repositoryRoot, ["merge-base", "main", "feature"]),
+        branchPointRevision: yield* git(repositoryRoot, ["rev-parse", "branch-point"]),
+      };
+    });
+
+    const featureCheck = Effect.flatMap(repositoryWithABranchBehindTheRemoval, (repositoryRoot) =>
+      answerWithout(repositoryRoot, {}),
+    );
+
+    it.effect("left the branch point standing as the merge base of the two branches", () =>
+      Effect.gen(function* program() {
+        const { mergeBaseRevision, branchPointRevision } = yield* branchRevisions;
+        expect(mergeBaseRevision).toBe(branchPointRevision);
+      }),
+    );
+
+    it.effect("names the removal the branch makes against the merge base", () =>
+      Effect.gen(function* program() {
+        expect(yield* featureCheck).toStrictEqual({
+          exitCode: 1,
+          out: REMOVAL_PROBLEM_LINE,
+          error: "",
         });
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: createdRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: createdRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(createdRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource(
-          "src/legacy.ts",
-          "export const current = true;\nexport const legacyMode = true;\n",
-        );
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        runGit(["branch", "branch-point"]);
-        writeSource("src/legacy.ts", "export const current = false;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        runGit(["checkout", "--quiet", "-b", "feature", "branch-point"]);
-        writeSource("src/legacy.ts", "export const current = true;\n");
-        writeSource("src/legacy-api.test.ts", REMOVAL_VERIFYING_SPEC);
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return createdRoot;
-      })
-      .extend("mergeBaseRevision", ({ repositoryRoot }) =>
-        execFileSync("git", ["merge-base", "main", "feature"], {
-          cwd: repositoryRoot,
-          encoding: "utf8",
-          env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-        }),
-      )
-      .extend("branchPointRevision", ({ repositoryRoot }) =>
-        execFileSync("git", ["rev-parse", "branch-point"], {
-          cwd: repositoryRoot,
-          encoding: "utf8",
-          env: { ...GIT_ENVIRONMENT, HOME: repositoryRoot },
-        }),
-      )
-      .extend("integrationTipCheck", async ({ repositoryRoot }) =>
-        runStopAiSlop([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "main",
-          "--head",
-          "feature",
-        ]),
-      )
-      .extend("branchPointCheck", async ({ repositoryRoot }) =>
-        runStopAiSlop([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "branch-point",
-          "--head",
-          "feature",
-        ]),
-      );
-
-    it("left the branch point standing as the merge base of the two branches", ({
-      mergeBaseRevision,
-      branchPointRevision,
-    }) => {
-      expect(mergeBaseRevision).toBe(branchPointRevision);
-    });
-
-    it("sees no removal when the base is the tip of the integration branch", ({
-      integrationTipCheck,
-    }) => {
-      expect(integrationTipCheck).toStrictEqual({ exitCode: 0, out: "", error: "" });
-    });
-
-    it("names the stale removal when the base is the merge base", ({ branchPointCheck }) => {
-      expect(branchPointCheck).toStrictEqual({
-        exitCode: 1,
-        out: REMOVAL_PROBLEM_LINE,
-        error: "",
-      });
-    });
+      }),
+    );
   });
 
-  describe("a head carrying a stale removal and no named revision", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: createdRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: createdRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(createdRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource(
-          "src/legacy.ts",
-          "export const current = true;\nexport const legacyMode = true;\n",
-        );
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        runGit(["update-ref", "refs/remotes/origin/main", "HEAD"]);
-        writeSource("src/legacy.ts", "export const current = true;\n");
-        writeSource("src/legacy-api.test.ts", REMOVAL_VERIFYING_SPEC);
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return createdRoot;
-      })
-      .extend("integrationBranchCheck", async ({ repositoryRoot }) =>
-        runStopAiSlop(["check", "--repository-root", repositoryRoot]),
+  describe("a head carrying a stale removal since the integration branch", () => {
+    const integrationBranchCheck = Effect.gen(function* integrationBranchCheck() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(
+        repositoryRoot,
+        "src/legacy.ts",
+        "export const current = true;\nexport const legacyMode = true;\n",
       );
-
-    it("compares the history since the integration branch", ({ integrationBranchCheck }) => {
-      expect(integrationBranchCheck).toStrictEqual({
-        exitCode: 1,
-        out: REMOVAL_PROBLEM_LINE,
-        error: "",
-      });
+      yield* commitSnapshot(repositoryRoot);
+      yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "HEAD"]);
+      yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = true;\n");
+      yield* writeSource(repositoryRoot, "src/legacy-api.test.ts", REMOVAL_VERIFYING_SPEC);
+      yield* commitSnapshot(repositoryRoot);
+      return yield* answerWithout(repositoryRoot, {});
     });
+
+    it.effect("compares the history since the integration branch", () =>
+      Effect.gen(function* program() {
+        expect(yield* integrationBranchCheck).toStrictEqual({
+          exitCode: 1,
+          out: REMOVAL_PROBLEM_LINE,
+          error: "",
+        });
+      }),
+    );
   });
 
-  describe("a base revision the repository does not carry", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: createdRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: createdRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(createdRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/current.ts", "export const current = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return createdRoot;
-      })
-      .extend("missingBaseRefusal", async ({ repositoryRoot }) =>
-        runStopAiSlop([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "missing-revision",
-          "--head",
-          "HEAD",
-        ]),
-      );
-
-    it("fails closed and names the command that refused", ({ missingBaseRefusal }) => {
-      expect(missingBaseRefusal).toStrictEqual({
-        exitCode: 2,
-        out: "",
-        error: `Command failed: ${gitExecutablePath(process.env.PATH)} rev-parse --verify --end-of-options missing-revision^{tree}\nfatal: Needed a single revision\n\n`,
-      });
+  describe("an integration branch that shares no history with the head", () => {
+    const unrelatedHistoryRefusal = Effect.gen(function* unrelatedHistoryRefusal() {
+      const repositoryRoot = yield* repositoryChangingCurrent;
+      const tree = (yield* git(repositoryRoot, ["rev-parse", "HEAD^{tree}"])).trim();
+      const unrelated = (yield* git(repositoryRoot, [
+        "commit-tree",
+        tree,
+        "-m",
+        "unrelated",
+      ])).trim();
+      yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", unrelated]);
+      return { unrelated, answer: yield* answerWithout(repositoryRoot, {}) };
     });
+
+    it.effect("fails closed and names the command that refused", () =>
+      Effect.gen(function* program() {
+        const executable = gitExecutablePath(yield* Config.String("PATH"));
+        const { unrelated, answer } = yield* unrelatedHistoryRefusal;
+        expect(answer).toStrictEqual({
+          exitCode: 2,
+          out: "",
+          error: `Command failed: ${executable} merge-base ${unrelated} HEAD\n\n`,
+        });
+      }),
+    );
   });
 
   describe("a head carrying a relevant source the parser cannot read", () => {
-    const it = test
-      .extend("repositoryRoot", ({}, { onCleanup }) => {
-        const createdRoot = mkdtempSync(join(tmpdir(), "stop-ai-slop-"));
-        onCleanup(() => {
-          rmSync(createdRoot, { recursive: true, force: true });
-        });
-        const runGit = (gitArguments: readonly string[]): string =>
-          execFileSync("git", [...gitArguments], {
-            cwd: createdRoot,
-            encoding: "utf8",
-            env: { ...GIT_ENVIRONMENT, HOME: createdRoot },
-          });
-        const writeSource = (relativePath: string, sourceText: string): void => {
-          const absolutePath = join(createdRoot, relativePath);
-          mkdirSync(dirname(absolutePath), { recursive: true });
-          writeFileSync(absolutePath, sourceText);
-        };
-        runGit(["init", "--quiet", "--initial-branch=main"]);
-        writeSource("src/legacy.ts", "export const legacyMode = true;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        writeSource("src/legacy.ts", "export const current = ;\n");
-        runGit(["add", "--all"]);
-        runGit(["commit", "--quiet", "--message", "snapshot"]);
-        return createdRoot;
-      })
-      .extend("unreadableSourceRefusal", async ({ repositoryRoot }) =>
-        runStopAiSlop([
-          "check",
-          "--repository-root",
-          repositoryRoot,
-          "--base",
-          "HEAD~1",
-          "--head",
-          "HEAD",
-        ]),
-      );
-
-    it("fails closed and names the source it could not read", ({ unreadableSourceRefusal }) => {
-      expect(unreadableSourceRefusal).toStrictEqual({
-        exitCode: 2,
-        out: "",
-        error: "src/legacy.ts: Unexpected token\n",
-      });
+    const unreadableSourceRefusal = Effect.gen(function* unreadableSourceRefusal() {
+      const repositoryRoot = yield* newRepository;
+      yield* writeSource(repositoryRoot, "src/legacy.ts", "export const legacyMode = true;\n");
+      yield* commitSnapshot(repositoryRoot);
+      yield* git(repositoryRoot, ["update-ref", "refs/remotes/origin/main", "HEAD"]);
+      yield* writeSource(repositoryRoot, "src/legacy.ts", "export const current = ;\n");
+      yield* commitSnapshot(repositoryRoot);
+      return yield* answerWithout(repositoryRoot, {});
     });
+
+    it.effect("fails closed and names the source it could not read", () =>
+      Effect.gen(function* program() {
+        expect(yield* unreadableSourceRefusal).toStrictEqual({
+          exitCode: 2,
+          out: "",
+          error: "src/legacy.ts: Unexpected token\n",
+        });
+      }),
+    );
   });
 });

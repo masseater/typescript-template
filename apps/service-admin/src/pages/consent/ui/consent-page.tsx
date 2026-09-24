@@ -1,14 +1,15 @@
+import { OAuthClientView } from "@repo/auth-ui/consent";
 import { decodeJson } from "@repo/runtime/client";
+import { Page, STATUS_VARIANT, StatusMessage } from "@repo/ui";
 import { getRouteApi } from "@tanstack/react-router";
-import { Schema } from "effect";
 import { useEffect, useState } from "react";
 
-import { ConsentView } from "./consent-view.tsx";
+import { serviceName } from "#shared/config/index.ts";
+import { ConsentActions } from "./consent-actions.tsx";
 
 import type { ReactElement } from "react";
 
 const consentRoute = getRouteApi("/consent");
-const ClientView = Schema.Struct({ client_name: Schema.optionalKey(Schema.String) });
 
 function getPublicClient(fetchImpl: typeof fetch, clientId: string): Promise<Response> {
   return fetchImpl(
@@ -28,7 +29,7 @@ function loadClientName(clientId: string): Promise<string | undefined> {
     }
     return response
       .json()
-      .then((payload) => decodeJson(ClientView, payload).client_name ?? clientId);
+      .then((payload) => decodeJson(OAuthClientView, payload).client_name ?? clientId);
   });
 }
 
@@ -70,7 +71,20 @@ function ConsentPage(): ReactElement {
   const { client_id: clientId } = consentRoute.useSearch();
   const [error, setError] = useState("");
   const client = useClientName(clientId, setError);
-  return <ConsentView client={client} clientId={clientId} error={error} onError={setError} />;
+  return (
+    <Page title={`${serviceName} との連携`}>
+      {clientId === undefined && (
+        <StatusMessage variant={STATUS_VARIANT.failure}>
+          連携を求めているクライアントが分かりません。
+        </StatusMessage>
+      )}
+      {client !== undefined && <ConsentActions client={client} onError={setError} />}
+      {clientId !== undefined && client === undefined && error === "" && (
+        <StatusMessage variant={STATUS_VARIANT.pending}>読み込み中です。</StatusMessage>
+      )}
+      {error !== "" && <StatusMessage variant={STATUS_VARIANT.failure}>{error}</StatusMessage>}
+    </Page>
+  );
 }
 
 export { ConsentPage };

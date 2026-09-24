@@ -1,24 +1,10 @@
 import { APPLICATION, ROLE, STAFF_PERMISSION } from "@repo/config";
-import { Effect, type Layer } from "effect";
+import { Effect } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { TestDatabase } from "./database-test-fixture.ts";
 import { addSession, addUser, auditActionsOf } from "./records-test-fixture.ts";
 import { inviteStaff, listStaff, removeStaff, setStaffPermission } from "./staff.ts";
-
-const runTest = <Value>(
-  program: Effect.Effect<Value, unknown, Layer.Success<typeof TestDatabase>>,
-): Promise<Value> => Effect.runPromise(program.pipe(Effect.provide(TestDatabase)));
-
-const failureTag = <Value>(
-  program: Effect.Effect<Value, { readonly _tag: string }, Layer.Success<typeof TestDatabase>>,
-): Promise<string> =>
-  runTest(
-    program.pipe(
-      Effect.flip,
-      Effect.map((failure) => failure._tag),
-    ),
-  );
 
 const signInAs = Effect.fn("signInAs")(function* signInAs(
   permission: (typeof STAFF_PERMISSION)[keyof typeof STAFF_PERMISSION],
@@ -28,37 +14,45 @@ const signInAs = Effect.fn("signInAs")(function* signInAs(
 });
 
 describe("staff permission levels", () => {
-  describe.for([
-    [
-      "inviting",
-      (sessionId: string) =>
-        inviteStaff({ email: "new@example.com", permission: STAFF_PERMISSION.viewer, sessionId }),
-    ],
-    [
-      "changing a level",
-      (sessionId: string) =>
-        setStaffPermission({ permission: STAFF_PERMISSION.viewer, sessionId, staffId: "editor" }),
-    ],
-    ["removing", (sessionId: string) => removeStaff(sessionId, "editor")],
-    ["listing", (sessionId: string) => listStaff(sessionId)],
-  ] as const)("a viewer %s", ([, operate]) => {
-    const it = test.extend("tag", () =>
-      failureTag(
-        Effect.gen(function* viewerWrites() {
-          yield* addUser({ role: ROLE.staff, userId: "editor" });
-          const sessionId = yield* signInAs(STAFF_PERMISSION.viewer);
-          return yield* operate(sessionId);
-        }),
-      ));
+  describe.for(["inviting", "changing a level", "removing", "listing"] as const)(
+    "a viewer %s",
+    (operation) => {
+      const it = test.extend("tag", () =>
+        Effect.runPromise(
+          Effect.gen(function* viewerWrites() {
+            yield* addUser({ role: ROLE.staff, userId: "editor" });
+            const sessionId = yield* signInAs(STAFF_PERMISSION.viewer);
+            const operations = {
+              "changing a level": setStaffPermission({
+                permission: STAFF_PERMISSION.viewer,
+                sessionId,
+                staffId: "editor",
+              }),
+              inviting: inviteStaff({
+                email: "new@example.com",
+                permission: STAFF_PERMISSION.viewer,
+                sessionId,
+              }),
+              listing: listStaff(sessionId),
+              removing: removeStaff(sessionId, "editor"),
+            };
+            return yield* operations[operation];
+          }).pipe(
+            Effect.flip,
+            Effect.map((failure) => failure._tag),
+            Effect.provide(TestDatabase),
+          ),
+        ));
 
-    it("is rejected with the missing level", ({ tag }) => {
-      expect(tag).toBe("PermissionRequired");
-    });
-  });
+      it("is rejected with the missing level", ({ tag }) => {
+        expect(tag).toBe("PermissionRequired");
+      });
+    },
+  );
 
   describe("an editor", () => {
-    const it = test.extend("outcome", () =>
-      runTest(
+    const it = test.extend("editorChanges", () =>
+      Effect.runPromise(
         Effect.gen(function* editorActs() {
           yield* addUser({
             permission: STAFF_PERMISSION.viewer,
@@ -76,17 +70,21 @@ describe("staff permission levels", () => {
           const remaining = yield* listStaff(sessionId);
           const audit = yield* auditActionsOf("other");
           return {
-            audit: audit.map((event) => [event.action, event.actorId, event.actorKind]),
+            audit: audit.map((auditEntry) => [
+              auditEntry.action,
+              auditEntry.actorId,
+              auditEntry.actorKind,
+            ]),
             promoted,
             remaining: remaining.map((member) => member.id),
             removed,
             staff: staff.map((member) => [member.id, member.permission]),
           };
-        }),
+        }).pipe(Effect.provide(TestDatabase)),
       ));
 
-    it("manages staff and every change is audited", ({ outcome }) => {
-      expect(outcome).toStrictEqual({
+    it("manages staff and every change is audited", ({ editorChanges }) => {
+      expect(editorChanges).toStrictEqual({
         audit: [
           ["staff_permission_changed", "actor-editor", ROLE.staff],
           ["staff_removed", "actor-editor", ROLE.staff],
@@ -104,11 +102,15 @@ describe("staff permission levels", () => {
 
   describe("an editor removing themselves", () => {
     const it = test.extend("tag", () =>
-      failureTag(
+      Effect.runPromise(
         Effect.gen(function* selfRemove() {
           const sessionId = yield* signInAs(STAFF_PERMISSION.editor);
           return yield* removeStaff(sessionId, "actor-editor");
-        }),
+        }).pipe(
+          Effect.flip,
+          Effect.map((failure) => failure._tag),
+          Effect.provide(TestDatabase),
+        ),
       ));
 
     it("is refused", ({ tag }) => {
@@ -118,7 +120,7 @@ describe("staff permission levels", () => {
 
   describe("the last editor demoting themselves", () => {
     const it = test.extend("tag", () =>
-      failureTag(
+      Effect.runPromise(
         Effect.gen(function* lastEditor() {
           const sessionId = yield* signInAs(STAFF_PERMISSION.editor);
           return yield* setStaffPermission({
@@ -126,7 +128,11 @@ describe("staff permission levels", () => {
             sessionId,
             staffId: "actor-editor",
           });
-        }),
+        }).pipe(
+          Effect.flip,
+          Effect.map((failure) => failure._tag),
+          Effect.provide(TestDatabase),
+        ),
       ));
 
     it("is refused to keep one editor", ({ tag }) => {
@@ -136,12 +142,16 @@ describe("staff permission levels", () => {
 
   describe("an administrator session on the wiki", () => {
     const it = test.extend("tag", () =>
-      failureTag(
+      Effect.runPromise(
         Effect.gen(function* adminActs() {
           yield* addUser({ role: ROLE.administrator, userId: "admin" });
           const sessionId = yield* addSession({ audience: APPLICATION.wiki, userId: "admin" });
           return yield* listStaff(sessionId);
-        }),
+        }).pipe(
+          Effect.flip,
+          Effect.map((failure) => failure._tag),
+          Effect.provide(TestDatabase),
+        ),
       ));
 
     it("cannot use the staff module", ({ tag }) => {
@@ -151,12 +161,16 @@ describe("staff permission levels", () => {
 
   describe("removing a member through the staff operation", () => {
     const it = test.extend("tag", () =>
-      failureTag(
+      Effect.runPromise(
         Effect.gen(function* removeMember() {
           yield* addUser({ userId: "member" });
           const sessionId = yield* signInAs(STAFF_PERMISSION.editor);
           return yield* removeStaff(sessionId, "member");
-        }),
+        }).pipe(
+          Effect.flip,
+          Effect.map((failure) => failure._tag),
+          Effect.provide(TestDatabase),
+        ),
       ));
 
     it("does not touch the member", ({ tag }) => {

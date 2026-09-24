@@ -1,5 +1,6 @@
 import { AccountMenu } from "@repo/auth-ui";
-import { AppFrame, ButtonLink, Icon } from "@repo/ui";
+import { wikiBasePath } from "@repo/config";
+import { AppFrame, ButtonAnchor, Icon } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import {
@@ -45,9 +46,9 @@ function DashboardFrame({
           >
             Google Analytics
           </a>
-          <ButtonLink to="/wiki" variant="secondary">
+          <ButtonAnchor href={`${wikiBasePath}/`} variant="secondary">
             Wiki
-          </ButtonLink>
+          </ButtonAnchor>
         </>
       }
       navigationId="dashboard-navigation"

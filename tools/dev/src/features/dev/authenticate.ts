@@ -1,11 +1,13 @@
+import { env as processEnvironment } from "node:process";
+
 import { APPLICATION } from "@repo/config";
 import { Effect } from "effect";
 import { URI } from "otpauth";
 
-import { agent, configuredOrigin, sessionName } from "./agent-session.ts";
 import { BROWSER_AGENT_COMMAND } from "./browser-agent-command.ts";
+import { configuredOrigin, sessionArguments, sessionName } from "./browser-session.ts";
 import { failure } from "./failure.ts";
-import { readCredentials, refreshBrowserConfig } from "./local-environment.ts";
+import { readCredentials, refreshBrowserConfig, root, run } from "./local-environment.ts";
 import { ensureOperators, operatorFile } from "./operator-account.ts";
 import { urlPath } from "./platform.ts";
 
@@ -35,6 +37,19 @@ const postLoginPaths: Readonly<Record<App, string>> = {
   [APPLICATION.user]: "/home",
   [APPLICATION.wiki]: "/",
 };
+
+const agent = Effect.fn("agent")(function* agent(
+  app: App,
+  credentials: Credentials,
+  socketDirectory: string,
+  args: readonly string[],
+) {
+  const env = { ...processEnvironment, AGENT_BROWSER_SOCKET_DIR: socketDirectory };
+  yield* run("agent-browser", [...(yield* sessionArguments(app, credentials)), ...args], {
+    cwd: root,
+    env,
+  });
+});
 
 const signInThroughBrowser = Effect.fn("signInThroughBrowser")(function* signInThroughBrowser(
   app: App,

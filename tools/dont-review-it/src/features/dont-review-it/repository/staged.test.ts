@@ -1,109 +1,115 @@
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
 import { Effect } from "effect";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect } from "vite-plus/test";
 
 import {
   CONFLICTED_FILE,
   conflict,
+  emptyDirectory,
+  repository,
   save,
   stage,
-  withEmptyDirectory,
-  withRepository,
 } from "./staged-test-fixture.ts";
 import { indexSecretHits } from "./staged.ts";
 
 const GIT_USAGE_EXIT_CODE = 128;
 
-const report = async (root: string): Promise<Readonly<Record<string, unknown>>> => {
-  const failure = await Effect.runPromise(Effect.flip(indexSecretHits(root, [])));
-  return failure.report;
-};
+const report = (root: string) =>
+  Effect.map(Effect.flip(indexSecretHits(root, [])), (failure) => failure.report);
 
-describe("index secret scanning", () => {
-  it("reports no hits for a clean index", async () => {
-    expect.assertions(1);
-    await withRepository(async (root) => {
-      await stage(root, "added.txt", "added\n");
-      await expect(Effect.runPromise(indexSecretHits(root, []))).resolves.toStrictEqual({
-        hits: [],
-        scan: "word",
-      });
-    });
+layer(NodeServices.layer)("index secret scanning", (it) => {
+  describe("a clean index", () => {
+    it.effect("reports no hits", () =>
+      Effect.gen(function* program() {
+        const root = yield* repository;
+        yield* stage(root, "added.txt", "added\n");
+        expect(yield* indexSecretHits(root, [])).toStrictEqual({ hits: [], scan: "word" });
+      }),
+    );
   });
 
-  it("names index files that match a content rule", async () => {
-    expect.assertions(1);
-    await withRepository(async (root) => {
-      const awsAccessKey = ["AKIA", "IOSFODNN7EXAMPLE"].join("");
-      await stage(root, "key.txt", `${awsAccessKey}\n`);
-      await expect(Effect.runPromise(indexSecretHits(root, []))).resolves.toStrictEqual({
-        hits: [{ filename: "key.txt", rules: ["aws-access-key"] }],
-        scan: "word",
-      });
-    });
+  describe("an index file that matches a content rule", () => {
+    it.effect("is named", () =>
+      Effect.gen(function* program() {
+        const root = yield* repository;
+        const awsAccessKey = ["AKIA", "IOSFODNN7EXAMPLE"].join("");
+        yield* stage(root, "key.txt", `${awsAccessKey}\n`);
+        expect(yield* indexSecretHits(root, [])).toStrictEqual({
+          hits: [{ filename: "key.txt", rules: ["aws-access-key"] }],
+          scan: "word",
+        });
+      }),
+    );
   });
 
-  it("flags private paths that are tracked in the index", async () => {
-    expect.assertions(1);
-    await withRepository(async (root) => {
-      await stage(root, ".env", "VISIBLE=1\n");
-      await expect(Effect.runPromise(indexSecretHits(root, []))).resolves.toStrictEqual({
-        hits: [{ filename: ".env", rules: ["private-file"] }],
-        scan: "word",
-      });
-    });
+  describe("a private path tracked in the index", () => {
+    it.effect("is flagged", () =>
+      Effect.gen(function* program() {
+        const root = yield* repository;
+        yield* stage(root, ".env", "VISIBLE=1\n");
+        expect(yield* indexSecretHits(root, [])).toStrictEqual({
+          hits: [{ filename: ".env", rules: ["private-file"] }],
+          scan: "word",
+        });
+      }),
+    );
   });
 
-  it("flags a deployment value introduced by the staged patch", async () => {
-    expect.assertions(1);
-    await withRepository(async (root) => {
-      await stage(root, "new.txt", "zzprefix-user\n");
-      await expect(
-        Effect.runPromise(indexSecretHits(root, [{ key: "TEMPLATE_PREFIX", value: "zzprefix" }])),
-      ).resolves.toStrictEqual({
-        hits: [{ filename: "new.txt", rules: ["deployment-value:TEMPLATE_PREFIX"] }],
-        scan: "separated",
-      });
-    });
+  describe("a deployment value introduced by the staged patch", () => {
+    it.effect("is flagged", () =>
+      Effect.gen(function* program() {
+        const root = yield* repository;
+        yield* stage(root, "new.txt", "zzprefix-user\n");
+        expect(
+          yield* indexSecretHits(root, [{ key: "TEMPLATE_PREFIX", value: "zzprefix" }]),
+        ).toStrictEqual({
+          hits: [{ filename: "new.txt", rules: ["deployment-value:TEMPLATE_PREFIX"] }],
+          scan: "separated",
+        });
+      }),
+    );
   });
 
-  it("leaves a deployment value that is already on main out of a later patch", async () => {
-    expect.assertions(1);
-    await withRepository(async (root) => {
-      await save(root, "existing.txt", "zzprefix-user\n");
-      await stage(root, "note.txt", "unrelated\n");
-      await expect(
-        Effect.runPromise(
-          indexSecretHits(root, [
+  describe("a deployment value that is already on main", () => {
+    it.effect("is left out of a later patch", () =>
+      Effect.gen(function* program() {
+        const root = yield* repository;
+        yield* save(root, "existing.txt", "zzprefix-user\n");
+        yield* stage(root, "note.txt", "unrelated\n");
+        expect(
+          yield* indexSecretHits(root, [
             { key: "TEMPLATE_APP_DOMAIN", value: "zzprefix-user" },
             { key: "TEMPLATE_PREFIX", value: "zzprefix" },
           ]),
-        ),
-      ).resolves.toStrictEqual({
-        hits: [],
-        scan: "separated",
-      });
-    });
+        ).toStrictEqual({ hits: [], scan: "separated" });
+      }),
+    );
   });
 
-  it("refuses to scan an index left unmerged by a conflict, naming the files", async () => {
-    expect.assertions(1);
-    await withRepository(async (root) => {
-      await conflict(root);
-      await expect(report(root)).resolves.toStrictEqual({
-        files: [CONFLICTED_FILE],
-        reason: "unmerged-index",
-      });
-    });
+  describe("an index left unmerged by a conflict", () => {
+    it.effect("is refused, naming the files", () =>
+      Effect.gen(function* program() {
+        const root = yield* repository;
+        yield* conflict(root);
+        expect(yield* report(root)).toStrictEqual({
+          files: [CONFLICTED_FILE],
+          reason: "unmerged-index",
+        });
+      }),
+    );
   });
 
-  it("reports the exit code when git cannot read the index at all", async () => {
-    expect.assertions(1);
-    await withEmptyDirectory(async (root) => {
-      await expect(report(root)).resolves.toStrictEqual({
-        command: "ls-files --unmerged -z",
-        exitCode: GIT_USAGE_EXIT_CODE,
-        reason: "git-command-failed",
-      });
-    });
+  describe("a directory git cannot read an index from at all", () => {
+    it.effect("reports the exit code", () =>
+      Effect.gen(function* program() {
+        const root = yield* emptyDirectory;
+        expect(yield* report(root)).toStrictEqual({
+          command: "ls-files --unmerged -z",
+          exitCode: GIT_USAGE_EXIT_CODE,
+          reason: "git-command-failed",
+        });
+      }),
+    );
   });
 });

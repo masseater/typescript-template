@@ -1,8 +1,7 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-
 import { Effect, Schema } from "effect";
+import { ChildProcess, type ChildProcessSpawner } from "effect/unstable/process";
 
+import { capturedProcess } from "./captured-process.ts";
 import {
   contentRules,
   leaks,
@@ -13,12 +12,9 @@ import {
   type PrefixScan,
 } from "./secrets.ts";
 
-const MAX_OUTPUT_BYTES = 33_554_432;
-const run = promisify(execFile);
-
 class IndexUnreadable extends Schema.TaggedError<IndexUnreadable>()("IndexUnreadable", {
   command: Schema.optional(Schema.String),
-  exitCode: Schema.optional(Schema.Number),
+  exitCode: Schema.optional(Schema.Int),
   files: Schema.optional(Schema.Array(Schema.String)),
   reason: Schema.Literals(["git-command-failed", "unmerged-index"]),
 }) {
@@ -33,53 +29,43 @@ class IndexUnreadable extends Schema.TaggedError<IndexUnreadable>()("IndexUnread
   }
 }
 
-const exitCodeOf = (error: unknown): number | undefined => {
-  return typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    typeof error.code === "number"
-    ? error.code
-    : undefined;
-};
+type IndexRead<Read> = Effect.Effect<
+  Read,
+  IndexUnreadable,
+  ChildProcessSpawner.ChildProcessSpawner
+>;
+
+const NO_MATCH_EXIT_CODE = 1;
 
 const gitOutput = (
   root: string,
   args: readonly string[],
   emptyOnNoMatch: boolean,
-): Effect.Effect<string, IndexUnreadable> => {
-  return Effect.tryPromise({
-    catch: (error) =>
-      new IndexUnreadable({
-        command: args.join(" "),
-        exitCode: exitCodeOf(error),
-        reason: "git-command-failed",
-      }),
-    try: async () => {
-      try {
-        const listing = await run("git", [...args], {
-          cwd: root,
-          maxBuffer: MAX_OUTPUT_BYTES,
-        });
-        return listing.stdout;
-      } catch (error) {
-        if (emptyOnNoMatch && exitCodeOf(error) === 1) {
-          return "";
-        }
-        throw error;
+): IndexRead<string> => {
+  const command = args.join(" ");
+  return capturedProcess(ChildProcess.make("git", [...args], { cwd: root, stdin: "ignore" })).pipe(
+    Effect.mapError(() => new IndexUnreadable({ command, reason: "git-command-failed" })),
+    Effect.flatMap(({ exitCode, stdout }) => {
+      if (exitCode === 0) {
+        return Effect.succeed(stdout);
       }
-    },
-  });
+      if (emptyOnNoMatch && exitCode === NO_MATCH_EXIT_CODE) {
+        return Effect.succeed("");
+      }
+      return Effect.fail(new IndexUnreadable({ command, exitCode, reason: "git-command-failed" }));
+    }),
+  );
 };
 
 const zeroSeparated = (listing: string): string[] => {
   return listing.split("\0").filter((entry) => entry !== "");
 };
 
-const listCachedFiles = (root: string): Effect.Effect<readonly string[], IndexUnreadable> => {
+const listCachedFiles = (root: string): IndexRead<readonly string[]> => {
   return Effect.map(gitOutput(root, ["ls-files", "--cached", "-z"], false), zeroSeparated);
 };
 
-const refuseUnmerged = (root: string): Effect.Effect<void, IndexUnreadable> => {
+const refuseUnmerged = (root: string): IndexRead<void> => {
   return Effect.flatMap(gitOutput(root, ["ls-files", "--unmerged", "-z"], false), (listing) => {
     const files = [
       ...new Set(zeroSeparated(listing).map((entry) => entry.split("\t").at(-1) ?? entry)),
@@ -90,31 +76,25 @@ const refuseUnmerged = (root: string): Effect.Effect<void, IndexUnreadable> => {
   });
 };
 
-const filesMatchingFixed = (
-  root: string,
-  value: string,
-): Effect.Effect<readonly string[], IndexUnreadable> => {
+const filesMatchingFixed = (root: string, value: string): IndexRead<readonly string[]> => {
   return Effect.map(
     gitOutput(root, ["grep", "--cached", "-l", "-z", "-F", "-e", value], true),
     zeroSeparated,
   );
 };
 
-const filesMatchingPerl = (
-  root: string,
-  pattern: string,
-): Effect.Effect<readonly string[], IndexUnreadable> => {
+const filesMatchingPerl = (root: string, pattern: string): IndexRead<readonly string[]> => {
   return Effect.map(
     gitOutput(root, ["grep", "--cached", "-l", "-z", "-P", "-e", pattern], true),
     zeroSeparated,
   );
 };
 
-const showCached = (root: string, filename: string): Effect.Effect<string, IndexUnreadable> => {
+const showCached = (root: string, filename: string): IndexRead<string> => {
   return gitOutput(root, ["show", `:${filename}`], false);
 };
 
-const addedText = (root: string): Effect.Effect<ReadonlyMap<string, string>, IndexUnreadable> => {
+const addedText = (root: string): IndexRead<ReadonlyMap<string, string>> => {
   return Effect.map(
     gitOutput(root, ["diff", "--cached", "--unified=0", "--no-color", "--no-ext-diff"], true),
     (diff) => {

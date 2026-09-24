@@ -1,7 +1,6 @@
 import { agreementKinds } from "@repo/config";
+import { maximumIdentifierLength } from "@repo/runtime/contracts";
 import { Schema } from "effect";
-
-const maximumIdentifierLength = 256;
 
 const AgreementKind = Schema.Literals(agreementKinds);
 
@@ -31,9 +30,11 @@ const AgreementAcceptance = Schema.Struct({
   ).check(Schema.isLengthBetween(1, agreementKinds.length)),
 });
 
-const AgreementWithdrawal = Schema.Struct({ kind: AgreementKind });
+const AgreementKindQuery = Schema.Struct({ kind: AgreementKind });
 
-const PublishedAgreementQuery = Schema.Struct({ kind: AgreementKind });
+const AgreementWithdrawal = AgreementKindQuery;
+
+const PublishedAgreementQuery = AgreementKindQuery;
 
 const PublishedAgreementView = Schema.Struct({
   body: Schema.String,

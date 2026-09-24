@@ -11,6 +11,8 @@ import { Effect } from "effect";
 import { describe, expect } from "vite-plus/test";
 
 import { AdminMfaRequired } from "./admin-mfa-required.ts";
+import { SessionInvalid } from "./session-invalid.ts";
+import { SessionRequired } from "./session-required.ts";
 import {
   AuthApps,
   assignRoleByEmail,
@@ -27,8 +29,6 @@ import {
   signInAs,
   wikiStaff,
 } from "./index-test-fixture.ts";
-import { SessionInvalid } from "./session-invalid.ts";
-import { SessionRequired } from "./session-required.ts";
 
 describe("verifySession", () => {
   describe("an administrator signed in with a password alone", () => {
@@ -192,7 +192,7 @@ describe("verifySession", () => {
   });
 
   describe("an administrator signing in to the user app", () => {
-    const it = authTest.extend("status", ({ auth }) =>
+    const it = authTest.extend("crossOverStatus", ({ auth }) =>
       runWith(auth, () =>
         Effect.gen(function* crossOver() {
           yield* bootstrapVerifiedAdmin("admin@example.com");
@@ -201,8 +201,8 @@ describe("verifySession", () => {
       ),
     );
 
-    it("is refused because administrators are not members", ({ status }) => {
-      expect(status).toBe(403);
+    it("is refused because administrators are not members", ({ crossOverStatus }) => {
+      expect(crossOverStatus).toBe(403);
     });
   });
 
@@ -247,12 +247,11 @@ describe("verifySession", () => {
       ),
     );
 
-    it("loses the session it held", ({ suspension }) => {
-      expect(suspension.lostSession).toStrictEqual(new SessionRequired());
-    });
-
-    it("cannot sign in again", ({ suspension }) => {
-      expect(suspension.signInStatus).toBe(403);
+    it("loses the session it held and cannot sign in again", ({ suspension }) => {
+      expect(suspension).toStrictEqual({
+        lostSession: new SessionRequired(),
+        signInStatus: 403,
+      });
     });
   });
 

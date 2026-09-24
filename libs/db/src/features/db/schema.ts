@@ -40,7 +40,14 @@ import {
   oauthRefreshToken,
   oauthResource,
 } from "./oauth-schema.ts";
+import {
+  recording,
+  recordingSegment,
+  recordingSpeaker,
+  speakerPerson,
+} from "./recording-schema.ts";
 import { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
+import { wikiDraft } from "./wiki-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -241,11 +248,16 @@ const schema = {
   passkey,
   planSubscription,
   rateLimit,
+  recording,
+  recordingSegment,
+  recordingSpeaker,
   session,
+  speakerPerson,
   stripeEvent,
   twoFactor,
   user,
   verification,
+  wikiDraft,
 };
 
 export {
@@ -306,3 +318,10 @@ export {
   memberGroup,
 } from "./messaging-schema.ts";
 export type { ConversationKind, GroupMembershipRole } from "./messaging-schema.ts";
+export {
+  recording,
+  recordingSegment,
+  recordingSpeaker,
+  speakerPerson,
+} from "./recording-schema.ts";
+export { wikiDraft } from "./wiki-schema.ts";

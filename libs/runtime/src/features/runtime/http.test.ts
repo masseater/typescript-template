@@ -116,7 +116,7 @@ describe.for(rejections)(
           Effect.gen(function* rejectedAnswerProgram() {
             const echo = api.route(
               { body: EchoBody, response: EchoBody },
-              (_asked, body) => Effect.succeed(body),
+              (_asked, mutation) => Effect.succeed(mutation),
               {},
             );
             const {
@@ -181,7 +181,7 @@ describe("an api route behind a start server route given invalid input", () => {
       Effect.gen(function* invalidAnswerProgram() {
         const echo = api.route(
           { body: EchoBody, response: EchoBody },
-          (_asked, body) => Effect.succeed(body),
+          (_asked, mutation) => Effect.succeed(mutation),
           {},
         );
         const {

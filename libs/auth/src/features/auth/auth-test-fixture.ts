@@ -165,10 +165,10 @@ const registerVerified = Effect.fn("registerVerified")(function* registerVerifie
 
 const bootstrapVerifiedAdmin = Effect.fn("bootstrapVerifiedAdmin")(function* bootstrapVerifiedAdmin(
   email: string,
-  kind: BootstrapKind = BOOTSTRAP_KIND.admin,
+  bootstrapKind: BootstrapKind = BOOTSTRAP_KIND.admin,
 ) {
   yield* registerVerified(email);
-  yield* bootstrapAdmin(email, kind);
+  yield* bootstrapAdmin(email, bootstrapKind);
 });
 
 const bootstrapVerifiedStaff = Effect.fn("bootstrapVerifiedStaff")(function* bootstrapVerifiedStaff(
@@ -336,20 +336,9 @@ const signedSessionCookie = Effect.fn("signedSessionCookie")(function* signedSes
   token: string,
 ) {
   const { instance } = yield* Auth;
-  const options: unknown = instance.options;
-  const advanced =
-    typeof options === "object" && options !== null && "advanced" in options
-      ? options.advanced
-      : undefined;
-  const cookiePrefix =
-    typeof advanced === "object" && advanced !== null && "cookiePrefix" in advanced
-      ? advanced.cookiePrefix
-      : undefined;
-  const secret =
-    typeof options === "object" && options !== null && "secret" in options
-      ? options.secret
-      : undefined;
-  if (typeof cookiePrefix !== "string" || typeof secret !== "string") {
+  const cookiePrefix = instance.options.advanced?.cookiePrefix;
+  const { secret } = instance.options;
+  if (cookiePrefix === undefined || secret === undefined) {
     return yield* new SessionRequired();
   }
   const signature = yield* Effect.promise(() => makeSignature(token, secret));

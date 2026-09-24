@@ -1,4 +1,4 @@
-import { applications } from "@repo/config";
+import { applications, wikiWorker } from "@repo/config";
 import {
   awaitingEffectDiagnostics,
   lifecycle,
@@ -11,14 +11,14 @@ import { defineConfig } from "vite-plus";
 
 import { monitorStacks } from "./src/features/cloudflare/monitors.ts";
 
-const stackBuilds = ["core", ...applications, ...monitorStacks].map(
+const stackBuilds = ["core", wikiWorker, ...applications, ...monitorStacks].map(
   (unit) => `@repo/${unit}#build`,
 );
 
 export default defineConfig({
   run: {
     tasks: {
-      ...awaitingEffectDiagnostics,
+      ...awaitingEffectDiagnostics(import.meta.dirname),
       ...checkCode,
       ...workspaceCheckImports,
       ...modularBoundaries,

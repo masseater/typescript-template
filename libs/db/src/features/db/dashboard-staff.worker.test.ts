@@ -10,6 +10,7 @@ import {
 } from "@repo/config";
 import { and, eq } from "drizzle-orm";
 import { DateTime, Effect, Schema } from "effect";
+import { describe, expect, test } from "vite-plus/test";
 
 import { dashboardStaff } from "./dashboard-staff.ts";
 import { TestDatabase } from "./database-test-fixture.ts";
@@ -25,25 +26,22 @@ const seedMembers = Effect.gen(function* seedMembersProgram() {
 });
 
 const seedAudit = query((database) =>
-  database
-    .insert(auditEvent)
-    .values([
-      {
-        action: AUDIT_ACTION.roleChanged,
-        actorId: "admin-a",
-        createdAt: recordedAt,
-        id: "audit-role",
-        targetId: "member-a",
-      },
-      {
-        action: AUDIT_ACTION.userDeleted,
-        actorId: "admin-a",
-        createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
-        id: "audit-delete",
-        targetId: "member-b",
-      },
-    ])
-    .then(() => undefined),
+  database.insert(auditEvent).values([
+    {
+      action: AUDIT_ACTION.roleChanged,
+      actorId: "admin-a",
+      createdAt: recordedAt,
+      id: "audit-role",
+      targetId: "member-a",
+    },
+    {
+      action: AUDIT_ACTION.userDeleted,
+      actorId: "admin-a",
+      createdAt: DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
+      id: "audit-delete",
+      targetId: "member-b",
+    },
+  ]),
 );
 
 it.effect("aggregates member counts into daily and weekly buckets", () =>
@@ -71,18 +69,15 @@ it.effect("returns empty trends for buckets outside the requested range", () =>
   Effect.gen(function* program() {
     yield* seedMembers;
     yield* query((database) =>
-      database
-        .insert(metricSnapshot)
-        .values({
-          bucket: "1999-01-01",
-          clientKind: CLIENT_KIND.total,
-          computedAt: DateTime.toDate(DateTime.makeUnsafe("1999-01-01T00:00:00.000Z")),
-          id: "old-snapshot",
-          metric: METRIC_KEY.memberCount,
-          period: "daily",
-          value: 99,
-        })
-        .then(() => undefined),
+      database.insert(metricSnapshot).values({
+        bucket: "1999-01-01",
+        clientKind: CLIENT_KIND.total,
+        computedAt: DateTime.toDate(DateTime.makeUnsafe("1999-01-01T00:00:00.000Z")),
+        id: "old-snapshot",
+        metric: METRIC_KEY.memberCount,
+        period: "daily",
+        value: 99,
+      }),
     );
     const trend = yield* dashboardStaff.metricTrend({
       days: 7,
@@ -127,20 +122,17 @@ it.effect("renders every audit action literal without hard-coding the list", () 
     yield* seedMembers;
     for (const action of auditActions) {
       yield* query((database) =>
-        database
-          .insert(auditEvent)
-          .values({
-            action,
-            actorId: "admin-a",
-            createdAt: recordedAt,
-            id: `audit-${action}`,
-            targetId: "member-a",
-          })
-          .then(() => undefined),
+        database.insert(auditEvent).values({
+          action,
+          actorId: "admin-a",
+          createdAt: recordedAt,
+          id: `audit-${action}`,
+          targetId: "member-a",
+        }),
       );
     }
     const listed = yield* dashboardStaff.auditEvents({ limit: 20, offset: 0 });
-    const actions = new Set(listed.events.map((event) => event.action));
+    const actions = new Set(listed.events.map((auditEntry) => auditEntry.action));
     for (const action of auditActions) {
       assert.isTrue(actions.has(action));
     }
@@ -161,35 +153,32 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
   Effect.gen(function* program() {
     yield* addUser({ userId: "staff" });
     yield* query((database) =>
-      database
-        .insert(session)
-        .values([
-          {
-            audience: APPLICATION.wiki,
-            authenticationMethod: "password_totp",
-            createdAt: recordedAt,
-            expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
-            id: "session-human",
-            securityVersion: 0,
-            token: "token-human",
-            updatedAt: recordedAt,
-            userAgent: "Mozilla/5.0",
-            userId: "staff",
-          },
-          {
-            audience: APPLICATION.wiki,
-            authenticationMethod: "password_totp",
-            createdAt: recordedAt,
-            expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
-            id: "session-ai",
-            securityVersion: 0,
-            token: "token-ai",
-            updatedAt: recordedAt,
-            userAgent: "Cursor/1.0",
-            userId: "staff",
-          },
-        ])
-        .then(() => undefined),
+      database.insert(session).values([
+        {
+          audience: APPLICATION.wiki,
+          authenticationMethod: "password_totp",
+          createdAt: recordedAt,
+          expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
+          id: "session-human",
+          securityVersion: 0,
+          token: "token-human",
+          updatedAt: recordedAt,
+          userAgent: "Mozilla/5.0",
+          userId: "staff",
+        },
+        {
+          audience: APPLICATION.wiki,
+          authenticationMethod: "password_totp",
+          createdAt: recordedAt,
+          expiresAt: DateTime.toDate(DateTime.makeUnsafe("2027-01-01T00:00:00.000Z")),
+          id: "session-ai",
+          securityVersion: 0,
+          token: "token-ai",
+          updatedAt: recordedAt,
+          userAgent: "Cursor/1.0",
+          userId: "staff",
+        },
+      ]),
     );
     yield* refreshMetricSnapshots();
     const today = bucketFor(METRIC_PERIOD.daily, DateTime.toDate(yield* DateTime.now));
@@ -204,19 +193,21 @@ it.effect("classifies wiki sessions by user agent when refreshing snapshots", ()
           ),
         ),
     );
-    const human = wikiSnapshots.find((row) => row.clientKind === CLIENT_KIND.human);
-    const ai = wikiSnapshots.find((row) => row.clientKind === CLIENT_KIND.ai);
+    const human = wikiSnapshots.find((snapshot) => snapshot.clientKind === CLIENT_KIND.human);
+    const ai = wikiSnapshots.find((snapshot) => snapshot.clientKind === CLIENT_KIND.ai);
     assert.strictEqual(human?.value, 1);
     assert.strictEqual(ai?.value, 1);
   }).pipe(Effect.provide(TestDatabase)),
 );
 
-it("formats daily buckets as UTC dates", () => {
-  assert.strictEqual(
+describe("daily metric buckets", () => {
+  const it = test.extend("dailyBucket", () =>
     bucketFor(
       METRIC_PERIOD.daily,
       DateTime.toDate(DateTime.makeUnsafe("2026-03-15T12:34:56.000Z")),
-    ),
-    "2026-03-15",
-  );
+    ));
+
+  it("formats daily buckets as UTC dates", ({ dailyBucket }) => {
+    expect(dailyBucket).toBe("2026-03-15");
+  });
 });

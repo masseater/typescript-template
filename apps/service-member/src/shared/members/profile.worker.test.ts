@@ -46,7 +46,7 @@ it.effect("shows another member only when their profile is open to members", () 
     yield* addUser("viewer");
     yield* addUser("hidden", { searchable: true, visibility: PROFILE_VISIBILITY.self });
     yield* addUser("open", { searchable: true });
-    yield* setPhotoKey("open", "face", "members/open/face/v1");
+    yield* setPhotoKey({ memberId: "open", photoKey: "members/open/face/v1", slot: "face" });
     assert.strictEqual(yield* failureTag(getMember("viewer", "hidden")), "UserNotFound");
     assert.strictEqual((yield* getMember("hidden", "hidden")).id, "hidden");
     const open = yield* getMember("viewer", "open");

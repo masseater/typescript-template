@@ -13,8 +13,12 @@ const sandboxUnsafeReasons = [
   "isSymbolicLink",
   "readlink",
   "readlinkSync",
+  "readLink",
   "lstat",
   "lstatSync",
+  "symlink",
+  "symlinkSync",
+  "SymbolicLink",
 ] as const;
 
 export { sandboxUnsafeReasons, sandboxUnsafeTestPattern, sandboxUnsafeTests };

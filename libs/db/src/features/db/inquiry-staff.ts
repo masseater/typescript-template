@@ -1,67 +1,74 @@
-import { type InquiryStatus } from "@repo/config";
-import { count, desc, eq, gte, sql } from "drizzle-orm";
+import { INQUIRY_STATUS, type InquiryStatus } from "@repo/config";
+import { asc, count, desc, eq, gte, sql } from "drizzle-orm";
 import { DateTime, Effect } from "effect";
 
 import { query } from "./database.ts";
 import { InquiryNotFound } from "./inquiry-not-found.ts";
-import { inquiryThread, memberInquiryColumns } from "./inquiry-thread.ts";
-import { INQUIRY_AUTHOR_KIND, inquiry, inquiryAuthorKinds, inquiryStatuses } from "./schema.ts";
-import { user } from "./schema.ts";
+import {
+  INQUIRY_AUTHOR_KIND,
+  inquiry,
+  inquiryAuthorKinds,
+  inquiryMessage,
+  inquiryStatuses,
+  user,
+} from "./schema.ts";
 
-interface StaffInquirySummary {
-  readonly createdAt: Date;
-  readonly id: string;
-  readonly memberId: string;
-  readonly status: InquiryStatus;
-  readonly subject: string;
-  readonly updatedAt: Date;
-}
+import type { InquiryMessage } from "./inquiry.ts";
 
-interface StaffInquiryMessage {
-  readonly authorId: string;
-  readonly authorKind: "admin" | "member";
-  readonly body: string;
-  readonly createdAt: Date;
-  readonly id: string;
-}
+type StaffInquirySummary = Readonly<{
+  createdAt: Date;
+  id: string;
+  memberId: string;
+  status: InquiryStatus;
+  subject: string;
+  updatedAt: Date;
+}>;
 
-interface StaffInquiryThread extends StaffInquirySummary {
-  readonly messages: readonly StaffInquiryMessage[];
-}
+type StaffInquiryThread = StaffInquirySummary & Readonly<{ messages: readonly InquiryMessage[] }>;
 
-interface InquiryStatusCount {
-  readonly answered: number;
-  readonly closed: number;
-  readonly open: number;
-}
+type InquiryStatusCount = Readonly<Record<InquiryStatus, number>>;
+type InquiryDailyTrend = InquiryStatusCount & Readonly<{ day: string }>;
 
-interface InquiryDailyTrend {
-  readonly answered: number;
-  readonly closed: number;
-  readonly day: string;
-  readonly open: number;
-}
+type InquiryStaffCounts = Readonly<{
+  byStatus: InquiryStatusCount;
+  trend: readonly InquiryDailyTrend[];
+}>;
 
-interface InquiryStaffCounts {
-  readonly byStatus: InquiryStatusCount;
-  readonly trend: readonly InquiryDailyTrend[];
-}
+const noInquiries: InquiryStatusCount = {
+  [INQUIRY_STATUS.answered]: 0,
+  [INQUIRY_STATUS.closed]: 0,
+  [INQUIRY_STATUS.open]: 0,
+};
+
+const statusTally = (
+  statusCounts: readonly Readonly<{ count: number; status: InquiryStatus }>[],
+): InquiryStatusCount =>
+  statusCounts.reduce<InquiryStatusCount>(
+    (tally, statusCount) => ({ ...tally, [statusCount.status]: statusCount.count }),
+    noInquiries,
+  );
+
+const dailyTrend = (
+  dailyCounts: readonly Readonly<{ count: number; day: string; status: InquiryStatus }>[],
+): readonly InquiryDailyTrend[] =>
+  [...Map.groupBy(dailyCounts, (dailyCount) => dailyCount.day)].map(([day, dayCounts]) =>
+    dayCounts.reduce<InquiryDailyTrend>(
+      (daily, dayCount) => ({ ...daily, [dayCount.status]: dayCount.count }),
+      { ...noInquiries, day },
+    ),
+  );
 
 const staffInquiryCounts = Effect.fn("staffInquiryCounts")(function* staffInquiryCounts() {
-  const rows = yield* query((database) =>
+  const statusCounts = yield* query((database) =>
     database
       .select({ count: count(), status: inquiry.status })
       .from(inquiry)
       .groupBy(inquiry.status),
   );
-  const byStatus = { answered: 0, closed: 0, open: 0 };
-  for (const row of rows) {
-    byStatus[row.status] = row.count;
-  }
-  const since = DateTime.toDate(yield* DateTime.now);
-  since.setUTCDate(since.getUTCDate() - 30);
-  since.setUTCHours(0, 0, 0, 0);
-  const trendRows = yield* query((database) =>
+  const since = DateTime.toDate(
+    DateTime.startOf(DateTime.subtract(yield* DateTime.now, { days: 30 }), "day"),
+  );
+  const dailyCounts = yield* query((database) =>
     database
       .select({
         count: count(),
@@ -73,12 +80,10 @@ const staffInquiryCounts = Effect.fn("staffInquiryCounts")(function* staffInquir
       .groupBy(sql`strftime('%Y-%m-%d', ${inquiry.createdAt} / 1000, 'unixepoch')`, inquiry.status)
       .orderBy(sql`strftime('%Y-%m-%d', ${inquiry.createdAt} / 1000, 'unixepoch')`),
   );
-  const trendMap = new Map<string, InquiryDailyTrend>();
-  for (const row of trendRows) {
-    const existing = trendMap.get(row.day) ?? { answered: 0, closed: 0, day: row.day, open: 0 };
-    trendMap.set(row.day, { ...existing, [row.status]: row.count });
-  }
-  return { byStatus, trend: [...trendMap.values()] } satisfies InquiryStaffCounts;
+  return {
+    byStatus: statusTally(statusCounts),
+    trend: dailyTrend(dailyCounts),
+  } satisfies InquiryStaffCounts;
 });
 
 const staffListMemberInquiries = Effect.fn("staffListMemberInquiries")(
@@ -91,7 +96,14 @@ const staffListMemberInquiries = Effect.fn("staffListMemberInquiries")(
     }
     return yield* query((database) =>
       database
-        .select(memberInquiryColumns)
+        .select({
+          createdAt: inquiry.createdAt,
+          id: inquiry.id,
+          memberId: inquiry.memberId,
+          status: inquiry.status,
+          subject: inquiry.subject,
+          updatedAt: inquiry.updatedAt,
+        })
         .from(inquiry)
         .where(eq(inquiry.memberId, memberId))
         .orderBy(desc(inquiry.updatedAt), inquiry.id),
@@ -100,17 +112,44 @@ const staffListMemberInquiries = Effect.fn("staffListMemberInquiries")(
 );
 
 const staffGetInquiry = Effect.fn("staffGetInquiry")(function* staffGetInquiry(inquiryId: string) {
-  const found = query((database) =>
-    database.select(memberInquiryColumns).from(inquiry).where(eq(inquiry.id, inquiryId)).limit(1),
+  const [staffInquiry] = yield* query((database) =>
+    database
+      .select({
+        createdAt: inquiry.createdAt,
+        id: inquiry.id,
+        memberId: inquiry.memberId,
+        status: inquiry.status,
+        subject: inquiry.subject,
+        updatedAt: inquiry.updatedAt,
+      })
+      .from(inquiry)
+      .where(eq(inquiry.id, inquiryId))
+      .limit(1),
   );
-  return (yield* inquiryThread(inquiryId, found)) satisfies StaffInquiryThread;
+  if (!staffInquiry) {
+    return yield* new InquiryNotFound();
+  }
+  const threadMessages = yield* query((database) =>
+    database
+      .select({
+        authorId: inquiryMessage.authorId,
+        authorKind: inquiryMessage.authorKind,
+        body: inquiryMessage.body,
+        createdAt: inquiryMessage.createdAt,
+        id: inquiryMessage.id,
+      })
+      .from(inquiryMessage)
+      .where(eq(inquiryMessage.inquiryId, inquiryId))
+      .orderBy(asc(inquiryMessage.createdAt), inquiryMessage.id),
+  );
+  return { ...staffInquiry, messages: threadMessages } satisfies StaffInquiryThread;
 });
 
-interface ReadOnlyInquiryStaff {
-  readonly getInquiry: typeof staffGetInquiry;
-  readonly inquiryCounts: typeof staffInquiryCounts;
-  readonly listMemberInquiries: typeof staffListMemberInquiries;
-}
+type ReadOnlyInquiryStaff = Readonly<{
+  getInquiry: typeof staffGetInquiry;
+  inquiryCounts: typeof staffInquiryCounts;
+  listMemberInquiries: typeof staffListMemberInquiries;
+}>;
 
 const inquiryStaff: ReadOnlyInquiryStaff = {
   getInquiry: staffGetInquiry,
@@ -132,7 +171,6 @@ export type {
   InquiryStaffCounts,
   InquiryStatusCount,
   ReadOnlyInquiryStaff,
-  StaffInquiryMessage,
   StaffInquirySummary,
   StaffInquiryThread,
 };

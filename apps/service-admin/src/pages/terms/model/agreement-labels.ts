@@ -1,10 +1,4 @@
-import { agreementPolicies, type AgreementKind } from "@repo/config";
-
-const agreementKindLabels: Readonly<Record<AgreementKind, string>> = {
-  interview_history: "AI インタビューの履歴の利用",
-  privacy: "プライバシーポリシー",
-  terms: "利用規約",
-};
+import { agreementKindLabels, agreementPolicies, type AgreementKind } from "@repo/config";
 
 const stateLabel = (publishedAt: number | null): string =>
   publishedAt === null ? "草稿" : "公開済み";

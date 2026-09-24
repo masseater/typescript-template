@@ -11,6 +11,17 @@ describe("dont-review-it/no-fixture-forward-subject--yield-sut-output", () => {
   testLintRule(noFixtureForwardSubject, {
     valid: [
       {
+        name: "a member of an imported data file is the part of that file a spec keeps",
+        documented: true,
+        filename: SPEC_FILE,
+        code: 'import manifest from "../package.json" with { type: "json" };\nconst test = baseTest.extend("manifestExports", () => manifest.exports);',
+      },
+      {
+        name: "a member of a data file imported by its extension is read the same way",
+        filename: SPEC_FILE,
+        code: 'import manifest from "../package.json";\nconst test = baseTest.extend("manifestExports", () => manifest.exports);',
+      },
+      {
         name: "a local binding handed back whole carries every field the code produced",
         documented: true,
         filename: SPEC_FILE,
@@ -129,6 +140,12 @@ describe("dont-review-it/no-fixture-forward-subject--yield-sut-output", () => {
       },
     ],
     invalid: [
+      {
+        name: "a member read off an imported module of code drops the rest of what it exports",
+        filename: SPEC_FILE,
+        code: 'import settings from "./settings.ts";\nconst test = baseTest.extend("retries", () => settings.retries);',
+        errors: [{ messageId: "projectedSubject", data: { subject: "settings" } }],
+      },
       {
         name: "a dependency handed straight back leaves this fixture stating nothing of its own",
         documented: true,

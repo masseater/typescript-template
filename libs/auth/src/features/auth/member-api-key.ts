@@ -8,38 +8,39 @@ import { assertEligibleUser } from "./policy.ts";
 import { SessionRequired } from "./session-required.ts";
 import { verifySession } from "./session.ts";
 
-type VerifiedMember = Readonly<{
-  session: { readonly id: string };
-  strong: boolean;
-  user: {
-    readonly email: string;
-    readonly id: string;
-    readonly name: string;
-    readonly role: string;
-    readonly twoFactorEnabled: boolean;
-  };
-}>;
+const bearerToken = (authorization: string | null): string | undefined => {
+  if (authorization?.startsWith("Bearer ") !== true) {
+    return undefined;
+  }
+  const token = authorization.slice("Bearer ".length).trim();
+  return token === "" ? undefined : token;
+};
 
-type VerifyApiKeyResult = Readonly<{
-  readonly error: { readonly code: string } | null;
-  readonly key: { readonly referenceId: string } | null;
-  readonly valid: boolean;
-}>;
-
-function apiKeyFromHeaders(headers: Headers): string | undefined {
+const apiKeyFromHeaders = (headers: Headers): string | undefined => {
   const fromHeader = headers.get(memberApiKeyHeader);
   if (fromHeader !== null && fromHeader !== "") {
     return fromHeader;
   }
-  const authorization = headers.get("authorization");
-  if (authorization?.startsWith("Bearer ")) {
-    const token = authorization.slice("Bearer ".length).trim();
-    if (token !== "") {
-      return token;
-    }
+  return bearerToken(headers.get("authorization"));
+};
+
+const apiKeyOwnerId = Effect.fn("apiKeyOwnerId")(function* apiKeyOwnerId(presented: string) {
+  const { instance } = yield* Auth;
+  const verifyApiKey = yield* Effect.fromNullishOr(instance.api.verifyApiKey).pipe(
+    Effect.mapError(() => new SessionRequired()),
+  );
+  const verified = yield* Effect.tryPromise({
+    catch: () => new SessionRequired(),
+    try: () =>
+      verifyApiKey({
+        body: { key: presented, permissions: memberApiKeyReadPermissions },
+      }),
+  });
+  if (!verified.valid || verified.key === null) {
+    return yield* new SessionRequired();
   }
-  return undefined;
-}
+  return verified.key.referenceId;
+});
 
 const verifyMemberApiKey = Effect.fn("verifyMemberApiKey")(function* verifyMemberApiKeyProgram(
   headers: Headers,
@@ -48,33 +49,29 @@ const verifyMemberApiKey = Effect.fn("verifyMemberApiKey")(function* verifyMembe
   if (presented === undefined) {
     return yield* new SessionRequired();
   }
-  const { audience, instance } = yield* Auth;
-  const verified = yield* Effect.tryPromise({
-    catch: () => new SessionRequired(),
-    try: () =>
-      (
-        instance.api as unknown as {
-          verifyApiKey: (input: unknown) => Promise<VerifyApiKeyResult>;
-        }
-      ).verifyApiKey({
-        body: { key: presented, permissions: memberApiKeyReadPermissions },
-      }),
-  });
-  if (!verified.valid || verified.key === null) {
-    return yield* new SessionRequired();
-  }
-  const owner = (yield* findUser(verified.key.referenceId)) ?? undefined;
+  const { audience } = yield* Auth;
+  const owner = (yield* findUser(yield* apiKeyOwnerId(presented))) ?? undefined;
   assertEligibleUser(owner, audience);
   const { email, id, name, role, twoFactorEnabled } = owner;
   return {
     session: { id: `api-key:${presented}` },
     strong: false,
     user: { email, id, name, role, twoFactorEnabled },
-  } satisfies VerifiedMember;
+  } satisfies Readonly<{
+    session: { readonly id: string };
+    strong: boolean;
+    user: {
+      readonly email: string;
+      readonly id: string;
+      readonly name: string;
+      readonly role: string;
+      readonly twoFactorEnabled: boolean;
+    };
+  }>;
 });
 
 const verifySessionOrApiKey = Effect.fn("verifySessionOrApiKey")(
-  function* verifySessionOrApiKeyProgram(headers: Headers, allowEnrollment = false) {
+  function* verifySessionOrApiKeyProgram(headers: Headers, allowEnrollment?: boolean) {
     const presented = apiKeyFromHeaders(headers);
     if (presented === undefined) {
       return yield* verifySession(headers, allowEnrollment);
@@ -85,7 +82,7 @@ const verifySessionOrApiKey = Effect.fn("verifySessionOrApiKey")(
 
 const verifySessionWriter = Effect.fn("verifySessionWriter")(function* verifySessionWriterProgram(
   headers: Headers,
-  allowEnrollment = false,
+  allowEnrollment?: boolean,
 ) {
   if (apiKeyFromHeaders(headers) !== undefined) {
     return yield* new ApiKeyWriteForbidden();

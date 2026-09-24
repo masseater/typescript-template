@@ -13,6 +13,7 @@ import { isUnreadable, readVerdict, unreadableState, unreadableVerdict } from ".
 import { databaseVerdict } from "./database-guard.ts";
 import { STATE_STORE_SCRIPT_NAME, missingPermissions } from "./deploy-token.ts";
 import { alertQuotaVerdict, emailBlocked, emailVerdicts } from "./email-guard.ts";
+import { encodeJson } from "./platform.ts";
 import { recordedWorkerNames } from "./state-ownership.ts";
 
 import type { StateService } from "alchemy/State";
@@ -89,6 +90,13 @@ const domainVerdict = Effect.fn("domainVerdict")(function* domainVerdict(
 
 const tokenVerdict = Effect.fn("tokenVerdict")(function* tokenVerdict(access: AccountAccess) {
   return yield* grantedPermissions(access).pipe(
+    Effect.tap((granted) =>
+      missingPermissions(granted).length === 0
+        ? Effect.void
+        : Effect.flatMap(encodeJson({ event: "account.token_permissions", granted }), (line) =>
+            Effect.log(line),
+          ),
+    ),
     Effect.map((granted) => missingPermissions(granted)),
     Effect.catchTag("CloudflareFailure", unreadableVerdict),
   );

@@ -1,23 +1,23 @@
-import { inquiryStatuses, roles } from "@repo/config";
-import { Identifier, adminPageSize, maximumAdminPageSize, pageNumber } from "@repo/config/paging";
+import { inquiryStatuses } from "@repo/config";
+import {
+  Identifier,
+  IdentifierQuery,
+  InquiryMessage,
+  Tally,
+  pageNumber,
+} from "@repo/runtime/contracts";
 import { Schema } from "effect";
 
 const maximumReplyLength = 4000;
+const defaultPageSize = 50;
+const maximumPageSize = 100;
 
 const InquiryStatus = Schema.Literals(inquiryStatuses);
 
 const InquiryListQuery = Schema.Struct({
-  limit: pageNumber(adminPageSize, 1, maximumAdminPageSize),
-  offset: pageNumber(0, 0, Number.MAX_SAFE_INTEGER),
+  limit: pageNumber({ fallback: defaultPageSize, maximum: maximumPageSize, minimum: 1 }),
+  offset: pageNumber({ fallback: 0, maximum: Number.MAX_SAFE_INTEGER, minimum: 0 }),
   status: Schema.optionalKey(InquiryStatus),
-});
-
-const InquiryMessage = Schema.Struct({
-  authorId: Schema.String,
-  authorKind: Schema.Literals(roles),
-  body: Schema.String,
-  createdAt: Schema.DateFromString,
-  id: Schema.String,
 });
 
 const AdminInquirySummary = Schema.Struct({
@@ -40,9 +40,9 @@ const AdminInquiryList = Schema.Struct({
   total: Schema.Finite,
 });
 
-const InquiryQuery = Schema.Struct({ id: Identifier });
+const InquiryQuery = IdentifierQuery;
 
-const MemberQuery = Schema.Struct({ id: Identifier });
+const MemberQuery = IdentifierQuery;
 
 const InquiryMemberSummary = Schema.Struct({
   email: Schema.String,
@@ -55,9 +55,9 @@ const InquiryReply = Schema.Struct({
   id: Identifier,
 });
 
-const InquiryClose = Schema.Struct({ id: Identifier });
+const InquiryClose = IdentifierQuery;
 
-const PendingCount = Schema.Struct({ count: Schema.Finite });
+const PendingCount = Tally;
 
 export {
   AdminInquiryList,

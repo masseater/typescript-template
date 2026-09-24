@@ -88,7 +88,7 @@ describe("atom-server-data", () => {
       "plain-make",
       'import { Atom } from "effect/unstable/reactivity"; export const open = Atom.make(false);',
     ],
-  ])("allows non-server Atom usage: %s", ([_label, code]) => {
+  ] as const)("allows non-server Atom usage: %s", ([_label, code]) => {
     expect.hasAssertions();
     expect(
       reportedRules({ code: code ?? "", filename: "libs/ui/src/features/ui/probe.ts" }),
@@ -107,7 +107,7 @@ describe("retired server-state imports", () => {
       'import { createTRPCClient } from "@trpc/client"; export { createTRPCClient };',
     ],
     ["react-query", 'export * from "react-query";'],
-  ])("rejects %s imports", ([_label, code]) => {
+  ] as const)("rejects %s imports", ([_label, code]) => {
     expect.hasAssertions();
     expect(
       reported("retired-imports", {

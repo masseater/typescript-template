@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 import { MergifyReporter } from "@mergifyio/vitest";
 import {
   dedicatedToolVitestProjects,
@@ -10,6 +12,7 @@ import {
   rootOnDemandChecks,
   workerTests,
 } from "@repo/dont-review-it";
+import { telemetryAsked } from "@repo/telemetry/optional-setting";
 import {
   effectDiagnostics,
   lifecycle,
@@ -29,6 +32,7 @@ const rootOwnedPaths = [
   ".cursor",
   ".fallowrc.json",
   ".fallowrc.production.json",
+  ".gitattributes",
   ".github",
   ".gitignore",
   ".mcp.json",
@@ -81,14 +85,15 @@ export default defineConfig({
         command: `vp check ${rootOwnedPaths.join(" ")}`,
         input: [...taskInput],
       },
-      ...effectDiagnostics,
+      ...effectDiagnostics(import.meta.dirname),
       "check:types": {
-        command: "dont-review-it-typecheck",
+        command: rootOnDemandChecks["check:types"],
         dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
       "check:canonical-literal-types": {
         command: "dont-review-it-canonical-literal-types",
+        dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
       fallow: {
@@ -135,13 +140,20 @@ export default defineConfig({
       ...lifecycle({
         precommit: ["check:text", "check:code"],
         prepush: ["check:effect", "fallow", "check:canonical-literal-types"],
+        prepr: ["check:repository"],
         premerge: ["test:dev-server", "test:storybook"],
         prerelease: ["mutation"],
       }),
-      "check:repository": rootOnDemandChecks["check:repository"],
+      "check:repository": { cache: false, command: "dont-review-it check-repository" },
     },
   },
   test: {
+    experimental: {
+      openTelemetry: {
+        enabled: telemetryAsked,
+        sdkPath: fileURLToPath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
+      },
+    },
     coverage: {
       exclude: ["specs/**"],
       thresholds: { branches: 50, functions: 50, lines: 50, statements: 50, perFile: true },

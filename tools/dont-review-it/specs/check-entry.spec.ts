@@ -1,23 +1,43 @@
+import { NodeServices } from "@effect/platform-node";
+import { layer } from "@effect/vitest";
 import { runCommand } from "citty";
-import { describe, expect, it } from "vite-plus/test";
+import { Effect, Schema } from "effect";
+import { expect } from "vite-plus/test";
 
 import { dontReviewItCommand } from "../src/features/dont-review-it/dont-review-it-command.ts";
 import { EXIT_MISUSE } from "../src/features/dont-review-it/repository-checks/index.ts";
 
-describe("リポジトリ検査の入口", () => {
-  it("check 以外の命令を名指しで拒否する", async () => {
-    await expect(runCommand(dontReviewItCommand, { rawArgs: ["deploy"] })).rejects.toThrow(
-      /Unknown command/u,
-    );
-  });
+class CommandRejected extends Schema.TaggedError<CommandRejected>()("CommandRejected", {
+  reason: Schema.String,
+}) {}
 
-  it("存在しない場所を検査対象に取らない", async () => {
-    process.exitCode = 0;
-    await runCommand(dontReviewItCommand, {
-      rawArgs: ["check", "--repository-root", "/nonexistent/verified-specifications-probe"],
-    });
+layer(NodeServices.layer)("リポジトリ検査の入口", (it) => {
+  it.effect("check 以外の命令を名指しで拒否する", () =>
+    Effect.gen(function* program() {
+      const rejection = yield* Effect.flip(
+        Effect.tryPromise({
+          try: () => runCommand(dontReviewItCommand, { rawArgs: ["deploy"] }),
+          catch: (rejected) =>
+            new CommandRejected({
+              reason: rejected instanceof Error ? rejected.message : String(rejected),
+            }),
+        }),
+      );
+      expect(rejection.reason).toMatch(/Unknown command/u);
+    }),
+  );
 
-    expect(process.exitCode).toBe(EXIT_MISUSE);
-    process.exitCode = 0;
-  });
+  it.effect("存在しない場所を検査対象に取らない", () =>
+    Effect.gen(function* program() {
+      process.exitCode = 0;
+      yield* Effect.promise(() =>
+        runCommand(dontReviewItCommand, {
+          rawArgs: ["check", "--repository-root", "/nonexistent/verified-specifications-probe"],
+        }),
+      );
+
+      expect(process.exitCode).toBe(EXIT_MISUSE);
+      process.exitCode = 0;
+    }),
+  );
 });
