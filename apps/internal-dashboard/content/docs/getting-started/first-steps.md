@@ -46,9 +46,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `TEMPLATE_AUTH_SECRET`: 32 文字以上、異なる文字が 16 種以上、前後に空白を付けない。
     - `TEMPLATE_MAIL_FROM`: メールアドレス。`@` 以降は `{TEMPLATE_PREFIX}.` で始まること。
     - `TEMPLATE_PREFIX`: 先頭は英小文字、続きは英小文字・数字・ハイフン。全体で 3〜36 文字。
-    - `TEMPLATE_STRIPE_PRICE_ID`: 有料会員の Stripe 価格 ID。
-    - `TEMPLATE_STRIPE_SECRET_KEY`: Stripe のシークレットキー。
-    - `TEMPLATE_STRIPE_WEBHOOK_SECRET`: Stripe Webhook の署名シークレット。
+    - `STRIPE_API_KEY`: [Stripe](https://stripe.com/) の sandbox のシークレットキー（`sk_test_` か `rk_test_` で始まる）。本番環境の鍵（`sk_live_`）は適用前の設定検証で拒みます。有料プランの Product と Price、Webhook の送り先と署名シークレットは、この鍵で Alchemy が sandbox に作り、利用者アプリの Worker に渡します。staging と本番環境には別々の sandbox の鍵を置きます。
   - 空でも適用は始まります。値があるときだけデプロイへ渡ります。
     - `TEMPLATE_OTLP_ENDPOINT`: https の URL。
     - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。

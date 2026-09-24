@@ -12,9 +12,7 @@ const deploymentKey = {
   otlpEndpoint: "TEMPLATE_OTLP_ENDPOINT",
   googleAnalyticsMeasurementId: "TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
   prefix: "TEMPLATE_PREFIX",
-  stripePriceId: "TEMPLATE_STRIPE_PRICE_ID",
-  stripeSecretKey: "TEMPLATE_STRIPE_SECRET_KEY",
-  stripeWebhookSecret: "TEMPLATE_STRIPE_WEBHOOK_SECRET",
+  stripeSecretKey: "STRIPE_API_KEY",
 } as const;
 const deploymentKeys = [
   deploymentKey.alertEmail,
@@ -26,9 +24,7 @@ const deploymentKeys = [
   deploymentKey.authSecret,
   deploymentKey.mailFrom,
   deploymentKey.prefix,
-  deploymentKey.stripePriceId,
   deploymentKey.stripeSecretKey,
-  deploymentKey.stripeWebhookSecret,
 ] as const;
 const optionalDeploymentKeys = [
   deploymentKey.googleAnalyticsMeasurementId,
