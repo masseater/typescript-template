@@ -123,60 +123,6 @@
         "code": "TS377130",
         "message": "`Schema.decodeSync` executes synchronously. Use `Schema.decodeEffect` to compose this operation through Effect without throwing. effect(schemaSync)",
         "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-compiler.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `child_process` module, the corresponding Effect API is `ChildProcess` from `effect/unstable/process`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-compiler.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-compiler.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-path.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck-path.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.test.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `fs` module, the corresponding Effect API is `FileSystem` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
-      },
-      {
-        "file": "src/features/vite-config/effect-typecheck.ts",
-        "code": "TS377057",
-        "message": "This module reference uses the `path` module, the corresponding Effect API is `Path` from `effect`. effect(nodeBuiltinImport)",
-        "count": 1
       }
     ],
     "tools/ai-native": [
