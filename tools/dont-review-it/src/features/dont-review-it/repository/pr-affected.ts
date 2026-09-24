@@ -23,13 +23,13 @@ class TrackedFilesUnreadable extends Schema.TaggedError<TrackedFilesUnreadable>(
 
 const rootTestFiles = Effect.gen(function* rootTestFiles() {
   const listed = yield* capturedProcess(
-    ChildProcess.make("git", ["ls-files"], { cwd: repositoryRoot, stdin: "ignore" }),
+    ChildProcess.make("git", ["ls-files", "-z"], { cwd: repositoryRoot, stdin: "ignore" }),
   );
   if (listed.exitCode !== 0) {
     return yield* new TrackedFilesUnreadable({ stderr: listed.stderr });
   }
   return listed.stdout
-    .split("\n")
+    .split("\0")
     .filter(
       (file) =>
         rootNodeTestIncludes.some((pattern) =>
