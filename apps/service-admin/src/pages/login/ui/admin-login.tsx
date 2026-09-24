@@ -1,5 +1,4 @@
-import { LoginPage } from "@repo/auth-ui";
-import { redirectTarget } from "@repo/auth-ui/login-redirect";
+import { LoginPage, redirectTarget } from "@repo/auth-ui";
 import { LocaleSwitch } from "@repo/ui";
 import { useLocation } from "@tanstack/react-router";
 

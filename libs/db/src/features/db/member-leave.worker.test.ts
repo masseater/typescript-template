@@ -1,6 +1,6 @@
 import { APPLICATION, ROLE } from "@repo/config";
 import { eq } from "drizzle-orm";
-import { DateTime, Effect } from "effect";
+import { DateTime, Effect, Ref } from "effect";
 import { describe, expect, test } from "vite-plus/test";
 
 import { agreementAcceptance, agreementVersion } from "./agreement-schema.ts";
@@ -20,6 +20,8 @@ import {
   addUser,
   liveSessionCount,
   oauthGrantCounts,
+  expireLeave,
+  keepPhotos,
   profileFieldsOf,
   withdrawnSnapshotCount,
 } from "./records-test-fixture.ts";
@@ -35,7 +37,7 @@ describe("withdrawMember", () => {
           yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
           yield* addOAuthGrant("leaver");
           const sessionId = yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
-          yield* withdrawMember("leaver", { immediate: false });
+          yield* withdrawMember("leaver", { immediate: false, removePhotos: keepPhotos });
           return {
             grants: yield* oauthGrantCounts("leaver"),
             liveSession: yield* getSessionSecurity(sessionId, APPLICATION.user),
@@ -59,7 +61,7 @@ describe("withdrawMember", () => {
           yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
           yield* addOAuthGrant("leaver");
           yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
-          yield* withdrawMember("leaver", { immediate: false });
+          yield* withdrawMember("leaver", { immediate: false, removePhotos: keepPhotos });
           return {
             member: yield* findUser("leaver"),
             stillListed: yield* profileFieldsOf("leaver"),
@@ -82,7 +84,7 @@ describe("withdrawMember", () => {
       Effect.runPromise(
         Effect.gen(function* deleteMember() {
           yield* addUser({ userId: "gone" });
-          yield* withdrawMember("gone", { immediate: true });
+          yield* withdrawMember("gone", { immediate: true, removePhotos: keepPhotos });
           return {
             member: yield* findUser("gone"),
             withdrawn: yield* withdrawnSnapshotCount("gone"),
@@ -107,7 +109,7 @@ describe("findRecoveryOffer", () => {
             profile: "former profile",
             userId: "former",
           });
-          yield* withdrawMember("former", { immediate: false });
+          yield* withdrawMember("former", { immediate: false, removePhotos: keepPhotos });
           yield* addUser({ email: "returning@example.com", userId: "newcomer" });
           return yield* findRecoveryOffer("newcomer");
         }).pipe(Effect.provide(TestDatabase)),
@@ -127,13 +129,13 @@ describe("findRecoveryOffer", () => {
             name: "Older Name",
             userId: "older",
           });
-          yield* withdrawMember("older", { immediate: false });
+          yield* withdrawMember("older", { immediate: false, removePhotos: keepPhotos });
           yield* addUser({
             email: "returning@example.com",
             name: "Newer Name",
             userId: "newer",
           });
-          yield* withdrawMember("newer", { immediate: false });
+          yield* withdrawMember("newer", { immediate: false, removePhotos: keepPhotos });
           yield* query((database) =>
             database
               .update(withdrawnMember)
@@ -157,7 +159,7 @@ describe("findRecoveryOffer", () => {
       Effect.runPromise(
         Effect.gen(function* loadOffer() {
           yield* addUser({ email: "former@example.com", userId: "former" });
-          yield* withdrawMember("former", { immediate: false });
+          yield* withdrawMember("former", { immediate: false, removePhotos: keepPhotos });
           yield* addUser({ email: "other@example.com", userId: "other" });
           return yield* findRecoveryOffer("other");
         }).pipe(Effect.provide(TestDatabase)),
@@ -173,7 +175,7 @@ describe("findRecoveryOffer", () => {
       Effect.runPromise(
         Effect.gen(function* loadOffer() {
           yield* addUser({ email: "returning@example.com", userId: "former" });
-          yield* withdrawMember("former", { immediate: false });
+          yield* withdrawMember("former", { immediate: false, removePhotos: keepPhotos });
           yield* query((database) =>
             database
               .update(leaveRequestTable)
@@ -195,7 +197,7 @@ describe("findRecoveryOffer", () => {
       Effect.runPromise(
         Effect.gen(function* loadOffer() {
           yield* addUser({ email: "returning@example.com", userId: "former" });
-          yield* withdrawMember("former", { immediate: false });
+          yield* withdrawMember("former", { immediate: false, removePhotos: keepPhotos });
           yield* query((database) =>
             database
               .update(leaveRequestTable)
@@ -204,6 +206,7 @@ describe("findRecoveryOffer", () => {
           );
           yield* purgeExpiredWithdrawnMembers(
             DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
+            keepPhotos,
           );
           yield* addUser({ email: "returning@example.com", userId: "newcomer" });
           return yield* findRecoveryOffer("newcomer");
@@ -227,7 +230,7 @@ describe("acceptRecovery", () => {
             profile: "former profile",
             userId: "former",
           });
-          yield* withdrawMember("former", { immediate: false });
+          yield* withdrawMember("former", { immediate: false, removePhotos: keepPhotos });
           yield* addUser({ email: "returning@example.com", userId: "newcomer" });
           yield* acceptRecovery("newcomer");
           return {
@@ -259,7 +262,7 @@ describe("acceptRecovery", () => {
               { acceptedAt, userId: "former", versionId: "agreement-privacy-1" },
             ]),
           );
-          yield* withdrawMember("former", { immediate: false });
+          yield* withdrawMember("former", { immediate: false, removePhotos: keepPhotos });
           yield* query((database) =>
             database.delete(agreementVersion).where(eq(agreementVersion.id, "agreement-privacy-1")),
           );
@@ -298,7 +301,7 @@ describe("declineRecovery", () => {
       Effect.runPromise(
         Effect.gen(function* declineMember() {
           yield* addUser({ email: "returning@example.com", userId: "former" });
-          yield* withdrawMember("former", { immediate: false });
+          yield* withdrawMember("former", { immediate: false, removePhotos: keepPhotos });
           yield* addUser({ email: "returning@example.com", userId: "newcomer" });
           yield* declineRecovery("newcomer");
           return {
@@ -315,32 +318,60 @@ describe("declineRecovery", () => {
 });
 
 describe("purgeExpiredWithdrawnMembers", () => {
+  const checkedAt = DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z"));
+
   describe("after the retention window", () => {
     const it = test.extend("purgedMember", () =>
       Effect.runPromise(
         Effect.gen(function* purgeMember() {
           yield* addUser({ userId: "expired" });
-          yield* withdrawMember("expired", { immediate: false });
-          yield* query((database) =>
-            database
-              .update(leaveRequestTable)
-              .set({ purgeAt: DateTime.toDate(DateTime.makeUnsafe("2020-01-01T00:00:00.000Z")) })
-              .where(eq(leaveRequestTable.memberId, "expired")),
-          );
-          const purged = yield* purgeExpiredWithdrawnMembers(
-            DateTime.toDate(DateTime.makeUnsafe("2026-01-02T00:00:00.000Z")),
+          yield* withdrawMember("expired", { immediate: false, removePhotos: keepPhotos });
+          yield* expireLeave("expired");
+          const released = yield* Ref.make<
+            readonly { readonly memberId: string; readonly snapshots: number }[]
+          >([]);
+          const purged = yield* purgeExpiredWithdrawnMembers(checkedAt, (memberId) =>
+            withdrawnSnapshotCount(memberId).pipe(
+              Effect.flatMap((snapshots) =>
+                Ref.update(released, (earlier) => [...earlier, { memberId, snapshots }]),
+              ),
+            ),
           );
           return {
             purged,
+            released: yield* Ref.get(released),
             withdrawn: yield* withdrawnSnapshotCount("expired"),
           };
         }).pipe(Effect.provide(TestDatabase)),
       ));
 
-    it("removes the withdrawn snapshot", ({ purgedMember }) => {
+    it("releases the photos before removing the withdrawn snapshot", ({ purgedMember }) => {
       expect(purgedMember).toStrictEqual({
-        purged: { count: 1, memberIds: ["expired"] },
+        purged: { memberIds: ["expired"], retainedMemberIds: [] },
+        released: [{ memberId: "expired", snapshots: 1 }],
         withdrawn: 0,
+      });
+    });
+  });
+
+  describe("when the photos cannot be released", () => {
+    const it = test.extend("retainedMember", () =>
+      Effect.runPromise(
+        Effect.gen(function* retainMember() {
+          yield* addUser({ userId: "stuck" });
+          yield* withdrawMember("stuck", { immediate: false, removePhotos: keepPhotos });
+          yield* expireLeave("stuck");
+          const purged = yield* purgeExpiredWithdrawnMembers(checkedAt, () =>
+            Effect.fail("storage unavailable"),
+          );
+          return { purged, withdrawn: yield* withdrawnSnapshotCount("stuck") };
+        }).pipe(Effect.provide(TestDatabase)),
+      ));
+
+    it("keeps the withdrawn snapshot for the next purge", ({ retainedMember }) => {
+      expect(retainedMember).toStrictEqual({
+        purged: { memberIds: [], retainedMemberIds: ["stuck"] },
+        withdrawn: 1,
       });
     });
   });
@@ -353,7 +384,7 @@ describe("liveSessionCount", () => {
         Effect.gen(function* countSessions() {
           yield* addUser({ role: ROLE.member, userId: "leaver" });
           yield* addSession({ audience: APPLICATION.user, userId: "leaver" });
-          yield* withdrawMember("leaver", { immediate: false });
+          yield* withdrawMember("leaver", { immediate: false, removePhotos: keepPhotos });
           return yield* liveSessionCount("leaver");
         }).pipe(Effect.provide(TestDatabase)),
       ));
