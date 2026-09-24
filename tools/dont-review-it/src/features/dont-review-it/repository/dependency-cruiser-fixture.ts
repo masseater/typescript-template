@@ -6,6 +6,7 @@ const workspaces: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   "apps/service-admin": { ".": "./src/index.ts" },
   "apps/service-member": { ".": "./src/index.ts" },
   "apps/internal-dashboard": { ".": "./src/index.ts" },
+  "apps/internal-wiki": { ".": "./src/index.ts" },
   "libs/auth": { ".": "./src/features/auth/index.ts" },
   "libs/config": {
     ".": "./src/features/config/index.ts",

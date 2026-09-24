@@ -47,3 +47,4 @@ export {
   retryRecording,
   storeTranscript,
 } from "./recordings.ts";
+export { WikiDraftConflict, discardWikiDraft, findWikiDraft, saveWikiDraft } from "./wiki-draft.ts";

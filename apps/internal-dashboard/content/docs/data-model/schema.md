@@ -285,6 +285,14 @@ erDiagram
     integer updated_at
     text value
   }
+  wiki_draft {
+    text base_revision "nullable"
+    text markdown
+    text path PK
+    integer updated_at
+    text updated_by FK "nullable"
+    integer version
+  }
   user ||--o{ account : "user_id"
   user |o--o{ board_post : "author_id"
   board_thread ||--o{ board_post : "thread_id"
@@ -313,4 +321,5 @@ erDiagram
   user ||--o{ session : "user_id"
   user |o--o{ speaker_person : "consent_recorded_by"
   user ||--o| two_factor : "user_id"
+  user |o--o{ wiki_draft : "updated_by"
 ```
