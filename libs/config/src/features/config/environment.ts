@@ -14,6 +14,7 @@ type AssetFetcher = {
 };
 
 const minimumAuthSecretLength = 32;
+const minimumAuthSecretVariety = 16;
 
 const AbsoluteUrl = Schema.String.check(
   Schema.makeFilter((candidate: string) => URL.canParse(candidate) || "Expected an absolute URL"),
@@ -31,7 +32,18 @@ const HttpsOrigin = Origin.check(
 );
 const Release = Schema.String.check(Schema.isPattern(/^[a-zA-Z0-9._-]{1,64}$/u));
 const Email = Schema.String.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/u));
-const AuthSecret = Schema.String.check(Schema.isMinLength(minimumAuthSecretLength));
+const AuthSecret = Schema.String.check(
+  Schema.isMinLength(minimumAuthSecretLength),
+  Schema.makeFilter(
+    (candidate: string) =>
+      candidate.trim() === candidate || "Leading or trailing whitespace is not allowed",
+  ),
+  Schema.makeFilter(
+    (candidate: string) =>
+      new Set(candidate).size >= minimumAuthSecretVariety ||
+      `Expected at least ${minimumAuthSecretVariety} distinct characters`,
+  ),
+);
 const NonEmpty = Schema.String.check(Schema.isMinLength(1));
 const NonEmptySecret = Schema.RedactedFromValue(NonEmpty);
 
@@ -268,7 +280,6 @@ export {
   decode,
   distinctOrigins,
   isLocalDevelopmentOrigin,
-  minimumAuthSecretLength,
   readAi,
   readConfig,
   readCore,

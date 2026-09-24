@@ -1,11 +1,11 @@
 import { tmpdir } from "node:os";
 
 import {
+  AuthSecret,
   applicationPorts,
   applications,
   loopbackHosts,
   mailpitPort,
-  minimumAuthSecretLength,
 } from "@repo/config";
 import { repositoryRoot as root } from "@repo/config/repository-root";
 import { Effect, Option, Path, Schema } from "effect";
@@ -43,7 +43,7 @@ const StripeTestCredentials = Schema.Struct({
   webhookSecret: Schema.String.check(Schema.isPattern(/^whsec_[A-Za-z0-9]+$/u)),
 });
 const CredentialsFile = Schema.Struct({
-  authSecret: Schema.String.check(Schema.isMinLength(minimumAuthSecretLength)),
+  authSecret: AuthSecret,
   origins: Schema.optionalKey(OriginMode),
   stripe: Schema.optionalKey(StripeTestCredentials),
 });

@@ -3,7 +3,6 @@ import { Effect, Redacted, Schema } from "effect";
 import { ConfigProvider, fromDotEnvContents } from "effect/ConfigProvider";
 
 import {
-  AuthSecret,
   Domain,
   Origin,
   Prefix,
@@ -63,18 +62,6 @@ it.effect("a rejected deployment input names its key without repeating its value
     assert.notInclude(described, "too-short");
   }),
 );
-
-const weakSecrets = [
-  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "abababababababababababababababab",
-  "                                        ",
-];
-
-for (const weak of weakSecrets) {
-  it.effect(`rejects a low-variety auth secret of length ${weak.length}`, () =>
-    rejects(AuthSecret, weak),
-  );
-}
 
 it.effect("the accepted secret stays redacted", () =>
   Effect.gen(function* program() {

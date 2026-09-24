@@ -131,7 +131,6 @@ export {
   decode,
   distinctOrigins,
   isLocalDevelopmentOrigin,
-  minimumAuthSecretLength,
   readAi,
   readConfig,
   readEnvironment,
