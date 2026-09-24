@@ -40,7 +40,7 @@
     "react-dom": "catalog:",
     "remark-gfm": "4.0.1",
     "yaml": "catalog:",
-    "zod": "catalog:"
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
@@ -52,7 +52,6 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "msw": "catalog:",
-    "steiger": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",

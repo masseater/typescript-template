@@ -1,4 +1,4 @@
-import { sandboxUnsafeTestPattern } from "./stryker-sandbox-test-fixture.ts";
+const sandboxUnsafeTestPattern = "**/*.sandbox-unsafe.test.ts";
 
 const configuration = {
   coverageAnalysis: "perTest",
@@ -37,4 +37,5 @@ const configuration = {
   vitest: { configFile: "vitest.mutation.config.ts" },
 };
 
+export { sandboxUnsafeTestPattern };
 export default configuration;

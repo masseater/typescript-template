@@ -2,8 +2,8 @@ import { runHook } from "cc-hooks-ts";
 import { Effect, Schema } from "effect";
 import { describe, expect, test, vi } from "vite-plus/test";
 
+import { runCaptured } from "../child-process.ts";
 import { joinPath } from "../host.ts";
-import { spawnChildSync } from "../node-spawn.ts";
 import { hook } from "./hook.ts";
 import { denyReasonFor } from "./message.ts";
 
@@ -37,29 +37,27 @@ describe("unabridged cli", () => {
   describe("a Bash command slicing the record it reads", () => {
     const it = test
       .extend("theRunOverASlicingCommand", () =>
-        spawnChildSync({
-          executable: process.execPath,
-          handed: [CLI_PATH],
-          spawnOptions: {
-            encoding: "utf8",
+        Effect.runPromise(
+          runCaptured({
+            executable: process.execPath,
+            handed: [CLI_PATH],
             input: SLICING_COMMAND_PAYLOAD,
-          },
-        }))
+          }),
+        ))
       .extend("theExitCodeOverASlicingCommand", ({ theRunOverASlicingCommand }) => {
         const { status } = theRunOverASlicingCommand;
         return status;
       })
       .extend("theDecisionOverASlicingCommand", () =>
         Effect.runPromise(
-          Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(
-            spawnChildSync({
-              executable: process.execPath,
-              handed: [CLI_PATH],
-              spawnOptions: {
-                encoding: "utf8",
-                input: SLICING_COMMAND_PAYLOAD,
-              },
-            }).stdout,
+          runCaptured({
+            executable: process.execPath,
+            handed: [CLI_PATH],
+            input: SLICING_COMMAND_PAYLOAD,
+          }).pipe(
+            Effect.flatMap(({ stdout }) =>
+              Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(stdout),
+            ),
           ),
         ),
       );
@@ -90,14 +88,13 @@ describe("unabridged cli", () => {
   describe("a Bash command reading the whole record", () => {
     const it = test
       .extend("theRunOverAWholeRecordCommand", () =>
-        spawnChildSync({
-          executable: process.execPath,
-          handed: [CLI_PATH],
-          spawnOptions: {
-            encoding: "utf8",
+        Effect.runPromise(
+          runCaptured({
+            executable: process.execPath,
+            handed: [CLI_PATH],
             input: WHOLE_RECORD_COMMAND_PAYLOAD,
-          },
-        }))
+          }),
+        ))
       .extend("theExitCodeOverAWholeRecordCommand", ({ theRunOverAWholeRecordCommand }) => {
         const { status } = theRunOverAWholeRecordCommand;
         return status;

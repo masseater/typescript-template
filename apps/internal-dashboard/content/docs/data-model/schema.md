@@ -100,6 +100,21 @@ erDiagram
     text member_id FK "nullable"
     text member_name
   }
+  customer_invoice {
+    integer amount_credited
+    integer amount_due
+    integer amount_paid
+    integer amount_refunded
+    integer amount_remaining
+    text currency
+    text hosted_invoice_url "nullable"
+    integer issued_at
+    text member_id FK
+    text origin_key UK
+    text status
+    text stripe_invoice_id PK
+    integer updated_at
+  }
   direct_message {
     text id PK
     text body
@@ -508,6 +523,7 @@ erDiagram
   board_thread ||--o{ board_post : "thread_id"
   conversation ||--o{ conversation_participant : "conversation_id"
   user |o--o{ conversation_participant : "member_id"
+  user ||--o{ customer_invoice : "member_id"
   conversation ||--o{ direct_message : "conversation_id"
   user |o--o{ direct_message : "sender_id"
   user ||--o{ follow : "followee_id"

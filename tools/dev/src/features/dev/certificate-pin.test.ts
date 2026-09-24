@@ -1,6 +1,3 @@
-// @effect-diagnostics-next-line nodeBuiltinImport:off
-import { X509Certificate } from "node:crypto";
-
 import { describe, expect, it } from "vite-plus/test";
 
 import { spkiFromCertificatePem } from "./certificate-pin.ts";
@@ -31,19 +28,21 @@ const versionOneCertificate = [
   "-----END CERTIFICATE-----",
 ].join("\n");
 
-const publicKeyDer = (pem: string): Buffer =>
-  new X509Certificate(pem).publicKey.export({ format: "der", type: "spki" });
+const issuedPublicKeyInfo = Buffer.from(
+  "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtuuYaqU9WgvCVEVR20mZHcqkzseWVaJG9P/7p2DQDqd45H4hvJ7TZ0p2yq+ACbGP4aCQPn47EXEZDWblGN12RQ==",
+  "base64",
+);
 
 describe("pinning a certificate by its public key", () => {
   it("reads the subject public key info after the explicit version field", () => {
     expect(Buffer.from(spkiFromCertificatePem(versionThreeCertificate))).toStrictEqual(
-      publicKeyDer(versionThreeCertificate),
+      issuedPublicKeyInfo,
     );
   });
 
   it("reads the subject public key info of a certificate without a version field", () => {
     expect(Buffer.from(spkiFromCertificatePem(versionOneCertificate))).toStrictEqual(
-      publicKeyDer(versionOneCertificate),
+      issuedPublicKeyInfo,
     );
   });
 

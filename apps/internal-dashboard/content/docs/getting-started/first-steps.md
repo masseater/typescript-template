@@ -9,9 +9,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
 
 まずはサービスの性質と規模をまとめ、そのうえでサービス名や初期コンテンツを自分のサービスに合わせて変更します。
 
-- サービスの性質と規模のまとめ:
-  - 利用者数、データ量、書き込みの頻度と同時に来る量、伸び方の見込み、扱うデータの性質（個人情報・決済など）を最初に書き出し、`apps/internal-dashboard/content/docs` に置きます。
-  - テンプレートの構成がそのまま使えるかは規模で変わります。4. の DB や 5. の決済代行業者の選択など、以降の判断はこのまとめを前提にします。
+- サービスの性質と規模のまとめ: [サービスの定義](/decisions/service#性質と規模) に書きます。テンプレートの構成がそのまま使えるかは規模で変わるので、4. の DB や 5. の決済代行業者の選択など、以降の判断はこのまとめを前提にします。
 - サービス名の変更: 利用者アプリのサービス名設定（`apps/service-member/src/shared/config/service.ts`）を更新します。
 - LP と見本コンテンツの刷新:
   - `apps/service-member` の LP（`/pages/member-lp`）や各種文言を書き換えます。
@@ -37,7 +35,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
   - `staging` の必須キーが揃っているとき、main への統合が staging へ適用します。1つも無いときは適用を始めず、一部だけあるときは失敗します。
   - `production` は Actions の deploy を `workflow_dispatch` で target `production` にしたときだけ適用します。Environment に承認者を付けます。
   - 両方でキー名は同じです。`TEMPLATE_PREFIX` と、そこから決まる origin・送信ドメインは環境ごとに分けます。
-  - 必須キーは `libs/observability/src/deployment-keys.ts` の `deploymentKeys` です。
+  - 必須キーは `libs/observability/src/features/observability/deployment-keys.ts` の `deploymentKeys` です。
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
     - `BUDGET_JPY`: 正の数。予算監視は実行のたびに取得した為替レートで米ドルに換算し、固定費と予備費を引いた残りを使える額とします。残りが無いと予算監視が失敗を通知します。
     - `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_ZONE_ID`: 16進 32 文字。
@@ -54,7 +52,7 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `TEMPLATE_OTLP_AUTHORIZATION`: トレース送信の認可。
     - `TEMPLATE_WIKI_PUBLISH_APP_ID`・`TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY`・`TEMPLATE_WIKI_PUBLISH_REPOSITORY`: wiki の下書きを「公開」したときに PR を作る [GitHub App](https://docs.github.com/ja/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) の App ID、秘密鍵（PEM）、`owner/repository`。手では置かず、下の `infra/github` の適用で作ります。3 つとも置くか、どれも置かないかのどちらかです。本番のデプロイだけに渡すので、staging では公開ボタンは出ません。staging の編集が main を経て本番へ出ないようにするためです。
 - 検索エンジン設定:
-  - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/worker.ts`）。
+  - テンプレートの初期状態では、全ページに `x-robots-tag: noindex, nofollow` が付与されています（`libs/runtime/src/features/runtime/responses.ts`）。
   - 一般公開する際は、公開対象のパスについてこの設定を見直し、本番応答でヘッダーを確認してから公開します。
 - Alchemy によるインフラ適用:
   - `infra/cloudflare` でリソースの `plan` を確認し、Cloudflare アカウントへインフラをデプロイします。

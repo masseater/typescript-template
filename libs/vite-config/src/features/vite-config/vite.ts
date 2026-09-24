@@ -118,7 +118,7 @@ const withoutLocalState = [
 
 const sliceBoundaries = measured({
   check: {
-    command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
+    command: "quality-check-feature-sliced && quality-check-thin-app-routes",
     input: [
       ...taskInput,
       ...withoutLocalState,

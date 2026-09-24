@@ -18,6 +18,21 @@ const OfferView = Schema.Struct({
 
 const HostedPage = Redirect;
 
+const InvoiceView = Schema.Struct({
+  amountCredited: Schema.Finite,
+  amountDue: Schema.Finite,
+  amountPaid: Schema.Finite,
+  amountRefunded: Schema.Finite,
+  amountRemaining: Schema.Finite,
+  currency: Schema.String,
+  hostedInvoiceUrl: Schema.optional(Schema.String),
+  issuedAt: Schema.DateFromString,
+  status: Schema.String,
+  stripeInvoiceId: Schema.String,
+});
+
+const InvoiceList = Schema.Struct({ invoices: Schema.Array(InvoiceView) });
+
 const WebhookReceipt = Schema.Struct({ outcome: Schema.Literals(webhookOutcomes) });
 
 const checkoutReturns = ["cancel", "success"] as const;
@@ -37,4 +52,12 @@ function readCheckoutReturn(raw: unknown): typeof CheckoutReturnSearch.Type {
   return Option.getOrElse(decodeCheckoutReturn(raw), () => ({}));
 }
 
-export { CHECKOUT_RETURN, HostedPage, OfferView, PlanView, WebhookReceipt, readCheckoutReturn };
+export {
+  CHECKOUT_RETURN,
+  HostedPage,
+  InvoiceList,
+  OfferView,
+  PlanView,
+  WebhookReceipt,
+  readCheckoutReturn,
+};

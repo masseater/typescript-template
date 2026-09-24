@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { NodeServices } from "@effect/platform-node";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { runCli } from "@repo/cli";
 import { Cause, Config, Console, Effect, Schema } from "effect";
 

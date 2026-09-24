@@ -1,37 +1,51 @@
-import { spawnChildSync } from "../node-spawn.ts";
+import { Data, Effect } from "effect";
+
+import { runCaptured } from "../child-process.ts";
 
 export type GitRunner = (
   gitLaunch: Readonly<{ cwd: string; handed: readonly string[] }>,
-) => Readonly<{ status: number | null; stderr: string; stdout: string }>;
+) => Effect.Effect<
+  Readonly<{ error?: Error; status: number | null; stderr: string; stdout: string }>
+>;
 
 export const runGit: GitRunner = (gitLaunch) =>
-  spawnChildSync({
-    executable: "git",
-    handed: gitLaunch.handed,
-    spawnOptions: { cwd: gitLaunch.cwd, encoding: "utf8", env: process.env },
-  });
+  runCaptured({ executable: "git", handed: gitLaunch.handed, cwd: gitLaunch.cwd });
+
+export class WorktreeHomeFailure extends Data.TaggedError("WorktreeHomeFailure")<{
+  readonly message: string;
+  readonly cause?: Error;
+}> {}
 
 export const gitOutput = (
   run: GitRunner,
   gitLaunch: Readonly<{ cwd: string; handed: readonly string[] }>,
-): string => {
-  const gitExit = run(gitLaunch);
-  if (gitExit.status !== 0) {
-    throw new Error(
-      `worktree-home: git ${gitLaunch.handed.join(" ")} failed in ${gitLaunch.cwd}: ${gitExit.stderr.trim()}`,
-    );
-  }
-  return gitExit.stdout.trim();
-};
+): Effect.Effect<string, WorktreeHomeFailure> =>
+  run(gitLaunch).pipe(
+    Effect.flatMap((gitExit) =>
+      gitExit.status === 0
+        ? Effect.succeed(gitExit.stdout.trim())
+        : Effect.fail(
+            new WorktreeHomeFailure({
+              message: `worktree-home: git ${gitLaunch.handed.join(" ")} failed in ${gitLaunch.cwd}: ${gitExit.stderr.trim()}`,
+              ...(gitExit.error === undefined ? {} : { cause: gitExit.error }),
+            }),
+          ),
+    ),
+  );
 
-export const repositoryRootOf = (run: GitRunner, directory: string): string | undefined => {
-  const commonDirectory = run({
+export const repositoryRootOf = (
+  run: GitRunner,
+  directory: string,
+): Effect.Effect<string | undefined> =>
+  run({
     cwd: directory,
     handed: ["rev-parse", "--path-format=absolute", "--git-common-dir"],
-  });
-  if (commonDirectory.status !== 0) {
-    return undefined;
-  }
-  const gitDirectory = commonDirectory.stdout.trim();
-  return gitDirectory.endsWith("/.git") ? gitDirectory.slice(0, -"/.git".length) : undefined;
-};
+  }).pipe(
+    Effect.map((commonDirectory) => {
+      if (commonDirectory.status !== 0) {
+        return undefined;
+      }
+      const gitDirectory = commonDirectory.stdout.trim();
+      return gitDirectory.endsWith("/.git") ? gitDirectory.slice(0, -"/.git".length) : undefined;
+    }),
+  );

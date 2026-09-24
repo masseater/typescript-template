@@ -1,6 +1,7 @@
+import { Effect } from "effect";
 import { attempt } from "es-toolkit";
 
-import { spawnChildSync } from "../node-spawn.ts";
+import { runCaptured } from "../child-process.ts";
 
 const combinedFailure = (primary: Error, fallback: Error | null): Error =>
   fallback === null
@@ -13,8 +14,7 @@ const combinedFailure = (primary: Error, fallback: Error | null): Error =>
 type TaskkillExecutor = (invocation: {
   executable: string;
   handedArguments: readonly string[];
-  spawnConfiguration: { stdio: "ignore"; windowsHide: true };
-}) => { error?: Error; status: number | null };
+}) => Effect.Effect<{ error?: Error; status: number | null }>;
 
 type ProcessTreeDependencies = {
   platform: NodeJS.Platform;
@@ -30,16 +30,14 @@ const signalProcess = (pid: number, signal: NodeJS.Signals): Error | null => {
   return signalFailure;
 };
 
-const executeTaskkill: TaskkillExecutor = (invocation) => {
-  const exit = spawnChildSync({
-    executable: invocation.executable,
-    handed: invocation.handedArguments,
-    spawnOptions: invocation.spawnConfiguration,
-  });
-  return exit.error === undefined
-    ? { status: exit.status }
-    : { error: exit.error, status: exit.status };
-};
+const executeTaskkill: TaskkillExecutor = (invocation) =>
+  runCaptured({ executable: invocation.executable, handed: invocation.handedArguments }).pipe(
+    Effect.map((exit) =>
+      exit.error === undefined
+        ? { status: exit.status }
+        : { error: exit.error, status: exit.status },
+    ),
+  );
 
 const resolvedDependencies = (
   input: Partial<ProcessTreeDependencies> | undefined,
@@ -49,26 +47,27 @@ const resolvedDependencies = (
   executeTaskkill: input?.executeTaskkill ?? executeTaskkill,
 });
 
-const runWindowsTaskkill = (pid: number, execute: TaskkillExecutor): Error | null => {
-  const taskkillExit = execute({
+const runWindowsTaskkill = (pid: number, execute: TaskkillExecutor): Effect.Effect<Error | null> =>
+  execute({
     executable: "taskkill",
     handedArguments: ["/PID", String(pid), "/T", "/F"],
-    spawnConfiguration: { stdio: "ignore", windowsHide: true },
-  });
-  if (taskkillExit.error !== undefined) return taskkillExit.error;
-  return taskkillExit.status === 0
-    ? null
-    : new Error(`taskkill exited with code ${taskkillExit.status ?? "unknown"}`);
-};
+  }).pipe(
+    Effect.map((taskkillExit) => {
+      if (taskkillExit.error !== undefined) return taskkillExit.error;
+      return taskkillExit.status === 0
+        ? null
+        : new Error(`taskkill exited with code ${taskkillExit.status ?? "unknown"}`);
+    }),
+  );
 
 const treeSignalFailure = (input: {
   pid: number;
   signal: NodeJS.Signals;
   dependencies: ProcessTreeDependencies;
-}): Error | null =>
+}): Effect.Effect<Error | null> =>
   input.dependencies.platform === "win32"
     ? runWindowsTaskkill(input.pid, input.dependencies.executeTaskkill)
-    : input.dependencies.signalProcess(-input.pid, input.signal);
+    : Effect.sync(() => input.dependencies.signalProcess(-input.pid, input.signal));
 
 const processIsMissing = (failure: Error): boolean =>
   (failure as NodeJS.ErrnoException).code === "ESRCH";
@@ -95,17 +94,20 @@ export const signalProcessTree = (input: {
   pid: number;
   signal: NodeJS.Signals;
   dependencies?: Partial<ProcessTreeDependencies>;
-}): Error | null => {
+}): Effect.Effect<Error | null> => {
   const dependencies = resolvedDependencies(input.dependencies);
-  const treeFailure = treeSignalFailure({ ...input, dependencies });
-  if (treeFailure === null) return null;
-  const rootFailure = dependencies.signalProcess(
-    input.pid,
-    dependencies.platform === "win32" ? TREE_TERMINATION_SIGNAL.forced : input.signal,
+  return treeSignalFailure({ ...input, dependencies }).pipe(
+    Effect.map((treeFailure) => {
+      if (treeFailure === null) return null;
+      const rootFailure = dependencies.signalProcess(
+        input.pid,
+        dependencies.platform === "win32" ? TREE_TERMINATION_SIGNAL.forced : input.signal,
+      );
+      if (shutdownCompleted({ platform: dependencies.platform, treeFailure, rootFailure })) {
+        return null;
+      }
+      return combinedFailure(treeFailure, rootFailure);
+    }),
   );
-  if (shutdownCompleted({ platform: dependencies.platform, treeFailure, rootFailure })) {
-    return null;
-  }
-  return combinedFailure(treeFailure, rootFailure);
 };
 export type { ProcessTreeDependencies, TaskkillExecutor };
