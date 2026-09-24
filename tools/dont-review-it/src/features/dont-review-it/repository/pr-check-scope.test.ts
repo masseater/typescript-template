@@ -3,6 +3,7 @@ import { Effect, FileSystem, Path } from "effect";
 import { describe, expect, it } from "vite-plus/test";
 
 import { repositoryRoot } from "./repository-root.ts";
+import { rootNodeTestIncludes } from "./tool-test-projects.ts";
 
 const repositoryText = (file: string) =>
   Effect.gen(function* repositoryText() {
@@ -33,9 +34,10 @@ describe("pull request check scope", () => {
         expect(vite).toContain('premerge: ["test:dev-server", "test:storybook"]');
         expect(vite).toContain("isolate: false");
         expect(vite).toContain('name: "node-isolated"');
-        expect(vite).toContain('"apps/**/*.test.ts"');
-        expect(vite).toContain('"infra/**/*.test.ts"');
-        expect(vite).toContain('"libs/**/*.test.ts"');
+        expect(vite).toContain("include: [...rootNodeTestIncludes]");
+        expect(rootNodeTestIncludes).toContain("apps/**/*.test.ts");
+        expect(rootNodeTestIncludes).toContain("infra/**/*.test.ts");
+        expect(rootNodeTestIncludes).toContain("libs/**/*.test.ts");
         expect(workflow).toContain("--shard=${{ matrix.shard }}/4");
         expect(workflow).toContain("shard: [1, 2, 3, 4]");
         expect(workflow).toContain("merge-queue-unit:");
