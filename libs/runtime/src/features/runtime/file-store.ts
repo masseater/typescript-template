@@ -23,8 +23,9 @@ type FileStoreShape = {
     file: Readonly<{ body: ReadableStream; contentType: string | undefined }>,
   ) => Effect.Effect<void, StorageFailed>;
   readonly remove: (fieldNames: readonly string[]) => Effect.Effect<void, StorageFailed>;
+  readonly removePrefix: (prefix: string) => Effect.Effect<void, StorageFailed>;
 };
-type Bucket = Pick<R2Bucket, "delete" | "get" | "put">;
+type Bucket = Pick<R2Bucket, "delete" | "get" | "list" | "put">;
 const isBucketStream = (candidate: unknown): candidate is BucketStream =>
   candidate instanceof ReadableStream;
 const attempt = storageAttempt("files");
@@ -32,6 +33,20 @@ const uploadOptions = (
   contentType: string | undefined,
 ): { readonly httpMetadata: { readonly contentType: string } } | undefined =>
   contentType === undefined ? undefined : { httpMetadata: { contentType } };
+const removeListed = (
+  bucket: Bucket,
+  listing: Readonly<{ prefix: string; cursor?: string }>,
+): Effect.Effect<void, StorageFailed> =>
+  Effect.gen(function* removeListedPage() {
+    const listed = yield* attempt("list", () => bucket.list(listing));
+    const fieldNames = listed.objects.map((stored) => stored.key);
+    if (fieldNames.length > 0) {
+      yield* attempt("delete", () => bucket.delete(fieldNames));
+    }
+    if (listed.truncated) {
+      yield* removeListed(bucket, { cursor: listed.cursor, prefix: listing.prefix });
+    }
+  });
 const storeOf = (bucket: Bucket): FileStoreShape => {
   return {
     get: (fieldName) =>
@@ -70,6 +85,10 @@ const storeOf = (bucket: Bucket): FileStoreShape => {
       fieldNames.length === 0
         ? Effect.void
         : attempt("delete", () => bucket.delete([...fieldNames])),
+    removePrefix: (prefix) =>
+      prefix.length === 0
+        ? Effect.fail(new StorageFailed({ reason: "operation_failed" }))
+        : removeListed(bucket, { prefix }),
   };
 };
 const unavailableStore: FileStoreShape = {
@@ -78,6 +97,7 @@ const unavailableStore: FileStoreShape = {
   put: () => storageUnavailable,
   putStream: () => storageUnavailable,
   remove: () => storageUnavailable,
+  removePrefix: () => storageUnavailable,
 };
 class FileStore extends Context.Service<FileStore, FileStoreShape>()("@repo/runtime/FileStore") {
   public static layer(bucket: Bucket | undefined): Layer.Layer<FileStore> {
