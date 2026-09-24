@@ -108,7 +108,6 @@ layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
       const ownerPath = pathService.join(mappingRoot, "src/owner.ts");
       yield* filesystem.writeFileString(ownerPath, OWNER_SOURCE);
       const program = createCanonicalValuesTypeScriptProgram({
-        documentRegistry: ts.createDocumentRegistry(),
         repositoryRoot: mappingRoot,
         rootNames: [ownerPath],
         searchDirectory: pathService.join(mappingRoot, "src"),
@@ -156,7 +155,6 @@ layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
       const ownerPath = pathService.join(outsideConfigRoot, "nested/src/owner.ts");
       yield* filesystem.writeFileString(ownerPath, OWNER_SOURCE);
       const program = createCanonicalValuesTypeScriptProgram({
-        documentRegistry: ts.createDocumentRegistry(),
         repositoryRoot: pathService.join(outsideConfigRoot, "nested"),
         rootNames: [ownerPath],
         searchDirectory: pathService.join(outsideConfigRoot, "nested/src"),
@@ -208,7 +206,6 @@ layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
       );
       const [failure] = attempt<ts.Program, Error>(() =>
         createCanonicalValuesTypeScriptProgram({
-          documentRegistry: ts.createDocumentRegistry(),
           repositoryRoot: path.join(outsideExtendsRoot, "nested"),
           rootNames: [ownerPath],
           searchDirectory: path.join(outsideExtendsRoot, "nested/src"),
@@ -259,7 +256,6 @@ layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
       );
       const [failure] = attempt<ts.Program, Error>(() =>
         createCanonicalValuesTypeScriptProgram({
-          documentRegistry: ts.createDocumentRegistry(),
           repositoryRoot: path.join(outsideTargetRoot, "nested"),
           rootNames: [ownerPath],
           searchDirectory: path.join(outsideTargetRoot, "nested/src"),
@@ -299,7 +295,6 @@ layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
       );
       const [failure] = attempt<ts.Program, Error>(() =>
         createCanonicalValuesTypeScriptProgram({
-          documentRegistry: ts.createDocumentRegistry(),
           repositoryRoot: malformedRoot,
           rootNames: [ownerPath],
           searchDirectory: path.join(malformedRoot, "src"),
@@ -329,7 +324,6 @@ layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
 
       const sourcePath = pathService.join(tsxRoot, "src/owner.tsx");
       const program = createCanonicalValuesTypeScriptProgram({
-        documentRegistry: ts.createDocumentRegistry(),
         repositoryRoot: tsxRoot,
         rootNames: [sourcePath],
         searchDirectory: pathService.join(tsxRoot, "src"),
@@ -361,7 +355,6 @@ layer(NodeServices.layer)("createCanonicalValuesTypeScriptProgram", (it) => {
 
       const sourcePath = pathService.join(tsRoot, "src/owner.ts");
       const program = createCanonicalValuesTypeScriptProgram({
-        documentRegistry: ts.createDocumentRegistry(),
         repositoryRoot: tsRoot,
         rootNames: [sourcePath],
         searchDirectory: pathService.join(tsRoot, "src"),

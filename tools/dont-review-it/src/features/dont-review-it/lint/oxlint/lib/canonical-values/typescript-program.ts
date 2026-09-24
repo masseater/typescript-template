@@ -5,10 +5,7 @@ import { measureStage } from "../../../../lint-rule-authoring/index.ts";
 import { path } from "../../../../platform/path.ts";
 import { pathIsInside } from "../path-is-inside.ts";
 
-const REGISTERED_VERSION = "on-disk";
-
 type ProgramInput = {
-  readonly documentRegistry: ts.DocumentRegistry;
   readonly repositoryRoot: string;
   readonly rootNames: readonly string[];
   readonly searchDirectory: string;
@@ -87,27 +84,12 @@ export const createCanonicalValuesTypeScriptProgram = (input: ProgramInput): ts.
   );
   const compilerOptions = requiredOptions(parsedConfig?.options ?? {});
   const baseHost = ts.createCompilerHost(compilerOptions);
-  const registeredSourceFile = (
-    fileName: string,
-    languageVersion: ts.ScriptTarget | ts.CreateSourceFileOptions,
-  ): ts.SourceFile | undefined => {
-    const diskText = baseHost.readFile(fileName);
-    if (diskText === undefined) return undefined;
-    return input.documentRegistry.acquireDocument(
-      fileName,
-      compilerOptions,
-      ts.ScriptSnapshot.fromString(diskText),
-      REGISTERED_VERSION,
-      undefined,
-      typeof languageVersion === "object" ? languageVersion : undefined,
-    );
-  };
   const host: ts.CompilerHost = {
     ...baseHost,
     getSourceFile: (...sourceFileArguments: Parameters<ts.CompilerHost["getSourceFile"]>) => {
       const [fileName, languageVersion] = sourceFileArguments;
       const sourceText = input.sourceOverrides?.get(path.resolve(fileName));
-      if (sourceText === undefined) return registeredSourceFile(fileName, languageVersion);
+      if (sourceText === undefined) return baseHost.getSourceFile(...sourceFileArguments);
       const scriptKind = fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
       return ts.createSourceFile(fileName, sourceText, languageVersion, true, scriptKind);
     },
