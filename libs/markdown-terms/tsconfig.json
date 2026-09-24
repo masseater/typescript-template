@@ -1,0 +1,9 @@
+{
+  "extends": "@repo/dont-review-it/tsconfig/library.json",
+  "compilerOptions": {
+    "noPropertyAccessFromIndexSignature": true,
+    "noFallthroughCasesInSwitch": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["src/**/*.ts", "vite.config.ts"]
+}

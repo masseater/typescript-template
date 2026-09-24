@@ -47,6 +47,7 @@ import {
   speakerPerson,
 } from "./recording-schema.ts";
 import { memberBlock, memberReport, moderationAction } from "./trust-schema.ts";
+import { wikiDraft } from "./wiki-schema.ts";
 
 const account = sqliteTable(
   "account",
@@ -256,6 +257,7 @@ const schema = {
   twoFactor,
   user,
   verification,
+  wikiDraft,
 };
 
 export {
@@ -322,3 +324,4 @@ export {
   recordingSpeaker,
   speakerPerson,
 } from "./recording-schema.ts";
+export { wikiDraft } from "./wiki-schema.ts";

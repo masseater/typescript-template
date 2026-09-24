@@ -1,0 +1,22 @@
+{
+  "name": "@repo/markdown-terms",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/features/markdown-terms/index.ts"
+  },
+  "dependencies": {
+    "effect": "catalog:",
+    "mdast-util-find-and-replace": "3.0.2"
+  },
+  "devDependencies": {
+    "@repo/telemetry": "workspace:*",
+    "@repo/vite-config": "workspace:*",
+    "@types/mdast": "catalog:",
+    "mdast-util-mdx-jsx": "3.2.0",
+    "remark": "catalog:",
+    "remark-mdx": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

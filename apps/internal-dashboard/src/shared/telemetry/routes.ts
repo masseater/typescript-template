@@ -14,6 +14,10 @@ export const routes = {
   "/api/staff": "staff-api",
   "/api/staff/invites": "staff-invites-api",
   "/api/telemetry": "telemetry",
+  "/api/wiki-edit/draft": "wiki-draft",
+  "/api/wiki-edit/images": "wiki-image-upload",
+  "/api/wiki-edit/images/*": "wiki-image",
+  "/api/wiki-edit/source": "wiki-source",
   "/audit": "audit",
   "/consent": "consent",
   "/flags": "flags",
@@ -27,4 +31,5 @@ export const routes = {
   "/staff": "staff-page",
   "/wiki": "wiki",
   "/wiki/*": "wiki",
+  "/wiki-edit/*": "wiki-edit",
 } as const;

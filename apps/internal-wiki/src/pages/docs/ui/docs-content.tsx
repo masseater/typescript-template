@@ -19,12 +19,18 @@ const mdxComponents = { ...defaultMdxComponents, Mermaid, TermLink, a: WikiDocLi
 
 type DocsEntry = NonNullable<ReturnType<typeof docs.getPage>>;
 
-function DocsContent({ page }: Readonly<{ page: DocsEntry }>): ReactElement {
+function DocsContent({ page, path }: Readonly<{ page: DocsEntry; path: string }>): ReactElement {
   const Body = page.body;
   return (
     <DocsPageLayout toc={page.toc}>
       <DocsTitle>{page.title}</DocsTitle>
       <DocsDescription>{page.description}</DocsDescription>
+      <a
+        className="w-fit rounded-sm text-sm text-link underline outline-none hover:text-link-hover focus-visible:focus-indicator-outer"
+        href={`/wiki-edit/${path}`}
+      >
+        このページを編集
+      </a>
       <DocsBody>
         <GlossaryTermsProvider terms={glossaryTerms()}>
           <Body components={mdxComponents} />
