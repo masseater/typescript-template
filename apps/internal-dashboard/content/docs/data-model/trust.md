@@ -69,7 +69,7 @@ erDiagram
 
 ## 不変条件
 
-- AgreementVersion の `kind` は `terms` か `privacy` である。`kind` ごとに、登録時に同意を要するか・未同意のあいだ会員の操作を止めるかを設定が持つ。今は両方が登録時に必須で、操作を止めるのは `terms` だけである
+- AgreementVersion の `kind` は `terms` か `privacy` である。`kind` ごとに、登録時に同意を要するか・未同意のあいだ会員の操作を止めるかを、設定で決める。今は両方が登録時に必須で、操作を止めるのは `terms` だけである
 - `version` は種類をまたいで一意である。`publishedAt` が入った版は本文を変えられず、公開は取り消せない。公開したときは AuditEvent に `agreement_published` を残す
 - AgreementAcceptance は公開済みの版にだけ作れる。同じ会員と版の組は 1 件で、会員を消すと消えるが、版は同意が残るあいだ消せない
 - 会員に求める再同意の判定は 1 か所で行う。会員ごとに「公開済みの最新版に未同意の `kind` の集合」を返し、登録時の同意、API の共通判定、会員の画面はそれを使う

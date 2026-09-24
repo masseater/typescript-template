@@ -3,7 +3,7 @@ title: OpenTelemetry
 description: 処理の区間を span にし、同じ trace id のログと一緒に OTLP で送る。HTTP を受けた span は自動で開く
 ---
 
-OpenTelemetry は、トレース、メトリクス、ログを一つのモデルで表し、OTLP で送る。トレースは span の木で、一本の trace id を共有する。span は名前と、開始から終了までの区間と、親の span id を持つ。ログは別の信号で、同じ trace id を持てる。この送り出しはトレースとログで、どちらも OTLP の JSON である。何を記録するかと深刻さは `.claude/skills/reviews/references/observability.md` が持つ。
+OpenTelemetry は、トレース、メトリクス、ログを一つのモデルで表し、OTLP で送る。トレースは span の木で、一本の trace id を共有する。span は名前と、開始から終了までの区間と、親の span id を持つ。ログは別の信号で、同じ trace id を持てる。この送り出しはトレースとログで、どちらも OTLP の JSON である。
 
 サーバーでは `effect/unstable/observability` の `OtlpTracer` と `OtlpLogger` が、`{endpoint}/v1/traces` と `{endpoint}/v1/logs` へ出す。リソースにはサービス名と版を載せる。タイマーでは送らない。`flushTelemetry` が溜めた分を送る。[Cloudflare](/tech-stack/cloudflare) では応答を返したあとに isolate が止まりうるので、応答を返せたときはその flush を `waitUntil` に渡す。エンドポイントが無いときは OTLP へ出さず、構造化ログの行だけが残る。
 
@@ -63,7 +63,7 @@ globalThis.fetch = async (input, init) => {
 };
 ```
 
-`fetch("/users/123")` は `traced` を送る。`hex(16)` が trace id、`hex(8)` が span id で、呼び出しごとに変わる。`fetch("https://other.example/")` と `fetch("/api/telemetry")` は `originalFetch` のままである。ブラウザから SLI までの層は [Observability](/observability) が持つ。
+`fetch("/users/123")` は `traced` を送る。`hex(16)` が trace id、`hex(8)` が span id で、呼び出しごとに変わる。`fetch("https://other.example/")` と `fetch("/api/telemetry")` は `originalFetch` のままである。
 
 ## 採ると
 

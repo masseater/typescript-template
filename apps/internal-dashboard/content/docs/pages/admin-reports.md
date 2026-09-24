@@ -8,8 +8,6 @@ description: 利用者からの通報を読み、処置するページ
 - `/reports`: サイドバー「通報」から開く一覧
 - `/reports/{id}`: 一覧・利用者の詳細から開く 1 件
 
-実体は [信頼と安全](/data-model/trust) の Report と ModerationAction が持つ。
-
 ## 一覧
 
 上から次の順に置く。
