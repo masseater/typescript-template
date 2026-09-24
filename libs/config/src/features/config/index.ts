@@ -71,6 +71,8 @@ export {
   PLAN,
   SUBSCRIPTION_STATUS,
   WEBHOOK_DISPOSITION,
+  aiMeterEventName,
+  aiUsageUnitAmount,
   invoiceDueDays,
   paidStatuses,
   plans,

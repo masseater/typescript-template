@@ -1,4 +1,10 @@
-import { invoiceDueDays, priceIntervals, readStripeConfig, stripeApiVersion } from "@repo/config";
+import {
+  aiMeterEventName,
+  invoiceDueDays,
+  priceIntervals,
+  readStripeConfig,
+  stripeApiVersion,
+} from "@repo/config";
 import { withSpan } from "@repo/observability";
 import { Redirect } from "@repo/runtime/contracts";
 import { Context, Effect, Layer, Schema } from "effect";
@@ -84,6 +90,9 @@ interface StripeShape {
   readonly createPortalSession: (input: PortalInput) => Effect.Effect<string, StripeFailure>;
   readonly offer: Effect.Effect<Offer, StripeFailure>;
   readonly payByInvoice: (subscriptionId: string) => Effect.Effect<void, StripeFailure>;
+  readonly reportUsage: (
+    usage: Readonly<{ customerId: string; identifier: string; quantity: number }>,
+  ) => Effect.Effect<void, StripeFailure>;
   readonly readEvent: (
     payload: string,
     signature: string | null,
@@ -203,6 +212,7 @@ function checkoutForm(config: StripeConfig, input: CheckoutInput): URLSearchPara
     integration_identifier: checkoutIntegration,
     "line_items[0][price]": config.priceId,
     "line_items[0][quantity]": "1",
+    "line_items[1][price]": config.meteredPriceId,
     mode: "subscription",
     "subscription_data[metadata][member_id]": input.memberId,
     success_url: input.successUrl,
@@ -233,6 +243,17 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
         Effect.flatMap((body) => decodeStripe(IssuedInvoiceBody, body)),
         Effect.map(asIssuedInvoice),
       ),
+    reportUsage: (usage) =>
+      send(
+        "/billing/meter_events",
+        new URLSearchParams({
+          event_name: aiMeterEventName,
+          identifier: usage.identifier,
+          "payload[stripe_customer_id]": usage.customerId,
+          "payload[value]": String(usage.quantity),
+        }),
+        `usage:${usage.identifier}`,
+      ).pipe(Effect.asVoid),
     payByInvoice: (subscriptionId) =>
       send(
         `/subscriptions/${subscriptionId}`,

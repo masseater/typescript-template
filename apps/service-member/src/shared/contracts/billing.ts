@@ -33,6 +33,13 @@ const InvoiceView = Schema.Struct({
 
 const InvoiceList = Schema.Struct({ invoices: Schema.Array(InvoiceView) });
 
+const UsageView = Schema.Struct({
+  events: Schema.Finite,
+  quantity: Schema.Finite,
+  since: Schema.DateFromString,
+  unreported: Schema.Finite,
+});
+
 const WebhookReceipt = Schema.Struct({ outcome: Schema.Literals(webhookOutcomes) });
 
 const checkoutReturns = ["cancel", "success"] as const;
@@ -58,6 +65,7 @@ export {
   InvoiceList,
   OfferView,
   PlanView,
+  UsageView,
   WebhookReceipt,
   readCheckoutReturn,
 };

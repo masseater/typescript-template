@@ -2,6 +2,7 @@ import { verifySession } from "@repo/auth";
 import { PLAN, WEBHOOK_DISPOSITION, httpStatus } from "@repo/config";
 import {
   PaidPlanRequired,
+  aiUsageSince,
   findInvoiceOfOrigin,
   findSubscription,
   listMemberInvoices,
@@ -10,7 +11,7 @@ import {
 } from "@repo/db";
 import { sessionFailures } from "@repo/runtime/account";
 import { AppOrigin, createApi, readJsonBody } from "@repo/runtime/http";
-import { Effect, Schema } from "effect";
+import { DateTime, Effect, Schema } from "effect";
 
 import { PaidAlready, Stripe, handleStripeEvent, paidFailures } from "#shared/billing/index.ts";
 import {
@@ -19,6 +20,7 @@ import {
   InvoiceList,
   OfferView,
   PlanView,
+  UsageView,
   WebhookReceipt,
 } from "#shared/contracts/index.ts";
 
@@ -149,6 +151,21 @@ const payByInvoice = Effect.fn("billing.api.payByInvoice")(function* payByInvoic
   return { outcome: WEBHOOK_DISPOSITION.applied };
 });
 
+const usage = Effect.fn("billing.api.usage")(function* usage(request: Request) {
+  const { user } = yield* verifySession(request.headers);
+  const subscription = yield* findSubscription(user.id);
+  const periodEnd = subscription?.currentPeriodEnd ?? undefined;
+  const periodStart = DateTime.toDate(
+    periodEnd === undefined
+      ? DateTime.makeUnsafe(0)
+      : DateTime.subtract(DateTime.fromDateUnsafe(periodEnd), { months: 1 }),
+  );
+  return {
+    ...(yield* aiUsageSince({ memberId: user.id, since: periodStart })),
+    since: periodStart,
+  };
+});
+
 const webhook = Effect.fn("billing.api.webhook")(function* webhook(request: Request) {
   const payload = yield* Effect.promise(() => request.text());
   const event = yield* (yield* Stripe).readEvent(payload, request.headers.get("stripe-signature"));
@@ -163,6 +180,7 @@ function billingApi(api: ApiRoutes<AppServices | Stripe>) {
     .post("/billing/checkout", ...api.route({ response: HostedPage }, checkout, failures))
     .post("/billing/portal", ...api.route({ response: HostedPage }, portal, failures))
     .get("/billing/invoices", ...api.route({ response: InvoiceList }, invoices, failures))
+    .get("/billing/usage", ...api.route({ response: UsageView }, usage, failures))
     .post(
       "/billing/invoice-payment",
       ...api.route({ response: WebhookReceipt }, payByInvoice, failures),

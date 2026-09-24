@@ -86,11 +86,13 @@ describe("the variables every runner shares", () => {
         expect.hasAssertions();
         const credentials = yield* sharedRunnerCredentials();
         expect(appVariables("service-member", credentials, "loopback")).toMatchObject({
+          STRIPE_METERED_PRICE_ID: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
           STRIPE_PRICE_ID: expect.stringMatching(/^price_[A-Za-z0-9]+$/u),
           STRIPE_SECRET_KEY: expect.stringMatching(/^sk_test_[A-Za-z0-9]+$/u),
           STRIPE_WEBHOOK_SECRET: expect.stringMatching(/^whsec_[A-Za-z0-9]+$/u),
         });
         const stripe = {
+          meteredPriceId: "price_storedMeteredNotReal",
           priceId: "price_storedNotReal",
           secretKey: "sk_test_storedNotAReal",
           webhookSecret: "whsec_storedNotReal",
@@ -98,6 +100,7 @@ describe("the variables every runner shares", () => {
         expect(
           appVariables("service-member", { ...credentials, stripe }, "loopback"),
         ).toMatchObject({
+          STRIPE_METERED_PRICE_ID: stripe.meteredPriceId,
           STRIPE_PRICE_ID: stripe.priceId,
           STRIPE_SECRET_KEY: stripe.secretKey,
           STRIPE_WEBHOOK_SECRET: stripe.webhookSecret,

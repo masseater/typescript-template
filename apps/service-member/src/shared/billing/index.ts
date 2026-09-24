@@ -1,3 +1,4 @@
+export { meterAiTurn } from "./ai-metering.ts";
 export { PaidAlready } from "./paid-already.ts";
 export { paidFailures } from "./paid-guard.ts";
 export { Stripe } from "./stripe.ts";

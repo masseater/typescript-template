@@ -7,8 +7,10 @@ import {
   withdrawAgreementKind,
 } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
+import { appEnvironment } from "@repo/runtime/testing";
 import { Effect, Layer, Schema } from "effect";
 
+import { Stripe } from "#shared/billing/index.ts";
 import { ProfileLayoutAssembler } from "#shared/profile-layout/assembler.ts";
 import { readSavedSheet } from "#shared/profile-layout/saved-sheet.ts";
 import { Interviewer } from "./interviewer.ts";
@@ -25,6 +27,7 @@ const withoutModel = Layer.mergeAll(
   TestDatabase,
   Interviewer.layer(),
   ProfileLayoutAssembler.layer(),
+  Layer.orDie(Stripe.fromEnvironment(appEnvironment())),
 );
 
 function addMember(id: string): Effect.Effect<unknown, unknown> {

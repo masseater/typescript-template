@@ -118,6 +118,7 @@ const StripeTrialPeriodDays = Schema.String.check(
 const StripeScalars = Schema.Struct({
   APP_ORIGIN: Origin,
   STRIPE_AUTOMATIC_TAX: Schema.Literals(["false", "true"]),
+  STRIPE_METERED_PRICE_ID: StripePriceId,
   STRIPE_PRICE_ID: StripePriceId,
   STRIPE_SECRET_KEY: StripeSecretKey,
   STRIPE_TRIAL_PERIOD_DAYS: StripeTrialPeriodDays,
@@ -272,6 +273,7 @@ const readStripeConfig = Effect.fn("readStripeConfig")(function* readStripeConfi
   }
   return {
     automaticTax: scalars.STRIPE_AUTOMATIC_TAX === "true",
+    meteredPriceId: scalars.STRIPE_METERED_PRICE_ID,
     mode: keyMode,
     priceId: scalars.STRIPE_PRICE_ID,
     secretKey: scalars.STRIPE_SECRET_KEY,

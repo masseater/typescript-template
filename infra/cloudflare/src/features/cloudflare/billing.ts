@@ -1,4 +1,6 @@
 import {
+  aiMeterEventName,
+  aiUsageUnitAmount,
   stripeApiVersion,
   stripeAutomaticTax,
   stripeTrialPeriodDays,
@@ -25,6 +27,17 @@ const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
     recurring: { interval: "month" },
     unitAmount: 500,
   });
+  const meter = yield* Stripe.BillingMeter("AiUsage", {
+    defaultAggregation: { formula: "sum" },
+    displayName: `${prefix} AI usage`,
+    eventName: aiMeterEventName,
+  });
+  const meteredPrice = yield* Stripe.Price("AiUsageMonthly", {
+    currency: "jpy",
+    product: product.id,
+    recurring: { interval: "month", meter: meter.id, usageType: "metered" },
+    unitAmount: aiUsageUnitAmount,
+  });
   const webhook = yield* Stripe.WebhookEndpoint("BillingWebhook", {
     apiVersion: stripeApiVersion,
     enabledEvents: [...stripeWebhookEvents],
@@ -32,6 +45,7 @@ const billingProgram = Effect.fn("billingProgram")(function* billingProgram(
   });
   return {
     STRIPE_AUTOMATIC_TAX: String(stripeAutomaticTax),
+    STRIPE_METERED_PRICE_ID: meteredPrice.id,
     STRIPE_PRICE_ID: price.id,
     STRIPE_SECRET_KEY: secretKey,
     STRIPE_TRIAL_PERIOD_DAYS: String(stripeTrialPeriodDays),

@@ -38,6 +38,13 @@ erDiagram
     text summary "nullable"
     text version UK
   }
+  ai_usage_event {
+    text identifier PK
+    text member_id FK
+    integer occurred_at
+    integer quantity
+    integer reported_at "nullable"
+  }
   apikey {
     text config_id
     integer created_at
@@ -520,6 +527,7 @@ erDiagram
   agreement_version ||--o{ agreement_acceptance : "version_id"
   user |o--o{ agreement_version : "created_by"
   user |o--o{ agreement_version : "published_by"
+  user ||--o{ ai_usage_event : "member_id"
   board_thread ||--o{ board_post : "thread_id"
   conversation ||--o{ conversation_participant : "conversation_id"
   user |o--o{ conversation_participant : "member_id"
