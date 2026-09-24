@@ -476,6 +476,14 @@ erDiagram
     integer updated_at
     text value
   }
+  wiki_draft {
+    text base_revision "nullable"
+    text markdown
+    text path PK
+    integer updated_at
+    text updated_by FK "nullable"
+    integer version
+  }
   withdrawn_member {
     integer created_at
     text email
@@ -544,4 +552,5 @@ erDiagram
   user ||--o{ session : "user_id"
   user |o--o{ speaker_person : "consent_recorded_by"
   user ||--o| two_factor : "user_id"
+  user |o--o{ wiki_draft : "updated_by"
 ```

@@ -5,7 +5,7 @@ import {
   configuredFeatureFlagsLayer,
 } from "@repo/feature-flags";
 import { configuredAppLayer } from "@repo/runtime";
-import { readWorkerConfig } from "@repo/runtime/bindings";
+import { readAppStorage, readWorkerConfig } from "@repo/runtime/bindings";
 import { Effect, Layer } from "effect";
 
 import type { AuthFailure } from "@repo/auth";
@@ -34,8 +34,9 @@ function wikiLayer(
       Effect.flatMap((config) =>
         Effect.gen(function* wikiServices() {
           const flags = yield* configuredFeatureFlagsLayer(config);
+          const storage = yield* readAppStorage(env, wikiService);
           return Layer.mergeAll(
-            configuredAppLayer({ appConfig: config, audience: wikiService, routes }),
+            configuredAppLayer({ appConfig: config, audience: wikiService, routes, storage }),
             flags,
             staffFlagEditors,
           );

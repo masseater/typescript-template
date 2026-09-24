@@ -25,6 +25,7 @@ import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as DashboardRecordingsIndexRouteImport } from './routes/_dashboard/recordings/index'
 import { Route as DashboardRecordingsIdRouteImport } from './routes/_dashboard/recordings/$id'
+import { Route as DashboardWikiEditSplatRouteImport } from './routes/_dashboard/wiki-edit/$'
 
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
@@ -106,6 +107,11 @@ const DashboardRecordingsIdRoute = DashboardRecordingsIdRouteImport.update({
   path: '/recordings/$id',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardWikiEditSplatRoute = DashboardWikiEditSplatRouteImport.update({
+  id: '/wiki-edit/$',
+  path: '/wiki-edit/$',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/invite/$token': typeof InviteTokenRoute
   '/recordings/$id': typeof DashboardRecordingsIdRoute
+  '/wiki-edit/$': typeof DashboardWikiEditSplatRoute
   '/recordings/': typeof DashboardRecordingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof DashboardIndexRoute
   '/recordings/$id': typeof DashboardRecordingsIdRoute
+  '/wiki-edit/$': typeof DashboardWikiEditSplatRoute
   '/recordings': typeof DashboardRecordingsIndexRoute
 }
 export interface FileRoutesById {
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/_dashboard/': typeof DashboardIndexRoute
   '/_dashboard/recordings/$id': typeof DashboardRecordingsIdRoute
+  '/_dashboard/wiki-edit/$': typeof DashboardWikiEditSplatRoute
   '/_dashboard/recordings/': typeof DashboardRecordingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/invite/$token'
     | '/recordings/$id'
+    | '/wiki-edit/$'
     | '/recordings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/'
     | '/recordings/$id'
+    | '/wiki-edit/$'
     | '/recordings'
   id:
     | '__root__'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/_dashboard/'
     | '/_dashboard/recordings/$id'
+    | '/_dashboard/wiki-edit/$'
     | '/_dashboard/recordings/'
   fileRoutesById: FileRoutesById
 }
@@ -340,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRecordingsIdRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/wiki-edit/$': {
+      id: '/_dashboard/wiki-edit/$'
+      path: '/wiki-edit/$'
+      fullPath: '/wiki-edit/$'
+      preLoaderRoute: typeof DashboardWikiEditSplatRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
@@ -351,6 +370,7 @@ interface DashboardRouteChildren {
   DashboardStaffRoute: typeof DashboardStaffRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardRecordingsIdRoute: typeof DashboardRecordingsIdRoute
+  DashboardWikiEditSplatRoute: typeof DashboardWikiEditSplatRoute
   DashboardRecordingsIndexRoute: typeof DashboardRecordingsIndexRoute
 }
 
@@ -362,6 +382,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardStaffRoute: DashboardStaffRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardRecordingsIdRoute: DashboardRecordingsIdRoute,
+  DashboardWikiEditSplatRoute: DashboardWikiEditSplatRoute,
   DashboardRecordingsIndexRoute: DashboardRecordingsIndexRoute,
 }
 
