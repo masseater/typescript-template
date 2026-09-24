@@ -119,9 +119,9 @@ export const relatedGuidelineProblems = ({
   readonly repositoryRoot: string;
 }): Effect.Effect<LintRuleCheckReport, LintRuleWorkspaceFailure, FileSystem.FileSystem> =>
   Effect.gen(function* relatedGuidelineProblems() {
-    const places = normativeDocumentPlacesIn(repositoryRoot);
+    const places = yield* normativeDocumentPlacesIn(repositoryRoot);
     const workspaces = yield* lintRuleWorkspacesIn(repositoryRoot);
-    const normativeDocuments = normativeDocumentsIn({
+    const normativeDocuments = yield* normativeDocumentsIn({
       repositoryRoot,
       places,
       workspaceDirectories: workspaces.map((workspace) => workspace.workspaceDir),

@@ -1,88 +1,118 @@
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { NodeServices } from "@effect/platform-node";
+import { Effect, Schema, Stream, type PlatformError } from "effect";
+import { ChildProcess, ChildProcessSpawner } from "effect/unstable/process";
 
-const binRelative = (
-  manifest: Readonly<{ readonly bin?: Readonly<Record<string, string>> }>,
-): string => {
+import { filesystem, paths } from "./host.ts";
+
+class CompilerUnavailable extends Schema.TaggedError<CompilerUnavailable>()("CompilerUnavailable", {
+  transcript: Schema.String,
+}) {
+  override get message(): string {
+    return this.transcript;
+  }
+}
+
+const EffectTsgoManifest = Schema.fromJsonString(
+  Schema.Struct({ bin: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)) }),
+);
+
+const effectTsgoBin = Effect.gen(function* effectTsgoBin() {
+  const packageJsonPath = yield* paths.fromFileUrl(
+    new URL(import.meta.resolve("@effect/tsgo/package.json")),
+  );
+  const manifest = yield* Schema.decodeEffect(EffectTsgoManifest)(
+    yield* filesystem.readFileString(packageJsonPath),
+  );
   const relativeBin = manifest.bin?.["effect-tsgo"];
   if (relativeBin === undefined) {
-    throw new Error("typecheck gate: @effect/tsgo is missing the effect-tsgo bin");
+    return yield* new CompilerUnavailable({
+      transcript: "typecheck gate: @effect/tsgo is missing the effect-tsgo bin",
+    });
   }
-  return relativeBin;
+  return paths.join(paths.dirname(packageJsonPath), relativeBin);
+});
+
+type SpawnTranscript = {
+  readonly status: number;
+  readonly stderr: string;
+  readonly stdout: string;
 };
 
-const effectTsgoBin = (): string => {
-  const packageJsonPath = fileURLToPath(import.meta.resolve("@effect/tsgo/package.json"));
-  return path.join(
-    path.dirname(packageJsonPath),
-    binRelative(
-      JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
-        readonly bin?: Readonly<Record<string, string>>;
-      },
-    ),
-  );
-};
+const spawnTranscript = (
+  invocation: Readonly<{
+    executable: string;
+    commandArguments: readonly string[];
+    cwd?: string;
+  }>,
+): Effect.Effect<SpawnTranscript, PlatformError.PlatformError> =>
+  Effect.gen(function* spawnTranscript() {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    const handle = yield* spawner.spawn(
+      ChildProcess.make(invocation.executable, [...invocation.commandArguments], {
+        ...(invocation.cwd === undefined ? {} : { cwd: invocation.cwd }),
+        stdin: "ignore",
+      }),
+    );
+    const [stdout, stderr, exitCode] = yield* Effect.all(
+      [
+        Stream.mkString(Stream.decodeText(handle.stdout)),
+        Stream.mkString(Stream.decodeText(handle.stderr)),
+        handle.exitCode,
+      ],
+      { concurrency: "unbounded" },
+    );
+    const transcript: SpawnTranscript = { status: exitCode, stderr, stdout };
+    return transcript;
+  }).pipe(Effect.scoped, Effect.provide(NodeServices.layer));
 
 type CompilerResult = {
   readonly output: string;
   readonly status: number;
 };
 
-type SpawnTranscript = {
-  readonly status: number | null;
-  readonly stderr: string | null;
-  readonly stdout: string | null;
-};
-
 const combinedOutput = (spawned: SpawnTranscript): CompilerResult => ({
-  output: `${spawned.stdout ?? ""}${spawned.stderr ?? ""}`,
-  status: spawned.status ?? 1,
+  output: `${spawned.stdout}${spawned.stderr}`,
+  status: spawned.status,
 });
 
-const compilerFromResolution = (spawned: SpawnTranscript): string => {
-  const executable = (spawned.stdout ?? "").trim();
-  if (spawned.status !== 0 || executable === "") {
-    throw new Error(combinedOutput(spawned).output || "typecheck gate: compiler not found");
+const locateCompiler = Effect.gen(function* locateCompiler() {
+  const resolution = yield* spawnTranscript({
+    executable: process.execPath,
+    commandArguments: [yield* effectTsgoBin, "get-exe-path"],
+  });
+  const executable = resolution.stdout.trim();
+  if (resolution.status !== 0 || executable === "") {
+    return yield* new CompilerUnavailable({
+      transcript: combinedOutput(resolution).output || "typecheck gate: compiler not found",
+    });
   }
   return executable;
-};
-
-const locateCompiler = (environment?: Readonly<Record<string, string | undefined>>): string =>
-  compilerFromResolution(
-    spawnSync(process.execPath, [effectTsgoBin(), "get-exe-path"], {
-      encoding: "utf-8",
-      ...(environment === undefined ? {} : { env: { ...environment } }),
-    }),
-  );
-
-const compilerFailureTranscript = (compilerFailure: unknown): string =>
-  compilerFailure instanceof Error
-    ? `${compilerFailure.message}\n`
-    : "typecheck gate: compiler not found\n";
+});
 
 const compileWorkspace = (
   asked: Readonly<{
     cwd: string;
-    environment?: Readonly<Record<string, string | undefined>>;
-    locate?: (environment?: Readonly<Record<string, string | undefined>>) => string;
+    locate?: Effect.Effect<string, Error>;
   }>,
-): CompilerResult => {
-  const locate = asked.locate ?? locateCompiler;
-  try {
-    const executable = locate(asked.environment);
+): Effect.Effect<CompilerResult> =>
+  Effect.gen(function* compileWorkspace() {
+    const executable = yield* asked.locate ?? locateCompiler;
     return combinedOutput(
-      spawnSync(executable, ["--pretty", "false", "--noEmit", "-p", "tsconfig.json"], {
+      yield* spawnTranscript({
+        executable,
+        commandArguments: ["--pretty", "false", "--noEmit", "-p", "tsconfig.json"],
         cwd: asked.cwd,
-        encoding: "utf-8",
-        ...(asked.environment === undefined ? {} : { env: { ...asked.environment } }),
       }),
     );
-  } catch (compilerFailure: unknown) {
-    return { output: compilerFailureTranscript(compilerFailure), status: 1 };
-  }
-};
+  }).pipe(
+    Effect.match({
+      onFailure: (compilerFailure): CompilerResult => ({
+        output: `${compilerFailure.message}\n`,
+        status: 1,
+      }),
+      onSuccess: (compiled) => compiled,
+    }),
+  );
 
 export { compileWorkspace };
 export type { CompilerResult };
