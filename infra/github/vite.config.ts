@@ -1,6 +1,5 @@
-import { fileURLToPath } from "node:url";
-
 import { telemetryAsked } from "@repo/telemetry/optional-setting";
+import { vitestSdkPath } from "@repo/telemetry/vitest-sdk-path";
 import { effectRun } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -16,7 +15,7 @@ export default defineConfig({
     experimental: {
       openTelemetry: {
         enabled: telemetryAsked,
-        sdkPath: fileURLToPath(import.meta.resolve("@repo/telemetry/vitest-sdk")),
+        sdkPath: vitestSdkPath,
       },
     },
     coverage: { exclude: ["specs/**"], thresholds: { 100: true, perFile: true } },

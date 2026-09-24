@@ -1,6 +1,5 @@
-import { fileURLToPath } from "node:url";
-
 import { telemetryAsked } from "@repo/ai-native-telemetry/optional-setting";
+import { vitestSdkPath } from "@repo/ai-native-telemetry/vitest-sdk-path";
 import {
   effectDiagnostics,
   intentValidation,
@@ -59,7 +58,7 @@ export default defineConfig({
     experimental: {
       openTelemetry: {
         enabled: telemetryAsked,
-        sdkPath: fileURLToPath(import.meta.resolve("@repo/ai-native-telemetry/vitest-sdk")),
+        sdkPath: vitestSdkPath,
       },
     },
     testTimeout: 60_000,
