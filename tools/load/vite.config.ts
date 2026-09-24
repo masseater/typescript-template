@@ -8,6 +8,7 @@ import {
   checkCode,
   modularBoundaries,
   workspaceCheckImports,
+  telemetryEnv,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 
@@ -16,6 +17,7 @@ export default defineConfig({
     tasks: {
       "check:effect": {
         command: [effectTsgoNoEmit("tsconfig.json"), effectTsgoNoEmit("scenarios/tsconfig.json")],
+        env: [...telemetryEnv],
         input: effectDiagnostics(import.meta.dirname)["check:effect"].input,
       },
       ...checkCode,

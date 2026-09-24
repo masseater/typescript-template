@@ -48,8 +48,8 @@ export default defineConfig({
   },
   pack: {
     entry: [
+      "src/features/ai-native-telemetry/index.ts",
       "src/features/ai-native-telemetry/telemetry/optional-setting.ts",
-      "src/features/ai-native-telemetry/telemetry/telemetry.ts",
       "src/features/ai-native-telemetry/telemetry/vitest-sdk.ts",
     ],
     dts: { generator: "oxc" },

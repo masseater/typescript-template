@@ -10,6 +10,7 @@ import {
   jobsQueueBinding,
   jobsWorkflowBinding,
   jobsWorkflowClass,
+  stripeWebhookEvents,
   userInboxBinding,
   userInboxClassName,
   wikiApiBinding,
@@ -30,6 +31,7 @@ import {
   healthOriginKey,
 } from "@repo/monitor/workers";
 import { deploymentKey } from "@repo/observability/deployment-keys";
+import { apiRoot } from "@repo/runtime/http";
 import { Cause, Console, Effect, Schema } from "effect";
 
 import { loadArtifacts } from "./artifacts.ts";
@@ -129,9 +131,9 @@ const capabilityBindings: readonly (readonly [Capability, readonly string[]])[] 
   [
     "billing",
     [
-      `STRIPE_PRICE_ID:secret_text:text=$${deploymentKey.stripePriceId}`,
+      "STRIPE_PRICE_ID:deferred:<unresolved PropExpr>",
       `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
-      `STRIPE_WEBHOOK_SECRET:secret_text:text=$${deploymentKey.stripeWebhookSecret}`,
+      "STRIPE_WEBHOOK_SECRET:deferred:<unresolved EffectExpr>",
     ],
   ],
   ["workers-ai", ["AI:ai"]],
@@ -162,6 +164,43 @@ function applicationCrons(app: Application): { readonly crons?: readonly string[
   return {
     ...(app === APPLICATION.user ? { crons: [memberLeavePurgeCron] } : {}),
     ...(app === APPLICATION.wiki ? { crons: ["*/30 * * * *"] } : {}),
+  };
+}
+
+function billingResources(app: Application): Readonly<Record<string, ResourceInventory>> {
+  if (!grants(app, "billing")) {
+    return {};
+  }
+  return {
+    BillingWebhook: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        enabledEvents: [...stripeWebhookEvents],
+        url: `${origins[app]}${apiRoot}/billing/webhook`,
+      },
+      removalPolicy: "destroy",
+      type: "Stripe.WebhookEndpoint",
+    },
+    PaidMonthly: {
+      adopt: false,
+      bindings: [],
+      declared: {
+        currency: "jpy",
+        product: "<unresolved PropExpr>",
+        recurring: { interval: "month" },
+        unitAmount: 500,
+      },
+      removalPolicy: "destroy",
+      type: "Stripe.Price",
+    },
+    PaidPlan: {
+      adopt: false,
+      bindings: [],
+      declared: { name: `${prefix} paid plan` },
+      removalPolicy: "destroy",
+      type: "Stripe.Product",
+    },
   };
 }
 
@@ -307,6 +346,7 @@ const applicationStack = Effect.fn("applicationStack")(function* applicationStac
 ) {
   const artifacts = yield* loadArtifacts(repositoryRoot, app);
   return declaredStack(app, {
+    ...billingResources(app),
     ...jobsResources(app),
     Worker: applicationResource(app, artifacts.release),
   });

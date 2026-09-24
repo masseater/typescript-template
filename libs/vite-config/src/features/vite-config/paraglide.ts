@@ -5,6 +5,7 @@ import { repositoryRoot } from "@repo/config/repository-root";
 
 import { paths } from "./host.ts";
 import { localizedApps, paraglideCompileOptions, paraglideStrategy } from "./paraglide-options.ts";
+import { telemetryEnv } from "./run-config.ts";
 import { taskInput } from "./task-input.ts";
 
 import type { PluginOption, UserConfig } from "vite-plus";
@@ -52,6 +53,7 @@ const workspaceParaglideCompile = {
     base: "workspace" as const,
     pattern: `apps/${app}/.paraglide/**`,
   })),
+  env: [...telemetryEnv],
 } satisfies NonNullable<NonNullable<NonNullable<UserConfig["run"]>["tasks"]>[string]>;
 
 export {

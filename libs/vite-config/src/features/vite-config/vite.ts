@@ -47,8 +47,10 @@ import { localizedApps } from "./paraglide-options.ts";
 import { withoutInlangState, workspaceParaglideCompile } from "./paraglide.ts";
 import { previewDevVars } from "./preview-dev-vars.ts";
 import { failOnBrokenSourceMaps, privateSourceMaps } from "./private-source-maps.ts";
+import { measured, telemetryEnv, type RunConfig, type Tasks } from "./run-config.ts";
 import { scalarReference } from "./scalar-reference.ts";
 import { taskInput } from "./task-input.ts";
+import { testRun } from "./test-run.ts";
 import {
   wikiCompanion,
   wikiDevServices,
@@ -109,29 +111,12 @@ const generatedDirectories = [
 const withoutGenerated = (...directories: readonly string[]): string[] =>
   directories.flatMap((directory) => [`!${directory}`, `!${directory}/**`]);
 
-type RunConfig = NonNullable<UserConfig["run"]>;
-type Tasks = NonNullable<RunConfig["tasks"]>;
-
-const testRun = {
-  test: {
-    command: "vp test run",
-    input: [
-      ...taskInput,
-      "!coverage/**",
-      { base: "workspace", pattern: "!**/coverage/**" },
-      { base: "workspace", pattern: "pnpm-lock.yaml" },
-      { base: "workspace", pattern: "pnpm-workspace.yaml" },
-    ],
-    output: [],
-  },
-} satisfies Tasks;
-
 const withoutLocalState = [
   { base: "workspace", pattern: "!.local" },
   { base: "workspace", pattern: "!.local/**" },
 ] as const;
 
-const sliceBoundaries = {
+const sliceBoundaries = measured({
   check: {
     command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
     input: [
@@ -143,25 +128,25 @@ const sliceBoundaries = {
       })),
     ],
   },
-} satisfies Tasks;
+} satisfies Tasks);
 
-const intentValidation = {
+const intentValidation = measured({
   check: { command: "intent validate", input: [...taskInput] },
-} satisfies Tasks;
+} satisfies Tasks);
 
-const checkCode = {
+const checkCode = measured({
   "check:code": { command: "vp check --no-error-on-unmatched-pattern", input: [...taskInput] },
-} satisfies Tasks;
+} satisfies Tasks);
 
-const workspaceCheckImports = {
+const workspaceCheckImports = measured({
   "check:imports": { command: "quality-check-imports", input: [...taskInput] },
-} satisfies Tasks;
+} satisfies Tasks);
 
-const modularBoundaries = {
+const modularBoundaries = measured({
   "check:modular": { command: "quality-check-modular", input: [...taskInput] },
-} satisfies Tasks;
+} satisfies Tasks);
 
-const effectRunTasks = {
+const effectRunTasks = measured({
   ...checkCode,
   ...workspaceCheckImports,
   ...modularBoundaries,
@@ -169,7 +154,7 @@ const effectRunTasks = {
     precommit: ["check:code"],
     prepush: ["check:effect", "check:imports", "check:modular"],
   }),
-} satisfies Tasks;
+} satisfies Tasks);
 
 const effectRun = (
   packageRoot: string,
@@ -183,7 +168,7 @@ const awaitingEffectRun = (
   tasks: { ...awaitingEffectDiagnostics(packageRoot), ...effectRunTasks },
 });
 
-const appChecks = {
+const appChecks = measured({
   "check:client": {
     command: "quality-check-client",
     input: [
@@ -201,9 +186,9 @@ const appChecks = {
     input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...withoutInlangState],
     output: [{ auto: true }, "!**/node_modules/.cache/**"],
   },
-} satisfies Tasks;
+} satisfies Tasks);
 
-const appTasks = {
+const appTasks = measured({
   ...checkCode,
   ...workspaceCheckImports,
   ...appChecks,
@@ -234,7 +219,7 @@ const appTasks = {
     prepr: ["build"],
     premerge: ["build", "check:dev"],
   }),
-} satisfies Tasks;
+} satisfies Tasks);
 
 const appRun = (packageRoot: string): { tasks: typeof appTasks & EffectDiagnosticsTask } => ({
   tasks: { ...awaitingEffectDiagnostics(packageRoot), ...appTasks },
@@ -242,7 +227,7 @@ const appRun = (packageRoot: string): { tasks: typeof appTasks & EffectDiagnosti
 
 const paraglideCompileDependency = ["typescript-template#compile:paraglide"];
 
-const paraglideAppTasks = {
+const paraglideAppTasks = measured({
   ...appTasks,
   ...Object.fromEntries(
     (["check:code", "check:imports", "check:client", "check:react"] as const).map((gatedTask) => [
@@ -250,7 +235,7 @@ const paraglideAppTasks = {
       { ...appTasks[gatedTask], dependsOn: paraglideCompileDependency },
     ]),
   ),
-} satisfies Tasks;
+} satisfies Tasks);
 
 const paraglideAppRun = (packageRoot: string): RunConfig => ({
   tasks: {
@@ -386,7 +371,7 @@ const wikiContentInput = {
   pattern: `apps/${wikiHost}/content/docs/**`,
 } as const;
 
-const wikiTasks = {
+const wikiTasks = measured({
   ...checkCode,
   ...workspaceCheckImports,
   ...appChecks,
@@ -403,7 +388,7 @@ const wikiTasks = {
     prepr: ["build"],
     premerge: ["build"],
   }),
-} satisfies Tasks;
+} satisfies Tasks);
 
 const wikiRun = (packageRoot: string): RunConfig => ({
   tasks: { ...effectDiagnostics(packageRoot), ...wikiTasks },
@@ -488,7 +473,9 @@ export {
   generatedDirectories,
   sliceBoundaries,
   startOptions,
+  measured,
   taskInput,
+  telemetryEnv,
   testRun,
   toolTest,
   withoutEnvFileLoader,

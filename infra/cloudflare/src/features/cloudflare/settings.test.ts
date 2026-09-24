@@ -13,7 +13,7 @@ import {
 } from "./config.ts";
 import { encodeJson } from "./platform.ts";
 import { describeFailure } from "./secrets.ts";
-import { authSecret, settings as deploymentSettings } from "./settings.ts";
+import { authSecret, settings as deploymentSettings, stripeSandboxKey } from "./settings.ts";
 import {
   verificationAuthSecret,
   verificationEnvironment,
@@ -206,5 +206,22 @@ it.effect("the settings every command reads carry the shared checks", () =>
       code: "mail_from_outside_deployment",
       keys: ["TEMPLATE_MAIL_FROM", "TEMPLATE_PREFIX"],
     });
+  }),
+);
+
+for (const key of ["sk_live_notARealKey", "rk_live_notARealKey", "pk_test_notARealKey"]) {
+  it.effect(`rejects Stripe key ${key.slice(0, 8)} outside the sandbox`, () =>
+    Effect.provideService(
+      stripeSandboxKey,
+      ConfigProvider,
+      environment({ STRIPE_API_KEY: key }),
+    ).pipe(Effect.flip, Effect.asVoid),
+  );
+}
+
+it.effect("accepts a Stripe sandbox secret key", () =>
+  Effect.gen(function* program() {
+    const key = yield* Effect.provideService(stripeSandboxKey, ConfigProvider, environment({}));
+    assert.strictEqual(Redacted.value(key), verificationSettings.stripeSecretKey);
   }),
 );

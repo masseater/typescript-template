@@ -3,13 +3,12 @@ import { pathToFileURL } from "node:url";
 
 import { repositoryRoot } from "@repo/config/repository-root";
 import { Stage, inMemoryState } from "alchemy";
-import { providers } from "alchemy/Cloudflare";
 import { isApplyExpr, isExpr, isPropExpr, isRefExpr } from "alchemy/Output";
 import { toEffect } from "alchemy/Test/Core";
 import { Effect, Predicate, References, Result, Schema } from "effect";
 
 import { stackEntrypoint } from "./stack-entrypoints.ts";
-import { stackName } from "./stacks.ts";
+import { stackName, stackProviders } from "./stacks.ts";
 import { verificationEnvironment, verificationSettings } from "./verification-settings.ts";
 
 import type { StackName } from "./stacks.ts";
@@ -277,7 +276,7 @@ const compileStack = Effect.fn("compileStack")(function* compileStack(stack: Sta
   const compiled: unknown = yield* toEffect(
     Effect.provideService(program, Stage, verificationSettings.prefix),
     {
-      providers: providers(),
+      providers: stackProviders,
       state: inMemoryState(),
     },
   ).pipe(

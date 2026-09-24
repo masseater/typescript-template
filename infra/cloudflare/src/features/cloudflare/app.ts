@@ -23,12 +23,13 @@ import {
 import { Effect } from "effect";
 
 import { loadArtifacts, workerModuleGlobs } from "./artifacts.ts";
+import { billingProgram } from "./billing.ts";
 import { workerCompatibilityOptions, workerObservability, workerSubdomain } from "./config.ts";
 import { coreWorkerRef } from "./core-program.ts";
 import { databaseRef } from "./database.ts";
 import { flagshipAppRef } from "./flagship.ts";
 import { memberLeavePurgeCron } from "./member-leave-purge.ts";
-import { authSecret, otlpAuthorization, settings, stripeSettings } from "./settings.ts";
+import { authSecret, otlpAuthorization, settings } from "./settings.ts";
 import { cacheNamespaceRef, fileBucketRef } from "./storage.ts";
 import { accountTokenRef } from "./tokens.ts";
 import { wikiWorkerRef } from "./wiki-program.ts";
@@ -98,15 +99,6 @@ function operationsEmail(config: SharedConfig): string {
   return config.budget.recipients[0] ?? config.mailFrom;
 }
 
-const optionalBilling = Effect.fn("optionalBilling")(function* optionalBilling(
-  target: Application,
-) {
-  const billing: BillingEnv | undefined = grants(target, "billing")
-    ? yield* stripeSettings
-    : undefined;
-  return billing;
-});
-
 const optionalJobsQueue = Effect.fn("optionalJobsQueue")(function* optionalJobsQueue(
   target: Application,
 ) {
@@ -153,8 +145,10 @@ const applicationProgram = Effect.fn("applicationProgram")(function* application
   const config: SharedConfig = yield* Effect.orDie(settings);
   const secret: Redacted.Redacted = yield* authSecret;
   const authorization: Redacted.Redacted | undefined = yield* otlpAuthorization;
-  const billing = yield* optionalBilling(target);
   const origin = config.origins[target];
+  const billing: BillingEnv | undefined = grants(target, "billing")
+    ? yield* billingProgram(config.prefix, origin)
+    : undefined;
   const artifacts = yield* Effect.orDie(loadArtifacts(repositoryRoot, target));
   const database = yield* databaseRef();
   const flags = yield* flagshipAppRef();

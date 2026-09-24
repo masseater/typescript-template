@@ -52,9 +52,7 @@ jobs:
           TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
-          TEMPLATE_STRIPE_PRICE_ID: ${{ secrets.TEMPLATE_STRIPE_PRICE_ID }}
-          TEMPLATE_STRIPE_SECRET_KEY: ${{ secrets.TEMPLATE_STRIPE_SECRET_KEY }}
-          TEMPLATE_STRIPE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_STRIPE_WEBHOOK_SECRET }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
@@ -93,9 +91,7 @@ jobs:
           TEMPLATE_PREFIX: ${{ secrets.TEMPLATE_PREFIX }}
           TEMPLATE_SERVICE_ADMIN_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_ADMIN_ORIGIN }}
           TEMPLATE_SERVICE_MEMBER_ORIGIN: ${{ secrets.TEMPLATE_SERVICE_MEMBER_ORIGIN }}
-          TEMPLATE_STRIPE_PRICE_ID: ${{ secrets.TEMPLATE_STRIPE_PRICE_ID }}
-          TEMPLATE_STRIPE_SECRET_KEY: ${{ secrets.TEMPLATE_STRIPE_SECRET_KEY }}
-          TEMPLATE_STRIPE_WEBHOOK_SECRET: ${{ secrets.TEMPLATE_STRIPE_WEBHOOK_SECRET }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
       - if: steps.prepare.outputs.configured == 'true'
         run: vp run --filter @repo/infra-cloudflare deploy:ordered
       - if: steps.prepare.outputs.configured == 'true'
