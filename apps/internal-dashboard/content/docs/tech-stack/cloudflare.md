@@ -3,7 +3,7 @@ title: Cloudflare
 description: アプリケーションを Workers として実行し、外部依存を binding として渡す
 ---
 
-実行環境は Cloudflare Workers である。リクエストを待っているプロセスは無く、`fetch` が応答を返したあとのメモリは残らない。開発時も同じ workerd で動く。資源の記述は [Alchemy](/tech-stack/alchemy) が持つ。
+実行環境は Cloudflare Workers である。リクエストを待っているプロセスは無く、`fetch` が応答を返したあとのメモリは残らない。開発時も同じ workerd で動く。
 
 Worker の外にあるデータベースは、接続文字列ではなく binding で渡す。D1 はその binding の先にある SQLite である。接続先をソースに書くと、宣言を変えても文字列の側は変わらない。
 

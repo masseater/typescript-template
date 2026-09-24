@@ -9,7 +9,7 @@
 | 対象 | 形式 | 例 |
 | --- | --- | --- |
 | コンポーネント | PascalCase | `Button`、`LoginPage`、`LoginModal` |
-| ページ部品 | `[Name]Page`（`Screen` 接尾辞は使わない） | `LoginPage` |
+| ページコンポーネント | `[Name]Page`（`Screen` 接尾辞は使わない） | `LoginPage` |
 | 定数 | `SCREAMING_SNAKE` | `DEFAULT_STATE`、`MAX_PAGES_WITHOUT_GAPS` |
 | Story の export | バリアント名（`[Feature]Stories` モジュール名は使わない） | `Primary`、`Disabled` |
 
@@ -22,7 +22,7 @@
 | テスト | `*.test.ts` / `*.test.tsx` / `*.worker.test.ts` | `action-gate.test.ts` |
 | ロケール | 言語コードの JSON（`language_territory` 形式は使わない） | `en.json`、`ja.json` |
 
-アプリの `src/` は FSD の `app` / `pages` / `widgets` / `features` / `entities` / `shared` だけ。`project/layers` と steiger が検査する。ページは `pages/<slice>/ui/*-page.tsx`、クエリは `api` セグメント。
+アプリの `src/` は FSD の `app` / `pages` / `widgets` / `features` / `entities` / `shared` だけ。`project/layers` と steiger がチェックする。ページは `pages/<slice>/ui/*-page.tsx`、クエリは `api` セグメント。
 
 ## 採らない出典
 
@@ -33,4 +33,4 @@
 | CSS クラスを手で kebab 設計する | Tailwind ユーティリティと `cva`。`@shadcn/lint` |
 | `[ScreenName]Screen` | `[Name]Page` |
 
-見た目のクラス名を部品の外で足さない。トークンと `data-slot` は既存の `libs/ui` に合わせる。props の形は `component-apis.md`。
+見た目のクラス名をコンポーネントの外で足さない。トークンと `data-slot` は既存の `libs/ui` に合わせる。props の形は `component-apis.md`。
