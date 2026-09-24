@@ -1,8 +1,8 @@
+import { X509Certificate } from "node:crypto";
+
 import { describe, expect, it } from "vite-plus/test";
 
 import { spkiFromCertificatePem } from "./certificate-pin.ts";
-
-const { X509Certificate } = process.getBuiltinModule("crypto");
 
 const versionThreeCertificate = [
   "-----BEGIN CERTIFICATE-----",

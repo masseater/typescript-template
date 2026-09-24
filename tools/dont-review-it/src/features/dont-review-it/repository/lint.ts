@@ -448,6 +448,7 @@ const nodeBuiltinBoundaryFiles = [
   "libs/telemetry/src/features/telemetry/telemetry.test.ts",
   "libs/vite-config/src/features/vite-config/cloudflare-workers-loader.ts",
   "libs/vite-config/src/features/vite-config/elysia-aot.ts",
+  "tools/dev/src/features/dev/certificate-pin.test.ts",
   "tools/dev/src/features/dev/ci-runner.test.ts",
   "tools/dev/src/features/dev/ci-runner.ts",
   "tools/dev/src/features/dev/dev-start.ts",
