@@ -4,6 +4,10 @@ Which lint rules of this repository declare each normative document as their gro
 
 <!-- BEGIN GENERATED rules-by-guideline -->
 
+## [.claude/skills/reviews/references/ai-like-japanese-in-product-text.md](../.claude/skills/reviews/references/ai-like-japanese-in-product-text.md)
+
+No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+
 ## [.claude/skills/reviews/references/failure-handling-and-fallbacks.md](../.claude/skills/reviews/references/failure-handling-and-fallbacks.md)
 
 | Rule | Description |
