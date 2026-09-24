@@ -1,1 +1,6 @@
-fallow の private type leak (InvoiceRecord) と portal / payByInvoice の重複を解消
+Revision history for #1553:
+
+rev 2 (content) 2026-09-24 09:45 UTC — fallow の private type leak (InvoiceRecord) と portal / payByInvoice の重複を解消
+rev 1 (initial) 2026-09-24 09:45 UTC
+
+<!-- mergify-revision-data: {"schema_version":1,"pull_number":1553,"entries":[{"number":1,"change_type":"initial","old_sha":null,"new_sha":"fc1fe540bcfc1863ca0161cee086b71abf845ed6","timestamp_iso":"2026-09-24T09:45:18Z","reason":"","replay_sha":null,"compare_url":null},{"number":2,"change_type":"content","old_sha":"fc1fe540bcfc1863ca0161cee086b71abf845ed6","new_sha":"ff9c5b8890e7ae215e78953823d44e16e2658f1a","timestamp_iso":"2026-09-24T09:45:18Z","reason":"fallow の private type leak (InvoiceRecord) と portal / payByInvoice の重複を解消","replay_sha":null,"compare_url":"https://github.com/masseater/typescript-template/compare/fc1fe540bcfc1863ca0161cee086b71abf845ed6...ff9c5b8890e7ae215e78953823d44e16e2658f1a"}]} -->
