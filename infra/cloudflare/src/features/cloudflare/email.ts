@@ -15,6 +15,9 @@ const stack = Stack(
       name: sendingDomain(config.mailFrom),
       zoneId: config.zoneId,
     }).pipe(RemovalPolicy.retain());
+    yield* Effect.forEach(config.budget.recipients, (recipient, index) =>
+      Email.Address(`Alert${index + 1}`, { email: recipient }).pipe(RemovalPolicy.retain()),
+    );
   }),
 );
 

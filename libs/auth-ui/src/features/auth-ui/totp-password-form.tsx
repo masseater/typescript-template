@@ -88,7 +88,6 @@ const TotpPasswordForm = ({
           name={AUTHENTICATION_METHOD.password}
           type={AUTHENTICATION_METHOD.password}
           autoComplete="current-password"
-          required
           value={password.value}
           onValueChange={password.handleChange}
         />

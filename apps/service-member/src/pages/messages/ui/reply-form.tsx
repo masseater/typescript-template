@@ -22,7 +22,6 @@ function ReplyForm({
           multiline
           label="メッセージ"
           name="body"
-          required
           maxLength={maximumMessageBodyLength}
           value={form.body}
           onValueChange={form.handleBodyChange}

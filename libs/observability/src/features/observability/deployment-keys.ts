@@ -5,6 +5,7 @@ const deploymentKey = {
   budgetJpy: "BUDGET_JPY",
   cloudflareAccountId: "CLOUDFLARE_ACCOUNT_ID",
   cloudflareApiToken: "CLOUDFLARE_API_TOKEN",
+  cloudflareWorkersSubdomain: "CLOUDFLARE_WORKERS_SUBDOMAIN",
   cloudflareZoneId: "CLOUDFLARE_ZONE_ID",
   mailFrom: "TEMPLATE_MAIL_FROM",
   otlpAuthorization: "TEMPLATE_OTLP_AUTHORIZATION",
@@ -12,9 +13,7 @@ const deploymentKey = {
   otlpEndpoint: "TEMPLATE_OTLP_ENDPOINT",
   googleAnalyticsMeasurementId: "TEMPLATE_GOOGLE_ANALYTICS_MEASUREMENT_ID",
   prefix: "TEMPLATE_PREFIX",
-  stripePriceId: "TEMPLATE_STRIPE_PRICE_ID",
-  stripeSecretKey: "TEMPLATE_STRIPE_SECRET_KEY",
-  stripeWebhookSecret: "TEMPLATE_STRIPE_WEBHOOK_SECRET",
+  stripeSecretKey: "STRIPE_API_KEY",
   wikiPublishAppId: "TEMPLATE_WIKI_PUBLISH_APP_ID",
   wikiPublishPrivateKey: "TEMPLATE_WIKI_PUBLISH_PRIVATE_KEY",
   wikiPublishRepository: "TEMPLATE_WIKI_PUBLISH_REPOSITORY",
@@ -24,14 +23,13 @@ const deploymentKeys = [
   deploymentKey.budgetJpy,
   deploymentKey.cloudflareAccountId,
   deploymentKey.cloudflareApiToken,
+  deploymentKey.cloudflareWorkersSubdomain,
   deploymentKey.cloudflareZoneId,
   deploymentKey.appDomain,
   deploymentKey.authSecret,
   deploymentKey.mailFrom,
   deploymentKey.prefix,
-  deploymentKey.stripePriceId,
   deploymentKey.stripeSecretKey,
-  deploymentKey.stripeWebhookSecret,
 ] as const;
 const optionalDeploymentKeys = [
   deploymentKey.googleAnalyticsMeasurementId,
@@ -43,7 +41,11 @@ const optionalDeploymentKeys = [
   deploymentKey.wikiPublishRepository,
 ] as const;
 const privateDeploymentKeys: readonly string[] = [
-  ...deploymentKeys.filter((settingName) => settingName !== deploymentKey.budgetJpy),
+  ...deploymentKeys.filter(
+    (settingName) =>
+      settingName !== deploymentKey.budgetJpy &&
+      settingName !== deploymentKey.cloudflareWorkersSubdomain,
+  ),
   ...optionalDeploymentKeys,
 ];
 export { deploymentKey, deploymentKeys, optionalDeploymentKeys, privateDeploymentKeys };

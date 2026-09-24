@@ -16,6 +16,7 @@ import {
   paraglideAppRun,
   sliceBoundaries,
   taskInput,
+  telemetryEnv,
   workspaceCheckImports,
   workspaceParaglideCompile,
 } from "./vite.ts";
@@ -97,6 +98,7 @@ describe("appRun", () => {
         ...workspaceCheckImports,
         "check:client": {
           command: "quality-check-client",
+          env: [...telemetryEnv],
           input: [
             ...taskInput,
             "!node_modules",
@@ -110,12 +112,14 @@ describe("appRun", () => {
         },
         "check:react": {
           command: "quality-check-react",
+          env: [...telemetryEnv],
           input: [...taskInput, "!**/node_modules/.cache/**", "!**/dist/**", ...inlangState],
           output: [{ auto: true }, "!**/node_modules/.cache/**"],
         },
         check: sliceBoundaries.check,
         build: {
           command: "vp build",
+          env: [...telemetryEnv],
           dependsOn: ["@repo/dev#setup", "check:effect"],
           input: [
             ...taskInput,
@@ -195,6 +199,7 @@ describe("sliceBoundaries", () => {
     expect(sliceChecks).toStrictEqual({
       check: {
         command: "steiger src --fail-on-warnings && quality-check-thin-app-routes",
+        env: [...telemetryEnv],
         input: [
           ...taskInput,
           { base: "workspace", pattern: "!.local" },
@@ -217,6 +222,7 @@ describe("workspaceParaglideCompile", () => {
   }) => {
     expect(paraglideCompile).toStrictEqual({
       command: "./libs/vite-config/src/features/vite-config/compile-workspace-paraglide.ts",
+      env: [...telemetryEnv],
       input: [
         ...taskInput,
         ...localizedApps.flatMap((app) =>

@@ -4,72 +4,74 @@ Which lint rules of this repository declare each normative document as their gro
 
 <!-- BEGIN GENERATED rules-by-guideline -->
 
-## [.claude/skills/reviews/references/agents-md.md](../.claude/skills/reviews/references/agents-md.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/ci-efficiency.md](../.claude/skills/reviews/references/ci-efficiency.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/colocation.md](../.claude/skills/reviews/references/colocation.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/config-cleanup.md](../.claude/skills/reviews/references/config-cleanup.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/documents.md](../.claude/skills/reviews/references/documents.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/domain-authority.md](../.claude/skills/reviews/references/domain-authority.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/enforcement.md](../.claude/skills/reviews/references/enforcement.md)
+## [.claude/skills/reviews/references/failure-handling-and-fallbacks.md](../.claude/skills/reviews/references/failure-handling-and-fallbacks.md)
 
 | Rule | Description |
 | --- | --- |
-| [forbid-generic-restriction-rule--use-the-declared-rule](../tools/dont-review-it/docs/lint/forbid-generic-restriction-rule--use-the-declared-rule.md) | Disallow enabling an off-the-shelf lint rule that reads what it rejects from its own configuration, so every ban this repository declares stands in the rule that carries its replacement and reaches the checks that read the bans |
-| [forbid-symbol-prefixed-name--rename-to-alphanumeric-start](../tools/dont-review-it/docs/lint/forbid-symbol-prefixed-name--rename-to-alphanumeric-start.md) | Require every directory and file name on the path of a linted file to start with a letter or a digit, so nothing sits where a glob walk never reaches it |
-| [forbid-test-adjacent-file--inline-its-setup-into-the-test](../tools/dont-review-it/docs/lint/forbid-test-adjacent-file--inline-its-setup-into-the-test.md) | Disallow a file whose name carries a test marker other than the ones the repository runs, so no file can leave the production scope by the way it is spelled |
-| [forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier](../tools/dont-review-it/docs/lint/forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier.md) | Disallow a module specifier whose value is decided while the program runs, so every specifier in the source is one string the checks that read specifiers can match |
-| [no-blanket-suppression--name-and-record](../tools/dont-review-it/docs/lint/no-blanket-suppression--name-and-record.md) | Disallow any lint suppression comment and disallow a repository ledger of approved suppressions, so a report ends in a repair to the code or a named exception in the lint configuration and never in a comment or a side file that takes the report away |
-| [no-broad-lint-disable--use-next-line-with-reason](../tools/dont-review-it/docs/lint/no-broad-lint-disable--use-next-line-with-reason.md) | Require every lint suppression to apply to the next line alone, so code written later never inherits an exemption nobody chose for it |
-| [no-explained-lint-message--state-prohibition-then-fix](../tools/dont-review-it/docs/lint/no-explained-lint-message--state-prohibition-then-fix.md) | Require every lint message to carry a prohibition and an imperative repair direction and nothing else, so the first thing a reader meets is the action that clears the report |
-| [no-inline-suppression-of-protected-rule--register-the-exception-in-configuration](../tools/dont-review-it/docs/lint/no-inline-suppression-of-protected-rule--register-the-exception-in-configuration.md) | Disallow silencing a protected rule from a comment in the source or from a severity the lint configuration lowers, so an exception to one of these rules stands as one registered entry carrying the grounds somebody wrote for it |
-| [no-lint-suppression-in-spec--fix-the-violation](../tools/dont-review-it/docs/lint/no-lint-suppression-in-spec--fix-the-violation.md) | Disallow a lint suppression comment in the files these rules run on, so a report ends in a repair to the code or a repair to the rule and never in a comment that takes the report away |
-| [no-partial-rule-set--enable-the-whole-set](../tools/dont-review-it/docs/lint/no-partial-rule-set--enable-the-whole-set.md) | Require a configuration naming any rule of a declared set to name the whole set at one severity in one scope on a run carrying the type information those rules read, so a set stands whole or stands nowhere |
-| [no-rule-suppression--fix-the-violation](../tools/dont-review-it/docs/lint/no-rule-suppression--fix-the-violation.md) | Disallow taking a rule of the parallel determinism gate out of a run through a suppression comment, a lowered severity, or an ignore entry, leaving the code the rule stands on as the only place a report ends |
-| [no-silent-suppression--fix-or-justify-inline](../tools/dont-review-it/docs/lint/no-silent-suppression--fix-or-justify-inline.md) | Require every report from the rules that keep one declaration in one place to end in a repair, a registered deviation, or a suppression that carries its grounds, so what the linter stops saying is a decision somebody wrote down |
-| [no-unchecked-authored-path--include-it-in-every-declared-check](../tools/dont-review-it/docs/lint/no-unchecked-authored-path--include-it-in-every-declared-check.md) | Require every authored path to sit inside a check this repository declares, and every registration row to sit inside the check that consumes it, so a check that opens nothing is reported instead of passing for a check that found nothing |
-| [no-unregistered-rule-plugin--enable-the-plugin](../tools/dont-review-it/docs/lint/no-unregistered-rule-plugin--enable-the-plugin.md) | Disallow a lint configuration naming a rule of a plugin that no plugin list it can reach enables, so a rule left standing on a dropped plugin is reported instead of resolving to nothing |
-| [no-vacuous-test-run--let-the-empty-run-fail](../tools/dont-review-it/docs/lint/no-vacuous-test-run--let-the-empty-run-fail.md) | Disallow a test config that lets a run finding no test file report success, so a suite that stopped being collected reaches the gate as a failure instead of as a green run |
-| [require-spec-lint-coverage--lint-every-spec-file](../tools/dont-review-it/docs/lint/require-spec-lint-coverage--lint-every-spec-file.md) | Require every file declaring a test block to sit inside the reach of the spec discipline bundle, with those rules failing a run and their shared settings handed out from one declaration, so a run that reports nothing stands apart from a bundle that reaches nothing |
-| [require-test-block-for-spec-file--add-test-or-delete-file](../tools/dont-review-it/docs/lint/require-test-block-for-spec-file--add-test-or-delete-file.md) | Require a file named as a spec to declare at least one test block that runs, so naming a file a spec costs a check that actually executes rather than buying the standing of a spec for free |
+| [no-array-mutation--derive-new-array](../tools/dont-review-it/docs/lint/no-array-mutation--derive-new-array.md) | Disallow calling an array method that changes the receiver in place, so a changed array always appears as a newly derived binding |
+| [no-class-as-mutable-cell--decide-in-an-iife](../tools/dont-review-it/docs/lint/no-class-as-mutable-cell--decide-in-an-iife.md) | Disallow a class whose only instance is built inside one function and never leaves it while its fields keep being written after construction, so a local mutable variable cannot be laundered into class syntax |
+| [no-discarded-failure--receive-and-surface-it](../tools/dont-review-it/docs/lint/no-discarded-failure--receive-and-surface-it.md) | Disallow taking the result of a call that returns a failure and a value as a pair without binding the failure, and disallow a catch clause that names nothing, so a failure reaches a place that can act on it instead of turning into the value that stands for its own absence |
+| [no-empty-catch--throw-or-handle](../tools/dont-review-it/docs/lint/no-empty-catch--throw-or-handle.md) | Disallow a catch clause whose body carries no statement, so catching a failure is a decision about what happens next instead of a place for the failure to stop being visible |
+| [no-floating-promise--await-the-result](../tools/dont-review-it/docs/lint/no-floating-promise--await-the-result.md) | Disallow a promise-valued expression that reaches no await, no return, no binding that is later awaited and no composition, so the place a failed asynchronous call lands is fixed by the call site's own control flow |
+| [no-logged-and-continued-failure--stop-or-recover](../tools/dont-review-it/docs/lint/no-logged-and-continued-failure--stop-or-recover.md) | Disallow writing a caught failure to an output stream inside a catch clause that neither stops nor returns, so a failure that was caught either ends the work or produces a value the caller can use |
+| [no-promise-chain--use-async-await](../tools/dont-review-it/docs/lint/no-promise-chain--use-async-await.md) | Disallow calling a member named then, catch or finally, so the continuation and the failure handling of an asynchronous call stay on the enclosing function's own control flow |
+| [no-reassign--use-spread-or-iife](../tools/dont-review-it/docs/lint/no-reassign--use-spread-or-iife.md) | Disallow every assignment-shaped mutation - a re-bindable declaration, a write to an existing binding or property, an index or length write, a property-writing standard call, a property deletion, a pattern assignment - so the value a name holds is fixed where the name is declared |
+| [no-receiver-mutation--derive-new-value](../tools/dont-review-it/docs/lint/no-receiver-mutation--derive-new-value.md) | Disallow calling a method that writes to a receiver which is not an array - a collection, a moment, a query string, a form, a sink, or a class of one's own whose body writes to `this` - so a changed value always appears as a newly derived binding |
+| [no-silent-catch--rethrow-or-handle](../tools/dont-review-it/docs/lint/no-silent-catch--rethrow-or-handle.md) | Disallow a catch clause whose body never carries the failure it bound out of the clause, so a failure that was caught reaches something able to act on it instead of ending where it was caught |
 
-## [.claude/skills/reviews/references/frontend.md](../.claude/skills/reviews/references/frontend.md)
+## [.claude/skills/reviews/references/frontend-components-and-state.md](../.claude/skills/reviews/references/frontend-components-and-state.md)
 
 | Rule | Description |
 | --- | --- |
 | [no-hand-rolled-server-read--use-tanstack-query](../tools/dont-review-it/docs/lint/no-hand-rolled-server-read--use-tanstack-query.md) | Disallow combining useState with fetch for server data after the TanStack Query migration |
 | [require-query-options-in-api-segment--move-query-options-to-api](../tools/dont-review-it/docs/lint/require-query-options-in-api-segment--move-query-options-to-api.md) | Require queryOptions, infiniteQueryOptions, and mutationOptions factories to live in an FSD api segment |
 
-## [.claude/skills/reviews/references/infrastructure.md](../.claude/skills/reviews/references/infrastructure.md)
+## [.claude/skills/reviews/references/infrastructure-resources-and-apply.md](../.claude/skills/reviews/references/infrastructure-resources-and-apply.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [.claude/skills/reviews/references/no-silent-fallback.md](../.claude/skills/reviews/references/no-silent-fallback.md)
+## [.claude/skills/reviews/references/io-boundaries-and-types.md](../.claude/skills/reviews/references/io-boundaries-and-types.md)
+
+| Rule | Description |
+| --- | --- |
+| [no-double-type-assertion--declare-the-real-type](../tools/dont-review-it/docs/lint/no-double-type-assertion--declare-the-real-type.md) | Disallow asserting the type of an expression that is already the result of a type assertion, so no value arrives at its declared type through a route the type checker was told to stop checking |
+| [no-interface-declaration--write-a-type-alias](../tools/dont-review-it/docs/lint/no-interface-declaration--write-a-type-alias.md) | Disallow declaring an object type with an interface outside an ambient module, so every object type is written one way and only the declarations that must merge into a module or the global scope keep the form that merges |
+| [no-single-use-local-type--inline-at-the-use-site](../tools/dont-review-it/docs/lint/no-single-use-local-type--inline-at-the-use-site.md) | Disallow a type declared at the top level of a file without being exported when the file references it at most once, so a name is given to a shape only where more than one place has to agree on it |
+| [no-unchecked-cast--parse-at-boundary](../tools/dont-review-it/docs/lint/no-unchecked-cast--parse-at-boundary.md) | Disallow handing a concrete type to a value the source declares as `any` or `unknown`, so every concrete type a value carries reached it through a step that read the value |
+
+## [.claude/skills/reviews/references/monitoring-logging-and-status-codes.md](../.claude/skills/reviews/references/monitoring-logging-and-status-codes.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
-## [.claude/skills/reviews/references/observability.md](../.claude/skills/reviews/references/observability.md)
+## [.claude/skills/reviews/references/names-and-vocabularies.md](../.claude/skills/reviews/references/names-and-vocabularies.md)
 
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
+| Rule | Description |
+| --- | --- |
+| [forbid-numbered-sibling-file--name-what-each-file-owns](../tools/dont-review-it/docs/lint/forbid-numbered-sibling-file--name-what-each-file-owns.md) | Disallow splitting a file into siblings distinguished only by a number, so every file name states the responsibility that file owns |
+| [no-ambiguous-variable-name--rename-to-concrete-noun](../tools/dont-review-it/docs/lint/no-ambiguous-variable-name--rename-to-concrete-noun.md) | Disallow a binding named by one of the ambiguous-name patterns, so the name says what the binding holds instead of sending a reader upstream to the assignment |
 
-## [.claude/skills/reviews/references/placement-and-tools.md](../.claude/skills/reviews/references/placement-and-tools.md)
+## [.claude/skills/reviews/references/normative-documents.md](../.claude/skills/reviews/references/normative-documents.md)
+
+| Rule | Description |
+| --- | --- |
+| [no-detached-rationale--comment-at-explained-line](../tools/dont-review-it/docs/lint/no-detached-rationale--comment-at-explained-line.md) | Require a JSDoc block to carry tag content only, so an explanation never drifts above a signature instead of sitting on the code it explains |
+| [no-explanatory-comment--delete-or-move-to-commit-message](../tools/dont-review-it/docs/lint/no-explanatory-comment--delete-or-move-to-commit-message.md) | Disallow comments that explain the code, so reasoning lives in the commit message instead of drifting beside an implementation that moves on without it |
+
+## [.claude/skills/reviews/references/ownership-and-duplication.md](../.claude/skills/reviews/references/ownership-and-duplication.md)
+
+| Rule | Description |
+| --- | --- |
+| [no-barrel-import--import-from-the-owning-module](../tools/dont-review-it/docs/lint/no-barrel-import--import-from-the-owning-module.md) | Disallow a module specifier that names a re-export module while the statement takes a value through it, so the module a binding is taken from is the module that declares it |
+| [no-barrel-module--declare-in-the-owning-module](../tools/dont-review-it/docs/lint/no-barrel-module--declare-in-the-owning-module.md) | Disallow a module whose every statement is a re-export and which forwards at least one value, so the module a binding is taken from is the module that declares it |
+| [no-duplicate-value-declaration--reuse-authoritative-value](../tools/dont-review-it/docs/lint/no-duplicate-value-declaration--reuse-authoritative-value.md) | Disallow a constant, function, or class declared under a name another declaration in the repository binds to the same body, so one value keeps one owner instead of drifting between copies |
+| [no-duplicated-body--import-the-existing-declaration](../tools/dont-review-it/docs/lint/no-duplicated-body--import-the-existing-declaration.md) | Disallow a declaration whose body is spelled exactly as another declaration elsewhere in the repository, so one behaviour keeps one owner instead of drifting between copies |
+| [no-identity-wrapper--call-the-target-directly](../tools/dont-review-it/docs/lint/no-identity-wrapper--call-the-target-directly.md) | Disallow a named function whose whole body forwards its own parameters unchanged to one other call and declares no type contract of its own, so a caller reaches the function that does the work instead of a name that only stands in front of it |
+| [no-local-finite-value-set--use-or-register-canonical-values](../tools/dont-review-it/docs/lint/no-local-finite-value-set--use-or-register-canonical-values.md) | Disallow defining a finite value set inside a file that does not own it, so one place declares the vocabulary and every other place derives from it |
+| [no-split-type-authority--rename-or-unify](../tools/dont-review-it/docs/lint/no-split-type-authority--rename-or-unify.md) | Disallow an exported type whose name carries a second shape inside its workspace, or whose non-trivial shape carries a second name inside the repository, so a name and a structure keep pointing at each other one to one |
+| [no-twin-declaration--merge-into-one-owner](../tools/dont-review-it/docs/lint/no-twin-declaration--merge-into-one-owner.md) | Disallow a declaration that another declaration in the repository spells with the same name and the same body, so one concept keeps one owner however small the body is |
+| [require-re-export-only-files--move-declaration-to-owning-module](../tools/dont-review-it/docs/lint/require-re-export-only-files--move-declaration-to-owning-module.md) | Require the files the deployment lists as re-export only to carry re-exports and nothing else, so the surface a module presents can be read off that file without opening what it forwards |
+
+## [.claude/skills/reviews/references/package-and-command-surfaces.md](../.claude/skills/reviews/references/package-and-command-surfaces.md)
 
 | Rule | Description |
 | --- | --- |
@@ -77,21 +79,8 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-citty-parent-run--move-run-into-a-subcommand](../tools/dont-review-it/docs/lint/no-citty-parent-run--move-run-into-a-subcommand.md) | Disallow a `run` handler on a citty command that declares `subCommands`, so a matched subcommand's output is never followed by the parent's |
 | [no-hardcoded-endpoint--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-endpoint--read-from-configuration.md) | Disallow text written out in the source at the destination argument of a call that opens a connection, so where a deployment talks to is decided by its configuration rather than by the file that performs the request |
 | [no-mixed-package-surface--declare-one-surface](../tools/dont-review-it/docs/lint/no-mixed-package-surface--declare-one-surface.md) | Require a package to declare either the surface it is run through or the surface it is imported through, so which discipline owns the package is decided by its manifest instead of by whoever reaches into it next |
-| [no-standalone-tsconfig--extend-shared-preset](../tools/dont-review-it/docs/lint/no-standalone-tsconfig--extend-shared-preset.md) | Require the tsconfig.json that governs a file to extend one of the shared presets, so compiler ruleOptions are decided in one place instead of being copied into every workspace |
-| [no-unwrapped-toolchain-config--call-the-preset-for-the-block](../tools/dont-review-it/docs/lint/no-unwrapped-toolchain-config--call-the-preset-for-the-block.md) | Require the lint and fmt blocks of a Vite+ configuration to be what the matching `dontReviewItPreset` function returns, so the rule set, the formatting decisions, and what git is told to ignore all arrive without the caller restating them |
-| [require-registered-file--restore-it-at-the-registered-path](../tools/dont-review-it/docs/lint/require-registered-file--restore-it-at-the-registered-path.md) | Require every path the required-file table registers to hold a file that is not empty, so a file whose readers sit outside the source keeps its place instead of leaving with the change that stopped mentioning it |
 
-## [.claude/skills/reviews/references/principles.md](../.claude/skills/reviews/references/principles.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/remove-useless-tests.md](../.claude/skills/reviews/references/remove-useless-tests.md)
-
-| Rule | Description |
-| --- | --- |
-| [no-whole-data-import-subject--assert-the-contract-member](../tools/dont-review-it/docs/lint/no-whole-data-import-subject--assert-the-contract-member.md) | Disallow handing an assertion a whole imported data file, so a spec states the part of that file it keeps rather than restating the file and failing on every unrelated edit |
-
-## [.claude/skills/reviews/references/review-findings.md](../.claude/skills/reviews/references/review-findings.md)
+## [.claude/skills/reviews/references/review-findings-and-fix-completion.md](../.claude/skills/reviews/references/review-findings-and-fix-completion.md)
 
 No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
 
@@ -102,11 +91,7 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [forbid-tracked-path--untrack-and-ignore](../tools/dont-review-it/docs/lint/forbid-tracked-path--untrack-and-ignore.md) | Require every path registered as untrackable to stay out of the tracked file list and to stand in the ignore settings, so values that belong to one machine and output that a build produces never ride a commit into another clone |
 | [no-hardcoded-provider-id--read-from-configuration](../tools/dont-review-it/docs/lint/no-hardcoded-provider-id--read-from-configuration.md) | Disallow text written out in the source at an identity argument of a client built from a provider package, so which account a deployment acts as is decided by its configuration rather than by the file that builds the client |
 
-## [.claude/skills/reviews/references/simplify.md](../.claude/skills/reviews/references/simplify.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/tests.md](../.claude/skills/reviews/references/tests.md)
+## [.claude/skills/reviews/references/test-design.md](../.claude/skills/reviews/references/test-design.md)
 
 | Rule | Description |
 | --- | --- |
@@ -153,6 +138,7 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [no-vacuous-host-object-equality--assert-parsed-value](../tools/dont-review-it/docs/lint/no-vacuous-host-object-equality--assert-parsed-value.md) | Disallow comparing or recording a host object that keeps its state in internal slots, so an assertion about an HTTP request or response fails once the code stops producing the contract it was written for |
 | [no-vi-mock-factory-behavior--use-spy-true-and-fixture](../tools/dont-review-it/docs/lint/no-vi-mock-factory-behavior--use-spy-true-and-fixture.md) | Disallow a module replacement declaration from carrying a factory, so what a replaced module hands back is declared by the fixture of the test that reads it instead of being fixed once for every test in the file |
 | [no-vitest-context-expect--import-expect-from-vitest](../tools/dont-review-it/docs/lint/no-vitest-context-expect--import-expect-from-vitest.md) | Disallow reading `expect` out of the context a test block hands its callback, so every assertion in the suite runs through the one `expect` the file imported from the test runner |
+| [no-whole-data-import-subject--assert-the-contract-member](../tools/dont-review-it/docs/lint/no-whole-data-import-subject--assert-the-contract-member.md) | Disallow handing an assertion a whole imported data file, so a spec states the part of that file it keeps rather than restating the file and failing on every unrelated edit |
 | [require-it-only-expect--move-setup-into-fixture](../tools/dont-review-it/docs/lint/require-it-only-expect--move-setup-into-fixture.md) | Disallow a statement other than an assertion in the body of a test block, so the subject every assertion reads is the one its fixture handed over |
 | [require-mock-type-parameter--annotate-vi-fn](../tools/dont-review-it/docs/lint/require-mock-type-parameter--annotate-vi-fn.md) | Require every mock function creation to carry a type parameter that pins the call signature of the dependency it stands in for, so a mock drifting from that dependency is caught by the type checker instead of passing every assertion in the suite |
 | [require-spec-directory-outside-coverage--exclude-it-from-the-measurement](../tools/dont-review-it/docs/lint/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.md) | Require the test config to keep the specification directory out of the coverage measurement, so the number a run reports is what the tests beside the sources reached rather than what the specifications happened to touch |
@@ -163,54 +149,48 @@ No rule of this repository declares this document as its grounds. What the off-t
 | [require-test-block-spelling--use-configured-fn](../tools/dont-review-it/docs/lint/require-test-block-spelling--use-configured-fn.md) | Require every test block declaration to be rooted at one configured spelling, so a scan of the test surface settles what an identifier means without reading the block behind it |
 | [require-vitest-extend-builder--infer-fixture-type](../tools/dont-review-it/docs/lint/require-vitest-extend-builder--infer-fixture-type.md) | Require every fixture to be declared as its own builder call whose type is inferred from what the factory returns, so the shape a test destructures is the shape the factory produces rather than a hand-written copy that drifts away from it |
 
-## [.claude/skills/reviews/references/verification-bypass.md](../.claude/skills/reviews/references/verification-bypass.md)
-
-No rule of this repository declares this document as its grounds. What the off-the-shelf rules and the other checks cover is not collected here.
-
-## [.claude/skills/reviews/references/writing-code.md](../.claude/skills/reviews/references/writing-code.md)
+## [.claude/skills/reviews/references/verification-and-automation.md](../.claude/skills/reviews/references/verification-and-automation.md)
 
 | Rule | Description |
 | --- | --- |
-| [forbid-numbered-sibling-file--name-what-each-file-owns](../tools/dont-review-it/docs/lint/forbid-numbered-sibling-file--name-what-each-file-owns.md) | Disallow splitting a file into siblings distinguished only by a number, so every file name states the responsibility that file owns |
-| [forbid-oversized-file--split-by-responsibility](../tools/dont-review-it/docs/lint/forbid-oversized-file--split-by-responsibility.md) | Disallow a file carrying more code lines than the budget set for it, so a file is split while it still has one seam instead of after it has accumulated several responsibilities |
-| [no-ambiguous-variable-name--rename-to-concrete-noun](../tools/dont-review-it/docs/lint/no-ambiguous-variable-name--rename-to-concrete-noun.md) | Disallow a binding named by one of the ambiguous-name patterns, so the name says what the binding holds instead of sending a reader upstream to the assignment |
-| [no-array-mutation--derive-new-array](../tools/dont-review-it/docs/lint/no-array-mutation--derive-new-array.md) | Disallow calling an array method that changes the receiver in place, so a changed array always appears as a newly derived binding |
-| [no-barrel-import--import-from-the-owning-module](../tools/dont-review-it/docs/lint/no-barrel-import--import-from-the-owning-module.md) | Disallow a module specifier that names a re-export module while the statement takes a value through it, so the module a binding is taken from is the module that declares it |
-| [no-barrel-module--declare-in-the-owning-module](../tools/dont-review-it/docs/lint/no-barrel-module--declare-in-the-owning-module.md) | Disallow a module whose every statement is a re-export and which forwards at least one value, so the module a binding is taken from is the module that declares it |
-| [no-class-as-mutable-cell--decide-in-an-iife](../tools/dont-review-it/docs/lint/no-class-as-mutable-cell--decide-in-an-iife.md) | Disallow a class whose only instance is built inside one function and never leaves it while its fields keep being written after construction, so a local mutable variable cannot be laundered into class syntax |
-| [no-default-export--use-named-export](../tools/dont-review-it/docs/lint/no-default-export--use-named-export.md) | Disallow every export whose outward name is `default`, so a symbol keeps the name it was defined under all the way to the places that call it |
-| [no-detached-declaration--declare-it-next-to-its-use](../tools/dont-review-it/docs/lint/no-detached-declaration--declare-it-next-to-its-use.md) | Disallow a declaration that stands apart from the statement that uses it, so a reader reaches the shape of a name without leaving the line that names it |
-| [no-detached-rationale--comment-at-explained-line](../tools/dont-review-it/docs/lint/no-detached-rationale--comment-at-explained-line.md) | Require a JSDoc block to carry tag content only, so an explanation never drifts above a signature instead of sitting on the code it explains |
-| [no-discarded-failure--receive-and-surface-it](../tools/dont-review-it/docs/lint/no-discarded-failure--receive-and-surface-it.md) | Disallow taking the result of a call that returns a failure and a value as a pair without binding the failure, and disallow a catch clause that names nothing, so a failure reaches a place that can act on it instead of turning into the value that stands for its own absence |
-| [no-double-type-assertion--declare-the-real-type](../tools/dont-review-it/docs/lint/no-double-type-assertion--declare-the-real-type.md) | Disallow asserting the type of an expression that is already the result of a type assertion, so no value arrives at its declared type through a route the type checker was told to stop checking |
-| [no-duplicate-value-declaration--reuse-authoritative-value](../tools/dont-review-it/docs/lint/no-duplicate-value-declaration--reuse-authoritative-value.md) | Disallow a constant, function, or class declared under a name another declaration in the repository binds to the same body, so one value keeps one owner instead of drifting between copies |
-| [no-duplicated-body--import-the-existing-declaration](../tools/dont-review-it/docs/lint/no-duplicated-body--import-the-existing-declaration.md) | Disallow a declaration whose body is spelled exactly as another declaration elsewhere in the repository, so one behaviour keeps one owner instead of drifting between copies |
-| [no-empty-catch--throw-or-handle](../tools/dont-review-it/docs/lint/no-empty-catch--throw-or-handle.md) | Disallow a catch clause whose body carries no statement, so catching a failure is a decision about what happens next instead of a place for the failure to stop being visible |
-| [no-explanatory-comment--delete-or-move-to-commit-message](../tools/dont-review-it/docs/lint/no-explanatory-comment--delete-or-move-to-commit-message.md) | Disallow comments that explain the code, so reasoning lives in the commit message instead of drifting beside an implementation that moves on without it |
-| [no-floating-promise--await-the-result](../tools/dont-review-it/docs/lint/no-floating-promise--await-the-result.md) | Disallow a promise-valued expression that reaches no await, no return, no binding that is later awaited and no composition, so the place a failed asynchronous call lands is fixed by the call site's own control flow |
-| [no-identity-wrapper--call-the-target-directly](../tools/dont-review-it/docs/lint/no-identity-wrapper--call-the-target-directly.md) | Disallow a named function whose whole body forwards its own parameters unchanged to one other call and declares no type contract of its own, so a caller reaches the function that does the work instead of a name that only stands in front of it |
-| [no-interface-declaration--write-a-type-alias](../tools/dont-review-it/docs/lint/no-interface-declaration--write-a-type-alias.md) | Disallow declaring an object type with an interface outside an ambient module, so every object type is written one way and only the declarations that must merge into a module or the global scope keep the form that merges |
-| [no-local-finite-value-set--use-or-register-canonical-values](../tools/dont-review-it/docs/lint/no-local-finite-value-set--use-or-register-canonical-values.md) | Disallow defining a finite value set inside a file that does not own it, so one place declares the vocabulary and every other place derives from it |
-| [no-logged-and-continued-failure--stop-or-recover](../tools/dont-review-it/docs/lint/no-logged-and-continued-failure--stop-or-recover.md) | Disallow writing a caught failure to an output stream inside a catch clause that neither stops nor returns, so a failure that was caught either ends the work or produces a value the caller can use |
-| [no-multi-binding-declaration--declare-one-binding-per-statement](../tools/dont-review-it/docs/lint/no-multi-binding-declaration--declare-one-binding-per-statement.md) | Disallow a declaration statement that introduces more than one binding, so every binding has a statement of its own to be read, moved and deleted at |
-| [no-promise-chain--use-async-await](../tools/dont-review-it/docs/lint/no-promise-chain--use-async-await.md) | Disallow calling a member named then, catch or finally, so the continuation and the failure handling of an asynchronous call stay on the enclosing function's own control flow |
-| [no-reassign--use-spread-or-iife](../tools/dont-review-it/docs/lint/no-reassign--use-spread-or-iife.md) | Disallow every assignment-shaped mutation - a re-bindable declaration, a write to an existing binding or property, an index or length write, a property-writing standard call, a property deletion, a pattern assignment - so the value a name holds is fixed where the name is declared |
-| [no-receiver-mutation--derive-new-value](../tools/dont-review-it/docs/lint/no-receiver-mutation--derive-new-value.md) | Disallow calling a method that writes to a receiver which is not an array - a collection, a moment, a query string, a form, a sink, or a class of one's own whose body writes to `this` - so a changed value always appears as a newly derived binding |
-| [no-silent-catch--rethrow-or-handle](../tools/dont-review-it/docs/lint/no-silent-catch--rethrow-or-handle.md) | Disallow a catch clause whose body never carries the failure it bound out of the clause, so a failure that was caught reaches something able to act on it instead of ending where it was caught |
-| [no-single-use-local-type--inline-at-the-use-site](../tools/dont-review-it/docs/lint/no-single-use-local-type--inline-at-the-use-site.md) | Disallow a type declared at the top level of a file without being exported when the file references it at most once, so a name is given to a shape only where more than one place has to agree on it |
-| [no-split-type-authority--rename-or-unify](../tools/dont-review-it/docs/lint/no-split-type-authority--rename-or-unify.md) | Disallow an exported type whose name carries a second shape inside its workspace, or whose non-trivial shape carries a second name inside the repository, so a name and a structure keep pointing at each other one to one |
-| [no-twin-declaration--merge-into-one-owner](../tools/dont-review-it/docs/lint/no-twin-declaration--merge-into-one-owner.md) | Disallow a declaration that another declaration in the repository spells with the same name and the same body, so one concept keeps one owner however small the body is |
-| [no-unchecked-cast--parse-at-boundary](../tools/dont-review-it/docs/lint/no-unchecked-cast--parse-at-boundary.md) | Disallow handing a concrete type to a value the source declares as `any` or `unknown`, so every concrete type a value carries reached it through a step that read the value |
-| [no-unordered-import--group-by-origin-then-sort-by-specifier](../tools/dont-review-it/docs/lint/no-unordered-import--group-by-origin-then-sort-by-specifier.md) | Disallow an import list whose order does not follow origin then specifier, so what a file depends on is read off the block boundaries instead of every specifier |
-| [no-unused-style-class--delete-or-reference-it](../tools/dont-review-it/docs/lint/no-unused-style-class--delete-or-reference-it.md) | Disallow a style sheet class that no script and no markup in the repository spells, so the style sheet keeps only the classes that reach the rendered page |
-| [require-re-export-only-files--move-declaration-to-owning-module](../tools/dont-review-it/docs/lint/require-re-export-only-files--move-declaration-to-owning-module.md) | Require the files the deployment lists as re-export only to carry re-exports and nothing else, so the surface a module presents can be read off that file without opening what it forwards |
+| [forbid-generic-restriction-rule--use-the-declared-rule](../tools/dont-review-it/docs/lint/forbid-generic-restriction-rule--use-the-declared-rule.md) | Disallow enabling an off-the-shelf lint rule that reads what it rejects from its own configuration, so every ban this repository declares stands in the rule that carries its replacement and reaches the checks that read the bans |
+| [forbid-symbol-prefixed-name--rename-to-alphanumeric-start](../tools/dont-review-it/docs/lint/forbid-symbol-prefixed-name--rename-to-alphanumeric-start.md) | Require every directory and file name on the path of a linted file to start with a letter or a digit, so nothing sits where a glob walk never reaches it |
+| [forbid-test-adjacent-file--inline-its-setup-into-the-test](../tools/dont-review-it/docs/lint/forbid-test-adjacent-file--inline-its-setup-into-the-test.md) | Disallow a file whose name carries a test marker other than the ones the repository runs, so no file can leave the production scope by the way it is spelled |
+| [forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier](../tools/dont-review-it/docs/lint/forbid-unresolvable-module-specifier--write-a-statically-resolvable-specifier.md) | Disallow a module specifier whose value is decided while the program runs, so every specifier in the source is one string the checks that read specifiers can match |
+| [no-blanket-suppression--name-and-record](../tools/dont-review-it/docs/lint/no-blanket-suppression--name-and-record.md) | Disallow any lint suppression comment and disallow a repository ledger of approved suppressions, so a report ends in a repair to the code or a named exception in the lint configuration and never in a comment or a side file that takes the report away |
+| [no-broad-lint-disable--use-next-line-with-reason](../tools/dont-review-it/docs/lint/no-broad-lint-disable--use-next-line-with-reason.md) | Require every lint suppression to apply to the next line alone, so code written later never inherits an exemption nobody chose for it |
+| [no-explained-lint-message--state-prohibition-then-fix](../tools/dont-review-it/docs/lint/no-explained-lint-message--state-prohibition-then-fix.md) | Require every lint message to carry a prohibition and an imperative repair direction and nothing else, so the first thing a reader meets is the action that clears the report |
+| [no-inline-suppression-of-protected-rule--register-the-exception-in-configuration](../tools/dont-review-it/docs/lint/no-inline-suppression-of-protected-rule--register-the-exception-in-configuration.md) | Disallow silencing a protected rule from a comment in the source or from a severity the lint configuration lowers, so an exception to one of these rules stands as one registered entry carrying the grounds somebody wrote for it |
+| [no-lint-suppression-in-spec--fix-the-violation](../tools/dont-review-it/docs/lint/no-lint-suppression-in-spec--fix-the-violation.md) | Disallow a lint suppression comment in the files these rules run on, so a report ends in a repair to the code or a repair to the rule and never in a comment that takes the report away |
+| [no-partial-rule-set--enable-the-whole-set](../tools/dont-review-it/docs/lint/no-partial-rule-set--enable-the-whole-set.md) | Require a configuration naming any rule of a declared set to name the whole set at one severity in one scope on a run carrying the type information those rules read, so a set stands whole or stands nowhere |
+| [no-rule-suppression--fix-the-violation](../tools/dont-review-it/docs/lint/no-rule-suppression--fix-the-violation.md) | Disallow taking a rule of the parallel determinism gate out of a run through a suppression comment, a lowered severity, or an ignore entry, leaving the code the rule stands on as the only place a report ends |
+| [no-silent-suppression--fix-or-justify-inline](../tools/dont-review-it/docs/lint/no-silent-suppression--fix-or-justify-inline.md) | Require every report from the rules that keep one declaration in one place to end in a repair, a registered deviation, or a suppression that carries its grounds, so what the linter stops saying is a decision somebody wrote down |
+| [no-unchecked-authored-path--include-it-in-every-declared-check](../tools/dont-review-it/docs/lint/no-unchecked-authored-path--include-it-in-every-declared-check.md) | Require every authored path to sit inside a check this repository declares, and every registration row to sit inside the check that consumes it, so a check that opens nothing is reported instead of passing for a check that found nothing |
+| [no-unregistered-rule-plugin--enable-the-plugin](../tools/dont-review-it/docs/lint/no-unregistered-rule-plugin--enable-the-plugin.md) | Disallow a lint configuration naming a rule of a plugin that no plugin list it can reach enables, so a rule left standing on a dropped plugin is reported instead of resolving to nothing |
+| [no-vacuous-test-run--let-the-empty-run-fail](../tools/dont-review-it/docs/lint/no-vacuous-test-run--let-the-empty-run-fail.md) | Disallow a test config that lets a run finding no test file report success, so a suite that stopped being collected reaches the gate as a failure instead of as a green run |
+| [require-spec-lint-coverage--lint-every-spec-file](../tools/dont-review-it/docs/lint/require-spec-lint-coverage--lint-every-spec-file.md) | Require every file declaring a test block to sit inside the reach of the spec discipline bundle, with those rules failing a run and their shared settings handed out from one declaration, so a run that reports nothing stands apart from a bundle that reaches nothing |
+| [require-test-block-for-spec-file--add-test-or-delete-file](../tools/dont-review-it/docs/lint/require-test-block-for-spec-file--add-test-or-delete-file.md) | Require a file named as a spec to declare at least one test block that runs, so naming a file a spec costs a check that actually executes rather than buying the standing of a spec for free |
+
+## [.claude/skills/reviews/references/workspace-placement-and-tooling.md](../.claude/skills/reviews/references/workspace-placement-and-tooling.md)
+
+| Rule | Description |
+| --- | --- |
+| [no-standalone-tsconfig--extend-shared-preset](../tools/dont-review-it/docs/lint/no-standalone-tsconfig--extend-shared-preset.md) | Require the tsconfig.json that governs a file to extend one of the shared presets, so compiler ruleOptions are decided in one place instead of being copied into every workspace |
+| [no-unwrapped-toolchain-config--call-the-preset-for-the-block](../tools/dont-review-it/docs/lint/no-unwrapped-toolchain-config--call-the-preset-for-the-block.md) | Require the lint and fmt blocks of a Vite+ configuration to be what the matching `dontReviewItPreset` function returns, so the rule set, the formatting decisions, and what git is told to ignore all arrive without the caller restating them |
+| [require-registered-file--restore-it-at-the-registered-path](../tools/dont-review-it/docs/lint/require-registered-file--restore-it-at-the-registered-path.md) | Require every path the required-file table registers to hold a file that is not empty, so a file whose readers sit outside the source keeps its place instead of leaving with the change that stopped mentioning it |
 
 ## [AGENTS.md](../AGENTS.md)
 
 | Rule | Description |
 | --- | --- |
 | [forbid-declared-command-invocation--use-designated-replacement](../tools/dont-review-it/docs/lint/forbid-declared-command-invocation--use-designated-replacement.md) | Disallow starting a command the shared declaration has retired as a child process, so the declaration that closes the import route and the manifest route closes the process route with the same entry |
+| [forbid-oversized-file--split-by-responsibility](../tools/dont-review-it/docs/lint/forbid-oversized-file--split-by-responsibility.md) | Disallow a file carrying more code lines than the budget set for it, so a file is split while it still has one seam instead of after it has accumulated several responsibilities |
+| [no-default-export--use-named-export](../tools/dont-review-it/docs/lint/no-default-export--use-named-export.md) | Disallow every export whose outward name is `default`, so a symbol keeps the name it was defined under all the way to the places that call it |
+| [no-detached-declaration--declare-it-next-to-its-use](../tools/dont-review-it/docs/lint/no-detached-declaration--declare-it-next-to-its-use.md) | Disallow a declaration that stands apart from the statement that uses it, so a reader reaches the shape of a name without leaving the line that names it |
 | [no-detached-test-file--move-beside-source](../tools/dont-review-it/docs/lint/no-detached-test-file--move-beside-source.md) | Require a test file to sit in the directory of the source it tests under that source's name, so the pair is tied together by the path and a test cannot be left behind when its source moves |
+| [no-multi-binding-declaration--declare-one-binding-per-statement](../tools/dont-review-it/docs/lint/no-multi-binding-declaration--declare-one-binding-per-statement.md) | Disallow a declaration statement that introduces more than one binding, so every binding has a statement of its own to be read, moved and deleted at |
+| [no-unordered-import--group-by-origin-then-sort-by-specifier](../tools/dont-review-it/docs/lint/no-unordered-import--group-by-origin-then-sort-by-specifier.md) | Disallow an import list whose order does not follow origin then specifier, so what a file depends on is read off the block boundaries instead of every specifier |
+| [no-unused-style-class--delete-or-reference-it](../tools/dont-review-it/docs/lint/no-unused-style-class--delete-or-reference-it.md) | Disallow a style sheet class that no script and no markup in the repository spells, so the style sheet keeps only the classes that reach the rendered page |
 | [no-version-range--pin-the-exact-version](../tools/dont-review-it/docs/lint/no-version-range--pin-the-exact-version.md) | Disallow every dependency version that matches more than one release, in workspace manifests and in the catalog alike, so the release a workspace installs is decided by the declaration instead of by the moment the install ran |
 | [require-catalog-entry--register-shared-dependency](../tools/dont-review-it/docs/lint/require-catalog-entry--register-shared-dependency.md) | Require every package that more than one workspace declares to be registered in the catalog, so the version they resolve to is decided in one place instead of workspace by workspace |
 | [require-spec-directory-outside-coverage--exclude-it-from-the-measurement](../tools/dont-review-it/docs/lint/require-spec-directory-outside-coverage--exclude-it-from-the-measurement.md) | Require the test config to keep the specification directory out of the coverage measurement, so the number a run reports is what the tests beside the sources reached rather than what the specifications happened to touch |

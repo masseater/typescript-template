@@ -3,7 +3,7 @@ title: 利用者アプリの設定
 description: 通知・セキュリティ・AI・プラン・退会など、設定の各ページ
 ---
 
-設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。プロフィールの編集は [プロフィール](/pages/member-profile) が、AI インタビューは [AI インタビュー](/pages/member-interview) が持つ。規約への同意（`/settings/agreements`）では、AI インタビューの履歴の利用への同意をあとから取り消せる。取り消したときは会話の履歴を消す。
+設定は [会員の枠](/pages/member-layout#設定) にあり、一覧（`/settings`）から各ページへ移る。規約への同意（`/settings/agreements`）では、AI インタビューの履歴の利用への同意をあとから取り消せる。取り消したときは会話の履歴を消す。
 
 ## 一覧
 
@@ -20,7 +20,7 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 3. 「会員一覧と検索に載せる」
 4. 「保存」
 
-「自分だけ」にすると、リンクを知っている会員にもプロフィールと写真を見せない。判定の実体は [会員のつながり](/data-model/member-graph) が持つ。
+「自分だけ」にすると、リンクを知っている会員にもプロフィールと写真を見せない。
 
 ## メールアドレス
 
@@ -75,7 +75,7 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 ## プランと解約
 
-パス: `/settings/plan`。実体は [契約](/data-model/billing) が持つ。
+パス: `/settings/plan`。
 
 1. 見出し「プランと解約」
 2. いまのプラン（無料 / 有料）と、有料なら現在期間の末。解約済みなら、その日に無料になることを書く
@@ -88,7 +88,7 @@ description: 通知・セキュリティ・AI・プラン・退会など、設�
 
 ## 規約への同意
 
-パス: `/settings/agreements`。実体は [信頼と安全](/data-model/trust) の AgreementAcceptance が持つ。
+パス: `/settings/agreements`。
 
 1. 見出し「規約への同意」
 2. 未同意の版。無ければ最新に同意していることを出し、あれば版の一覧と [規約への同意](/pages/member-agreement) へのリンクを出す

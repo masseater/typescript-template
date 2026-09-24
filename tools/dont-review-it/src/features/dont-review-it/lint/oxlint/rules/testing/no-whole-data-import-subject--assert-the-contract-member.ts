@@ -89,7 +89,7 @@ export const noWholeDataImportSubject = createDontReviewItRule({
     docs: {
       description:
         "Disallow handing an assertion a whole imported data file, so a spec states the part of that file it keeps rather than restating the file and failing on every unrelated edit",
-      relatedGuidelines: [".claude/skills/reviews/references/remove-useless-tests.md"],
+      relatedGuidelines: [".claude/skills/reviews/references/test-design.md"],
     },
     messages: {
       wholeDataImport:

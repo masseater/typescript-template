@@ -65,11 +65,11 @@ const authSecret = Config.schema(AuthSecret, deploymentKey.authSecret).pipe(
 
 const otlpAuthorization = optional(Config.Redacted(deploymentKey.otlpAuthorization));
 
-const stripeSettings = Config.all({
-  STRIPE_PRICE_ID: Config.Redacted(deploymentKey.stripePriceId),
-  STRIPE_SECRET_KEY: Config.Redacted(deploymentKey.stripeSecretKey),
-  STRIPE_WEBHOOK_SECRET: Config.Redacted(deploymentKey.stripeWebhookSecret),
-});
+const StripeSandboxKey = Schema.String.check(Schema.isPattern(/^(?:sk|rk)_test_[A-Za-z0-9]+$/u));
+
+const stripeSandboxKey = Config.schema(StripeSandboxKey, deploymentKey.stripeSecretKey).pipe(
+  Config.map(Redacted.make),
+);
 
 const wikiPublishSettings = Config.all({
   appId: optional(Config.String(deploymentKey.wikiPublishAppId)),
@@ -102,4 +102,4 @@ const wikiPublishSettings = Config.all({
   ),
 );
 
-export { authSecret, otlpAuthorization, settings, stripeSettings, wikiPublishSettings };
+export { authSecret, otlpAuthorization, settings, stripeSandboxKey, wikiPublishSettings };

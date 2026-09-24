@@ -21,13 +21,13 @@ describe("an api response behind a start server route", () => {
     Effect.runPromise(
       Effect.gen(function* encodedViewProgram() {
         const viewRoute = api.route(
-          Schema.Struct({ id: Schema.String }),
+          { response: Schema.Struct({ id: Schema.String }) },
           () => Effect.succeed({ id: "visible", profile: "x" }),
           {},
         );
         const {
           handlers: { ANY: answerAny },
-        } = elysiaServer(createApi("").get("/api/view", viewRoute));
+        } = elysiaServer(createApi("").get("/api/view", ...viewRoute));
         const answered = yield* startRoute({
           fetch: (rendered) => answerAny({ request: rendered }),
         })(new Request(`${origin}/api/view`));
@@ -59,7 +59,7 @@ describe("an api route behind a start server route that fails unexpectedly", () 
     Effect.runPromise(
       Effect.gen(function* brokenStatusProgram() {
         const viewRoute = api.route(
-          Schema.Struct({}),
+          { response: Schema.Struct({}) },
           () => Effect.fail({ _tag: "Broken" } as const),
           {
             Broken: "unexpected",
@@ -67,7 +67,7 @@ describe("an api route behind a start server route that fails unexpectedly", () 
         );
         const {
           handlers: { ANY: answerAny },
-        } = elysiaServer(createApi("").get("/api/broken", viewRoute));
+        } = elysiaServer(createApi("").get("/api/broken", ...viewRoute));
         const answered = yield* startRoute({
           fetch: (rendered) => answerAny({ request: rendered }),
         })(new Request(`${origin}/api/broken`));
@@ -85,13 +85,13 @@ describe("a HEAD request behind a start server route", () => {
     Effect.runPromise(
       Effect.gen(function* headStatusProgram() {
         const viewRoute = api.route(
-          Schema.Struct({ id: Schema.String }),
+          { response: Schema.Struct({ id: Schema.String }) },
           () => Effect.succeed({ id: "visible" }),
           {},
         );
         const {
           handlers: { HEAD: answerHead },
-        } = elysiaServer(createApi("").get("/api/view", viewRoute));
+        } = elysiaServer(createApi("").get("/api/view", ...viewRoute));
         const answered = yield* startRoute({
           fetch: (rendered) => answerHead({ request: rendered }),
         })(new Request(`${origin}/api/view`, { method: "HEAD" }));
@@ -108,10 +108,10 @@ describe("an unknown api path behind a start server route", () => {
   const it = test.extend("missingAnswer", () =>
     Effect.runPromise(
       Effect.gen(function* missingAnswerProgram() {
-        const viewRoute = api.route(Schema.Struct({}), () => Effect.succeed({}), {});
+        const viewRoute = api.route({ response: Schema.Struct({}) }, () => Effect.succeed({}), {});
         const {
           handlers: { ANY: answerAny },
-        } = elysiaServer(createApi("").get("/api/view", viewRoute));
+        } = elysiaServer(createApi("").get("/api/view", ...viewRoute));
         const answered = yield* startRoute({
           fetch: (rendered) => answerAny({ request: rendered }),
         })(new Request(`${origin}/api/missing`));

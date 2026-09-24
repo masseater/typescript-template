@@ -1,4 +1,4 @@
-# 独立した処理は同時に走らせる
+# 独立した処理は同時に始める
 
 大本: https://github.com/vercel-labs/agent-skills/blob/main/skills/react-best-practices/rules/async-parallel.md
 

@@ -18,6 +18,8 @@ import {
   lifecycle,
   taskInput,
   workspaceParaglideCompile,
+  telemetryEnv,
+  testRun,
 } from "@repo/vite-config";
 import { defineConfig } from "vite-plus";
 import { defaultExclude } from "vite-plus/test/config";
@@ -35,6 +37,7 @@ const rootOwnedPaths = [
   ".gitignore",
   ".mcp.json",
   ".mergify.yml",
+  ".textlint-ai-words.json",
   ".textlintrc.json",
   ".vite-hooks",
   "AGENTS.md",
@@ -82,21 +85,25 @@ export default defineConfig({
       "compile:paraglide": workspaceParaglideCompile,
       "check:code": {
         command: `vp check ${rootOwnedPaths.join(" ")}`,
+        env: [...telemetryEnv],
         input: [...taskInput],
       },
       ...effectDiagnostics(import.meta.dirname),
       "check:types": {
         command: rootOnDemandChecks["check:types"],
+        env: [...telemetryEnv],
         dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
       "check:canonical-literal-types": {
         command: "dont-review-it-canonical-literal-types",
+        env: [...telemetryEnv],
         dependsOn: ["compile:paraglide"],
         input: [...taskInput],
       },
       knip: {
         command: ["knip", "knip --strict"],
+        env: [...telemetryEnv],
         dependsOn: ["compile:paraglide"],
         input: [...taskInput, "!node_modules/.cache/**"],
         output: [{ auto: true }, "!node_modules/.cache/**"],
@@ -107,16 +114,9 @@ export default defineConfig({
           "stryker run tools/dont-review-it/src/features/dont-review-it/repository/stryker.ts",
       },
       test: {
+        ...testRun.test,
         command: `vp test run --project '!@repo/*' --exclude '${devServerTests}'`,
         dependsOn: ["compile:paraglide"],
-        input: [
-          ...taskInput,
-          "!coverage/**",
-          { base: "workspace", pattern: "!**/coverage/**" },
-          { base: "workspace", pattern: "pnpm-lock.yaml" },
-          { base: "workspace", pattern: "pnpm-workspace.yaml" },
-        ],
-        output: [],
       },
       "test:dev-server": {
         cache: false,
@@ -129,10 +129,12 @@ export default defineConfig({
         dependsOn: ["compile:paraglide"],
       },
       "check:text": {
-        command: 'textlint "apps/internal-dashboard/content/docs/**/*.md"',
+        command: 'textlint "**/*.md"',
+        env: [...telemetryEnv],
         input: [
           ...taskInput,
-          { base: "workspace", pattern: "apps/internal-dashboard/content/docs/**/*.md" },
+          { base: "workspace", pattern: "**/*.md" },
+          { base: "workspace", pattern: ".textlint-ai-words.json" },
           { base: "workspace", pattern: ".textlintrc.json" },
         ],
       },

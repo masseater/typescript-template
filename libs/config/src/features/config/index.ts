@@ -7,6 +7,7 @@ export {
 export type { AgreementKind, AgreementPolicy } from "./agreements.ts";
 export {
   APPLICATION,
+  scalarReferencePath,
   ApplicationName,
   applicationOrigins,
   applicationPorts,
@@ -73,10 +74,17 @@ export {
   paidStatuses,
   plans,
   priceIntervals,
+  stripeWebhookEvents,
   subscriptionStatuses,
   webhookOutcomes,
 } from "./billing.ts";
-export type { Plan, PriceInterval, SubscriptionStatus, WebhookOutcome } from "./billing.ts";
+export type {
+  Plan,
+  PriceInterval,
+  StripeWebhookEvent,
+  SubscriptionStatus,
+  WebhookOutcome,
+} from "./billing.ts";
 export {
   CloudflareApiToken,
   CloudflareId,

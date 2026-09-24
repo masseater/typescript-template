@@ -3,8 +3,6 @@ title: Observability
 description: ブラウザで起きた操作が、計測と伝播と収集を経て SLI に届くまでの層
 ---
 
-この節は、ブラウザで起きた一つの操作が、計測、伝播、収集、保存を経て目標の数値になるまでの層を、上から順に持つ。何を記録するかと深刻さは `.claude/skills/reviews/references/observability.md` が持つ。このテンプレートで span を切って OTLP へ出す手順は [OpenTelemetry](/tech-stack/opentelemetry) が持つ。
-
 ```mermaid
 flowchart TD
   browser[Browser]

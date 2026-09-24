@@ -41,14 +41,13 @@ description: テンプレートを自分のサービス向けにカスタマイ�
     - `ALERT_EMAIL`: カンマ区切りのメールアドレス。1〜10 個。
     - `BUDGET_JPY`: 正の数。予算監視は実行のたびに取得した為替レートで米ドルに換算し、固定費と予備費を引いた残りを使える額とします。残りが無いと予算監視が失敗を通知します。
     - `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_ZONE_ID`: 16進 32 文字。
-    - `CLOUDFLARE_API_TOKEN`: Cloudflare API トークン。
+    - `CLOUDFLARE_API_TOKEN`: Cloudflare API トークン。アカウント側は Workers Admin、D1 Edit、Secrets Store Edit、Account API Tokens Edit、Billing Read、Workers Observability Write、Email Sending Write、Email Routing Addresses Edit。ゾーン側は Workers Routes Edit、DNS Read、Zone Settings Edit。
+    - `CLOUDFLARE_WORKERS_SUBDOMAIN`: アカウントの `workers.dev` サブドメイン（`https://<name>.<ここ>.workers.dev` の部分）。英小文字・数字・ハイフン。
     - `TEMPLATE_APP_DOMAIN`: URL ではなくホスト名（`example.com`）。`workers.dev` は不可。origin は `https://{TEMPLATE_PREFIX}-member.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-admin.{TEMPLATE_APP_DOMAIN}`、`https://{TEMPLATE_PREFIX}-dashboard.{TEMPLATE_APP_DOMAIN}` になります。
     - `TEMPLATE_AUTH_SECRET`: 32 文字以上、異なる文字が 16 種以上、前後に空白を付けない。
     - `TEMPLATE_MAIL_FROM`: メールアドレス。`@` 以降は `{TEMPLATE_PREFIX}.` で始まること。
     - `TEMPLATE_PREFIX`: 先頭は英小文字、続きは英小文字・数字・ハイフン。全体で 3〜36 文字。
-    - `TEMPLATE_STRIPE_PRICE_ID`: 有料会員の Stripe 価格 ID。
-    - `TEMPLATE_STRIPE_SECRET_KEY`: Stripe のシークレットキー。
-    - `TEMPLATE_STRIPE_WEBHOOK_SECRET`: Stripe Webhook の署名シークレット。
+    - `STRIPE_API_KEY`: [Stripe](https://stripe.com/) の sandbox のシークレットキー（`sk_test_` か `rk_test_` で始まる）。本番環境の鍵（`sk_live_`）は適用前の設定検証で拒みます。有料プランの Product と Price、Webhook の送り先と署名シークレットは、この鍵で Alchemy が sandbox に作り、利用者アプリの Worker に渡します。staging と本番環境には別々の sandbox の鍵を置きます。
   - 空でも適用は始まります。値があるときだけデプロイへ渡ります。
     - `TEMPLATE_OTLP_ENDPOINT`: https の URL。
     - `TEMPLATE_OTLP_ENABLED`: `true` か `false`。`TEMPLATE_OTLP_ENDPOINT` を置くときは必須です。

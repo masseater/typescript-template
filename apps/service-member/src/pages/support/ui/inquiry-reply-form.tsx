@@ -19,7 +19,6 @@ function InquiryReplyForm({
           multiline
           name="body"
           onValueChange={form.handleBodyChange}
-          required
           value={form.body}
         />
         <Button disabled={form.blocked} type="submit">
