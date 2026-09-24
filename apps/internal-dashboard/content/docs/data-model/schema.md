@@ -251,12 +251,12 @@ erDiagram
     integer expires_at "nullable"
     text id PK
     text reference_id "nullable"
-    text refresh_id FK "nullable"
     text requested_user_info_claims "nullable"
     text resources "nullable"
     integer revoked "nullable"
     text scopes
     text session_id FK "nullable"
+    text refresh_id FK "nullable"
     text token UK "nullable"
     text user_id FK "nullable"
   }
@@ -321,7 +321,6 @@ erDiagram
     text user_id FK "nullable"
   }
   oauth_refresh_token {
-    integer auth_time "nullable"
     text authorization_code_id "nullable"
     text client_id FK
     text confirmation "nullable"
@@ -332,11 +331,12 @@ erDiagram
     text requested_user_info_claims "nullable"
     text resources "nullable"
     integer revoked "nullable"
+    text scopes
+    text session_id FK "nullable"
+    integer auth_time "nullable"
     integer rotated_at "nullable"
     integer rotation_replay_expires_at "nullable"
     text rotation_replay_response "nullable"
-    text scopes
-    text session_id FK "nullable"
     text token UK
     text user_id FK
   }
@@ -534,8 +534,8 @@ erDiagram
   user ||--o{ notification : "member_id"
   user ||--o| notification_preference : "member_id"
   oauth_client ||--o{ oauth_access_token : "client_id"
-  oauth_refresh_token |o--o{ oauth_access_token : "refresh_id"
   session |o--o{ oauth_access_token : "session_id"
+  oauth_refresh_token |o--o{ oauth_access_token : "refresh_id"
   user |o--o{ oauth_access_token : "user_id"
   user |o--o{ oauth_client : "user_id"
   oauth_client ||--o{ oauth_client_resource : "client_id"
