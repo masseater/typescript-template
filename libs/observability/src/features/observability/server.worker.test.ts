@@ -62,7 +62,11 @@ describe("observeRequest", () => {
         ).pipe(
           Effect.provide(
             Layer.merge(
-              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "service-member" }),
+              Telemetry.layer({
+                release: "test",
+                routes: { "/": "home" },
+                serviceName: "service-member",
+              }),
               fixedEntropy,
             ),
           ),
@@ -92,7 +96,11 @@ describe("observeRequest", () => {
         ).pipe(
           Effect.provide(
             Layer.merge(
-              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "service-member" }),
+              Telemetry.layer({
+                release: "test",
+                routes: { "/": "home" },
+                serviceName: "service-member",
+              }),
               fixedEntropy,
             ),
           ),
@@ -129,7 +137,11 @@ describe("observeRequest", () => {
         ).pipe(
           Effect.provide(
             Layer.merge(
-              Telemetry.layer({ release: "test", routes: { "/": "home" }, serviceName: "service-member" }),
+              Telemetry.layer({
+                release: "test",
+                routes: { "/": "home" },
+                serviceName: "service-member",
+              }),
               fixedEntropy,
             ),
           ),
