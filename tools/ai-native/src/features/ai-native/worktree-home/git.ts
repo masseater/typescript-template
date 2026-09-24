@@ -2,7 +2,6 @@ import { Data, Effect } from "effect";
 
 import { runCaptured } from "../child-process.ts";
 
-
 export type GitRunner = (
   gitLaunch: Readonly<{ cwd: string; handed: readonly string[] }>,
 ) => Effect.Effect<Readonly<{ status: number | null; stderr: string; stdout: string }>>;

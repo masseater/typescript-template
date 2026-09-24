@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { NodeServices } from "@effect/platform-node";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { causeRecord, markFailed, runCli } from "@repo/cli";
 import { type BuildTarget, BuildTargetName } from "@repo/config";
 import { Console, Effect, Schema, type PlatformError } from "effect";
