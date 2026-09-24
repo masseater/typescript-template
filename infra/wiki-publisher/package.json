@@ -1,26 +1,23 @@
 {
-  "name": "@repo/infra-github",
+  "name": "@repo/wiki-publisher",
   "private": true,
-  "bin": {
-    "repo-github": "./src/features/github/cli.ts"
-  },
   "type": "module",
   "exports": {
-    ".": "./src/features/github/index.ts"
+    ".": "./src/features/wiki-publisher/index.ts"
   },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
-    "@repo/cli": "workspace:*",
     "@repo/config": "workspace:*",
     "@repo/infra-cloudflare": "workspace:*",
+    "@repo/infra-github": "workspace:*",
+    "@repo/observability": "workspace:*",
     "alchemy": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/platform-node": "catalog:",
     "@repo/telemetry": "workspace:*",
     "@repo/vite-config": "workspace:*",
     "@types/node": "catalog:",
-    "msw": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   }
