@@ -63,3 +63,49 @@ expect(appRun.tasks.build.dependsOn).toEqual(expect.arrayContaining(["check:effe
 - 変更で不要になった fixture、mock、helper も削除する。
 - 残すかどうかは、そのテストが失敗したときにどの仕様、振る舞い、制約が破れたかを説明できるかで決める。「現在こう書かれている」としか説明できないなら不要。互換性、不変条件、意図的な禁止のように、その状態の維持自体が仕様なら残す。
 - カバレッジ不足だけを理由に、実装詳細を固定するテストを足さない。
+
+## 書き方の例
+
+書く前に、対象の契約から確かめたいことを文で決める。`openPullRequestOf` なら次の 2 つになる。
+
+- 開いている PR について `gh pr view` が成功したら、その PR の番号、URL、base、merge 状態を返す。
+- `gh pr view` が失敗したら何も返さない。
+
+1 つの文が 1 つの `describe` になり、文の前半の状況を fixture が作り、後半の観測できる結果を `it` が確かめる（`tools/ai-native/src/features/ai-native/sync-base/read-open-pr.test.ts`）。
+
+```ts
+import { describe, expect, test } from "vite-plus/test";
+
+import { openPullRequestOf } from "./read-open-pr.ts";
+
+describe("openPullRequestOf", () => {
+  describe("a successful gh pr view of an open pull request", () => {
+    const it = test.extend("thePullRequest", () =>
+      openPullRequestOf("/work", () => ({
+        status: 0,
+        stdout:
+          '{"baseRefName":"main","mergeStateStatus":"BEHIND","number":3,"url":"https://example.com/3"}',
+      })),
+    );
+
+    it("returns the parsed pull request", ({ thePullRequest }) => {
+      expect(thePullRequest).toStrictEqual({
+        baseRefName: "main",
+        mergeStateStatus: "BEHIND",
+        number: 3,
+        url: "https://example.com/3",
+      });
+    });
+  });
+
+  describe("a gh pr view that fails", () => {
+    const it = test.extend("thePullRequestWhenGhFails", () =>
+      openPullRequestOf("/work", () => ({ status: 1, stdout: "no pull requests found" })),
+    );
+
+    it("returns nothing", ({ thePullRequestWhenGhFails }) => {
+      expect(thePullRequestWhenGhFails).toBe(undefined);
+    });
+  });
+});
+```
