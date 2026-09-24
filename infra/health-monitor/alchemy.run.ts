@@ -1,13 +1,11 @@
 import { APPLICATION } from "@repo/config";
 import { monitorArtifact, monitorProgram, type SharedConfig } from "@repo/infra-cloudflare/monitor";
-import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
+import { prefixedStack } from "@repo/infra-cloudflare/prefixed-stack";
 import { healthMonitorWorker, healthOriginKey } from "@repo/monitor/workers";
-import { Stack } from "alchemy";
 import { Effect } from "effect";
 
-export default Stack(
-  stackName("health-monitor"),
-  stackOptions,
+export default prefixedStack(
+  "health-monitor",
   monitorProgram("health", {
     artifact: monitorArtifact("health-monitor"),
     className: healthMonitorWorker.className,

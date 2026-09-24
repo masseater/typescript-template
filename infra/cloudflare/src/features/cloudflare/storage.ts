@@ -1,9 +1,10 @@
-import { RemovalPolicy, Stack } from "alchemy";
+import { RemovalPolicy } from "alchemy";
 import { KV, R2 } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
+import { prefixedStack } from "./prefixed-stack.ts";
 import { settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
+import { stackName } from "./stacks.ts";
 
 const filesResource = "Files";
 const cacheResource = "Cache";
@@ -16,9 +17,8 @@ function cacheNamespaceTitle(prefix: string): string {
   return `${prefix}-cache`;
 }
 
-const stack = Stack(
-  stackName("storage"),
-  stackOptions,
+const stack = prefixedStack(
+  "storage",
   Effect.gen(function* storage() {
     const config = yield* Effect.orDie(settings);
     const files = yield* R2.Bucket(filesResource, {

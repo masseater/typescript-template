@@ -1,14 +1,13 @@
-import { RemovalPolicy, Stack } from "alchemy";
+import { RemovalPolicy } from "alchemy";
 import { Email } from "alchemy/Cloudflare";
 import { Effect } from "effect";
 
 import { sendingDomain } from "./config.ts";
+import { prefixedStack } from "./prefixed-stack.ts";
 import { settings } from "./settings.ts";
-import { stackName, stackOptions } from "./stacks.ts";
 
-const stack = Stack(
-  stackName("email"),
-  stackOptions,
+const stack = prefixedStack(
+  "email",
   Effect.gen(function* email() {
     const config = yield* Effect.orDie(settings);
     yield* Email.SendingSubdomain("Sending", {

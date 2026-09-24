@@ -1,9 +1,4 @@
 import { applicationProgram } from "@repo/infra-cloudflare/application";
-import { stackName, stackOptions } from "@repo/infra-cloudflare/stacks";
-import { Stack } from "alchemy";
+import { prefixedStack } from "@repo/infra-cloudflare/prefixed-stack";
 
-export default Stack(
-  stackName("internal-dashboard"),
-  stackOptions,
-  applicationProgram("internal-dashboard"),
-);
+export default prefixedStack("internal-dashboard", applicationProgram("internal-dashboard"));
