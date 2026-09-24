@@ -1,4 +1,2 @@
 node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 26 ? 0 : 1)' || { echo "Node 26 or later is required by package.json engines; this hook ran on $(node --version)" >&2; exit 1; }
-scope="$(node tools/dont-review-it/src/features/dont-review-it/repository/hook-scope.ts precommit)" || scope="-r"
-[ -n "$scope" ] || exit 0
-vp run --concurrency-limit 2 $scope precommit
+vp run --filter @repo/dont-review-it hook:precommit

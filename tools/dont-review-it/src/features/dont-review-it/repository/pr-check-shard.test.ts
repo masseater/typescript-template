@@ -17,9 +17,14 @@ const numberedShards = Array.from({ length: prCheckShardCount }, (_unused, index
   String(index + 1),
 );
 
+const rootTestFiles = [
+  "libs/ui/src/features/ui/button.test.tsx",
+  "apps/service-member/src/app/server.test.ts",
+];
+
 const outputs = (checkShard: string, files: readonly string[]) =>
   Object.fromEntries(
-    Effect.runSync(shardOutput(checkShard, files, packages))
+    Effect.runSync(shardOutput(checkShard, { files, packages, rootTestFiles }))
       .split("\n")
       .filter((line) => line !== "")
       .map((line) => {
@@ -65,14 +70,27 @@ describe("pull request check shard outputs", () => {
     ).toStrictEqual(["apps/service-member", "libs/ui"]);
   });
 
+  it("leaves an affected workspace without root tests out of the test paths", () => {
+    expect.hasAssertions();
+    const shards = numberedShards.map((shard) =>
+      outputs(shard, ["libs/cli/src/features/cli/cli.ts", "libs/ui/src/features/ui/button.tsx"]),
+    );
+    expect(
+      shards
+        .flatMap((shard) => (shard.paths ?? "").split(" "))
+        .filter(Boolean)
+        .toSorted(),
+    ).toStrictEqual(["apps/service-member", "libs/ui"]);
+  });
+
   it("refuses a workspace whose name cannot be a filter", () => {
     expect.hasAssertions();
     const exit = Effect.runSyncExit(
-      shardOutput(
-        "1",
-        ["vite.config.ts"],
-        [{ dependencies: [], directory: "apps/service-member", name: "service-member" }],
-      ),
+      shardOutput("1", {
+        files: ["vite.config.ts"],
+        packages: [{ dependencies: [], directory: "apps/service-member", name: "service-member" }],
+        rootTestFiles,
+      }),
     );
     expect(Exit.isFailure(exit)).toBe(true);
   });

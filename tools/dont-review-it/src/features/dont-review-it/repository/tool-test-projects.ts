@@ -24,4 +24,14 @@ const rootNodeToolTestIncludes: readonly string[] = readdirSync(toolsDirectory, 
   .toSorted((left, right) => left.localeCompare(right))
   .flatMap((name) => [`tools/${name}/**/*.test.ts`, `tools/${name}/**/*.test.tsx`]);
 
-export { dedicatedToolVitestProjects, rootNodeToolTestIncludes };
+const rootNodeTestIncludes = [
+  "libs/**/*.test.ts",
+  "libs/**/*.test.tsx",
+  "apps/**/*.test.ts",
+  "apps/**/*.test.tsx",
+  ...rootNodeToolTestIncludes,
+  "tools/dont-review-it/src/features/dont-review-it/repository/**/*.test.ts",
+  "infra/**/*.test.ts",
+] as const;
+
+export { dedicatedToolVitestProjects, rootNodeTestIncludes };

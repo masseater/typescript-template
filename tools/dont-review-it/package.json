@@ -21,7 +21,7 @@
     "dont-review-it-client": "./src/features/dont-review-it/repository/client-bundle.ts",
     "dont-review-it-effect-typecheck": "./src/features/dont-review-it/repository/check-effect-typecheck.ts",
     "dont-review-it-feature-sliced": "./src/features/dont-review-it/repository/feature-sliced-check.ts",
-    "dont-review-it-hook-scope": "./src/features/dont-review-it/repository/hook-scope.ts",
+    "dont-review-it-hook": "./src/features/dont-review-it/repository/hook.ts",
     "dont-review-it-imports": "./src/features/dont-review-it/repository/workspace-imports.ts",
     "dont-review-it-modular": "./src/features/dont-review-it/repository/modular-budgets-check.ts",
     "dont-review-it-pr-affected": "./src/features/dont-review-it/repository/pr-affected.ts",
