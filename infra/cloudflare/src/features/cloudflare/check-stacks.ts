@@ -11,6 +11,8 @@ import {
   jobsWorkflowBinding,
   jobsWorkflowClass,
   stripeApiVersion,
+  stripeAutomaticTax,
+  stripeTrialPeriodDays,
   stripeWebhookEvents,
   userInboxBinding,
   userInboxClassName,
@@ -182,8 +184,10 @@ function applicationResource(app: Application, release: string): ResourceInvento
       plainText(appEnvKey.otlpEndpoint, otlp.endpoint),
       ...(grants(app, "billing")
         ? [
+            plainText("STRIPE_AUTOMATIC_TAX", String(stripeAutomaticTax)),
             "STRIPE_PRICE_ID:deferred:<unresolved PropExpr>",
             `STRIPE_SECRET_KEY:secret_text:text=$${deploymentKey.stripeSecretKey}`,
+            plainText("STRIPE_TRIAL_PERIOD_DAYS", String(stripeTrialPeriodDays)),
             "STRIPE_WEBHOOK_SECRET:deferred:<unresolved EffectExpr>",
           ]
         : []),

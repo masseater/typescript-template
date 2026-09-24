@@ -38,8 +38,10 @@ type DevVars = {
 };
 
 const stripeTestPlaceholders: readonly (readonly [string, string])[] = [
+  ["STRIPE_AUTOMATIC_TAX", "false"],
   ["STRIPE_PRICE_ID", "price_e2ePlaceholderNotReal"],
   ["STRIPE_SECRET_KEY", "sk_test_e2ePlaceholderNotAReal"],
+  ["STRIPE_TRIAL_PERIOD_DAYS", "0"],
   ["STRIPE_WEBHOOK_SECRET", "whsec_e2ePlaceholderNotReal"],
 ];
 

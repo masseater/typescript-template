@@ -122,6 +122,7 @@ export {
   findSubscription,
   isPaidMember,
   markPaymentFailed,
+  markPaymentSettled,
   memberOfCustomer,
   planOf,
   recordSubscription,
