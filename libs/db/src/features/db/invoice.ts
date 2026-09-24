@@ -1,3 +1,4 @@
+import { WEBHOOK_DISPOSITION } from "@repo/config";
 import { desc, eq, lte, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -138,10 +139,26 @@ const settleInvoicePayment = Effect.fn("settleInvoicePayment")(function* settleI
   ]);
 });
 
+const isRecordedInvoice = Effect.fn("isRecordedInvoice")(function* isRecordedInvoice(
+  stripeInvoiceId: string,
+) {
+  const [recorded] = yield* query((database) =>
+    database
+      .select({ stripeInvoiceId: customerInvoice.stripeInvoiceId })
+      .from(customerInvoice)
+      .where(eq(customerInvoice.stripeInvoiceId, stripeInvoiceId))
+      .limit(1),
+  );
+  return recorded !== undefined;
+});
+
 const creditInvoice = Effect.fn("creditInvoice")(function* creditInvoice(
   webhookEvent: StripeEventRecord,
   credit: Readonly<{ amount: number; stripeInvoiceId: string }>,
 ) {
+  if (!(yield* isRecordedInvoice(credit.stripeInvoiceId))) {
+    return WEBHOOK_DISPOSITION.ignored;
+  }
   return yield* applyStripeEvent(webhookEvent, [
     (database): BatchItem<"sqlite"> =>
       database
@@ -155,6 +172,9 @@ const refundInvoice = Effect.fn("refundInvoice")(function* refundInvoice(
   webhookEvent: StripeEventRecord,
   refund: Readonly<{ amountRefunded: number; stripeInvoiceId: string }>,
 ) {
+  if (!(yield* isRecordedInvoice(refund.stripeInvoiceId))) {
+    return WEBHOOK_DISPOSITION.ignored;
+  }
   return yield* applyStripeEvent(webhookEvent, [
     (database): BatchItem<"sqlite"> =>
       database
