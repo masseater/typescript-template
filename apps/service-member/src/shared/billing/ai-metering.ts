@@ -1,41 +1,51 @@
-import { findSubscription, markAiUsageReported, recordAiUsage } from "@repo/db";
-import { logAt } from "@repo/observability";
-import { Effect } from "effect";
+import { findSubscription, markAiUsageReported, recordAiUsage, unreportedAiUsage } from "@repo/db";
+import { logCause } from "@repo/observability";
+import { Cause, DateTime, Effect } from "effect";
 
 import { Stripe } from "./stripe.ts";
 
 const oneTurn = 1;
+const meterBackdatingLimit = { days: 35 } as const;
 
 const meterAiTurn = Effect.fn("billing.meterAiTurn")(function* meterAiTurn(
   turn: Readonly<{ identifier: string; memberId: string }>,
 ) {
   const subscription = yield* findSubscription(turn.memberId);
   if (subscription === undefined) {
-    return;
+    return { unreported: 0 };
   }
-  const first = yield* recordAiUsage({
+  yield* recordAiUsage({
     identifier: turn.identifier,
     memberId: turn.memberId,
     quantity: oneTurn,
   });
-  if (!first) {
-    return;
-  }
-  yield* (yield* Stripe)
-    .reportUsage({
-      customerId: subscription.stripeCustomerId,
-      identifier: turn.identifier,
-      quantity: oneTurn,
-    })
-    .pipe(
-      Effect.flatMap(() => markAiUsageReported(turn.identifier)),
-      Effect.catchTag("StripeFailure", (failure) =>
-        logAt("Warn", {
-          attributes: { identifier: turn.identifier, reason: failure.reason },
-          eventName: "billing.usage_unreported",
-        }),
-      ),
-    );
+  const pending = {
+    memberId: turn.memberId,
+    since: DateTime.toDate(DateTime.subtract(yield* DateTime.now, meterBackdatingLimit)),
+  };
+  const stripe = yield* Stripe;
+  yield* Effect.forEach(
+    yield* unreportedAiUsage(pending),
+    (usage) =>
+      stripe
+        .reportUsage({
+          customerId: subscription.stripeCustomerId,
+          identifier: usage.identifier,
+          occurredAt: usage.occurredAt,
+          quantity: usage.quantity,
+        })
+        .pipe(Effect.andThen(markAiUsageReported(usage.identifier))),
+    { discard: true },
+  ).pipe(
+    Effect.catchTag("StripeFailure", (failure) =>
+      logCause({
+        attributes: { identifier: turn.identifier, reason: failure.reason },
+        cause: Cause.fail(failure),
+        eventName: "billing.usage_unreported",
+      }),
+    ),
+  );
+  return { unreported: (yield* unreportedAiUsage(pending)).length };
 });
 
 export { meterAiTurn };

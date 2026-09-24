@@ -4,6 +4,7 @@ import { aiUsageSince } from "@repo/db";
 import { TestDatabase, runStatement } from "@repo/db/testing";
 import { appEnvironment } from "@repo/runtime/testing";
 import { DateTime, Effect, Layer } from "effect";
+import { TestClock } from "effect/testing";
 import { HttpResponse, http } from "msw";
 
 import { meterAiTurn } from "./ai-metering.ts";
@@ -36,7 +37,7 @@ function subscribe(id: string): Effect.Effect<unknown, unknown> {
 }
 
 function stripeAnswering(
-  status: number,
+  statuses: readonly number[],
   sent: URLSearchParams[],
 ): Effect.Effect<void, never, Scope.Scope> {
   return Effect.acquireRelease(
@@ -46,6 +47,7 @@ function stripeAnswering(
       network.use(
         http.post(meterEvents, ({ request }) =>
           request.formData().then((form) => {
+            const status = statuses[Math.min(sent.length, statuses.length - 1)] ?? 200;
             sent.push(new URLSearchParams([...form].map(([key, value]) => [key, String(value)])));
             return status === 200
               ? HttpResponse.json({ event_name: "ai_interview_turn" })
@@ -64,11 +66,11 @@ function stripeAnswering(
 }
 
 function withStripeAnswering<Value, Failure, Requirement>(
-  status: number,
+  statuses: readonly number[],
   sent: URLSearchParams[],
   program: Effect.Effect<Value, Failure, Requirement>,
 ) {
-  return stripeAnswering(status, sent).pipe(
+  return stripeAnswering(statuses, sent).pipe(
     Effect.andThen(program.pipe(Effect.provide(stripeLayer))),
   );
 }
@@ -79,7 +81,7 @@ it.effect("a paid member's model turn reaches the meter once, however often it i
     yield* addMember("member");
     yield* subscribe("member");
     yield* withStripeAnswering(
-      200,
+      [200],
       sent,
       Effect.gen(function* replayTwice() {
         yield* meterAiTurn({ identifier: "interview:member:1", memberId: "member" });
@@ -95,6 +97,7 @@ it.effect("a paid member's model turn reaches the meter once, however often it i
           identifier: "interview:member:1",
           "payload[stripe_customer_id]": customerId,
           "payload[value]": "1",
+          timestamp: "0",
         },
       ],
     );
@@ -107,14 +110,43 @@ it.effect("usage that Stripe refused stays on record as unreported instead of va
     const sent: URLSearchParams[] = [];
     yield* addMember("member");
     yield* subscribe("member");
-    yield* withStripeAnswering(
-      503,
+    const metered = yield* withStripeAnswering(
+      [503],
       sent,
       meterAiTurn({ identifier: "interview:member:1", memberId: "member" }),
     );
     const usage = yield* aiUsageSince({ memberId: "member", since: epoch });
     assert.strictEqual(sent.length, 1);
+    assert.deepStrictEqual(metered, { unreported: 1 });
     assert.deepStrictEqual(usage, { events: 1, quantity: 1, unreported: 1 });
+  }).pipe(Effect.provide(TestDatabase)),
+);
+
+it.effect("refused usage reaches the meter on the next turn, stamped with when it happened", () =>
+  Effect.gen(function* program() {
+    const sent: URLSearchParams[] = [];
+    yield* addMember("member");
+    yield* subscribe("member");
+    const metered = yield* withStripeAnswering(
+      [503, 200],
+      sent,
+      Effect.gen(function* twoTurnsAnHourApart() {
+        yield* meterAiTurn({ identifier: "interview:member:1", memberId: "member" });
+        yield* TestClock.adjust("1 hour");
+        return yield* meterAiTurn({ identifier: "interview:member:2", memberId: "member" });
+      }),
+    );
+    const usage = yield* aiUsageSince({ memberId: "member", since: epoch });
+    assert.deepStrictEqual(
+      sent.map((form) => [form.get("identifier"), form.get("timestamp")]),
+      [
+        ["interview:member:1", "0"],
+        ["interview:member:1", "0"],
+        ["interview:member:2", "3600"],
+      ],
+    );
+    assert.deepStrictEqual(metered, { unreported: 0 });
+    assert.deepStrictEqual(usage, { events: 2, quantity: 2, unreported: 0 });
   }).pipe(Effect.provide(TestDatabase)),
 );
 
@@ -123,7 +155,7 @@ it.effect("a free member's turn is neither recorded nor sent", () =>
     const sent: URLSearchParams[] = [];
     yield* addMember("member");
     yield* withStripeAnswering(
-      200,
+      [200],
       sent,
       meterAiTurn({ identifier: "interview:member:1", memberId: "member" }),
     );

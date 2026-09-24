@@ -138,7 +138,7 @@ export {
   settleInvoicePayment,
 } from "./invoice.ts";
 export type { InvoiceState } from "./invoice.ts";
-export { aiUsageSince, markAiUsageReported, recordAiUsage } from "./ai-usage.ts";
+export { aiUsageSince, markAiUsageReported, recordAiUsage, unreportedAiUsage } from "./ai-usage.ts";
 export { acceptQuote, applyQuoteState, listMemberQuotes } from "./quote.ts";
 export type { QuoteState } from "./quote.ts";
 export {
