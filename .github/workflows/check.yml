@@ -68,7 +68,7 @@ jobs:
       - if: steps.affected.outputs.paths != ''
         env:
           AFFECTED_PATHS: ${{ steps.affected.outputs.paths }}
-        run: vp test run --passWithNoTests --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
+        run: vp test run --project '!@repo/*' --exclude '**/*.dev-server.test.ts' $AFFECTED_PATHS
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && (steps.affected.outputs.root == 'true' || steps.affected.outputs.filters != '')
         with:

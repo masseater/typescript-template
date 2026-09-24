@@ -33,6 +33,14 @@ export default defineConfig({
         command: `vp test run ${isolatedNodeTestSuffix}`,
       },
       test: { command: [], dependsOn: ["test:shared", "test:isolated"] },
+      "hook:precommit": {
+        cache: false,
+        command: "dont-review-it-hook precommit",
+      },
+      "hook:prepush": {
+        cache: false,
+        command: "dont-review-it-hook prepush",
+      },
       "check:staged": {
         cache: false,
         command: "dont-review-it-check-staged",
