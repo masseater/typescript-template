@@ -110,19 +110,46 @@ function request(
   );
 }
 
-function checkoutForm(priceId: string, input: CheckoutInput): URLSearchParams {
+function taxFields(config: StripeConfig, returning: boolean): Record<string, string> {
+  return config.automaticTax
+    ? {
+        "automatic_tax[enabled]": "true",
+        "tax_id_collection[enabled]": "true",
+        ...(returning
+          ? { "customer_update[address]": "auto", "customer_update[name]": "auto" }
+          : {}),
+      }
+    : {};
+}
+
+const noTrial = 0;
+
+function trialFields(config: StripeConfig): Record<string, string> {
+  return config.trialPeriodDays === noTrial
+    ? {}
+    : {
+        "subscription_data[trial_period_days]": String(config.trialPeriodDays),
+        "subscription_data[trial_settings][end_behavior][missing_payment_method]": "cancel",
+      };
+}
+
+function checkoutForm(config: StripeConfig, input: CheckoutInput): URLSearchParams {
+  const customerFields =
+    "id" in input.customer
+      ? { customer: input.customer.id }
+      : { customer_email: input.customer.email };
   return new URLSearchParams({
     cancel_url: input.cancelUrl,
     client_reference_id: input.memberId,
     integration_identifier: checkoutIntegration,
-    "line_items[0][price]": priceId,
+    "line_items[0][price]": config.priceId,
     "line_items[0][quantity]": "1",
     mode: "subscription",
     "subscription_data[metadata][member_id]": input.memberId,
     success_url: input.successUrl,
-    ...("id" in input.customer
-      ? { customer: input.customer.id }
-      : { customer_email: input.customer.email }),
+    ...customerFields,
+    ...taxFields(config, "customer" in customerFields),
+    ...trialFields(config),
   });
 }
 
@@ -131,7 +158,7 @@ function stripeService(fetchImpl: typeof fetch, config: StripeConfig): StripeSha
     request(fetchImpl, config.secretKey, path, form);
   return {
     createCheckoutSession: (input) =>
-      send("/checkout/sessions", checkoutForm(config.priceId, input)).pipe(
+      send("/checkout/sessions", checkoutForm(config, input)).pipe(
         Effect.flatMap((body) => decodeStripe(Redirect, body)),
         Effect.map((session) => session.url),
       ),
