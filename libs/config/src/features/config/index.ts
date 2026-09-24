@@ -175,6 +175,7 @@ export {
 } from "./recording-schemas.ts";
 export {
   JobPayload,
+  jobInstanceId,
   jobsQueueBinding,
   jobsQueueName,
   jobsWorkflowBinding,
