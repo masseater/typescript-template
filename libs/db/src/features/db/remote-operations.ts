@@ -37,7 +37,7 @@ const fail = (code: typeof RemoteFailureCode.Type): Effect.Effect<never, RemoteF
   return Effect.fail(new RemoteFailure({ code }));
 };
 
-const migrationsFolder = repositoryFile("libs/db/migrations");
+const migrationsFolder = repositoryFile("libs/db/migrations/");
 
 const Statement = Schema.Trim.check(Schema.isMinLength(1));
 const MigrationFile = Schema.Struct({
